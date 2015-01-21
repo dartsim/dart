@@ -519,8 +519,10 @@ void Skeleton::setCommand(size_t _index, double _command)
 {
   assert(_index < getNumDofs());
 
-  mGenCoordInfos[_index].joint->setCommand(mGenCoordInfos[_index].localIndex,
-                                           _command);
+  Joint* joint = mDofs[_index]->getJoint();
+  const size_t localIndex = mDofs[_index]->getIndexInJoint();
+
+  return joint->setCommand(localIndex, _command);
 }
 
 //==============================================================================
@@ -528,28 +530,24 @@ double Skeleton::getCommand(size_t _index) const
 {
   assert(_index <getNumDofs());
 
-  return mGenCoordInfos[_index].joint->getCommand(
-        mGenCoordInfos[_index].localIndex);
+  const Joint* joint = mDofs[_index]->getJoint();
+  const size_t localIndex = mDofs[_index]->getIndexInJoint();
+
+  return joint->getCommand(localIndex);
 }
 
 //==============================================================================
 void Skeleton::setCommands(const Eigen::VectorXd& _commands)
 {
-  size_t index = 0;
-  size_t dof = 0;
-  Joint* joint;
-
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    joint = mBodyNodes[i]->getParentJoint();
-
-    dof = joint->getNumDofs();
+    Joint*       joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
       joint->setCommands(_commands.segment(index, dof));
-
-      index += dof;
     }
   }
 }
@@ -557,17 +555,19 @@ void Skeleton::setCommands(const Eigen::VectorXd& _commands)
 //==============================================================================
 Eigen::VectorXd Skeleton::getCommands() const
 {
-  size_t index = 0;
-  size_t dof = getNumDofs();
-  Eigen::VectorXd commands(dof);
+  Eigen::VectorXd commands(getNumDofs());
 
-  for (size_t i = 0; i < dof; ++i)
+  for (const auto& bodyNode : mBodyNodes)
   {
-    commands[index++]
-        = mGenCoordInfos[i].joint->getCommand(mGenCoordInfos[i].localIndex);
-  }
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
 
-  assert(index == dof);
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      commands.segment(index, dof) = joint->getCommands();
+    }
+  }
 
   return commands;
 }

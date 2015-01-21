@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "dart/common/Console.h"
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 #include "dart/constraint/ConstraintSolver.h"
 
 namespace dart {
@@ -56,7 +56,7 @@ ConstrainedGroup::~ConstrainedGroup()
 }
 
 //==============================================================================
-void ConstrainedGroup::addConstraint(Constraint* _constraint)
+void ConstrainedGroup::addConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint != NULL && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == false
@@ -73,14 +73,14 @@ size_t ConstrainedGroup::getNumConstraints() const
 }
 
 //==============================================================================
-Constraint* ConstrainedGroup::getConstraint(size_t _index) const
+ConstraintBase* ConstrainedGroup::getConstraint(size_t _index) const
 {
   assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
-void ConstrainedGroup::removeConstraint(Constraint* _constraint)
+void ConstrainedGroup::removeConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint != NULL && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == true
@@ -107,7 +107,7 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-bool ConstrainedGroup::containConstraint(Constraint* _constraint) const
+bool ConstrainedGroup::containConstraint(ConstraintBase* _constraint) const
 {
 //  std::cout << "CommunityTEST::_containConstraint(): Not implemented."
 //            << std::endl;
@@ -116,7 +116,7 @@ bool ConstrainedGroup::containConstraint(Constraint* _constraint) const
 }
 
 //==============================================================================
-bool ConstrainedGroup::checkAndAddConstraint(Constraint* _constraint)
+bool ConstrainedGroup::checkAndAddConstraint(ConstraintBase* _constraint)
 {
   std::cout << "CommunityTEST::_checkAndAddConstraint(): Not implemented."
             << std::endl;

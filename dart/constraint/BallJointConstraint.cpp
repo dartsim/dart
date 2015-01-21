@@ -357,9 +357,9 @@ void BallJointConstraint::uniteSkeletons()
     return;
 
   dynamics::Skeleton* unionId1
-      = Constraint::compressPath(mBodyNode1->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   dynamics::Skeleton* unionId2
-      = Constraint::compressPath(mBodyNode2->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)
     return;

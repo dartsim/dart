@@ -1,3 +1,25 @@
+### Version 4.3.0 (2015-01-19)
+
+1. Added name manager for efficient name look-up and unique naming
+    * [Pull request #277](https://github.com/dartsim/dart/pull/277)
+1. Added all-inclusive header and namespace headers
+    * [Pull request #278](https://github.com/dartsim/dart/pull/278)
+1. Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates 
+    * [Pull request #288](https://github.com/dartsim/dart/pull/288)
+1. Added hybrid dynamics
+    * [Pull request #298](https://github.com/dartsim/dart/pull/298)
+1. Added joint actuator types
+    * [Pull request #298](https://github.com/dartsim/dart/pull/298)
+1. Added Coulomb joint friction
+    * [Pull request #301](https://github.com/dartsim/dart/pull/301)
+1. Migrated to C++11
+    * [Pull request #268](https://github.com/dartsim/dart/pull/268)
+    * [Pull request #299](https://github.com/dartsim/dart/pull/299)
+1. Improved readability of CMake outp messages
+    * [Pull request #272](https://github.com/dartsim/dart/pull/272)
+1. Fixed const-correctneess of member functions
+    * [Pull request #277](https://github.com/dartsim/dart/pull/277)
+
 ### Version 4.2.1 (2015-01-07)
 
 1. Fixed version numbering of shared libraries in debian packages

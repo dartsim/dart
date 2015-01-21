@@ -1,9 +1,23 @@
+dart (4.3.0) unstable; urgency=low
+
+  * Added name manager for efficient name look-up and unique naming
+  * Added all-inclusive header and namespace headers
+  * Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates 
+  * Added hybrid dynamics
+  * Added joint actuator types
+  * Added Coulomb joint friction
+  * Migrated to C++11
+  * Improved readability of CMake outp messages
+  * Fixed const-correctneess of member functions
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 19 Jan 2015 14:00:00 -0500
+
 dart (4.2.1) unstable; urgency=low
 
   * Fixed version numbering of shared libraries in debian packages
   * Fixed Jacobian and its derivatives of FreeJoint/BallJoint
 
-  -- Jeongseok Lee <jslee02@gmail.com>  Wed, 7 Jan 2015 02:00:00 -0500
+ -- Jeongseok Lee <jslee02@gmail.com>  Wed, 7 Jan 2015 02:00:00 -0500
 
 dart (4.2.0) unstable; urgency=low
 

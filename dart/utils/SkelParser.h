@@ -37,6 +37,8 @@
 #ifndef DART_UTILS_SKEL_PARSER_H
 #define DART_UTILS_SKEL_PARSER_H
 
+#include <cstddef>
+
 #include <Eigen/StdVector>
 #include <Eigen/Dense>
 // TinyXML-2 Library
@@ -172,6 +174,12 @@ protected:
   ///
   static dart::dynamics::WeldJoint* readWeldJoint(
       tinyxml2::XMLElement* _jointElement);
+
+  /// Read axis
+  static void readJointDynamicsAndLimit(
+      tinyxml2::XMLElement* _jointElement,
+      dart::dynamics::Joint* _joint,
+      size_t _numAxis);
 };
 
 } // namespace utils
