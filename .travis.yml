@@ -3,7 +3,7 @@ os:
   - linux
   - osx
 compiler:
-  #- gcc
+  - gcc
   - clang
 before_install:
   - 'ci/before_install.sh'
