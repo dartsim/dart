@@ -28,10 +28,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
-#  DESTINATION include/dart/gui
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
+  DESTINATION include/dart/gui
+  COMPONENT headers
+)
 #install(TARGETS dart_gui EXPORT DARTTargets DESTINATION lib)
 

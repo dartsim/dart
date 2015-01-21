@@ -52,10 +52,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
-#  DESTINATION include/dart/collision
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  DESTINATION include/dart/collision
+  COMPONENT headers
+)
 #install(TARGETS dart_collision EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_collision EXPORT DARTTargets DESTINATION lib)

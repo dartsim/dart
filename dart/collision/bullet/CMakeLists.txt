@@ -23,11 +23,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.h
-#  DESTINATION include/dart/collision/bullet
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.h
+  DESTINATION include/dart/collision/bullet
+  COMPONENT headers
+)
 #install(TARGETS dart_collision_bullet EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_collision_bullet EXPORT DARTTargets DESTINATION lib)
 

@@ -28,11 +28,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
-#  DESTINATION include/dart/dynamics
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
+  DESTINATION include/dart/dynamics
+  COMPONENT headers
+)
 #install(TARGETS dart_dynamics EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_dynamics EXPORT DARTTargets DESTINATION lib)
 
