@@ -10,3 +10,7 @@ brew install tinyxml
 brew install tinyxml2
 brew install libccd
 brew install nlopt
+brew install urdfdom
+brew install urdfdom_headers
+brew install console_bridge
+
