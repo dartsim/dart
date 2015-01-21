@@ -36,6 +36,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Assimp
     #FOUND_VAR     Assimp_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS Assimp_INCLUDE_DIRS Assimp_LIBRARIES Assimp_VERSION
+    REQUIRED_VARS Assimp_INCLUDE_DIRS Assimp_LIBRARIES
     VERSION_VAR   Assimp_VERSION)
 
