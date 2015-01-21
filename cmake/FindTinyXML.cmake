@@ -37,6 +37,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TinyXML
     #FOUND_VAR     TinyXML_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS TinyXML_INCLUDE_DIRS TinyXML_LIBRARIES TinyXML_VERSION
+    REQUIRED_VARS TinyXML_INCLUDE_DIRS TinyXML_LIBRARIES
     VERSION_VAR   TinyXML_VERSION)
 

@@ -27,6 +27,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Eigen3
     #FOUND_VAR     Eigen3_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS Eigen3_INCLUDE_DIRS Eigen3_VERSION
+    REQUIRED_VARS Eigen3_INCLUDE_DIRS
     VERSION_VAR   Eigen3_VERSION)
 
