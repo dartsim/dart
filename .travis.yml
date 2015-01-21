@@ -1,4 +1,7 @@
 language: cpp
+os:
+  - linux
+  - osx
 compiler:
   - gcc
   - clang
@@ -9,8 +12,8 @@ env:
   matrix:
     - BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug
     - BUILD_CORE_ONLY=OFF BUILD_TYPE=Release
-    - BUILD_CORE_ONLY=ON BUILD_TYPE=Debug
-    - BUILD_CORE_ONLY=ON BUILD_TYPE=Release
+    - BUILD_CORE_ONLY=ON  BUILD_TYPE=Debug
+    - BUILD_CORE_ONLY=ON  BUILD_TYPE=Release
 before_script: cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
 script:
   - make
