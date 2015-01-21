@@ -1127,6 +1127,21 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
                                 double                   _edgeStiffness,
                                 double                   _dampingCoeff)
 {
+  Eigen::Vector3i frags = _frags;
+
+  for (int i = 0; i < 3; ++i)
+  {
+    if (frags[i] == 2)
+    {
+      dtwarn << "Invalid property of soft body '" << _softBodyNode->getName()
+             << "'. "
+             << "The number of vertices of each soft box edge should be "
+             << "equal to or greater than 3. It's set to 3."
+             << std::endl;
+      frags[i] = 3;
+    }
+  }
+
   size_t id = 0;
 
   std::map<PointMass*, size_t> map;
@@ -1147,12 +1162,12 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   // Point masses
   //----------------------------------------------------------------------------
   // Number of point masses
-  assert(_frags[0] > 1 && _frags[1] > 1 && _frags[2] > 1);
+  assert(frags[0] > 1 && frags[1] > 1 && frags[2] > 1);
 
   size_t nCorners = 8;
-  size_t nVerticesAtEdgeX = _frags[0] - 2;
-  size_t nVerticesAtEdgeY = _frags[1] - 2;
-  size_t nVerticesAtEdgeZ = _frags[2] - 2;
+  size_t nVerticesAtEdgeX = frags[0] - 2;
+  size_t nVerticesAtEdgeY = frags[1] - 2;
+  size_t nVerticesAtEdgeZ = frags[2] - 2;
   size_t nVerticesAtSideX = nVerticesAtEdgeY*nVerticesAtEdgeZ;
   size_t nVerticesAtSideY = nVerticesAtEdgeZ*nVerticesAtEdgeX;
   size_t nVerticesAtSideZ = nVerticesAtEdgeX*nVerticesAtEdgeY;
@@ -1164,9 +1179,9 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   // Mass per vertices
   double mass = _totalMass / nVertices;
 
-  Eigen::Vector3d segLength(_size[0]/(_frags[0] - 1),
-                            _size[1]/(_frags[1] - 1),
-                            _size[2]/(_frags[2] - 1));
+  Eigen::Vector3d segLength(_size[0]/(frags[0] - 1),
+                            _size[1]/(frags[1] - 1),
+                            _size[2]/(frags[2] - 1));
 
   std::vector<PointMass*> corners(nCorners);
 
@@ -1432,9 +1447,9 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  size_t nFacesX = 2*(_frags[1] - 1)*(_frags[2] - 1);
-  size_t nFacesY = 2*(_frags[2] - 1)*(_frags[0] - 1);
-  size_t nFacesZ = 2*(_frags[0] - 1)*(_frags[1] - 1);
+  size_t nFacesX = 2*(frags[1] - 1)*(frags[2] - 1);
+  size_t nFacesY = 2*(frags[2] - 1)*(frags[0] - 1);
+  size_t nFacesZ = 2*(frags[0] - 1)*(frags[1] - 1);
   size_t nFaces  = 2*nFacesX + 2*nFacesY + 2*nFacesZ;
 
   std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());

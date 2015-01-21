@@ -10,20 +10,23 @@ if(HAVE_BULLET_COLLISION)
   add_subdirectory(bullet)
 endif()
 
+set(dart_collision_hdrs ${hdrs} ${dart_collision_hdrs} PARENT_SCOPE)
+set(dart_collision_srcs ${srcs} ${dart_collision_srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_collision ${srcs} ${hdrs})
-target_link_libraries(
-  dart_collision
-  dart_common
-  dart_math
-  dart_collision_dart
-  dart_collision_fcl
-  dart_collision_fcl_mesh
-  ${DART_CORE_DEPENDENCIES}
-)
-if(HAVE_BULLET_COLLISION)
-  target_link_libraries(dart_collision dart_collision_bullet)
-endif()
+#dart_add_library(dart_collision ${srcs} ${hdrs})
+#target_link_libraries(
+#  dart_collision
+#  dart_common
+#  dart_math
+#  dart_collision_dart
+#  dart_collision_fcl
+#  dart_collision_fcl_mesh
+#  ${DART_CORE_DEPENDENCIES}
+#)
+#if(HAVE_BULLET_COLLISION)
+#  target_link_libraries(dart_collision dart_collision_bullet)
+#endif()
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision headers" ${hdrs})
@@ -49,10 +52,10 @@ configure_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
-  DESTINATION include/dart/collision
-  COMPONENT headers
-)
-install(TARGETS dart_collision EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_collision EXPORT DARTTargets DESTINATION lib)
+#install(
+#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+#  DESTINATION include/dart/collision
+#  COMPONENT headers
+#)
+#install(TARGETS dart_collision EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_collision EXPORT DARTTargets DESTINATION lib)

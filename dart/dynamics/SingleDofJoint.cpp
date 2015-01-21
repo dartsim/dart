@@ -72,6 +72,7 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mSpringStiffness(0.0),
     mRestPosition(0.0),
     mDampingCoefficient(0.0),
+    mFriction(0.0),
     mJacobian(Eigen::Vector6d::Zero()),
     mJacobianDeriv(Eigen::Vector6d::Zero()),
     mInvProjArtInertia(0.0),
@@ -708,7 +709,8 @@ void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 {
   if (_index != 0)
   {
-    dterr << "setSpringStiffness index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::setSpringStiffness]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -722,7 +724,8 @@ double SingleDofJoint::getSpringStiffness(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getSpringStiffness index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::getSpringStiffness]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
@@ -734,7 +737,8 @@ void SingleDofJoint::setRestPosition(size_t _index, double _q0)
 {
   if (_index != 0)
   {
-    dterr << "setRestPosition index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::setRestPosition]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -756,7 +760,8 @@ double SingleDofJoint::getRestPosition(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getRestPosition index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::getRestPosition]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
@@ -768,7 +773,8 @@ void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
 {
   if (_index != 0)
   {
-    dterr << "setDampingCoefficient index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::setDampingCoefficient]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -782,11 +788,40 @@ double SingleDofJoint::getDampingCoefficient(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getDampingCoefficient index[" << _index << "] out of range\n";
+    dterr << "[SingleDofJoint::getDampingCoefficient]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
   return mDampingCoefficient;
+}
+
+//==============================================================================
+void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
+{
+  if (_index != 0)
+  {
+    dterr << "[SingleDofJoint::setFriction]: index[" << _index
+          << "] out of range." << std::endl;
+    return;
+  }
+
+  assert(_friction >= 0.0);
+
+  mFriction = _friction;
+}
+
+//==============================================================================
+double SingleDofJoint::getCoulombFriction(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "[SingleDofJoint::getFriction]: index[" << _index
+          << "] out of range." << std::endl;
+    return 0.0;
+  }
+
+  return mFriction;
 }
 
 //==============================================================================
@@ -804,7 +839,7 @@ double SingleDofJoint::getPotentialEnergy() const
 void SingleDofJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
-  if(!mDof->isNamePreserved())
+  if (!mDof->isNamePreserved())
     mDof->setName(mName, false);
 }
 

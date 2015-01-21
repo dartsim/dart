@@ -2,9 +2,12 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_common_hdrs ${hdrs} PARENT_SCOPE)
+set(dart_common_srcs ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_common ${srcs} ${hdrs})
-target_link_libraries(dart_common ${DART_CORE_DEPENDENCIES})
+#dart_add_library(dart_common ${srcs} ${hdrs})
+#target_link_libraries(dart_common ${DART_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "common headers" ${hdrs})
@@ -20,11 +23,11 @@ configure_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/common.h
-  DESTINATION include/dart/common
-  COMPONENT headers
-)
-install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
+#install(
+#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/common.h
+#  DESTINATION include/dart/common
+#  COMPONENT headers
+#)
+#install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
 

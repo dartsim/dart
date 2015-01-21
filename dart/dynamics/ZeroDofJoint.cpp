@@ -399,7 +399,7 @@ void ZeroDofJoint::integrateVelocities(double _dt)
 }
 
 //==============================================================================
-void ZeroDofJoint::setSpringStiffness(size_t _index, double _k)
+void ZeroDofJoint::setSpringStiffness(size_t /*_index*/, double /*_k*/)
 {
   // Do nothing
 }
@@ -411,7 +411,7 @@ double ZeroDofJoint::getSpringStiffness(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setRestPosition(size_t _index, double _q0)
+void ZeroDofJoint::setRestPosition(size_t /*_index*/, double /*_q0*/)
 {
   // Do nothing
 }
@@ -423,13 +423,25 @@ double ZeroDofJoint::getRestPosition(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setDampingCoefficient(size_t _index, double _d)
+void ZeroDofJoint::setDampingCoefficient(size_t /*_index*/, double /*_d*/)
 {
   // Do nothing
 }
 
 //==============================================================================
 double ZeroDofJoint::getDampingCoefficient(size_t _index) const
+{
+  return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setCoulombFriction(size_t /*_index*/, double /*_friction*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+double ZeroDofJoint::getCoulombFriction(size_t /*_index*/) const
 {
   return 0.0;
 }

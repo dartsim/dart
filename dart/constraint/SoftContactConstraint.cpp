@@ -71,7 +71,7 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
     const collision::Contact& _contact)
-  : Constraint(),
+  : ConstraintBase(),
     mBodyNode1(_contact.bodyNode1),
     mBodyNode2(_contact.bodyNode2),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
@@ -92,7 +92,7 @@ SoftContactConstraint::SoftContactConstraint(
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
-  : Constraint(),
+  : ConstraintBase(),
     mTimeStep(_timeStep),
     mBodyNode1(_contact.bodyNode1),
     mBodyNode2(_contact.bodyNode2),
@@ -1000,9 +1000,9 @@ void SoftContactConstraint::uniteSkeletons()
     return;
 
   dynamics::Skeleton* unionId1
-      = Constraint::compressPath(mBodyNode1->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   dynamics::Skeleton* unionId2
-      = Constraint::compressPath(mBodyNode2->getSkeleton());
+      = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)
     return;

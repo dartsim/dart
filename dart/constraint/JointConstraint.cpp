@@ -56,7 +56,7 @@ double JointConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 JointConstraint::JointConstraint(dynamics::BodyNode* _body)
-  : Constraint(),
+  : ConstraintBase(),
     mBodyNode1(_body),
     mBodyNode2(NULL)
 {
@@ -66,7 +66,7 @@ JointConstraint::JointConstraint(dynamics::BodyNode* _body)
 //==============================================================================
 JointConstraint::JointConstraint(dynamics::BodyNode* _body1,
                                  dynamics::BodyNode* _body2)
-  : Constraint(),
+  : ConstraintBase(),
     mBodyNode1(_body1),
     mBodyNode2(_body2)
 {

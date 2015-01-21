@@ -143,7 +143,7 @@ Eigen::Vector3d Trackball::mouseOnSphere(double _mouseX, double _mouseY) const {
 
   mag = pointOnSphere(0) * pointOnSphere(0) + pointOnSphere(1)*pointOnSphere(1);
   if (mag > 1.0) {
-    register double scale = 1.0/sqrt(mag);
+    double scale = 1.0/sqrt(mag);
     pointOnSphere(0) *= scale;
     pointOnSphere(1) *= scale;
     pointOnSphere(2) = 0.0;

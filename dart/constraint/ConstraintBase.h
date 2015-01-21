@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINT_H_
-#define DART_CONSTRAINT_CONSTRAINT_H_
+#ifndef DART_CONSTRAINT_CONSTRAINTBASE_H_
+#define DART_CONSTRAINT_CONSTRAINTBASE_H_
 
 #include <cstddef>
 
@@ -73,7 +73,7 @@ struct ConstraintInfo
 };
 
 /// Constraint is a base class of concrete constraints classes
-class Constraint
+class ConstraintBase
 {
 public:
   /// Return dimesion of this constranit
@@ -124,10 +124,10 @@ public:
 
 protected:
   /// Default contructor
-  Constraint();
+  ConstraintBase();
 
   /// Destructor
-  virtual ~Constraint();
+  virtual ~ConstraintBase();
 
 protected:
   /// Dimension of constraint
@@ -137,5 +137,5 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINT_H_
+#endif  // DART_CONSTRAINT_CONSTRAINTBASE_H_
 

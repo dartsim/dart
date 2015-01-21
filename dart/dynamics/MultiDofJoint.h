@@ -268,26 +268,34 @@ public:
   virtual void integrateVelocities(double _dt);
 
   //----------------------------------------------------------------------------
-  // Spring and damper
+  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setSpringStiffness(size_t _index, double _k);
+  virtual void setSpringStiffness(size_t _index, double _k) override;
 
   // Documentation inherited
-  virtual double getSpringStiffness(size_t _index) const;
+  virtual double getSpringStiffness(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setRestPosition(size_t _index, double _q0);
+  virtual void setRestPosition(size_t _index, double _q0) override;
 
   // Documentation inherited
-  virtual double getRestPosition(size_t _index) const;
+  virtual double getRestPosition(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setDampingCoefficient(size_t _index, double _d);
+  virtual void setDampingCoefficient(size_t _index, double _d) override;
 
   // Documentation inherited
-  virtual double getDampingCoefficient(size_t _index) const;
+  virtual double getDampingCoefficient(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void setCoulombFriction(size_t _index, double _friction) override;
+
+  // Documentation inherited
+  virtual double getCoulombFriction(size_t _index) const override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
 
@@ -536,6 +544,9 @@ protected:
   /// Joint damping coefficient
   Eigen::Matrix<double, DOF, 1> mDampingCoefficient;
 
+  /// Joint Coulomb friction
+  Eigen::Matrix<double, DOF, 1> mFrictions;
+
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms
   //----------------------------------------------------------------------------
@@ -686,6 +697,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mSpringStiffness(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mRestPosition(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mDampingCoefficient(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
+    mFrictions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
     mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
     mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
@@ -1381,7 +1393,8 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setSpringStiffness index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::setSpringStiffness()]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -1396,7 +1409,8 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getSpringStiffness index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::getSpringStiffness()]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
@@ -1409,7 +1423,8 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setRestPosition index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::setRestPosition()]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -1432,7 +1447,8 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getRestPosition index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::getRestPosition()]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
@@ -1445,7 +1461,8 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setDampingCoefficient index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::setDampingCoefficient()]: index[" << _index
+          << "] out of range." << std::endl;
     return;
   }
 
@@ -1461,11 +1478,42 @@ double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getDampingCoefficient index[" << _index << "] out of range\n";
+    dterr << "[MultiDofJoint::getDampingCoefficient()]: index[" << _index
+          << "] out of range." << std::endl;
     return 0.0;
   }
 
   return mDampingCoefficient[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::setFriction()]: index[" << _index
+          << "] out of range." << std::endl;
+    return;
+  }
+
+  assert(_friction >= 0.0);
+
+  mFrictions[_index] = _friction;
+}
+
+//==============================================================================
+template <size_t DOF>
+double MultiDofJoint<DOF>::getCoulombFriction(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::getFriction()]: index[" << _index
+          << "] out of range." << std::endl;
+    return 0.0;
+  }
+
+  return mFrictions[_index];
 }
 
 //==============================================================================

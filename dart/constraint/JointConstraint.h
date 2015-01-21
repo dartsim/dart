@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_JOINTCONSTRAINT_H_
 #define DART_CONSTRAINT_JOINTCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 
 namespace dart {
 
@@ -48,7 +48,7 @@ class BodyNode;
 namespace constraint {
 
 /// class JointConstraint
-class JointConstraint : public Constraint
+class JointConstraint : public ConstraintBase
 {
 public:
   /// Contructor
