@@ -1,31 +1,37 @@
 # Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
 # This file is provided under the "BSD-style" License
 
-# Find FLANN
+# Find CCD
 #
 # This sets the following variables:
-# FLANN_FOUND
-# FLANN_INCLUDE_DIRS
-# FLANN_VERSION
+# CCD_FOUND
+# CCD_INCLUDE_DIRS
+# CCD_LIBRARIES
+# CCD_VERSION
 
 find_package(PkgConfig QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_FLANN flann QUIET)
+pkg_check_modules(PC_CCD ccd QUIET)
 
 # Include directories
-find_path(FLANN_INCLUDE_DIRS
-    NAMES flann/flann.h
-    HINTS ${PC_FLANN_INCLUDEDIR}
+find_path(CCD_INCLUDE_DIRS
+    NAMES ccd/ccd.h
+    HINTS ${PC_CCD_INCLUDEDIR}
     PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
+# Libraries
+find_library(CCD_LIBRARIES
+    NAMES ccd
+    HINTS ${PC_CCD_LIBDIR})
+
 # Version
-set(FLANN_VERSION ${PC_FLANN_VERSION})
+set(CCD_VERSION ${PC_CCD_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(FLANN
+find_package_handle_standard_args(CCD
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS FLANN_INCLUDE_DIRS FLANN_VERSION
-    VERSION_VAR   FLANN_VERSION)
+    REQUIRED_VARS CCD_INCLUDE_DIRS CCD_LIBRARIES CCD_VERSION
+    VERSION_VAR   CCD_VERSION)
 
