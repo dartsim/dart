@@ -24,7 +24,7 @@ cat <<END
 // Deprecated header file for case-sensitive filesystems
 #warning The dart/$lower/$1.h header file is deprecated \\
   as of gazebo 4.3 and will be removed in the next release.
-#include "dart/$lower/$1Base.h"
+#include "dart/$lower/$2.h"
 
 #endif
 

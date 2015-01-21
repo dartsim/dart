@@ -70,14 +70,14 @@ endmacro()
 # Copied from https://bitbucket.org/osrf/gazebo/pull-request/638 and will be
 # removed by DART 5.0
 #===============================================================================
-macro(dt_issue_303 _name)
+macro(dt_issue_303 _name _output_name)
   if (FILESYSTEM_CASE_SENSITIVE)
     if (${DART_VERSION} VERSION_GREATER 4.3)
       message(WARNING "Installing deprecated ${_name}.hh. This should be removed after Gazebo 4.3")
     endif()
     set(generated_file "${CMAKE_CURRENT_BINARY_DIR}/${_name}.h")
     execute_process(
-      COMMAND bash ${PROJECT_SOURCE_DIR}/tools/issue_303_generator.bash ${_name}
+      COMMAND bash ${PROJECT_SOURCE_DIR}/tools/issue_303_generator.bash ${_name} ${_output_name}
       OUTPUT_FILE ${generated_file}
     )
     string(TOLOWER ${_name} nameLower)

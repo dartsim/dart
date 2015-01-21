@@ -37,5 +37,5 @@ install(
 #install(TARGETS dart_constraint EXPORT DARTTargets DESTINATION lib)
 
 # Deprecated Constraint.h
-dt_issue_303("Constraint")
+dt_issue_303("Constraint" "ConstraintBase")
 

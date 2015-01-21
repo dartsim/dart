@@ -39,6 +39,8 @@
 
 #include <cstddef>
 
+#include "dart/common/Deprecated.h"
+
 namespace dart {
 
 namespace dynamics {
@@ -133,6 +135,9 @@ protected:
   /// Dimension of constraint
   size_t mDim;
 };
+
+DEPRECATED(4.3)
+typedef ConstraintBase Constraint;
 
 } // namespace constraint
 } // namespace dart
