@@ -15,4 +15,5 @@ brew install nlopt     # 2.4.2
 brew install ros/deps/urdfdom
 brew install ros/deps/urdfdom_headers
 brew install ros/deps/console_bridge
+brew install ros/deps/gtest
 
