@@ -1294,7 +1294,7 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
   // propagate in that way. In this function, we can avoid this propagation by
   // acting directly on mAcceleration without notifying the need for an update.
   // This is technically 'dangerous' because it bypasses the auto-update system,
-  // but it should work *as long as* this function is used correctly!
+  // but it should work *as long as* this function is used correctly.
 
   // 1. dq = dq + del_dq
   // 2. ddq = ddq + del_dq / dt

@@ -2238,7 +2238,7 @@ void MultiDofJoint<DOF>::updateConstrainedTermsDynamic(double _timeStep)
   mVelocities += mVelocityChanges;
   mAccelerations.noalias() += mVelocityChanges*invTimeStep;
   mForces.noalias() += mImpulses*invTimeStep;
-  // TODO(MXG): Notify Acceleration Update here
+  // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
 //==============================================================================
