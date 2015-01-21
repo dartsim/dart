@@ -96,7 +96,7 @@ public:
           bool _isOpenKnots = true)
     : Spline<_Scalar, _Dim, Dynamic>(
         KnotVectorType(_degree + _numCtrlPts + 1),
-        ControlPointVectorType(_Dim, _numCtrlPts))
+        ControlPointVectorType(ControlPointVectorType::Zero(_Dim, _numCtrlPts)))
   {
     setUniformKnots(_firstKnot, _lastKnot, _isOpenKnots);
 
