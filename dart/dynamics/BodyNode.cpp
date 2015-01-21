@@ -93,7 +93,6 @@ BodyNode::BodyNode(const std::string& _name)
     mChildBodyNodes(std::vector<BodyNode*>(0)),
     mIsBodyJacobianDirty(true),
     mIsBodyJacobianDerivDirty(true),
-    mV(Eigen::Vector6d::Zero()),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mA(Eigen::Vector6d::Zero()),
     mF(Eigen::Vector6d::Zero()),
@@ -502,28 +501,41 @@ size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 }
 
 //==============================================================================
+const Eigen::Isometry3d& BodyNode::getRelativeTransform() const
+{
+  return mParentJoint->getLocalTransform();
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getRelativeSpatialVelocity() const
+{
+  return mParentJoint->getLocalSpatialVelocity();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyVelocity() const
 {
-  return mV;
+  return getSpatialVelocity();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getBodyLinearVelocity() const
 {
-  return mV.tail<3>();
+  return getSpatialVelocity().tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getBodyLinearVelocity(
     const Eigen::Vector3d& _offset) const
 {
-  return mV.tail<3>() + mV.head<3>().cross(_offset);
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  return V.tail<3>() + V.head<3>().cross(_offset);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getBodyAngularVelocity() const
 {
-  return mV.head<3>();
+  return getSpatialVelocity().head<3>();
 }
 
 //==============================================================================
@@ -553,6 +565,12 @@ Eigen::Vector3d BodyNode::getWorldAngularVelocity() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
+{
+  return mParentJoint->getLocalSpatialAcceleration();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
   return getSpatialAcceleration();
@@ -568,13 +586,14 @@ Eigen::Vector3d BodyNode::getBodyLinearAcceleration() const
 Eigen::Vector3d BodyNode::getBodyLinearAcceleration(
     const Eigen::Vector3d& _offset) const
 {
-  return mV.tail<3>() + mV.head<3>().cross(_offset);
+  const Eigen::Vector6d& A = getSpatialAcceleration();
+  return A.tail<3>() + A.head<3>().cross(_offset);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getBodyAngularAcceleration() const
 {
-  return mA.head<3>();
+  return getSpatialAcceleration().head<3>();
 }
 
 //==============================================================================
@@ -741,14 +760,15 @@ math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv(
   // TODO(JS): Optimize!
 
   const Eigen::Isometry3d& W = getWorldTransform();
-  Eigen::Isometry3d T = W;
+  const Eigen::Vector6d& V = getSpatialVelocity();
 
+  Eigen::Isometry3d T = W;
   T.translation() = W.linear() * -_offset;
 
   math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
 
   bodyJacobianDeriv.bottomRows<3>().noalias()
-      -= mBodyJacobian.bottomRows<3>().colwise().cross(mV.head<3>());
+      -= mBodyJacobian.bottomRows<3>().colwise().cross(V.head<3>());
 
   return math::AdTJac(T, bodyJacobianDeriv).bottomRows<3>();
 }
@@ -759,12 +779,14 @@ math::AngularJacobian BodyNode::getWorldAngularJacobianDeriv()
   // TODO(JS): Optimize!
 
   const Eigen::Isometry3d& W = getWorldTransform();
+  const Eigen::Vector6d& V = getSpatialVelocity();
+
   Eigen::Isometry3d T = W;
 
   math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
 
   bodyJacobianDeriv.bottomRows<3>().noalias()
-      -= mBodyJacobian.bottomRows<3>().colwise().cross(mV.head<3>());
+      -= mBodyJacobian.bottomRows<3>().colwise().cross(V.head<3>());
 
   return math::AdTJac(T, bodyJacobianDeriv).topRows<3>();
 }
@@ -951,36 +973,15 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
 //==============================================================================
 void BodyNode::updateTransform()
 {
-  // Update parent joint's local transformation
-  mParentJoint->updateLocalTransform();
-
-  // Compute world transform
-  if (mParentBodyNode)
-    mW = mParentBodyNode->mW * mParentJoint->mT;
-  else
-    mW = mParentJoint->mT;
-
-  // Verification
-  assert(math::verifyTransform(mW));
-
-  // Update parent joint's local Jacobian
-  mParentJoint->updateLocalJacobian();
+  // Calling getWorldTransform will update the transform if an update is needed
+  assert(math::verifyTransform(getWorldTransform()));
 }
 
 //==============================================================================
 void BodyNode::updateVelocity()
 {
-  // Transmit velocity of parent body to this body
-  if (mParentBodyNode)
-    mV = math::AdInvT(mParentJoint->mT, mParentBodyNode->mV);
-  else
-    mV.setZero();
-
-  // Add parent joint's velocity
-  mParentJoint->addVelocityTo(mV);
-
-  // Verification
-  assert(!math::isNan(mV));
+  // Calling getSpatialVelocity will update the velocity if an update is needed
+  assert(!math::isNan(getSpatialVelocity()));
 }
 
 //==============================================================================
@@ -990,7 +991,8 @@ void BodyNode::updatePartialAcceleration()
   mParentJoint->updateLocalJacobianTimeDeriv();
 
   // Compute partial acceleration
-  mParentJoint->setPartialAccelerationTo(mPartialAcceleration, mV);
+  mParentJoint->setPartialAccelerationTo(mPartialAcceleration,
+                                         getSpatialVelocity());
 }
 
 //==============================================================================
@@ -1051,7 +1053,8 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   mF -= mFgravity;
 
   // Coriolis force
-  mF -= math::dad(mV, mI * mV);
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mF -= math::dad(V, mI * V);
 
   //
   for (const auto& childBodyNode : mChildBodyNodes)
@@ -1114,7 +1117,8 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
     mFgravity.setZero();
 
   // Set bias force
-  mBiasForce = -math::dad(mV, mI * mV) - mFext - mFgravity;
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mBiasForce = -math::dad(V, mI * V) - mFext - mFgravity;
 
   // Verifycation
   assert(!math::isNan(mBiasForce));
@@ -1184,7 +1188,7 @@ void BodyNode::updateTransmittedWrench()
 void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
-  mF.noalias() += mArtInertiaImplicit * mA;
+  mF.noalias() += mArtInertiaImplicit * getSpatialAcceleration();
 
   assert(!math::isNan(mF));
 }
@@ -1210,27 +1214,18 @@ void BodyNode::updateAccelerationFD()
   if (mParentBodyNode)
   {
     // Update joint acceleration
-    mParentJoint->updateAcceleration(mArtInertiaImplicit, mParentBodyNode->mA);
-
-    // Transmit spatial acceleration of parent body to this body
-    mA = math::AdInvT(mParentJoint->mT, mParentBodyNode->mA)
-         + mPartialAcceleration;
+    mParentJoint->updateAcceleration(mArtInertiaImplicit,
+                                     mParentBodyNode->getSpatialAcceleration());
   }
   else
   {
     // Update joint acceleration
     mParentJoint->updateAcceleration(mArtInertiaImplicit,
                                      Eigen::Vector6d::Zero());
-
-    // Transmit spatial acceleration of parent body to this body
-    mA = mPartialAcceleration;
   }
 
-  // Add parent joint's acceleration to this body
-  mParentJoint->addAccelerationTo(mA);
-
   // Verify the spatial acceleration of this body
-  assert(!math::isNan(mA));
+  assert(!math::isNan(mAcceleration));
 }
 
 //==============================================================================
@@ -1290,13 +1285,29 @@ void BodyNode::updateJointImpulseFD()
 //==============================================================================
 void BodyNode::updateConstrainedTerms(double _timeStep)
 {
+  // TODO(MXG): Consider how to fit this function (and the constrained delta-V
+  // terms in general) more cleanly into the auto-update framework. The basic
+  // complication is that the delta-V of each BodyNode is computed after the
+  // Forward Dynamics is computed. Moreover, the delta-V is computed in a way
+  // that avoids needing to propagate accelerations from the root to the leaves
+  // all over again. However, the auto-updating forces accelerations to always
+  // propagate in that way. In this function, we can avoid this propagation by
+  // acting directly on mAcceleration without notifying the need for an update.
+  // This is technically 'dangerous' because it bypasses the auto-update system,
+  // but it should work *as long as* this function is used correctly!
+
   // 1. dq = dq + del_dq
   // 2. ddq = ddq + del_dq / dt
   // 3. tau = tau + imp / dt
   mParentJoint->updateConstrainedTerms(_timeStep);
 
+  // Make absolutely sure that acceleration is up-to-date
+  getSpatialAcceleration();
+
   //
-  mA += mDelV / _timeStep;
+  mAcceleration += mDelV / _timeStep;
+  // Note: No need to notify acceleration update here as long as this function
+  // is called on all BodyNodes
 
   //
   mF += mImpF / _timeStep;
@@ -1381,7 +1392,8 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 //==============================================================================
 double BodyNode::getKineticEnergy() const
 {
-  return 0.5 * mV.dot(mI * mV);
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  return 0.5 * V.dot(mI * V);
 }
 
 //==============================================================================
@@ -1393,7 +1405,7 @@ double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 //==============================================================================
 Eigen::Vector3d BodyNode::getLinearMomentum() const
 {
-  return (mI * mV).tail<3>();
+  return (mI * getSpatialVelocity()).tail<3>();
 }
 
 //==============================================================================
@@ -1401,7 +1413,7 @@ Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   T.translation() = _pivot;
-  return math::dAdT(T, mI * mV).head<3>();
+  return math::dAdT(T, mI * getSpatialVelocity()).head<3>();
 }
 
 //==============================================================================
@@ -1515,9 +1527,10 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   else
     mFgravity.setZero();
 
+  const Eigen::Vector6d& V = getSpatialVelocity();
   mCg_F = mI * mCg_dV;
   mCg_F -= mFgravity;
-  mCg_F -= math::dad(mV, mI * mV);
+  mCg_F -= math::dad(V, mI * V);
 
   for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
@@ -1831,7 +1844,7 @@ void BodyNode::_updateBodyJacobianDeriv()
         = math::AdInvTJac(mParentJoint->getLocalTransform(),
                           mParentBodyNode->mBodyJacobianDeriv);
     for (int i = 0; i < numParentDOFs; ++i)
-      mBodyJacobianDeriv.col(i) -= math::ad(mV, J.col(i));
+      mBodyJacobianDeriv.col(i) -= math::ad(getSpatialVelocity(), J.col(i));
   }
 
   // Local Jacobian

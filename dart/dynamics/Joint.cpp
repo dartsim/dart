@@ -185,7 +185,28 @@ const Skeleton* Joint::getSkeleton() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
+  if(mNeedPositionUpdate)
+    updateLocalTransform();
+
   return mT;
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+{
+  if(mNeedVelocityUpdate)
+    updateLocalSpatialVelocity();
+
+  return mSpatialVelocity;
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+{
+  if(mNeedAccelerationUpdate)
+    updateLocalSpatialAcceleration();
+
+  return mSpatialAcceleration;
 }
 
 //==============================================================================

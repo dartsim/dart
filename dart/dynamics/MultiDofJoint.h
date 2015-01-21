@@ -2065,6 +2065,8 @@ void MultiDofJoint<DOF>::updateAccelerationDynamic(
 
   // Verification
   assert(!math::isNan(mAccelerations));
+
+  // TODO(MXG): Notify acceleration update here
 }
 
 //==============================================================================
@@ -2236,6 +2238,7 @@ void MultiDofJoint<DOF>::updateConstrainedTermsDynamic(double _timeStep)
   mVelocities += mVelocityChanges;
   mAccelerations.noalias() += mVelocityChanges*invTimeStep;
   mForces.noalias() += mImpulses*invTimeStep;
+  // TODO(MXG): Notify Acceleration Update here
 }
 
 //==============================================================================

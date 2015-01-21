@@ -297,7 +297,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     mFgravity.setZero();
 
   // Inertial force
-  mF.noalias() = mI * mA;
+  mF.noalias() = mI * getSpatialAcceleration();
 
   // External force
   if (_withExternalForces)
@@ -310,7 +310,8 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   mF -= mFgravity;
 
   // Coriolis force
-  mF -= math::dad(mV, mI * mV);
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mF -= math::dad(V, mI * V);
 
   //
   for (const auto& childBodyNode : mChildBodyNodes)
@@ -418,7 +419,8 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
     mFgravity.setZero();
 
   // Set bias force
-  mBiasForce = -math::dad(mV, mI * mV) - mFext - mFgravity;
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mBiasForce = -math::dad(V, mI * V) - mFext - mFgravity;
 
   // Verifycation
   assert(!math::isNan(mBiasForce));

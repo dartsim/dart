@@ -234,6 +234,13 @@ public:
   // Properties updated by dynamics (kinematics)
   //--------------------------------------------------------------------------
 
+  /// Get the transform of this BodyNode with respect to its parent BodyNode,
+  /// which is also its parent Frame.
+  const Eigen::Isometry3d& getRelativeTransform() const;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+
   /// Return the spatial velocity at the origin of the bodynode expressed in
   /// the body-fixed frame
   const Eigen::Vector6d& getBodyVelocity() const;
@@ -263,6 +270,9 @@ public:
 
   /// Return the angular velocity expressed in world frame
   Eigen::Vector3d getWorldAngularVelocity() const;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
   /// Return generalized acceleration at the origin of this body node where the
   /// acceleration is expressed in this body node frame
@@ -762,9 +772,6 @@ protected:
 
   /// Dirty flag for time derivative of body Jacobian.
   bool mIsBodyJacobianDerivDirty;
-
-  /// Spatial body velocity w.r.t. body frame
-  Eigen::Vector6d mV;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   Eigen::Vector6d mPartialAcceleration;

@@ -461,8 +461,14 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get transformation from parent body node to child body node
+  /// Get transformation from parent BodyNode to child BodyNode
   const Eigen::Isometry3d& getLocalTransform() const;
+
+  /// Get the velocity from the parent BodyNode to the child BodyNode
+  const Eigen::Vector6d& getLocalSpatialVelocity() const;
+
+  /// Get the acceleration from the parent BodyNode to the child BodyNode
+  const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
@@ -550,8 +556,14 @@ protected:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Update transformation from parent body node to child body node
-  virtual void updateLocalTransform() = 0;
+  /// Update transformation from parent BodyNode to child BodyNode
+  virtual void updateLocalTransform() const = 0;
+
+  /// Update velocity from the parent BodyNode to the child BodyNode
+  virtual void updateLocalSpatialVelocity() const = 0;
+
+  /// Update acceleration from the parent BodyNode to the child BodyNode
+  virtual void updateLocalSpatialAcceleration() const = 0;
 
   /// Update generalized Jacobian from parent body node to child body
   /// node w.r.t. local generalized coordinate
@@ -736,11 +748,27 @@ protected:
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
   /// Local transformation
-  Eigen::Isometry3d mT;
+  mutable Eigen::Isometry3d mT;
 
-  /// Relative spatial velocity from parent body to child body where the
-  /// velocity is expressed in child body frame
-  Eigen::Vector6d mSpatialVelocity;
+  /// Relative spatial velocity from parent BodyNode to child BodyNode where the
+  /// velocity is expressed in child body Frame
+  mutable Eigen::Vector6d mSpatialVelocity;
+
+  /// Relative spatial acceleration from parent BodyNode to child BodyNode where
+  /// the acceleration is expressed in the child body Frame
+  mutable Eigen::Vector6d mSpatialAcceleration;
+
+  /// True iff this joint's position has changed since the last call to
+  /// getLocalTransform()
+  bool mNeedPositionUpdate;
+
+  /// True iff this joint's position or velocity has changed since the last call
+  /// to getLocalSpatialVelocity()
+  bool mNeedVelocityUpdate;
+
+  /// True iff this joint's position, velocity, or acceleration has changed
+  /// since the last call to getLocalSpatialAcceleration()
+  bool mNeedAccelerationUpdate;
 
   /// Transmitting wrench from parent body to child body expressed in child body
   DEPRECATED(4.3)
