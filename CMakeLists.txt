@@ -70,7 +70,7 @@ message(STATUS "")
 message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
-find_package(Eigen3 3.2.0 QUIET)
+find_package(Eigen3 3.0.5 QUIET)
 if(Eigen3_FOUND)
   message(STATUS "Looking for Eigen3 - ${Eigen3_VERSION} found")
 else()
@@ -78,7 +78,7 @@ else()
 endif()
 
 # CCD
-find_package(CCD 1.5.0 QUIET)
+find_package(CCD 1.4.0 QUIET)
 if(CCD_FOUND)
   message(STATUS "Looking for CCD - ${CCD_VERSION} found")
 else()
@@ -86,7 +86,7 @@ else()
 endif()
 
 # FCL
-find_package(FCL 0.3.0 QUIET)
+find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - ${FCL_VERSION} found")
 else()
@@ -157,7 +157,7 @@ if(NOT BUILD_CORE_ONLY)
   endif()
 
   # TinyXML2
-  find_package(TinyXML2 2.1.0 QUIET)
+  find_package(TinyXML2 1.0.1 QUIET)
   if(TinyXML2_FOUND)
     message(STATUS "Looking for TinyXML2 - ${TinyXML2_VERSION} found")
   else()
