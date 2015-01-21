@@ -83,7 +83,7 @@ private:
 };
 
 DEPRECATED(4.3)
-typedef ODELCPSolver ODELCPSolver;
+typedef ODELCPSolver LCPSolver;
 
 }  // namespace lcpsolver
 }  // namespace dart
