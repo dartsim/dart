@@ -34,7 +34,6 @@ set(ASSIMP_VERSION ${PC_ASSIMP_VERSION})
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ASSIMP
-    #FOUND_VAR     ASSIMP_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
     VERSION_VAR   ASSIMP_VERSION)

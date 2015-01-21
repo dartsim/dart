@@ -1,12 +1,12 @@
+# Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
+# This file is provided under the "BSD-style" License
+
 # Find Eigen
 #
 # This sets the following variables:
 # EIGEN3_FOUND
 # EIGEN3_INCLUDE_DIRS
 # EIGEN3_VERSION
-
-# Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
-# This file is provided under the "BSD-style" License
 
 find_package(PkgConfig QUIET)
 
@@ -25,7 +25,6 @@ set(EIGEN3_VERSION ${PC_EIGEN3_VERSION})
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(EIGEN3
-    #FOUND_VAR     EIGEN3_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS EIGEN3_INCLUDE_DIRS
     VERSION_VAR   EIGEN3_VERSION)
