@@ -19,7 +19,9 @@ matrix:
       compiler: gcc
     - os: osx
       env: BUILD_CORE_ONLY=OFF
-before_script: cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
+before_script: 
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE .; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_BUILD_UNITTESTS=OFF .; fi
 script:
   - make
   - sudo ldconfig --verbose # So the test executeables can detect libtinyxml2
