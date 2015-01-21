@@ -4,7 +4,7 @@
 # Find Assimp
 #
 # This sets the following variables:
-# Assimp_FOUND
+# ASSIMP_FOUND
 # Assimp_INCLUDE_DIRS
 # Assimp_LIBRARIES
 # Assimp_VERSION
@@ -34,7 +34,7 @@ set(Assimp_VERSION ${PC_Assimp_VERSION})
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Assimp
-    FOUND_VAR     Assimp_FOUND
+    #FOUND_VAR     Assimp_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS Assimp_INCLUDE_DIRS Assimp_LIBRARIES Assimp_VERSION
     VERSION_VAR   Assimp_VERSION)

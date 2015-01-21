@@ -71,7 +71,7 @@ message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
 find_package(Eigen3 3.0.5 QUIET)
-if(Eigen3_FOUND)
+if(EIGEN3_FOUND)
   message(STATUS "Looking for Eigen3 - ${Eigen3_VERSION} found")
 else()
   if(PC_Eigen3_VERSION)
@@ -107,7 +107,7 @@ endif()
 
 # Assimp
 find_package(Assimp 3.0.0 QUIET)
-if(Assimp_FOUND)
+if(ASSIMP_FOUND)
   message(STATUS "Looking for Assimp - ${Assimp_VERSION} found")
 else()
   if(Assimp_VERSION)
@@ -170,7 +170,7 @@ if(NOT BUILD_CORE_ONLY)
 
   # TinyXML
   find_package(TinyXML 2.6.2 QUIET)
-  if(TinyXML_FOUND)
+  if(TINYXML_FOUND)
     message(STATUS "Looking for TinyXML - ${TinyXML_VERSION} found")
   else()
     if(TinyXML_VERSION)
@@ -182,7 +182,7 @@ if(NOT BUILD_CORE_ONLY)
 
   # TinyXML2
   find_package(TinyXML2 1.0.1 QUIET)
-  if(TinyXML2_FOUND)
+  if(TINYXML2_FOUND)
     message(STATUS "Looking for TinyXML2 - ${TinyXML2_VERSION} found")
   else()
     if(TinyXML2_VERSION)

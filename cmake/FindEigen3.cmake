@@ -1,7 +1,7 @@
 # Find Eigen
 #
 # This sets the following variables:
-# Eigen3_FOUND
+# EIGEN3_FOUND
 # Eigen3_INCLUDE_DIRS
 # Eigen3_VERSION
 
@@ -22,10 +22,13 @@ find_path(Eigen3_INCLUDE_DIRS
 # Version
 set(Eigen3_VERSION ${PC_Eigen3_VERSION})
 
+message(STATUS "Eigen3_INCLUDE_DIRS: ${Eigen3_INCLUDE_DIRS}")
+message(STATUS "Eigen3_VERSION: ${Eigen3_VERSION}")
+
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Eigen3
-    FOUND_VAR     Eigen3_FOUND
+    #FOUND_VAR     Eigen3_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS Eigen3_INCLUDE_DIRS Eigen3_VERSION
     VERSION_VAR   Eigen3_VERSION)

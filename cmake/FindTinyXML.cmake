@@ -4,7 +4,7 @@
 # Find TinyXML
 #
 # This sets the following variables:
-# TinyXML_FOUND
+# TINYXML_FOUND
 # TinyXML_INCLUDE_DIRS
 # TinyXML_LIBRARIES
 # TinyXML_VERSION
@@ -35,7 +35,7 @@ set(TinyXML_VERSION ${PC_TinyXML_VERSION})
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TinyXML
-    FOUND_VAR     TinyXML_FOUND
+    #FOUND_VAR     TinyXML_FOUND
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS TinyXML_INCLUDE_DIRS TinyXML_LIBRARIES TinyXML_VERSION
     VERSION_VAR   TinyXML_VERSION)
