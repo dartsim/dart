@@ -181,7 +181,7 @@ if(NOT BUILD_CORE_ONLY)
   endif()
 
   # TinyXML2
-  find_package(TinyXML2 1.0.1 QUIET)
+  find_package(TinyXML2 QUIET)
   if(TINYXML2_FOUND)
     message(STATUS "Looking for TinyXML2 - ${TinyXML2_VERSION} found")
   else()
