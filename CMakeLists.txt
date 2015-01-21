@@ -70,11 +70,11 @@ message(STATUS "")
 message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
-find_package(Eigen QUIET)
+find_package(Eigen 3.1.0 QUIET)
 if(EIGEN_FOUND)
-  message(STATUS "Looking for Eigen - found")
+  message(STATUS "Looking for Eigen - ${EIGEN_VERSION} found")
 else()
-  message(SEND_ERROR "Looking for Eigen - NOT found, please install libeigen3-dev")
+  message(SEND_ERROR "Looking for Eigen - NOT found, please install libeigen3-dev (3.1.0 or greater)")
 endif()
 
 # FCL
@@ -288,7 +288,7 @@ endif()
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(${Eigen_INCLUDE_DIRS})
+include_directories(${EIGEN_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
 include_directories(${Assimp_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
