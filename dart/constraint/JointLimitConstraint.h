@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_JOINTLIMITCONSTRAINT_H_
 #define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 
 namespace dart {
 
@@ -50,7 +50,7 @@ namespace constraint {
 
 /// JointLimitConstraint handles joint position or velocity limits
 // TOOD: better naming
-class JointLimitConstraint : public Constraint
+class JointLimitConstraint : public ConstraintBase
 {
 public:
   /// Constructor

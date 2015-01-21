@@ -260,26 +260,34 @@ public:
   virtual void integrateVelocities(double _dt);
 
   //----------------------------------------------------------------------------
-  // Spring and damper
+  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setSpringStiffness(size_t _index, double _k);
+  virtual void setSpringStiffness(size_t _index, double _k) override;
 
   // Documentation inherited
-  virtual double getSpringStiffness(size_t _index) const;
+  virtual double getSpringStiffness(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setRestPosition(size_t _index, double _q0);
+  virtual void setRestPosition(size_t _index, double _q0) override;
 
   // Documentation inherited
-  virtual double getRestPosition(size_t _index) const;
+  virtual double getRestPosition(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setDampingCoefficient(size_t _index, double _d);
+  virtual void setDampingCoefficient(size_t _index, double _d) override;
 
   // Documentation inherited
-  virtual double getDampingCoefficient(size_t _index) const;
+  virtual double getDampingCoefficient(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void setCoulombFriction(size_t _index, double _friction) override;
+
+  // Documentation inherited
+  virtual double getCoulombFriction(size_t _index) const override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
 

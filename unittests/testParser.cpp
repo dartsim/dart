@@ -429,6 +429,39 @@ TEST(Parser, DofAttributes)
 }
 
 //==============================================================================
+TEST(Parser, JointDynamicsElements)
+{
+  World* world
+      = SkelParser::readWorld(
+          DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
+  EXPECT_TRUE(world != NULL);
+
+  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+
+  Joint* joint0 = skel1->getJoint("joint0");
+  EXPECT_EQ(joint0->getDampingCoefficient(0), 1.0);
+  EXPECT_EQ(joint0->getCoulombFriction   (0), 5.0);
+  EXPECT_EQ(joint0->getRestPosition      (0), 0.1);
+  EXPECT_EQ(joint0->getSpringStiffness   (0), 3.0);
+
+  Joint* joint1 = skel1->getJoint("joint1");
+  EXPECT_EQ(joint1->getDampingCoefficient(0), 1.0);
+  EXPECT_EQ(joint1->getCoulombFriction   (0), 5.0);
+  EXPECT_EQ(joint1->getRestPosition      (0), 0.1);
+  EXPECT_EQ(joint1->getSpringStiffness   (0), 3.0);
+
+  EXPECT_EQ(joint1->getDampingCoefficient(1), 2.0);
+  EXPECT_EQ(joint1->getCoulombFriction   (1), 4.0);
+  EXPECT_EQ(joint1->getRestPosition      (1), 0.2);
+  EXPECT_EQ(joint1->getSpringStiffness   (1), 2.0);
+
+  EXPECT_EQ(joint1->getDampingCoefficient(2), 3.0);
+  EXPECT_EQ(joint1->getCoulombFriction   (2), 3.0);
+  EXPECT_EQ(joint1->getRestPosition      (2), 0.3);
+  EXPECT_EQ(joint1->getSpringStiffness   (2), 1.0);
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

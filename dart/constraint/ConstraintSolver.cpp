@@ -50,6 +50,7 @@
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/JointCoulombFrictionConstraint.h"
 #include "dart/constraint/DantzigLCPSolver.h"
 #include "dart/constraint/PGSLCPSolver.h"
 
@@ -178,7 +179,7 @@ void ConstraintSolver::removeAllSkeletons()
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraint(Constraint* _constraint)
+void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint);
 
@@ -193,7 +194,7 @@ void ConstraintSolver::addConstraint(Constraint* _constraint)
 }
 
 //==============================================================================
-void ConstraintSolver::removeConstraint(Constraint* _constraint)
+void ConstraintSolver::removeConstraint(ConstraintBase* _constraint)
 {
   assert(_constraint);
 
@@ -302,7 +303,7 @@ bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
 }
 
 //==============================================================================
-bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
+bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) const
 {
   return std::find(mManualConstraints.begin(),
                    mManualConstraints.end(),
@@ -310,7 +311,7 @@ bool ConstraintSolver::containConstraint(const Constraint* _constraint) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddConstraint(Constraint* _constraint)
+bool ConstraintSolver::checkAndAddConstraint(ConstraintBase* _constraint)
 {
   if (!containConstraint(_constraint))
   {
@@ -420,6 +421,47 @@ void ConstraintSolver::updateConstraints()
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
   }
+
+  //----------------------------------------------------------------------------
+  // Update automatic constraints: joint Coulomb friction constraints
+  //----------------------------------------------------------------------------
+  // Destroy previous joint limit constraints
+  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+    delete jointFrictionConstraint;
+  mJointCoulombFrictionConstraints.clear();
+
+  // Create new joint limit constraints
+  for (const auto& skel : mSkeletons)
+  {
+    const size_t numBodyNodes = skel->getNumBodyNodes();
+    for (size_t i = 0; i < numBodyNodes; i++)
+    {
+      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+
+      if (joint->isDynamic())
+      {
+        const size_t dof = joint->getNumDofs();
+        for (size_t i = 0; i < dof; ++i)
+        {
+          if (joint->getCoulombFriction(i) != 0.0)
+          {
+            mJointCoulombFrictionConstraints.push_back(
+                  new JointCoulombFrictionConstraint(joint));
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Add active joint limit
+  for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+  {
+    jointFrictionConstraint->update();
+
+    if (jointFrictionConstraint->isActive())
+      mActiveConstraints.push_back(jointFrictionConstraint);
+  }
 }
 
 //==============================================================================
@@ -435,7 +477,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (std::vector<Constraint*>::iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     (*it)->uniteSkeletons();
@@ -444,7 +486,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
@@ -471,7 +513,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (std::vector<Constraint*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     dynamics::Skeleton* skel = (*it)->getRootSkeleton();

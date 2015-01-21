@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 
 #include <cmath>
 #include <cstring>
@@ -47,24 +47,24 @@ namespace dart {
 namespace constraint {
 
 //==============================================================================
-Constraint::Constraint()
+ConstraintBase::ConstraintBase()
   : mDim(0)
 {
 }
 
 //==============================================================================
-Constraint::~Constraint()
+ConstraintBase::~ConstraintBase()
 {
 }
 
 //==============================================================================
-size_t Constraint::getDimension() const
+size_t ConstraintBase::getDimension() const
 {
   return mDim;
 }
 
 //==============================================================================
-dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
+dynamics::Skeleton* ConstraintBase::compressPath(dynamics::Skeleton* _skeleton)
 {
   while (_skeleton->mUnionRootSkeleton != _skeleton)
   {
@@ -77,7 +77,7 @@ dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
 }
 
 //==============================================================================
-dynamics::Skeleton*Constraint::getRootSkeleton(dynamics::Skeleton* _skeleton)
+dynamics::Skeleton*ConstraintBase::getRootSkeleton(dynamics::Skeleton* _skeleton)
 {
   while (_skeleton->mUnionRootSkeleton != _skeleton)
     _skeleton = _skeleton->mUnionRootSkeleton;

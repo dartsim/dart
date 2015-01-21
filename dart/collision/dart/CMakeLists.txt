@@ -2,9 +2,12 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_collision_hdrs ${dart_collision_hdrs} ${hdrs} PARENT_SCOPE)
+set(dart_collision_srcs ${dart_collision_srcs} ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_collision_dart ${srcs} ${hdrs})
-target_link_libraries(dart_collision_dart ${DART_CORE_DEPENDENCIES})
+#dart_add_library(dart_collision_dart ${srcs} ${hdrs})
+#target_link_libraries(dart_collision_dart ${DART_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_dart headers" ${hdrs})
@@ -20,11 +23,11 @@ configure_file(
 )
 
 # Install
-install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dart.h
-  DESTINATION include/dart/collision/dart
-  COMPONENT headers
-)
-install(TARGETS dart_collision_dart EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_collision_dart EXPORT DARTTargets DESTINATION lib)
+#install(
+#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dart.h
+#  DESTINATION include/dart/collision/dart
+#  COMPONENT headers
+#)
+#install(TARGETS dart_collision_dart EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_collision_dart EXPORT DARTTargets DESTINATION lib)
 

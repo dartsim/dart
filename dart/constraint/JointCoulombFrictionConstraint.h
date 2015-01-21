@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,74 +34,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONTACTCONSTRAINT_H_
-#define DART_CONSTRAINT_CONTACTCONSTRAINT_H_
+#ifndef DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
+#define DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 
 #include "dart/constraint/ConstraintBase.h"
-
-#include "dart/common/Deprecated.h"
-#include "dart/math/MathTypes.h"
-#include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 
 namespace dynamics {
 class BodyNode;
-class Skeleton;
+class Joint;
 }  // namespace dynamics
 
 namespace constraint {
 
-/// ContactConstraint represents a contact constraint between two bodies
-class ContactConstraint : public ConstraintBase
+/// Joint Coulomb friction constraint
+class JointCoulombFrictionConstraint : public ConstraintBase
 {
 public:
   /// Constructor
-  ///
-  /// Do not use me anymore. This constructor is not possible to store contact
-  /// force in _contact
-  DEPRECATED(4.2)
-  explicit ContactConstraint(const collision::Contact& _contact);
-
-  /// Constructor
-  ContactConstraint(collision::Contact& _contact, double _timeStep);
+  explicit JointCoulombFrictionConstraint(dynamics::Joint* _joint);
 
   /// Destructor
-  virtual ~ContactConstraint();
+  virtual ~JointCoulombFrictionConstraint();
 
   //----------------------------------------------------------------------------
   // Property settings
   //----------------------------------------------------------------------------
-
-  /// Set global error reduction parameter
-  static void setErrorAllowance(double _allowance);
-
-  /// Get global error reduction parameter
-  static double getErrorAllowance();
-
-  /// Set global error reduction parameter
-  static void setErrorReductionParameter(double _erp);
-
-  /// Get global error reduction parameter
-  static double getErrorReductionParameter();
-
-  /// Set global error reduction parameter
-  static void setMaxErrorReductionVelocity(double _erv);
-
-  /// Get global error reduction parameter
-  static double getMaxErrorReductionVelocity();
 
   /// Set global constraint force mixing parameter
   static void setConstraintForceMixing(double _cfm);
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
-
-  /// Set first frictional direction
-  void setFrictionDirection(const Eigen::Vector3d& _dir);
-
-  /// Get first frictional direction
-  const Eigen::Vector3d& getFrictionDirection1() const;
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -119,13 +84,13 @@ protected:
   virtual void update();
 
   // Documentation inherited
-  virtual void getInformation(ConstraintInfo* _info);
+  virtual void getInformation(ConstraintInfo* _lcp);
 
   // Documentation inherited
-  virtual void applyUnitImpulse(size_t _idx);
+  virtual void applyUnitImpulse(size_t _index);
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _vel, bool _withCfm);
+  virtual void getVelocityChange(double* _delVel, bool _withCfm);
 
   // Documentation inherited
   virtual void excite();
@@ -140,85 +105,44 @@ protected:
   virtual dynamics::Skeleton* getRootSkeleton() const;
 
   // Documentation inherited
-  virtual void uniteSkeletons();
-
-  // Documentation inherited
   virtual bool isActive() const;
 
 private:
-  /// Get change in relative velocity at contact point due to external impulse
-  /// \param[out] _relVel Change in relative velocity at contact point of the
-  ///                     two colliding bodies
-  void getRelVelocity(double* _relVel);
+  ///
+  dynamics::Joint* mJoint;
 
   ///
-  void updateFirstFrictionalDirection();
-
-  ///
-  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
-
-private:
-  /// Time step
-  double mTimeStep;
-
-  /// Fircst body node
-  dynamics::BodyNode* mBodyNode1;
-
-  /// Second body node
-  dynamics::BodyNode* mBodyNode2;
-
-  /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact*> mContacts;
-
-  /// First frictional direction
-  Eigen::Vector3d mFirstFrictionalDirection;
-
-  /// Coefficient of Friction
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  double mRestitutionCoeff;
-
-  /// Local body jacobians for mBodyNode1
-  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians1;
-
-  /// Local body jacobians for mBodyNode2
-  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians2;
-
-  ///
-  bool mIsFrictionOn;
+  dynamics::BodyNode* mBodyNode;
 
   /// Index of applied impulse
   size_t mAppliedImpulseIndex;
 
   ///
-  bool mIsBounceOn;
+  size_t mLifeTime[6];
 
   ///
-  bool mActive;
+  bool mActive[6];
 
-  /// Global constraint error allowance
-  static double mErrorAllowance;
+  ///
+  double mNegativeVel[6];
 
-  /// Global constraint error redection parameter in the range of [0, 1]. The
-  /// default is 0.01.
-  static double mErrorReductionParameter;
+  ///
+  double mOldX[6];
 
-  /// Maximum error reduction velocity
-  static double mMaxErrorReductionVelocity;
+  ///
+  double mUpperBound[6];
+
+  ///
+  double mLowerBound[6];
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5
   /// \sa http://www.ode.org/ode-latest-userguide.html#sec_3_8_0
   static double mConstraintForceMixing;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace constraint
-} // namespace dart
+}  // namespace constraint
+}  // namespace dart
 
-#endif  // DART_CONSTRAINT_CONTACTCONSTRAINT_H_
+#endif  // DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 

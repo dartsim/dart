@@ -1017,36 +1017,42 @@ dynamics::Joint* SkelParser::readJoint(
   return newJoint;
 }
 
-static void getDofAttributeIfItExists(const std::string& attribute,
-                                    double& value,
-                                    const std::string& element_type,
-                                    const tinyxml2::XMLElement* xmlElement,
-                                    const dart::dynamics::DegreeOfFreedom* dof)
+//==============================================================================
+static void getDofAttributeIfItExists(
+    const std::string& _attribute,
+    double& _value,
+    const std::string& _element_type,
+    const tinyxml2::XMLElement* _xmlElement,
+    const dynamics::DegreeOfFreedom* _dof)
 {
-  if(xmlElement->QueryDoubleAttribute(attribute.c_str(), &value)==
-     tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
+  if (_xmlElement->QueryDoubleAttribute(_attribute.c_str(), &_value)
+      == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
   {
-    dterr << "Invalid type for '" << attribute << "' attribute of '"
-          << element_type << "' element in the '"
-          << dof->getName() << "' dof of '" << dof->getJoint()->getName()
+    dterr << "Invalid type for '" << _attribute << "' attribute of '"
+          << _element_type << "' element in the '"
+          << _dof->getName() << "' dof of '" << _dof->getJoint()->getName()
           << "'.\n";
   }
 }
 
-template <void (dart::dynamics::DegreeOfFreedom::*setLimits)(double,double),
- std::pair<double,double> (dart::dynamics::DegreeOfFreedom::*getLimits)() const,
- void (dart::dynamics::DegreeOfFreedom::*setValue)(double),
- double (dart::dynamics::DegreeOfFreedom::*getValue)() const>
+//==============================================================================
+template <
+    void (dynamics::DegreeOfFreedom::*setLimits)(double,double),
+    std::pair<double,double> (dynamics::DegreeOfFreedom::*getLimits)() const,
+    void (dynamics::DegreeOfFreedom::*setValue)(double),
+    double (dynamics::DegreeOfFreedom::*getValue)() const>
 static void setDofAttributes(tinyxml2::XMLElement* _dofElement,
-                             dart::dynamics::DegreeOfFreedom* _dof,
+                             dynamics::DegreeOfFreedom* _dof,
                              const std::string& _element_type)
 {
-  const tinyxml2::XMLElement* xmlElement =
-      getElement(_dofElement, _element_type);
+  const tinyxml2::XMLElement* xmlElement
+      = getElement(_dofElement, _element_type);
+
   std::pair<double,double> limit_vals = (_dof->*getLimits)();
-  double defaultLower = limit_vals.first,
-         defaultUpper = limit_vals.second,
-         defaultInitial = (_dof->*getValue)();
+
+  double defaultLower = limit_vals.first;
+  double defaultUpper = limit_vals.second;
+  double defaultInitial = (_dof->*getValue)();
 
   getDofAttributeIfItExists("lower", defaultLower,
                             _element_type, xmlElement, _dof);
@@ -1059,17 +1065,18 @@ static void setDofAttributes(tinyxml2::XMLElement* _dofElement,
   (_dof->*setValue)(defaultInitial);
 }
 
+//==============================================================================
 void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                      dynamics::Joint* _dartJoint)
 {
-  if(NULL==_dartJoint || NULL==_dofElement)
+  if (NULL == _dartJoint || NULL == _dofElement)
     return;
 
   int localIndex = -1;
   int xml_err = _dofElement->QueryIntAttribute("local_index", &localIndex);
 
   // If the localIndex is out of bounds, quit
-  if(localIndex >= (int)_dartJoint->getNumDofs())
+  if (localIndex >= (int)_dartJoint->getNumDofs())
   {
     dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
           << _dartJoint->getName() << "' contains dof element with invalid "
@@ -1079,9 +1086,9 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
   }
 
   // If no localIndex was found, report an error and quit
-  if(localIndex == -1 && _dartJoint->getNumDofs() > 1)
+  if (localIndex == -1 && _dartJoint->getNumDofs() > 1)
   {
-    if(tinyxml2::XML_NO_ATTRIBUTE == xml_err)
+    if (tinyxml2::XML_NO_ATTRIBUTE == xml_err)
     {
       dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
             << _dartJoint->getName() << "' has " << _dartJoint->getNumDofs()
@@ -1089,7 +1096,7 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
             << "local_index specified. For Joints with multiple DOFs, all dof "
             << "elements must specify their local_index attribute.\n";
     }
-    else if(tinyxml2::XML_WRONG_ATTRIBUTE_TYPE == xml_err)
+    else if (tinyxml2::XML_WRONG_ATTRIBUTE_TYPE == xml_err)
     {
       dterr << "[SkelParser::readDegreeOfFreedom] Joint named '"
             << _dartJoint->getName() << "' has a dof element with a wrongly "
@@ -1099,17 +1106,17 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
     return;
   }
   // Unless the joint is a single-dof joint
-  else if(localIndex == -1 && _dartJoint->getNumDofs() == 1)
+  else if (localIndex == -1 && _dartJoint->getNumDofs() == 1)
     localIndex = 0;
 
   dart::dynamics::DegreeOfFreedom* dof = _dartJoint->getDof(localIndex);
   const char* name = _dofElement->Attribute("name");
-  if(name)
+  if (name)
   {
     dof->setName(std::string(name));
   }
 
-  if(hasElement(_dofElement, "position"))
+  if (hasElement(_dofElement, "position"))
   {
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setPositionLimits,
@@ -1119,7 +1126,7 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                                        "position");
   }
 
-  if(hasElement(_dofElement, "velocity"))
+  if (hasElement(_dofElement, "velocity"))
   {
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setVelocityLimits,
@@ -1129,7 +1136,7 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                                        "velocity");
   }
 
-  if(hasElement(_dofElement, "acceleration"))
+  if (hasElement(_dofElement, "acceleration"))
   {
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setAccelerationLimits,
@@ -1139,19 +1146,21 @@ void SkelParser::readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                                            "acceleration");
   }
 
-  if(hasElement(_dofElement, "force"))
+  if (hasElement(_dofElement, "force"))
   {
     setDofAttributes<
         &dart::dynamics::DegreeOfFreedom::setForceLimits,
         &dart::dynamics::DegreeOfFreedom::getForceLimits,
         &dart::dynamics::DegreeOfFreedom::setForce,
         &dart::dynamics::DegreeOfFreedom::getForce>(_dofElement, dof,
-                                                     "force");
+                                                    "force");
   }
 }
 
+//==============================================================================
 dynamics::WeldJoint* SkelParser::readWeldJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::WeldJoint* newWeldJoint = new dynamics::WeldJoint;
@@ -1159,52 +1168,35 @@ dynamics::WeldJoint* SkelParser::readWeldJoint(
   return newWeldJoint;
 }
 
+//==============================================================================
 dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::RevoluteJoint* newRevoluteJoint = new dynamics::RevoluteJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_jointElement, "axis");
+  if (hasElement(_jointElement, "axis"))
+  {
+    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     newRevoluteJoint->setAxis(xyz);
-
-    // damping
-    if (hasElement(axisElement, "damping")) {
-      double damping = getValueDouble(axisElement, "damping");
-      newRevoluteJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newRevoluteJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newRevoluteJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  } else {
+  }
+  else
+  {
     assert(0);
   }
 
+  readJointDynamicsAndLimit(_jointElement, newRevoluteJoint, 1);
+
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
@@ -1213,7 +1205,8 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
@@ -1223,52 +1216,35 @@ dynamics::RevoluteJoint* SkelParser::readRevoluteJoint(
   return newRevoluteJoint;
 }
 
+//==============================================================================
 dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::PrismaticJoint* newPrismaticJoint = new dynamics::PrismaticJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_jointElement, "axis");
+  if (hasElement(_jointElement, "axis"))
+  {
+    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     newPrismaticJoint->setAxis(xyz);
-
-    // damping
-    if (hasElement(axisElement, "damping")) {
-      double damping = getValueDouble(axisElement, "damping");
-      newPrismaticJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newPrismaticJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newPrismaticJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  } else {
+  }
+  else
+  {
     assert(0);
   }
 
+  readJointDynamicsAndLimit(_jointElement, newPrismaticJoint, 1);
+
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
@@ -1277,7 +1253,8 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
@@ -1286,59 +1263,42 @@ dynamics::PrismaticJoint* SkelParser::readPrismaticJoint(
 
   return newPrismaticJoint;
 }
-
+//==============================================================================
 dynamics::ScrewJoint* SkelParser::readScrewJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::ScrewJoint* newScrewJoint = new dynamics::ScrewJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_jointElement, "axis");
+  if (hasElement(_jointElement, "axis"))
+  {
+    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     newScrewJoint->setAxis(xyz);
 
     // pitch
-    if (hasElement(axisElement, "pitch")) {
+    if (hasElement(axisElement, "pitch"))
+    {
       double pitch = getValueDouble(axisElement, "pitch");
       newScrewJoint->setPitch(pitch);
     }
-
-    // damping
-    if (hasElement(axisElement, "damping")) {
-      double damping = getValueDouble(axisElement, "damping");
-      newScrewJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newScrewJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newScrewJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  } else {
+  }
+  else
+  {
     assert(0);
   }
 
+  readJointDynamicsAndLimit(_jointElement, newScrewJoint, 1);
+
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     double init_pos = getValueDouble(_jointElement, "init_pos");
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
@@ -1347,7 +1307,8 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     double init_vel = getValueDouble(_jointElement, "init_vel");
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
@@ -1357,96 +1318,58 @@ dynamics::ScrewJoint* SkelParser::readScrewJoint(
   return newScrewJoint;
 }
 
+//==============================================================================
 dynamics::UniversalJoint* SkelParser::readUniversalJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::UniversalJoint* newUniversalJoint = new dynamics::UniversalJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_jointElement, "axis");
+  if (hasElement(_jointElement, "axis"))
+  {
+    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
 
     // xyz
     Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
     newUniversalJoint->setAxis1(xyz);
-
-    // damping
-    if (hasElement(axisElement, "damping")) {
-      double damping = getValueDouble(axisElement, "damping");
-      newUniversalJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  } else {
+  }
+  else
+  {
     assert(0);
   }
 
   //--------------------------------------------------------------------------
   // axis2
-  if (hasElement(_jointElement, "axis2")) {
-    tinyxml2::XMLElement* axis2Element
-        = getElement(_jointElement, "axis2");
+  if (hasElement(_jointElement, "axis2"))
+  {
+    tinyxml2::XMLElement* axis2Element = getElement(_jointElement, "axis2");
 
     // xyz
     Eigen::Vector3d xyz = getValueVector3d(axis2Element, "xyz");
     newUniversalJoint->setAxis2(xyz);
-
-    // damping
-    if (hasElement(axis2Element, "damping")) {
-      double damping = getValueDouble(axis2Element, "damping");
-      newUniversalJoint->setDampingCoefficient(1, damping);
-    }
-
-    // limit
-    if (hasElement(axis2Element, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axis2Element, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newUniversalJoint->setPositionLowerLimit(1, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newUniversalJoint->setPositionUpperLimit(1, upper);
-      }
-    }
-  } else {
+  }
+  else
+  {
     assert(0);
   }
 
+  readJointDynamicsAndLimit(_jointElement, newUniversalJoint, 2);
+
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
     newUniversalJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
     newUniversalJoint->setVelocities(init_vel);
   }
@@ -1454,22 +1377,26 @@ dynamics::UniversalJoint* SkelParser::readUniversalJoint(
   return newUniversalJoint;
 }
 
+//==============================================================================
 dynamics::BallJoint* SkelParser::readBallJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::BallJoint* newBallJoint = new dynamics::BallJoint;
 
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     newBallJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     newBallJoint->setVelocities(init_vel);
   }
@@ -1477,8 +1404,10 @@ dynamics::BallJoint* SkelParser::readBallJoint(
   return newBallJoint;
 }
 
+//==============================================================================
 dynamics::EulerJoint* SkelParser::readEulerJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::EulerJoint* newEulerJoint = new dynamics::EulerJoint;
@@ -1486,118 +1415,36 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
   //--------------------------------------------------------------------------
   // axis order
   std::string order = getValueString(_jointElement, "axis_order");
-  if (order == "xyz") {
+  if (order == "xyz")
+  {
     newEulerJoint->setAxisOrder(dynamics::EulerJoint::AO_XYZ);
-  } else if (order == "zyx") {
+  }
+  else if (order == "zyx")
+  {
     newEulerJoint->setAxisOrder(dynamics::EulerJoint::AO_ZYX);
-  } else {
+  }
+  else
+  {
     dterr << "Undefined Euler axis order\n";
     assert(0);
   }
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    tinyxml2::XMLElement* axisElement
-        = getElement(_jointElement, "axis");
-
-    // damping
-    if (hasElement(axisElement, "damping")) {
-      double damping = getValueDouble(axisElement, "damping");
-      newEulerJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  }
-
-  //--------------------------------------------------------------------------
-  // axis2
-  if (hasElement(_jointElement, "axis2")) {
-    tinyxml2::XMLElement* axis2Element
-        = getElement(_jointElement, "axis2");
-
-    // damping
-    if (hasElement(axis2Element, "damping")) {
-      double damping = getValueDouble(axis2Element, "damping");
-      newEulerJoint->setDampingCoefficient(1, damping);
-    }
-
-    // limit
-    if (hasElement(axis2Element, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axis2Element, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->setPositionLowerLimit(1, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->setPositionUpperLimit(1, upper);
-      }
-    }
-  }
-
-  //--------------------------------------------------------------------------
-  // axis3
-  if (hasElement(_jointElement, "axis3")) {
-    tinyxml2::XMLElement* axis3Element
-        = getElement(_jointElement, "axis3");
-
-    // damping
-    if (hasElement(axis3Element, "damping")) {
-      double damping = getValueDouble(axis3Element, "damping");
-      newEulerJoint->setDampingCoefficient(2, damping);
-    }
-
-    // limit
-    if (hasElement(axis3Element, "limit")) {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axis3Element, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower")) {
-        double lower = getValueDouble(limitElement, "lower");
-        newEulerJoint->setPositionLowerLimit(2, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper")) {
-        double upper = getValueDouble(limitElement, "upper");
-        newEulerJoint->setPositionUpperLimit(2, upper);
-      }
-    }
-  }
+  readJointDynamicsAndLimit(_jointElement, newEulerJoint, 3);
 
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     newEulerJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     newEulerJoint->setVelocities(init_vel);
   }
@@ -1605,23 +1452,31 @@ dynamics::EulerJoint* SkelParser::readEulerJoint(
   return newEulerJoint;
 }
 
+//==============================================================================
 dynamics::TranslationalJoint* SkelParser::readTranslationalJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::TranslationalJoint* newTranslationalJoint
       = new dynamics::TranslationalJoint;
 
   //--------------------------------------------------------------------------
+  // axis
+  readJointDynamicsAndLimit(_jointElement, newTranslationalJoint, 3);
+
+  //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     newTranslationalJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     newTranslationalJoint->setVelocities(init_vel);
   }
@@ -1686,110 +1541,7 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis"))
-  {
-    tinyxml2::XMLElement* axisElement = getElement(_jointElement, "axis");
-
-    // damping
-    if (hasElement(axisElement, "damping"))
-    {
-      double damping = getValueDouble(axisElement, "damping");
-      newPlanarJoint->setDampingCoefficient(0, damping);
-    }
-
-    // limit
-    if (hasElement(axisElement, "limit"))
-    {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axisElement, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower"))
-      {
-        double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->setPositionLowerLimit(0, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper"))
-      {
-        double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->setPositionUpperLimit(0, upper);
-      }
-    }
-  }
-
-  //--------------------------------------------------------------------------
-  // axis2
-  if (hasElement(_jointElement, "axis2"))
-  {
-    tinyxml2::XMLElement* axis2Element
-        = getElement(_jointElement, "axis2");
-
-    // damping
-    if (hasElement(axis2Element, "damping"))
-    {
-      double damping = getValueDouble(axis2Element, "damping");
-      newPlanarJoint->setDampingCoefficient(1, damping);
-    }
-
-    // limit
-    if (hasElement(axis2Element, "limit"))
-    {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axis2Element, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower"))
-      {
-        double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->setPositionLowerLimit(1, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper"))
-      {
-        double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->setPositionUpperLimit(1, upper);
-      }
-    }
-  }
-
-  //--------------------------------------------------------------------------
-  // axis3
-  if (hasElement(_jointElement, "axis3"))
-  {
-    tinyxml2::XMLElement* axis3Element
-        = getElement(_jointElement, "axis3");
-
-    // damping
-    if (hasElement(axis3Element, "damping"))
-    {
-      double damping = getValueDouble(axis3Element, "damping");
-      newPlanarJoint->setDampingCoefficient(2, damping);
-    }
-
-    // limit
-    if (hasElement(axis3Element, "limit"))
-    {
-      tinyxml2::XMLElement* limitElement
-          = getElement(axis3Element, "limit");
-
-      // lower
-      if (hasElement(limitElement, "lower"))
-      {
-        double lower = getValueDouble(limitElement, "lower");
-        newPlanarJoint->setPositionLowerLimit(2, lower);
-      }
-
-      // upper
-      if (hasElement(limitElement, "upper"))
-      {
-        double upper = getValueDouble(limitElement, "upper");
-        newPlanarJoint->setPositionUpperLimit(2, upper);
-      }
-    }
-  }
+  readJointDynamicsAndLimit(_jointElement, newPlanarJoint, 3);
 
   //--------------------------------------------------------------------------
   // init_pos
@@ -1810,27 +1562,120 @@ dynamics::PlanarJoint* SkelParser::readPlanarJoint(
   return newPlanarJoint;
 }
 
+//==============================================================================
 dynamics::FreeJoint* SkelParser::readFreeJoint(
-    tinyxml2::XMLElement* _jointElement) {
+    tinyxml2::XMLElement* _jointElement)
+{
   assert(_jointElement != NULL);
 
   dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
 
   //--------------------------------------------------------------------------
   // init_pos
-  if (hasElement(_jointElement, "init_pos")) {
+  if (hasElement(_jointElement, "init_pos"))
+  {
     Eigen::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
     newFreeJoint->setPositions(init_pos);
   }
 
   //--------------------------------------------------------------------------
   // init_vel
-  if (hasElement(_jointElement, "init_vel")) {
+  if (hasElement(_jointElement, "init_vel"))
+  {
     Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
     newFreeJoint->setVelocities(init_vel);
   }
 
   return newFreeJoint;
+}
+
+//==============================================================================
+void SkelParser::readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
+                                           dynamics::Joint* _joint,
+                                           size_t _numAxis)
+{
+  assert(_jointElement != NULL);
+  assert(_numAxis <= 6);
+
+  std::string axisName = "axis";
+
+  // axis
+  for (size_t i = 0; i < _numAxis; ++i)
+  {
+    if (i != 0)
+      axisName = "axis" + std::to_string(i + 1);
+
+    if (hasElement(_jointElement, axisName))
+    {
+      tinyxml2::XMLElement* axisElement = getElement(_jointElement, axisName);
+
+      // damping
+      if (hasElement(axisElement, "damping"))
+      {
+        dtwarn << "<damping> tag is moved to under <dynamics> tag. "
+               << "Please see (https://github.com/dartsim/dart/wiki/) "
+               << "for the detail." << std::endl;
+        double damping = getValueDouble(axisElement, "damping");
+        _joint->setDampingCoefficient(i, damping);
+      }
+
+      // dynamics
+      if (hasElement(axisElement, "dynamics"))
+      {
+        tinyxml2::XMLElement* dynamicsElement
+            = getElement(axisElement, "dynamics");
+
+        // damping
+        if (hasElement(dynamicsElement, "damping"))
+        {
+          double val = getValueDouble(dynamicsElement, "damping");
+          _joint->setDampingCoefficient(i, val);
+        }
+
+        // friction
+        if (hasElement(dynamicsElement, "friction"))
+        {
+          double val = getValueDouble(dynamicsElement, "friction");
+          _joint->setCoulombFriction(i, val);
+        }
+
+        // spring_rest_position
+        if (hasElement(dynamicsElement, "spring_rest_position"))
+        {
+          double val = getValueDouble(dynamicsElement, "spring_rest_position");
+          _joint->setRestPosition(i, val);
+        }
+
+        // friction
+        if (hasElement(dynamicsElement, "spring_stiffness"))
+        {
+          double val = getValueDouble(dynamicsElement, "spring_stiffness");
+          _joint->setSpringStiffness(i, val);
+        }
+      }
+
+      // limit
+      if (hasElement(axisElement, "limit"))
+      {
+        tinyxml2::XMLElement* limitElement
+            = getElement(axisElement, "limit");
+
+        // lower
+        if (hasElement(limitElement, "lower"))
+        {
+          double lower = getValueDouble(limitElement, "lower");
+          _joint->setPositionLowerLimit(i, lower);
+        }
+
+        // upper
+        if (hasElement(limitElement, "upper"))
+        {
+          double upper = getValueDouble(limitElement, "upper");
+          _joint->setPositionUpperLimit(i, upper);
+        }
+      }
+    }
+  }
 }
 
 }  // namespace utils
