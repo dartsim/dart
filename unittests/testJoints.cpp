@@ -383,7 +383,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 }
 
 //==============================================================================
-TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
+void testJointCoulombFrictionForce(double _timeStep)
 {
   double tol = 1e-9;
 
@@ -393,6 +393,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
   EXPECT_TRUE(myWorld != NULL);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setTimeStep(_timeStep);
 
   dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != NULL);
@@ -486,6 +487,18 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
     EXPECT_NEAR(jointVel0, 0.0, tol);
     EXPECT_NEAR(jointVel1, 0.0, tol);
   }
+}
+
+//==============================================================================
+TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
+{
+  std::array<double, 3> timeSteps;
+  timeSteps[0] = 1e-2;
+  timeSteps[1] = 1e-3;
+  timeSteps[2] = 1e-4;
+
+  for (auto timeStep : timeSteps)
+    testJointCoulombFrictionForce(timeStep);
 }
 
 //==============================================================================
