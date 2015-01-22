@@ -1,3 +1,9 @@
+### Version 4.3.1 (2015-01-21)
+
+1. Fixed API incompatibility introduced by dart-4.3.0
+    * [Issue #303](https://github.com/dartsim/dart/issues/303)
+    * [Pull request #309](https://github.com/dartsim/dart/pull/309)
+
 ### Version 4.3.0 (2015-01-19)
 
 1. Added name manager for efficient name look-up and unique naming
@@ -15,7 +21,7 @@
 1. Migrated to C++11
     * [Pull request #268](https://github.com/dartsim/dart/pull/268)
     * [Pull request #299](https://github.com/dartsim/dart/pull/299)
-1. Improved readability of CMake outp messages
+1. Improved readability of CMake output messages
     * [Pull request #272](https://github.com/dartsim/dart/pull/272)
 1. Fixed const-correctneess of member functions
     * [Pull request #277](https://github.com/dartsim/dart/pull/277)

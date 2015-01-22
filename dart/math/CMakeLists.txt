@@ -23,11 +23,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
-#  DESTINATION include/dart/math
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
+  DESTINATION include/dart/math
+  COMPONENT headers
+)
 #install(TARGETS dart_math EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_math EXPORT DARTTargets DESTINATION lib)
 

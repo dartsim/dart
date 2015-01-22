@@ -34,22 +34,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCPSOLVER_LCPSOLVER_H_
-#define DART_LCPSOLVER_LCPSOLVER_H_
+#ifndef DART_LCPSOLVER_ODELCPSOLVER_H_
+#define DART_LCPSOLVER_ODELCPSOLVER_H_
 
 #include <Eigen/Dense>
+#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace lcpsolver {
 
 /// \brief
-class LCPSolver {
+class ODELCPSolver {
 public:
   /// \brief
-  LCPSolver();
+  ODELCPSolver();
 
   /// \brief
-  virtual ~LCPSolver();
+  virtual ~ODELCPSolver();
 
   /// \brief
   bool Solve(const Eigen::MatrixXd& _A,
@@ -81,7 +82,10 @@ private:
                        const Eigen::VectorXd& _x);
 };
 
+DEPRECATED(4.3)
+typedef ODELCPSolver LCPSolver;
+
 }  // namespace lcpsolver
 }  // namespace dart
 
-#endif  // DART_LCPSOLVER_LCPSOLVER_H_
+#endif  // DART_LCPSOLVER_ODELCPSOLVER_H_

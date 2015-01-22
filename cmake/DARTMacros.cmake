@@ -55,3 +55,33 @@ macro(dart_add_library _name)
     VERSION "${DART_VERSION}"
   )
 endmacro()
+
+#===============================================================================
+# Copied from https://bitbucket.org/osrf/gazebo/pull-request/638 and will be
+# removed by DART 5.0
+#===============================================================================
+macro (dt_install_includes _subdir)
+  install(FILES ${ARGN} DESTINATION include/dart/${_subdir} COMPONENT headers)
+endmacro()
+
+#===============================================================================
+# Deprecated header files
+# Install until next gazebo version on case-sensitive filesystems
+# Copied from https://bitbucket.org/osrf/gazebo/pull-request/638 and will be
+# removed by DART 5.0
+#===============================================================================
+macro(dt_issue_303 _name _output_name)
+  if (FILESYSTEM_CASE_SENSITIVE)
+    if (${DART_VERSION} VERSION_GREATER 4.3)
+      message(WARNING "Installing deprecated ${_name}.hh. This should be removed after DART 4.3")
+    endif()
+    set(generated_file "${CMAKE_CURRENT_BINARY_DIR}/${_name}.h")
+    execute_process(
+      COMMAND bash ${PROJECT_SOURCE_DIR}/tools/issue_303_generator.bash ${_name} ${_output_name}
+      OUTPUT_FILE ${generated_file}
+    )
+    string(TOLOWER ${_name} nameLower)
+    dt_install_includes(${nameLower} ${generated_file})
+  endif()
+endmacro()
+
