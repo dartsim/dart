@@ -115,13 +115,6 @@ BodyNode::BodyNode(const std::string& _name)
 //==============================================================================
 BodyNode::~BodyNode()
 {
-  // Release shapes for visualization
-  for (std::vector<Shape*>::const_iterator it = mVizShapes.begin();
-       it != mVizShapes.end(); ++it)
-  {
-    delete (*it);
-  }
-
   // Release shapes for collisions
   for (std::vector<Shape*>::const_iterator itColShape = mColShapes.begin();
        itColShape != mColShapes.end(); ++itColShape)
@@ -950,35 +943,36 @@ void BodyNode::init(Skeleton* _skeleton)
 }
 
 //==============================================================================
-void BodyNode::draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color,
-                    bool _useDefaultColor,
-                    int _depth) const
-{
-  if (_ri == NULL)
-    return;
+// Note: This has been moved to the Frame/Entity class
+//void BodyNode::draw(renderer::RenderInterface* _ri,
+//                    const Eigen::Vector4d& _color,
+//                    bool _useDefaultColor,
+//                    int _depth) const
+//{
+//  if (_ri == NULL)
+//    return;
 
-  _ri->pushMatrix();
+//  _ri->pushMatrix();
 
-  // render the self geometry
-  mParentJoint->applyGLTransform(_ri);
+//  // render the self geometry
+//  mParentJoint->applyGLTransform(_ri);
 
-  _ri->pushName((unsigned)mID);
-  for (size_t i = 0; i < mVizShapes.size(); i++)
-  {
-    _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
-    _ri->popMatrix();
-  }
-  _ri->popName();
+//  _ri->pushName((unsigned)mID);
+//  for (size_t i = 0; i < mVizShapes.size(); i++)
+//  {
+//    _ri->pushMatrix();
+//    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+//    _ri->popMatrix();
+//  }
+//  _ri->popName();
 
-  // render the subtree
-  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
-    mChildBodyNodes[i]->draw(_ri, _color, _useDefaultColor);
+//  // render the subtree
+//  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
+//    mChildBodyNodes[i]->draw(_ri, _color, _useDefaultColor);
 
 
-  _ri->popMatrix();
-}
+//  _ri->popMatrix();
+//}
 
 //==============================================================================
 void BodyNode::drawMarkers(renderer::RenderInterface* _ri,

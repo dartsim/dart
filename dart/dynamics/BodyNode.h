@@ -495,11 +495,6 @@ public:
   // Rendering
   //--------------------------------------------------------------------------
 
-  /// Render the entire subtree rooted at this body node.
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const;
-
   /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -738,9 +733,6 @@ protected:
 
   /// Coefficient of friction
   double mRestitutionCoeff;
-
-  /// Array of visualization shpaes
-  std::vector<Shape*> mVizShapes;
 
   /// Array of collision shpaes
   std::vector<Shape*> mColShapes;
