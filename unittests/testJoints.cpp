@@ -404,16 +404,16 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
   EXPECT_TRUE(joint0 != NULL);
   EXPECT_TRUE(joint1 != NULL);
 
-  double friction  = 5.0;
+  double frictionForce  = 5.0;
 
   joint0->setPositionLimited(false);
   joint1->setPositionLimited(false);
 
-  joint0->setCoulombFriction(0, friction);
-  joint1->setCoulombFriction(0, friction);
+  joint0->setCoulombFriction(0, frictionForce);
+  joint1->setCoulombFriction(0, frictionForce);
 
-  EXPECT_EQ(joint0->getCoulombFriction(0), friction);
-  EXPECT_EQ(joint1->getCoulombFriction(0), friction);
+  EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
+  EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
   double simTime = 2.0;
   double timeStep = myWorld->getTimeStep();
@@ -422,8 +422,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
   // Two seconds with lower control forces than the friction
   for (int i = 0; i < nSteps; i++)
   {
-    joint0->setForce(0, 1.0);
-    joint1->setForce(0, 1.0);
+    joint0->setForce(0, +4.9);
+    joint1->setForce(0, +4.9);
     myWorld->step();
 
     double jointVel0 = joint0->getVelocity(0);
@@ -433,7 +433,21 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
     EXPECT_NEAR(jointVel1, 0.0, tol);
   }
 
-  // Another two seconds with higher control forces than the friction
+  // Another two seconds with lower control forces than the friction forces
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, -4.9);
+    joint1->setForce(0, -4.9);
+    myWorld->step();
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_NEAR(jointVel0, 0.0, tol);
+    EXPECT_NEAR(jointVel1, 0.0, tol);
+  }
+
+  // Another two seconds with higher control forces than the friction forces
   for (int i = 0; i < nSteps; i++)
   {
     joint0->setForce(0, 10.0);
@@ -443,8 +457,34 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
     double jointVel0 = joint0->getVelocity(0);
     double jointVel1 = joint1->getVelocity(0);
 
-    EXPECT_GE(jointVel0, 0.0);
-    EXPECT_GE(jointVel1, 0.0);
+    EXPECT_GE(std::fabs(jointVel0), 0.0);
+    EXPECT_GE(std::fabs(jointVel1), 0.0);
+  }
+
+  // Spend 20 sec waiting the joints stop
+  for (int i = 0; i < nSteps * 10; i++)
+  {
+    myWorld->step();
+  }
+  double jointVel0 = joint0->getVelocity(0);
+  double jointVel1 = joint1->getVelocity(0);
+
+  EXPECT_NEAR(jointVel0, 0.0, tol);
+  EXPECT_NEAR(jointVel1, 0.0, tol);
+
+  // Another two seconds with lower control forces than the friction forces
+  // and expect the joints stop
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, 4.9);
+    joint1->setForce(0, 4.9);
+    myWorld->step();
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_NEAR(jointVel0, 0.0, tol);
+    EXPECT_NEAR(jointVel1, 0.0, tol);
   }
 }
 
