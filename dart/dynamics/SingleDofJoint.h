@@ -192,6 +192,34 @@ public:
   virtual double getAccelerationUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
+  // Fixed-size mutators and accessors
+  //----------------------------------------------------------------------------
+
+  // Note: The fixed-size versions of these functions exist to make it easier
+  // to comply with the auto-updating design. Use these functions to avoid
+  // accessing mPosition directly, that way it is easier to ensure that the
+  // auto-updating design assumptions are being satisfied when reviewing the
+  // code.
+
+  /// Fixed-size version of setPositions()
+  void setPositionStatic(const double& _position);
+
+  /// Fixed-size version of getPositions()
+  const double& getPositionStatic() const;
+
+  /// Fixed-size version of setVelocities()
+  void setVelocityStatic(const double& _velocity);
+
+  /// Fixed-size version of getVelocities()
+  const double& getVelocityStatic() const;
+
+  /// Fixed-size version of setAccelerations()
+  void setAccelerationStatic(const double& _acceleration);
+
+  /// Fixed-size version of getAccelerations()
+  const double& getAccelerationStatic() const;
+
+  //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
@@ -315,13 +343,13 @@ protected:
   virtual const math::Jacobian getLocalJacobian() const override;
 
   /// Fixed-size version of getLocalJacobian()
-  virtual const Eigen::Vector6d& getFixedLocalJacobian() const;
+  virtual const Eigen::Vector6d& getLocalJacobianStatic() const;
 
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   /// Fixed-size version of getLocalJacobianTimeDeriv()
-  virtual const Eigen::Vector6d& getFixedLocalJacobianTimeDeriv() const;
+  virtual const Eigen::Vector6d& getLocalJacobianTimeDerivStatic() const;
 
   /// Get the inverse of projected articulated inertia
   const double& getInvProjArtInertia() const;
@@ -569,12 +597,12 @@ protected:
 
   /// Spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getFixedLocalJacobian() to access this quantity
+  /// Do not use directly! Use getLocalJacobianStatic() to access this quantity
   mutable Eigen::Vector6d mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getFixedLocalJacobianTimeDeriv() to access this
+  /// Do not use directly! Use getLocalJacobianTimeDerivStatic() to access this
   /// quantity
   Eigen::Vector6d mJacobianDeriv;
 

@@ -129,7 +129,7 @@ void ZeroDofJoint::resetCommands()
 }
 
 //==============================================================================
-void ZeroDofJoint::setPosition(size_t _index, double _position)
+void ZeroDofJoint::setPosition(size_t, double)
 {
   // Do nothing
 }

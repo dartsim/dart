@@ -61,10 +61,11 @@ BallJoint::~BallJoint()
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear()
-      * math::expMapRot(getFixedLocalJacobian().topRows<3>()
-                        * mVelocities * _dt);
+      * math::expMapRot(getLocalJacobianStatic().topRows<3>()
+                        * getVelocitiesStatic() * _dt);
 
-  mPositions = math::logMap(mR.linear());
+  setPositionsStatic(math::logMap(mR.linear()));
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -81,7 +82,7 @@ void BallJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void BallJoint::updateLocalTransform() const
 {
-  mR.linear() = math::expMapRot(mPositions);
+  mR.linear() = math::expMapRot(getPositionsStatic());
 
   mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
 
@@ -92,7 +93,7 @@ void BallJoint::updateLocalTransform() const
 void BallJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = math::expMapJac(mPositions).transpose();
+  J.topRows<3>()    = math::expMapJac(getPositionsStatic()).transpose();
   J.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
   mJacobian = math::AdTJacFixed(mT_ChildBodyToJoint, J);
@@ -104,7 +105,8 @@ void BallJoint::updateLocalJacobian(bool) const
 void BallJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> dJ;
-  dJ.topRows<3>()    = math::expMapJacDot(mPositions, mVelocities).transpose();
+  dJ.topRows<3>()    = math::expMapJacDot(getPositionsStatic(),
+                                          getVelocitiesStatic()).transpose();
   dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
   mJacobianDeriv = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);

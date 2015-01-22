@@ -76,7 +76,7 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 void RevoluteJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
-       * math::expAngular(mAxis * mPosition)
+       * math::expAngular(mAxis * getPositionStatic())
        * mT_ChildBodyToJoint.inverse();
 
   // Verification

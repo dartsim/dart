@@ -96,9 +96,10 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void UniversalJoint::updateLocalTransform() const
 {
+  const Eigen::Vector2d& positions = getPositionsStatic();
   mT = mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(mPositions[0], mAxis[0])
-       * Eigen::AngleAxisd(mPositions[1], mAxis[1])
+       * Eigen::AngleAxisd(positions[0], mAxis[0])
+       * Eigen::AngleAxisd(positions[1], mAxis[1])
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -108,7 +109,7 @@ void UniversalJoint::updateLocalJacobian(bool) const
 {
   mJacobian.col(0) = math::AdTAngular(
                        mT_ChildBodyToJoint
-                       * math::expAngular(-mAxis[1] * mPositions[1]),
+                       * math::expAngular(-mAxis[1] * getPositionsStatic()[1]),
                                           mAxis[0]);
   mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
   assert(!math::isNan(mJacobian));
@@ -117,9 +118,10 @@ void UniversalJoint::updateLocalJacobian(bool) const
 //==============================================================================
 void UniversalJoint::updateLocalJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1 = getFixedLocalJacobian().col(1) * mVelocities[1];
+  Eigen::Vector6d tmpV1 = getLocalJacobianStatic().col(1)
+                        * getVelocitiesStatic()[1];
 
-  Eigen::Isometry3d tmpT = math::expAngular(-mAxis[1] * mPositions[1]);
+  Eigen::Isometry3d tmpT = math::expAngular(-mAxis[1] * getPositionsStatic()[1]);
 
   Eigen::Vector6d tmpV2
       = math::AdTAngular(mT_ChildBodyToJoint * tmpT, mAxis[0]);

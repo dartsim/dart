@@ -71,7 +71,7 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 void TranslationalJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mPositions)
+       * Eigen::Translation3d(getPositionsStatic())
        * mT_ChildBodyToJoint.inverse();
 
   // Verification

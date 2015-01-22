@@ -74,7 +74,7 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 void PrismaticJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mAxis * mPosition)
+       * Eigen::Translation3d(mAxis * getPositionStatic())
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
