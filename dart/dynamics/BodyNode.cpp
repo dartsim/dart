@@ -460,6 +460,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   assert(_body != NULL);
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
+  _body->changeParentFrame(this);
 }
 
 //==============================================================================

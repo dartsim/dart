@@ -1732,7 +1732,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaToDynamic(
   // Child body's articulated inertia
   Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * getFixedLocalJacobian();
   Eigen::Matrix6d PI = _childArtInertia;
-  PI.noalias() -= AIS * getInvProjArtInertia() * AIS.transpose();
+  PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
@@ -1787,7 +1787,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitToDynamic(
   // Child body's articulated inertia
   Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * getFixedLocalJacobian();
   Eigen::Matrix6d PI = _childArtInertia;
-  PI.noalias() -= AIS * getInvProjArtInertiaImplicit() * AIS.transpose();
+  PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
