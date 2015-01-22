@@ -1,4 +1,4 @@
-dart (4.3.1) unstable; urgency=low
+dart (4.3.2) unstable; urgency=low
 
   * Fixed installation -- missing headers (utils/urdf, utils/sdf)
 
