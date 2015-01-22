@@ -474,7 +474,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_NEAR(jointVel1, 0.0, tol);
 
   // Another two seconds with lower control forces than the friction forces
-  // and expect the joints stop
+  // and expect the joints to stop
   for (int i = 0; i < nSteps; i++)
   {
     joint0->setForce(0, 4.9);
