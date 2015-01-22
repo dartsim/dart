@@ -118,6 +118,26 @@ const Frame* Entity::getParentFrame() const
 }
 
 //==============================================================================
+bool Entity::dependsOn(const Frame *_someFrame) const
+{
+  if(this == _someFrame)
+    return true;
+
+  if(_someFrame->isWorld())
+    return true;
+
+  const Frame* descentCheck = getParentFrame();
+  while(!descentCheck->isWorld())
+  {
+    if(descentCheck == _someFrame)
+      return true;
+    descentCheck = descentCheck->getParentFrame();
+  }
+
+  return false;
+}
+
+//==============================================================================
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;

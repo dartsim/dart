@@ -97,6 +97,10 @@ public:
   /// Get the parent (reference) frame of this Entity
   const Frame* getParentFrame() const;
 
+  /// True iff this Entity depends on (i.e. kinematically descends from)
+  /// _someFrame
+  bool dependsOn(const Frame* _someFrame) const;
+
   /// Returns true if this Entity is set to be quiet.
   ///
   /// A quiet entity is unknown to its parent Frame. It will not be tracked by
