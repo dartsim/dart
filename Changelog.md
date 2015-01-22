@@ -1,3 +1,13 @@
+### Version 4.3.2 (2015-01-22)
+
+1. Fixed installation -- missing headers (utils/urdf, utils/sdf)
+
+### Version 4.3.1 (2015-01-21)
+
+1. Fixed API incompatibility introduced by dart-4.3.0
+    * [Issue #303](https://github.com/dartsim/dart/issues/303)
+    * [Pull request #309](https://github.com/dartsim/dart/pull/309)
+
 ### Version 4.3.0 (2015-01-19)
 
 1. Added name manager for efficient name look-up and unique naming

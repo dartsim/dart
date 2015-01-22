@@ -4,7 +4,9 @@ before_install() {
   # Install nlopt from source since Ubuntu 12.04 does not provide debian package for nlopt
   curl -o nlopt-2.4.1.tar.gz http://ab-initio.mit.edu/nlopt/nlopt-2.4.1.tar.gz
   tar -xf nlopt-2.4.1.tar.gz
-  (cd nlopt-2.4.1/; sh autogen.sh; make CPPFLAGS='-fPIC' && sudo make install)
+  cd nlopt-2.4.1/
+  sh autogen.sh &>/dev/null  # mute the output
+  make CPPFLAGS='-fPIC' && sudo make install &>/dev/null  # mute the output
 }
 
 # Install gcc-4.8 and g++-4.8 for C++11

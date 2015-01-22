@@ -23,10 +23,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
-#  DESTINATION include/dart/utils/sdf
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
+  DESTINATION include/dart/utils/sdf
+  COMPONENT headers
+)
 #install(TARGETS dart_utils_sdf EXPORT DARTTargets DESTINATION lib)
 
