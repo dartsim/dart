@@ -297,6 +297,16 @@ DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
 }
 
 //==============================================================================
+void Joint::updateArticulatedInertia() const
+{
+  if(mSkeleton)
+  {
+    if(mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
+  }
+}
+
+//==============================================================================
 //Eigen::VectorXd Joint::getDampingForces() const
 //{
 //  int numDofs = getNumDofs();

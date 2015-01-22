@@ -590,6 +590,9 @@ protected:
   /// function will be a no op.
   virtual void updateLocalJacobianTimeDeriv() const = 0;
 
+  /// Tells the Skeleton to update the articulated inertia if it needs updating
+  void updateArticulatedInertia() const;
+
   /// Add joint velocity to _vel
   virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
 
@@ -788,23 +791,23 @@ protected:
 
   /// True iff this joint's position has changed since the last call to
   /// getLocalTransform()
-  bool mNeedPositionUpdate;
+  mutable bool mNeedPositionUpdate;
 
   /// True iff this joint's position or velocity has changed since the last call
   /// to getLocalSpatialVelocity()
-  bool mNeedVelocityUpdate;
+  mutable bool mNeedVelocityUpdate;
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getLocalSpatialAcceleration()
-  bool mNeedAccelerationUpdate;
+  mutable bool mNeedAccelerationUpdate;
 
   /// True iff this joint's local Jacobian has not been updated since the last
   /// position change
-  bool mIsLocalJacobianDirty;
+  mutable bool mIsLocalJacobianDirty;
 
   /// True iff this joint's local Jacobian time derivative has not been updated
   /// since the last position or velocity change
-  bool mIsLocalJacobianTimeDerivDirty;
+  mutable bool mIsLocalJacobianTimeDerivDirty;
 
   /// Transmitting wrench from parent body to child body expressed in child body
   DEPRECATED(4.3)

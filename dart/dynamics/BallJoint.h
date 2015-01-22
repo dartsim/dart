@@ -72,7 +72,7 @@ protected:
 
 protected:
   /// Rotation matrix
-  Eigen::Isometry3d mR;
+  mutable Eigen::Isometry3d mR;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -844,6 +844,19 @@ void SingleDofJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
+void SingleDofJoint::updateLocalSpatialVelocity() const
+{
+  mSpatialVelocity = getFixedLocalJacobian() * mVelocity;
+}
+
+//==============================================================================
+void SingleDofJoint::updateLocalSpatialAcceleration() const
+{
+  mSpatialAcceleration = getFixedLocalJacobian() * mAcceleration
+                       + getFixedLocalJacobianTimeDeriv() * mVelocity;
+}
+
+//==============================================================================
 Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
@@ -897,24 +910,14 @@ const Eigen::Vector6d& SingleDofJoint::getFixedLocalJacobianTimeDeriv() const
 //==============================================================================
 const double& SingleDofJoint::getInvProjArtInertia() const
 {
-  if(mSkeleton)
-  {
-    if(mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
-  }
-
+  Joint::updateArticulatedInertia();
   return mInvProjArtInertia;
 }
 
 //==============================================================================
 const double& SingleDofJoint::getInvProjArtInertiaImplicit() const
 {
-  if(mSkeleton)
-  {
-    if(mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
-  }
-
+  Joint::updateArticulatedInertia();
   return mInvProjArtInertiaImplicit;
 }
 

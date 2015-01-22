@@ -1579,6 +1579,7 @@ const math::Jacobian MultiDofJoint<DOF>::getLocalJacobian() const
 }
 
 //==============================================================================
+template <size_t DOF>
 const Eigen::Matrix<double, 6, DOF>&
 MultiDofJoint<DOF>::getFixedLocalJacobian() const
 {
@@ -1603,6 +1604,7 @@ const math::Jacobian MultiDofJoint<DOF>::getLocalJacobianTimeDeriv() const
 }
 
 //==============================================================================
+template <size_t DOF>
 const Eigen::Matrix<double, 6, DOF>&
 MultiDofJoint<DOF>::getFixedLocalJacobianTimeDeriv() const
 {
@@ -1615,28 +1617,20 @@ MultiDofJoint<DOF>::getFixedLocalJacobianTimeDeriv() const
 }
 
 //==============================================================================
+template <size_t DOF>
 const Eigen::Matrix<double, DOF, DOF>&
 MultiDofJoint<DOF>::getInvProjArtInertia() const
 {
-  if(mSkeleton)
-  {
-    if(mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
-  }
-
+  Joint::updateArticulatedInertia();
   return mInvProjArtInertia;
 }
 
 //==============================================================================
+template <size_t DOF>
 const Eigen::Matrix<double, DOF, DOF>&
 MultiDofJoint<DOF>::getInvProjArtInertiaImplicit() const
 {
-  if(mSkeleton)
-  {
-    if(mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
-  }
-
+  Joint::updateArticulatedInertia();
   return mInvProjArtInertiaImplicit;
 }
 

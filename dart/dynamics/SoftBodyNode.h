@@ -147,10 +147,10 @@ protected:
   virtual void updateVelocity() override;
 
   // Documentation inherited.
-  virtual void updatePartialAcceleration() override;
+  virtual void updatePartialAcceleration() const override;
 
   // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep) override;
+  virtual void updateArtInertia(double _timeStep) const override;
 
   // Documentation inherited.
   virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
@@ -291,11 +291,11 @@ protected:
 
 private:
   /// \brief
-  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi);
+  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const;
 
   /// \brief
   void _addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
-                                  double _ImplicitPi);
+                                  double _ImplicitPi) const;
 
   ///
   void updateInertiaWithPointMass();

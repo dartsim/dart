@@ -1312,7 +1312,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 //==============================================================================
 void Skeleton::updateArticulatedInertia() const
 {
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
     (*it)->updateArtInertia(mTimeStep);

@@ -538,11 +538,11 @@ protected:
   virtual void updateVelocity();
 
   /// Update partial spatial body acceleration due to parent joint's velocity.
-  virtual void updatePartialAcceleration();
+  virtual void updatePartialAcceleration() const;
 
   /// Update articulated body inertia for forward dynamics.
   /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
-  virtual void updateArtInertia(double _timeStep);
+  virtual void updateArtInertia(double _timeStep) const;
 
   /// Update bias force associated with the articulated body inertia for forward
   /// dynamics.

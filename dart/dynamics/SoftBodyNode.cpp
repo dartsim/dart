@@ -56,7 +56,8 @@ namespace dynamics {
 
 //==============================================================================
 SoftBodyNode::SoftBodyNode(const std::string& _name)
-  : BodyNode(_name),
+  : Entity(Frame::World(), _name, false),
+    BodyNode(_name),
     mKv(DART_DEFAULT_VERTEX_STIFFNESS),
     mKe(DART_DEFAULT_EDGE_STIFNESS),
     mDampCoeff(DART_DEFAULT_DAMPING_COEFF),
@@ -266,7 +267,7 @@ void SoftBodyNode::updateVelocity()
 }
 
 //==============================================================================
-void SoftBodyNode::updatePartialAcceleration()
+void SoftBodyNode::updatePartialAcceleration() const
 {
   BodyNode::updatePartialAcceleration();
 
@@ -364,7 +365,7 @@ void SoftBodyNode::updateJointImpulseFD()
 }
 
 //==============================================================================
-void SoftBodyNode::updateArtInertia(double _timeStep)
+void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
   for (auto& pointMass : mPointMasses)
     pointMass->updateArtInertiaFD(_timeStep);
@@ -980,7 +981,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi)
+void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const
 {
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
 
@@ -995,7 +996,7 @@ void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi)
 
 //==============================================================================
 void SoftBodyNode::_addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
-                                              double _ImplicitPi)
+                                              double _ImplicitPi) const
 {
   Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
 

@@ -78,6 +78,20 @@ void WeldJoint::updateLocalTransform() const
 }
 
 //==============================================================================
+void WeldJoint::updateLocalSpatialVelocity() const
+{
+  // Do nothing
+  // Should we have mSpatialVelocity.setZero() here instead?
+}
+
+//==============================================================================
+void WeldJoint::updateLocalSpatialAcceleration() const
+{
+  // Do nothing
+  // Should we have mSpatialAcceleration.setZero() here instead?
+}
+
+//==============================================================================
 void WeldJoint::updateLocalJacobian(bool) const
 {
   // Do nothing

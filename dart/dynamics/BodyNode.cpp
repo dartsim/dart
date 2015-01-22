@@ -73,7 +73,9 @@ int BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
 BodyNode::BodyNode(const std::string& _name)
-  : mID(BodyNode::msBodyNodeCount++),
+  : Entity(Frame::World(), _name, false),
+    Frame(Frame::World(), _name),
+    mID(BodyNode::msBodyNodeCount++),
     mName(_name),
     mGravityMode(true),
     mI(Eigen::Matrix6d::Identity()),
@@ -659,7 +661,7 @@ Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
 
   Eigen::Vector6d dV = getSpatialAcceleration();
 
-  const Eigen::Vector6& V = getSpatialVelocity();
+  const Eigen::Vector6d& V = getSpatialVelocity();
 
   dV.tail<3>() += V.head<3>().cross(V.tail<3>());
   // TODO(MXG): This does not look right... I thought only linear acceleration
@@ -1078,7 +1080,7 @@ void BodyNode::updateVelocity()
 }
 
 //==============================================================================
-void BodyNode::updatePartialAcceleration()
+void BodyNode::updatePartialAcceleration() const
 {
   // Compute partial acceleration
   mParentJoint->setPartialAccelerationTo(mPartialAcceleration,
@@ -1156,7 +1158,7 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 }
 
 //==============================================================================
-void BodyNode::updateArtInertia(double _timeStep)
+void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
   mArtInertia = mI;

@@ -306,6 +306,12 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
+  virtual void updateLocalSpatialVelocity() const override;
+
+  // Documentation inherited
+  virtual void updateLocalSpatialAcceleration() const override;
+
+  // Documentation inherited
   virtual const math::Jacobian getLocalJacobian() const override;
 
   /// Fixed-size version of getLocalJacobian()
@@ -564,7 +570,7 @@ protected:
   /// Spatial Jacobian expressed in the child body frame
   ///
   /// Do not use directly! Use getFixedLocalJacobian() to access this quantity
-  Eigen::Vector6d mJacobian;
+  mutable Eigen::Vector6d mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
