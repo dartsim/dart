@@ -381,13 +381,20 @@ void Frame::notifyAccelerationUpdate()
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
-  if(_newParentFrame->dependsOn(this))
+  if(_newParentFrame)
   {
-    dtwarn << "[Frame::changeParentFrame(~)] Attempting to create a circular "
-           << "kinematic dependency by making Frame '" << getName()
-           << "' a child of Frame '" << _newParentFrame->getName() << "'. "
-           << "This will not be allowed.\n";
-    return;
+    if(_newParentFrame->dependsOn(this))
+    {
+      if(!(this->isWorld() && _newParentFrame->isWorld()))
+      // We make an exception here for the World Frame, because it's special/unique
+      {
+        dtwarn << "[Frame::changeParentFrame(~)] Attempting to create a circular "
+               << "kinematic dependency by making Frame '" << getName()
+               << "' a child of Frame '" << _newParentFrame->getName() << "'. "
+               << "This will not be allowed.\n";
+        return;
+      }
+    }
   }
 
   if(mParentFrame)

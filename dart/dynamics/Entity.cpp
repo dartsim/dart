@@ -130,8 +130,11 @@ bool Entity::dependsOn(const Frame *_someFrame) const
     return true;
 
   const Frame* descentCheck = getParentFrame();
-  while(!descentCheck->isWorld())
+  while(descentCheck)
   {
+    if(descentCheck->isWorld())
+      break;
+
     if(descentCheck == _someFrame)
       return true;
     descentCheck = descentCheck->getParentFrame();
