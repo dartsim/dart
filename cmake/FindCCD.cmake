@@ -1,41 +1,41 @@
 # Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
 # This file is provided under the "BSD-style" License
 
-# Find FCL
+# Find CCD
 #
 # This sets the following variables:
-# FCL_FOUND
-# FCL_INCLUDE_DIRS
-# FCL_LIBRARIES
-# FCL_VERSION
+# CCD_FOUND
+# CCD_INCLUDE_DIRS
+# CCD_LIBRARIES
+# CCD_VERSION
 
 find_package(PkgConfig QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_FCL fcl QUIET)
+pkg_check_modules(PC_CCD ccd QUIET)
 
 # Include directories
-find_path(FCL_INCLUDE_DIRS
-    NAMES fcl/collision.h
-    HINTS ${PC_FCL_INCLUDEDIR}
+find_path(CCD_INCLUDE_DIRS
+    NAMES ccd/ccd.h
+    HINTS ${PC_CCD_INCLUDEDIR}
     PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES optimized fcl debug fcld)
+  set(CCD_LIBRARIES optimized ccd debug ccdd)
 else()
-  find_library(FCL_LIBRARIES
-      NAMES fcl
-      HINTS ${PC_FCL_LIBDIR})
+  find_library(CCD_LIBRARIES
+      NAMES ccd
+      HINTS ${PC_CCD_LIBDIR})
 endif()
 
 # Version
-set(FCL_VERSION ${PC_FCL_VERSION})
+set(CCD_VERSION ${PC_CCD_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(FCL
+find_package_handle_standard_args(CCD
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS FCL_INCLUDE_DIRS FCL_LIBRARIES
-    VERSION_VAR   FCL_VERSION)
+    REQUIRED_VARS CCD_INCLUDE_DIRS CCD_LIBRARIES
+    VERSION_VAR   CCD_VERSION)
 
