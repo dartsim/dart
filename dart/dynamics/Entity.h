@@ -98,7 +98,7 @@ public:
   const Frame* getParentFrame() const;
 
   /// True iff this Entity depends on (i.e. kinematically descends from)
-  /// _someFrame
+  /// _someFrame. If _someFrame is NULL, this returns false.
   bool dependsOn(const Frame* _someFrame) const;
 
   /// Returns true if this Entity is set to be quiet.
