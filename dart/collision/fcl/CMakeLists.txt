@@ -23,11 +23,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl.h
-#  DESTINATION include/dart/collision/fcl
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl.h
+  DESTINATION include/dart/collision/fcl
+  COMPONENT headers
+)
 #install(TARGETS dart_collision_fcl EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_collision_fcl EXPORT DARTTargets DESTINATION lib)
 

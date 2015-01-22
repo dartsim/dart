@@ -328,6 +328,17 @@ if(HAVE_BULLET_COLLISION)
 endif()
 
 #===============================================================================
+# Check for non-case-sensitive filesystems
+#===============================================================================
+execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
+                RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
+if (${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
+  set(FILESYSTEM_CASE_SENSITIVE TRUE)
+else()
+  set(FILESYSTEM_CASE_SENSITIVE FALSE)
+endif()
+
+#===============================================================================
 # Compiler flags
 #===============================================================================
 if(MSVC)

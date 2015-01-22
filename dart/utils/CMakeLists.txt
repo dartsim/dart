@@ -41,10 +41,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
-#  DESTINATION include/dart/utils
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
+  DESTINATION include/dart/utils
+  COMPONENT headers
+)
 #install(TARGETS dart_utils EXPORT DARTTargets DESTINATION lib)
 

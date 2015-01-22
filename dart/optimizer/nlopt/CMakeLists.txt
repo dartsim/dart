@@ -23,10 +23,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
-#  DESTINATION include/dart/optimizer/nlopt
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
+  DESTINATION include/dart/optimizer/nlopt
+  COMPONENT headers
+)
 #install(TARGETS dart_optimizer_nlopt EXPORT DARTTargets DESTINATION lib)
 

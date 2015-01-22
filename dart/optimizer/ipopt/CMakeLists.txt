@@ -23,10 +23,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
-#  DESTINATION include/dart/optimizer/ipopt
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  DESTINATION include/dart/optimizer/ipopt
+  COMPONENT headers
+)
 #install(TARGETS dart_optimizer_ipopt EXPORT DARTTargets DESTINATION lib)
 
