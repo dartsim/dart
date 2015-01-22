@@ -1,3 +1,9 @@
+dart (4.3.2) unstable; urgency=low
+
+  * Fixed installation -- missing headers (utils/urdf, utils/sdf)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 22 Jan 2015 10:00:00 -0500
+
 dart (4.3.1) unstable; urgency=low
 
   * Fixed API incompatibility introduced by dart-4.3.0

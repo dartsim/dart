@@ -23,10 +23,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.h
-#  DESTINATION include/dart/utils/urdf
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.h
+  DESTINATION include/dart/utils/urdf
+  COMPONENT headers
+)
 #install(TARGETS dart_utils_urdf EXPORT DARTTargets DESTINATION lib)
 
