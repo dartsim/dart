@@ -22,7 +22,7 @@ find_path(FCL_INCLUDE_DIRS
 
 # Libraries
 if(MSVC)
-  set(FCL_LIBRARIES optimized fcl optimized ccd debug fcld debug ccdd)
+  set(FCL_LIBRARIES optimized fcl debug fcld)
 else()
   find_library(FCL_LIBRARIES
       NAMES fcl
