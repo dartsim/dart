@@ -462,7 +462,7 @@ void testJointCoulombFrictionForce(double _timeStep)
     EXPECT_GE(std::fabs(jointVel1), 0.0);
   }
 
-  // Spend 20 sec waiting the joints stop
+  // Spend 20 sec waiting the joints to stop
   for (int i = 0; i < nSteps * 10; i++)
   {
     myWorld->step();
