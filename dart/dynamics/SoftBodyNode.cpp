@@ -431,9 +431,9 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasForceTo(mBiasForce,
-                                    childBodyNode->mArtInertiaImplicit,
-                                    childBodyNode->mBiasForce,
-                                    childBodyNode->mPartialAcceleration);
+                                childBodyNode->getArticulatedInertiaImplicit(),
+                                childBodyNode->mBiasForce,
+                                childBodyNode->getPartialAcceleration());
   }
 
   //
@@ -448,8 +448,9 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
-  mParentJoint->updateTotalForce(
-        mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
+  mParentJoint->updateTotalForce( getArticulatedInertiaImplicit()
+                                  * getPartialAcceleration() + mBiasForce,
+                                  _timeStep);
 }
 
 //==============================================================================
@@ -485,7 +486,7 @@ void SoftBodyNode::updateBiasImpulse()
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasImpulseTo(mBiasImpulse,
-                                      childBodyNode->mArtInertia,
+                                      childBodyNode->getArticulatedInertia(),
                                       childBodyNode->mBiasImpulse);
   }
 
@@ -646,7 +647,7 @@ void SoftBodyNode::updateInvMassMatrix()
        it != mChildBodyNodes.end(); ++it)
   {
     (*it)->getParentJoint()->addChildBiasForceForInvMassMatrix(
-          mInvM_c, (*it)->mArtInertia, (*it)->mInvM_c);
+          mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
   }
 
   //
@@ -682,7 +683,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
 //       it != mChildBodyNodes.end(); ++it)
 //  {
 //    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
-//          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
+//          mInvM_c, (*it)->getArticulatedInertiaImplicit(), (*it)->mInvM_c);
 //  }
 
 //  //
@@ -707,16 +708,17 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, mArtInertia, mParentBodyNode->mInvM_U);
+          *_InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
+    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+                           mParentBodyNode->mInvM_U);
   }
   else
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, mArtInertia, Eigen::Vector6d::Zero());
+          *_InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -741,7 +743,7 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
 //  {
 //    //
 //    mParentJoint->getInvAugMassMatrixSegment(
-//          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
+//          *_InvMCol, _col, getArticulatedInertiaImplicit(), mParentBodyNode->mInvM_U);
 
 //    //
 //    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
@@ -750,7 +752,7 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
 //  {
 //    //
 //    mParentJoint->getInvAugMassMatrixSegment(
-//          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
+//          *_InvMCol, _col, getArticulatedInertiaImplicit(), Eigen::Vector6d::Zero());
 
 //    //
 //    mInvM_U.setZero();

@@ -633,6 +633,9 @@ protected:
   /// Remove a joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
+  /// Update the articulated inertias of the skeleton
+  void updateArticulatedInertia() const;
+
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
 
@@ -661,12 +664,12 @@ protected:
   /// Update gravity force vector of the skeleton.
   void updateGravityForces();
 
-  /// Update combined vector of the skeletong.
+  /// Update combined vector of the skeleton.
   /// \remarks Please use updateCoriolisAndGravityForces() instead.
   DEPRECATED(4.2)
   virtual void updateCombinedVector();
 
-  /// Update combined vector of the skeletong.
+  /// Update combined vector of the skeleton.
   void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized forces.
@@ -760,7 +763,7 @@ protected:
   double mTotalMass;
 
   /// Dirty flag for articulated body inertia
-  bool mIsArticulatedInertiaDirty;
+  mutable bool mIsArticulatedInertiaDirty;
 
   /// Mass matrix for the skeleton.
   Eigen::MatrixXd mM;

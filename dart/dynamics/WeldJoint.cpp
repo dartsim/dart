@@ -72,19 +72,19 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void WeldJoint::updateLocalTransform()
+void WeldJoint::updateLocalTransform() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobian()
+void WeldJoint::updateLocalJacobian(bool) const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobianTimeDeriv()
+void WeldJoint::updateLocalJacobianTimeDeriv() const
 {
   // Do nothing
 }

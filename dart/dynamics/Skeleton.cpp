@@ -1310,6 +1310,18 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
+void Skeleton::updateArticulatedInertia() const
+{
+  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+       it != mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateArtInertia(mTimeStep);
+  }
+
+  mIsArticulatedInertiaDirty = false;
+}
+
+//==============================================================================
 void Skeleton::updateMassMatrix()
 {
   if (getNumDofs() == 0)
@@ -1431,16 +1443,9 @@ void Skeleton::updateInvMassMatrix()
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
-  if (mIsArticulatedInertiaDirty)
-  {
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
-    {
-      (*it)->updateArtInertia(mTimeStep);
-    }
-
-    mIsArticulatedInertiaDirty = false;
-  }
+  // Note: we do not need to update articulated inertias here, because they will
+  // be updated when BodyNode::updateInvMassMatrix() calls
+  // BodyNode::getArticulatedInertia()
 
   int dof = getNumDofs();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
@@ -1752,23 +1757,11 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
 //==============================================================================
 void Skeleton::computeForwardDynamicsRecursionPartB()
 {
-  // Backward recursion
-  if (mIsArticulatedInertiaDirty)
-  {
-    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    {
-      (*it)->updateArtInertia(mTimeStep);
-      (*it)->updateBiasForce(mGravity, mTimeStep);
-    }
-    // TODO: Replace with std::make_reverse_iterator when we migrate to C++14
+  // Note: Articulated Inertias will be updated automatically when
+  // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
-    mIsArticulatedInertiaDirty = false;
-  }
-  else
-  {
-    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-      (*it)->updateBiasForce(mGravity, mTimeStep);
-  }
+  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+    (*it)->updateBiasForce(mGravity, mTimeStep);
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
@@ -2016,22 +2009,13 @@ void Skeleton::computeImpulseForwardDynamics()
   if (!isMobile() || getNumDofs() == 0)
     return;
 
-  // Backward recursion
-  if (mIsArticulatedInertiaDirty)
-  {
-    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    {
-      (*it)->updateArtInertia(mTimeStep);
-      (*it)->updateBiasImpulse();
-    }
+  // Note: we do not need to update articulated inertias here, because they will
+  // be updated when BodyNode::updateBiasImpulse() calls
+  // BodyNode::getArticulatedInertia()
 
-    mIsArticulatedInertiaDirty = false;
-  }
-  else
-  {
-    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-      (*it)->updateBiasImpulse();
-  }
+  // Backward recursion
+  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+    (*it)->updateBiasImpulse();
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)

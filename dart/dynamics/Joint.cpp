@@ -62,6 +62,11 @@ Joint::Joint(const std::string& _name)
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mNeedPositionUpdate(true),
+    mNeedVelocityUpdate(true),
+    mNeedAccelerationUpdate(true),
+    mIsLocalJacobianDirty(true),
+    mIsLocalJacobianTimeDerivDirty(true),
     mIsPositionLimited(true)
 {
 }
@@ -186,7 +191,10 @@ const Skeleton* Joint::getSkeleton() const
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
   if(mNeedPositionUpdate)
+  {
     updateLocalTransform();
+    mNeedPositionUpdate = false;
+  }
 
   return mT;
 }
@@ -195,7 +203,10 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const
 const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 {
   if(mNeedVelocityUpdate)
+  {
     updateLocalSpatialVelocity();
+    mNeedVelocityUpdate = false;
+  }
 
   return mSpatialVelocity;
 }
@@ -204,7 +215,10 @@ const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
 {
   if(mNeedAccelerationUpdate)
+  {
     updateLocalSpatialAcceleration();
+    mNeedAccelerationUpdate = false;
+  }
 
   return mSpatialAcceleration;
 }
@@ -248,6 +262,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
+  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -265,7 +280,7 @@ const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 //==============================================================================
 void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 {
-  _ri->transform(mT);
+  _ri->transform(getLocalTransform());
 }
 
 //==============================================================================
@@ -308,6 +323,45 @@ DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
 //  assert(!math::isNan(springForce));
 //  return springForce;
 //}
+
+//==============================================================================
+void Joint::notifyPositionUpdate()
+{
+  if(mChildBodyNode)
+    mChildBodyNode->notifyTransformUpdate();
+
+  if(mNeedPositionUpdate)
+    return;
+
+  mNeedPositionUpdate = true;
+  mIsLocalJacobianDirty = true;
+  mIsLocalJacobianTimeDerivDirty = true;
+}
+
+//==============================================================================
+void Joint::notifyVelocityUpdate()
+{
+  if(mChildBodyNode)
+    mChildBodyNode->notifyVelocityUpdate();
+
+  if(mNeedVelocityUpdate)
+    return;
+
+  mNeedVelocityUpdate = true;
+  mIsLocalJacobianTimeDerivDirty = true;
+}
+
+//==============================================================================
+void Joint::notifyAccelerationUpdate()
+{
+  if(mChildBodyNode)
+    mChildBodyNode->notifyAccelerationUpdate();
+
+  if(mNeedAccelerationUpdate)
+    return;
+
+  mNeedAccelerationUpdate = true;
+}
 
 }  // namespace dynamics
 }  // namespace dart

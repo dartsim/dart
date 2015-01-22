@@ -847,26 +847,82 @@ void SingleDofJoint::updateDegreeOfFreedomNames()
 Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
-  return mChildBodyNode->getBodyForce() - mJacobian * mForce;
+  return mChildBodyNode->getBodyForce() - getFixedLocalJacobian() * mForce;
 }
 
 //==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
+  if(mIsLocalJacobianDirty)
+  {
+    updateLocalJacobian(false);
+    mIsLocalJacobianDirty = false;
+  }
+  return mJacobian;
+}
+
+//==============================================================================
+const Eigen::Vector6d& SingleDofJoint::getFixedLocalJacobian() const
+{
+  if(mIsLocalJacobianDirty)
+  {
+    updateLocalJacobian(false);
+    mIsLocalJacobianDirty = false;
+  }
   return mJacobian;
 }
 
 //==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobianTimeDeriv() const
 {
+  if(mIsLocalJacobianTimeDerivDirty)
+  {
+    updateLocalJacobianTimeDeriv();
+    mIsLocalJacobianTimeDerivDirty = false;
+  }
   return mJacobianDeriv;
+}
+
+//==============================================================================
+const Eigen::Vector6d& SingleDofJoint::getFixedLocalJacobianTimeDeriv() const
+{
+  if(mIsLocalJacobianTimeDerivDirty)
+  {
+    updateLocalJacobianTimeDeriv();
+    mIsLocalJacobianTimeDerivDirty = false;
+  }
+  return mJacobianDeriv;
+}
+
+//==============================================================================
+const double& SingleDofJoint::getInvProjArtInertia() const
+{
+  if(mSkeleton)
+  {
+    if(mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
+  }
+
+  return mInvProjArtInertia;
+}
+
+//==============================================================================
+const double& SingleDofJoint::getInvProjArtInertiaImplicit() const
+{
+  if(mSkeleton)
+  {
+    if(mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
+  }
+
+  return mInvProjArtInertiaImplicit;
 }
 
 //==============================================================================
 void SingleDofJoint::addVelocityTo(Eigen::Vector6d& _vel)
 {
   // Add joint velocity to _vel
-  _vel.noalias() += mJacobian * mVelocity;
+  _vel.noalias() += getFixedLocalJacobian() * mVelocity;
 
   // Verification
   assert(!math::isNan(_vel));
@@ -878,7 +934,8 @@ void SingleDofJoint::setPartialAccelerationTo(
     const Eigen::Vector6d& _childVelocity)
 {
   // ad(V, S * dq) + dS * dq
-  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocity)
+  _partialAcceleration = math::ad(_childVelocity, getFixedLocalJacobian()
+                                  * mVelocity)
                          + mJacobianDeriv * mVelocity;
 
   // Verification
@@ -890,14 +947,14 @@ void SingleDofJoint::setPartialAccelerationTo(
 void SingleDofJoint::addAccelerationTo(Eigen::Vector6d& _acc)
 {
   //
-  _acc += mJacobian * mAcceleration;
+  _acc += getFixedLocalJacobian() * mAcceleration;
 }
 
 //==============================================================================
 void SingleDofJoint::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 {
   //
-  _velocityChange += mJacobian * mVelocityChange;
+  _velocityChange += getFixedLocalJacobian() * mVelocityChange;
 }
 
 //==============================================================================
@@ -925,17 +982,18 @@ void SingleDofJoint::addChildArtInertiaTo(
 }
 
 //==============================================================================
-void SingleDofJoint::addChildArtInertiaToDynamic(Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
+void SingleDofJoint::addChildArtInertiaToDynamic(
+    Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
-  Eigen::Vector6d AIS = _childArtInertia * mJacobian;
+  Eigen::Vector6d AIS = _childArtInertia * getFixedLocalJacobian();
   Eigen::Matrix6d PI = _childArtInertia;
-  PI.noalias() -= mInvProjArtInertia * AIS * AIS.transpose();
+  PI.noalias() -= getInvProjArtInertia() * AIS * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), PI);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -944,7 +1002,8 @@ void SingleDofJoint::addChildArtInertiaToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+                                              _childArtInertia);
 }
 
 //==============================================================================
@@ -976,14 +1035,14 @@ void SingleDofJoint::addChildArtInertiaImplicitToDynamic(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
-  const Eigen::Vector6d AIS = _childArtInertia * mJacobian;
+  const Eigen::Vector6d AIS = _childArtInertia * getFixedLocalJacobian();
   Eigen::Matrix6d PI = _childArtInertia;
-  PI.noalias() -= mInvProjArtInertiaImplicit * AIS * AIS.transpose();
+  PI.noalias() -= getInvProjArtInertiaImplicit() * AIS * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), PI);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -992,7 +1051,8 @@ void SingleDofJoint::addChildArtInertiaImplicitToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+                                              _childArtInertia);
 }
 
 //==============================================================================
@@ -1022,7 +1082,8 @@ void SingleDofJoint::updateInvProjArtInertiaDynamic(
     const Eigen::Matrix6d& _artInertia)
 {
   // Projected articulated inertia
-  double projAI = mJacobian.dot(_artInertia * mJacobian);
+  const Eigen::Vector6d& Jacobian = getFixedLocalJacobian();
+  double projAI = Jacobian.dot(_artInertia * Jacobian);
 
   // Inversion of projected articulated inertia
   mInvProjArtInertia = 1.0 / projAI;
@@ -1066,7 +1127,8 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitDynamic(
     const Eigen::Matrix6d& _artInertia, double _timeStep)
 {
   // Projected articulated inertia
-  double projAI = mJacobian.dot(_artInertia * mJacobian);
+  const Eigen::Vector6d& Jacobian = getFixedLocalJacobian();
+  double projAI = Jacobian.dot(_artInertia * Jacobian);
 
   // Add additional inertia for implicit damping and spring force
   projAI += _timeStep * mDampingCoefficient
@@ -1127,15 +1189,16 @@ void SingleDofJoint::addChildBiasForceToDynamic(
 {
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
-  const double coeff = mInvProjArtInertiaImplicit * mTotalForce;
-  beta.noalias() += _childArtInertia*(_childPartialAcc + coeff*mJacobian);
+  const double coeff = getInvProjArtInertiaImplicit() * mTotalForce;
+  beta.noalias() += _childArtInertia*(_childPartialAcc
+                                      + coeff*getFixedLocalJacobian());
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(mT, beta);
+  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1148,14 +1211,14 @@ void SingleDofJoint::addChildBiasForceToKinematic(
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
   beta.noalias() += _childArtInertia*(_childPartialAcc
-                                      + mAcceleration*mJacobian);
+                                      + mAcceleration*getFixedLocalJacobian());
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(mT, beta);
+  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1195,14 +1258,15 @@ void SingleDofJoint::addChildBiasImpulseToDynamic(
   // Compute beta
   const Eigen::Vector6d beta
       = _childBiasImpulse
-        + _childArtInertia * mJacobian * mInvProjArtInertia * mTotalImpulse;
+        + _childArtInertia * getFixedLocalJacobian()
+          * getInvProjArtInertia() * mTotalImpulse;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(mT, beta);
+  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1213,7 +1277,7 @@ void SingleDofJoint::addChildBiasImpulseToKinematic(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(mT, _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
 }
 
 //==============================================================================
@@ -1264,7 +1328,8 @@ void SingleDofJoint::updateTotalForceDynamic(
   const double dampingForce = -mDampingCoefficient * mVelocity;
 
   // Compute alpha
-  mTotalForce = mForce + springForce + dampingForce - mJacobian.dot(_bodyForce);
+  mTotalForce = mForce + springForce + dampingForce
+                - getFixedLocalJacobian().dot(_bodyForce);
 }
 
 //==============================================================================
@@ -1299,7 +1364,7 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 void SingleDofJoint::updateTotalImpulseDynamic(
     const Eigen::Vector6d& _bodyImpulse)
 {
-  mTotalImpulse = mConstraintImpulse - mJacobian.dot(_bodyImpulse);
+  mTotalImpulse = mConstraintImpulse - getFixedLocalJacobian().dot(_bodyImpulse);
 }
 
 //==============================================================================
@@ -1342,8 +1407,9 @@ void SingleDofJoint::updateAccelerationDynamic(
     const Eigen::Matrix6d& _artInertia, const Eigen::Vector6d& _spatialAcc)
 {
   //
-  const double val = mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc));
-  mAcceleration = mInvProjArtInertiaImplicit * (mTotalForce - val);
+  const double val = getFixedLocalJacobian().dot(
+        _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc));
+  mAcceleration = getInvProjArtInertiaImplicit() * (mTotalForce - val);
 
   // Verification
   assert(!math::isNan(mAcceleration));
@@ -1386,9 +1452,10 @@ void SingleDofJoint::updateVelocityChangeDynamic(
 {
   //
   mVelocityChange
-      = mInvProjArtInertia
+      = getInvProjArtInertia()
         * (mTotalImpulse
-           - mJacobian.dot(_artInertia * math::AdInvT(mT, _velocityChange)));
+           - getFixedLocalJacobian().dot(
+             _artInertia * math::AdInvT(getLocalTransform(), _velocityChange)));
 
   // Verification
   assert(!math::isNan(mVelocityChange));
@@ -1408,7 +1475,7 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
                                    bool _withDampingForces,
                                    bool _withSpringForces)
 {
-  mForce = mJacobian.dot(_bodyForce);
+  mForce = getFixedLocalJacobian().dot(_bodyForce);
 
   // Damping force
   if (_withDampingForces)
@@ -1453,7 +1520,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
 //==============================================================================
 void SingleDofJoint::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 {
-  mImpulse = mJacobian.dot(_bodyImpulse);
+  mImpulse = getFixedLocalJacobian().dot(_bodyImpulse);
 }
 
 //==============================================================================
@@ -1521,15 +1588,15 @@ void SingleDofJoint::addChildBiasForceForInvMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
-  beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertia
-                    * mInvM_a;
+  beta.noalias() += _childArtInertia * getFixedLocalJacobian()
+                    * getInvProjArtInertia() * mInvM_a;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(mT, beta);
+  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1540,15 +1607,15 @@ void SingleDofJoint::addChildBiasForceForInvAugMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
-  beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertiaImplicit
-                    * mInvM_a;
+  beta.noalias() += _childArtInertia * getFixedLocalJacobian()
+                    * getInvProjArtInertiaImplicit() * mInvM_a;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(mT, beta);
+  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1556,7 +1623,7 @@ void SingleDofJoint::updateTotalForceForInvMassMatrix(
     const Eigen::Vector6d& _bodyForce)
 {
   // Compute alpha
-  mInvM_a = mForce - mJacobian.dot(_bodyForce);
+  mInvM_a = mForce - getFixedLocalJacobian().dot(_bodyForce);
 }
 
 //==============================================================================
@@ -1567,9 +1634,9 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
 {
   //
   mInvMassMatrixSegment
-      = mInvProjArtInertia
-        * (mInvM_a
-           - mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc)));
+      = getInvProjArtInertia()
+        * (mInvM_a - getFixedLocalJacobian().dot(
+             _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc)));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -1590,9 +1657,9 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
 {
   //
   mInvMassMatrixSegment
-      = mInvProjArtInertiaImplicit
-        * (mInvM_a
-           - mJacobian.dot(_artInertia * math::AdInvT(mT, _spatialAcc)));
+      = getInvProjArtInertiaImplicit()
+        * (mInvM_a - getFixedLocalJacobian().dot(
+             _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc)));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -1608,7 +1675,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
 void SingleDofJoint::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
 {
   //
-  _acc += mJacobian * mInvMassMatrixSegment;
+  _acc += getFixedLocalJacobian() * mInvMassMatrixSegment;
 }
 
 //==============================================================================
@@ -1616,7 +1683,7 @@ Eigen::VectorXd SingleDofJoint::getSpatialToGeneralized(
     const Eigen::Vector6d& _spatial)
 {
   Eigen::VectorXd generalized = Eigen::VectorXd::Zero(1);
-  generalized[0] = mJacobian.dot(_spatial);
+  generalized[0] = getFixedLocalJacobian().dot(_spatial);
   return generalized;
 }
 

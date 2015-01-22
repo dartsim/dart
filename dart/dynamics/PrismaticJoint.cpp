@@ -71,7 +71,7 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalTransform()
+void PrismaticJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
        * Eigen::Translation3d(mAxis * mPosition)
@@ -82,17 +82,20 @@ void PrismaticJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobian()
+void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
-  // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
-  mJacobian = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+  if(_mandatory)
+  {
+    // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
+    mJacobian = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
 
-  // Verification
-  assert(!math::isNan(mJacobian));
+    // Verification
+    assert(!math::isNan(mJacobian));
+  }
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobianTimeDeriv()
+void PrismaticJoint::updateLocalJacobianTimeDeriv() const
 {
   // Time derivative of prismatic joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

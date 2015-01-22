@@ -56,6 +56,8 @@
 namespace dart {
 namespace dynamics {
 
+typedef std::set<Entity*> EntityPtrSet;
+
 //==============================================================================
 template <typename T>
 static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
@@ -94,7 +96,7 @@ BodyNode::BodyNode(const std::string& _name)
     mIsBodyJacobianDirty(true),
     mIsBodyJacobianDerivDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
-    mA(Eigen::Vector6d::Zero()),
+    mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
     mFext(Eigen::Vector6d::Zero()),
     mFgravity(Eigen::Vector6d::Zero()),
@@ -255,6 +257,30 @@ void BodyNode::getMomentOfInertia(double& _Ixx, double& _Iyy, double& _Izz,
 const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
 {
   return mI;
+}
+
+//==============================================================================
+const math::Inertia& BodyNode::getArticulatedInertia() const
+{
+  if(mSkeleton)
+  {
+    if(mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
+  }
+
+  return mArtInertia;
+}
+
+//==============================================================================
+const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
+{
+  if(mSkeleton)
+  {
+    if(mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
+  }
+
+  return mArtInertiaImplicit;
 }
 
 //==============================================================================
@@ -643,6 +669,15 @@ Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
+{
+  if(mIsPartialAccelerationDirty)
+    updatePartialAcceleration();
+
+  return mPartialAcceleration;
+}
+
+//==============================================================================
 const math::Jacobian& BodyNode::getBodyJacobian()
 {
   if (mIsBodyJacobianDirty)
@@ -654,10 +689,7 @@ const math::Jacobian& BodyNode::getBodyJacobian()
 //==============================================================================
 math::LinearJacobian BodyNode::getBodyLinearJacobian()
 {
-  if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
-
-  return mBodyJacobian.bottomRows<3>();
+  return getBodyJacobian().bottomRows<3>();
 }
 
 //==============================================================================
@@ -674,10 +706,7 @@ math::LinearJacobian BodyNode::getBodyLinearJacobian(
 //==============================================================================
 math::AngularJacobian BodyNode::getBodyAngularJacobian()
 {
-  if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
-
-  return mBodyJacobian.topRows<3>();
+  return getBodyJacobian().topRows<3>();
 }
 
 //==============================================================================
@@ -971,6 +1000,70 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
+void BodyNode::notifyTransformUpdate()
+{
+  notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
+
+  if(mNeedTransformUpdate)
+    return;
+
+  mNeedTransformUpdate = true;
+  mIsBodyJacobianDirty = true;
+  mIsBodyJacobianDerivDirty = true;
+
+  if(mSkeleton)
+  {
+    mSkeleton->mIsArticulatedInertiaDirty = true;
+    mSkeleton->mIsMassMatrixDirty = true;
+    mSkeleton->mIsAugMassMatrixDirty = true;
+    mSkeleton->mIsInvMassMatrixDirty = true;
+    mSkeleton->mIsCoriolisForcesDirty = true;
+    mSkeleton->mIsGravityForcesDirty = true;
+    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+    mSkeleton->mIsExternalForcesDirty = true;
+  }
+  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  for( ; it != end; ++it)
+    (*it)->notifyTransformUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyVelocityUpdate()
+{
+  notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+
+  if(mNeedVelocityUpdate)
+    return;
+
+  mNeedVelocityUpdate = true;
+  mIsBodyJacobianDerivDirty = true;
+  mIsPartialAccelerationDirty = true;
+
+  if(mSkeleton)
+  {
+    mSkeleton->mIsCoriolisForcesDirty = true;
+    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+  }
+
+  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  for( ; it != end; ++it)
+    (*it)->notifyVelocityUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyAccelerationUpdate()
+{
+  if(mNeedAccelerationUpdate)
+    return;
+
+  mNeedAccelerationUpdate = true;
+
+  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  for( ; it != end; ++it)
+    (*it)->notifyAccelerationUpdate();
+}
+
+//==============================================================================
 void BodyNode::updateTransform()
 {
   // Calling getWorldTransform will update the transform if an update is needed
@@ -987,12 +1080,10 @@ void BodyNode::updateVelocity()
 //==============================================================================
 void BodyNode::updatePartialAcceleration()
 {
-  // Update parent joint's time derivative of local Jacobian
-  mParentJoint->updateLocalJacobianTimeDeriv();
-
   // Compute partial acceleration
   mParentJoint->setPartialAccelerationTo(mPartialAcceleration,
                                          getSpatialVelocity());
+  mIsPartialAccelerationDirty = false;
 }
 
 //==============================================================================
@@ -1004,22 +1095,10 @@ void BodyNode::updateAcceleration()
 //==============================================================================
 void BodyNode::updateAccelerationID()
 {
-  // Transmit acceleration of parent body to this body
-  if (mParentBodyNode)
-  {
-    mA = math::AdInvT(mParentJoint->mT, mParentBodyNode->mA)
-         + mPartialAcceleration;
-  }
-  else
-  {
-    mA = mPartialAcceleration;
-  }
-
-  // Add parent joint's acceleration to this body
-  mParentJoint->addAccelerationTo(mA);
-
+  // Note: auto-updating has replaced this function
+  getSpatialAcceleration();
   // Verification
-  assert(!math::isNan(mA));
+  assert(!math::isNan(mAcceleration));
 }
 
 //==============================================================================
@@ -1040,7 +1119,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     mFgravity.setZero();
 
   // Inertial force
-  mF.noalias() = mI * mA;
+  mF.noalias() = mI * getSpatialAcceleration();
 
   // External force
   if (_withExternalForces)
@@ -1129,9 +1208,9 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasForceTo(mBiasForce,
-                                    childBodyNode->mArtInertiaImplicit,
-                                    childBodyNode->mBiasForce,
-                                    childBodyNode->mPartialAcceleration);
+                                childBodyNode->getArticulatedInertiaImplicit(),
+                                childBodyNode->mBiasForce,
+                                childBodyNode->getPartialAcceleration());
   }
 
   // Verification
@@ -1139,8 +1218,9 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 
   // Update parent joint's total force with implicit joint damping and spring
   // forces
-  mParentJoint->updateTotalForce(
-        mArtInertiaImplicit * mPartialAcceleration + mBiasForce, _timeStep);
+  mParentJoint->updateTotalForce( getArticulatedInertiaImplicit()
+                                  * getPartialAcceleration() + mBiasForce,
+                                  _timeStep);
 }
 
 //==============================================================================
@@ -1155,7 +1235,7 @@ void BodyNode::updateBiasImpulse()
     Joint* childJoint = childBodyNode->getParentJoint();
 
     childJoint->addChildBiasImpulseTo(mBiasImpulse,
-                                      childBodyNode->mArtInertia,
+                                      childBodyNode->getArticulatedInertia(),
                                       childBodyNode->mBiasImpulse);
   }
 
@@ -1188,7 +1268,7 @@ void BodyNode::updateTransmittedWrench()
 void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
-  mF.noalias() += mArtInertiaImplicit * getSpatialAcceleration();
+  mF.noalias() += getArticulatedInertiaImplicit() * getSpatialAcceleration();
 
   assert(!math::isNan(mF));
 }
@@ -1203,7 +1283,7 @@ void BodyNode::updateBodyImpForceFwdDyn()
 void BodyNode::updateTransmittedImpulse()
 {
   mImpF = mBiasImpulse;
-  mImpF.noalias() += mArtInertia * mDelV;
+  mImpF.noalias() += getArticulatedInertia() * mDelV;
 
   assert(!math::isNan(mImpF));
 }
@@ -1214,13 +1294,13 @@ void BodyNode::updateAccelerationFD()
   if (mParentBodyNode)
   {
     // Update joint acceleration
-    mParentJoint->updateAcceleration(mArtInertiaImplicit,
+    mParentJoint->updateAcceleration(getArticulatedInertiaImplicit(),
                                      mParentBodyNode->getSpatialAcceleration());
   }
   else
   {
     // Update joint acceleration
-    mParentJoint->updateAcceleration(mArtInertiaImplicit,
+    mParentJoint->updateAcceleration(getArticulatedInertiaImplicit(),
                                      Eigen::Vector6d::Zero());
   }
 
@@ -1234,15 +1314,18 @@ void BodyNode::updateVelocityChangeFD()
   if (mParentBodyNode)
   {
     // Update joint velocity change
-    mParentJoint->updateVelocityChange(mArtInertia, mParentBodyNode->mDelV);
+    mParentJoint->updateVelocityChange(getArticulatedInertia(),
+                                       mParentBodyNode->mDelV);
 
     // Transmit spatial acceleration of parent body to this body
-    mDelV = math::AdInvT(mParentJoint->mT, mParentBodyNode->mDelV);
+    mDelV = math::AdInvT(mParentJoint->getLocalTransform(),
+                         mParentBodyNode->mDelV);
   }
   else
   {
     // Update joint velocity change
-    mParentJoint->updateVelocityChange(mArtInertia, Eigen::Vector6d::Zero());
+    mParentJoint->updateVelocityChange(getArticulatedInertia(),
+                                       Eigen::Vector6d::Zero());
 
     // Transmit spatial acceleration of parent body to this body
     mDelV.setZero();
@@ -1465,7 +1548,7 @@ void BodyNode::updateConstrainedJointAndBodyAcceleration(double /*_timeStep*/)
 void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
 {
   ///
-  mA += mDelV / _timeStep;
+  mAcceleration += mDelV / _timeStep;
 
   ///
   mF += mImpF / _timeStep;
@@ -1508,11 +1591,11 @@ void BodyNode::updateCombinedVector()
   if (mParentBodyNode)
   {
     mCg_dV = math::AdInvT(mParentJoint->getLocalTransform(),
-                          mParentBodyNode->mCg_dV) + mPartialAcceleration;
+                          mParentBodyNode->mCg_dV) + getPartialAcceleration();
   }
   else
   {
-    mCg_dV = mPartialAcceleration;
+    mCg_dV = getPartialAcceleration();
   }
 }
 
@@ -1692,7 +1775,7 @@ void BodyNode::updateInvMassMatrix()
        it != mChildBodyNodes.end(); ++it)
   {
     (*it)->getParentJoint()->addChildBiasForceForInvMassMatrix(
-          mInvM_c, (*it)->mArtInertia, (*it)->mInvM_c);
+          mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
   }
 
   // Verification
@@ -1713,7 +1796,7 @@ void BodyNode::updateInvAugMassMatrix()
        it != mChildBodyNodes.end(); ++it)
   {
     (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
-          mInvM_c, (*it)->mArtInertiaImplicit, (*it)->mInvM_c);
+          mInvM_c, (*it)->getArticulatedInertiaImplicit(), (*it)->mInvM_c);
   }
 
   // Verification
@@ -1730,16 +1813,17 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, mArtInertia, mParentBodyNode->mInvM_U);
+          *_InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
+    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+                           mParentBodyNode->mInvM_U);
   }
   else
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, mArtInertia, Eigen::Vector6d::Zero());
+          *_InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -1757,16 +1841,19 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, mParentBodyNode->mInvM_U);
+          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
+    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+                           mParentBodyNode->mInvM_U);
   }
   else
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, mArtInertiaImplicit, Eigen::Vector6d::Zero());
+          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();

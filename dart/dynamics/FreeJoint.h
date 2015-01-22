@@ -64,17 +64,17 @@ protected:
   virtual void updateDegreeOfFreedomNames();
 
   // Documentation inherited
-  virtual void updateLocalTransform();
+  virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian();
+  virtual void updateLocalJacobian(bool =true) const;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
   /// Transformation matrix dependant on generalized coordinates
-  Eigen::Isometry3d mQ;
+  mutable Eigen::Isometry3d mQ;
 
 public:
   // To get byte-aligned Eigen vectors

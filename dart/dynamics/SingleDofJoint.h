@@ -308,8 +308,21 @@ protected:
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobian() const override;
 
+  /// Fixed-size version of getLocalJacobian()
+  virtual const Eigen::Vector6d& getFixedLocalJacobian() const;
+
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
+
+  /// Fixed-size version of getLocalJacobianTimeDeriv()
+  virtual const Eigen::Vector6d& getFixedLocalJacobianTimeDeriv() const;
+
+  /// Get the inverse of projected articulated inertia
+  const double& getInvProjArtInertia() const;
+
+  /// Get the inverse of projected articulated inertia for implicit joint
+  /// damping and spring forces
+  const double& getInvProjArtInertiaImplicit() const;
 
   // Documentation inherited
   virtual void addVelocityTo(Eigen::Vector6d& _vel) override;
@@ -549,17 +562,27 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Spatial Jacobian expressed in the child body frame
+  ///
+  /// Do not use directly! Use getFixedLocalJacobian() to access this quantity
   Eigen::Vector6d mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
+  ///
+  /// Do not use directly! Use getFixedLocalJacobianTimeDeriv() to access this
+  /// quantity
   Eigen::Vector6d mJacobianDeriv;
 
   /// Inverse of projected articulated inertia
-  double mInvProjArtInertia;
+  ///
+  /// Do not use directly! Use getInvProjArtInertia() to access this quantity
+  mutable double mInvProjArtInertia;
 
   /// Inverse of projected articulated inertia for implicit joint damping and
   /// spring forces
-  double mInvProjArtInertiaImplicit;
+  ///
+  /// Do not use directly! Use getInvProjArtInertiaImplicit() to access this
+  /// quantity
+  mutable double mInvProjArtInertiaImplicit;
 
   /// Total force projected on joint space
   double mTotalForce;

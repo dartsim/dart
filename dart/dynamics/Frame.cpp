@@ -45,6 +45,7 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
+//==============================================================================
 Frame::Frame(Frame* _refFrame, const std::string &_name)
   : Entity(_refFrame, _name, false),
     mWorldTransform(Eigen::Isometry3d::Identity()),

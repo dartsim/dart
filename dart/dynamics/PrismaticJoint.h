@@ -65,13 +65,13 @@ public:
 
 protected:
   // Documentation inherited
-  virtual void updateLocalTransform();
+  virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian();
+  virtual void updateLocalJacobian(bool _mandatory=true) const;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
   /// Rotational axis.

@@ -184,7 +184,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalTransform()
+void PlanarJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
        * Eigen::Translation3d(mTransAxis1 * mPositions[0])
@@ -197,7 +197,7 @@ void PlanarJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobian()
+void PlanarJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mTransAxis1;
@@ -215,22 +215,23 @@ void PlanarJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobianTimeDeriv()
+void PlanarJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mTransAxis1;
   J.block<3, 1>(3, 1) = mTransAxis2;
   J.block<3, 1>(0, 2) = mRotAxis;
 
+  const Eigen::Matrix<double, 6, 3>& Jacobian = getFixedLocalJacobian();
   mJacobianDeriv.col(0)
-      = -math::ad(mJacobian.col(2) * mVelocities[2],
+      = -math::ad(Jacobian.col(2) * mVelocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
                                                * -mPositions[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
-      = -math::ad(mJacobian.col(2) * mVelocities[2],
+      = -math::ad(Jacobian.col(2) * mVelocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
                                                * -mPositions[2]),

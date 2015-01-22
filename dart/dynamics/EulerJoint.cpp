@@ -115,7 +115,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalTransform()
+void EulerJoint::updateLocalTransform() const
 {
   switch (mAxisOrder)
   {
@@ -144,7 +144,7 @@ void EulerJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobian()
+void EulerJoint::updateLocalJacobian(bool) const
 {
   // double q0 = mPositions[0];
   double q1 = mPositions[1];
@@ -247,7 +247,7 @@ void EulerJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobianTimeDeriv()
+void EulerJoint::updateLocalJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
   double q1 = mPositions[1];

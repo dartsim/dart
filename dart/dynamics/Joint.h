@@ -576,11 +576,19 @@ protected:
 
   /// Update generalized Jacobian from parent body node to child body
   /// node w.r.t. local generalized coordinate
-  virtual void updateLocalJacobian() = 0;
+  ///
+  /// The _mandatory argument can be set to false if the Jacobian update request
+  /// is due to a change in Joint positions, because not all Joint types have a
+  /// Local Jacobian that depends on their Joint positions, so a Local Jacobian
+  /// update would not actually be required.
+  virtual void updateLocalJacobian(bool _mandatory=true) const = 0;
 
   /// Update time derivative of generalized Jacobian from parent body
   /// node to child body node w.r.t. local generalized coordinate
-  virtual void updateLocalJacobianTimeDeriv() = 0;
+  ///
+  /// If the Local Jacobian Time Derivative of this Joint is zero, then this
+  /// function will be a no op.
+  virtual void updateLocalJacobianTimeDeriv() const = 0;
 
   /// Add joint velocity to _vel
   virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
@@ -737,6 +745,15 @@ protected:
 
   /// \}
 
+  /// Notify that a position update is needed
+  virtual void notifyPositionUpdate();
+
+  /// Notify that a velocity update is needed
+  virtual void notifyVelocityUpdate();
+
+  /// Notify that an acceleration update is needed
+  virtual void notifyAccelerationUpdate();
+
 protected:
   /// Joint name
   std::string mName;
@@ -757,6 +774,8 @@ protected:
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
   /// Local transformation
+  ///
+  /// Do not use directly! Use getLocalTransform() to access this quantity
   mutable Eigen::Isometry3d mT;
 
   /// Relative spatial velocity from parent BodyNode to child BodyNode where the
@@ -778,6 +797,14 @@ protected:
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getLocalSpatialAcceleration()
   bool mNeedAccelerationUpdate;
+
+  /// True iff this joint's local Jacobian has not been updated since the last
+  /// position change
+  bool mIsLocalJacobianDirty;
+
+  /// True iff this joint's local Jacobian time derivative has not been updated
+  /// since the last position or velocity change
+  bool mIsLocalJacobianTimeDerivDirty;
 
   /// Transmitting wrench from parent body to child body expressed in child body
   DEPRECATED(4.3)

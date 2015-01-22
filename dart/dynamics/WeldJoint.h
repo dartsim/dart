@@ -68,13 +68,13 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void updateLocalTransform();
+  virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian();
+  virtual void updateLocalJacobian(bool =true) const;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv() const;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -206,12 +206,18 @@ private:
 protected:
   /// World transform of this Frame. This object is mutable to enable
   /// auto-updating to happen in the const member getWorldTransform() function
+  ///
+  /// Do not use directly! Use getWorldTransform() to access this quantity
   mutable Eigen::Isometry3d mWorldTransform;
 
   /// Total velocity of this Frame, in the coordinates of this Frame
+  ///
+  /// Do not use directly! Use getSpatialVelocity() to access this quantity
   mutable Eigen::Vector6d mVelocity;
 
   /// Total acceleration of this Frame, in the coordinates of this Frame
+  ///
+  /// Do not use directly! Use getSpatialAcceleration() to access this quantity
   mutable Eigen::Vector6d mAcceleration;
 
   /// Container of this Frame's child Frames.
@@ -226,6 +232,10 @@ private:
 
 };
 
+/// The WorldFrame class is a class that is used internally to create the
+/// singleton World Frame. This class cannot be instantiated directly: you must
+/// use the Frame::World() function to access it. Only one World Frame exists
+/// in any application.
 class WorldFrame : public Frame
 {
 public:

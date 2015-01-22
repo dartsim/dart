@@ -60,8 +60,8 @@ FreeJoint::~FreeJoint()
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  mQ.linear()      = mQ.linear() * math::expMapRot(mJacobian.topRows<3>()
-                                                   * mVelocities * _dt);
+  mQ.linear()      = mQ.linear() * math::expMapRot(
+        getFixedLocalJacobian().topRows<3>() * mVelocities * _dt);
   mQ.translation() = mQ.translation() + mVelocities.tail<3>() * _dt;
 
   mPositions.head<3>() = math::logMap(mQ.linear());
@@ -86,7 +86,7 @@ void FreeJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void FreeJoint::updateLocalTransform()
+void FreeJoint::updateLocalTransform() const
 {
   mQ.linear()      = math::expMapRot(mPositions.head<3>());
   mQ.translation() = mPositions.tail<3>();
@@ -97,7 +97,7 @@ void FreeJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobian()
+void FreeJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
   J.topLeftCorner<3,3>() = math::expMapJac(mPositions.head<3>()).transpose();
@@ -113,7 +113,7 @@ void FreeJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobianTimeDeriv()
+void FreeJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J;
   J.topRows<3>()    = Eigen::Matrix3d::Zero();
@@ -128,14 +128,15 @@ void FreeJoint::updateLocalJacobianTimeDeriv()
                               * math::expAngular(-mPositions.head<3>());
 
   mJacobianDeriv.leftCols<3>() = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
+  const Eigen::Matrix<double, 6, 6>& Jacobian = getFixedLocalJacobian();
   mJacobianDeriv.col(3)
-      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+      = -math::ad(Jacobian.leftCols<3>() * mVelocities.head<3>(),
                   math::AdT(T, J.col(0)));
   mJacobianDeriv.col(4)
-      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+      = -math::ad(Jacobian.leftCols<3>() * mVelocities.head<3>(),
                   math::AdT(T, J.col(1)));
   mJacobianDeriv.col(5)
-      = -math::ad(mJacobian.leftCols<3>() * mVelocities.head<3>(),
+      = -math::ad(Jacobian.leftCols<3>() * mVelocities.head<3>(),
                   math::AdT(T, J.col(2)));
 }
 

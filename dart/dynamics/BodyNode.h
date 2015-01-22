@@ -121,6 +121,13 @@ public:
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
 
+  /// Return the articulated body inertia
+  const math::Inertia& getArticulatedInertia() const;
+
+  /// Return the articulated body inertia for implicit joint damping and spring
+  /// forces
+  const math::Inertia& getArticulatedInertiaImplicit() const;
+
   /// Set center of mass expressed in body frame
   void setLocalCOM(const Eigen::Vector3d& _com);
 
@@ -305,6 +312,9 @@ public:
 
   /// Return the angular acceleration expressed in world frame
   Eigen::Vector3d getWorldAngularAcceleration() const;
+
+  /// Return the partial acceleration of this body
+  const Eigen::Vector6d& getPartialAcceleration() const;
 
   /// Return generalized Jacobian at the origin of this body node where the
   /// Jacobian is expressed in this body node frame
@@ -494,6 +504,15 @@ public:
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  // Documentation inherited
+  virtual void notifyTransformUpdate();
+
+  // Documentation inherited
+  virtual void notifyVelocityUpdate();
+
+  // Documentation inherited
+  virtual void notifyAccelerationUpdate();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -774,11 +793,13 @@ protected:
   bool mIsBodyJacobianDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
-  Eigen::Vector6d mPartialAcceleration;
+  ///
+  /// Do not use directly! Use getPartialAcceleration() to access this quantity
+  mutable Eigen::Vector6d mPartialAcceleration;
   // TODO(JS): Rename with more informative name
 
-  /// Spatial body acceleration w.r.t. body frame
-  Eigen::Vector6d mA;
+  /// Is the partial acceleration vector dirty
+  mutable bool mIsPartialAccelerationDirty;
 
   /// Transmitted wrench from parent to the bodynode expressed in body-fixed
   /// frame
@@ -790,11 +811,15 @@ protected:
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;
 
-   /// Articulated body inertia
-  math::Inertia mArtInertia;
+  /// Articulated body inertia
+  ///
+  /// Do not use directly! Use getArticulatedInertia() to access this quantity
+  mutable math::Inertia mArtInertia;
 
-  /// Articulated body inertia for implicit joing damping and spring forces
-  math::Inertia mArtInertiaImplicit;
+  /// Articulated body inertia for implicit joint damping and spring forces
+  ///
+  /// DO not use directly! Use getArticulatedInertiaImplicit() to access this
+  mutable math::Inertia mArtInertiaImplicit;
 
   /// Bias force
   Eigen::Vector6d mBiasForce;
