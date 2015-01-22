@@ -36,8 +36,8 @@
 
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
-
 #include "dart/renderer/RenderInterface.h"
+#include "dart/common/Console.h"
 
 namespace dart {
 namespace dynamics {
@@ -67,8 +67,17 @@ Frame::~Frame()
   // Inform all child entities that this Frame is disappearing by setting their
   // reference frames to the World frame.
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->changeParentFrame(Frame::World());
+  for( ; it != end; )
+    (*(it++))->changeParentFrame(Frame::World());
+  // Note: When we instruct an Entity to change its parent Frame, it will erase
+  // itself from this Frame's mChildEntities list. This would invalidate the
+  // 'it' and clobber our attempt to iterate through the std::set if we applied
+  // changeParentFrame(~) directly to the 'it' iterator. So instead we use the
+  // post-increment operator to iterate 'it' forward and we apply
+  // changeParentFrame(~) to the temporary iterator created by the
+  // post-increment operator. Put simply: we increment 'it' forward once and
+  // then apply changeParentFrame(~) to the pointer that 'it' held just before
+  // it incremented.
 
   // Free the memory of the visualization shapes
   for(size_t i=0; i<mVizShapes.size(); ++i)
@@ -372,6 +381,15 @@ void Frame::notifyAccelerationUpdate()
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
+  if(_newParentFrame->dependsOn(this))
+  {
+    dtwarn << "[Frame::changeParentFrame(~)] Attempting to create a circular "
+           << "kinematic dependency by making Frame '" << getName()
+           << "' a child of Frame '" << _newParentFrame->getName() << "'. "
+           << "This will not be allowed.\n";
+    return;
+  }
+
   if(mParentFrame)
   {
     FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
