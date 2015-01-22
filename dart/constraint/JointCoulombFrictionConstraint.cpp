@@ -121,7 +121,17 @@ void JointCoulombFrictionConstraint::update()
 
     if (mNegativeVel[i] != 0.0)
     {
-      mUpperBound[i] =  mJoint->getCoulombFriction(i);;
+      double timeStep = mJoint->getSkeleton()->getTimeStep();
+      // TODO: There are multiple ways to get time step (or its inverse).
+      //   - ContactConstraint get it from the constructor parameter
+      //   - Skeleton has it itself.
+      //   - ConstraintBase::getInformation() passes ConstraintInfo structure
+      //     that contains reciprocal time step.
+      // We might need to pick one way and remove the others to get rid of
+      // redundancy.
+
+      // Note: Coulomb friction is force not impulse
+      mUpperBound[i] =  mJoint->getCoulombFriction(i) * timeStep;
       mLowerBound[i] = -mUpperBound[i];
 
       if (mActive[i])
