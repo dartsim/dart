@@ -2,14 +2,17 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_dynamics_hdrs ${hdrs} PARENT_SCOPE)
+set(dart_dynamics_srcs ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_dynamics ${srcs} ${hdrs})
-target_link_libraries(
-  dart_dynamics
-  dart_common
-  dart_math
-  ${DART_CORE_DEPENDENCIES}
-)
+#dart_add_library(dart_dynamics ${srcs} ${hdrs})
+#target_link_libraries(
+#  dart_dynamics
+#  dart_common
+#  dart_math
+#  ${DART_CORE_DEPENDENCIES}
+#)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "dynamics headers" ${hdrs})
@@ -30,6 +33,6 @@ install(
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
-install(TARGETS dart_dynamics EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_dynamics EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS dart_dynamics EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_dynamics EXPORT DARTTargets DESTINATION lib)
 

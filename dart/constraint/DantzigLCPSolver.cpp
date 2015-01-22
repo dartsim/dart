@@ -42,9 +42,8 @@
 #endif
 
 #include "dart/common/Console.h"
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 #include "dart/constraint/ConstrainedGroup.h"
-#include "dart/lcpsolver/LCPSolver.h"
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 
@@ -93,7 +92,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
   for (size_t i = 1; i < numConstraints; ++i)
   {
-    Constraint* constraint = _group->getConstraint(i - 1);
+    ConstraintBase* constraint = _group->getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
     offset[i] = offset[i - 1] + constraint->getDimension();
 //    std::cout << "offset[" << i << "]: " << offset[i] << std::endl;
@@ -102,7 +101,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   // For each constraint
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
-  Constraint* constraint;
+  ConstraintBase* constraint;
   for (size_t i = 0; i < numConstraints; ++i)
   {
     constraint = _group->getConstraint(i);

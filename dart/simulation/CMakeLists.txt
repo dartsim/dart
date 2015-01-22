@@ -2,14 +2,17 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_simulation_hdrs ${hdrs} PARENT_SCOPE)
+set(dart_simulation_srcs ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_simulation ${srcs} ${hdrs})
-target_link_libraries(
-  dart_simulation
-  dart_constraint
-  dart_integration
-  ${DART_CORE_DEPENDENCIES}
-)
+#dart_add_library(dart_simulation ${srcs} ${hdrs})
+#target_link_libraries(
+#  dart_simulation
+#  dart_constraint
+#  dart_integration
+#  ${DART_CORE_DEPENDENCIES}
+#)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "simulation headers" ${hdrs})
@@ -30,6 +33,6 @@ install(
   DESTINATION include/dart/simulation
   COMPONENT headers
 )
-install(TARGETS dart_simulation EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_simulation EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS dart_simulation EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_simulation EXPORT DARTTargets DESTINATION lib)
 

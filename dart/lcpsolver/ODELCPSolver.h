@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -34,56 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/Constraint.h"
+#ifndef DART_LCPSOLVER_ODELCPSOLVER_H_
+#define DART_LCPSOLVER_ODELCPSOLVER_H_
 
-#include <cmath>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
-
-#include "dart/dynamics/Skeleton.h"
+#include <Eigen/Dense>
+#include "dart/common/Deprecated.h"
 
 namespace dart {
-namespace constraint {
+namespace lcpsolver {
 
-//==============================================================================
-Constraint::Constraint()
-  : mDim(0)
-{
-}
+/// \brief
+class ODELCPSolver {
+public:
+  /// \brief
+  ODELCPSolver();
 
-//==============================================================================
-Constraint::~Constraint()
-{
-}
+  /// \brief
+  virtual ~ODELCPSolver();
 
-//==============================================================================
-size_t Constraint::getDimension() const
-{
-  return mDim;
-}
+  /// \brief
+  bool Solve(const Eigen::MatrixXd& _A,
+             const Eigen::VectorXd& _b,
+             Eigen::VectorXd* _x,
+             int numContacts,
+             double mu = 0,
+             int numDir = 0,
+             bool bUseODESolver = false);
 
-//==============================================================================
-dynamics::Skeleton* Constraint::compressPath(dynamics::Skeleton* _skeleton)
-{
-  while (_skeleton->mUnionRootSkeleton != _skeleton)
-  {
-    _skeleton->mUnionRootSkeleton
-        = _skeleton->mUnionRootSkeleton->mUnionRootSkeleton;
-    _skeleton = _skeleton->mUnionRootSkeleton;
-  }
+private:
+  /// \brief
+  void transferToODEFormulation(const Eigen::MatrixXd& _A,
+                                const Eigen::VectorXd& _b,
+                                Eigen::MatrixXd* _AOut,
+                                Eigen::VectorXd* _bOut,
+                                int _numDir,
+                                int _numContacts);
 
-  return _skeleton;
-}
+  /// \brief
+  void transferSolFromODEFormulation(const Eigen::VectorXd& _x,
+                                     Eigen::VectorXd* _xOut,
+                                     int _numDir,
+                                     int _numContacts);
 
-//==============================================================================
-dynamics::Skeleton*Constraint::getRootSkeleton(dynamics::Skeleton* _skeleton)
-{
-  while (_skeleton->mUnionRootSkeleton != _skeleton)
-    _skeleton = _skeleton->mUnionRootSkeleton;
+  /// \brief
+  bool checkIfSolution(const Eigen::MatrixXd& _A,
+                       const Eigen::VectorXd& _b,
+                       const Eigen::VectorXd& _x);
+};
 
-  return _skeleton;
-}
+DEPRECATED(4.3)
+typedef ODELCPSolver LCPSolver;
 
-}  // namespace constraint
+}  // namespace lcpsolver
 }  // namespace dart
+
+#endif  // DART_LCPSOLVER_ODELCPSOLVER_H_

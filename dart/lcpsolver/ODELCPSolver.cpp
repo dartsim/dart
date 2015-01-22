@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/LCPSolver.h"
+#include "dart/lcpsolver/ODELCPSolver.h"
 
 #include <cstdio>
 
@@ -45,13 +45,13 @@
 namespace dart {
 namespace lcpsolver {
 
-LCPSolver::LCPSolver() {
+ODELCPSolver::ODELCPSolver() {
 }
 
-LCPSolver::~LCPSolver() {
+ODELCPSolver::~ODELCPSolver() {
 }
 
-bool LCPSolver::Solve(const Eigen::MatrixXd& _A,
+bool ODELCPSolver::Solve(const Eigen::MatrixXd& _A,
                       const Eigen::VectorXd& _b,
                       Eigen::VectorXd* _x,
                       int _numContacts,
@@ -129,7 +129,7 @@ bool LCPSolver::Solve(const Eigen::MatrixXd& _A,
   }
 }
 
-void LCPSolver::transferToODEFormulation(const Eigen::MatrixXd& _A,
+void ODELCPSolver::transferToODEFormulation(const Eigen::MatrixXd& _A,
                                          const Eigen::VectorXd& _b,
                                          Eigen::MatrixXd* _AOut,
                                          Eigen::VectorXd* _bOut,
@@ -170,7 +170,7 @@ void LCPSolver::transferToODEFormulation(const Eigen::MatrixXd& _A,
         AIntermediate.col(_numContacts * (_numDir + 2) + i);
 }
 
-void LCPSolver::transferSolFromODEFormulation(const Eigen::VectorXd& _x,
+void ODELCPSolver::transferSolFromODEFormulation(const Eigen::VectorXd& _x,
                                               Eigen::VectorXd* _xOut,
                                               int _numDir,
                                               int _numContacts) {
@@ -190,7 +190,7 @@ void LCPSolver::transferSolFromODEFormulation(const Eigen::VectorXd& _x,
     (*_xOut)[_numContacts * (2 + _numDir) + i] = _x[_numContacts * 3 + i];
 }
 
-bool LCPSolver::checkIfSolution(const Eigen::MatrixXd& _A,
+bool ODELCPSolver::checkIfSolution(const Eigen::MatrixXd& _A,
                                 const Eigen::VectorXd& _b,
                                 const Eigen::VectorXd& _x) {
   const double threshold = 1e-4;

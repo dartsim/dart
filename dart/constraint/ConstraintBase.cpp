@@ -34,21 +34,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ClosedLoopConstraint.h"
+#include "dart/constraint/ConstraintBase.h"
+
+#include <cmath>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace constraint {
 
-//ClosedLoopConstraint::ClosedLoopConstraint()
-//  : WeldJointConstraint()
-//{
+//==============================================================================
+ConstraintBase::ConstraintBase()
+  : mDim(0)
+{
+}
 
-//}
+//==============================================================================
+ConstraintBase::~ConstraintBase()
+{
+}
 
-//ClosedLoopConstraint::~ClosedLoopConstraint()
-//{
+//==============================================================================
+size_t ConstraintBase::getDimension() const
+{
+  return mDim;
+}
 
-//}
+//==============================================================================
+dynamics::Skeleton* ConstraintBase::compressPath(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+  {
+    _skeleton->mUnionRootSkeleton
+        = _skeleton->mUnionRootSkeleton->mUnionRootSkeleton;
+    _skeleton = _skeleton->mUnionRootSkeleton;
+  }
 
-} // namespace constraint
-} // namespace dart
+  return _skeleton;
+}
+
+//==============================================================================
+dynamics::Skeleton*ConstraintBase::getRootSkeleton(dynamics::Skeleton* _skeleton)
+{
+  while (_skeleton->mUnionRootSkeleton != _skeleton)
+    _skeleton = _skeleton->mUnionRootSkeleton;
+
+  return _skeleton;
+}
+
+}  // namespace constraint
+}  // namespace dart

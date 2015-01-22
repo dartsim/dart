@@ -23,8 +23,8 @@ endif()
 project(dart)
 
 set(DART_MAJOR_VERSION "4")
-set(DART_MINOR_VERSION "2")
-set(DART_PATCH_VERSION "1")
+set(DART_MINOR_VERSION "3")
+set(DART_PATCH_VERSION "2")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -325,6 +325,17 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
 if(HAVE_BULLET_COLLISION)
   link_directories("${BULLET_LIBRARY_DIRS}")
+endif()
+
+#===============================================================================
+# Check for non-case-sensitive filesystems
+#===============================================================================
+execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
+                RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
+if (${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
+  set(FILESYSTEM_CASE_SENSITIVE TRUE)
+else()
+  set(FILESYSTEM_CASE_SENSITIVE FALSE)
 endif()
 
 #===============================================================================

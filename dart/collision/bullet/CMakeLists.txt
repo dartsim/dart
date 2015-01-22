@@ -2,9 +2,12 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+set(dart_collision_hdrs ${dart_collision_hdrs} ${hdrs} PARENT_SCOPE)
+set(dart_collision_srcs ${dart_collision_srcs} ${srcs} PARENT_SCOPE)
+
 # Library
-dart_add_library(dart_collision_bullet ${srcs} ${hdrs})
-target_link_libraries(dart_collision_bullet ${DART_CORE_DEPENDENCIES})
+#dart_add_library(dart_collision_bullet ${srcs} ${hdrs})
+#target_link_libraries(dart_collision_bullet ${DART_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})
@@ -25,6 +28,6 @@ install(
   DESTINATION include/dart/collision/bullet
   COMPONENT headers
 )
-install(TARGETS dart_collision_bullet EXPORT DARTCoreTargets DESTINATION lib)
-install(TARGETS dart_collision_bullet EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS dart_collision_bullet EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS dart_collision_bullet EXPORT DARTTargets DESTINATION lib)
 

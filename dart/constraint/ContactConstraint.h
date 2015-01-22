@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_CONTACTCONSTRAINT_H_
 #define DART_CONSTRAINT_CONTACTCONSTRAINT_H_
 
-#include "dart/constraint/Constraint.h"
+#include "dart/constraint/ConstraintBase.h"
 
 #include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
@@ -53,7 +53,7 @@ class Skeleton;
 namespace constraint {
 
 /// ContactConstraint represents a contact constraint between two bodies
-class ContactConstraint : public Constraint
+class ContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor
