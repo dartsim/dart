@@ -23,11 +23,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/common.h
-#  DESTINATION include/dart/common
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/common.h
+  DESTINATION include/dart/common
+  COMPONENT headers
+)
 #install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
 

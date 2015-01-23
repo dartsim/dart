@@ -28,11 +28,14 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.h
-#  DESTINATION include/dart/constraint
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.h
+  DESTINATION include/dart/constraint
+  COMPONENT headers
+)
 #install(TARGETS dart_constraint EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_constraint EXPORT DARTTargets DESTINATION lib)
+
+# Deprecated Constraint.h
+dt_issue_303("Constraint" "ConstraintBase")
 

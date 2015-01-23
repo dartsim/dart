@@ -1,3 +1,15 @@
+dart (4.3.2) unstable; urgency=low
+
+  * Fixed installation -- missing headers (utils/urdf, utils/sdf)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 22 Jan 2015 10:00:00 -0500
+
+dart (4.3.1) unstable; urgency=low
+
+  * Fixed API incompatibility introduced by dart-4.3.0
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 21 Jan 2015 22:00:00 -0500
+
 dart (4.3.0) unstable; urgency=low
 
   * Added name manager for efficient name look-up and unique naming
@@ -7,7 +19,7 @@ dart (4.3.0) unstable; urgency=low
   * Added joint actuator types
   * Added Coulomb joint friction
   * Migrated to C++11
-  * Improved readability of CMake outp messages
+  * Improved readability of CMake output messages
   * Fixed const-correctneess of member functions
 
  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 19 Jan 2015 14:00:00 -0500

@@ -44,7 +44,6 @@
 #include "dart/common/Console.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/constraint/ConstrainedGroup.h"
-#include "dart/lcpsolver/LCPSolver.h"
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 

@@ -1,31 +1,31 @@
 # Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
 # This file is provided under the "BSD-style" License
 
-# Find FLANN
+# Find Eigen
 #
 # This sets the following variables:
-# FLANN_FOUND
-# FLANN_INCLUDE_DIRS
-# FLANN_VERSION
+# EIGEN3_FOUND
+# EIGEN3_INCLUDE_DIRS
+# EIGEN3_VERSION
 
 find_package(PkgConfig QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_FLANN flann QUIET)
+pkg_check_modules(PC_EIGEN3 eigen3 QUIET)
 
 # Include directories
-find_path(FLANN_INCLUDE_DIRS
-    NAMES flann/flann.h
-    HINTS ${PC_FLANN_INCLUDEDIR}
-    PATHS "${CMAKE_INSTALL_PREFIX}/include")
+find_path(EIGEN3_INCLUDE_DIRS
+    NAMES Eigen/Core
+    PATHS "${CMAKE_INSTALL_PREFIX}/include"
+    PATH_SUFFIXES eigen3 eigen)
 
 # Version
-set(FLANN_VERSION ${PC_FLANN_VERSION})
+set(EIGEN3_VERSION ${PC_EIGEN3_VERSION})
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(FLANN
+find_package_handle_standard_args(EIGEN3
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS FLANN_INCLUDE_DIRS
-    VERSION_VAR   FLANN_VERSION)
+    REQUIRED_VARS EIGEN3_INCLUDE_DIRS
+    VERSION_VAR   EIGEN3_VERSION)
 

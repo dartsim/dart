@@ -23,10 +23,10 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.h
-#  DESTINATION include/dart/planning
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.h
+  DESTINATION include/dart/planning
+  COMPONENT headers
+)
 #install(TARGETS dart_planning EXPORT DARTTargets DESTINATION lib)
 
