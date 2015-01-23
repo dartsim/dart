@@ -52,6 +52,7 @@ PlanarJoint::PlanarJoint(const std::string& _name)
 {
   setXYPlane();
   updateDegreeOfFreedomNames();
+  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -69,6 +70,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -81,6 +83,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -93,6 +96,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -120,6 +124,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================

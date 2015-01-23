@@ -52,6 +52,7 @@ EulerJoint::EulerJoint(const std::string& _name)
     mAxisOrder(AO_XYZ)
 {
   updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -65,6 +66,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
   mAxisOrder = _order;
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================

@@ -51,6 +51,7 @@ PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
   : SingleDofJoint(_name),
     mAxis(axis.normalized())
 {
+  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -62,6 +63,8 @@ PrismaticJoint::~PrismaticJoint()
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mAxis = _axis.normalized();
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -86,7 +89,6 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
     mJacobian = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
 
     // Verification

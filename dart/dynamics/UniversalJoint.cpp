@@ -45,7 +45,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2,
+UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1,
+                               const Eigen::Vector3d& _axis2,
                                const std::string& _name)
   : MultiDofJoint(_name)
 {
@@ -53,6 +54,7 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1, const Eigen::Vecto
   mAxis[1] = _axis1.normalized();
 
   updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -64,12 +66,14 @@ UniversalJoint::~UniversalJoint()
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAxis[0] = _axis.normalized();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAxis[1] = _axis.normalized();
+  notifyPositionUpdate();
 }
 
 //==============================================================================

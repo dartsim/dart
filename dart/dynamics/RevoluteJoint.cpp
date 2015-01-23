@@ -52,6 +52,8 @@ RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
   : SingleDofJoint(_name),
     mAxis(axis.normalized())
 {
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -64,6 +66,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mAxis = _axis.normalized();
   updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================

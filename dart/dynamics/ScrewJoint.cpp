@@ -53,6 +53,8 @@ ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
     mAxis(axis.normalized()),
     mPitch(_pitch)
 {
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -64,6 +66,7 @@ ScrewJoint::~ScrewJoint()
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mAxis = _axis.normalized();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -76,6 +79,7 @@ const Eigen::Vector3d& ScrewJoint::getAxis() const
 void ScrewJoint::setPitch(double _pitch)
 {
   mPitch = _pitch;
+  updateLocalJacobian();
 }
 
 //==============================================================================

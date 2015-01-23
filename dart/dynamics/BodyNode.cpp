@@ -1381,13 +1381,19 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
   // 3. tau = tau + imp / dt
   mParentJoint->updateConstrainedTerms(_timeStep);
 
-  // Make absolutely sure that acceleration is up-to-date
-  getSpatialAcceleration();
+//  // --------------------------------------------------------------------------
+//  // This block violates the auto-updating assumptions, so it will be left
+//  // commented out for the moment
 
-  //
-  mAcceleration += mDelV / _timeStep;
-  // Note: No need to notify acceleration update here as long as this function
-  // is called on all BodyNodes
+//  // Make absolutely sure that acceleration is up-to-date
+//  getSpatialAcceleration();
+
+//  //
+//  mAcceleration += mDelV / _timeStep;
+//  // Note: No need to notify acceleration update here as long as this function
+//  // is called on all BodyNodes
+
+//  //---------------------------------------------------------------------------
 
   //
   mF += mImpF / _timeStep;

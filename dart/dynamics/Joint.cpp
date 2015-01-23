@@ -255,6 +255,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -263,6 +264,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
   updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
