@@ -39,6 +39,7 @@
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/BodyNode.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/math/Helpers.h"
@@ -53,6 +54,10 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
   if(NULL==skel)
     return 0;
 
+  dart::dynamics::BodyNode* bn = skel->getBodyNode(0);
+  while(bn->getChildBodyNode(0))
+    bn = bn->getChildBodyNode(0);
+
   std::chrono::time_point<std::chrono::system_clock> start, end;
   start = std::chrono::system_clock::now();
 
@@ -65,8 +70,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
                           std::max(dof->getPositionLowerLimit(),-1.0),
                           std::min(dof->getPositionUpperLimit(), 1.0)) );
     }
-
-    skel->computeForwardKinematics(position, velocity, acceleration);
+    bn->getWorldTransform();
   }
 
   end = std::chrono::system_clock::now();
