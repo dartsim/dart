@@ -98,6 +98,12 @@ bool equals(const Eigen::DenseBase<MATRIX>& A,
         {
             if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
                 return false;
+            else if (fabs(A(i,j)) > 1)
+            {
+              // Test relative error for values that are larger than 1
+              if (fabs( (A(i,j) - B(i,j))/A(i,j) ) > tol)
+                return false;
+            }
             else if (fabs(A(i,j) - B(i,j)) > tol)
                 return false;
         }

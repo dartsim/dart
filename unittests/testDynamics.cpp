@@ -1113,7 +1113,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       {
         cout << "deltaVel1: " << deltaVel1.transpose()  << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
-        cout << "error: " << (deltaVel1-deltaVel2).norm() << endl;
       }
     }
   }
