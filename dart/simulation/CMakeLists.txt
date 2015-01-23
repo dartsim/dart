@@ -28,11 +28,11 @@ configure_file(
 )
 
 # Install
-#install(
-#  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.h
-#  DESTINATION include/dart/simulation
-#  COMPONENT headers
-#)
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.h
+  DESTINATION include/dart/simulation
+  COMPONENT headers
+)
 #install(TARGETS dart_simulation EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_simulation EXPORT DARTTargets DESTINATION lib)
 

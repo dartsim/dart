@@ -24,7 +24,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "4")
 set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "0")
+set(DART_PATCH_VERSION "2")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -70,27 +70,51 @@ message(STATUS "")
 message(STATUS "[ Mandatory dependencies ]")
 
 # Eigen
-find_package(Eigen QUIET)
-if(EIGEN_FOUND)
-  message(STATUS "Looking for Eigen - found")
+find_package(EIGEN3 3.0.5 QUIET)
+if(EIGEN3_FOUND)
+  message(STATUS "Looking for EIGEN3 - ${EIGEN3_VERSION} found")
 else()
-  message(SEND_ERROR "Looking for Eigen - NOT found, please install libeigen3-dev")
+  if(PC_EIGEN3_VERSION)
+    message(SEND_ERROR "Looking for EIGEN3 - ${EIGEN3_VERSION} found, ${PROJECT_NAME} requires 3.0.5 or greater.")
+  else()
+    message(SEND_ERROR "Looking for EIGEN3 - NOT found, please install libeigen3-dev")
+  endif()
+endif()
+
+# CCD
+find_package(CCD 1.4.0 QUIET)
+if(CCD_FOUND)
+  message(STATUS "Looking for CCD - ${CCD_VERSION} found")
+else()
+  if(CCD_VERSION)
+    message(SEND_ERROR "Looking for CCD - ${CCD_VERSION} found, ${PROJECT_NAME} requires 1.4.0 or greater.")
+  else()
+    message(SEND_ERROR "Looking for CCD - NOT found, please install libccd-dev")
+  endif()
 endif()
 
 # FCL
-find_package(FCL QUIET)
+find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
-  message(STATUS "Looking for FCL - found")
+  message(STATUS "Looking for FCL - ${FCL_VERSION} found")
 else()
-  message(SEND_ERROR "Looking for FCL - NOT found, please install libfcl-dev")
+  if(FCL_VERSION)
+    message(SEND_ERROR "Looking for FCL - ${FCL_VERSION} found, ${PROJECT_NAME} requires 0.2.9 or greater.")
+  else()
+    message(SEND_ERROR "Looking for FCL - NOT found, please install libfcl-dev")
+  endif()
 endif()
 
-# Assimp
-find_package(Assimp QUIET)
+# ASSIMP
+find_package(ASSIMP 3.0.0 QUIET)
 if(ASSIMP_FOUND)
-  message(STATUS "Looking for Assimp - found")
+  message(STATUS "Looking for ASSIMP - ${ASSIMP_VERSION} found")
 else()
-  message(SEND_ERROR "Looking for Assimp - NOT found, please install libassimp-dev")
+  if(ASSIMP_VERSION)
+    message(SEND_ERROR "Looking for ASSIMP - ${ASSIMP_VERSION} found, ${PROJECT_NAME} requires 3.0.0 or greater.")
+  else()
+    message(SEND_ERROR "Looking for ASSIMP - NOT found, please install libassimp-dev")
+  endif()
 endif()
 
 # OpenGL
@@ -132,29 +156,40 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
 
-
   # FLANN
-  find_package(FLANN QUIET)
+  find_package(FLANN 1.8.4 QUIET)
   if(FLANN_FOUND)
-    message(STATUS "Looking for FLANN - found")
+    message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
   else()
-    message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
+    if(FLANN_VERSION)
+      message(SEND_ERROR "Looking for FLANN - ${FLANN_VERSION} found, ${PROJECT_NAME} requires 1.8.4 or greater.")
+    else()
+      message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
+    endif()
   endif()
 
-  # TinyXML
-  find_package(TinyXML QUIET)
+  # TINYXML
+  find_package(TINYXML 2.6.2 QUIET)
   if(TINYXML_FOUND)
-    message(STATUS "Looking for TinyXML - found")
+    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
   else()
-    message(SEND_ERROR "Looking for TinyXML - NOT found, please install libtinyxml-dev")
+    if(TINYXML_VERSION)
+      message(SEND_ERROR "Looking for TINYXML - ${TINYXML_VERSION} found, ${PROJECT_NAME} requires 2.6.2 or greater.")
+    else()
+      message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev")
+    endif()
   endif()
 
-  # TinyXML2
-  find_package(TinyXML2 QUIET)
+  # TINYXML2
+  find_package(TINYXML2 QUIET)
   if(TINYXML2_FOUND)
-    message(STATUS "Looking for TinyXML2 - found")
+    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
   else()
-    message(SEND_ERROR "Looking for TinyXML2 - NOT found, please install libtinyxml2-dev")
+    if(TINYXML2_VERSION)
+      message(SEND_ERROR "Looking for TINYXML2 - ${TINYXML2_VERSION} found, ${PROJECT_NAME} requires 1.0.1 or greater.")
+    else()
+      message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev")
+    endif()
   endif()
 
   # urdfdom
@@ -192,29 +227,37 @@ if(ENABLE_OPENMP)
 endif()
 
 # NLOPT
-find_package(NLOPT QUIET)
+find_package(NLOPT 2.4.1 QUIET)
 if(NLOPT_FOUND)
-  message(STATUS "Looking for NLOPT - found")
+  message(STATUS "Looking for NLOPT - ${NLOPT_VERSION} found")
   set(HAVE_NLOPT TRUE)
 else()
-  message(STATUS "Looking for NLOPT - NOT found, please install libnlopt-dev")
+  if(NLOPT_VERSION)
+    message(STATUS "Looking for NLOPT - ${NLOPT_VERSION} found, ${PROJECT_NAME} requires 2.4.1 or greater.")
+  else()
+    message(STATUS "Looking for NLOPT - NOT found, please install libnlopt-dev")
+  endif()
   set(HAVE_NLOPT FALSE)
 endif()
 
 # IPOPT
-find_package(IPOPT QUIET)
+find_package(IPOPT 3.11.4 QUIET)
 if(IPOPT_FOUND)
-  message(STATUS "Looking for IPOPT - found")
+  message(STATUS "Looking for IPOPT - ${IPOPT_VERSION} found")
   set(HAVE_IPOPT TRUE)
 else()
-  message(STATUS "Looking for IPOPT - NOT found, please install coinor-libipopt-dev")
+  if(IPOPT_VERSION)
+    message(STATUS "Looking for IPOPT - ${IPOPT_VERSION} found, ${PROJECT_NAME} requires 3.11.4 or greater.")
+  else()
+    message(STATUS "Looking for IPOPT - NOT found, please install coinor-libipopt-dev")
+  endif()
   set(HAVE_IPOPT FALSE)
 endif()
 
 # Shark
 find_package(SHARK QUIET)
 if(SHARK_FOUND)
-  message(STATUS "Looking for SHARK - found")
+  message(STATUS "Looking for SHARK - ${SHARK_VERSION} found")
   set(HAVE_SHARK TRUE)
 else()
   message(STATUS "Looking for SHARK - NOT found, please install SHARK (http://image.diku.dk/shark)")
@@ -231,7 +274,7 @@ else()
   find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
 endif()
 if(BULLET_FOUND)
-  message(STATUS "Looking for BulletCollision - found")
+  message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
   set(HAVE_BULLET_COLLISION TRUE)
 else()
   message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
@@ -258,7 +301,7 @@ endif()
 # DART dependency variable settings
 #===============================================================================
 set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
-                           ${Assimp_LIBRARIES}
+                           ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
                            ${GLUT_LIBRARY}
@@ -270,8 +313,8 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
-                        ${TinyXML_LIBRARIES}
-                        ${TinyXML2_LIBRARIES}
+                        ${TINYXML_LIBRARIES}
+                        ${TINYXML2_LIBRARIES}
   )
   if(HAVE_NLOPT)
     set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${NLOPT_LIBRARIES})
@@ -288,9 +331,9 @@ endif()
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(${Eigen_INCLUDE_DIRS})
+include_directories(${EIGEN3_INCLUDE_DIRS})
 include_directories(${FCL_INCLUDE_DIRS})
-include_directories(${Assimp_INCLUDE_DIRS})
+include_directories(${ASSIMP_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
@@ -302,8 +345,8 @@ endif()
 if(NOT BUILD_CORE_ONLY)
   include_directories(${FLANN_INCLUDE_DIRS})
   include_directories(${urdfdom_INCLUDE_DIRS})
-  include_directories(${TinyXML_INCLUDE_DIRS})
-  include_directories(${TinyXML2_INCLUDE_DIRS})
+  include_directories(${TINYXML_INCLUDE_DIRS})
+  include_directories(${TINYXML2_INCLUDE_DIRS})
   if(HAVE_NLOPT)
     include_directories(${NLOPT_INCLUDE_DIRS})
   endif()
@@ -325,6 +368,17 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
 if(HAVE_BULLET_COLLISION)
   link_directories("${BULLET_LIBRARY_DIRS}")
+endif()
+
+#===============================================================================
+# Check for non-case-sensitive filesystems
+#===============================================================================
+execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
+                RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
+if (${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
+  set(FILESYSTEM_CASE_SENSITIVE TRUE)
+else()
+  set(FILESYSTEM_CASE_SENSITIVE FALSE)
 endif()
 
 #===============================================================================

@@ -1,3 +1,6 @@
+# Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
+# This file is provided under the "BSD-style" License
+
 # Find SHARK
 #
 # This sets the following variables:
@@ -5,24 +8,34 @@
 # SHARK_INCLUDE_DIRS
 # SHARK_LIBRARIES
 # SHARK_DEFINITIONS
+# SHARK_VERSION
 
 find_package(PkgConfig QUIET)
+
+# Check to see if pkgconfig is installed.
 pkg_check_modules(PC_SHARK Shark QUIET)
+
+# Definitions
 set(SHARK_DEFINITIONS ${PC_SHARK_CFLAGS_OTHER})
 
-find_path(SHARK_INCLUDE_DIR 
-  shark/Core/Shark.h
-  HINTS ${PC_SHARK_INCLUDEDIR} ${PC_SHARK_INCLUDE_DIRS}
-  PATHS "${CMAKE_INSTALL_PREFIX}/include")
+# Include directories
+find_path(SHARK_INCLUDE_DIRS
+    NAMES shark/Core/Shark.h
+    HINTS ${PC_SHARK_INCLUDEDIR}
+    PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
-find_library(SHARK_LIBRARY NAMES shark
-  HINTS ${PC_SHARK_LIBDIR} ${PC_SHARK_LIBRARY_DIRS} )
+# Libraries
+find_library(SHARK_LIBRARIES
+    NAMES shark
+    HINTS ${PC_SHARK_LIBDIR})
 
-set(SHARK_LIBRARIES ${SHARK_LIBRARY})
-set(SHARK_INCLUDE_DIRS ${SHARK_INCLUDE_DIR})
+# Version
+set(SHARK_VERSION ${PC_SHARK_VERSION})
 
+# Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(SHARK DEFAULT_MSG
-  SHARK_LIBRARY SHARK_INCLUDE_DIR)
+find_package_handle_standard_args(SHARK
+    FAIL_MESSAGE  DEFAULT_MSG
+    REQUIRED_VARS SHARK_INCLUDE_DIRS SHARK_LIBRARIES
+    VERSION_VAR   SHARK_VERSION)
 
-mark_as_advanced(SHARK_INCLUDE_DIR SHARK_LIBRARY)

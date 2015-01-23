@@ -1,23 +1,17 @@
 # A list of applications
 set_property(DIRECTORY PROPERTY FOLDER Apps)
 
+# Automatically identify all directories in the apps folder
+file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
+set(directories "")
+foreach(child ${children})
+    if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
+        list(APPEND directories ${child})
+    endif(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
+endforeach(child)
+
 # List of all the subdirectories to include
-foreach(APPDIR
-    addDeleteSkels
-    atlasSimbicon
-    bipedStand
-    hardcodedDesign
-    hybridDynamics
-    jointConstraints
-    mixedChain
-    operationalSpaceControl
-    rigidChain
-    rigidCubes
-    rigidLoop
-    simpleFrames
-    softBodies
-    vehicle
-    )
+foreach(APPDIR ${directories})
     add_subdirectory(${APPDIR})
     if(WIN32)
         if(TARGET ${APPTARGET})

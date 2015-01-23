@@ -3,14 +3,15 @@
 #
 # This sets the following variables:
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
-# DART_LIBRARIES - Libraries needed to use DART.
+# DART_LIBRARIES    - Libraries needed to use DART.
 # DART_LIBRARY_DIRS - Directories that contain the DART libraries.
+# DART_VERSION      - DART version.
 
 get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
 set(DART_INCLUDE_DIRS
   "@CMAKE_INSTALL_PREFIX@/include"
-  "@Eigen_INCLUDE_DIRS@"
+  "@EIGEN3_INCLUDE_DIRS@"
 )
 
 set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
@@ -18,3 +19,5 @@ set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 include("${CURRENT_DIR}/DARTTargets.cmake")
 
 set(DART_LIBRARIES dart)
+
+set(DART_VERSION @DART_VERSION@)
