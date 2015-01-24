@@ -46,6 +46,7 @@
 #include "dart/config.h"
 
 double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
+                                 bool whole_skeleton=true,
                                  bool position=true,
                                  bool velocity=true,
                                  bool acceleration=true,
@@ -70,7 +71,33 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
                           std::max(dof->getPositionLowerLimit(),-1.0),
                           std::min(dof->getPositionUpperLimit(), 1.0)) );
     }
-    bn->getWorldTransform();
+
+//    skel->computeForwardKinematics();
+
+    if(whole_skeleton)
+    {
+      for(size_t i=0; i<skel->getNumBodyNodes(); ++i)
+      {
+        if(position)
+          skel->getBodyNode(i)->getWorldTransform();
+        if(velocity)
+        {
+//          skel->getBodyNode(i)->getSpatialVelocity();
+          skel->getBodyNode(i)->getPartialAcceleration();
+        }
+        if(acceleration)
+          skel->getBodyNode(i)->getSpatialAcceleration();
+      }
+    }
+    else
+    {
+      if(position)
+        bn->getWorldTransform();
+      if(velocity)
+        bn->getSpatialVelocity();
+      if(acceleration)
+        bn->getSpatialAcceleration();
+    }
   }
 
   end = std::chrono::system_clock::now();
@@ -121,11 +148,21 @@ int main()
 {
   std::vector<dart::simulation::World*> worlds = getWorlds();
   double totalTime = 0;
+
+  // Test for updating the whole skeleton
   for(size_t i=0; i<worlds.size(); ++i)
   {
     dart::simulation::World* world = worlds[i];
     totalTime += testForwardKinematicSpeed(world->getSkeleton(0));
   }
+  std::cout << "Whole skeleton: " << totalTime << "s" << std::endl;
 
-  std::cout << "Total time: " << totalTime << "s" << std::endl;
+  // Test for updating a specific BodyNode
+  totalTime = 0;
+  for(size_t i=0; i<worlds.size(); ++i)
+  {
+    dart::simulation::World* world = worlds[i];
+    totalTime += testForwardKinematicSpeed(world->getSkeleton(0), false);
+  }
+  std::cout << "Specific BodyNode: " << totalTime << "s" << std::endl;
 }

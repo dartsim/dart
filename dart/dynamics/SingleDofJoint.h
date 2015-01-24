@@ -343,13 +343,13 @@ protected:
   virtual const math::Jacobian getLocalJacobian() const override;
 
   /// Fixed-size version of getLocalJacobian()
-  virtual const Eigen::Vector6d& getLocalJacobianStatic() const;
+  const Eigen::Vector6d& getLocalJacobianStatic() const;
 
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   /// Fixed-size version of getLocalJacobianTimeDeriv()
-  virtual const Eigen::Vector6d& getLocalJacobianTimeDerivStatic() const;
+  const Eigen::Vector6d& getLocalJacobianTimeDerivStatic() const;
 
   /// Get the inverse of projected articulated inertia
   const double& getInvProjArtInertia() const;
