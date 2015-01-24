@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <array>
 #include <iostream>
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
