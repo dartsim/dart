@@ -891,8 +891,14 @@ void SingleDofJoint::updateLocalSpatialVelocity() const
 //==============================================================================
 void SingleDofJoint::updateLocalSpatialAcceleration() const
 {
-  mSpatialAcceleration = getLocalJacobianStatic() * getAccelerationStatic()
+  mSpatialAcceleration = getLocalPrimaryAcceleration()
                        + getLocalJacobianTimeDerivStatic() * getVelocityStatic();
+}
+
+//==============================================================================
+void SingleDofJoint::updateLocalPrimaryAcceleration() const
+{
+  mPrimaryAcceleration = getLocalJacobianStatic() * getAccelerationStatic();
 }
 
 //==============================================================================

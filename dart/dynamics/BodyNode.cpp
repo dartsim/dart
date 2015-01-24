@@ -593,6 +593,21 @@ const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& BodyNode::getPrimaryRelativeAcceleration() const
+{
+  return mParentJoint->getLocalPrimaryAcceleration();
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
+{
+  if(mIsPartialAccelerationDirty)
+    updatePartialAcceleration();
+
+  return mPartialAcceleration;
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
   return getSpatialAcceleration();
@@ -662,15 +677,6 @@ Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
   // needs to be adjusted by w x v
 
   return math::AdT(T, dV).head<3>();
-}
-
-//==============================================================================
-const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
-{
-  if(mIsPartialAccelerationDirty)
-    updatePartialAcceleration();
-
-  return mPartialAcceleration;
 }
 
 //==============================================================================
@@ -1045,19 +1051,6 @@ void BodyNode::notifyVelocityUpdate()
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyVelocityUpdate();
-}
-
-//==============================================================================
-void BodyNode::notifyAccelerationUpdate()
-{
-  if(mNeedAccelerationUpdate)
-    return;
-
-  mNeedAccelerationUpdate = true;
-
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyAccelerationUpdate();
 }
 
 //==============================================================================

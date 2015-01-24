@@ -177,10 +177,10 @@ public:
   const Skeleton* getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
-  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
+  void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
   /// Set transformation from child body node to this joint
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+  void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
   /// Get transformation from parent body node to this joint
   const Eigen::Isometry3d& getTransformFromParentBodyNode() const;
@@ -479,6 +479,9 @@ public:
   /// Get the acceleration from the parent BodyNode to the child BodyNode
   const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
+  /// Get the J * q_dd of this joint
+  const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
+
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
   virtual const math::Jacobian getLocalJacobian() const = 0;
@@ -573,6 +576,9 @@ protected:
 
   /// Update acceleration from the parent BodyNode to the child BodyNode
   virtual void updateLocalSpatialAcceleration() const = 0;
+
+  /// Update the J * q_dd of this joint
+  virtual void updateLocalPrimaryAcceleration() const = 0;
 
   /// Update generalized Jacobian from parent body node to child body
   /// node w.r.t. local generalized coordinate
@@ -749,13 +755,13 @@ protected:
   /// \}
 
   /// Notify that a position update is needed
-  virtual void notifyPositionUpdate();
+  void notifyPositionUpdate();
 
   /// Notify that a velocity update is needed
-  virtual void notifyVelocityUpdate();
+  void notifyVelocityUpdate();
 
   /// Notify that an acceleration update is needed
-  virtual void notifyAccelerationUpdate();
+  void notifyAccelerationUpdate();
 
 protected:
   /// Joint name
@@ -789,6 +795,9 @@ protected:
   /// the acceleration is expressed in the child body Frame
   mutable Eigen::Vector6d mSpatialAcceleration;
 
+  /// J * q_dd
+  mutable Eigen::Vector6d mPrimaryAcceleration;
+
   /// True iff this joint's position has changed since the last call to
   /// getLocalTransform()
   mutable bool mNeedPositionUpdate;
@@ -800,6 +809,10 @@ protected:
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getLocalSpatialAcceleration()
   mutable bool mNeedAccelerationUpdate;
+
+  /// True iff this joint's position, velocity, or acceleration has changed
+  /// since the last call to getLocalPrimaryAcceleration()
+  mutable bool mNeedPrimaryAccelerationUpdate;
 
   /// True iff this joint's local Jacobian has not been updated since the last
   /// position change

@@ -121,6 +121,18 @@ public:
   /// in the coordinates of this Frame.
   virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const = 0;
 
+  /// The Featherstone ABI algorithm exploits a component of the spatial
+  /// acceleration which we refer to as the partial acceleration, accessible
+  /// by getPartialAcceleration(). We save operations during our forward
+  /// kinematics by computing and storing the partial acceleration separately
+  /// from the rest of the Frame's acceleration. getPrimaryRelativeAcceleration()
+  /// will return the portion of the relative spatial acceleration that is not
+  /// contained in the partial acceleration.
+  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const = 0;
+
+  ///
+  virtual const Eigen::Vector6d& getPartialAcceleration() const = 0;
+
   /// Get the total spatial acceleration of this Frame in the coordinates of
   /// this Frame.
   const Eigen::Vector6d& getSpatialAcceleration() const;
@@ -250,6 +262,12 @@ public:
   /// Always returns a zero vector
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
+  /// Always return a zero vector
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+
+  /// Always return a zero vector
+  const Eigen::Vector6d& getPartialAcceleration() const;
+
 private:
   /// This may only be constructed by the Frame class
   explicit WorldFrame();
@@ -259,11 +277,7 @@ private:
   const Eigen::Isometry3d mRelativeTf;
 
   /// This is set to a Zero vector and never changes
-  const Eigen::Vector6d mRelativeVelocity;
-
-  /// This is set to a Zero vector and never changes
-  const Eigen::Vector6d mRelativeAcceleration;
-
+  const Eigen::Vector6d mZero;
 };
 
 } // namespace dynamics

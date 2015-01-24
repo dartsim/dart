@@ -185,8 +185,10 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
   {
     mAcceleration = math::AdInvT(getRelativeTransform(),
                                  getParentFrame()->getSpatialAcceleration())
-                + getRelativeSpatialAcceleration()
-                + math::ad(getSpatialVelocity(), getRelativeSpatialVelocity());
+        + getPrimaryRelativeAcceleration()
+        + getPartialAcceleration();
+//        + getRelativeSpatialAcceleration()
+//        + math::ad(getSpatialVelocity(), getRelativeSpatialVelocity());
 
     mNeedAccelerationUpdate = false;
   }
@@ -435,13 +437,25 @@ const Eigen::Isometry3d& WorldFrame::getRelativeTransform() const
 //==============================================================================
 const Eigen::Vector6d& WorldFrame::getRelativeSpatialVelocity() const
 {
-  return mRelativeVelocity;
+  return mZero;
 }
 
 //==============================================================================
 const Eigen::Vector6d& WorldFrame::getRelativeSpatialAcceleration() const
 {
-  return mRelativeAcceleration;
+  return mZero;
+}
+
+//==============================================================================
+const Eigen::Vector6d& WorldFrame::getPrimaryRelativeAcceleration() const
+{
+  return mZero;
+}
+
+//==============================================================================
+const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
+{
+  return mZero;
 }
 
 //==============================================================================
@@ -449,8 +463,7 @@ WorldFrame::WorldFrame()
   : Entity(NULL, "World", true),
     Frame(),
     mRelativeTf(Eigen::Isometry3d::Identity()),
-    mRelativeVelocity(Eigen::Vector6d::Zero()),
-    mRelativeAcceleration(Eigen::Vector6d::Zero())
+    mZero(Eigen::Vector6d::Zero())
 {
   changeParentFrame(this);
 }

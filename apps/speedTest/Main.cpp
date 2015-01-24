@@ -56,7 +56,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
     return 0;
 
   dart::dynamics::BodyNode* bn = skel->getBodyNode(0);
-  while(bn->getChildBodyNode(0))
+  while(bn->getNumChildBodyNodes() > 0)
     bn = bn->getChildBodyNode(0);
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -82,7 +82,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
           skel->getBodyNode(i)->getWorldTransform();
         if(velocity)
         {
-//          skel->getBodyNode(i)->getSpatialVelocity();
+          skel->getBodyNode(i)->getSpatialVelocity();
           skel->getBodyNode(i)->getPartialAcceleration();
         }
         if(acceleration)
