@@ -550,7 +550,7 @@ set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
 set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
     "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
-     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev, libgtest-dev,
+     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev,
      libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
      urdfdom")
 if(HAVE_BULLET_COLLISION)

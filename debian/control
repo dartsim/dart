@@ -12,7 +12,6 @@ Build-Depends: debhelper (>= 9),
                libflann-dev (>= 1.8),
                libtinyxml-dev,
                libtinyxml2-dev,
-               libgtest-dev,
                liburdfdom-dev
 Standards-Version: 3.9.5
 Section: libs
