@@ -73,7 +73,7 @@ endmacro()
 macro(dt_issue_303 _name _output_name)
   if (FILESYSTEM_CASE_SENSITIVE)
     if (${DART_VERSION} VERSION_GREATER 4.3)
-      message(WARNING "Installing deprecated ${_name}.hh. This should be removed after DART 4.3")
+      message(WARNING "Installing deprecated ${_name}.h. This should be removed in DART 5.0.")
     endif()
     set(generated_file "${CMAKE_CURRENT_BINARY_DIR}/${_name}.h")
     execute_process(
