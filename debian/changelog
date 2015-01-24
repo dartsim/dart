@@ -1,3 +1,9 @@
+dart (4.3.4) unstable; urgency=low
+
+  * Fixed build issue with gtest on Mac
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Sat, 24 Jan 2015 13:00:00 -0500
+
 dart (4.3.3) unstable; urgency=low
 
   * Fixed joint Coulomb friction

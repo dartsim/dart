@@ -1,3 +1,8 @@
+### Version 4.3.3 (2015-01-24)
+
+1. Fixed build issue with gtest on Mac
+    * [Pull request #315](https://github.com/dartsim/dart/pull/315)
+
 ### Version 4.3.3 (2015-01-23)
 
 1. Fixed joint Coulomb friction
