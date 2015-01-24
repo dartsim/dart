@@ -54,6 +54,7 @@ target_link_libraries(gtest_main gtest)
 if(NOT WIN32)
   target_link_libraries(gtest pthread)
 endif()
+set_target_properties(gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Compile each test file
 message(STATUS "")
