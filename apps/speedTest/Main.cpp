@@ -40,6 +40,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/math/Helpers.h"
@@ -83,7 +84,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
         if(velocity)
         {
           skel->getBodyNode(i)->getSpatialVelocity();
-          skel->getBodyNode(i)->getPartialAcceleration();
+//          skel->getBodyNode(i)->getPartialAcceleration();
         }
         if(acceleration)
           skel->getBodyNode(i)->getSpatialAcceleration();
@@ -165,4 +166,25 @@ int main()
     totalTime += testForwardKinematicSpeed(world->getSkeleton(0), false);
   }
   std::cout << "Specific BodyNode: " << totalTime << "s" << std::endl;
+
+  size_t spatialAcceleration = 0;
+  size_t primaryAcceleration = 0;
+  size_t partialAcceleration = 0;
+  for(size_t i=0; i<worlds.size(); ++i)
+  {
+    dart::simulation::World* world = worlds[i];
+    dart::dynamics::Skeleton* skel = world->getSkeleton(0);
+    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
+    {
+      dart::dynamics::Joint* J = skel->getJoint(j);
+      spatialAcceleration += J->spatialAccelerationUpdates;
+      primaryAcceleration += J->primaryAccelerationUpdates;
+      partialAcceleration += J->partialAccelerationUpdates;
+    }
+  }
+
+  std::cout << "spatial: " << spatialAcceleration
+            << "\nprimary: " << primaryAcceleration
+            << "\npartial: " << partialAcceleration
+            << std::endl;
 }

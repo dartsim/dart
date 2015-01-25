@@ -120,6 +120,11 @@ public:
     LOCKED
   };
 
+  // TODO(MXG) Remove these
+  mutable unsigned long int primaryAccelerationUpdates;
+  mutable unsigned long int partialAccelerationUpdates;
+  mutable unsigned long int spatialAccelerationUpdates;
+
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
 

@@ -55,6 +55,9 @@ const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
 //==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
+    primaryAccelerationUpdates(0),
+    partialAccelerationUpdates(0),
+    spatialAccelerationUpdates(0),
     mActuatorType(FORCE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
@@ -361,6 +364,8 @@ void Joint::notifyPositionUpdate()
   mNeedPositionUpdate = true;
   mIsLocalJacobianDirty = true;
   mIsLocalJacobianTimeDerivDirty = true;
+  mNeedPrimaryAccelerationUpdate = true;
+  mNeedAccelerationUpdate = true;
 }
 
 //==============================================================================
@@ -374,6 +379,7 @@ void Joint::notifyVelocityUpdate()
 
   mNeedVelocityUpdate = true;
   mIsLocalJacobianTimeDerivDirty = true;
+  mNeedAccelerationUpdate = true;
 }
 
 //==============================================================================
