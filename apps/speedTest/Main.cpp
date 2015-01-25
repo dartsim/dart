@@ -82,10 +82,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
         if(position)
           skel->getBodyNode(i)->getWorldTransform();
         if(velocity)
-        {
           skel->getBodyNode(i)->getSpatialVelocity();
-          skel->getBodyNode(i)->getPartialAcceleration();
-        }
         if(acceleration)
           skel->getBodyNode(i)->getSpatialAcceleration();
       }
@@ -145,7 +142,9 @@ std::vector<dart::simulation::World*> getWorlds()
   return worlds;
 }
 
-void runTest(const std::vector<dart::simulation::World*>& worlds,
+void runTest(std::vector<double>& wholebody_results,
+             std::vector<double>& specificBN_results,
+             const std::vector<dart::simulation::World*>& worlds,
              bool position, bool velocity, bool acceleration)
 {
   double totalTime = 0;
@@ -165,6 +164,7 @@ void runTest(const std::vector<dart::simulation::World*>& worlds,
     totalTime += testForwardKinematicSpeed(world->getSkeleton(0), true,
                                         position, velocity, acceleration);
   }
+  wholebody_results.push_back(totalTime);
   std::cout << "Whole skeleton: " << totalTime << "s" << std::endl;
 
   // Test for updating a specific BodyNode
@@ -175,13 +175,64 @@ void runTest(const std::vector<dart::simulation::World*>& worlds,
     totalTime += testForwardKinematicSpeed(world->getSkeleton(0), false,
                                         position, velocity, acceleration);
   }
+  specificBN_results.push_back(totalTime);
   std::cout << "Specific BodyNode: " << totalTime << "s" << std::endl;
+}
+
+void print_results(const std::vector<double>& result)
+{
+  double sum = std::accumulate(result.begin(), result.end(), 0.0);
+  double mean = sum/result.size();
+  std::cout << "Average: " << mean << "\n";
+  std::vector<double> diff(result.size());
+  std::transform(result.begin(), result.end(), diff.begin(),
+                 std::bind2nd(std::minus<double>(), mean));
+  double stddev = std::sqrt(std::inner_product(diff.begin(), diff.end(),
+                                        diff.begin(), 0.0)/result.size());
+  std::cout << "Std Dev: " << stddev << "\n";
 }
 
 int main()
 {
   std::vector<dart::simulation::World*> worlds = getWorlds();
-  runTest(worlds, true, true, true);
-  runTest(worlds, true, true, false);
-  runTest(worlds, true, false, false);
+
+  std::vector<double> wb_results_acceleration;
+  std::vector<double> bn_results_acceleration;
+
+  std::vector<double> wb_results_velocity;
+  std::vector<double> bn_results_velocity;
+
+  std::vector<double> wb_results_position;
+  std::vector<double> bn_results_position;
+
+  for(size_t i=0; i<10; ++i)
+  {
+    std::cout << "Test #" << i << std::endl;
+    runTest(wb_results_acceleration, bn_results_acceleration,
+            worlds, true, true, true);
+    runTest(wb_results_velocity, bn_results_velocity,
+            worlds, true, true, false);
+    runTest(wb_results_position, bn_results_position,
+            worlds, true, false, false);
+  }
+
+  std::cout << "\n\n --- Final Results --- \n\n";
+
+  std::cout << "Position, Velocity, Acceleration\n";
+  std::cout << "Whole Body\n";
+  print_results(wb_results_acceleration);
+  std::cout << "Specific BodyNode\n";
+  print_results(bn_results_acceleration);
+
+  std::cout << "\nPosition, Velocity\n";
+  std::cout << "Whole Body\n";
+  print_results(wb_results_velocity);
+  std::cout << "Specific BodyNode\n";
+  print_results(bn_results_velocity);
+
+  std::cout << "\nPosition\n";
+  std::cout << "Whole Body\n";
+  print_results(wb_results_position);
+  std::cout << "Specific BodyNode\n";
+  print_results(bn_results_position);
 }
