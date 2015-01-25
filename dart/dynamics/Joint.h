@@ -791,15 +791,15 @@ protected:
 
   /// True iff this joint's position has changed since the last call to
   /// getLocalTransform()
-  mutable bool mNeedPositionUpdate;
+  mutable bool mNeedTransformUpdate;
 
   /// True iff this joint's position or velocity has changed since the last call
   /// to getLocalSpatialVelocity()
-  mutable bool mNeedVelocityUpdate;
+  mutable bool mNeedSpatialVelocityUpdate;
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getLocalSpatialAcceleration()
-  mutable bool mNeedAccelerationUpdate;
+  mutable bool mNeedSpatialAccelerationUpdate;
 
   /// True iff this joint's local Jacobian has not been updated since the last
   /// position change

@@ -180,6 +180,8 @@ const std::string& BodyNode::getName() const
 void BodyNode::setGravityMode(bool _gravityMode)
 {
   mGravityMode = _gravityMode;
+  if(mSkeleton)
+    mSkeleton->mIsGravityForcesDirty = true;
 }
 
 //==============================================================================
@@ -855,6 +857,9 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
     F.tail<3>() = W.linear().transpose() * _force;
 
   mFext += math::dAdInvT(T, F);
+
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -877,6 +882,9 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
     F.tail<3>() = W.linear().transpose() * _force;
 
   mFext = math::dAdInvT(T, F);
+
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -886,6 +894,9 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     mFext.head<3>() += _torque;
   else
     mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
+
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -895,6 +906,9 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
     mFext.head<3>() = _torque;
   else
     mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
+
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -1005,20 +1019,15 @@ void BodyNode::notifyTransformUpdate()
     return;
 
   mNeedTransformUpdate = true;
-  mIsBodyJacobianDirty = true;
-  mIsBodyJacobianDerivDirty = true;
 
   if(mSkeleton)
   {
-    mSkeleton->mIsArticulatedInertiaDirty = true;
-    mSkeleton->mIsMassMatrixDirty = true;
-    mSkeleton->mIsAugMassMatrixDirty = true;
-    mSkeleton->mIsInvMassMatrixDirty = true;
     mSkeleton->mIsCoriolisForcesDirty = true;
     mSkeleton->mIsGravityForcesDirty = true;
     mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
     mSkeleton->mIsExternalForcesDirty = true;
   }
+
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyTransformUpdate();
@@ -1991,12 +2000,17 @@ void BodyNode::_updateSpatialInertia()
   assert(mI(4, 5) == 0.0);
 
   mI.triangularView<Eigen::StrictlyLower>() = mI.transpose();
+
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 void BodyNode::clearExternalForces()
 {
   mFext.setZero();
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 }  // namespace dynamics
