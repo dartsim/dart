@@ -893,14 +893,12 @@ void SingleDofJoint::updateLocalSpatialAcceleration() const
 {
   mSpatialAcceleration = getLocalPrimaryAcceleration()
                        + getLocalJacobianTimeDerivStatic() * getVelocityStatic();
-  ++spatialAccelerationUpdates;
 }
 
 //==============================================================================
 void SingleDofJoint::updateLocalPrimaryAcceleration() const
 {
   mPrimaryAcceleration = getLocalJacobianStatic() * getAccelerationStatic();
-  ++primaryAccelerationUpdates;
 }
 
 //==============================================================================
@@ -987,7 +985,6 @@ void SingleDofJoint::setPartialAccelerationTo(
   _partialAcceleration = math::ad(_childVelocity, getLocalJacobianStatic()
                                   * getVelocityStatic())
                          + mJacobianDeriv * getVelocityStatic();
-  ++partialAccelerationUpdates;
   // Verification
   assert(!math::isNan(_partialAcceleration));
 }

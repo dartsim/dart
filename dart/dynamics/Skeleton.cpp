@@ -205,6 +205,7 @@ void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
   mTimeStep = _timeStep;
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -217,6 +218,8 @@ double Skeleton::getTimeStep() const
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
   mGravity = _gravity;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
 }
 
 //==============================================================================
@@ -1307,6 +1310,22 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
   }
+}
+
+//==============================================================================
+void Skeleton::notifyArticulatedInertiaUpdate()
+{
+  if(mIsArticulatedInertiaDirty)
+    return;
+
+  mIsArticulatedInertiaDirty = true;
+  mIsMassMatrixDirty = true;
+  mIsAugMassMatrixDirty = true;
+  mIsInvMassMatrixDirty = true;
+  mIsInvAugMassMatrixDirty = true;
+  mIsCoriolisForcesDirty = true;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
 }
 
 //==============================================================================

@@ -84,7 +84,7 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
         if(velocity)
         {
           skel->getBodyNode(i)->getSpatialVelocity();
-//          skel->getBodyNode(i)->getPartialAcceleration();
+          skel->getBodyNode(i)->getPartialAcceleration();
         }
         if(acceleration)
           skel->getBodyNode(i)->getSpatialAcceleration();
@@ -145,16 +145,25 @@ std::vector<dart::simulation::World*> getWorlds()
   return worlds;
 }
 
-int main()
+void runTest(const std::vector<dart::simulation::World*>& worlds,
+             bool position, bool velocity, bool acceleration)
 {
-  std::vector<dart::simulation::World*> worlds = getWorlds();
   double totalTime = 0;
+  std::cout << "Testing: ";
+  if(position)
+    std::cout << "Position ";
+  if(velocity)
+    std::cout << "Velocity ";
+  if(acceleration)
+    std::cout << "Acceleration ";
+  std::cout << "\n";
 
   // Test for updating the whole skeleton
   for(size_t i=0; i<worlds.size(); ++i)
   {
     dart::simulation::World* world = worlds[i];
-    totalTime += testForwardKinematicSpeed(world->getSkeleton(0));
+    totalTime += testForwardKinematicSpeed(world->getSkeleton(0), true,
+                                        position, velocity, acceleration);
   }
   std::cout << "Whole skeleton: " << totalTime << "s" << std::endl;
 
@@ -163,28 +172,16 @@ int main()
   for(size_t i=0; i<worlds.size(); ++i)
   {
     dart::simulation::World* world = worlds[i];
-    totalTime += testForwardKinematicSpeed(world->getSkeleton(0), false);
+    totalTime += testForwardKinematicSpeed(world->getSkeleton(0), false,
+                                        position, velocity, acceleration);
   }
   std::cout << "Specific BodyNode: " << totalTime << "s" << std::endl;
+}
 
-  size_t spatialAcceleration = 0;
-  size_t primaryAcceleration = 0;
-  size_t partialAcceleration = 0;
-  for(size_t i=0; i<worlds.size(); ++i)
-  {
-    dart::simulation::World* world = worlds[i];
-    dart::dynamics::Skeleton* skel = world->getSkeleton(0);
-    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
-    {
-      dart::dynamics::Joint* J = skel->getJoint(j);
-      spatialAcceleration += J->spatialAccelerationUpdates;
-      primaryAcceleration += J->primaryAccelerationUpdates;
-      partialAcceleration += J->partialAccelerationUpdates;
-    }
-  }
-
-  std::cout << "spatial: " << spatialAcceleration
-            << "\nprimary: " << primaryAcceleration
-            << "\npartial: " << partialAcceleration
-            << std::endl;
+int main()
+{
+  std::vector<dart::simulation::World*> worlds = getWorlds();
+  runTest(worlds, true, true, true);
+  runTest(worlds, true, true, false);
+  runTest(worlds, true, false, false);
 }

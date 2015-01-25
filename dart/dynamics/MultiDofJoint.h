@@ -1734,7 +1734,6 @@ void MultiDofJoint<DOF>::updateLocalSpatialAcceleration() const
 {
   mSpatialAcceleration = getLocalPrimaryAcceleration()
                     + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
-  ++spatialAccelerationUpdates;
 }
 
 //==============================================================================
@@ -1742,7 +1741,6 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateLocalPrimaryAcceleration() const
 {
   mPrimaryAcceleration = getLocalJacobianStatic() * getAccelerationsStatic();
-  ++primaryAccelerationUpdates;
 }
 
 //==============================================================================
@@ -1766,7 +1764,6 @@ void MultiDofJoint<DOF>::setPartialAccelerationTo(
   _partialAcceleration = math::ad(_childVelocity,
                       getLocalJacobianStatic() * getVelocitiesStatic())
                     + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
-  ++partialAccelerationUpdates;
   // Verification
   assert(!math::isNan(_partialAcceleration));
 }

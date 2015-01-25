@@ -55,9 +55,6 @@ const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
 //==============================================================================
 Joint::Joint(const std::string& _name)
   : mName(_name),
-    primaryAccelerationUpdates(0),
-    partialAccelerationUpdates(0),
-    spatialAccelerationUpdates(0),
     mActuatorType(FORCE),
     mChildBodyNode(NULL),
     mSkeleton(NULL),
@@ -65,9 +62,9 @@ Joint::Joint(const std::string& _name)
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mNeedPositionUpdate(true),
-    mNeedVelocityUpdate(true),
-    mNeedAccelerationUpdate(true),
+    mNeedTransformUpdate(true),
+    mNeedSpatialVelocityUpdate(true),
+    mNeedSpatialAccelerationUpdate(true),
     mNeedPrimaryAccelerationUpdate(true),
     mIsLocalJacobianDirty(true),
     mIsLocalJacobianTimeDerivDirty(true),
@@ -194,10 +191,10 @@ const Skeleton* Joint::getSkeleton() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
-  if(mNeedPositionUpdate)
+  if(mNeedTransformUpdate)
   {
     updateLocalTransform();
-    mNeedPositionUpdate = false;
+    mNeedTransformUpdate = false;
   }
 
   return mT;
@@ -206,10 +203,10 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const
 //==============================================================================
 const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 {
-  if(mNeedVelocityUpdate)
+  if(mNeedSpatialVelocityUpdate)
   {
     updateLocalSpatialVelocity();
-    mNeedVelocityUpdate = false;
+    mNeedSpatialVelocityUpdate = false;
   }
 
   return mSpatialVelocity;
@@ -218,10 +215,10 @@ const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 //==============================================================================
 const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
 {
-  if(mNeedAccelerationUpdate)
+  if(mNeedSpatialAccelerationUpdate)
   {
     updateLocalSpatialAcceleration();
-    mNeedAccelerationUpdate = false;
+    mNeedSpatialAccelerationUpdate = false;
   }
 
   return mSpatialAcceleration;
@@ -356,16 +353,25 @@ void Joint::updateArticulatedInertia() const
 void Joint::notifyPositionUpdate()
 {
   if(mChildBodyNode)
+  {
     mChildBodyNode->notifyTransformUpdate();
+    mChildBodyNode->mIsBodyJacobianDirty = true;
+    mChildBodyNode->mIsBodyJacobianDerivDirty = true;
+  }
 
-  if(mNeedPositionUpdate)
-    return;
-
-  mNeedPositionUpdate = true;
   mIsLocalJacobianDirty = true;
   mIsLocalJacobianTimeDerivDirty = true;
   mNeedPrimaryAccelerationUpdate = true;
-  mNeedAccelerationUpdate = true;
+
+  mNeedTransformUpdate = true;
+  mNeedSpatialVelocityUpdate = true;
+  mNeedSpatialAccelerationUpdate = true;
+
+  if(mSkeleton)
+  {
+    mSkeleton->notifyArticulatedInertiaUpdate();
+    mSkeleton->mIsExternalForcesDirty = true;
+  }
 }
 
 //==============================================================================
@@ -374,12 +380,10 @@ void Joint::notifyVelocityUpdate()
   if(mChildBodyNode)
     mChildBodyNode->notifyVelocityUpdate();
 
-  if(mNeedVelocityUpdate)
-    return;
-
-  mNeedVelocityUpdate = true;
   mIsLocalJacobianTimeDerivDirty = true;
-  mNeedAccelerationUpdate = true;
+
+  mNeedSpatialVelocityUpdate = true;
+  mNeedSpatialAccelerationUpdate = true;
 }
 
 //==============================================================================
@@ -388,11 +392,8 @@ void Joint::notifyAccelerationUpdate()
   if(mChildBodyNode)
     mChildBodyNode->notifyAccelerationUpdate();
 
-  if(mNeedPrimaryAccelerationUpdate)
-    return;
-
+  mNeedSpatialAccelerationUpdate = true;
   mNeedPrimaryAccelerationUpdate = true;
-  mNeedAccelerationUpdate = true;
 }
 
 }  // namespace dynamics

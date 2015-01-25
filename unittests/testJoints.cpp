@@ -181,14 +181,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
       // a
       Eigen::VectorXd q_a = q;
       _joint->setPositions(q_a);
-      skeleton.computeForwardKinematics(true, false, false);
+//      skeleton.computeForwardKinematics(true, false, false);
       Jacobian J_a = _joint->getLocalJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       _joint->setPositions(q_b);
-      skeleton.computeForwardKinematics(true, false, false);
+//      skeleton.computeForwardKinematics(true, false, false);
       Jacobian J_b = _joint->getLocalJacobian();
 
       //

@@ -1088,6 +1088,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
           joint->setPosition(l, random(lbRP, ubRP));
         }
       }
+//      skel->computeForwardKinematics();
 //      skel->setPositions(VectorXd::Zero(dof));
 
       // TODO(JS): Just clear what should be
@@ -1108,11 +1109,12 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-6));
-      if (!equals(deltaVel1, deltaVel2, 1e-6))
+      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-5));
+      if (!equals(deltaVel1, deltaVel2, 1e-5))
       {
         cout << "deltaVel1: " << deltaVel1.transpose()  << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
+        cout << "error: " << (deltaVel1-deltaVel2).norm() << endl;
       }
     }
   }

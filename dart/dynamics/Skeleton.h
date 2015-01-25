@@ -633,6 +633,10 @@ protected:
   /// Remove a joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void notifyArticulatedInertiaUpdate();
+
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
 
