@@ -1,4 +1,4 @@
-### Version 4.3.3 (2015-01-24)
+### Version 4.3.4 (2015-01-24)
 
 1. Fixed build issue with gtest on Mac
     * [Pull request #315](https://github.com/dartsim/dart/pull/315)
