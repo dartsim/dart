@@ -211,6 +211,11 @@ protected:
   // Documentation inherited
   virtual void changeParentFrame(Frame* _newParentFrame);
 
+  /// Called during a parent Frame change to allow extensions of the Frame class
+  /// to handle new children in customized ways. This function is a no op unless
+  /// an inheriting class (such as BodyNode) overrides it.
+  virtual void processNewEntity(Entity* _newChildEntity);
+
 private:
   /// Constructor for World Frame
   explicit Frame();

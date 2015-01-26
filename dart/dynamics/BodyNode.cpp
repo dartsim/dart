@@ -453,6 +453,11 @@ const BodyNode* BodyNode::getParentBodyNode() const
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
   assert(_body != NULL);
+
+  if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
+     mChildBodyNodes.end())
+    return;
+
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
@@ -963,6 +968,19 @@ void BodyNode::init(Skeleton* _skeleton)
 }
 
 //==============================================================================
+void BodyNode::processNewEntity(Entity* _newChildEntity)
+{
+  if(find(mChildBodyNodes.begin(),mChildBodyNodes.end(), _newChildEntity) !=
+     mChildBodyNodes.end())
+    return;
+
+  if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
+    return;
+
+  mNonBodyNodeEntities.insert(_newChildEntity);
+}
+
+//==============================================================================
 // Note: This has been moved to the Frame/Entity class
 //void BodyNode::draw(renderer::RenderInterface* _ri,
 //                    const Eigen::Vector4d& _color,
@@ -1034,7 +1052,17 @@ void BodyNode::notifyTransformUpdate()
     mSkeleton->mIsExternalForcesDirty = true;
   }
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+//  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+//  for( ; it != end; ++it)
+//    (*it)->notifyTransformUpdate();
+
+  // Child BodyNodes and other generic Entities are notified separately to allow
+  // some optimizations
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyTransformUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyTransformUpdate();
 }
@@ -1057,9 +1085,33 @@ void BodyNode::notifyVelocityUpdate()
     mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
   }
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  // Child BodyNodes and other generic Entities are notified separately to allow
+  // some optimizations
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyVelocityUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyVelocityUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyAccelerationUpdate()
+{
+  // If we already know we need to update, just quit
+  if(mNeedAccelerationUpdate)
+    return;
+
+  mNeedAccelerationUpdate = true;
+
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyAccelerationUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
+  for( ; it != end; ++it)
+    (*it)->notifyAccelerationUpdate();
 }
 
 //==============================================================================

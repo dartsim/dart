@@ -418,6 +418,12 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
+void Frame::processNewEntity(Entity*)
+{
+  // Do nothing
+}
+
+//==============================================================================
 Frame::Frame()
   : Entity(this, "World", true),
     mWorldTransform(Eigen::Isometry3d::Identity()),

@@ -509,6 +509,9 @@ public:
   // Documentation inherited
   void notifyVelocityUpdate() override;
 
+  // Documentation inherited
+  void notifyAccelerationUpdate() override;
+
   //----------------------------------------------------------------------------
   // Friendship
   //----------------------------------------------------------------------------
@@ -525,6 +528,10 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
+
+  /// Separate generic child Entities from child BodyNodes for more efficient
+  /// update notices
+  void processNewEntity(Entity* _newChildEntity);
 
   /// Update transformation
   virtual void updateTransform();
@@ -758,6 +765,10 @@ protected:
 
   /// Array of child body nodes
   std::vector<BodyNode*> mChildBodyNodes;
+
+  /// Array of child Entities that are not BodyNodes. Organizing them separately
+  /// allows some performance optimizations.
+  std::set<Entity*> mNonBodyNodeEntities;
 
   /// List of markers associated
   std::vector<Marker*> mMarkers;

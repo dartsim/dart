@@ -184,6 +184,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
   if(!mAmQuiet)
   {
     mParentFrame->mChildEntities.insert(this);
+    mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
 }
