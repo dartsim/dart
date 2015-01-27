@@ -266,7 +266,7 @@ const std::set<Entity*>& Frame::getChildEntities()
 }
 
 //==============================================================================
-std::set<const Entity*> Frame::getChildEntities() const
+const std::set<const Entity*> Frame::getChildEntities() const
 {
   return convertToConstSet<Entity>(mChildEntities);
 }

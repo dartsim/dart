@@ -130,7 +130,9 @@ public:
   /// contained in the partial acceleration.
   virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const = 0;
 
-  ///
+  /// The Featherstone ABI algorithm exploits a component of the spatial
+  /// acceleration which we refer to as the partial acceleration. This function
+  /// returns that component of acceleration.
   virtual const Eigen::Vector6d& getPartialAcceleration() const = 0;
 
   /// Get the total spatial acceleration of this Frame in the coordinates of
@@ -152,6 +154,8 @@ public:
       const Frame* _relativeTo=Frame::World(),
       const Frame* _inCoordinatesOf=Frame::World()) const;
 
+  /// Get the angular portion of classical acceleration of this Frame relative
+  /// to some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getAngularAcceleration(
       const Frame* _relativeTo=Frame::World(),
       const Frame* _inCoordinatesOf=Frame::World()) const;
@@ -162,13 +166,15 @@ public:
 
   /// Get a container with the Entities that are children of this Frame.
   /// std::set is used because Entities may be arbitrarily added and removed
-  /// from a parent Frame, and each entry should be unique.
+  /// from a parent Frame, and each entry should be unique. std::set makes this
+  /// procedure easier.
   const std::set<Entity*>& getChildEntities();
 
   /// Get a container with the Entities that are children of this Frame. Note
-  /// that this is version is less efficient than the non-const version because
-  /// it needs to rebuild a set so that the entries are const.
-  std::set<const Entity*> getChildEntities() const;
+  /// that this is version is slightly less efficient than the non-const version
+  /// because it needs to rebuild a set where each pointer is converted to be a
+  /// const pointer.
+  const std::set<const Entity*> getChildEntities() const;
 
   /// Get the number of Entities that are currently children of this Frame.
   size_t getNumChildEntities() const;
@@ -217,7 +223,7 @@ protected:
   virtual void processNewEntity(Entity* _newChildEntity);
 
 private:
-  /// Constructor for World Frame
+  /// Constructor only to be used by the WorldFrame class
   explicit Frame();
 
 protected:
@@ -245,7 +251,7 @@ protected:
 
 private:
   /// Contains whether or not this is the World Frame
-  bool mAmWorld;
+  const bool mAmWorld;
 
 };
 

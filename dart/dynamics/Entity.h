@@ -144,7 +144,7 @@ protected:
 
 private:
   /// Whether or not this Entity is set to be quiet
-  bool mAmQuiet;
+  const bool mAmQuiet;
 
 };
 

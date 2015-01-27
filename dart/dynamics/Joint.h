@@ -784,18 +784,24 @@ protected:
 
   /// Local transformation
   ///
-  /// Do not use directly! Use getLocalTransform() to access this quantity
+  /// Do not use directly! Use getLocalTransform() to access this
   mutable Eigen::Isometry3d mT;
 
   /// Relative spatial velocity from parent BodyNode to child BodyNode where the
   /// velocity is expressed in child body Frame
+  ///
+  /// Do not use directly! Use getLocalSpatialVelocity() to access this
   mutable Eigen::Vector6d mSpatialVelocity;
 
   /// Relative spatial acceleration from parent BodyNode to child BodyNode where
   /// the acceleration is expressed in the child body Frame
+  ///
+  /// Do not use directly! Use getLocalSpatialAcceleration() to access this
   mutable Eigen::Vector6d mSpatialAcceleration;
 
   /// J * q_dd
+  ///
+  /// Do not use directly! Use getLocalPrimaryAcceleration() to access this
   mutable Eigen::Vector6d mPrimaryAcceleration;
 
   /// True iff this joint's position has changed since the last call to

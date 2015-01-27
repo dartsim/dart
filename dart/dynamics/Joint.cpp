@@ -314,11 +314,8 @@ DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
 //==============================================================================
 void Joint::updateArticulatedInertia() const
 {
-  if(mSkeleton)
-  {
-    if(mSkeleton->mIsArticulatedInertiaDirty)
+  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
       mSkeleton->updateArticulatedInertia();
-  }
 }
 
 //==============================================================================
