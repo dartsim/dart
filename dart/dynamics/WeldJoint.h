@@ -77,6 +77,9 @@ protected:
   virtual void updateLocalSpatialAcceleration() const;
 
   // Documentation inherited
+  virtual void updateLocalPrimaryAcceleration() const;
+
+  // Documentation inherited
   virtual void updateLocalJacobian(bool =true) const;
 
   // Documentation inherited

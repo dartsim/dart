@@ -279,7 +279,13 @@ public:
   Eigen::Vector3d getWorldAngularVelocity() const;
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+
+  /// Return the partial acceleration of this body
+  const Eigen::Vector6d& getPartialAcceleration() const override;
 
   /// Return generalized acceleration at the origin of this body node where the
   /// acceleration is expressed in this body node frame
@@ -312,9 +318,6 @@ public:
 
   /// Return the angular acceleration expressed in world frame
   Eigen::Vector3d getWorldAngularAcceleration() const;
-
-  /// Return the partial acceleration of this body
-  const Eigen::Vector6d& getPartialAcceleration() const;
 
   /// Return generalized Jacobian at the origin of this body node where the
   /// Jacobian is expressed in this body node frame
@@ -501,13 +504,13 @@ public:
                    bool _useDefaultColor = true) const;
 
   // Documentation inherited
-  virtual void notifyTransformUpdate();
+  void notifyTransformUpdate() override;
 
   // Documentation inherited
-  virtual void notifyVelocityUpdate();
+  void notifyVelocityUpdate() override;
 
   // Documentation inherited
-  virtual void notifyAccelerationUpdate();
+  void notifyAccelerationUpdate() override;
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -525,6 +528,10 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
+
+  /// Separate generic child Entities from child BodyNodes for more efficient
+  /// update notices
+  void processNewEntity(Entity* _newChildEntity);
 
   /// Update transformation
   virtual void updateTransform();
@@ -758,6 +765,10 @@ protected:
 
   /// Array of child body nodes
   std::vector<BodyNode*> mChildBodyNodes;
+
+  /// Array of child Entities that are not BodyNodes. Organizing them separately
+  /// allows some performance optimizations.
+  std::set<Entity*> mNonBodyNodeEntities;
 
   /// List of markers associated
   std::vector<Marker*> mMarkers;

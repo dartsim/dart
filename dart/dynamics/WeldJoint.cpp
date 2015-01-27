@@ -92,6 +92,12 @@ void WeldJoint::updateLocalSpatialAcceleration() const
 }
 
 //==============================================================================
+void WeldJoint::updateLocalPrimaryAcceleration() const
+{
+  // Do nothing
+}
+
+//==============================================================================
 void WeldJoint::updateLocalJacobian(bool) const
 {
   // Do nothing

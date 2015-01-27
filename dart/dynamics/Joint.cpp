@@ -65,6 +65,7 @@ Joint::Joint(const std::string& _name)
     mNeedTransformUpdate(true),
     mNeedSpatialVelocityUpdate(true),
     mNeedSpatialAccelerationUpdate(true),
+    mNeedPrimaryAccelerationUpdate(true),
     mIsLocalJacobianDirty(true),
     mIsLocalJacobianTimeDerivDirty(true),
     mIsPositionLimited(true)
@@ -224,6 +225,18 @@ const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+{
+  if(mNeedPrimaryAccelerationUpdate)
+  {
+    updateLocalPrimaryAcceleration();
+    mNeedPrimaryAccelerationUpdate = false;
+  }
+
+  return mPrimaryAcceleration;
+}
+
+//==============================================================================
 //bool Joint::contains(const GenCoord* _genCoord) const {
 //  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
 //      mGenCoords.end() ? true : false;
@@ -348,6 +361,7 @@ void Joint::notifyPositionUpdate()
 
   mIsLocalJacobianDirty = true;
   mIsLocalJacobianTimeDerivDirty = true;
+  mNeedPrimaryAccelerationUpdate = true;
 
   mNeedTransformUpdate = true;
   mNeedSpatialVelocityUpdate = true;
@@ -379,6 +393,7 @@ void Joint::notifyAccelerationUpdate()
     mChildBodyNode->notifyAccelerationUpdate();
 
   mNeedSpatialAccelerationUpdate = true;
+  mNeedPrimaryAccelerationUpdate = true;
 }
 
 }  // namespace dynamics

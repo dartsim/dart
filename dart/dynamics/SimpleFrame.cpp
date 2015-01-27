@@ -125,6 +125,20 @@ const Eigen::Vector6d& SimpleFrame::getRelativeSpatialAcceleration() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& SimpleFrame::getPrimaryRelativeAcceleration() const
+{
+  return mRelativeAcceleration;
+}
+
+//==============================================================================
+const Eigen::Vector6d& SimpleFrame::getPartialAcceleration() const
+{
+  mPartialAcceleration = math::ad(getSpatialVelocity(),
+                                  getRelativeSpatialVelocity());
+  return mPartialAcceleration;
+}
+
+//==============================================================================
 void SimpleFrame::setClassicDerivatives(
     const Eigen::Vector3d& _linearVelocity,
     const Eigen::Vector3d& _angularVelocity,

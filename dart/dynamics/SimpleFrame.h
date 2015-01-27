@@ -119,6 +119,12 @@ public:
   // Documentation inherited
   virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
+  // Documentation inherited
+  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+
+  // Documentation inherited
+  virtual const Eigen::Vector6d& getPartialAcceleration() const;
+
   //--------------------------------------------------------------------------
   // Classic Method
   //--------------------------------------------------------------------------
@@ -151,6 +157,9 @@ protected:
 
   /// Relative Acceleration of this Frame
   Eigen::Vector6d mRelativeAcceleration;
+
+  /// Partial Acceleration of this Frame
+  mutable Eigen::Vector6d mPartialAcceleration;
 
 };
 

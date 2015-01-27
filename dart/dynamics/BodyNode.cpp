@@ -453,6 +453,11 @@ const BodyNode* BodyNode::getParentBodyNode() const
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
   assert(_body != NULL);
+
+  if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
+     mChildBodyNodes.end())
+    return;
+
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
@@ -595,6 +600,21 @@ const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
 }
 
 //==============================================================================
+const Eigen::Vector6d& BodyNode::getPrimaryRelativeAcceleration() const
+{
+  return mParentJoint->getLocalPrimaryAcceleration();
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
+{
+  if(mIsPartialAccelerationDirty)
+    updatePartialAcceleration();
+
+  return mPartialAcceleration;
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
   return getSpatialAcceleration();
@@ -660,19 +680,8 @@ Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
   const Eigen::Vector6d& V = getSpatialVelocity();
 
   dV.tail<3>() += V.head<3>().cross(V.tail<3>());
-  // TODO(MXG): This does not look right... I thought only linear acceleration
-  // needs to be adjusted by w x v
 
   return math::AdT(T, dV).head<3>();
-}
-
-//==============================================================================
-const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
-{
-  if(mIsPartialAccelerationDirty)
-    updatePartialAcceleration();
-
-  return mPartialAcceleration;
 }
 
 //==============================================================================
@@ -957,6 +966,19 @@ void BodyNode::init(Skeleton* _skeleton)
 }
 
 //==============================================================================
+void BodyNode::processNewEntity(Entity* _newChildEntity)
+{
+  if(find(mChildBodyNodes.begin(),mChildBodyNodes.end(), _newChildEntity) !=
+     mChildBodyNodes.end())
+    return;
+
+  if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
+    return;
+
+  mNonBodyNodeEntities.insert(_newChildEntity);
+}
+
+//==============================================================================
 // Note: This has been moved to the Frame/Entity class
 //void BodyNode::draw(renderer::RenderInterface* _ri,
 //                    const Eigen::Vector4d& _color,
@@ -1028,7 +1050,17 @@ void BodyNode::notifyTransformUpdate()
     mSkeleton->mIsExternalForcesDirty = true;
   }
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+//  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+//  for( ; it != end; ++it)
+//    (*it)->notifyTransformUpdate();
+
+  // Child BodyNodes and other generic Entities are notified separately to allow
+  // some optimizations
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyTransformUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyTransformUpdate();
 }
@@ -1051,7 +1083,13 @@ void BodyNode::notifyVelocityUpdate()
     mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
   }
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  // Child BodyNodes and other generic Entities are notified separately to allow
+  // some optimizations
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyVelocityUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyVelocityUpdate();
 }
@@ -1059,12 +1097,17 @@ void BodyNode::notifyVelocityUpdate()
 //==============================================================================
 void BodyNode::notifyAccelerationUpdate()
 {
+  // If we already know we need to update, just quit
   if(mNeedAccelerationUpdate)
     return;
 
   mNeedAccelerationUpdate = true;
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
+  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+    mChildBodyNodes[i]->notifyAccelerationUpdate();
+
+  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
+                         end=mNonBodyNodeEntities.end();
   for( ; it != end; ++it)
     (*it)->notifyAccelerationUpdate();
 }
@@ -1073,14 +1116,16 @@ void BodyNode::notifyAccelerationUpdate()
 void BodyNode::updateTransform()
 {
   // Calling getWorldTransform will update the transform if an update is needed
-  assert(math::verifyTransform(getWorldTransform()));
+  getWorldTransform();
+  assert(math::verifyTransform(mWorldTransform));
 }
 
 //==============================================================================
 void BodyNode::updateVelocity()
 {
   // Calling getSpatialVelocity will update the velocity if an update is needed
-  assert(!math::isNan(getSpatialVelocity()));
+  getSpatialVelocity();
+  assert(!math::isNan(mVelocity));
 }
 
 //==============================================================================
@@ -1374,35 +1419,10 @@ void BodyNode::updateJointImpulseFD()
 //==============================================================================
 void BodyNode::updateConstrainedTerms(double _timeStep)
 {
-  // TODO(MXG): Consider how to fit this function (and the constrained delta-V
-  // terms in general) more cleanly into the auto-update framework. The basic
-  // complication is that the delta-V of each BodyNode is computed after the
-  // Forward Dynamics is computed. Moreover, the delta-V is computed in a way
-  // that avoids needing to propagate accelerations from the root to the leaves
-  // all over again. However, the auto-updating forces accelerations to always
-  // propagate in that way. In this function, we can avoid this propagation by
-  // acting directly on mAcceleration without notifying the need for an update.
-  // This is technically 'dangerous' because it bypasses the auto-update system,
-  // but it should work *as long as* this function is used correctly.
-
   // 1. dq = dq + del_dq
   // 2. ddq = ddq + del_dq / dt
   // 3. tau = tau + imp / dt
   mParentJoint->updateConstrainedTerms(_timeStep);
-
-//  // --------------------------------------------------------------------------
-//  // This block violates the auto-updating assumptions, so it will be left
-//  // commented out for the moment
-
-//  // Make absolutely sure that acceleration is up-to-date
-//  getSpatialAcceleration();
-
-//  //
-//  mAcceleration += mDelV / _timeStep;
-//  // Note: No need to notify acceleration update here as long as this function
-//  // is called on all BodyNodes
-
-//  //---------------------------------------------------------------------------
 
   //
   mF += mImpF / _timeStep;

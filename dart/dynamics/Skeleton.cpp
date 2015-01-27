@@ -472,7 +472,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   }
 
   // Compute transformations, velocities, and partial accelerations
-  computeForwardDynamicsRecursionPartA();
+//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
 
   // Set dimension of dynamics quantities
   size_t dof = getNumDofs();
@@ -1735,7 +1735,7 @@ void Skeleton::updateExternalForces()
 void Skeleton::computeForwardDynamics()
 {
   //
-  computeForwardDynamicsRecursionPartA();
+//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
 
   //
   computeForwardDynamicsRecursionPartB();
