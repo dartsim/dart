@@ -1012,19 +1012,13 @@ void BodyNode::notifyTransformUpdate()
     mSkeleton->mIsExternalForcesDirty = true;
   }
 
-//  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-//  for( ; it != end; ++it)
-//    (*it)->notifyTransformUpdate();
-
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
   for(size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyTransformUpdate();
 
-  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
-                         end=mNonBodyNodeEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyTransformUpdate();
+  for(Entity* entity : mNonBodyNodeEntities)
+    entity->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -1050,10 +1044,8 @@ void BodyNode::notifyVelocityUpdate()
   for(size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyVelocityUpdate();
 
-  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
-                         end=mNonBodyNodeEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyVelocityUpdate();
+  for(Entity* entity : mNonBodyNodeEntities)
+    entity->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -1068,10 +1060,8 @@ void BodyNode::notifyAccelerationUpdate()
   for(size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyAccelerationUpdate();
 
-  EntityPtrSet::iterator it=mNonBodyNodeEntities.begin(),
-                         end=mNonBodyNodeEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyAccelerationUpdate();
+  for(Entity* entity : mNonBodyNodeEntities)
+    entity->notifyAccelerationUpdate();
 }
 
 //==============================================================================

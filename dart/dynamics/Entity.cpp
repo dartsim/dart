@@ -144,6 +144,12 @@ bool Entity::dependsOn(const Frame *_someFrame) const
 }
 
 //==============================================================================
+bool Entity::isQuiet() const
+{
+  return mAmQuiet;
+}
+
+//==============================================================================
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;

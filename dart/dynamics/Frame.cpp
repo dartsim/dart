@@ -67,7 +67,7 @@ Frame::~Frame()
   // Inform all child entities that this Frame is disappearing by setting their
   // reference frames to the World frame.
   EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; )
+  while( it != end )
     (*(it++))->changeParentFrame(Frame::World());
   // Note: When we instruct an Entity to change its parent Frame, it will erase
   // itself from this Frame's mChildEntities list. This would invalidate the
@@ -117,6 +117,8 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
     return getWorldTransform();
   else if(_withRespectTo == mParentFrame)
     return getRelativeTransform();
+  else if(_withRespectTo == this)
+    return Eigen::Isometry3d::Identity();
 
   return _withRespectTo->getWorldTransform().inverse()*getWorldTransform();
 }
@@ -187,8 +189,6 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
                                  getParentFrame()->getSpatialAcceleration())
         + getPrimaryRelativeAcceleration()
         + getPartialAcceleration();
-//        + getRelativeSpatialAcceleration()
-//        + math::ad(getSpatialVelocity(), getRelativeSpatialVelocity());
 
     mNeedAccelerationUpdate = false;
   }
@@ -252,9 +252,8 @@ template <typename T>
 static std::set<const T*> convertToConstSet(const std::set<T*>& _set)
 {
   std::set<const T*> const_set;
-  typename std::set<T*>::const_iterator it=_set.begin(), end=_set.end();
-  for( ; it != end; ++it)
-    const_set.insert(*it);
+  for(const auto& element : _set)
+    const_set.insert(element);
 
   return const_set;
 }
@@ -326,10 +325,8 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
   // _ri.popName();
 
   // render the subtree
-  EntityPtrSet::const_iterator it=mChildEntities.begin();
-  EntityPtrSet::const_iterator end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->draw(_ri, _color, _useDefaultColor);
+  for(Entity* entity : mChildEntities)
+    entity->draw(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
 }
@@ -345,9 +342,8 @@ void Frame::notifyTransformUpdate()
 
   mNeedTransformUpdate = true;
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyTransformUpdate();
+  for(Entity* entity : mChildEntities)
+    entity->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -361,9 +357,8 @@ void Frame::notifyVelocityUpdate()
 
   mNeedVelocityUpdate = true;
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyVelocityUpdate();
+  for(Entity* entity : mChildEntities)
+    entity->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -375,9 +370,8 @@ void Frame::notifyAccelerationUpdate()
 
   mNeedAccelerationUpdate = true;
 
-  EntityPtrSet::iterator it=mChildEntities.begin(), end=mChildEntities.end();
-  for( ; it != end; ++it)
-    (*it)->notifyAccelerationUpdate();
+  for(Entity* entity : mChildEntities)
+    entity->notifyAccelerationUpdate();
 }
 
 //==============================================================================
