@@ -1,24 +1,27 @@
 language: cpp
+os:
+  - linux
+  - osx
 compiler:
   - gcc
   - clang
-before_install:
-  - 'ci/before_install.sh'
 env:
-  global:
-  matrix:
-    - BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug
-    - BUILD_CORE_ONLY=OFF BUILD_TYPE=Release
-    - BUILD_CORE_ONLY=ON BUILD_TYPE=Debug
-    - BUILD_CORE_ONLY=ON BUILD_TYPE=Release
-before_script: cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
+  - BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug
+  - BUILD_CORE_ONLY=OFF BUILD_TYPE=Release
+  - BUILD_CORE_ONLY=ON  BUILD_TYPE=Debug
+  - BUILD_CORE_ONLY=ON  BUILD_TYPE=Release
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+before_install:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/before_install_linux.sh' ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/before_install_osx.sh'   ; fi
+install: 
+  - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
 script:
-  - make
-  - sudo ldconfig --verbose # So the test executeables can detect libtinyxml2
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
-  # - cd tools/
-  # - ./code_check.sh
-  # - ./abi_check.sh 4.1.0  # Check with DART 4.1.0
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/script_linux.sh' ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/script_osx.sh'   ; fi
 after_failure:
-  - cat Testing/Temporary/LastTest.log
-  - cat Testing/Temporary/LastTestsFailed.log
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/after_failure_linux.sh' ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/after_failure_osx.sh'   ; fi

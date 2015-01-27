@@ -51,7 +51,6 @@ libxmu-dev
 
 APT=$APT_CORE' 
 libflann-dev
-libgtest-dev
 libtinyxml-dev
 libtinyxml2-dev
 liburdfdom-dev

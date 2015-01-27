@@ -1,3 +1,4 @@
+usr/include/dart/dart-core.h
 usr/include/dart/config.h
 usr/include/dart/collision/*
 usr/include/dart/common/*

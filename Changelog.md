@@ -1,3 +1,13 @@
+### Version 4.3.4 (2015-01-24)
+
+1. Fixed build issue with gtest on Mac
+    * [Pull request #315](https://github.com/dartsim/dart/pull/315)
+
+### Version 4.3.3 (2015-01-23)
+
+1. Fixed joint Coulomb friction
+    * [Pull request #311](https://github.com/dartsim/dart/pull/311)
+
 ### Version 4.3.2 (2015-01-22)
 
 1. Fixed installation -- missing headers (utils/urdf, utils/sdf)

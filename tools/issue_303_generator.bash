@@ -23,7 +23,7 @@ cat <<END
 
 // Deprecated header file for case-sensitive filesystems
 #warning The dart/$lower/$1.h header file is deprecated \\
-  as of dart 4.3 and will be removed in the next release. \\
+  as of dart 4.3 and will be removed in dart 5.0. \\
   Please include dart/$lower/$2.h instead.
 #include "dart/$lower/$2.h"
 
