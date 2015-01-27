@@ -95,7 +95,7 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
   // frame? And then we're not popping this matrix at the end of this function.
   // This all seems questionable to me.
 
-  // _ri->pushName(???); TODO(MXG): How should this be handled for entities?
+  // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
   for(size_t i=0; i < mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();

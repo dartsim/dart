@@ -121,7 +121,7 @@ void World::step(bool _resetCommand)
 
     skel->computeForwardDynamicsRecursionPartB();
     skel->integrateVelocities(mTimeStep);
-    skel->computeForwardKinematics(false, true, false);
+//    skel->computeForwardKinematics(false, true, false); // No longer needed with auto-update
   }
 
   // Detect activated constraints and compute constraint impulses
@@ -140,7 +140,7 @@ void World::step(bool _resetCommand)
     }
 
     skel->integratePositions(mTimeStep);
-    skel->computeForwardDynamicsRecursionPartA();
+//    skel->computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
 
     if (_resetCommand)
     {
@@ -277,12 +277,12 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
   // TODO(MXG): This approach invalidates the indices of all Skeletons in the
-  // vector coming after the one that was deleted. Now if the user attempts to
-  // access those Skeletons by their previously assigned indices, it will not
-  // work correctly. If we don't care about enforcing consistency with the
-  // assigned index (since user can access Skeletons by name anyway), why don't
-  // we use a std::set<Skeleton*> instead of a std::vector<Skeleton*>? std::set
-  // will automatically ensure that we have no repeated entries.
+  // vector that came after the one that was deleted. Now if the user attempts
+  // to access those Skeletons by their previously assigned indices, it will not
+  // work correctly. This isn't really a problem since the user has the freedom
+  // to always access Skeletons by name, but it might be worth mentioning in
+  // documentation that the user cannot expect the index of a Skeleton to remain
+  // valid after a deletion has happened.
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -385,7 +385,7 @@ void World::withdrawEntity(dynamics::Entity *_entity)
 
   mEntities.erase(remove(mEntities.begin(), mEntities.end(), _entity),
                   mEntities.end());
-  // TODO(MXG): Same question as the one above for withdrawSkeleton()
+  // TODO(MXG): Same issue as the one above for withdrawSkeleton()
 }
 
 //==============================================================================
