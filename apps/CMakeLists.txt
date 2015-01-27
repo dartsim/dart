@@ -8,12 +8,14 @@ file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
 set(directories "")
 foreach(child ${children})
     if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
-        if(NOT ${child} EQUAL "CMakeFiles") # Travis-CI automatically generates
-                                            # a directory with this name, so we
-                                            # need to explicitly ignore it.
+        if(child MATCHES "CMakeFiles")
+            # Travis-CI automatically generates
+            # a directory with this name, so we
+            # need to explicitly ignore it.
+        else(child MATCHES "CMakeFiles")
             message(STATUS "Adding application: " ${child})
             list(APPEND directories ${child})
-        endif(NOT ${child} EQUAL "CMakeFiles")
+        endif(child MATCHES "CMakeFiles")
     endif(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
 endforeach(child)
 
