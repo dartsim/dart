@@ -1,12 +1,19 @@
 # A list of applications
 set_property(DIRECTORY PROPERTY FOLDER Apps)
 
+message(STATUS "")
+message(STATUS "[ Applications ]")
 # Automatically identify all directories in the apps folder
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
 set(directories "")
 foreach(child ${children})
     if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
-        list(APPEND directories ${child})
+        if(NOT ${child} EQUAL "CMakeFiles") # Travis-CI automatically generates
+                                            # a directory with this name, so we
+                                            # need to explicitly ignore it.
+            message(STATUS "Adding application: " ${child})
+            list(APPEND directories ${child})
+        endif(NOT ${child} EQUAL "CMakeFiles")
     endif(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
 endforeach(child)
 
