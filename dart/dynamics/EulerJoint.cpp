@@ -84,20 +84,10 @@ void EulerJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_y");
       affixes.push_back("_x");
       break;
-    case AO_ZYZ:
-      affixes.push_back("_z");
-      affixes.push_back("_y");
-      affixes.push_back("_z");
-      break;
     case AO_XYZ:
       affixes.push_back("_x");
       affixes.push_back("_y");
       affixes.push_back("_z");
-      break;
-    case AO_ZXY:
-      affixes.push_back("_z");
-      affixes.push_back("_x");
-      affixes.push_back("_y");
       break;
     default:
       dterr << "Unsupported axis order in EulerJoint named '" << mName

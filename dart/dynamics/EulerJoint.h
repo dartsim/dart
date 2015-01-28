@@ -52,9 +52,7 @@ public:
   enum AxisOrder
   {
     AO_ZYX = 0,
-    AO_ZYZ = 1,
-    AO_XYZ = 2,
-    AO_ZXY = 3
+    AO_XYZ = 1
   };
 
   /// Constructor
@@ -63,12 +61,13 @@ public:
   /// Destructor
   virtual ~EulerJoint();
 
-  /// \brief Set the axis order
+  /// Set the axis order
+  /// \param[in] _order Axis order
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the axis order.
   void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
-  ///
+  /// Return the axis order
   AxisOrder getAxisOrder() const;
 
 protected:
