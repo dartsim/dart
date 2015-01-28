@@ -52,10 +52,11 @@ namespace dynamics {
 /// Frame inherits Entity, so it exists within a reference Frame. This class
 /// keeps track of both its local (relative) and global (world) transforms,
 /// velocities, and accelerations. It also notifies every child Entity when
+/// a transform, velocity, or acceleration has changed locally or globally.
 ///
-/// Entity class is inherited by using virtual inheritence to solve so-called
-/// "diamond problem". Because of that, the Entity's constructor will be called
-/// directly by the most derived class's constructor.
+/// Entity class is inherited by using virtual inheritence to solve the
+/// so-called "diamond problem". Because of that, the Entity's constructor will
+/// be called directly by the most derived class's constructor.
 class Frame : public virtual Entity
 {
 public:
