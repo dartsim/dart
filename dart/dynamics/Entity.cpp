@@ -176,7 +176,10 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     {
       EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
       if(it != mParentFrame->mChildEntities.end())
+      {
         mParentFrame->mChildEntities.erase(it);
+        mParentFrame->processRemovedEntity(this);
+      }
     }
   }
 
@@ -211,3 +214,4 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
 
 } // namespace dynamics
 } // namespace dart
+
