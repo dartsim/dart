@@ -418,6 +418,12 @@ void Frame::processNewEntity(Entity*)
 }
 
 //==============================================================================
+void Frame::processRemovedEntity(Entity*)
+{
+  // Do nothing
+}
+
+//==============================================================================
 Frame::Frame()
   : Entity(this, "World", true),
     mWorldTransform(Eigen::Isometry3d::Identity()),

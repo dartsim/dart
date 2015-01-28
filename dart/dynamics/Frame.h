@@ -223,6 +223,10 @@ protected:
   /// an inheriting class (such as BodyNode) overrides it.
   virtual void processNewEntity(Entity* _newChildEntity);
 
+  /// Called when a child Entity is removed from its parent Frame. This allows
+  /// special post-processing to be performed for extensions of the Frame class.
+  virtual void processRemovedEntity(Entity* _oldChildEntity);
+
 private:
   /// Constructor only to be used by the WorldFrame class
   explicit Frame();

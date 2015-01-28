@@ -533,6 +533,9 @@ protected:
   /// update notices
   void processNewEntity(Entity* _newChildEntity);
 
+  /// Remove this Entity from mChildBodyNodes or mNonBodyNodeEntities
+  void processRemovedEntity(Entity* _oldChildEntity);
+
   /// Update transformation
   virtual void updateTransform();
 

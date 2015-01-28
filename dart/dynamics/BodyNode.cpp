@@ -980,6 +980,20 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 }
 
 //==============================================================================
+void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
+{
+  std::vector<BodyNode*>::iterator it = find(mChildBodyNodes.begin(),
+                                             mChildBodyNodes.end(),
+                                             _oldChildEntity);
+  if(it != mChildBodyNodes.end())
+    mChildBodyNodes.erase(it);
+
+  if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
+          _oldChildEntity) != mNonBodyNodeEntities.end())
+    mNonBodyNodeEntities.erase(_oldChildEntity);
+}
+
+//==============================================================================
 void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
                            bool _useDefaultColor) const
