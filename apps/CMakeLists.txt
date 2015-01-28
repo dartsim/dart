@@ -3,18 +3,7 @@ set_property(DIRECTORY PROPERTY FOLDER Apps)
 
 # List of all the subdirectories to include
 foreach(APPDIR
-    addDeleteSkels
-    atlasSimbicon
-    bipedStand
-    hardcodedDesign    
-    jointConstraints
-    mixedChain
-    operationalSpaceControl
-    rigidChain
-    rigidCubes
-    rigidLoop    
-    softBodies
-    vehicle
+        galileo
     )
     add_subdirectory(${APPDIR})
     if(WIN32)
