@@ -144,7 +144,7 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
 //==============================================================================
 Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinatesOf) const
 {
-  if(this==_inCoordinatesOf)
+  if(_inCoordinatesOf == this)
     return getSpatialVelocity();
 
   if(_inCoordinatesOf->isWorld())
@@ -160,14 +160,14 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
   return math::AdR(getTransform(_inCoordinatesOf),
                    getSpatialVelocity()
                    - math::AdT(_relativeTo->getTransform(this),
-                               _relativeTo->getSpatialVelocity()) );
+                               _relativeTo->getSpatialVelocity()));
 }
 
 //==============================================================================
 Eigen::Vector3d Frame::getLinearVelocity(const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const
 {
-  return getSpatialVelocity(_relativeTo,_inCoordinatesOf).tail<3>();
+  return getSpatialVelocity(_relativeTo, _inCoordinatesOf).tail<3>();
 }
 
 //==============================================================================
@@ -200,7 +200,7 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
 Eigen::Vector6d Frame::getSpatialAcceleration(
     const Frame* _inCoordinatesOf) const
 {
-  if(this==_inCoordinatesOf)
+  if(_inCoordinatesOf == this)
     return getSpatialAcceleration();
 
   if(_inCoordinatesOf->isWorld())

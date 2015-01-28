@@ -69,6 +69,9 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
+///
+/// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
+/// BodyNode of the BodyNode.
 class BodyNode : public Frame
 {
 public:
@@ -167,6 +170,7 @@ public:
 
   /// Return _index-th visualization shape
   Shape* getVisualizationShape(int _index);
+
   /// Return (const) _index-th visualization shape
   const Shape* getVisualizationShape(int _index) const;
 

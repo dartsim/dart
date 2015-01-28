@@ -56,6 +56,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
@@ -69,6 +70,7 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
   return NULL;
 }
 
+//==============================================================================
 int BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
@@ -179,8 +181,12 @@ const std::string& BodyNode::getName() const
 //==============================================================================
 void BodyNode::setGravityMode(bool _gravityMode)
 {
+  if (mGravityMode == _gravityMode)
+    return;
+
   mGravityMode = _gravityMode;
-  if(mSkeleton)
+
+  if (mSkeleton)
     mSkeleton->mIsGravityForcesDirty = true;
 }
 
@@ -450,7 +456,12 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 
   if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
      mChildBodyNodes.end())
+  {
+    dtwarn << "[BodyNode::addChildBodyNode(~)] Attempting to add a BodyNode '"
+           << _body->getName() << "' as a child BodyNode of '" << getName()
+           << "', which is already its parent." << std::endl;
     return;
+  }
 
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
@@ -970,10 +981,16 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
      mChildBodyNodes.end())
     return;
+  // TODO: Looks redundant
 
   // Check if it's already accounted for in our Non-BodyNode Entities
   if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
+  {
+    dtwarn << "[BodyNode::processNewEntity(~)] Attempting to add an Entity '"
+           << _newChildEntity->getName() << "' as a child Entity of '"
+           << getName() << "', which is already its parent." << std::endl;
     return;
+  }
 
   // Add it to the Non-BodyNode Entities
   mNonBodyNodeEntities.insert(_newChildEntity);
