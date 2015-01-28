@@ -68,6 +68,9 @@ public:
   /// renmaed according to the axis order.
   void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
+  ///
+  AxisOrder getAxisOrder() const;
+
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of an EulerJoint with the specified AxisOrder. The positions returned by
   /// this function will result in a relative transform of
@@ -99,9 +102,6 @@ public:
   {
     return convertToPositions(_rotation, mAxisOrder);
   }
-
-  ///
-  AxisOrder getAxisOrder() const;
 
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
