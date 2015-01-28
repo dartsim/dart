@@ -503,6 +503,138 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
 }
 
 //==============================================================================
+template<int N>
+Eigen::Matrix<double,N,1> random_vec(double limit=100)
+{
+  Eigen::Matrix<double,N,1> v;
+  for(size_t i=0; i<N; ++i)
+    v[i] = math::random(-fabs(limit), fabs(limit));
+  return v;
+}
+
+//==============================================================================
+Eigen::Isometry3d random_transform(double translation_limit=100,
+                                   double rotation_limit=2*M_PI)
+{
+  Eigen::Vector3d r = random_vec<3>(translation_limit);
+  Eigen::Vector3d theta = random_vec<3>(rotation_limit);
+
+  Eigen::Isometry3d tf;
+  tf.setIdentity();
+  tf.translate(r);
+
+  if(theta.norm()>0)
+    tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+
+  return tf;
+}
+
+Eigen::Isometry3d predict_joint_transform(Joint* joint,
+                                          const Eigen::Isometry3d& joint_tf)
+{
+  return joint->getTransformFromParentBodyNode() * joint_tf
+          * joint->getTransformFromChildBodyNode().inverse();
+}
+
+Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
+{
+  return relativeTo->getTransform().inverse() * bn->getTransform();
+}
+
+//==============================================================================
+TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
+{
+  // -- set up the root BodyNode
+  BodyNode* root = new BodyNode("root");
+  WeldJoint* rootjoint = new WeldJoint("base");
+  root->setParentJoint(rootjoint);
+
+  // -- set up the FreeJoint
+  BodyNode* freejoint_bn = new BodyNode("freejoint_bn");
+  FreeJoint* freejoint = new FreeJoint("freejoint");
+
+  freejoint_bn->setParentJoint(freejoint);
+  root->addChildBodyNode(freejoint_bn);
+
+  freejoint->setTransformFromParentBodyNode(random_transform());
+  freejoint->setTransformFromChildBodyNode(random_transform());
+  Eigen::Isometry3d freejoint_tf = random_transform();
+  freejoint->setPositions(FreeJoint::convertToPositions(freejoint_tf));
+
+  // -- set up the EulerJoint
+  BodyNode* eulerjoint_bn = new BodyNode("eulerjoint_bn");
+  EulerJoint* eulerjoint = new EulerJoint("eulerjoint");
+
+  eulerjoint_bn->setParentJoint(eulerjoint);
+  root->addChildBodyNode(eulerjoint_bn);
+
+  eulerjoint->setTransformFromParentBodyNode(random_transform());
+  eulerjoint->setTransformFromChildBodyNode(random_transform());
+  Eigen::Isometry3d eulerjoint_tf = random_transform();
+  eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
+  eulerjoint->setPositions(
+        eulerjoint->convertToPositions(eulerjoint_tf.rotation()));
+
+  // -- set up the BallJoint
+  BodyNode* balljoint_bn = new BodyNode("balljoint_bn");
+  BallJoint* balljoint = new BallJoint("balljoint");
+
+  balljoint_bn->setParentJoint(balljoint);
+  root->addChildBodyNode(balljoint_bn);
+
+  balljoint->setTransformFromParentBodyNode(random_transform());
+  balljoint->setTransformFromChildBodyNode(random_transform());
+  Eigen::Isometry3d balljoint_tf = random_transform();
+  balljoint_tf.translation() = Eigen::Vector3d::Zero();
+  balljoint->setPositions(
+        BallJoint::convertToPositions(balljoint_tf.rotation()));
+
+  // -- set up Skeleton and compute forward kinematics
+  Skeleton* skel = new Skeleton;
+  skel->addBodyNode(root);
+  skel->addBodyNode(freejoint_bn);
+  skel->addBodyNode(eulerjoint_bn);
+  skel->addBodyNode(balljoint_bn);
+  skel->init();
+  skel->computeForwardKinematics(true, false, false);
+
+  std::vector<Joint*> joints;
+  std::vector<BodyNode*> bns;
+  std::vector<Eigen::Isometry3d> tfs;
+
+  joints.push_back(freejoint);
+  bns.push_back(freejoint_bn);
+  tfs.push_back(freejoint_tf);
+
+  joints.push_back(eulerjoint);
+  bns.push_back(eulerjoint_bn);
+  tfs.push_back(eulerjoint_tf);
+
+  joints.push_back(balljoint);
+  bns.push_back(balljoint_bn);
+  tfs.push_back(balljoint_tf);
+
+  for(size_t i=0; i<joints.size(); ++i)
+  {
+    Joint* joint = joints[i];
+    BodyNode* bn = bns[i];
+    Eigen::Isometry3d tf = tfs[i];
+    EXPECT_TRUE(equals(predict_joint_transform(joint, tf).matrix(),
+            get_relative_transform(bn, bn->getParentBodyNode()).matrix()));
+
+    if(!equals(predict_joint_transform(joint, tf).matrix(),
+          get_relative_transform(bn, bn->getParentBodyNode()).matrix()))
+    {
+      std::cout << "[" << joint->getName() << " Failed]\n";
+      std::cout << "Predicted:\n" << predict_joint_transform(joint, tf).matrix()
+                << "\n\nActual:\n"
+                << get_relative_transform(bn, bn->getParentBodyNode()).matrix()
+                << "\n\n";
+    }
+  }
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

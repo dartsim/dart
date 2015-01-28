@@ -54,6 +54,18 @@ public:
   /// Destructor
   virtual ~BallJoint();
 
+  /// Convert a rotation into a 3D vector that can be used to set the positions
+  /// of a BallJoint. The positions returned by this function will result in a
+  /// relative transform of
+  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
+  /// between the parent BodyNode and the child BodyNode frames when applied to
+  /// a BallJoint.
+  template <typename RotationType>
+  static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
+  {
+    return math::logMap(_rotation);
+  }
+
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);

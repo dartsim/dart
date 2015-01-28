@@ -68,6 +68,38 @@ public:
   /// renmaed according to the axis order.
   void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
+  /// Convert a rotation into a 3D vector that can be used to set the positions
+  /// of an EulerJoint with the specified AxisOrder. The positions returned by
+  /// this function will result in a relative transform of
+  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
+  /// between the parent BodyNode and the child BodyNode frames when applied to
+  /// an EulerJoint with the correct axis ordering.
+  template <typename RotationType>
+  static Eigen::Vector3d convertToPositions(
+      const RotationType& _rotation, AxisOrder _ordering)
+  {
+    switch(_ordering)
+    {
+      case AO_XYZ:
+        return math::matrixToEulerXYZ(_rotation);
+      case AO_ZYX:
+        return math::matrixToEulerZYX(_rotation);
+      default:
+        dtwarn << "[EulerJoint::convertToPositions] Unsupported AxisOrder ("
+               << _ordering << "), returning a zero vector\n";
+        return Eigen::Vector3d::Zero();
+    }
+  }
+
+  /// This is a version of EulerJoint::convertToPositions(const RotationType&,
+  /// AxisOrder) which will use the AxisOrder belonging to the joint instance
+  /// that it gets called on.
+  template <typename RotationType>
+  Eigen::Vector3d convertToPositions(const RotationType& _rotation)
+  {
+    return convertToPositions(_rotation, mAxisOrder);
+  }
+
   ///
   AxisOrder getAxisOrder() const;
 

@@ -58,6 +58,15 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
+Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
+{
+  Eigen::Vector6d x;
+  x.head<3>() = math::logMap(_tf.rotation());
+  x.tail<3>() = _tf.translation();
+  return x;
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   mQ.linear()      = mQ.linear() * math::expMapRot(mJacobian.topRows<3>()

@@ -56,6 +56,14 @@ public:
   /// Destructor
   virtual ~FreeJoint();
 
+  /// Convert a transform into a 6D vector that can be used to set the positions
+  /// of a FreeJoint. The positions returned by this function will result in a
+  /// relative transform of
+  /// getTransformFromParentBodyNode() * _tf * getTransformFromChildBodyNode().inverse()
+  /// between the parent BodyNode and the child BodyNode frames when applied to
+  /// a FreeJoint.
+  static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
+
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);
