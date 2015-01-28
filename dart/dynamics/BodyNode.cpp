@@ -962,13 +962,20 @@ void BodyNode::init(Skeleton* _skeleton)
 //==============================================================================
 void BodyNode::processNewEntity(Entity* _newChildEntity)
 {
+  // Here we want to sort out whether the Entity that has been added is a child
+  // BodyNode or not
+
+  // Check if it's a child BodyNode (if not, then it's just some other arbitrary
+  // type of Entity)
   if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
      mChildBodyNodes.end())
     return;
 
+  // Check if it's already accounted for in our Non-BodyNode Entities
   if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
     return;
 
+  // Add it to the Non-BodyNode Entities
   mNonBodyNodeEntities.insert(_newChildEntity);
 }
 

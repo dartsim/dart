@@ -52,6 +52,7 @@ namespace dynamics {
 /// Frame inherits Entity, so it exists within a reference Frame. This class
 /// keeps track of both its local (relative) and global (world) transforms,
 /// velocities, and accelerations. It also notifies every child Entity when
+/// a transform, velocity, or acceleration has changed locally or globally.
 class Frame : public virtual Entity
 {
 public:
