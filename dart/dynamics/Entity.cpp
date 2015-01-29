@@ -120,10 +120,10 @@ const Frame* Entity::getParentFrame() const
 //==============================================================================
 bool Entity::dependsOn(const Frame *_someFrame) const
 {
-  if(_someFrame == NULL)
+  if(NULL == _someFrame)
     return false;
 
-  if(_someFrame == this)
+  if(this == _someFrame)
     return true;
 
   if(_someFrame->isWorld())
@@ -183,7 +183,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  if(_newParentFrame == NULL)
+  if(NULL == _newParentFrame)
   {
     mParentFrame = NULL;
     return;
