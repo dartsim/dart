@@ -83,6 +83,10 @@ bool FileInfoWorld::loadFile(const char* _fName)
     inFile >> intVal;
     numDofsForSkels.push_back(intVal);
   }
+
+  // Release the previous recording
+  delete mRecord;
+
   mRecord = new simulation::Recording(numDofsForSkels);
 
   for (int i = 0; i < numFrames; i++)
