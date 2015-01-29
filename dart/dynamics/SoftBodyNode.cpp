@@ -378,7 +378,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   }
   for (auto& pointMass : mPointMasses)
   {
-    mF.head<3>() += pointMass->mX.cross(pointMass->mF);
+    mF.head<3>() += pointMass->getLocalPosition().cross(pointMass->mF);
     mF.tail<3>() += pointMass->mF;
   }
 
@@ -442,8 +442,9 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   //
   for (const auto& pointMass : mPointMasses)
   {
-    _addPiToArtInertia(pointMass->mX, pointMass->mPi);
-    _addPiToArtInertiaImplicit(pointMass->mX, pointMass->mImplicitPi);
+    _addPiToArtInertia(pointMass->getLocalPosition(), pointMass->mPi);
+    _addPiToArtInertiaImplicit(pointMass->getLocalPosition(),
+                               pointMass->mImplicitPi);
   }
 
   // Verification
@@ -493,7 +494,7 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
   //
   for (const auto& pointMass : mPointMasses)
   {
-    mBiasForce.head<3>() += pointMass->mX.cross(pointMass->mBeta);
+    mBiasForce.head<3>() += pointMass->getLocalPosition().cross(pointMass->mBeta);
     mBiasForce.tail<3>() += pointMass->mBeta;
   }
 
@@ -548,7 +549,7 @@ void SoftBodyNode::updateBiasImpulse()
 
   for (auto& pointMass : mPointMasses)
   {
-    mBiasImpulse.head<3>() += pointMass->mX.cross(pointMass->mImpBeta);
+    mBiasImpulse.head<3>() += pointMass->getLocalPosition().cross(pointMass->mImpBeta);
     mBiasImpulse.tail<3>() += pointMass->mImpBeta;
   }
 
@@ -622,7 +623,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
 //       it != mPointMasses.end(); ++it)
 //  {
-//    mM_F.head<3>() += (*it)->mX.cross((*it)->mM_F);
+//    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
 //    mM_F.tail<3>() += (*it)->mM_F;
 //  }
 
@@ -662,7 +663,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mM_F.head<3>() += (*it)->mX.cross((*it)->mM_F);
+    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
     mM_F.tail<3>() += (*it)->mM_F;
   }
   assert(!math::isNan(mM_F));
@@ -710,7 +711,7 @@ void SoftBodyNode::updateInvMassMatrix()
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+    mInvM_c.head<3>() += (*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta);
     mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
   }
 
@@ -746,7 +747,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
 ////  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
 ////       it != mPointMasses.end(); ++it)
 ////  {
-////    mInvM_c.head<3>() += (*it)->mX.cross((*it)->mBiasForceForInvMeta);
+////    mInvM_c.head<3>() += (*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta);
 ////    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
 ////  }
 
@@ -852,7 +853,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mG_F.head<3>() += (*it)->mX.cross((*it)->mG_F);
+    mG_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mG_F);
     mG_F.tail<3>() += (*it)->mG_F;
   }
 
@@ -905,7 +906,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
 //       it != mPointMasses.end(); ++it)
 //  {
-//    mCg_F.head<3>() += (*it)->mX.cross((*it)->mCg_F);
+//    mCg_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mCg_F);
 //    mCg_F.tail<3>() += (*it)->mCg_F;
 //  }
 
@@ -938,7 +939,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
        it != mPointMasses.end(); ++it)
   {
-    mFext_F.head<3>() += (*it)->mX.cross((*it)->mFext);
+    mFext_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mFext);
     mFext_F.tail<3>() += (*it)->mFext;
   }
 
@@ -973,7 +974,8 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
   _ri->pushMatrix();
 
   // render the self geometry
-  mParentJoint->applyGLTransform(_ri);
+//  mParentJoint->applyGLTransform(_ri);
+  _ri->transform(getRelativeTransform());
 
   _ri->pushName((unsigned)mID);
   // rigid body
@@ -1008,15 +1010,15 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
       glEnable(GL_AUTO_NORMAL);
       glBegin(GL_TRIANGLES);
 
-      pos = mPointMasses[mFaces[i](0)]->mX;
+      pos = mPointMasses[mFaces[i](0)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mFaces[i](1)]->mX;
+      pos = mPointMasses[mFaces[i](1)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mFaces[i](2)]->mX;
+      pos = mPointMasses[mFaces[i](2)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
@@ -1027,10 +1029,12 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
   _ri->popName();
 
   // render the subtree
-  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
-  {
-    getChildBodyNode(i)->draw(_ri, _color, _useDefaultColor);
-  }
+//  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
+//  {
+//    getChildBodyNode(i)->draw(_ri, _color, _useDefaultColor);
+//  }
+  for(Entity* entity : mChildEntities)
+    entity->draw(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
 }

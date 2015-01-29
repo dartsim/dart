@@ -446,7 +446,7 @@ void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
   }
   else
   {
-    mFext += mParentSoftBodyNode->getTransform().linear().transpose()
+    mFext += mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _force;
   }
 }
@@ -468,7 +468,7 @@ void PointMass::setConstraintImpulse(const Eigen::Vector3d& _constImp,
   else
   {
     const Matrix3d Rt
-        = mParentSoftBodyNode->getTransform().linear().transpose();
+        = mParentSoftBodyNode->getWorldTransform().linear().transpose();
     mConstraintImpulses = Rt * _constImp;
   }
 }
@@ -484,7 +484,7 @@ void PointMass::addConstraintImpulse(const Eigen::Vector3d& _constImp,
   else
   {
     const Matrix3d Rt
-        = mParentSoftBodyNode->getTransform().linear().transpose();
+        = mParentSoftBodyNode->getWorldTransform().linear().transpose();
     mConstraintImpulses.noalias() += Rt * _constImp;
   }
 }
@@ -561,7 +561,7 @@ Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getBodyJacobian()
 //==============================================================================
 Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getWorldJacobian()
 {
-  return mParentSoftBodyNode->getTransform().linear()
+  return mParentSoftBodyNode->getWorldTransform().linear()
       * getBodyJacobian();
 }
 
@@ -607,7 +607,7 @@ const Eigen::Vector3d&PointMass::getBodyVelocity() const
 //==============================================================================
 Eigen::Vector3d PointMass::getWorldVelocity() const
 {
-  return mParentSoftBodyNode->getTransform().linear() * getBodyVelocity();
+  return mParentSoftBodyNode->getWorldTransform().linear() * getBodyVelocity();
 }
 
 //==============================================================================
@@ -621,7 +621,7 @@ const Eigen::Vector3d& PointMass::getBodyAcceleration() const
 //==============================================================================
 Eigen::Vector3d PointMass::getWorldAcceleration() const
 {
-  return mParentSoftBodyNode->getTransform().linear() * getBodyAcceleration();
+  return mParentSoftBodyNode->getWorldTransform().linear() * getBodyAcceleration();
 }
 
 //==============================================================================
@@ -645,13 +645,13 @@ void PointMass::init()
 //==============================================================================
 void PointMass::updateTransform() const
 {
-  // Local transpose
+  // Local translation
   mX = getPositions() + mX0;
   assert(!math::isNan(mX));
 
-  // World transpose
-  mW = mParentSoftBodyNode->getTransform().translation()
-       + mParentSoftBodyNode->getTransform().linear() * mX;
+  // World translation
+  Eigen::Isometry3d parentW = mParentSoftBodyNode->getWorldTransform();
+  mW = parentW.translation() + parentW.linear() * mX;
   assert(!math::isNan(mW));
 }
 
@@ -707,7 +707,7 @@ void PointMass::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
         mMass * getBodyVelocity()) - mFext;
   if (mParentSoftBodyNode->getGravityMode() == true)
   {
-    mF -= mMass * (mParentSoftBodyNode->getTransform().linear().transpose()
+    mF -= mMass * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
                    * _gravity);
   }
   assert(!math::isNan(mF));
@@ -771,7 +771,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   if (mParentSoftBodyNode->getGravityMode() == true)
   {
     mB -= mMass
-          * (mParentSoftBodyNode->getTransform().linear().transpose()
+          * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
              * _gravity);
   }
   assert(!math::isNan(mB));
