@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "dart/dynamics/Entity.h"
 #include "dart/common/Deprecated.h"
 
 namespace dart {
@@ -53,6 +54,8 @@ namespace dynamics {
 class EllipsoidShape;
 class SoftBodyNode;
 
+class PointMassNotifier;
+
 ///
 class PointMass
 {
@@ -63,7 +66,8 @@ public:
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
   /// Default constructor
-  explicit PointMass(SoftBodyNode* _softBodyNode);
+  explicit PointMass(SoftBodyNode* _softBodyNode,
+                     PointMassNotifier* _notifier = NULL);
 
   /// Default destructor
   virtual ~PointMass();
@@ -653,6 +657,8 @@ protected:
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector3d mImpF;
 
+  PointMassNotifier* mNotifier;
+
 private:
   EllipsoidShape* mShape;
 
@@ -666,6 +672,22 @@ public:
 //  PointMass* pm1;
 //  PointMass* pm2;
 //};
+
+class PointMassNotifier : public Entity
+{
+public:
+
+  PointMassNotifier(Frame* _refFrame, const std::string& _name);
+
+  void clearTransformNotice();
+  void clearVelocityNotice();
+  void clearAccelerationNotice();
+
+  void notifyTransformUpdate();
+  void notifyVelocityUpdate();
+  void notifyAccelerationUpdate();
+
+};
 
 }  // namespace dynamics
 }  // namespace dart

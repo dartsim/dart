@@ -64,6 +64,8 @@ SoftBodyNode::SoftBodyNode(const std::string& _name)
     mSoftVisualShape(NULL),
     mSoftCollShape(NULL)
 {
+
+  mNotifier = new PointMassNotifier(this, "PointMassNotifier");
 }
 
 //==============================================================================

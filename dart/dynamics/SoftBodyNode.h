@@ -52,6 +52,7 @@ namespace dart {
 namespace dynamics {
 
 class PointMass;
+class PointMassNotifier;
 class SoftMeshShape;
 
 /// SoftBodyNode represent a soft body that has one deformable skin
@@ -258,6 +259,9 @@ protected:
 protected:
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;
+
+  /// An Entity which tracks when the point masses need to be updated
+  PointMassNotifier* mNotifier;
 
   // TODO(JS): Let's remove this because this is rendering part
   /// \brief Tri-mesh indexes for rendering.

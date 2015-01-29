@@ -50,7 +50,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PointMass::PointMass(SoftBodyNode* _softBodyNode)
+PointMass::PointMass(SoftBodyNode* _softBodyNode, PointMassNotifier* _notifier)
   : // mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
     mPositions(Eigen::Vector3d::Zero()),
     mPositionLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
@@ -94,6 +94,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mImpAlpha(Eigen::Vector3d::Zero()),
     mImpBeta(Eigen::Vector3d::Zero()),
     mImpF(Eigen::Vector3d::Zero()),
+    mNotifier(_notifier),
     mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01)))
 {
   assert(mParentSoftBodyNode != NULL);
@@ -109,7 +110,11 @@ PointMass::~PointMass()
 void PointMass::setMass(double _mass)
 {
   assert(0.0 < _mass);
+  if(_mass == mMass)
+    return;
+
   mMass = _mass;
+
 }
 
 //==============================================================================
@@ -1039,6 +1044,52 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   _ri->popMatrix();
   //  _ri->popName();
 
+}
+
+//==============================================================================
+PointMassNotifier::PointMassNotifier(Frame* _refFrame, const std::string& _name)
+  : Entity(_refFrame, _name, false)
+{
+
+}
+
+//==============================================================================
+void PointMassNotifier::clearTransformNotice()
+{
+  mNeedTransformUpdate = false;
+}
+
+//==============================================================================
+void PointMassNotifier::clearVelocityNotice()
+{
+  mNeedVelocityUpdate = false;
+}
+
+//==============================================================================
+void PointMassNotifier::clearAccelerationNotice()
+{
+  mNeedAccelerationUpdate = false;
+}
+
+//==============================================================================
+void PointMassNotifier::notifyTransformUpdate()
+{
+  mNeedTransformUpdate = true;
+  mNeedVelocityUpdate = true;
+  mNeedAccelerationUpdate =true;
+}
+
+//==============================================================================
+void PointMassNotifier::notifyVelocityUpdate()
+{
+  mNeedVelocityUpdate = true;
+  mNeedAccelerationUpdate = true;
+}
+
+//==============================================================================
+void PointMassNotifier::notifyAccelerationUpdate()
+{
+  mNeedAccelerationUpdate = true;
 }
 
 }  // namespace dynamics
