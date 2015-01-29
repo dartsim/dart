@@ -177,10 +177,10 @@ public:
   const Skeleton* getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
-  void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
   /// Set transformation from child body node to this joint
-  void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
   /// Get transformation from parent body node to this joint
   const Eigen::Isometry3d& getTransformFromParentBodyNode() const;

@@ -57,10 +57,10 @@ public:
   virtual ~WeldJoint();
 
   // Documentation inherited
-  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
 
   // Documentation inherited
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
 
 protected:
   //----------------------------------------------------------------------------
