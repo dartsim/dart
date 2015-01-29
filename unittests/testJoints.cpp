@@ -573,7 +573,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   Eigen::Isometry3d eulerjoint_tf = random_transform();
   eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
   eulerjoint->setPositions(
-        eulerjoint->convertToPositions(eulerjoint_tf.rotation()));
+        eulerjoint->convertToPositions(eulerjoint_tf.linear()));
 
   // -- set up the BallJoint
   BodyNode* balljoint_bn = new BodyNode("balljoint_bn");
@@ -587,7 +587,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   Eigen::Isometry3d balljoint_tf = random_transform();
   balljoint_tf.translation() = Eigen::Vector3d::Zero();
   balljoint->setPositions(
-        BallJoint::convertToPositions(balljoint_tf.rotation()));
+        BallJoint::convertToPositions(balljoint_tf.linear()));
 
   // -- set up Skeleton and compute forward kinematics
   Skeleton* skel = new Skeleton;

@@ -61,7 +61,7 @@ FreeJoint::~FreeJoint()
 Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
 {
   Eigen::Vector6d x;
-  x.head<3>() = math::logMap(_tf.rotation());
+  x.head<3>() = math::logMap(_tf.linear());
   x.tail<3>() = _tf.translation();
   return x;
 }
