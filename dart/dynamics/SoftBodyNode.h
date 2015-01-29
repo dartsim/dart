@@ -63,6 +63,8 @@ class SoftBodyNode : public BodyNode
 {
 public:
   friend class Skeleton;
+  friend class PointMass;
+  friend class PointMassNotifier;
 
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
@@ -72,6 +74,12 @@ public:
 
   /// \brief
   virtual ~SoftBodyNode();
+
+  /// Get the update notifier for the PointMasses of this SoftBodyNode
+  PointMassNotifier* getNotifier();
+
+  /// Get the update notifier for the PointMasses of this SoftBodyNode
+  const PointMassNotifier* getNotifier() const;
 
   /// \brief Get mass.
   double getMass() const;
@@ -140,6 +148,18 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
+
+  /// Tell the Skeleton that an articulated inertia update is needed
+  void notifyArticulatedInertiaUpdate();
+
+  /// Tell the Skeleton that the external forces need to be updated
+  void notifyExternalForcesUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void notifyCoriolisUpdate();
+
+  /// Update articulated inertia if necessary
+  void checkArticulatedInertiaUpdate() const;
 
   // Documentation inherited.
   virtual void updateTransform() override;

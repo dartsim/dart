@@ -144,6 +144,18 @@ void SoftBodyNode::init(Skeleton* _skeleton)
 //}
 
 //==============================================================================
+PointMassNotifier* SoftBodyNode::getNotifier()
+{
+  return mNotifier;
+}
+
+//==============================================================================
+const PointMassNotifier* SoftBodyNode::getNotifier() const
+{
+  return mNotifier;
+}
+
+//==============================================================================
 double SoftBodyNode::getMass() const
 {
   double totalMass = BodyNode::getMass();
@@ -251,12 +263,45 @@ void SoftBodyNode::clearConstraintImpulse()
 }
 
 //==============================================================================
+void SoftBodyNode::notifyArticulatedInertiaUpdate()
+{
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
+}
+
+//==============================================================================
+void SoftBodyNode::notifyExternalForcesUpdate()
+{
+  if(mSkeleton)
+    mSkeleton->mIsExternalForcesDirty = true;
+}
+
+//==============================================================================
+void SoftBodyNode::notifyCoriolisUpdate()
+{
+  if(mSkeleton)
+  {
+    mSkeleton->mIsCoriolisForcesDirty = true;
+    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+  }
+}
+
+//==============================================================================
+void SoftBodyNode::checkArticulatedInertiaUpdate() const
+{
+  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
+    updateArtInertia(mSkeleton->getTimeStep());
+}
+
+//==============================================================================
 void SoftBodyNode::updateTransform()
 {
   BodyNode::updateTransform();
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateTransform();
+
+  mNotifier->clearTransformNotice();
 }
 
 //==============================================================================
@@ -266,6 +311,8 @@ void SoftBodyNode::updateVelocity()
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateVelocity();
+
+  mNotifier->clearVelocityNotice();
 }
 
 //==============================================================================
@@ -275,6 +322,8 @@ void SoftBodyNode::updatePartialAcceleration() const
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updatePartialAcceleration();
+
+  mNotifier->clearPartialAccelerationNotice();
 }
 
 //==============================================================================
@@ -284,6 +333,8 @@ void SoftBodyNode::updateAccelerationID()
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateAccelerationID();
+
+  mNotifier->clearAccelerationNotice();
 }
 
 //==============================================================================
@@ -453,7 +504,7 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
   // forces
   mParentJoint->updateTotalForce( getArticulatedInertiaImplicit()
                                   * getPartialAcceleration() + mBiasForce,
-                                  _timeStep);
+                                  _timeStep );
 }
 
 //==============================================================================
@@ -463,6 +514,8 @@ void SoftBodyNode::updateAccelerationFD()
 
   for (auto& pointMass : mPointMasses)
     pointMass->updateAccelerationFD();
+
+  mNotifier->clearAccelerationNotice();
 }
 
 //==============================================================================

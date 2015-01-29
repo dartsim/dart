@@ -50,7 +50,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PointMass::PointMass(SoftBodyNode* _softBodyNode, PointMassNotifier* _notifier)
+PointMass::PointMass(SoftBodyNode* _softBodyNode)
   : // mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
     mPositions(Eigen::Vector3d::Zero()),
     mPositionLowerLimits(Eigen::Vector3d::Constant(-DART_DBL_INF)),
@@ -94,10 +94,11 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode, PointMassNotifier* _notifier)
     mImpAlpha(Eigen::Vector3d::Zero()),
     mImpBeta(Eigen::Vector3d::Zero()),
     mImpF(Eigen::Vector3d::Zero()),
-    mNotifier(_notifier),
+    mNotifier(_softBodyNode->mNotifier),
     mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01)))
 {
   assert(mParentSoftBodyNode != NULL);
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -110,17 +111,41 @@ PointMass::~PointMass()
 void PointMass::setMass(double _mass)
 {
   assert(0.0 < _mass);
-  if(_mass == mMass)
-    return;
-
   mMass = _mass;
-
 }
 
 //==============================================================================
 double PointMass::getMass() const
 {
   return mMass;
+}
+
+//==============================================================================
+double PointMass::getPsi() const
+{
+  mParentSoftBodyNode->checkArticulatedInertiaUpdate();
+  return mPsi;
+}
+
+//==============================================================================
+double PointMass::getImplicitPsi() const
+{
+  mParentSoftBodyNode->checkArticulatedInertiaUpdate();
+  return mImplicitPsi;
+}
+
+//==============================================================================
+double PointMass::getPi() const
+{
+  mParentSoftBodyNode->checkArticulatedInertiaUpdate();
+  return mPi;
+}
+
+//==============================================================================
+double PointMass::getImplicitPi() const
+{
+  mParentSoftBodyNode->checkArticulatedInertiaUpdate();
+  return mImplicitPi;
 }
 
 //==============================================================================
@@ -191,6 +216,7 @@ void PointMass::setPosition(size_t _index, double _position)
   assert(_index < 3);
 
   mPositions[_index] = _position;
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -205,6 +231,7 @@ double PointMass::getPosition(size_t _index) const
 void PointMass::setPositions(const Vector3d& _positions)
 {
   mPositions = _positions;
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -217,6 +244,7 @@ const Vector3d& PointMass::getPositions() const
 void PointMass::resetPositions()
 {
   mPositions.setZero();
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -225,6 +253,7 @@ void PointMass::setVelocity(size_t _index, double _velocity)
   assert(_index < 3);
 
   mVelocities[_index] = _velocity;
+  mNotifier->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -239,6 +268,7 @@ double PointMass::getVelocity(size_t _index) const
 void PointMass::setVelocities(const Vector3d& _velocities)
 {
   mVelocities = _velocities;
+  mNotifier->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -251,6 +281,7 @@ const Vector3d& PointMass::getVelocities() const
 void PointMass::resetVelocities()
 {
   mVelocities.setZero();
+  mNotifier->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -259,6 +290,7 @@ void PointMass::setAcceleration(size_t _index, double _acceleration)
   assert(_index < 3);
 
   mAccelerations[_index] = _acceleration;
+  mNotifier->notifyAccelerationUpdate();
 }
 
 //==============================================================================
@@ -273,6 +305,7 @@ double PointMass::getAcceleration(size_t _index) const
 void PointMass::setAccelerations(const Eigen::Vector3d& _accelerations)
 {
   mAccelerations = _accelerations;
+  mNotifier->notifyAccelerationUpdate();
 }
 
 //==============================================================================
@@ -282,9 +315,18 @@ const Vector3d& PointMass::getAccelerations() const
 }
 
 //==============================================================================
+const Vector3d& PointMass::getPartialAccelerations() const
+{
+  if(mNotifier->needsPartialAccelerationUpdate())
+    mParentSoftBodyNode->updatePartialAcceleration();
+  return mEta;
+}
+
+//==============================================================================
 void PointMass::resetAccelerations()
 {
   mAccelerations.setZero();
+  mNotifier->notifyAccelerationUpdate();
 }
 
 //==============================================================================
@@ -368,25 +410,25 @@ void PointMass::resetConstraintImpulses()
 //==============================================================================
 void PointMass::integratePositions(double _dt)
 {
-  mPositions += mVelocities * _dt;
+  setPositions( getPositions() + getVelocities() * _dt );
 }
 
 //==============================================================================
 void PointMass::integrateVelocities(double _dt)
 {
-  mVelocities += mAccelerations * _dt;
+  setVelocities( getVelocities() + getAccelerations() * _dt );
 }
 
 //==============================================================================
 void PointMass::updateVelocityWithVelocityChange()
 {
-  mVelocities += mVelocityChanges;
+  setVelocities( getVelocities() + mVelocityChanges );
 }
 
 //==============================================================================
 void PointMass::updateAccelerationWithVelocityChange(double _timeStep)
 {
-  mAccelerations.noalias() += mVelocityChanges / _timeStep;
+  setAccelerations( getAccelerations() + mVelocityChanges / _timeStep );
 }
 
 //==============================================================================
@@ -469,6 +511,7 @@ void PointMass::clearConstraintImpulse()
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
   mX0 = _p;
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -480,12 +523,16 @@ const Eigen::Vector3d& PointMass::getRestingPosition() const
 //==============================================================================
 const Eigen::Vector3d& PointMass::getLocalPosition() const
 {
+  if(mNotifier->needsTransformUpdate())
+    mParentSoftBodyNode->updateTransform();
   return mX;
 }
 
 //==============================================================================
 const Eigen::Vector3d& PointMass::getWorldPosition() const
 {
+  if(mNotifier && mNotifier->needsTransformUpdate())
+    mParentSoftBodyNode->updateTransform();
   return mW;
 }
 
@@ -501,7 +548,7 @@ Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getBodyJacobian()
       = Eigen::MatrixXd::Zero(3, totalDof);
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  T.translation() = mX;
+  T.translation() = getLocalPosition();
 
   J.leftCols(dof)
       = math::AdInvTJac(
@@ -552,25 +599,29 @@ const SoftBodyNode* PointMass::getParentSoftBodyNode() const
 //==============================================================================
 const Eigen::Vector3d&PointMass::getBodyVelocity() const
 {
+  if(mNotifier->needsVelocityUpdate())
+    mParentSoftBodyNode->updateVelocity();
   return mV;
 }
 
 //==============================================================================
 Eigen::Vector3d PointMass::getWorldVelocity() const
 {
-  return mParentSoftBodyNode->getTransform().linear() * mV;
+  return mParentSoftBodyNode->getTransform().linear() * getBodyVelocity();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PointMass::getBodyAcceleration() const
 {
+  if(mNotifier->needsAccelerationUpdate())
+    mParentSoftBodyNode->updateAccelerationID();
   return mA;
 }
 
 //==============================================================================
 Eigen::Vector3d PointMass::getWorldAcceleration() const
 {
-  return mParentSoftBodyNode->getTransform().linear() * mA;
+  return mParentSoftBodyNode->getTransform().linear() * getBodyAcceleration();
 }
 
 //==============================================================================
@@ -592,10 +643,10 @@ void PointMass::init()
 }
 
 //==============================================================================
-void PointMass::updateTransform()
+void PointMass::updateTransform() const
 {
   // Local transpose
-  mX = mPositions + mX0;
+  mX = getPositions() + mX0;
   assert(!math::isNan(mX));
 
   // World transpose
@@ -605,20 +656,20 @@ void PointMass::updateTransform()
 }
 
 //==============================================================================
-void PointMass::updateVelocity()
+void PointMass::updateVelocity() const
 {
   // v = w(parent) x mX + v(parent) + dq
-  mV = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mX)
+  mV = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(getLocalPosition())
        + mParentSoftBodyNode->getBodyVelocity().tail<3>()
-       + mVelocities;
+       + getVelocities();
   assert(!math::isNan(mV));
 }
 
 //==============================================================================
-void PointMass::updatePartialAcceleration()
+void PointMass::updatePartialAcceleration() const
 {
   // eta = w(parent) x dq
-  Eigen::Vector3d dq = mVelocities;
+  const Eigen::Vector3d& dq = getVelocities();
   mEta = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(dq);
   assert(!math::isNan(mEta));
 }
@@ -630,12 +681,12 @@ void PointMass::updateAcceleration()
 }
 
 //==============================================================================
-void PointMass::updateAccelerationID()
+void PointMass::updateAccelerationID() const
 {
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
+  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(getLocalPosition()) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        mEta + mAccelerations;
+        getPartialAccelerations() + getAccelerations();
   assert(!math::isNan(mA));
 }
 
@@ -651,9 +702,9 @@ void PointMass::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                                 bool _withExternalForces)
 {
   // f = m*dv + w(parent) x m*v - fext
-  mF.noalias() = mMass * mA;
-  mF += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mMass * mV)
-        - mFext;
+  mF.noalias() = mMass * getBodyAcceleration();
+  mF += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(
+        mMass * getBodyVelocity()) - mFext;
   if (mParentSoftBodyNode->getGravityMode() == true)
   {
     mF -= mMass * (mParentSoftBodyNode->getTransform().linear().transpose()
@@ -669,7 +720,7 @@ void PointMass::updateArticulatedInertia(double _dt)
 }
 
 //==============================================================================
-void PointMass::updateArtInertiaFD(double _timeStep)
+void PointMass::updateArtInertiaFD(double _timeStep) const
 {
   // Articulated inertia
   // - Do nothing
@@ -714,7 +765,8 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
 {
   // B = w(parent) x m*v - fext - fgravity
   // - w(parent) x m*v - fext
-  mB = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mMass*mV) - mFext;
+  mB = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(
+        mMass * getBodyVelocity()) - mFext;
   // - fgravity
   if (mParentSoftBodyNode->getGravityMode() == true)
   {
@@ -730,9 +782,9 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   double kd = mParentSoftBodyNode->getDampingCoefficient();
   int nN = mConnectedPointMasses.size();
   mAlpha = mForces
-           - (kv + nN * ke) * mPositions
-           - (_dt * (kv + nN * ke) + kd) * mVelocities
-           - mMass * mEta
+           - (kv + nN * ke) * getPositions()
+           - (_dt * (kv + nN * ke) + kd) * getVelocities()
+           - mMass * getPartialAccelerations()
            - mB;
   for (size_t i = 0; i < mConnectedPointMasses.size(); ++i)
   {
@@ -743,7 +795,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
 
   // Cache data: beta
   mBeta = mB;
-  mBeta.noalias() += mMass * (mEta + mImplicitPsi * mAlpha);
+  mBeta.noalias() += mMass * (getPartialAccelerations() + getImplicitPsi() * mAlpha);
   assert(!math::isNan(mBeta));
 }
 
@@ -757,18 +809,19 @@ void PointMass::updateJointAndBodyAcceleration()
 void PointMass::updateAccelerationFD()
 {
   // ddq = imp_psi*(alpha - m*(dw(parent) x mX + dv(parent))
+  const Eigen::Vector3d& X = getLocalPosition();
   Eigen::Vector3d ddq =
-      mImplicitPsi
+      getImplicitPsi()
       * (mAlpha - mMass
-         * (mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX)
+         * (mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(X)
             + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
   setAccelerations(ddq);
   assert(!math::isNan(ddq));
 
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(mX) +
+  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(X) +
         mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        mEta + mAccelerations;
+        getPartialAccelerations() + getAccelerations();
   assert(!math::isNan(mA));
 }
 
@@ -777,15 +830,15 @@ void PointMass::updateTransmittedForce()
 {
   // f = m*dv + B
   mF = mB;
-  mF.noalias() += mMass * mA;
+  mF.noalias() += mMass * getBodyAcceleration();
   assert(!math::isNan(mF));
 }
 
 //==============================================================================
 void PointMass::updateMassMatrix()
 {
-  mM_dV = mAccelerations
-          + mParentSoftBodyNode->mM_dV.head<3>().cross(mX)
+  mM_dV = getAccelerations()
+          + mParentSoftBodyNode->mM_dV.head<3>().cross(getLocalPosition())
           + mParentSoftBodyNode->mM_dV.tail<3>();
   assert(!math::isNan(mM_dV));
 }
@@ -826,9 +879,10 @@ void PointMass::updateVelocityChangeFD()
   //           * (mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
   //              + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()));
 
+  const Eigen::Vector3d& X = getLocalPosition();
   Eigen::Vector3d del_dq
-      = mPsi * mImpAlpha
-        - mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+      = getPsi() * mImpAlpha
+        - mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(X)
         - mParentSoftBodyNode->getBodyVelocityChange().tail<3>();
 
   //  del_dq = Eigen::Vector3d::Zero();
@@ -836,7 +890,7 @@ void PointMass::updateVelocityChangeFD()
   mVelocityChanges = del_dq;
   assert(!math::isNan(del_dq));
 
-  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(X)
           + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
           + mVelocityChanges;
   assert(!math::isNan(mDelV));
@@ -845,7 +899,7 @@ void PointMass::updateVelocityChangeFD()
 //==============================================================================
 void PointMass::updateBodyVelocityChange()
 {
-  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(mX)
+  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(getLocalPosition())
           + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
           + mVelocityChanges;
   assert(!math::isNan(mDelV));
@@ -882,7 +936,8 @@ void PointMass::updateConstrainedJointAndBodyAcceleration(double _timeStep)
 void PointMass::updateConstrainedTransmittedForce(double _timeStep)
 {
   ///
-  mA += mDelV / _timeStep;
+//  mA += mDelV / _timeStep;
+  setAccelerations( getAccelerations() + mDelV / _timeStep );
 
   ///
   mF += _timeStep * mImpF;
@@ -892,16 +947,17 @@ void PointMass::updateConstrainedTransmittedForce(double _timeStep)
 void PointMass::updateConstrainedTermsFD(double _timeStep)
 {
   // 1. dq = dq + del_dq
-  mVelocities += mVelocityChanges;
+  setVelocities( getVelocities() + mVelocityChanges );
 
   // 2. ddq = ddq + del_dq / dt
-  mAccelerations.noalias() += mVelocityChanges / _timeStep;
+  setAccelerations( getAccelerations() + mVelocityChanges / _timeStep );
 
   // 3. tau = tau + imp / dt
   mForces.noalias() += mConstraintImpulses / _timeStep;
 
   ///
-  mA += mDelV / _timeStep;
+//  mA += mDelV / _timeStep;
+  setAccelerations( getAccelerations() + mDelV / _timeStep );
 
   ///
   mF += _timeStep * mImpF;
@@ -986,8 +1042,8 @@ void PointMass::aggregateGravityForceVector(Eigen::VectorXd* _g,
 //==============================================================================
 void PointMass::updateCombinedVector()
 {
-  mCg_dV = mEta
-           + mParentSoftBodyNode->mCg_dV.head<3>().cross(mX)
+  mCg_dV = getPartialAccelerations()
+           + mParentSoftBodyNode->mCg_dV.head<3>().cross(getLocalPosition())
            + mParentSoftBodyNode->mCg_dV.tail<3>();
 }
 
@@ -1027,7 +1083,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   // render the self geometry
   //  mParentJoint->applyGLTransform(_ri);
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  T.translation() = mX;
+  T.translation() = getLocalPosition();
   _ri->transform(T);
   Eigen::Vector4d color1;
   color1 << 0.8, 0.3, 0.3, 1.0;
@@ -1047,10 +1103,19 @@ void PointMass::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-PointMassNotifier::PointMassNotifier(Frame* _refFrame, const std::string& _name)
-  : Entity(_refFrame, _name, false)
+PointMassNotifier::PointMassNotifier(SoftBodyNode* _parentSoftBody,
+                                     const std::string& _name)
+  : Entity(_parentSoftBody, _name, false),
+    mNeedPartialAccelerationUpdate(true),
+    mParentSoftBodyNode(_parentSoftBody)
 {
 
+}
+
+//==============================================================================
+bool PointMassNotifier::needsPartialAccelerationUpdate() const
+{
+  return mNeedPartialAccelerationUpdate;
 }
 
 //==============================================================================
@@ -1066,6 +1131,12 @@ void PointMassNotifier::clearVelocityNotice()
 }
 
 //==============================================================================
+void PointMassNotifier::clearPartialAccelerationNotice()
+{
+  mNeedPartialAccelerationUpdate = false;
+}
+
+//==============================================================================
 void PointMassNotifier::clearAccelerationNotice()
 {
   mNeedAccelerationUpdate = false;
@@ -1076,14 +1147,21 @@ void PointMassNotifier::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;
   mNeedVelocityUpdate = true;
-  mNeedAccelerationUpdate =true;
+  mNeedPartialAccelerationUpdate = true;
+  mNeedAccelerationUpdate = true;
+
+  mParentSoftBodyNode->notifyArticulatedInertiaUpdate();
+  mParentSoftBodyNode->notifyExternalForcesUpdate();
 }
 
 //==============================================================================
 void PointMassNotifier::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
+  mNeedPartialAccelerationUpdate = true;
   mNeedAccelerationUpdate = true;
+
+  mParentSoftBodyNode->notifyCoriolisUpdate();
 }
 
 //==============================================================================

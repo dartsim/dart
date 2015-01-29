@@ -113,11 +113,20 @@ public:
   /// Notify this Entity that its parent Frame's pose has changed
   virtual void notifyTransformUpdate();
 
+  /// Returns true iff a transform update is needed for this Entity
+  bool needsTransformUpdate() const;
+
   /// Notify this Entity that its parent Frame's velocity has changed
   virtual void notifyVelocityUpdate();
 
+  /// Returns true iff a velocity update is needed for this Entity
+  bool needsVelocityUpdate() const;
+
   /// Notify this Entity that its parent Frame's acceleration has changed
   virtual void notifyAccelerationUpdate();
+
+  /// Returns true iff an acceleration update is needed for this Entity
+  bool needsAccelerationUpdate() const;
 
 protected:
   /// Used by derived classes to change their parent frames
