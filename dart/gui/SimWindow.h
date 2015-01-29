@@ -57,6 +57,8 @@ class World;
 namespace dart {
 namespace gui {
 
+class GraphWindow;
+
 /// \brief
 class SimWindow : public Win3D {
 public:
@@ -88,7 +90,7 @@ public:
   void saveWorld();
 
   /// \brief Plot _data in a 2D window
-  void plot(Eigen::VectorXd & _data);
+  void plot(Eigen::VectorXd& _data);
 //  bool isSimulating() const { return mSimulating; }
 
 //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
@@ -109,6 +111,8 @@ protected:
   /// \brief
   bool mShowMarkers;
 
+  /// \brief Array of graph windows
+  std::vector<GraphWindow*> mGraphWindows;
 };
 
 }  // namespace gui
