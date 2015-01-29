@@ -98,10 +98,25 @@ public:
   /// AxisOrder) which will use the AxisOrder belonging to the joint instance
   /// that it gets called on.
   template <typename RotationType>
-  Eigen::Vector3d convertToPositions(const RotationType& _rotation)
+  Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
   {
     return convertToPositions(_rotation, mAxisOrder);
   }
+
+  /// Convert a set of Euler angle positions into a transform
+  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions,
+                                           AxisOrder _ordering);
+
+  /// This is a version of EulerJoint::convertToRotation(const Eigen::Vector3d&,
+  /// AxisOrder) which will use the AxisOrder belonging to the joint instance
+  /// that it gets called on.
+  Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions) const;
+
+  /// Convert a set of Euler angle positions into a rotation matrix
+  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions,
+                                           AxisOrder _ordering);
+
+  Eigen::Matrix3d convertToRotation(const Eigen::Vector3d &_positions) const;
 
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction

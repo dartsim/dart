@@ -66,6 +66,12 @@ public:
     return math::logMap(_rotation);
   }
 
+  /// Convert a BallJoint-style position vector into a transform
+  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions);
+
+  /// Convert a BallJoint-style position vector into a rotation matrix
+  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
+
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);

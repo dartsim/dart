@@ -64,6 +64,9 @@ public:
   /// a FreeJoint.
   static Eigen::Vector6d convertToPositions(const Eigen::Isometry3d& _tf);
 
+  /// Convert a FreeJoint-style 6D vector into a transform
+  static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
+
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);
