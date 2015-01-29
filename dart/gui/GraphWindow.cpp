@@ -68,8 +68,14 @@ void GraphWindow::draw() {
   glMatrixMode(GL_MODELVIEW);
 
   int nPoints = mData.size();
-  double upperBound = mData.maxCoeff();
-  double lowerBound = mData.minCoeff();
+
+  double upperBound = +1.0;
+  double lowerBound = -1.0;
+  if (nPoints > 0) {
+    upperBound = mData.maxCoeff();
+    lowerBound = mData.minCoeff();
+  }
+
   for (int i = 0; i < nPoints; i++) {
     glPushMatrix();
     glLoadIdentity();

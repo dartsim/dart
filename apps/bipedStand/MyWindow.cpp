@@ -156,9 +156,12 @@ void MyWindow::plotCOMX() {
     mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);    
     data[i] = mWorld->getSkeleton(1)->getWorldCOM()[0];
   }
-  Eigen::VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
-  mWorld->getSkeleton(1)->setPositions(pose);
-  mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
+  if (nFrame != 0)
+  {
+    Eigen::VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
+    mWorld->getSkeleton(1)->setPositions(pose);
+    mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
+  }
 
   plot(data);
 }
