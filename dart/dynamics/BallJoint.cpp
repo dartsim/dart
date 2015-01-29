@@ -65,7 +65,7 @@ Eigen::Isometry3d BallJoint::convertToTransform(
 }
 
 //==============================================================================
-Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d &_positions)
+Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 {
   return math::expMapRot(_positions);
 }

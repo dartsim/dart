@@ -74,8 +74,8 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 }
 
 //==============================================================================
-Eigen::Isometry3d EulerJoint::convertToTransform(const Eigen::Vector3d& _positions,
-                                                 AxisOrder _ordering)
+Eigen::Isometry3d EulerJoint::convertToTransform(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
 {
   return Eigen::Isometry3d(convertToRotation(_positions, _ordering));
 }
@@ -88,8 +88,8 @@ Eigen::Isometry3d EulerJoint::convertToTransform(
 }
 
 //==============================================================================
-Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d &_positions,
-                                              AxisOrder _ordering)
+Eigen::Matrix3d EulerJoint::convertToRotation(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
 {
   switch (_ordering)
   {
@@ -107,7 +107,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d &_positions,
 }
 
 //==============================================================================
-Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d &_positions)
+Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
                                                                            const
 {
   return convertToRotation(_positions, mAxisOrder);

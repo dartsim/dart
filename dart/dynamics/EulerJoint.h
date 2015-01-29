@@ -116,7 +116,7 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions,
                                            AxisOrder _ordering);
 
-  Eigen::Matrix3d convertToRotation(const Eigen::Vector3d &_positions) const;
+  Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
