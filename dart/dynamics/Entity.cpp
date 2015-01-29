@@ -156,15 +156,33 @@ void Entity::notifyTransformUpdate()
 }
 
 //==============================================================================
+bool Entity::needsTransformUpdate() const
+{
+  return mNeedTransformUpdate;
+}
+
+//==============================================================================
 void Entity::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
 }
 
 //==============================================================================
+bool Entity::needsVelocityUpdate() const
+{
+  return mNeedVelocityUpdate;
+}
+
+//==============================================================================
 void Entity::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+}
+
+//==============================================================================
+bool Entity::needsAccelerationUpdate() const
+{
+  return mNeedAccelerationUpdate;
 }
 
 //==============================================================================

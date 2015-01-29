@@ -787,9 +787,6 @@ protected:
   // Dynamical Properties
   //--------------------------------------------------------------------------
 
-  /// World transformation
-  Eigen::Isometry3d mW;
-
   /// Body Jacobian
   math::Jacobian mBodyJacobian;
 

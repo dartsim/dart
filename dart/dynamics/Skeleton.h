@@ -623,6 +623,7 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
   friend class BodyNode;
+  friend class SoftBodyNode;
   friend class Joint;
   friend class DegreeOfFreedom;
 
