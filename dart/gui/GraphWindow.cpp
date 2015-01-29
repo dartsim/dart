@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -39,79 +39,88 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_SIMWINDOW_H_
-#define DART_GUI_SIMWINDOW_H_
+#include "dart/gui/GraphWindow.h"
 
-#include <vector>
+#include <cstdio>
+#include <iostream>
+#include <string>
 
-#include <Eigen/Dense>
-
-#include "dart/gui/Win3D.h"
-
-namespace dart {
-namespace simulation {
-class World;
-}  // namespace simulation
-}  // namespace dart
+#include "dart/gui/GLFuncs.h"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class SimWindow : public Win3D {
-public:
-  /// \brief
-  SimWindow();
+GraphWindow::GraphWindow()
+  : Win2D() {
+  mBackground[0] = 1.0;
+  mBackground[1] = 1.0;
+  mBackground[2] = 1.0;
+  mBackground[3] = 1.0;
+}
 
-  /// \brief
-  virtual ~SimWindow();
+GraphWindow::~GraphWindow() {
+}
 
-  /// \brief
-  virtual void timeStepping();
+void GraphWindow::draw() {
+  mRI->setPenColor(Eigen::Vector3d(0.2, 0.8, 0.2));
+  glPointSize(2);
+  glMatrixMode(GL_MODELVIEW);
 
-  /// \brief
-  virtual void drawSkels();
+  int nPoints = mData.size();
+  double upperBound = mData.maxCoeff();
+  double lowerBound = mData.minCoeff();
+  for (int i = 0; i < nPoints; i++) {
+    glPushMatrix();
+    glLoadIdentity();
+    glBegin(GL_POINTS);
+    glVertex2f(i / (double)nPoints * mWinWidth - mWinWidth / 2.0, mWinHeight * (mData[i] - lowerBound) / (upperBound - lowerBound) - mWinHeight / 2.0);
+    glEnd();
+    glPopMatrix();
+  }    
+  glMatrixMode(GL_PROJECTION);
 
-  /// \brief
-  virtual void displayTimer(int _val);
+  double xPos = 0.1;
+  while (xPos < 1.0) {
+    char buff[64];
+    int v = xPos * nPoints;
+#ifdef WIN32
+    _snprintf(buff, sizeof(buff), "%d", v);
+#else
+    std::snprintf(buff, sizeof(buff), "%d", v);
+#endif
+    std::string frame(buff);
+    glColor3f(0.0, 0.0, 0.0);
+    gui::drawStringOnScreen(xPos, 0.01f, frame, false);
+    xPos += 0.2;
+  }
 
-  /// \brief
-  virtual void draw();
+  double yPos = 0.1;
+  while (yPos < 1.0) {
+    char buff[64];
+    double v = yPos * (upperBound - lowerBound) + lowerBound;
+#ifdef WIN32
+    _snprintf(buff, sizeof(buff), "%.2e", v);
+#else
+    std::snprintf(buff, sizeof(buff), "%.2e", v);
+#endif
+    std::string frame(buff);
+    glColor3f(0.0, 0.0, 0.0);
+    gui::drawStringOnScreen(0.01f, yPos, frame, false);
+    yPos += 0.2;
+  }
+}
 
-  /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+void GraphWindow::keyboard(unsigned char _key, int _x, int _y) {
+  switch (_key) {
+    default:
+      Win2D::keyboard(_key, _x, _y);
+  }
+  glutPostRedisplay();
+}
 
-  /// \brief
-  void setWorld(simulation::World* _world);
-
-  /// \brief Save world in 'tempWorld.txt'
-  void saveWorld();
-
-  /// \brief Plot _data in a 2D window
-  void plot(Eigen::VectorXd & _data);
-//  bool isSimulating() const { return mSimulating; }
-
-//  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
-
-protected:
-  /// \brief
-  simulation::World* mWorld;
-
-  /// \brief
-  int mPlayFrame;
-
-  /// \brief
-  bool mPlay;
-
-  /// \brief
-  bool mSimulating;
-
-  /// \brief
-  bool mShowMarkers;
-
-};
+void GraphWindow::setData(Eigen::VectorXd _data) {
+  mData = _data;
+}
 
 }  // namespace gui
 }  // namespace dart
-
-#endif  // DART_GUI_SIMWINDOW_H_
