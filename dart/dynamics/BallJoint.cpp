@@ -65,7 +65,6 @@ void BallJoint::integratePositions(double _dt)
                         * getVelocitiesStatic() * _dt);
 
   setPositionsStatic(math::logMap(mR.linear()));
-  notifyPositionUpdate();
 }
 
 //==============================================================================

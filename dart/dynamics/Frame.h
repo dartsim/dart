@@ -112,6 +112,14 @@ public:
       const Frame* _relativeTo = Frame::World(),
       const Frame* _inCoordinatesOf = Frame::World()) const;
 
+  /// Get the linear velocity of a point that is fixed in this Frame. You can
+  /// specify a relative Frame, and it can be expressed in the coordinates of
+  /// any Frame.
+  Eigen::Vector3d getLinearVelocity(
+      const Eigen::Vector3d& _offset,
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
   /// Get the angular portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getAngularVelocity(
@@ -156,6 +164,11 @@ public:
   /// Get the linear portion of classical acceleration of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getLinearAcceleration(
+      const Frame* _relativeTo=Frame::World(),
+      const Frame* _inCoordinatesOf=Frame::World()) const;
+
+  Eigen::Vector3d getLinearAcceleration(
+      const Eigen::Vector3d& _offset,
       const Frame* _relativeTo=Frame::World(),
       const Frame* _inCoordinatesOf=Frame::World()) const;
 
