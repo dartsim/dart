@@ -55,7 +55,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 //==============================================================================
 SimpleFrame::~SimpleFrame()
 {
-
+  // Do nothing. The inherited destructors will do all the necessary cleanup.
 }
 
 //==============================================================================
