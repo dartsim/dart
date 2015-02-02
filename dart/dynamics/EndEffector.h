@@ -42,12 +42,77 @@
 namespace dart {
 namespace dynamics {
 
+class BodyNode;
+class Skeleton;
+
 class EndEffector : public FixedFrame
 {
 public:
 
+  friend class Skeleton;
 
+  /// Constructor
+  explicit EndEffector(Frame* _refFrame, const std::string& _name,
+                       const Eigen::Isometry3d& _relativeTransform =
+                                        Eigen::Isometry3d::Identity());
 
+  /// Destructor
+  virtual ~EndEffector();
+
+  //----------------------------------------------------------------------------
+  // Properties
+  //----------------------------------------------------------------------------
+
+  /// Set the current relative transform of this EndEffector
+  void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
+
+  /// Set the default relative transform of this EndEffector. The relative
+  /// transform of this EndEffector will be set to _newDefaultTf the next time
+  /// resetRelativeTransform() is called. If _useNow is set to true, then
+  /// resetRelativeTransform() will be called at the end of this function.
+  void setDefaultRelativeTransform(const Eigen::Isometry3d& _newDefaultTf,
+                                   bool _useNow);
+
+  /// Set the current relative transform of this EndEffector to the default
+  /// relative transform of this EndEffector. The default relative transform can
+  /// be set with setDefaultRelativeTransform()
+  void resetRelativeTransform();
+
+  //----------------------------------------------------------------------------
+  // Relationships
+  //----------------------------------------------------------------------------
+
+  /// Get the BodyNode that this EndEffector is rigidly attached to
+  BodyNode* getParentBodyNode();
+
+  /// Get the BodyNode that this EndEffector is rigidly attached to
+  const BodyNode* getParentBodyNode() const;
+
+  /// Get the Skeleton that this EndEffector belongs to
+  Skeleton* getSkeleton();
+
+  /// Get the Skeleton that this EndEffector belongs to
+  const Skeleton* getSkeleton() const;
+
+  /// Get the index of this EndEffector within the Skeleton
+  size_t getIndex() const;
+
+protected:
+  /// Search for the parent BodyNode that this EndEffector belongs to
+  void identifyParentBodyNode(Frame* _refFrame);
+
+  /// Inform the Skeleton of this EndEffector's existence
+  void registerWithSkeleton();
+
+  /// The BodyNode that this EndEffector is rigidly attached to
+  BodyNode* mParentBodyNode;
+
+  /// The relative transform will be set to this whenever
+  /// resetRelativeTransform() is called
+  Eigen::Isometry3d mDefaultTransform;
+
+  /// The index of this EndEffector within the Skeleton
+  size_t mIndexInSkeleton;
 };
 
 } // namespace dynamics

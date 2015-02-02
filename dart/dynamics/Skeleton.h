@@ -62,6 +62,7 @@ class PointMass;
 class Joint;
 class Marker;
 class DegreeOfFreedom;
+class EndEffector;
 
 /// struct GenCoordInfo
 struct GenCoordInfo
@@ -134,7 +135,7 @@ public:
   double getMass() const;
 
   //----------------------------------------------------------------------------
-  // Structueral Properties
+  // Structural Properties
   //----------------------------------------------------------------------------
 
   /// Add a body node
@@ -626,6 +627,7 @@ public:
   friend class SoftBodyNode;
   friend class Joint;
   friend class DegreeOfFreedom;
+  friend class EndEffector;
 
 protected:
   /// Register a joint with the Skeleton. Internal use only.
@@ -698,6 +700,9 @@ protected:
   /// Add a DegreeOfFreedom to the Dof NameManager
   const std::string& addEntryToDofNameMgr(DegreeOfFreedom* _newDof);
 
+  /// Add an EndEffector to the EndEffector NameManager
+  const std::string& addEntryToEndEffectorNameMgr(EndEffector* _ee);
+
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
@@ -738,6 +743,9 @@ protected:
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
+  /// List of EndEffectors in the Skeleton
+  std::vector<EndEffector*> mEndEffectors;
+
   /// NameManager for tracking BodyNodes
   dart::common::NameManager<BodyNode> mNameMgrForBodyNodes;
 
@@ -752,6 +760,9 @@ protected:
 
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker> mNameMgrForMarkers;
+
+  /// NameManager for tracking EndEffectors
+  dart::common::NameManager<EndEffector> mNameMgrForEndEffectors;
 
   /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are

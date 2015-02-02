@@ -48,6 +48,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -129,6 +130,14 @@ const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom* _newDof)
   _newDof->mName = mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(),
                                                       _newDof);
   return _newDof->mName;
+}
+
+//==============================================================================
+const std::string& Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
+{
+  _ee->mName = mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
+
+  return _ee->mName;
 }
 
 //==============================================================================
