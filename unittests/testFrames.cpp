@@ -322,6 +322,36 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       EXPECT_TRUE( equals(v_rels[i], v_rel, tolerance) );
       EXPECT_TRUE( equals(a_rels[i], a_rel, tolerance) );
     }
+
+    // Test offset computations
+    for(size_t i=0; i<frames.size(); ++i)
+    {
+      Eigen::Vector3d offset = random_vec<3>();
+      Frame* F = frames[i];
+
+      Eigen::Vector3d v_actual = F->getLinearVelocity(offset);
+      Eigen::Vector3d w_actual = F->getAngularVelocity();
+      Eigen::Vector3d v_expect, w_expect;
+      compute_velocity(F->getLinearVelocity(), F->getAngularVelocity(),
+                       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                       offset, F->getWorldTransform(), v_expect, w_expect);
+
+      EXPECT_TRUE( equals( v_expect, v_actual) );
+      EXPECT_TRUE( equals( w_expect, w_actual) );
+
+      Eigen::Vector3d a_actual = F->getLinearAcceleration(offset);
+      Eigen::Vector3d alpha_actual = F->getAngularAcceleration();
+      Eigen::Vector3d a_expect, alpha_expect;
+      compute_acceleration(F->getLinearAcceleration(),
+                           F->getAngularAcceleration(), F->getAngularVelocity(),
+                           Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                           Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                           offset, F->getWorldTransform(),
+                           a_expect, alpha_expect);
+
+      EXPECT_TRUE( equals( a_expect, a_actual) );
+      EXPECT_TRUE( equals( alpha_expect, alpha_actual) );
+    }
   }
 
   // Testing conversion between spatial and classical accelerations
@@ -541,6 +571,80 @@ void check_values(const std::vector<SimpleFrame*>& targets,
   }
 }
 
+void check_offset_computations(const std::vector<SimpleFrame*>& targets,
+                               const std::vector<SimpleFrame*>& followers,
+                               const Frame* relativeTo,
+                               const Frame* inCoordinatesOf,
+                               double tolerance)
+{
+  for(size_t i=0; i<targets.size(); ++i)
+  {
+    Frame* T = targets[i];
+    Frame* F = followers[i];
+
+    Eigen::Isometry3d coordTf = relativeTo->getTransform(inCoordinatesOf);
+
+    Vector3d offset_T = random_vec<3>();
+    Vector3d offset_F = T->getTransform(F) * offset_T;
+
+    Vector3d v_TO, w_TO, v_FO, w_FO, a_TO, alpha_TO, a_FO, alpha_FO;
+
+    // Compute velocity of the offfset in the relative frame
+    compute_velocity(T->getLinearVelocity(relativeTo, relativeTo),
+                     T->getAngularVelocity(relativeTo, relativeTo),
+                     Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                     offset_T, T->getTransform(relativeTo), v_TO, w_TO);
+    // Convert to the desired coordinate system
+    v_TO = coordTf.linear() * v_TO;
+    w_TO = coordTf.linear() * w_TO;
+
+    // Compute acceleration of the offset in the relative frame
+    compute_acceleration(T->getLinearAcceleration(relativeTo, relativeTo),
+                         T->getAngularAcceleration(relativeTo, relativeTo),
+                         T->getAngularVelocity(relativeTo, relativeTo),
+                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                         offset_T, T->getTransform(relativeTo), a_TO, alpha_TO);
+    // Convert to the desired coordinate system
+    a_TO = coordTf.linear() * a_TO;
+    alpha_TO = coordTf.linear() * alpha_TO;
+
+    compute_velocity(F->getLinearVelocity(relativeTo, relativeTo),
+                     F->getAngularVelocity(relativeTo, relativeTo),
+                     Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                     offset_F, F->getTransform(relativeTo), v_FO, w_FO);
+    v_FO = coordTf.linear() * v_FO;
+    w_FO = coordTf.linear() * w_FO;
+
+    compute_acceleration(F->getLinearAcceleration(relativeTo, relativeTo),
+                         F->getAngularAcceleration(relativeTo, relativeTo),
+                         F->getAngularVelocity(relativeTo, relativeTo),
+                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                         offset_F, F->getTransform(relativeTo), a_FO, alpha_FO);
+    a_FO = coordTf.linear() * a_FO;
+    alpha_FO = coordTf.linear() * alpha_FO;
+
+    Eigen::Vector3d v_TO_actual = T->getLinearVelocity(offset_T, relativeTo,
+                                                       inCoordinatesOf);
+    Eigen::Vector3d v_FO_actual = F->getLinearVelocity(offset_F, relativeTo,
+                                                       inCoordinatesOf);
+
+    EXPECT_TRUE( equals(v_TO, v_FO, tolerance) );
+    EXPECT_TRUE( equals(v_TO, v_TO_actual, tolerance) );
+    EXPECT_TRUE( equals(v_FO, v_FO_actual, tolerance) );
+
+    Eigen::Vector3d a_TO_actual = T->getLinearAcceleration(offset_T, relativeTo,
+                                                           inCoordinatesOf);
+    Eigen::Vector3d a_FO_actual = F->getLinearAcceleration(offset_F, relativeTo,
+                                                           inCoordinatesOf);
+
+    EXPECT_TRUE( equals(a_TO, a_FO, tolerance) );
+    EXPECT_TRUE( equals(a_TO, a_TO_actual, tolerance) );
+    EXPECT_TRUE( equals(a_FO, a_FO_actual, tolerance) );
+  }
+}
+
 void test_relative_values(bool spatial_targets, bool spatial_followers)
 {
   const double tolerance = 1e-8;
@@ -592,6 +696,7 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
 
       check_values(targets, followers, T, F, tolerance);
       check_values(targets, followers, F, T, tolerance);
+      check_offset_computations(targets, followers, T, F, tolerance);
     }
   }
 }
@@ -620,7 +725,8 @@ TEST(RELATIVE_FRAMES, CLASSIC_SPATIAL)
 
 int main(int argc, char* argv[])
 {
-  math::seedRand();
+  srand(271828); // Seed with an arbitrary fixed integer. Don't seed with time,
+                 // because it will produce different numbers between runs.
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
