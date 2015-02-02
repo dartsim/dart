@@ -106,6 +106,11 @@ public:
   Eigen::Vector6d getSpatialVelocity(const Frame* _relativeTo,
                                      const Frame* _inCoordinatesOf) const;
 
+  /// Get the spatial velocity of a fixed point in this Frame.
+  Eigen::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset,
+                                     const Frame* _relativeTo,
+                                     const Frame* _inCoordinatesOf) const;
+
   /// Get the linear portion of classical velocity of this Frame relative to
   /// some other Frame. It can be expressed in the coordinates of any Frame.
   Eigen::Vector3d getLinearVelocity(
@@ -162,6 +167,11 @@ public:
   /// Get the spatial acceleration of this Frame relative to some other Frame.
   /// It can be expressed in the coordinates of any Frame.
   Eigen::Vector6d getSpatialAcceleration(const Frame* _relativeTo,
+                                         const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial acceleration of a fixed point in this Frame
+  Eigen::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset,
+                                         const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const;
 
   /// Get the linear portion of classical acceleration of this Frame relative to

@@ -174,6 +174,37 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
 }
 
 //==============================================================================
+Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d &_offset,
+                                          const Frame* _relativeTo,
+                                          const Frame* _inCoordinatesOf) const
+{
+  if(this == _relativeTo)
+    return Eigen::Vector6d::Zero();
+
+  Eigen::Vector6d v = getSpatialVelocity();
+  v.tail<3>().noalias() += v.head<3>().cross(_offset);
+
+  if(_relativeTo->isWorld())
+  {
+    if(this == _inCoordinatesOf)
+      return v;
+
+    return math::AdR(getTransform(_inCoordinatesOf), v);
+  }
+
+  Eigen::Vector6d v_0 = math::AdT(_relativeTo->getTransform(this),
+                                  _relativeTo->getSpatialVelocity());
+  v_0.tail<3>().noalias() += v_0.head<3>().cross(_offset);
+
+  v = v - v_0;
+
+  if(this == _inCoordinatesOf)
+    return v;
+
+  return math::AdR(getTransform(_inCoordinatesOf), v);
+}
+
+//==============================================================================
 Eigen::Vector3d Frame::getLinearVelocity(const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const
 {
@@ -185,29 +216,7 @@ Eigen::Vector3d Frame::getLinearVelocity(const Eigen::Vector3d& _offset,
                                          const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const
 {
-  const Eigen::Vector6d& V = getSpatialVelocity();
-
-  if(this == _relativeTo)
-    Eigen::Vector3d::Zero();
-
-  if(Frame::World() == _relativeTo)
-  {
-    const Eigen::Vector3d& result = V.tail<3>() + V.head<3>().cross(_offset);
-
-    if(this == _inCoordinatesOf)
-      return result;
-
-    return getTransform(_inCoordinatesOf).linear() * result;
-  }
-
-  const Eigen::Vector3d& result = V.tail<3>() + V.head<3>().cross(_offset)
-                      - math::AdT(_relativeTo->getTransform(this),
-                                  _relativeTo->getSpatialVelocity()).tail<3>();
-
-  if(this == _inCoordinatesOf)
-    return result;
-
-  return getTransform(_inCoordinatesOf).linear() * result;
+  return getSpatialVelocity(_offset, _relativeTo, _inCoordinatesOf).tail<3>();
 }
 
 //==============================================================================
@@ -280,18 +289,62 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
 }
 
 //==============================================================================
+Eigen::Vector6d Frame::getSpatialAcceleration(const Eigen::Vector3d& _offset,
+                                              const Frame* _relativeTo,
+                                              const Frame* _inCoordinatesOf) const
+{
+  if(this == _relativeTo)
+    return Eigen::Vector6d::Zero();
+
+  // Compute spatial acceleration of the point
+  Eigen::Vector6d a = getSpatialAcceleration();
+  a.tail<3>().noalias() += a.head<3>().cross(_offset);
+
+  if(_relativeTo->isWorld())
+  {
+    if(this == _inCoordinatesOf)
+      return a;
+
+    return math::AdR(getTransform(_inCoordinatesOf), a);
+  }
+
+  // Compute the spatial velocity of the point
+  Eigen::Vector6d v = getSpatialVelocity();
+  v.tail<3>().noalias() += v.head<3>().cross(_offset);
+
+  // Compute the acceleration of the reference Frame
+  Eigen::Vector6d a_ref = math::AdT(_relativeTo->getTransform(this),
+                                    _relativeTo->getSpatialAcceleration());
+  a_ref.tail<3>().noalias() += a_ref.head<3>().cross(_offset);
+
+  // Compute the relative velocity of the point
+  const Eigen::Vector6d& v_rel = getSpatialVelocity(_offset, _relativeTo, this);
+
+  a = a - a_ref - math::ad(v, v_rel);
+
+  if(this == _inCoordinatesOf)
+    return a;
+
+  return math::AdR(getTransform(_inCoordinatesOf), a);
+}
+
+//==============================================================================
 Eigen::Vector3d Frame::getLinearAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   if(this == _relativeTo)
     return Eigen::Vector3d::Zero();
 
-  const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo,
-                                                    _inCoordinatesOf);
+  const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo, this);
 
   // r'' = a + w x v
-  return getSpatialAcceleration(_relativeTo,_inCoordinatesOf).tail<3>()
-         + v_rel.head<3>().cross(v_rel.tail<3>());
+  const Eigen::Vector3d& a = getSpatialAcceleration(_relativeTo, this).tail<3>()
+                              + v_rel.head<3>().cross(v_rel.tail<3>());
+
+  if(this == _inCoordinatesOf)
+    return a;
+
+  return getTransform(_inCoordinatesOf).linear() * a;
 }
 
 //==============================================================================
@@ -302,31 +355,15 @@ Eigen::Vector3d Frame::getLinearAcceleration(const Eigen::Vector3d& _offset,
   if(this == _relativeTo)
     return Eigen::Vector3d::Zero();
 
-  const Eigen::Vector3d& a_parent = getLinearAcceleration(Frame::World(), this);
-  const Eigen::Vector3d& alpha = getAngularAcceleration(Frame::World(), this);
-  const Eigen::Vector3d& w = getAngularVelocity(Frame::World(), this);
-
-  // Compute linear acceleration of the point relative to the world, in the
-  // coordinates of this Frame
-  const Eigen::Vector3d& a =
-      a_parent + alpha.cross(_offset) + w.cross(w.cross(_offset));
-
-  if(_relativeTo->isWorld())
-  {
-    if(this == _inCoordinatesOf)
-      return a;
-
-    return getTransform(_inCoordinatesOf).linear() * a;
-  }
-
-  // Compute the relative linear acceleration of the point
-  const Eigen::Vector3d& a_rel = a
-      - _relativeTo->getLinearAcceleration(Frame::World(), this);
+  const Eigen::Vector6d& v_rel = getSpatialVelocity(_offset, _relativeTo, this);
+  const Eigen::Vector3d& a = getSpatialAcceleration(_offset, _relativeTo,
+                                                    this).tail<3>()
+                              + v_rel.head<3>().cross(v_rel.tail<3>());
 
   if(this == _inCoordinatesOf)
-    return a_rel;
+    return a;
 
-  return getTransform(_inCoordinatesOf).linear() * a_rel;
+  return getTransform(_inCoordinatesOf).linear() * a;
 }
 
 //==============================================================================
