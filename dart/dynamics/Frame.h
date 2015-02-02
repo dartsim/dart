@@ -140,7 +140,10 @@ public:
   /// kinematics by computing and storing the partial acceleration separately
   /// from the rest of the Frame's acceleration. getPrimaryRelativeAcceleration()
   /// will return the portion of the relative spatial acceleration that is not
-  /// contained in the partial acceleration.
+  /// contained in the partial acceleration. To get the full spatial
+  /// acceleration of this Frame relative to its parent Frame, use
+  /// getRelativeSpatialAcceleration(). To get the full spatial acceleration
+  /// of this Frame relative to the World Frame, use getSpatialAcceleration().
   virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const = 0;
 
   /// The Featherstone ABI algorithm exploits a component of the spatial
