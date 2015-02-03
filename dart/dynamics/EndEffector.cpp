@@ -160,7 +160,8 @@ void EndEffector::registerWithSkeleton()
     return;
   }
 
-  mIndexInSkeleton = skel->mEndEffectors.push_back(this) - 1;
+  skel->mEndEffectors.push_back(this);
+  mIndexInSkeleton = skel->mEndEffectors.size() - 1;
   skel->addEntryToEndEffectorNameMgr(this);
 }
 
