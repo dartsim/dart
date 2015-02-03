@@ -51,6 +51,50 @@ public:
 
   friend class Skeleton;
 
+  /// EndEffector Mode
+  ///
+  /// The EndEffector class exists to provide a convenient interface for
+  /// indicating locations on the BodyNodes of a Skeleton that are designed to
+  /// interact with the environment. The EndEffector class is built to offer
+  /// easy ways of defining kinematics and dynamics constraints for Skeletons.
+  /// Many common real-world EndEffectors have multiple modes of functionality
+  /// or different ways in which they can be used.
+  ///
+  /// Three different types of kinematic constraints will be generated
+  /// automatically when the EndEffector is created and successfully attached
+  /// to its BodyNode: LINKAGE, WHOLEBODY, and SUPPORT. These constraints will
+  /// use iterative Jacobian methods to find solutions. ANALYTICAL mode is
+  /// reserved for analytical inverse kinematics solvers, but it is not
+  /// automatically generated. The CUSTOM mode is reserved for any custome
+  /// kinematics solver that the user wants to provide, and FREE is reserved to
+  /// indicate that there is no active constraint. All of these modes can be
+  /// overriden by user-created kinematics constraint functions.
+  enum Mode
+  {
+    /// There is no active kinematic constraint on the EndEffector
+    FREE = 0,
+
+    /// Use only the longest possible uninterrupted linkage (series of links
+    /// that only have a single child link) for solving inverse kinematics
+    /// constraints
+    LINKAGE,
+
+    /// Use all relevant links, all the way down to the root link, for solving
+    /// inverse kinematics constraints
+    WHOLEBODY,
+
+    /// Identical to the LINKAGE constraint, but the support polygon of this
+    /// EndEffector will be used to contribute to the overall support polygon
+    /// of the Skeleton when solving balance-related constraints.
+    SUPPORT,
+
+    /// Reserved for users to provide an analytical inverse kinematics solver
+    ANALYTICAL,
+
+    /// Reserved for users to provide arbitrary inverse kinematics solvers
+    CUSTOM
+  };
+
   /// Constructor
   explicit EndEffector(Frame* _refFrame, const std::string& _name,
                        const Eigen::Isometry3d& _relativeTransform =
