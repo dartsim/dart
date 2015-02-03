@@ -18,6 +18,7 @@
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -299,9 +300,12 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
       joint = new dynamics::FreeJoint();
       break;
   case urdf::Joint::PLANAR:
-      std::cout << "Planar joint not supported." << std::endl;
-      assert(false);
-      return NULL;
+      joint = new dynamics::PlanarJoint();
+      // TODO(MXG): Should we read in position limits? The URDF limits
+      // specification only offers one dimension of limits, but a PlanarJoint is
+      // two-dimensional. Should we assume that position limits apply to both
+      // coordinates equally? Or just don't accept the position limits at all?
+      break;
   default:
       std::cout << "Unsupported joint type." << std::endl;
       assert(false);
@@ -326,18 +330,22 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::strin
 
   dynamics::BodyNode* node = new dynamics::BodyNode(_lk->name);
   
-  // Mesh Loading
-  // FIXME: Shouldn't mass and inertia default to 0?
-  // double mass = 0.1;
-  Eigen::Matrix3d inertia = Eigen::MatrixXd::Identity(3,3);
-  inertia *= 0.1;
-  
   // Load Inertial information
   if(_lk->inertial) {
-      node->setLocalCOM(toEigen(_lk->inertial->origin.position));
-      node->setMass(_lk->inertial->mass);
-      node->setMomentOfInertia(_lk->inertial->ixx, _lk->inertial->iyy, _lk->inertial->izz,
-                               _lk->inertial->ixy, _lk->inertial->ixz, _lk->inertial->iyz);
+    urdf::Pose origin = _lk->inertial->origin;
+    node->setLocalCOM(toEigen(origin.position));
+    node->setMass(_lk->inertial->mass);
+
+    Eigen::Matrix3d J;
+    J << _lk->inertial->ixx, _lk->inertial->ixy, _lk->inertial->ixz,
+         _lk->inertial->ixy, _lk->inertial->iyy, _lk->inertial->iyz,
+         _lk->inertial->ixz, _lk->inertial->iyz, _lk->inertial->izz;
+    Eigen::Matrix3d R(Eigen::Quaterniond(origin.rotation.w, origin.rotation.x,
+                                         origin.rotation.y, origin.rotation.z));
+    J = R * J * R.transpose();
+
+    node->setMomentOfInertia(J(0,0), J(1,1), J(2,2),
+                             J(0,1), J(0,2), J(1,2));
   }
 
   // Set visual information
