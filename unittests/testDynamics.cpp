@@ -701,8 +701,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
-      EXPECT_EQ(M.rows(), dof);
-      EXPECT_EQ(M.cols(), dof);
+      EXPECT_EQ(M.rows(), (int)dof);
+      EXPECT_EQ(M.cols(), (int)dof);
 
       // Check mass matrix
       EXPECT_TRUE(equals(M, M2, 1e-6));
@@ -898,9 +898,9 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd dq = skel->getVelocities();
       VectorXd ddq = skel->getAccelerations();
 
-      VectorXd com   = skel->getWorldCOM();
-      VectorXd dcom  = skel->getWorldCOMVelocity();
-      VectorXd ddcom = skel->getWorldCOMAcceleration();
+      VectorXd com   = skel->getCOM();
+      VectorXd dcom  = skel->getCOMVelocity();
+      VectorXd ddcom = skel->getCOMAcceleration();
 
       MatrixXd comJ  = skel->getWorldCOMJacobian();
       MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();

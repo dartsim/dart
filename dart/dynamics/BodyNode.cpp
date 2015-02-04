@@ -301,15 +301,35 @@ Eigen::Vector3d BodyNode::getWorldCOM() const
 }
 
 //==============================================================================
+Eigen::Vector3d BodyNode::getCOM(const Frame *_withRespectTo) const
+{
+  return getTransform(_withRespectTo) * mCenterOfMass;
+}
+
+//==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
 {
   return getWorldLinearVelocity(mCenterOfMass);
 }
 
 //==============================================================================
+Eigen::Vector3d BodyNode::getCOMVelocity(const Frame* _relativeTo,
+                                         const Frame* _inCoordinatesOf) const
+{
+  return getLinearVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+}
+
+//==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
 {
   return getWorldLinearAcceleration(mCenterOfMass);
+}
+
+//==============================================================================
+Eigen::Vector3d BodyNode::getCOMAcceleration(const Frame* _relativeTo,
+                                             const Frame* _inCoordinatesOf) const
+{
+  return getLinearAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -575,21 +595,14 @@ Eigen::Vector3d BodyNode::getBodyAngularVelocity() const
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldLinearVelocity() const
 {
-  return getWorldLinearVelocity(Eigen::Vector3d::Zero());
+  return getLinearVelocity();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldLinearVelocity(
     const Eigen::Vector3d& _offset) const
 {
-  // TODO(JS): Optimize!
-
-  const Eigen::Isometry3d& W = getWorldTransform();
-  Eigen::Isometry3d T = W;
-
-  T.translation() = W.linear() * -_offset;
-
-  return math::AdT(T, getSpatialVelocity()).tail<3>();
+  return getLinearVelocity(_offset);
 }
 
 //==============================================================================
@@ -655,8 +668,6 @@ Eigen::Vector3d BodyNode::getWorldLinearAcceleration() const
 Eigen::Vector3d BodyNode::getWorldLinearAcceleration(
     const Eigen::Vector3d& _offset) const
 {
-  // TODO(JS): Optimize!
-
   const Eigen::Isometry3d& W = getWorldTransform();
 
   Eigen::Isometry3d T = W;

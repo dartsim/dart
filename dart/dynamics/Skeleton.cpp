@@ -2063,10 +2063,26 @@ Eigen::Vector3d Skeleton::getWorldCOM()
   for (int i = 0; i < nNodes; i++)
   {
     BodyNode* bodyNode = getBodyNode(i);
-    com += bodyNode->getMass() * bodyNode->getWorldCOM();
+    com += bodyNode->getMass() * bodyNode->getCOM();
   }
 
   // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return com / mTotalMass;
+}
+
+//==============================================================================
+Eigen::Vector3d Skeleton::getCOM(const Frame *_withRespectTo) const
+{
+  Eigen::Vector3d com(0.0, 0.0, 0.0);
+
+  const size_t numBodies = getNumBodyNodes();
+  for (size_t i = 0; i < numBodies; ++i)
+  {
+    const BodyNode* bodyNode = getBodyNode(i);
+    com += bodyNode->getMass() * bodyNode->getCOM(_withRespectTo);
+  }
+
   assert(mTotalMass != 0.0);
   return com / mTotalMass;
 }
@@ -2082,10 +2098,28 @@ Eigen::Vector3d Skeleton::getWorldCOMVelocity()
   for (int i = 0; i < nNodes; i++)
   {
     BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getWorldCOMVelocity();
+    comVel += bodyNode->getMass() * bodyNode->getCOMVelocity();
   }
 
   // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comVel / mTotalMass;
+}
+
+//==============================================================================
+Eigen::Vector3d Skeleton::getCOMVelocity(const Frame* _relativeTo,
+                                         const Frame* _inCoordinatesOf) const
+{
+  Eigen::Vector3d comVel(0.0, 0.0, 0.0);
+
+  const size_t numBodies = getNumBodyNodes();
+  for (size_t i = 0; i < numBodies; ++i)
+  {
+    const BodyNode* bodyNode = getBodyNode(i);
+    comVel += bodyNode->getMass() * bodyNode->getCOMVelocity(_relativeTo,
+                                                             _inCoordinatesOf);
+  }
+
   assert(mTotalMass != 0.0);
   return comVel / mTotalMass;
 }
@@ -2100,10 +2134,28 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
   const int nNodes = getNumBodyNodes();
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
+    comAcc += bodyNode->getMass() * bodyNode->getCOMAcceleration();
   }
 
   // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comAcc / mTotalMass;
+}
+
+//==============================================================================
+Eigen::Vector3d Skeleton::getCOMAcceleration(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const
+{
+  Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
+
+  const size_t numBodies = getNumBodyNodes();
+  for (size_t i = 0; i < numBodies; ++i)
+  {
+    const BodyNode* bodyNode = getBodyNode(i);
+    comAcc += bodyNode->getMass() * bodyNode->getCOMAcceleration(_relativeTo,
+                                                              _inCoordinatesOf);
+  }
+
   assert(mTotalMass != 0.0);
   return comAcc / mTotalMass;
 }

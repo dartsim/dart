@@ -138,13 +138,35 @@ public:
   const Eigen::Vector3d& getLocalCOM() const;
 
   /// Return center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOM()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOM() const;
 
+  /// Return the center of mass with respect to an arbitrary Frame
+  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+
   /// Return velocity of center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOMVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMVelocity() const;
 
+  /// Return the linear velocity of the center of mass, expressed in terms of
+  /// arbitrary Frames
+  Eigen::Vector3d getCOMVelocity(const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
   /// Return acceleration of center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOMAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration() const;
+
+  /// Return the linear acceleration of the center of mass, expressed in terms
+  /// of arbitary Frames
+  Eigen::Vector3d getCOMAcceleration(const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Set coefficient of friction in range of [0, ~]
   void setFrictionCoeff(double _coeff);
@@ -254,6 +276,9 @@ public:
 
   /// Return the spatial velocity at the origin of the bodynode expressed in
   /// the body-fixed frame
+  ///
+  /// Deprecated in 4.4. Please use getSpatialVelocity() instead.
+  DEPRECATED(4.4)
   const Eigen::Vector6d& getBodyVelocity() const;
 
   /// Return the linear velocity of the origin of the bodynode expressed in

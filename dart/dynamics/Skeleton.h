@@ -46,6 +46,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
+#include "dart/dynamics/Frame.h"
 
 namespace dart {
 namespace renderer {
@@ -570,13 +571,35 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get skeleton's COM w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOM() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOM();
 
+  /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
+  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+
   /// Get skeleton's COM velocity w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMVelocity() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMVelocity();
 
+  /// Get the Skeleton's COM velocity in terms of any Frame (default is World
+  /// Frame)
+  Eigen::Vector3d getCOMVelocity(const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
   /// Get skeleton's COM acceleration w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMAcceleration() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration();
+
+  /// Get the Skeleton's COM linear acceleration in terms of any Frame (default
+  /// is World Frame)
+  Eigen::Vector3d getCOMAcceleration(const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get skeleton's COM Jacobian w.r.t. world frame.
   Eigen::MatrixXd getWorldCOMJacobian();
