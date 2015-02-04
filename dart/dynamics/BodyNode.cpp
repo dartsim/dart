@@ -301,22 +301,9 @@ Eigen::Vector3d BodyNode::getWorldCOM() const
 }
 
 //==============================================================================
-Eigen::Vector3d BodyNode::getCOM(const Frame *_withRespectTo) const
-{
-  return getTransform(_withRespectTo) * mCenterOfMass;
-}
-
-//==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
 {
   return getWorldLinearVelocity(mCenterOfMass);
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getCOMVelocity(const Frame* _relativeTo,
-                                         const Frame* _inCoordinatesOf) const
-{
-  return getLinearVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -326,10 +313,49 @@ Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
 }
 
 //==============================================================================
-Eigen::Vector3d BodyNode::getCOMAcceleration(const Frame* _relativeTo,
-                                             const Frame* _inCoordinatesOf) const
+Eigen::Vector3d BodyNode::getCOM(const Frame *_withRespectTo) const
+{
+  return getTransform(_withRespectTo) * mCenterOfMass;
+}
+
+//==============================================================================
+Eigen::Vector3d BodyNode::getCOMLinearVelocity(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const
+{
+  return getLinearVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+}
+
+//==============================================================================
+Eigen::Vector6d BodyNode::getCOMSpatialVelocity() const
+{
+  return getSpatialVelocity(mCenterOfMass);
+}
+
+//==============================================================================
+Eigen::Vector6d BodyNode::getCOMSpatialVelocity(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const
+{
+  return getSpatialVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+}
+
+//==============================================================================
+Eigen::Vector3d BodyNode::getCOMLinearAcceleration(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const
 {
   return getLinearAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+}
+
+//==============================================================================
+Eigen::Vector6d BodyNode::getCOMSpatialAcceleration() const
+{
+  return getSpatialAcceleration(mCenterOfMass);
+}
+
+//==============================================================================
+Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const
+{
+  return getSpatialAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================

@@ -585,20 +585,22 @@ public:
   DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMVelocity();
 
-  /// Get the Skeleton's COM velocity in terms of any Frame (default is World
-  /// Frame)
-  Eigen::Vector3d getCOMVelocity(const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
   /// Get skeleton's COM acceleration w.r.t. world frame.
   ///
   /// Deprecated in 4.4. Please use getCOMAcceleration() instead
   DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration();
 
+  /// Get the Skeleton's COM velocity in terms of any Frame (default is World
+  /// Frame)
+  Eigen::Vector3d getCOMLinearVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
   /// Get the Skeleton's COM linear acceleration in terms of any Frame (default
   /// is World Frame)
-  Eigen::Vector3d getCOMAcceleration(const Frame* _relativeTo = Frame::World(),
+  Eigen::Vector3d getCOMLinearAcceleration(
+                          const Frame* _relativeTo = Frame::World(),
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Get skeleton's COM Jacobian w.r.t. world frame.

@@ -118,7 +118,7 @@ const Frame* Entity::getParentFrame() const
 }
 
 //==============================================================================
-bool Entity::dependsOn(const Frame *_someFrame) const
+bool Entity::descendsFrom(const Frame *_someFrame) const
 {
   if(NULL == _someFrame)
     return false;

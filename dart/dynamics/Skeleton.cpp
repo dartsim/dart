@@ -2098,7 +2098,7 @@ Eigen::Vector3d Skeleton::getWorldCOMVelocity()
   for (int i = 0; i < nNodes; i++)
   {
     BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getCOMVelocity();
+    comVel += bodyNode->getMass() * bodyNode->getCOMLinearVelocity();
   }
 
   // Divide the sum by the total mass
@@ -2107,7 +2107,7 @@ Eigen::Vector3d Skeleton::getWorldCOMVelocity()
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOMVelocity(const Frame* _relativeTo,
+Eigen::Vector3d Skeleton::getCOMLinearVelocity(const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const
 {
   Eigen::Vector3d comVel(0.0, 0.0, 0.0);
@@ -2116,8 +2116,8 @@ Eigen::Vector3d Skeleton::getCOMVelocity(const Frame* _relativeTo,
   for (size_t i = 0; i < numBodies; ++i)
   {
     const BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getCOMVelocity(_relativeTo,
-                                                             _inCoordinatesOf);
+    comVel += bodyNode->getMass() * bodyNode->getCOMLinearVelocity(
+                                                 _relativeTo, _inCoordinatesOf);
   }
 
   assert(mTotalMass != 0.0);
@@ -2134,7 +2134,7 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
   const int nNodes = getNumBodyNodes();
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getCOMAcceleration();
+    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration().tail<3>();
   }
 
   // Divide the sum by the total mass
@@ -2143,7 +2143,7 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOMAcceleration(const Frame* _relativeTo,
+Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
   Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
@@ -2152,8 +2152,8 @@ Eigen::Vector3d Skeleton::getCOMAcceleration(const Frame* _relativeTo,
   for (size_t i = 0; i < numBodies; ++i)
   {
     const BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getCOMAcceleration(_relativeTo,
-                                                              _inCoordinatesOf);
+    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration(
+                                                 _relativeTo, _inCoordinatesOf);
   }
 
   assert(mTotalMass != 0.0);

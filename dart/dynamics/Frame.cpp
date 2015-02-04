@@ -174,6 +174,12 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
 }
 
 //==============================================================================
+Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d& _offset) const
+{
+  return getSpatialVelocity(_offset, Frame::World(), this);
+}
+
+//==============================================================================
 Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d &_offset,
                                           const Frame* _relativeTo,
                                           const Frame* _inCoordinatesOf) const
@@ -286,6 +292,12 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
     return result;
 
   return math::AdR(getTransform(_inCoordinatesOf), result);
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialAcceleration(const Eigen::Vector3d& _offset) const
+{
+  return getSpatialAcceleration(_offset, Frame::World(), this);
 }
 
 //==============================================================================
@@ -505,7 +517,7 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
 {
   if(_newParentFrame)
   {
-    if(_newParentFrame->dependsOn(this))
+    if(_newParentFrame->descendsFrom(this))
     {
       if(!(this->isWorld() && _newParentFrame->isWorld()))
       // We make an exception here for the World Frame, because it's special/unique
