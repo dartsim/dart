@@ -74,6 +74,46 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 }
 
 //==============================================================================
+Eigen::Isometry3d EulerJoint::convertToTransform(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+{
+  return Eigen::Isometry3d(convertToRotation(_positions, _ordering));
+}
+
+//==============================================================================
+Eigen::Isometry3d EulerJoint::convertToTransform(
+    const Eigen::Vector3d &_positions) const
+{
+  return convertToTransform(_positions, mAxisOrder);
+}
+
+//==============================================================================
+Eigen::Matrix3d EulerJoint::convertToRotation(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+{
+  switch (_ordering)
+  {
+    case AO_XYZ:
+      return math::eulerXYZToMatrix(_positions);
+    case AO_ZYX:
+      return math::eulerZYXToMatrix(_positions);
+    default:
+    {
+      dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
+            << _ordering << ")\n";
+      return Eigen::Matrix3d::Identity();
+    }
+  }
+}
+
+//==============================================================================
+Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
+                                                                           const
+{
+  return convertToRotation(_positions, mAxisOrder);
+}
+
+//==============================================================================
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
@@ -107,28 +147,8 @@ void EulerJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void EulerJoint::updateLocalTransform()
 {
-  switch (mAxisOrder)
-  {
-    case AO_XYZ:
-    {
-      mT = mT_ParentBodyToJoint
-           * Eigen::Isometry3d(math::eulerXYZToMatrix(mPositions))
-           * mT_ChildBodyToJoint.inverse();
-      break;
-    }
-    case AO_ZYX:
-    {
-      mT = mT_ParentBodyToJoint
-           * Eigen::Isometry3d(math::eulerZYXToMatrix(mPositions))
-           * mT_ChildBodyToJoint.inverse();
-      break;
-    }
-    default:
-    {
-      dterr << "Undefined Euler axis order\n";
-      break;
-    }
-  }
+  mT = mT_ParentBodyToJoint * convertToTransform(mPositions)
+       * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }

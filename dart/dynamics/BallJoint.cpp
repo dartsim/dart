@@ -58,12 +58,25 @@ BallJoint::~BallJoint()
 }
 
 //==============================================================================
+Eigen::Isometry3d BallJoint::convertToTransform(
+    const Eigen::Vector3d& _positions)
+{
+  return Eigen::Isometry3d(convertToRotation(_positions));
+}
+
+//==============================================================================
+Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
+{
+  return math::expMapRot(_positions);
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear() * math::expMapRot(mJacobian.topRows<3>()
-                                              * mVelocities * _dt);
+  mR.linear() = mR.linear() * convertToRotation(mJacobian.topRows<3>()
+                                                * mVelocities * _dt);
 
-  mPositions = math::logMap(mR.linear());
+  mPositions = convertToPositions(mR.linear());
 }
 
 //==============================================================================
@@ -80,7 +93,7 @@ void BallJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void BallJoint::updateLocalTransform()
 {
-  mR.linear() = math::expMapRot(mPositions);
+  mR.linear() = convertToRotation(mPositions);
 
   mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
 

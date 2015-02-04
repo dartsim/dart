@@ -58,14 +58,32 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
+Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
+{
+  Eigen::Vector6d x;
+  x.head<3>() = math::logMap(_tf.linear());
+  x.tail<3>() = _tf.translation();
+  return x;
+}
+
+//==============================================================================
+Eigen::Isometry3d FreeJoint::convertToTransform(
+    const Eigen::Vector6d& _positions)
+{
+  Eigen::Isometry3d tf;
+  tf.linear() = math::expMapRot(_positions.head<3>());
+  tf.translation() = _positions.tail<3>();
+  return tf;
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   mQ.linear()      = mQ.linear() * math::expMapRot(mJacobian.topRows<3>()
                                                    * mVelocities * _dt);
   mQ.translation() = mQ.translation() + mVelocities.tail<3>() * _dt;
 
-  mPositions.head<3>() = math::logMap(mQ.linear());
-  mPositions.tail<3>() = mQ.translation();
+  mPositions = convertToPositions(mQ);
 }
 
 //==============================================================================
@@ -88,8 +106,7 @@ void FreeJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void FreeJoint::updateLocalTransform()
 {
-  mQ.linear()      = math::expMapRot(mPositions.head<3>());
-  mQ.translation() = mPositions.tail<3>();
+  mQ = convertToTransform(mPositions);
 
   mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
 
