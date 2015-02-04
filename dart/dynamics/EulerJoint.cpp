@@ -76,6 +76,46 @@ EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 }
 
 //==============================================================================
+Eigen::Isometry3d EulerJoint::convertToTransform(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+{
+  return Eigen::Isometry3d(convertToRotation(_positions, _ordering));
+}
+
+//==============================================================================
+Eigen::Isometry3d EulerJoint::convertToTransform(
+    const Eigen::Vector3d &_positions) const
+{
+  return convertToTransform(_positions, mAxisOrder);
+}
+
+//==============================================================================
+Eigen::Matrix3d EulerJoint::convertToRotation(
+    const Eigen::Vector3d& _positions, AxisOrder _ordering)
+{
+  switch (_ordering)
+  {
+    case AO_XYZ:
+      return math::eulerXYZToMatrix(_positions);
+    case AO_ZYX:
+      return math::eulerZYXToMatrix(_positions);
+    default:
+    {
+      dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
+            << _ordering << ")\n";
+      return Eigen::Matrix3d::Identity();
+    }
+  }
+}
+
+//==============================================================================
+Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
+                                                                           const
+{
+  return convertToRotation(_positions, mAxisOrder);
+}
+
+//==============================================================================
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
@@ -86,20 +126,10 @@ void EulerJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_y");
       affixes.push_back("_x");
       break;
-    case AO_ZYZ:
-      affixes.push_back("_z");
-      affixes.push_back("_y");
-      affixes.push_back("_z");
-      break;
     case AO_XYZ:
       affixes.push_back("_x");
       affixes.push_back("_y");
       affixes.push_back("_z");
-      break;
-    case AO_ZXY:
-      affixes.push_back("_z");
-      affixes.push_back("_x");
-      affixes.push_back("_y");
       break;
     default:
       dterr << "Unsupported axis order in EulerJoint named '" << mName
@@ -119,28 +149,8 @@ void EulerJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void EulerJoint::updateLocalTransform() const
 {
-  switch (mAxisOrder)
-  {
-    case AO_XYZ:
-    {
-      mT = mT_ParentBodyToJoint
-           * Eigen::Isometry3d(math::eulerXYZToMatrix(getPositionsStatic()))
-           * mT_ChildBodyToJoint.inverse();
-      break;
-    }
-    case AO_ZYX:
-    {
-      mT = mT_ParentBodyToJoint
-           * Eigen::Isometry3d(math::eulerZYXToMatrix(getPositionsStatic()))
-           * mT_ChildBodyToJoint.inverse();
-      break;
-    }
-    default:
-    {
-      dterr << "Undefined Euler axis order\n";
-      break;
-    }
-  }
+  mT = mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
+       * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }

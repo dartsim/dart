@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sumit Jain <sumit@cc.gatech.edu>
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -19,6 +19,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -34,42 +40,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_H_
-#define DART_GUI_GLFUNCS_H_
+#ifndef DART_GUI_GRAPHWINDOW_H_
+#define DART_GUI_GRAPHWINDOW_H_
 
-#include <string>
+#include <vector>
 
-#include <Eigen/Eigen>
-// #include "FreeImage.h"
+#include <Eigen/Dense>
+
+#include "dart/gui/Win2D.h"
 
 namespace dart {
 namespace gui {
 
 /// \brief
-  void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                          bool _bigFont = true);
+class GraphWindow : public Win2D {
+public:
+  /// \brief
+  GraphWindow();
 
-/// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
+  /// \brief
+  virtual ~GraphWindow();
 
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
+  /// \brief
+  virtual void draw();
 
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
+  /// \brief
+  virtual void keyboard(unsigned char _key, int _x, int _y);
 
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
+  void setData(Eigen::VectorXd _data);
 
-// TODO(Unknown): freeimage
-
+protected:
+  Eigen::VectorXd mData;
+};
+ 
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_H_
+#endif  // DART_GUI_GRAPHWINDOW_H_
