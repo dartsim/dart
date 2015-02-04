@@ -303,7 +303,7 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
       joint = new dynamics::PlanarJoint();
       // TODO(MXG): Should we read in position limits? The URDF limits
       // specification only offers one dimension of limits, but a PlanarJoint is
-      // two-dimensional. Should we assume that position limits apply to both
+      // three-dimensional. Should we assume that position limits apply to both
       // coordinates equally? Or just don't accept the position limits at all?
       break;
   default:
