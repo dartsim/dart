@@ -280,8 +280,7 @@ public:
 
   /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
-  Eigen::VectorXd getPositionSegment(
-      const std::vector<size_t>& _id) const;
+  Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the positions
   void resetPositions();
@@ -311,8 +310,17 @@ public:
   /// Set generalized velocities
   void setVelocities(const Eigen::VectorXd& _velocities);
 
+  /// Set the generalized velocities of a segment of this Skeleton. The order of
+  /// input is determined by _id
+  void setVelocitySegment(const std::vector<size_t>& _id,
+                          const Eigen::VectorXd& _velocities);
+
   /// Get generalized velocities
   Eigen::VectorXd getVelocities() const;
+
+  /// Get the generalized velocities of a segment of this Skeleton. The returned
+  /// order of the velocities is determined by _id.
+  Eigen::VectorXd getVelocitySegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the velocities
   void resetVelocities();
@@ -343,8 +351,17 @@ public:
   /// Set generalized accelerations
   void setAccelerations(const Eigen::VectorXd& _accelerations);
 
+  /// Set the generalized accelerations of a segment of this Skeleton. The order
+  /// of input is determined by _id
+  void setAccelerationSegment(const std::vector<size_t>& _id,
+                              const Eigen::VectorXd& _accelerations);
+
   /// Get accelerations
   Eigen::VectorXd getAccelerations() const;
+
+  /// Get the generalized accelerations of a segment of this Skeleton. The
+  /// returned order of the accelerations is determined by _id
+  Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the accelerations
   void resetAccelerations();

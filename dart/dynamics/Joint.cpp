@@ -353,7 +353,7 @@ void Joint::notifyPositionUpdate()
   {
     mChildBodyNode->notifyTransformUpdate();
     mChildBodyNode->mIsBodyJacobianDirty = true;
-    mChildBodyNode->mIsBodyJacobianDerivDirty = true;
+    mChildBodyNode->mIsBodyJacobianSpatialDerivDirty = true;
   }
 
   mIsLocalJacobianDirty = true;

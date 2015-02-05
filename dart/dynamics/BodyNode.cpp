@@ -98,7 +98,7 @@ BodyNode::BodyNode(const std::string& _name)
     mParentBodyNode(NULL),
     mChildBodyNodes(std::vector<BodyNode*>(0)),
     mIsBodyJacobianDirty(true),
-    mIsBodyJacobianDerivDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
@@ -303,17 +303,17 @@ Eigen::Vector3d BodyNode::getWorldCOM() const
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
 {
-  return getWorldLinearVelocity(mCenterOfMass);
+  return getSpatialVelocity(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
 {
-  return getWorldLinearAcceleration(mCenterOfMass);
+  return getSpatialAcceleration(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
-Eigen::Vector3d BodyNode::getCOM(const Frame *_withRespectTo) const
+Eigen::Vector3d BodyNode::getCOM(const Frame* _withRespectTo) const
 {
   return getTransform(_withRespectTo) * mCenterOfMass;
 }
@@ -581,6 +581,55 @@ size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 }
 
 //==============================================================================
+const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
+{
+  return mDependentGenCoordIndices;
+}
+
+//==============================================================================
+template <typename DofType, typename BnType, typename SkelType, typename JType>
+std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
+{
+  std::vector<DofType*> dofs;
+  SkelType* skel = bn->getSkeleton();
+  if(!skel)
+  {
+    JType* joint = bn->getParentJoint();
+    if(!joint)
+      return dofs;
+
+    size_t nDofs = joint->getNumDofs();
+    dofs.reserve(nDofs);
+    for(size_t i=0; i<nDofs; ++i)
+      dofs.push_back(joint->getDof(i));
+
+    return dofs;
+  }
+
+  const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
+  size_t nDofs = coords.size();
+  dofs.reserve(nDofs);
+  for(size_t i=0; i<nDofs; ++i)
+    dofs.push_back(skel->getDof(coords[i]));
+
+  return dofs;
+}
+
+//==============================================================================
+std::vector<DegreeOfFreedom*> BodyNode::getDependentDofs()
+{
+  return getDependentDofsTemplate<
+      DegreeOfFreedom, BodyNode, Skeleton, Joint>(this);
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> BodyNode::getDependentDofs() const
+{
+  return getDependentDofsTemplate<
+      const DegreeOfFreedom, const BodyNode, const Skeleton, const Joint>(this);
+}
+
+//==============================================================================
 const Eigen::Isometry3d& BodyNode::getRelativeTransform() const
 {
   return mParentJoint->getLocalTransform();
@@ -733,6 +782,46 @@ math::AngularJacobian BodyNode::getAngularJacobian(
 }
 
 //==============================================================================
+const math::Jacobian& BodyNode::getJacobianSpatialDeriv() const
+{
+  if(mIsBodyJacobianSpatialDerivDirty)
+    _updateBodyJacobianSpatialDeriv();
+
+  return mBodyJacobianDeriv;
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobianSpatialDeriv();
+
+  return math::AdRJac(getTransform(_inCoordinatesOf), getJacobianSpatialDeriv());
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const
+{
+  math::Jacobian J_d = getJacobianSpatialDeriv();
+  J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(_offset);
+
+  return J_d;
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
+                                            const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobianSpatialDeriv(_offset);
+
+  Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
+  T.translation() = T.linear() * -_offset;
+
+  return math::AdTJac(T, getJacobianSpatialDeriv());
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
   return getSpatialAcceleration();
@@ -748,8 +837,7 @@ Eigen::Vector3d BodyNode::getBodyLinearAcceleration() const
 Eigen::Vector3d BodyNode::getBodyLinearAcceleration(
     const Eigen::Vector3d& _offset) const
 {
-  const Eigen::Vector6d& A = getSpatialAcceleration();
-  return A.tail<3>() + A.head<3>().cross(_offset);
+  return getSpatialAcceleration(_offset).tail<3>();
 }
 
 //==============================================================================
@@ -761,186 +849,108 @@ Eigen::Vector3d BodyNode::getBodyAngularAcceleration() const
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldLinearAcceleration() const
 {
-  return getWorldLinearAcceleration(Eigen::Vector3d::Zero());
+  return getSpatialAcceleration(Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldLinearAcceleration(
     const Eigen::Vector3d& _offset) const
 {
-  const Eigen::Isometry3d& W = getWorldTransform();
-
-  Eigen::Isometry3d T = W;
-
-  T.translation() = W.linear() * -_offset;
-
-  Eigen::Vector6d dV = getSpatialAcceleration();
-
-  const Eigen::Vector6d& V = getSpatialVelocity();
-
-  dV.tail<3>() += V.head<3>().cross(V.tail<3>());
-
-  return math::AdT(T, dV).tail<3>();
+  return getSpatialAcceleration(_offset, Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
 {
-  // TODO(JS): Optimize!
-
-  const Eigen::Isometry3d& W = getWorldTransform();
-  Eigen::Isometry3d T = W;
-
-  Eigen::Vector6d dV = getSpatialAcceleration();
-
-  const Eigen::Vector6d& V = getSpatialVelocity();
-
-  dV.tail<3>() += V.head<3>().cross(V.tail<3>());
-
-  return math::AdT(T, dV).head<3>();
+  return getSpatialAcceleration(Frame::World(), Frame::World()).head<3>();
 }
 
 //==============================================================================
 const math::Jacobian& BodyNode::getBodyJacobian()
 {
-  if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
-
-  return mBodyJacobian;
+  return getJacobian();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getBodyLinearJacobian()
 {
-  return getBodyJacobian().bottomRows<3>();
+  return getJacobian().bottomRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getBodyLinearJacobian(
     const Eigen::Vector3d& _offset)
 {
-  if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
-
-  return mBodyJacobian.bottomRows<3>()
-      + mBodyJacobian.topRows<3>().colwise().cross(_offset);
+  return getJacobian(_offset).bottomRows<3>();
 }
 
 //==============================================================================
 math::AngularJacobian BodyNode::getBodyAngularJacobian()
 {
-  return getBodyJacobian().topRows<3>();
+  return getJacobian().topRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getWorldLinearJacobian()
 {
-  return getWorldLinearJacobian(Eigen::Vector3d::Zero());
+  return getJacobian(Frame::World()).bottomRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getWorldLinearJacobian(
     const Eigen::Vector3d& _offset)
 {
-  // TODO(JS): Optimize!
-
-  const Eigen::Isometry3d& W = getWorldTransform();
-  Eigen::Isometry3d T = W;
-
-  T.translation() = W.linear() * -_offset;
-
-  return math::AdTJac(T, getBodyJacobian()).bottomRows<3>();
+  return getJacobian(_offset, Frame::World()).bottomRows<3>();
 }
 
 //==============================================================================
 math::AngularJacobian BodyNode::getWorldAngularJacobian()
 {
-  if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
-
-  return getWorldTransform().linear() * mBodyJacobian.topRows<3>();
+  return getJacobian(Frame::World()).topRows<3>();
 }
 
 //==============================================================================
 const math::Jacobian& BodyNode::getBodyJacobianDeriv()
 {
-  if (mIsBodyJacobianDerivDirty)
-    _updateBodyJacobianDeriv();
-
-  return mBodyJacobianDeriv;
+  return getJacobianSpatialDeriv();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getBodyLinearJacobianDeriv()
 {
-  if (mIsBodyJacobianDerivDirty)
-    _updateBodyJacobianDeriv();
-
-  return mBodyJacobianDeriv.bottomRows<3>();
+  return getJacobianSpatialDeriv().bottomRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getBodyLinearJacobianDeriv(
     const Eigen::Vector3d& _offset)
 {
-  if (mIsBodyJacobianDerivDirty)
-    _updateBodyJacobianDeriv();
-
-  return mBodyJacobianDeriv.bottomRows<3>()
-      + mBodyJacobianDeriv.topRows<3>().colwise().cross(_offset);
+  return getJacobianSpatialDeriv(_offset).bottomRows<3>();
 }
 
 //==============================================================================
 math::AngularJacobian BodyNode::getBodyAngularJacobianDeriv()
 {
-  if (mIsBodyJacobianDerivDirty)
-    _updateBodyJacobianDeriv();
-
-  return mBodyJacobianDeriv.topRows<3>();
+  return getJacobianSpatialDeriv().topRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv()
 {
-  return getWorldLinearJacobianDeriv(Eigen::Vector3d::Zero());
+  return getJacobianSpatialDeriv(Frame::World()).bottomRows<3>();
 }
 
 //==============================================================================
 math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv(
     const Eigen::Vector3d& _offset)
 {
-  // TODO(JS): Optimize!
-
-  const Eigen::Isometry3d& W = getWorldTransform();
-  const Eigen::Vector6d& V = getSpatialVelocity();
-
-  Eigen::Isometry3d T = W;
-  T.translation() = W.linear() * -_offset;
-
-  math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
-
-  bodyJacobianDeriv.bottomRows<3>().noalias()
-      -= mBodyJacobian.bottomRows<3>().colwise().cross(V.head<3>());
-
-  return math::AdTJac(T, bodyJacobianDeriv).bottomRows<3>();
+  return getJacobianSpatialDeriv(_offset, Frame::World()).bottomRows<3>();
 }
 
 //==============================================================================
 math::AngularJacobian BodyNode::getWorldAngularJacobianDeriv()
 {
-  // TODO(JS): Optimize!
-
-  const Eigen::Isometry3d& W = getWorldTransform();
-  const Eigen::Vector6d& V = getSpatialVelocity();
-
-  Eigen::Isometry3d T = W;
-
-  math::Jacobian bodyJacobianDeriv = getBodyJacobianDeriv();
-
-  bodyJacobianDeriv.bottomRows<3>().noalias()
-      -= mBodyJacobian.bottomRows<3>().colwise().cross(V.head<3>());
-
-  return math::AdTJac(T, bodyJacobianDeriv).topRows<3>();
+  return getJacobianSpatialDeriv(Frame::World()).topRows<3>();
 }
 
 //==============================================================================
@@ -1179,7 +1189,7 @@ void BodyNode::notifyVelocityUpdate()
     return;
 
   mNeedVelocityUpdate = true;
-  mIsBodyJacobianDerivDirty = true;
+  mIsBodyJacobianSpatialDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
   if(mSkeleton)
@@ -2034,7 +2044,7 @@ void BodyNode::_updateBodyJacobian() const
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobianDeriv()
+void BodyNode::_updateBodyJacobianSpatialDeriv() const
 {
   //--------------------------------------------------------------------------
   // Jacobian first derivative update
@@ -2050,7 +2060,7 @@ void BodyNode::_updateBodyJacobianDeriv()
 
   const int numLocalDOFs = mParentJoint->getNumDofs();
   const int numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
-  math::Jacobian J = getBodyJacobian();
+  math::Jacobian J = getJacobian();
 
   // Parent Jacobian
   if (mParentBodyNode)
@@ -2063,15 +2073,15 @@ void BodyNode::_updateBodyJacobianDeriv()
     mBodyJacobianDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getLocalTransform(),
                           mParentBodyNode->mBodyJacobianDeriv);
-    for (int i = 0; i < numParentDOFs; ++i)
-      mBodyJacobianDeriv.col(i) -= math::ad(getSpatialVelocity(), J.col(i));
+
+    mBodyJacobianDeriv -= math::adJac(getSpatialVelocity(), J);
   }
 
   // Local Jacobian
   mBodyJacobianDeriv.rightCols(numLocalDOFs)
       = mParentJoint->getLocalJacobianTimeDeriv();
 
-  mIsBodyJacobianDerivDirty = false;
+  mIsBodyJacobianSpatialDerivDirty = false;
 }
 
 //==============================================================================

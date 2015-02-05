@@ -62,6 +62,7 @@ namespace dynamics {
 class GenCoord;
 class Skeleton;
 class Joint;
+class DegreeOfFreedom;
 class Shape;
 class Marker;
 
@@ -284,6 +285,18 @@ public:
   /// Return a generalized coordinate index from the array index
   /// (< getNumDependentDofs)
   size_t getDependentGenCoordIndex(size_t _arrayIndex) const;
+
+  /// Return a std::vector of generalized coordinate indices that this BodyNode
+  /// depends on.
+  const std::vector<size_t>& getDependentGenCoordIndices() const;
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
+  /// depends on.
+  std::vector<DegreeOfFreedom*> getDependentDofs();
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
+  /// depends on.
+  std::vector<const DegreeOfFreedom*> getDependentDofs() const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -1030,7 +1043,7 @@ protected:
   std::vector<Marker*> mMarkers;
 
   /// A increasingly sorted list of dependent dof indices.
-  std::vector<int> mDependentGenCoordIndices;
+  std::vector<size_t> mDependentGenCoordIndices;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties
@@ -1043,10 +1056,10 @@ protected:
   mutable bool mIsBodyJacobianDirty;
 
   /// Time derivative of body Jacobian.
-  math::Jacobian mBodyJacobianDeriv;
+  mutable math::Jacobian mBodyJacobianDeriv;
 
   /// Dirty flag for time derivative of body Jacobian.
-  mutable bool mIsBodyJacobianDerivDirty;
+  mutable bool mIsBodyJacobianSpatialDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
@@ -1123,7 +1136,7 @@ protected:
 
   /// Update time derivative of body Jacobian. getBodyJacobianTimeDeriv()
   ///        calls this function if mIsBodyJacobianTimeDerivDirty is true.
-  void _updateBodyJacobianDeriv();
+  void _updateBodyJacobianSpatialDeriv() const;
 
 private:
   ///

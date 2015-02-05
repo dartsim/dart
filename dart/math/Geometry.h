@@ -264,8 +264,30 @@ typename Derived::PlainObject AdRJac(const Eigen::Isometry3d& _T,
 
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
-  ret.template topRows<3>() = _T.linear() * _J.template topRows<3>();
-  ret.template bottomRows<3>() = _T.linear() * _J.template bottomRows<3>();
+  ret.template topRows<3>().noalias() =
+      _T.linear() * _J.template topRows<3>();
+
+  ret.template bottomRows<3>().noalias() =
+      _T.linear() * _J.template bottomRows<3>();
+
+  return ret;
+}
+
+template<typename Derived>
+typename Derived::PlainObject adJac(const Eigen::Vector6d& _V,
+                                    const Eigen::MatrixBase<Derived>& _J)
+{
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() =
+      - _J.template topRows<3>().colwise().cross(_V.head<3>());
+
+  ret.template bottomRows<3>().noalias() =
+      - _J.template bottomRows<3>().colwise().cross(_V.head<3>())
+      - _J.template topRows<3>().colwise().cross(_V.tail<3>());
 
   return ret;
 }

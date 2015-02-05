@@ -650,8 +650,20 @@ Eigen::VectorXd Skeleton::getPositionSegment(
 void Skeleton::setPositionSegment(const std::vector<size_t>& _id,
                                   const Eigen::VectorXd& _positions)
 {
+  assert((int)_id.size() == _positions.size());
+  if((int)_id.size() != _positions.size())
+  {
+    dterr << "[Skeleton::setPositionSegment] Mismatch between _id size ("
+          << _id.size() << ") and _positions size (" << _positions.size()
+          << "). Positions will NOT be set!\n";
+    return;
+  }
+
   for (size_t i = 0; i < _id.size(); ++i)
-    mDofs[_id[i]]->setPosition(_positions[i]);
+  {
+    DegreeOfFreedom* dof = getDof(_id[i]);
+    dof->setPosition(_positions[i]);
+  }
 }
 
 //==============================================================================
@@ -726,6 +738,26 @@ void Skeleton::setVelocities(const Eigen::VectorXd& _velocities)
 }
 
 //==============================================================================
+void Skeleton::setVelocitySegment(const std::vector<size_t>& _id,
+                                  const Eigen::VectorXd& _velocities)
+{
+  assert((int)_id.size() == _velocities.size());
+  if((int)_id.size() != _velocities.size())
+  {
+    dterr << "[Skeleton::setVelocitySegment] Mismatch between _id size ("
+          << _id.size() << ") and _velocity size (" << _velocities.size()
+          << "). Velocities will NOT be set!\n";
+    return;
+  }
+
+  for (size_t i=0; i<_id.size(); ++i)
+  {
+    DegreeOfFreedom* dof = getDof(_id[i]);
+    dof->setVelocity(_velocities[i]);
+  }
+}
+
+//==============================================================================
 Eigen::VectorXd Skeleton::getVelocities() const
 {
   Eigen::VectorXd dq(getNumDofs());
@@ -740,6 +772,20 @@ Eigen::VectorXd Skeleton::getVelocities() const
       size_t index = joint->getDof(0)->getIndexInSkeleton();
       dq.segment(index, dof) = joint->getVelocities();
     }
+  }
+
+  return dq;
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getVelocitySegment(const std::vector<size_t>& _id) const
+{
+  Eigen::VectorXd dq(_id.size());
+
+  for(size_t i=0; i<_id.size(); ++i)
+  {
+    const DegreeOfFreedom* dof = getDof(_id[i]);
+    dq[i] = dof->getVelocity();
   }
 
   return dq;
@@ -817,6 +863,26 @@ void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 }
 
 //==============================================================================
+void Skeleton::setAccelerationSegment(const std::vector<size_t>& _id,
+                                      const Eigen::VectorXd& _accelerations)
+{
+  assert((int)_id.size() == _accelerations.size());
+  if((int)_id.size() != _accelerations.size())
+  {
+    dterr << "[Skeleton::setAccelerationSegment] Mismatch between _id size ("
+          << _id.size() << ") and _acceleration size (" << _accelerations.size()
+          << "). Accelerations will NOT be set!\n";
+    return;
+  }
+
+  for (size_t i=0; i<_id.size(); ++i)
+  {
+    DegreeOfFreedom* dof = getDof(_id[i]);
+    dof->setAcceleration(_accelerations[i]);
+  }
+}
+
+//==============================================================================
 Eigen::VectorXd Skeleton::getAccelerations() const
 {
   Eigen::VectorXd ddq(getNumDofs());
@@ -831,6 +897,20 @@ Eigen::VectorXd Skeleton::getAccelerations() const
       size_t index = joint->getDof(0)->getIndexInSkeleton();
       ddq.segment(index, dof) = joint->getAccelerations();
     }
+  }
+
+  return ddq;
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id) const
+{
+  Eigen::VectorXd ddq(_id.size());
+
+  for (size_t i=0; i<_id.size(); ++i)
+  {
+    const DegreeOfFreedom* dof = getDof(_id[i]);
+    ddq[i] = dof->getAcceleration();
   }
 
   return ddq;
@@ -1120,7 +1200,7 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianDerivDirty = true;
+    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
   }
 }
 
@@ -1769,7 +1849,7 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianDerivDirty = true;
+    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
   }
 }
 
@@ -1829,7 +1909,7 @@ void Skeleton::computeInverseDynamicsRecursionA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsBodyJacobianDerivDirty = true;
+    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
   }
 }
 
@@ -2135,9 +2215,9 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
 //    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
-//    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration(
-//                                      Frame::World(), Frame::World()).tail<3>();
-    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration();
+    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration(
+                                      Frame::World(), Frame::World()).tail<3>();
+//    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration();
   }
 
   // Divide the sum by the total mass
