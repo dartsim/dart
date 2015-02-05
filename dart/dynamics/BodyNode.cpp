@@ -659,6 +659,80 @@ const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
 }
 
 //==============================================================================
+const math::Jacobian& BodyNode::getJacobian() const
+{
+  if (mIsBodyJacobianDirty)
+    _updateBodyJacobian();
+
+  return mBodyJacobian;
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobian(const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobian();
+
+  return math::AdRJac(getTransform(_inCoordinatesOf), getJacobian());
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset) const
+{
+  math::Jacobian J = getJacobian();
+  J.bottomRows<3>() += J.topRows<3>().colwise().cross(_offset);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
+                                     const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobian(_offset);
+
+  Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
+  T.translation() = - T.linear() * _offset;
+
+  return math::AdTJac(T, getJacobian());
+}
+
+//==============================================================================
+math::LinearJacobian BodyNode::getLinearJacobian(
+    const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobian().bottomRows<3>();
+
+  return getTransform(_inCoordinatesOf).linear() * getJacobian().bottomRows<3>();
+}
+
+//==============================================================================
+math::LinearJacobian BodyNode::getLinearJacobian(const Eigen::Vector3d& _offset,
+                                            const Frame* _inCoordinatesOf) const
+{
+  const math::Jacobian& J = getJacobian();
+  math::LinearJacobian JLinear;
+  JLinear = J.bottomRows<3>() + J.topRows<3>().colwise().cross(_offset);
+
+  if(this == _inCoordinatesOf)
+    return JLinear;
+
+  return getTransform(_inCoordinatesOf).linear() * JLinear;
+}
+
+//==============================================================================
+math::AngularJacobian BodyNode::getAngularJacobian(
+                                            const Frame* _inCoordinatesOf) const
+{
+  if(this == _inCoordinatesOf)
+    return getJacobian().topRows<3>();
+
+  return getTransform(_inCoordinatesOf).linear() * getJacobian().topRows<3>();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
 {
   return getSpatialAcceleration();
@@ -1923,7 +1997,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobian()
+void BodyNode::_updateBodyJacobian() const
 {
   //--------------------------------------------------------------------------
   // Jacobian update
@@ -1943,14 +2017,14 @@ void BodyNode::_updateBodyJacobian()
   // Parent Jacobian
   if (mParentBodyNode)
   {
-    assert(static_cast<size_t>(mParentBodyNode->getBodyJacobian().cols())
+    assert(static_cast<size_t>(mParentBodyNode->getJacobian().cols())
            + mParentJoint->getNumDofs()
            == static_cast<size_t>(mBodyJacobian.cols()));
 
     assert(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) =
         math::AdInvTJac(mParentJoint->getLocalTransform(),
-                        mParentBodyNode->getBodyJacobian());
+                        mParentBodyNode->getJacobian());
   }
 
   // Local Jacobian

@@ -2134,7 +2134,10 @@ Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
   const int nNodes = getNumBodyNodes();
   for (int i = 0; i < nNodes; i++) {
     BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration().tail<3>();
+//    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
+//    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration(
+//                                      Frame::World(), Frame::World()).tail<3>();
+    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration();
   }
 
   // Divide the sum by the total mass

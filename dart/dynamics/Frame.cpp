@@ -180,7 +180,7 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d& _offset) const
 }
 
 //==============================================================================
-Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d &_offset,
+Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d& _offset,
                                           const Frame* _relativeTo,
                                           const Frame* _inCoordinatesOf) const
 {
@@ -368,6 +368,8 @@ Eigen::Vector3d Frame::getLinearAcceleration(const Eigen::Vector3d& _offset,
     return Eigen::Vector3d::Zero();
 
   const Eigen::Vector6d& v_rel = getSpatialVelocity(_offset, _relativeTo, this);
+//  const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo, this);
+  // TODO(MXG) Remove: ^ Using this replicates the BodyNode::getWorldLinearAcceleration(_offset) function
   const Eigen::Vector3d& a = getSpatialAcceleration(_offset, _relativeTo,
                                                     this).tail<3>()
                               + v_rel.head<3>().cross(v_rel.tail<3>());

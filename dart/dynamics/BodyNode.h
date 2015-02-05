@@ -1037,16 +1037,16 @@ protected:
   //--------------------------------------------------------------------------
 
   /// Body Jacobian
-  math::Jacobian mBodyJacobian;
+  mutable math::Jacobian mBodyJacobian;
 
   /// Dirty flag for body Jacobian.
-  bool mIsBodyJacobianDirty;
+  mutable bool mIsBodyJacobianDirty;
 
   /// Time derivative of body Jacobian.
   math::Jacobian mBodyJacobianDeriv;
 
   /// Dirty flag for time derivative of body Jacobian.
-  bool mIsBodyJacobianDerivDirty;
+  mutable bool mIsBodyJacobianDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
@@ -1119,7 +1119,7 @@ protected:
 
   /// Update body Jacobian. getBodyJacobian() calls this function if
   ///        mIsBodyJacobianDirty is true.
-  void _updateBodyJacobian();
+  void _updateBodyJacobian() const;
 
   /// Update time derivative of body Jacobian. getBodyJacobianTimeDeriv()
   ///        calls this function if mIsBodyJacobianTimeDerivDirty is true.

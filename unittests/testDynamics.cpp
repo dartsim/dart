@@ -899,8 +899,10 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd ddq = skel->getAccelerations();
 
       VectorXd com   = skel->getCOM();
-      VectorXd dcom  = skel->getCOMLinearVelocity();
-      VectorXd ddcom = skel->getCOMLinearAcceleration();
+//      VectorXd dcom  = skel->getCOMLinearVelocity();
+      VectorXd dcom = skel->getWorldCOMVelocity();
+//      VectorXd ddcom = skel->getCOMLinearAcceleration();
+      VectorXd ddcom = skel->getWorldCOMAcceleration();
 
       MatrixXd comJ  = skel->getWorldCOMJacobian();
       MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();
