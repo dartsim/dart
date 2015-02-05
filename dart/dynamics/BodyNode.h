@@ -204,7 +204,7 @@ public:
   double getRestitutionCoeff() const;
 
   //--------------------------------------------------------------------------
-  // Structueral Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
 
   /// Add a visualization shape into the bodynode
@@ -357,19 +357,27 @@ public:
   ///
   /// NOTE: Since this is a spatial time derivative, it should be used with
   /// spatial vectors. If you are using classical linear and angular
-  /// acceleration vectors, use getJacobianClassicDeriv() instead.
+  /// acceleration vectors, then use getJacobianClassicDeriv(),
+  /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
   const math::Jacobian& getJacobianSpatialDeriv() const;
 
   /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
   /// coordinates of any Frame.
+  ///
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classical linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
   math::Jacobian getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
   /// this BodyNode's coordinate Frame.
   ///
-  /// NOTE: This Jacobian is only for use with spatial vectors. If you are using
-  /// classic linear and angular vectors, use getJacobianClassicDeriv() instead.
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classic linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
   ///
   /// \sa getJacobianSpatialDeriv()
   math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const;
@@ -390,20 +398,43 @@ public:
 
   /// A version of getJacobianClassicDeriv() that can return the Jacobian in
   /// coordinates of any Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
   math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
 
-
+  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
+  /// an offset within the BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
   math::Jacobian getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  math::LinearJacobian getLinearJacobianClassicDeriv(
+  /// Return the linear Jacobian (classical) time derivative, in terms of any
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  math::LinearJacobian getLinearJacobianDeriv(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  math::LinearJacobian getLinearJacobianClassicDeriv(
+  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
+  /// an offset within the BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  math::LinearJacobian getLinearJacobianDeriv(
                           const Eigen::Vector3d& _offset,
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  math::AngularJacobian getAngularJacobianClassicDeriv(
+  /// Return the angular Jacobian time derivative, in terms of any coordinate
+  /// Frame.
+  math::AngularJacobian getAngularJacobianDeriv(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
   //----------------------------------------------------------------------------

@@ -561,7 +561,7 @@ protected:
                                     size_t _indexInJoint);
 
   /// Update the names of the joint's degrees of freedom. Used when setName() is
-  /// called with _rename_dofs set to true.
+  /// called with _renameDofs set to true.
   virtual void updateDegreeOfFreedomNames() = 0;
 
   //----------------------------------------------------------------------------
