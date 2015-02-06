@@ -52,9 +52,7 @@ public:
   enum AxisOrder
   {
     AO_ZYX = 0,
-    AO_ZYZ = 1,
-    AO_XYZ = 2,
-    AO_ZXY = 3
+    AO_XYZ = 1
   };
 
   /// Constructor
@@ -63,13 +61,61 @@ public:
   /// Destructor
   virtual ~EulerJoint();
 
-  /// \brief Set the axis order
+  /// Set the axis order
+  /// \param[in] _order Axis order
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the axis order.
   void setAxisOrder(AxisOrder _order, bool _renameDofs = true);
 
-  ///
+  /// Return the axis order
   AxisOrder getAxisOrder() const;
+
+  /// Convert a rotation into a 3D vector that can be used to set the positions
+  /// of an EulerJoint with the specified AxisOrder. The positions returned by
+  /// this function will result in a relative transform of
+  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
+  /// between the parent BodyNode and the child BodyNode frames when applied to
+  /// an EulerJoint with the correct axis ordering.
+  template <typename RotationType>
+  static Eigen::Vector3d convertToPositions(
+      const RotationType& _rotation, AxisOrder _ordering)
+  {
+    switch(_ordering)
+    {
+      case AO_XYZ:
+        return math::matrixToEulerXYZ(_rotation);
+      case AO_ZYX:
+        return math::matrixToEulerZYX(_rotation);
+      default:
+        dtwarn << "[EulerJoint::convertToPositions] Unsupported AxisOrder ("
+               << _ordering << "), returning a zero vector\n";
+        return Eigen::Vector3d::Zero();
+    }
+  }
+
+  /// This is a version of EulerJoint::convertToPositions(const RotationType&,
+  /// AxisOrder) which will use the AxisOrder belonging to the joint instance
+  /// that it gets called on.
+  template <typename RotationType>
+  Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
+  {
+    return convertToPositions(_rotation, mAxisOrder);
+  }
+
+  /// Convert a set of Euler angle positions into a transform
+  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions,
+                                           AxisOrder _ordering);
+
+  /// This is a version of EulerJoint::convertToRotation(const Eigen::Vector3d&,
+  /// AxisOrder) which will use the AxisOrder belonging to the joint instance
+  /// that it gets called on.
+  Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions) const;
+
+  /// Convert a set of Euler angle positions into a rotation matrix
+  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions,
+                                           AxisOrder _ordering);
+
+  Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction

@@ -52,6 +52,7 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/utils/FileInfoWorld.h"
+#include "dart/gui/GraphWindow.h"
 
 namespace dart {
 namespace gui {
@@ -72,6 +73,8 @@ SimWindow::SimWindow()
 }
 
 SimWindow::~SimWindow() {
+  for (const auto& graphWindow : mGraphWindows)
+    delete graphWindow;
 }
 
 void SimWindow::timeStepping() {
@@ -232,6 +235,13 @@ void SimWindow::saveWorld() {
     return;
   dart::utils::FileInfoWorld worldFile;
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
+}
+
+void SimWindow::plot(Eigen::VectorXd& _data) {
+  GraphWindow* figure = new GraphWindow();
+  figure->setData(_data);
+  figure->initWindow(480, 240, "figure");
+  mGraphWindows.push_back(figure);
 }
 
 }  // namespace gui
