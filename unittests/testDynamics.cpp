@@ -328,16 +328,10 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 
         EXPECT_TRUE( equals(AngularVel, AngularVelJ) );
 
-        std::cout << bn->getName() << ", " << bn->getNumDependentGenCoords()
-                  << " : " << bn->getParentJoint()->getNumDofs() << "\n";
-
-//        EXPECT_TRUE( equals(LinearAcc, LinearAccJ) );
-        std::cout << LinearAcc.transpose() << "\n"
-                  << LinearAccJ.transpose() << "\n\n";
+        EXPECT_TRUE( equals(LinearAcc, LinearAccJ) );
 
         EXPECT_TRUE( equals(AngularAcc, AngularAccJ) );
-        std::cout << AngularAcc.transpose() << "\n"
-                  << AngularAccJ.transpose() << "\n\n";
+
 
         // Calculation of velocities using recursive method
         Vector3d BodyLinVel = bn->getLinearVelocity(Frame::World(), bn);

@@ -867,12 +867,15 @@ math::Jacobian BodyNode::getJacobianClassicDeriv(const Frame* _inCoordinatesOf) 
 
 //==============================================================================
 math::Jacobian BodyNode::getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
-                                                 const Frame* _inCoordinatesOf) const
+                                            const Frame* _inCoordinatesOf) const
 {
   math::Jacobian J_d = getJacobianClassicDeriv();
+  const math::Jacobian& J = getWorldJacobian();
+  const Eigen::Vector3d& w = getAngularVelocity();
   const Eigen::Vector3d& p = getWorldTransform().linear() * _offset;
 
-  J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(p);
+  J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(p)
+                         + J.topRows<3>().colwise().cross(w.cross(p));
 
   if(_inCoordinatesOf->isWorld())
     return J_d;
@@ -881,7 +884,8 @@ math::Jacobian BodyNode::getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
 }
 
 //==============================================================================
-math::LinearJacobian BodyNode::getLinearJacobianDeriv(const Frame* _inCoordinatesOf) const
+math::LinearJacobian BodyNode::getLinearJacobianDeriv(
+    const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d = getJacobianClassicDeriv();
   if(_inCoordinatesOf->isWorld())
@@ -893,20 +897,25 @@ math::LinearJacobian BodyNode::getLinearJacobianDeriv(const Frame* _inCoordinate
 
 //==============================================================================
 math::LinearJacobian BodyNode::getLinearJacobianDeriv(
-            const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
+    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d = getJacobianClassicDeriv();
+  const math::Jacobian& J = getWorldJacobian();
+  const Eigen::Vector3d& w = getAngularVelocity();
   const Eigen::Vector3d& p = getWorldTransform().linear() * _offset;
 
   if(_inCoordinatesOf->isWorld())
-    return J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p);
+    return J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
+           + J.topRows<3>().colwise().cross(w.cross(p));
 
   return _inCoordinatesOf->getWorldTransform().linear().transpose()
-         * J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p);
+         * (J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
+            + J.topRows<3>().colwise().cross(w.cross(p)));
 }
 
 //==============================================================================
-math::AngularJacobian BodyNode::getAngularJacobianDeriv(const Frame* _inCoordinatesOf) const
+math::AngularJacobian BodyNode::getAngularJacobianDeriv(
+    const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d = getJacobianClassicDeriv();
 
@@ -2202,9 +2211,9 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
   //----------------------------------------------------------------------------
   // World Jacobian first classic deriv update
   //
-  // dJr = |                  dJr_parent                                           dJr_local - Jr_local x w_parent |
+  // dJr = |                   dJr_parent                                           dJr_local - Jr_local x w |
   //
-  // dJl = | dJl_parent + Jr_parent x (v_local + w_local x p) + dJr_parent x p     dJl_local - Jl_local x w_parent |
+  // dJl = | dJl_parent + Jr_parent x (v_local + w_parent x p) + dJr_parent x p     dJl_local - Jl_local x w |
   //
   // dJr: Rotational portion of Jacobian derivative
   // dJl: Linear portion of Jacobian derivative
@@ -2213,9 +2222,9 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
   // dJr_local: Local rotational Jacobian derivative (in World coordinates)
   // dJl_local: Local linear Jacobian derivative (in World coordinates)
   // v_local: Linear velocity relative to parent Frame
-  // w_local: Angular velocity relative to parent Frame
-  // p: Offset from origin of parent Frame
   // w_parent: Total angular velocity of the parent Frame
+  // w: Total angular velocity of this Frame
+  // p: Offset from origin of parent Frame
 
   if(NULL == mParentJoint)
     return;
@@ -2231,8 +2240,7 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 
     const Eigen::Vector3d& v_local = getLinearVelocity(mParentBodyNode,
                                                        Frame::World());
-    const Eigen::Vector3d& w_local = getAngularVelocity(mParentBodyNode,
-                                                        Frame::World());
+    const Eigen::Vector3d& w_parent = mParentFrame->getAngularVelocity();
     const Eigen::Vector3d& p = getWorldTransform().translation()
                           - mParentBodyNode->getWorldTransform().translation();
 
@@ -2244,36 +2252,22 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
         = dJ_parent.topRows<3>();
     mWorldJacobianClassicDeriv.block(3,0,3,numParentDOFs)
         = dJ_parent.bottomRows<3>()
-          + J_parent.topRows<3>().colwise().cross(v_local + w_local.cross(p))
+          + J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
           + dJ_parent.topRows<3>().colwise().cross(p);
-
-//    const Eigen::Isometry3d& T = mParentBodyNode->getWorldTransform();
-    const Eigen::Isometry3d& T = getWorldTransform();
-//    const Eigen::Vector3d& w_parent = mParentBodyNode->getAngularVelocity();
-    const Eigen::Vector3d& w = getAngularVelocity();
-
-    const math::Jacobian& J_local = mParentJoint->getLocalJacobian();
-
-    mWorldJacobianClassicDeriv.block(0,numParentDOFs,3,numLocalDOFs)
-        = - (T.linear()*J_local.topRows<3>()).colwise().cross(w);
-
-    mWorldJacobianClassicDeriv.block(3,numParentDOFs,3,numLocalDOFs)
-        = - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
-  }
-  else
-  {
-    mWorldJacobianClassicDeriv.setZero();
   }
 
-//  const Eigen::Isometry3d& T = mParentFrame->getWorldTransform();
-  const Eigen::Isometry3d& T = getWorldTransform();
   const math::Jacobian& dJ_local = mParentJoint->getLocalJacobianTimeDeriv();
+  const math::Jacobian& J_local = mParentJoint->getLocalJacobian();
+  const Eigen::Isometry3d& T = getWorldTransform();
+  const Eigen::Vector3d& w = getAngularVelocity();
 
   mWorldJacobianClassicDeriv.block(0,numParentDOFs,3,numLocalDOFs)
-      += T.linear()*dJ_local.topRows<3>();
+      = T.linear()*dJ_local.topRows<3>()
+        - (T.linear()*J_local.topRows<3>()).colwise().cross(w);
 
   mWorldJacobianClassicDeriv.block(3,numParentDOFs,3,numLocalDOFs)
-      += T.linear()*dJ_local.bottomRows<3>();
+      = T.linear()*dJ_local.bottomRows<3>()
+        - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
 }
