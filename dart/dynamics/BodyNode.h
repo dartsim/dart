@@ -319,8 +319,7 @@ public:
   const Eigen::Vector6d& getPartialAcceleration() const override;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
-  /// Jacobian is expressed in the Frame of this BodyNode. The Jacobian follows
-  /// spatial vector conventions.
+  /// Jacobian is expressed in the Frame of this BodyNode.
   const math::Jacobian& getJacobian() const;
 
   /// A version of getJacobian() that lets you specify a coordinate Frame to
@@ -335,6 +334,15 @@ public:
   /// coordinate Frame to express the Jacobian in.
   math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
                              const Frame* _inCoordinatesOf) const;
+
+  /// Return the generalized Jacobian targeting the origin of this BodyNode. The
+  /// Jacobian is expressed in the World Frame.
+  const math::Jacobian& getWorldJacobian() const;
+
+  /// Return the generalized Jacobian targeting an offset in this BodyNode. The
+  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
+  /// expressed in the World Frame.
+  math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
 
   /// Return the linear Jacobian targeting the origin of this BodyNode. You can
   /// specify a coordinate Frame to express the Jacobian in.
@@ -405,7 +413,8 @@ public:
   math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
 
   /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
-  /// an offset within the BodyNode Frame.
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in the coordinates of this BodyNode Frame.
   ///
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
@@ -423,7 +432,8 @@ public:
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
-  /// an offset within the BodyNode Frame.
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in coordinates of this BodyNode Frame.
   ///
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear vectors. If you are using spatial vectors, use
@@ -1081,16 +1091,36 @@ protected:
   //--------------------------------------------------------------------------
 
   /// Body Jacobian
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mBodyJacobian;
 
   /// Dirty flag for body Jacobian.
   mutable bool mIsBodyJacobianDirty;
 
-  /// Time derivative of body Jacobian.
-  mutable math::Jacobian mBodyJacobianDeriv;
+  /// Cached World Jacobian
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
+  mutable math::Jacobian mWorldJacobian;
 
-  /// Dirty flag for time derivative of body Jacobian.
+  /// Dirty flag for world Jacobian
+  mutable bool mIsWorldJacobianDirty;
+
+  /// Spatial time derivative of body Jacobian.
+  ///
+  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
+  mutable math::Jacobian mBodyJacobianSpatialDeriv;
+
+  /// Dirty flag for spatial time derivative of body Jacobian.
   mutable bool mIsBodyJacobianSpatialDerivDirty;
+
+  /// Classic time derivative of Body Jacobian
+  ///
+  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
+  mutable math::Jacobian mWorldJacobianClassicDeriv;
+
+  /// Dirty flag for the classic time derivative of the Jacobian
+  mutable bool mIsWorldJacobianClassicDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
@@ -1162,12 +1192,22 @@ protected:
   Eigen::Vector6d mImpF;
 
   /// Update body Jacobian. getBodyJacobian() calls this function if
-  ///        mIsBodyJacobianDirty is true.
+  /// mIsBodyJacobianDirty is true.
   void _updateBodyJacobian() const;
 
-  /// Update time derivative of body Jacobian. getBodyJacobianTimeDeriv()
-  ///        calls this function if mIsBodyJacobianTimeDerivDirty is true.
+  /// Update the World Jacobian. The commonality of using the World Jacobian
+  /// makes it worth caching.
+  void _updateWorldJacobian() const;
+
+  /// Update spatial time derivative of body Jacobian.
+  /// getJacobianSpatialTimeDeriv() calls this function if
+  /// mIsBodyJacobianSpatialDerivDirty is true.
   void _updateBodyJacobianSpatialDeriv() const;
+
+  /// Update classic time derivative of body Jacobian.
+  /// getJacobianClassicTimeDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void _updateWorldJacobianClassicDeriv() const;
 
 private:
   ///

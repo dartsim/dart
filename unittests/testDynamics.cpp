@@ -145,7 +145,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 
     int dof = body->getNumDependentGenCoords();
     I = body->getSpatialInertia();
-    J = body->getBodyJacobian();
+    J = body->getJacobian();
 
     EXPECT_EQ(I.rows(), 6);
     EXPECT_EQ(I.cols(), 6);
@@ -269,7 +269,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
         Vector6d BodyAcc = bn->getSpatialAcceleration();
 
         MatrixXd BodyJac = bn->getJacobian();
-        MatrixXd BodyJacDeriv = bn->getBodyJacobianDeriv();
+        MatrixXd BodyJacDeriv = bn->getJacobianSpatialDeriv();
         const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
         VectorXd q_d = skeleton->getVelocitySegment(coords);
         VectorXd q_dd = skeleton->getAccelerationSegment(coords);
@@ -311,24 +311,24 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 
 
         // Calculation of velocities using recursive method
-        Vector3d BodyLinVel = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel = bn->getBodyAngularVelocity();
-        Vector3d WorldLinVel = bn->getWorldLinearVelocity();
-        Vector3d WorldAngVel = bn->getWorldAngularVelocity();
-        Vector3d BodyLinAcc = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc = bn->getBodyAngularAcceleration();
-        Vector3d WorldLinAcc = bn->getWorldLinearAcceleration();
-        Vector3d WorldAngAcc = bn->getWorldAngularAcceleration();
+        Vector3d BodyLinVel = bn->getLinearVelocity(Frame::World(), bn);
+        Vector3d BodyAngVel = bn->getAngularVelocity(Frame::World(), bn);
+        Vector3d WorldLinVel = bn->getLinearVelocity();
+        Vector3d WorldAngVel = bn->getAngularVelocity();
+        Vector3d BodyLinAcc = bn->getSpatialAcceleration().tail<3>();
+        Vector3d BodyAngAcc = bn->getSpatialAcceleration().head<3>();
+        Vector3d WorldLinAcc = bn->getSpatialAcceleration(Frame::World()).tail<3>();
+        Vector3d WorldAngAcc = bn->getSpatialAcceleration(Frame::World()).head<3>();
 
         // Calculation of velocities using Jacobian and dq
-        MatrixXd BodyLinJac = bn->getBodyLinearJacobian();
-        MatrixXd BodyAngJac = bn->getBodyAngularJacobian();
-        MatrixXd WorldLinJac = bn->getWorldLinearJacobian();
-        MatrixXd WorldAngJac = bn->getWorldAngularJacobian();
-        MatrixXd BodyLinJacDeriv = bn->getBodyLinearJacobianDeriv();
-        MatrixXd BodyAngJacDeriv = bn->getBodyAngularJacobianDeriv();
-        MatrixXd WorldLinJacDeriv = bn->getWorldLinearJacobianDeriv();
-        MatrixXd WorldAngJacDeriv = bn->getWorldAngularJacobianDeriv();
+        MatrixXd BodyLinJac = bn->getLinearJacobian(bn);
+        MatrixXd BodyAngJac = bn->getAngularJacobian(bn);
+        MatrixXd WorldLinJac = bn->getLinearJacobian();
+        MatrixXd WorldAngJac = bn->getAngularJacobian();
+        MatrixXd BodyLinJacDeriv = bn->getJacobianSpatialDeriv().bottomRows<3>();
+        MatrixXd BodyAngJacDeriv = bn->getJacobianSpatialDeriv().topRows<3>();
+        MatrixXd WorldLinJacDeriv = bn->getJacobianSpatialDeriv(Frame::World()).bottomRows<3>();
+        MatrixXd WorldAngJacDeriv = bn->getJacobianSpatialDeriv(Frame::World()).topRows<3>();
         Vector3d BodyLinVel2 = Vector3d::Zero();
         Vector3d BodyAngVel2 = Vector3d::Zero();
         Vector3d WorldLinVel2 = Vector3d::Zero();
@@ -484,15 +484,15 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         skeleton->setVelocities(dq);
         skeleton->setAccelerations(ddq);
 
-        Vector3d BodyLinVel1 = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel1 = bn->getBodyAngularVelocity();
+        Vector3d BodyLinVel1 = bn->getLinearVelocity(Frame::World(), bn);
+        Vector3d BodyAngVel1 = bn->getAngularVelocity(Frame::World(), bn);
         Vector3d WorldLinVel1 = bn->getLinearVelocity();
         Vector3d WorldAngVel1 = bn->getAngularVelocity();
         // Isometry3d T1    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc1 = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc1 = bn->getBodyAngularAcceleration();
+        Vector3d BodyLinAcc1 = bn->getSpatialAcceleration().tail<3>();
+        Vector3d BodyAngAcc1 = bn->getSpatialAcceleration().head<3>();
         Vector3d WorldLinAcc1 = bn->getLinearAcceleration();
         Vector3d WorldAngAcc1 = bn->getAngularAcceleration();
 
@@ -501,15 +501,15 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         skeleton->setVelocities(dqNext);
         skeleton->setAccelerations(ddq);
 
-        Vector3d BodyLinVel2 = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel2 = bn->getBodyAngularVelocity();
+        Vector3d BodyLinVel2 = bn->getLinearVelocity(Frame::World(), bn);
+        Vector3d BodyAngVel2 = bn->getAngularVelocity(Frame::World(), bn);
         Vector3d WorldLinVel2 = bn->getLinearVelocity();
         Vector3d WorldAngVel2 = bn->getAngularVelocity();
         // Isometry3d T2    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc2 = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc2 = bn->getBodyAngularAcceleration();
+        Vector3d BodyLinAcc2 = bn->getSpatialAcceleration().tail<3>();
+        Vector3d BodyAngAcc2 = bn->getSpatialAcceleration().head<3>();
         Vector3d WorldLinAcc2 = bn->getLinearAcceleration();
         Vector3d WorldAngAcc2 = bn->getAngularAcceleration();
 
@@ -922,8 +922,8 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       VectorXd dq = skel->getVelocities();
       VectorXd ddq = skel->getAccelerations();
 
-      VectorXd dcom = skel->getWorldCOMVelocity();
-      VectorXd ddcom = skel->getWorldCOMAcceleration();
+      VectorXd dcom = skel->getCOMLinearVelocity();
+      VectorXd ddcom = skel->getCOMSpatialAcceleration().tail<3>();
 
       MatrixXd comJ  = skel->getWorldCOMJacobian();
       MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();

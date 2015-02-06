@@ -587,30 +587,24 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get skeleton's COM w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOM() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOM();
-
   /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
   Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
 
-  /// Get skeleton's COM velocity w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOMVelocity() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMVelocity();
+  /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
+  /// World Frame)
+  Eigen::Vector6d getCOMSpatialVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  /// Get skeleton's COM acceleration w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOMAcceleration() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMAcceleration();
-
-  /// Get the Skeleton's COM velocity in terms of any Frame (default is World
-  /// Frame)
+  /// Get the Skeleton's COM linear velocity in terms of any Frame (default is
+  /// World Frame)
   Eigen::Vector3d getCOMLinearVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM spatial acceleration in terms of any Frame (default
+  /// is World Frame)
+  Eigen::Vector6d getCOMSpatialAcceleration(
                           const Frame* _relativeTo = Frame::World(),
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
@@ -620,9 +614,44 @@ public:
                           const Frame* _relativeTo = Frame::World(),
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
+  math::Jacobian getCOMJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  math::LinearJacobian getCOMLinearJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  math::Jacobian getCOMJacobianSpatialDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  math::Jacobian getCOMJacobianClassicDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  math::LinearJacobian getCOMLinearJacobianDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get skeleton's COM w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOM() instead
+  DEPRECATED(4.4)
+  Eigen::Vector3d getWorldCOM();
+
+  /// Get skeleton's COM velocity w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMLinearVelocity() instead
+  DEPRECATED(4.4)
+  Eigen::Vector3d getWorldCOMVelocity();
+
+  /// Get skeleton's COM acceleration w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMAcceleration() instead
+  DEPRECATED(4.4)
+  Eigen::Vector3d getWorldCOMAcceleration();
+
+  // TODO(MXG): Deprecate
   /// Get skeleton's COM Jacobian w.r.t. world frame.
   Eigen::MatrixXd getWorldCOMJacobian();
 
+  // TODO(MXG): Deprecate
   /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
@@ -648,12 +677,18 @@ public:
 
 public:
   /// Compute recursion part A of forward dynamics
+  ///
+  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
+  DEPRECATED(4.4)
   void computeForwardDynamicsRecursionPartA();
 
   /// Compute recursion part B of forward dynamics
   void computeForwardDynamicsRecursionPartB();
 
   /// Compute recursion part A of inverse dynamics
+  ///
+  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
+  DEPRECATED(4.4)
   void computeInverseDynamicsRecursionA();
 
   /// Compute recursion part B of inverse dynamics

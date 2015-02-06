@@ -552,7 +552,7 @@ Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getBodyJacobian()
 
   J.leftCols(dof)
       = math::AdInvTJac(
-          T, mParentSoftBodyNode->getBodyJacobian()).bottomRows<3>();
+          T, mParentSoftBodyNode->getJacobian()).bottomRows<3>();
   J.rightCols<3>() = Eigen::Matrix3d::Identity();
 
   return J;
@@ -659,8 +659,8 @@ void PointMass::updateTransform() const
 void PointMass::updateVelocity() const
 {
   // v = w(parent) x mX + v(parent) + dq
-  mV = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(getLocalPosition())
-       + mParentSoftBodyNode->getBodyVelocity().tail<3>()
+  const Eigen::Vector6d& v_parent = mParentSoftBodyNode->getSpatialVelocity();
+  mV = v_parent.head<3>().cross(getLocalPosition()) + v_parent.tail<3>()
        + getVelocities();
   assert(!math::isNan(mV));
 }
@@ -670,7 +670,7 @@ void PointMass::updatePartialAcceleration() const
 {
   // eta = w(parent) x dq
   const Eigen::Vector3d& dq = getVelocities();
-  mEta = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(dq);
+  mEta = mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(dq);
   assert(!math::isNan(mEta));
 }
 
@@ -684,9 +684,9 @@ void PointMass::updateAcceleration()
 void PointMass::updateAccelerationID() const
 {
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(getLocalPosition()) +
-        mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        getPartialAccelerations() + getAccelerations();
+  const Eigen::Vector6d& a_parent = mParentSoftBodyNode->getSpatialAcceleration();
+  mA = a_parent.head<3>().cross(getLocalPosition()) + a_parent.tail<3>()
+       + getPartialAccelerations() + getAccelerations();
   assert(!math::isNan(mA));
 }
 
@@ -703,7 +703,7 @@ void PointMass::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 {
   // f = m*dv + w(parent) x m*v - fext
   mF.noalias() = mMass * getBodyAcceleration();
-  mF += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(
+  mF += mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(
         mMass * getBodyVelocity()) - mFext;
   if (mParentSoftBodyNode->getGravityMode() == true)
   {
@@ -765,7 +765,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
 {
   // B = w(parent) x m*v - fext - fgravity
   // - w(parent) x m*v - fext
-  mB = mParentSoftBodyNode->getBodyVelocity().head<3>().cross(
+  mB = mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(
         mMass * getBodyVelocity()) - mFext;
   // - fgravity
   if (mParentSoftBodyNode->getGravityMode() == true)
@@ -810,18 +810,16 @@ void PointMass::updateAccelerationFD()
 {
   // ddq = imp_psi*(alpha - m*(dw(parent) x mX + dv(parent))
   const Eigen::Vector3d& X = getLocalPosition();
+  const Eigen::Vector6d& a_parent = mParentSoftBodyNode->getSpatialAcceleration();
   Eigen::Vector3d ddq =
       getImplicitPsi()
-      * (mAlpha - mMass
-         * (mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(X)
-            + mParentSoftBodyNode->getBodyAcceleration().tail<3>()));
+      * (mAlpha - mMass * (a_parent.head<3>().cross(X) + a_parent.tail<3>()));
   setAccelerations(ddq);
   assert(!math::isNan(ddq));
 
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
-  mA = mParentSoftBodyNode->getBodyAcceleration().head<3>().cross(X) +
-        mParentSoftBodyNode->getBodyAcceleration().tail<3>() +
-        getPartialAccelerations() + getAccelerations();
+  mA = a_parent.head<3>().cross(X) + a_parent.tail<3>()
+       + getPartialAccelerations() + getAccelerations();
   assert(!math::isNan(mA));
 }
 
