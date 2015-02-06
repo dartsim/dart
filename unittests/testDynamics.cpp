@@ -309,6 +309,35 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 
         EXPECT_TRUE( equals(ComAccBody, ComAccBodyJ) );
 
+        Vector3d LinearVel = bn->getLinearVelocity();
+        Vector3d AngularVel = bn->getAngularVelocity();
+        Vector3d LinearAcc = bn->getLinearAcceleration();
+        Vector3d AngularAcc = bn->getAngularAcceleration();
+
+        math::LinearJacobian LinearJac = bn->getLinearJacobian();
+        math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv();
+        math::AngularJacobian AngularJac = bn->getAngularJacobian();
+        math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv();
+
+        Vector3d LinearVelJ = LinearJac * q_d;
+        Vector3d AngularVelJ = AngularJac * q_d;
+        Vector3d LinearAccJ = LinearJac * q_dd + LinearJacDeriv * q_d;
+        Vector3d AngularAccJ = AngularJac * q_dd + AngularJacDeriv * q_d;
+
+        EXPECT_TRUE( equals(LinearVel, LinearVelJ) );
+
+        EXPECT_TRUE( equals(AngularVel, AngularVelJ) );
+
+        std::cout << bn->getName() << ", " << bn->getNumDependentGenCoords()
+                  << " : " << bn->getParentJoint()->getNumDofs() << "\n";
+
+//        EXPECT_TRUE( equals(LinearAcc, LinearAccJ) );
+        std::cout << LinearAcc.transpose() << "\n"
+                  << LinearAccJ.transpose() << "\n\n";
+
+        EXPECT_TRUE( equals(AngularAcc, AngularAccJ) );
+        std::cout << AngularAcc.transpose() << "\n"
+                  << AngularAccJ.transpose() << "\n\n";
 
         // Calculation of velocities using recursive method
         Vector3d BodyLinVel = bn->getLinearVelocity(Frame::World(), bn);

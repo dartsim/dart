@@ -2247,23 +2247,26 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
           + J_parent.topRows<3>().colwise().cross(v_local + w_local.cross(p))
           + dJ_parent.topRows<3>().colwise().cross(p);
 
-    const Eigen::Isometry3d& T = mParentBodyNode->getWorldTransform();
-    const Eigen::Vector3d& w_parent = mParentBodyNode->getAngularVelocity();
+//    const Eigen::Isometry3d& T = mParentBodyNode->getWorldTransform();
+    const Eigen::Isometry3d& T = getWorldTransform();
+//    const Eigen::Vector3d& w_parent = mParentBodyNode->getAngularVelocity();
+    const Eigen::Vector3d& w = getAngularVelocity();
 
     const math::Jacobian& J_local = mParentJoint->getLocalJacobian();
 
     mWorldJacobianClassicDeriv.block(0,numParentDOFs,3,numLocalDOFs)
-        = - (T.linear()*J_local.topRows<3>()).colwise().cross(w_parent);
+        = - (T.linear()*J_local.topRows<3>()).colwise().cross(w);
 
     mWorldJacobianClassicDeriv.block(3,numParentDOFs,3,numLocalDOFs)
-        = - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w_parent);
+        = - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
   }
   else
   {
     mWorldJacobianClassicDeriv.setZero();
   }
 
-  const Eigen::Isometry3d& T = mParentFrame->getWorldTransform();
+//  const Eigen::Isometry3d& T = mParentFrame->getWorldTransform();
+  const Eigen::Isometry3d& T = getWorldTransform();
   const math::Jacobian& dJ_local = mParentJoint->getLocalJacobianTimeDeriv();
 
   mWorldJacobianClassicDeriv.block(0,numParentDOFs,3,numLocalDOFs)
