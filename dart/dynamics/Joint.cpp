@@ -62,6 +62,8 @@ Joint::Joint(const std::string& _name)
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mSpatialAcceleration(Eigen::Vector6d::Zero()),
+    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
     mNeedTransformUpdate(true),
     mNeedSpatialVelocityUpdate(true),
     mNeedSpatialAccelerationUpdate(true),

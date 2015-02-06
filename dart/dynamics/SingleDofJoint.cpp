@@ -78,7 +78,9 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mInvProjArtInertia(0.0),
     mInvProjArtInertiaImplicit(0.0),
     mTotalForce(0.0),
-    mTotalImpulse(0.0)
+    mTotalImpulse(0.0),
+    mInvM_a(0.0),
+    mInvMassMatrixSegment(0.0)
 {
 }
 
