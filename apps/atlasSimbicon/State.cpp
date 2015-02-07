@@ -220,13 +220,13 @@ void State::end(double _currentTime)
 //==============================================================================
 Eigen::Vector3d State::getCOM() const
 {
-  return mSkeleton->getWorldCOM();
+  return mSkeleton->getCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d State::getCOMVelocity() const
 {
-  return mSkeleton->getWorldCOMVelocity();
+  return mSkeleton->getCOMLinearVelocity();
 }
 
 //==============================================================================

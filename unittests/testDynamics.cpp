@@ -941,18 +941,17 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
 
       skel->computeForwardDynamics();
 
-      VectorXd q  = skel->getPositions();
       VectorXd dq = skel->getVelocities();
       VectorXd ddq = skel->getAccelerations();
 
-      VectorXd dcom = skel->getCOMLinearVelocity();
-      VectorXd ddcom = skel->getCOMSpatialAcceleration().tail<3>();
+      Vector6d dcom = skel->getCOMSpatialVelocity();
+      Vector6d ddcom = skel->getCOMSpatialAcceleration();
 
-      MatrixXd comJ  = skel->getWorldCOMJacobian();
-      MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();
+      math::Jacobian comJ  = skel->getCOMJacobian();
+      math::Jacobian comdJ = skel->getCOMJacobianSpatialDeriv();
 
-      VectorXd dcom2  = comJ * dq;
-      VectorXd ddcom2 = comdJ * dq + comJ * ddq;
+      Vector6d dcom2  = comJ * dq;
+      Vector6d ddcom2 = comdJ * dq + comJ * ddq;
 
       EXPECT_TRUE(equals(dcom, dcom2, 1e-6));
       if (!equals(dcom, dcom2, 1e-6))
@@ -1047,7 +1046,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
         Eigen::VectorXd constraintVector1 = skel->getConstraintForces();
 
         // Get constraint force vector by using Jacobian of skeleon
-        Eigen::MatrixXd bodyJacobian = body->getBodyJacobian();
+        Eigen::MatrixXd bodyJacobian = body->getJacobian();
         Eigen::VectorXd constraintVector2 = bodyJacobian.transpose()
                                             * impulseOnBody
                                             / skel->getTimeStep();

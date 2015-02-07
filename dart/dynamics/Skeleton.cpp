@@ -2132,76 +2132,63 @@ Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 }
 
 //==============================================================================
-Eigen::Vector6d Skeleton::getCOMSpatialVelocity(const Frame* _relativeTo,
-                                            const Frame* _inCoordinatesOf) const
-{
-  Eigen::Vector6d comVel(Eigen::Vector6d::Zero());
 
-  const size_t numBodies = getNumBodyNodes();
+// Templated function for computing different kinds of COM properties, like
+// velocities and accelerations
+template <
+    typename PropertyType,
+    PropertyType (BodyNode::*getPropertyFn)(const Frame*, const Frame*) const>
+PropertyType getCOMPropertyTemplate(const Skeleton* _skel,
+                                    const Frame* _relativeTo,
+                                    const Frame* _inCoordinatesOf)
+{
+  PropertyType result(PropertyType::Zero());
+
+  const size_t numBodies = _skel->getNumBodyNodes();
   for (size_t i = 0; i < numBodies; ++i)
   {
-    const BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getCOMSpatialVelocity(
-                                                 _relativeTo, _inCoordinatesOf);
+    const BodyNode* bodyNode = _skel->getBodyNode(i);
+    result += bodyNode->getMass()
+              * (bodyNode->*getPropertyFn)(_relativeTo, _inCoordinatesOf);
   }
 
-  assert(mTotalMass != 0.0);
-  return comVel / mTotalMass;
+  assert(_skel->getMass() != 0.0);
+  return result / _skel->getMass();
+}
+
+//==============================================================================
+Eigen::Vector6d Skeleton::getCOMSpatialVelocity(const Frame* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  return getCOMPropertyTemplate<Eigen::Vector6d,
+      &BodyNode::getCOMSpatialVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d Skeleton::getCOMLinearVelocity(const Frame* _relativeTo,
-                                         const Frame* _inCoordinatesOf) const
+    const Frame* _inCoordinatesOf) const
 {
-  Eigen::Vector3d comVel(0.0, 0.0, 0.0);
-
-  const size_t numBodies = getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
-  {
-    const BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getCOMLinearVelocity(
-                                                 _relativeTo, _inCoordinatesOf);
-  }
-
-  assert(mTotalMass != 0.0);
-  return comVel / mTotalMass;
+  return getCOMPropertyTemplate<Eigen::Vector3d,
+      &BodyNode::getCOMLinearVelocity>(this, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector6d Skeleton::getCOMSpatialAcceleration(const Frame* _relativeTo,
-                                            const Frame* _inCoordinatesOf) const
+    const Frame* _inCoordinatesOf) const
 {
-  Eigen::Vector6d comAcc(Eigen::Vector6d::Zero());
-
-  const size_t numBodies = getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
-  {
-    const BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration(
-                                                 _relativeTo, _inCoordinatesOf);
-  }
-
-  assert(mTotalMass != 0.0);
-  return comAcc / mTotalMass;
+  return getCOMPropertyTemplate<Eigen::Vector6d,
+      &BodyNode::getCOMSpatialAcceleration>(this, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
-                                            const Frame* _inCoordinatesOf) const
+    const Frame* _inCoordinatesOf) const
 {
-  Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
-
-  const size_t numBodies = getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
-  {
-    const BodyNode* bodyNode = getBodyNode(i);
-    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration(
-                                                 _relativeTo, _inCoordinatesOf);
-  }
-
-  assert(mTotalMass != 0.0);
-  return comAcc / mTotalMass;
+  return getCOMPropertyTemplate<Eigen::Vector3d,
+      &BodyNode::getCOMLinearAcceleration>(this, _relativeTo, _inCoordinatesOf);
 }
+
+//==============================================================================
 
 // Templated function for computing different kinds of COM Jacobians and their
 // derivatives
@@ -2248,7 +2235,7 @@ math::Jacobian Skeleton::getCOMJacobian(const Frame* _inCoordinatesOf) const
 
 //==============================================================================
 math::LinearJacobian Skeleton::getCOMLinearJacobian(
-                                            const Frame* _inCoordinatesOf) const
+    const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::LinearJacobian,
            &BodyNode::getLinearJacobian>(this, _inCoordinatesOf);
@@ -2256,133 +2243,56 @@ math::LinearJacobian Skeleton::getCOMLinearJacobian(
 
 //==============================================================================
 math::Jacobian Skeleton::getCOMJacobianSpatialDeriv(
-                                            const Frame* _inCoordinatesOf) const
+    const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::Jacobian,
       &BodyNode::getJacobianSpatialDeriv>(this, _inCoordinatesOf);
 }
 
 //==============================================================================
+math::Jacobian Skeleton::getCOMJacobianClassicDeriv(
+    const Frame* _inCoordinatesOf) const
+{
+  return getCOMJacobianTemplate<math::Jacobian,
+      &BodyNode::getJacobianClassicDeriv>(this, _inCoordinatesOf);
+}
+
+//==============================================================================
+math::LinearJacobian Skeleton::getCOMLinearJacobianDeriv(
+    const Frame* _inCoordinatesOf) const
+{
+  return getCOMJacobianTemplate<math::LinearJacobian,
+      &BodyNode::getLinearJacobianDeriv>(this, _inCoordinatesOf);
+}
+
+//==============================================================================
 Eigen::Vector3d Skeleton::getWorldCOM()
 {
-  // COM
-  Eigen::Vector3d com(0.0, 0.0, 0.0);
-
-  // Compute sum of each body's COM multiplied by body's mass
-  const int nNodes = getNumBodyNodes();
-  for (int i = 0; i < nNodes; i++)
-  {
-    BodyNode* bodyNode = getBodyNode(i);
-    com += bodyNode->getMass() * bodyNode->getCOM();
-  }
-
-  // Divide the sum by the total mass
-  assert(mTotalMass != 0.0);
-  return com / mTotalMass;
+  return getCOM(Frame::World());
 }
 
 //==============================================================================
 Eigen::Vector3d Skeleton::getWorldCOMVelocity()
 {
-  // Velocity of COM
-  Eigen::Vector3d comVel(0.0, 0.0, 0.0);
-
-  // Compute sum of each body's COM velocities multiplied by body's mass
-  const int nNodes = getNumBodyNodes();
-  for (int i = 0; i < nNodes; i++)
-  {
-    BodyNode* bodyNode = getBodyNode(i);
-    comVel += bodyNode->getMass() * bodyNode->getCOMLinearVelocity();
-  }
-
-  // Divide the sum by the total mass
-  assert(mTotalMass != 0.0);
-  return comVel / mTotalMass;
+  return getCOMLinearVelocity();
 }
 
 //==============================================================================
 Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
 {
-  // Acceleration of COM
-  Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
-
-  // Compute sum of each body's COM accelerations multiplied by body's mass
-  const int nNodes = getNumBodyNodes();
-  for (int i = 0; i < nNodes; i++) {
-    BodyNode* bodyNode = getBodyNode(i);
-//    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
-    comAcc += bodyNode->getMass() * bodyNode->getCOMSpatialAcceleration(
-                                      Frame::World(), Frame::World()).tail<3>();
-//    comAcc += bodyNode->getMass() * bodyNode->getCOMLinearAcceleration();
-  }
-
-  // Divide the sum by the total mass
-  assert(mTotalMass != 0.0);
-  return comAcc / mTotalMass;
+  return getCOMLinearAcceleration();
 }
 
 //==============================================================================
 Eigen::MatrixXd Skeleton::getWorldCOMJacobian()
 {
-  // Jacobian of COM
-  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, getNumDofs());
-
-  // Compute sum of each body's Jacobian of COM accelerations multiplied by
-  // body's mass
-  const int nNodes = getNumBodyNodes();
-  for (int i = 0; i < nNodes; i++)
-  {
-    // BodyNode iterator
-    BodyNode* bodyNode = getBodyNode(i);
-
-    // Compute weighted Jacobian
-    Eigen::MatrixXd localJ
-        = bodyNode->getMass()
-          * bodyNode->getWorldLinearJacobian(bodyNode->getLocalCOM());
-
-    // Assign the weighted Jacobian to total Jacobian
-    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
-    {
-      int idx = bodyNode->getDependentGenCoordIndex(j);
-      J.col(idx) += localJ.col(j);
-    }
-  }
-
-  // Divide the sum by the total mass
-  assert(mTotalMass != 0.0);
-  return J / mTotalMass;
+  return getCOMLinearJacobian();
 }
 
 //==============================================================================
 Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv()
 {
-  // Jacobian time derivative of COM
-  Eigen::MatrixXd dJ = Eigen::MatrixXd::Zero(3, getNumDofs());
-
-  // Compute sum of each body's Jacobian time derivative of COM accelerations
-  // multiplied by body's mass
-  const int nNodes = getNumBodyNodes();
-  for (int i = 0; i < nNodes; i++)
-  {
-    // BodyNode iterator
-    BodyNode* bodyNode = getBodyNode(i);
-
-    // Compute weighted Jacobian time derivative
-    Eigen::MatrixXd localJ
-        = bodyNode->getMass()
-          * bodyNode->getWorldLinearJacobianDeriv(bodyNode->getLocalCOM());
-
-    // Assign the weighted Jacobian to total Jacobian time derivative
-    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
-    {
-      int idx = bodyNode->getDependentGenCoordIndex(j);
-      dJ.col(idx) += localJ.col(j);
-    }
-  }
-
-  // Divide the sum by the total mass
-  assert(mTotalMass != 0.0);
-  return dJ / mTotalMass;
+  return getCOMLinearJacobianDeriv();
 }
 
 //==============================================================================

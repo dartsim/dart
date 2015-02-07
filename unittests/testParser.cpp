@@ -120,7 +120,7 @@ TEST(Parser, EmptyWorld)
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), 0);
   EXPECT_EQ(world->getGravity()(2), -9.81);
-  EXPECT_EQ(world->getNumSkeletons(), 0);
+  EXPECT_EQ((int)world->getNumSkeletons(), 0);
 
   EXPECT_EQ(world->getTime(), 0);
   world->step();

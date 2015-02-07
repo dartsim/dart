@@ -647,12 +647,12 @@ public:
   DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration();
 
-  // TODO(MXG): Deprecate
   /// Get skeleton's COM Jacobian w.r.t. world frame.
+  DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobian();
 
-  // TODO(MXG): Deprecate
   /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
+  DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
   /// Get kinetic energy of this skeleton.

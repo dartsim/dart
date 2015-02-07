@@ -122,7 +122,7 @@ TEST(WORLD, ADDING_AND_REMOVING_SKELETONS)
 
     // Remove all the skeletons
     world->removeAllSkeletons();
-    EXPECT_EQ(world->getNumSkeletons(), 0);
+    EXPECT_EQ((int)world->getNumSkeletons(), 0);
     for (int i = 0; i < nSteps; ++i)
         world->step();
 
