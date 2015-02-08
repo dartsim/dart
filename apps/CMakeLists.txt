@@ -6,7 +6,7 @@ foreach(APPDIR
         galileo
         tinkertoy
     )
-    add_subdirectory(${APPDIR})
+    Add_subdirectory(${APPDIR})
     if(WIN32)
         if(TARGET ${APPTARGET})
             set_target_properties(${APPTARGET} PROPERTIES FOLDER Apps
