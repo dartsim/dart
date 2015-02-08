@@ -881,7 +881,7 @@ math::Jacobian BodyNode::getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
   math::Jacobian J_d = getJacobianClassicDeriv();
   const math::Jacobian& J = getWorldJacobian();
   const Eigen::Vector3d& w = getAngularVelocity();
-  const Eigen::Vector3d& p = getWorldTransform().linear() * _offset;
+  const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
 
   J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(p)
                          + J.topRows<3>().colwise().cross(w.cross(p));
@@ -911,7 +911,7 @@ math::LinearJacobian BodyNode::getLinearJacobianDeriv(
   const math::Jacobian& J_d = getJacobianClassicDeriv();
   const math::Jacobian& J = getWorldJacobian();
   const Eigen::Vector3d& w = getAngularVelocity();
-  const Eigen::Vector3d& p = getWorldTransform().linear() * _offset;
+  const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
 
   if(_inCoordinatesOf->isWorld())
     return J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
@@ -2250,8 +2250,8 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
     const Eigen::Vector3d& v_local = getLinearVelocity(mParentBodyNode,
                                                        Frame::World());
     const Eigen::Vector3d& w_parent = mParentFrame->getAngularVelocity();
-    const Eigen::Vector3d& p = getWorldTransform().translation()
-                          - mParentBodyNode->getWorldTransform().translation();
+    const Eigen::Vector3d& p = (getWorldTransform().translation()
+                  - mParentBodyNode->getWorldTransform().translation()).eval();
 
     assert(static_cast<size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
            == static_cast<size_t>(mWorldJacobianClassicDeriv.cols()));

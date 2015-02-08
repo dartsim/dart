@@ -2250,14 +2250,6 @@ math::Jacobian Skeleton::getCOMJacobianSpatialDeriv(
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getCOMJacobianClassicDeriv(
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMJacobianTemplate<math::Jacobian,
-      &BodyNode::getJacobianClassicDeriv>(this, _inCoordinatesOf);
-}
-
-//==============================================================================
 math::LinearJacobian Skeleton::getCOMLinearJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {

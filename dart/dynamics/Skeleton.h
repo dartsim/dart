@@ -614,18 +614,31 @@ public:
                           const Frame* _relativeTo = Frame::World(),
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
+  /// Get the Skeleton's COM Jacobian in terms of any Frame (default is World
+  /// Frame)
   math::Jacobian getCOMJacobian(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
+  /// Get the Skeleton's COM Linear Jacobian in terms of any Frame (default is
+  /// World Frame)
   math::LinearJacobian getCOMLinearJacobian(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
+  /// Get the Skeleton's COM Jacobian spatial time derivative in terms of any
+  /// Frame (default is World Frame).
+  ///
+  /// NOTE: Since this is a spatial time derivative, it is only meant to be used
+  /// with spatial acceleration vectors. If you are using classical linear
+  /// vectors, then use getCOMLinearJacobianDeriv() instead.
   math::Jacobian getCOMJacobianSpatialDeriv(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 
-  math::Jacobian getCOMJacobianClassicDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
+  /// Get the Skeleton's COM Linear Jacobian time derivative in terms of any
+  /// Frame (default is World Frame).
+  ///
+  /// NOTE: Since this is a classical time derivative, it is only meant to be
+  /// used with classical acceleration vectors. If you are using spatial
+  /// vectors, then use getCOMJacobianSpatialDeriv() instead.
   math::LinearJacobian getCOMLinearJacobianDeriv(
                           const Frame* _inCoordinatesOf = Frame::World()) const;
 

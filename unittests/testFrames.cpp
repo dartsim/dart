@@ -48,10 +48,7 @@ using namespace dynamics;
 template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
-  Eigen::Matrix<double,N,1> v;
-  for(size_t i=0; i<N; ++i)
-    v[i] = math::random(-fabs(limit), fabs(limit));
-  return v;
+  return randomVector<N>(limit);
 }
 
 void randomize_transform(Eigen::Isometry3d& tf,
