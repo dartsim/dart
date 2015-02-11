@@ -231,7 +231,8 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
-  mNameMgrForSkeletons.issueNewNameAndAdd(_skeleton->getName(), _skeleton);
+  _skeleton->setName(mNameMgrForSkeletons.issueNewNameAndAdd(
+                       _skeleton->getName(), _skeleton));
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
@@ -270,7 +271,6 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
-//  mConstraintHandler->removeSkeleton(_skeleton);
   mConstraintSolver->removeSkeleton(_skeleton);
 
   // Remove _skeleton in mSkeletons and delete it.
@@ -279,6 +279,9 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
+
+  // Remove from NameManager
+  mNameMgrForSkeletons.removeName(_skeleton->getName());
 
   delete _skeleton;
 }

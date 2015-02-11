@@ -101,11 +101,20 @@ TEST(WORLD, ADDING_AND_REMOVING_SKELETONS)
     for (int i = 0; i < nSteps; ++i)
         world->step();
 
+    std::string s1name = skeleton1->getName();
+    std::string s2name = skeleton2->getName();
+    EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
+    EXPECT_TRUE(skeleton2 == world->getSkeleton(s2name));
+
     // Remove skeleton2
     world->removeSkeleton(skeleton2);
     EXPECT_TRUE(world->getNumSkeletons() == 1);
     for (int i = 0; i < nSteps; ++i)
         world->step();
+
+    EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
+    EXPECT_FALSE(skeleton2 == world->getSkeleton(s2name));
+    EXPECT_TRUE(world->getSkeleton(s2name) == NULL);
 
     // Add skeleton3, skeleton4
     world->addSkeleton(skeleton3);
@@ -114,17 +123,33 @@ TEST(WORLD, ADDING_AND_REMOVING_SKELETONS)
     for (int i = 0; i < nSteps; ++i)
         world->step();
 
+    std::string s3name = skeleton3->getName();
+    std::string s4name = skeleton4->getName();
+
+    EXPECT_TRUE(s3name == s2name);
+    EXPECT_TRUE(skeleton3 == world->getSkeleton(s3name));
+    EXPECT_TRUE(skeleton4 == world->getSkeleton(s4name));
+
     // Remove skeleton1
     world->removeSkeleton(skeleton1);
     EXPECT_TRUE(world->getNumSkeletons() == 2);
     for (int i = 0; i < nSteps; ++i)
         world->step();
 
+    EXPECT_FALSE(skeleton1 == world->getSkeleton(s1name));
+    EXPECT_TRUE(world->getSkeleton(s1name) == NULL);
+
     // Remove all the skeletons
     world->removeAllSkeletons();
     EXPECT_EQ(world->getNumSkeletons(), 0);
     for (int i = 0; i < nSteps; ++i)
         world->step();
+
+    EXPECT_FALSE(skeleton3 == world->getSkeleton(s3name));
+    EXPECT_TRUE(world->getSkeleton(s3name) == NULL);
+
+    EXPECT_FALSE(skeleton4 == world->getSkeleton(s4name));
+    EXPECT_TRUE(world->getSkeleton(s4name) == NULL);
 
     delete world;
 }
