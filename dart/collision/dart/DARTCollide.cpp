@@ -1278,7 +1278,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape0);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1);
           return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, _T0,
                                      ellipsoid1->getSize()[0] * 0.5, _T1,
                                      _result);
