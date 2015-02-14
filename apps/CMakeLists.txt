@@ -15,6 +15,7 @@ foreach(APPDIR
     rigidCubes
     rigidLoop    
     softBodies
+    speedTest
     vehicle
     )
     add_subdirectory(${APPDIR})
