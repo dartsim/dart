@@ -558,8 +558,6 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 
   freejoint->setTransformFromParentBodyNode(random_transform());
   freejoint->setTransformFromChildBodyNode(random_transform());
-  Eigen::Isometry3d freejoint_tf = random_transform();
-  freejoint->setPositions(FreeJoint::convertToPositions(freejoint_tf));
 
   // -- set up the EulerJoint
   BodyNode* eulerjoint_bn = new BodyNode("eulerjoint_bn");
@@ -570,10 +568,6 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 
   eulerjoint->setTransformFromParentBodyNode(random_transform());
   eulerjoint->setTransformFromChildBodyNode(random_transform());
-  Eigen::Isometry3d eulerjoint_tf = random_transform();
-  eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
-  eulerjoint->setPositions(
-        eulerjoint->convertToPositions(eulerjoint_tf.linear()));
 
   // -- set up the BallJoint
   BodyNode* balljoint_bn = new BodyNode("balljoint_bn");
@@ -584,10 +578,6 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 
   balljoint->setTransformFromParentBodyNode(random_transform());
   balljoint->setTransformFromChildBodyNode(random_transform());
-  Eigen::Isometry3d balljoint_tf = random_transform();
-  balljoint_tf.translation() = Eigen::Vector3d::Zero();
-  balljoint->setPositions(
-        BallJoint::convertToPositions(balljoint_tf.linear()));
 
   // -- set up Skeleton and compute forward kinematics
   Skeleton* skel = new Skeleton;
@@ -596,40 +586,84 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   skel->addBodyNode(eulerjoint_bn);
   skel->addBodyNode(balljoint_bn);
   skel->init();
-  skel->computeForwardKinematics(true, false, false);
 
-  std::vector<Joint*> joints;
-  std::vector<BodyNode*> bns;
-  std::vector<Eigen::Isometry3d> tfs;
-
-  joints.push_back(freejoint);
-  bns.push_back(freejoint_bn);
-  tfs.push_back(freejoint_tf);
-
-  joints.push_back(eulerjoint);
-  bns.push_back(eulerjoint_bn);
-  tfs.push_back(eulerjoint_tf);
-
-  joints.push_back(balljoint);
-  bns.push_back(balljoint_bn);
-  tfs.push_back(balljoint_tf);
-
-  for(size_t i=0; i<joints.size(); ++i)
+  // Test a hundred times
+  for(size_t n=0; n<100; ++n)
   {
-    Joint* joint = joints[i];
-    BodyNode* bn = bns[i];
-    Eigen::Isometry3d tf = tfs[i];
-    EXPECT_TRUE(equals(predict_joint_transform(joint, tf).matrix(),
-            get_relative_transform(bn, bn->getParentBodyNode()).matrix()));
+    // -- convert transforms to positions and then positions back to transforms
+    Eigen::Isometry3d desired_freejoint_tf = random_transform();
+    freejoint->setPositions(FreeJoint::convertToPositions(desired_freejoint_tf));
+    Eigen::Isometry3d actual_freejoint_tf = FreeJoint::convertToTransform(
+          freejoint->getPositions());
 
-    if(!equals(predict_joint_transform(joint, tf).matrix(),
-          get_relative_transform(bn, bn->getParentBodyNode()).matrix()))
+    Eigen::Isometry3d desired_eulerjoint_tf = random_transform();
+    desired_eulerjoint_tf.translation() = Eigen::Vector3d::Zero();
+    eulerjoint->setPositions(
+          eulerjoint->convertToPositions(desired_eulerjoint_tf.linear()));
+    Eigen::Isometry3d actual_eulerjoint_tf = eulerjoint->convertToTransform(
+          eulerjoint->getPositions());
+
+    Eigen::Isometry3d desired_balljoint_tf = random_transform();
+    desired_balljoint_tf.translation() = Eigen::Vector3d::Zero();
+    balljoint->setPositions(
+          BallJoint::convertToPositions(desired_balljoint_tf.linear()));
+    Eigen::Isometry3d actual_balljoint_tf = BallJoint::convertToTransform(
+          balljoint->getPositions());
+
+    skel->computeForwardKinematics(true, false, false);
+
+    // -- collect everything so we can cycle through the tests
+    std::vector<Joint*> joints;
+    std::vector<BodyNode*> bns;
+    std::vector<Eigen::Isometry3d> desired_tfs;
+    std::vector<Eigen::Isometry3d> actual_tfs;
+
+    joints.push_back(freejoint);
+    bns.push_back(freejoint_bn);
+    desired_tfs.push_back(desired_freejoint_tf);
+    actual_tfs.push_back(actual_freejoint_tf);
+
+    joints.push_back(eulerjoint);
+    bns.push_back(eulerjoint_bn);
+    desired_tfs.push_back(desired_eulerjoint_tf);
+    actual_tfs.push_back(actual_eulerjoint_tf);
+
+    joints.push_back(balljoint);
+    bns.push_back(balljoint_bn);
+    desired_tfs.push_back(desired_balljoint_tf);
+    actual_tfs.push_back(actual_balljoint_tf);
+
+    for(size_t i=0; i<joints.size(); ++i)
     {
-      std::cout << "[" << joint->getName() << " Failed]\n";
-      std::cout << "Predicted:\n" << predict_joint_transform(joint, tf).matrix()
-                << "\n\nActual:\n"
-                << get_relative_transform(bn, bn->getParentBodyNode()).matrix()
-                << "\n\n";
+      Joint* joint = joints[i];
+      BodyNode* bn = bns[i];
+      Eigen::Isometry3d tf = desired_tfs[i];
+
+      bool check_transform_conversion =
+          equals(predict_joint_transform(joint, tf).matrix(),
+                 get_relative_transform(bn, bn->getParentBodyNode()).matrix());
+      EXPECT_TRUE(check_transform_conversion);
+
+      if(!check_transform_conversion)
+      {
+        std::cout << "[" << joint->getName() << " Failed]\n";
+        std::cout << "Predicted:\n" << predict_joint_transform(joint, tf).matrix()
+                  << "\n\nActual:\n"
+                  << get_relative_transform(bn, bn->getParentBodyNode()).matrix()
+                  << "\n\n";
+      }
+
+      bool check_full_cycle = equals(desired_tfs[i].matrix(),
+                                     actual_tfs[i].matrix());
+      EXPECT_TRUE(check_full_cycle);
+
+      if(!check_full_cycle)
+      {
+        std::cout << "[" << joint->getName() << " Failed]\n";
+        std::cout << "Desired:\n" << desired_tfs[i].matrix()
+                  << "\n\nActual:\n" << actual_tfs[i].matrix()
+                  << "\n\n";
+      }
     }
   }
 }
