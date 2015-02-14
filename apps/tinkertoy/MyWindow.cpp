@@ -37,10 +37,10 @@ void MyWindow::draw() {
   for (int i = 0; i < mWorld->getNumParticles(); i++)
     mWorld->getParticle(i)->draw(mRI);
 
-  //Draw a circle
   glDisable(GL_LIGHTING);
   mRI->setPenColor(Vector4d(0.3, 0.3, 0.3, 1.0));
   mRI->pushMatrix();
+  // Draw a circle
   glBegin(GL_LINE_LOOP);
   double rad = 3.14 / 180.0;
   double radius = 0.2;
@@ -48,6 +48,13 @@ void MyWindow::draw() {
     double angle = i * rad;
     glVertex3d(radius * cos(angle), radius * sin(angle), 0.0);
   }
+  glEnd();
+  // Draw a line
+  glBegin(GL_LINES);
+  Vector3d p1 = mWorld->getParticle(0)->mPosition;
+  Vector3d p2 = mWorld->getParticle(1)->mPosition;
+  glVertex3f(p1[0], p1[1], p1[2]);
+  glVertex3f(p2[0], p2[1], p2[2]);
   glEnd();
   mRI->popMatrix();
   glEnable(GL_LIGHTING);
