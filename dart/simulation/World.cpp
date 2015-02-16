@@ -121,7 +121,6 @@ void World::step(bool _resetCommand)
 
     skel->computeForwardDynamicsRecursionPartB();
     skel->integrateVelocities(mTimeStep);
-//    skel->computeForwardKinematics(false, true, false); // No longer needed with auto-update
   }
 
   // Detect activated constraints and compute constraint impulses
@@ -140,7 +139,6 @@ void World::step(bool _resetCommand)
     }
 
     skel->integratePositions(mTimeStep);
-//    skel->computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
 
     if (_resetCommand)
     {
@@ -232,7 +230,7 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 
   mSkeletons.push_back(_skeleton);
   _skeleton->setName(mNameMgrForSkeletons.issueNewNameAndAdd(
-                        _skeleton->getName(), _skeleton));
+                       _skeleton->getName(), _skeleton));
   _skeleton->init(mTimeStep, mGravity);
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
@@ -243,6 +241,7 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
   return _skeleton->getName();
 }
 
+//==============================================================================
 void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 {
   assert(_skeleton != NULL && "Attempted to remove NULL Skeleton from world");
@@ -270,7 +269,6 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
-//  mConstraintHandler->removeSkeleton(_skeleton);
   mConstraintSolver->removeSkeleton(_skeleton);
 
   // Remove _skeleton in mSkeletons and delete it.
@@ -286,6 +284,9 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
+
+  // Remove from NameManager
+  mNameMgrForSkeletons.removeName(_skeleton->getName());
 }
 
 //==============================================================================
