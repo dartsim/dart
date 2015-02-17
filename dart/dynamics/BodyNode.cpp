@@ -71,7 +71,7 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 }
 
 //==============================================================================
-int BodyNode::msBodyNodeCount = 0;
+size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
 BodyNode::BodyNode(const std::string& _name)
@@ -410,13 +410,13 @@ size_t BodyNode::getNumVisualizationShapes() const
 }
 
 //==============================================================================
-Shape* BodyNode::getVisualizationShape(int _index)
+Shape* BodyNode::getVisualizationShape(size_t _index)
 {
   return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
 }
 
 //==============================================================================
-const Shape* BodyNode::getVisualizationShape(int _index) const
+const Shape* BodyNode::getVisualizationShape(size_t _index) const
 {
   return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
 }
@@ -434,13 +434,13 @@ size_t BodyNode::getNumCollisionShapes() const
 }
 
 //==============================================================================
-Shape* BodyNode::getCollisionShape(int _index)
+Shape* BodyNode::getCollisionShape(size_t _index)
 {
   return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
 }
 
 //==============================================================================
-const Shape* BodyNode::getCollisionShape(int _index) const
+const Shape* BodyNode::getCollisionShape(size_t _index) const
 {
   return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
 }
@@ -570,7 +570,7 @@ const Marker* BodyNode::getMarker(size_t _index) const
 }
 
 //==============================================================================
-bool BodyNode::dependsOn(int _genCoordIndex) const
+bool BodyNode::dependsOn(size_t _genCoordIndex) const
 {
   return std::binary_search(mDependentGenCoordIndices.begin(),
                             mDependentGenCoordIndices.end(),
@@ -1185,10 +1185,10 @@ void BodyNode::init(Skeleton* _skeleton)
 
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
-  int nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (int i = 0; i < nDepGenCoordIndices - 1; i++)
+  size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
+  for (size_t i = 0; i < nDepGenCoordIndices - 1; i++)
   {
-    for (int j = i + 1; j < nDepGenCoordIndices; j++)
+    for (size_t j = i + 1; j < nDepGenCoordIndices; j++)
     {
       assert(mDependentGenCoordIndices[i] !=
           mDependentGenCoordIndices[j] &&
@@ -1200,7 +1200,7 @@ void BodyNode::init(Skeleton* _skeleton)
   //--------------------------------------------------------------------------
   // Set dimensions of dynamics matrices and vectors.
   //--------------------------------------------------------------------------
-  int numDepGenCoords = getNumDependentGenCoords();
+  size_t numDepGenCoords = getNumDependentGenCoords();
   mBodyJacobian.setZero(6, numDepGenCoords);
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
@@ -1260,10 +1260,10 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
   mParentJoint->applyGLTransform(_ri);
 
   // render the corresponding mMarkerss
-  for (unsigned int i = 0; i < mMarkers.size(); i++)
+  for (size_t i = 0; i < mMarkers.size(); i++)
     mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
 
-  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
+  for (size_t i = 0; i < mChildBodyNodes.size(); i++)
     mChildBodyNodes[i]->drawMarkers(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
@@ -1836,11 +1836,11 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                           (*it)->mG_F);
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInSkeleton(0);
     _g->segment(iStart, nGenCoords) = g;
   }
 }
@@ -1881,12 +1881,12 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
     mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg
         = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInSkeleton(0);
     _Cg->segment(iStart, nGenCoords) = Cg;
   }
 }
@@ -1903,11 +1903,11 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
                              (*it)->mFext_F);
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInSkeleton(0);
     _Fext->segment(iStart, nGenCoords) = Fext;
   }
 }
@@ -1937,7 +1937,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
 void BodyNode::updateMassMatrix()
 {
   mM_dV.setZero();
-  int dof = mParentJoint->getNumDofs();
+  size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     mM_dV.noalias() += mParentJoint->getLocalJacobian()
@@ -1951,7 +1951,7 @@ void BodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
 {
   //
   mM_F.noalias() = mI * mM_dV;
@@ -1971,17 +1971,17 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getNumDofs();
+  size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInSkeleton(0);
     _MCol->block(iStart, _col, dof, 1).noalias() =
         mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
                                       double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -2004,18 +2004,18 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
   assert(!math::isNan(mM_F));
 
   //
-  int dof = mParentJoint->getNumDofs();
+  size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (int i = 0; i < dof; ++i)
+    for (size_t i = 0; i < dof; ++i)
     {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
 
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInSkeleton(0);
 
     _MCol->block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
@@ -2067,7 +2067,7 @@ void BodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
 {
   if (mParentBodyNode)
   {
@@ -2094,7 +2094,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
 }
 
 //==============================================================================
-void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
+void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
                                          double /*_timeStep*/)
 {
   if (mParentBodyNode)
@@ -2141,8 +2141,9 @@ void BodyNode::_updateBodyJacobian() const
   if(NULL == mParentJoint)
     return;
 
-  const int localDof     = mParentJoint->getNumDofs();
-  const int ascendantDof = getNumDependentGenCoords() - localDof;
+  const size_t localDof     = mParentJoint->getNumDofs();
+  assert(getNumDependentGenCoords() >= localDof);
+  const size_t ascendantDof = getNumDependentGenCoords() - localDof;
 
   // Parent Jacobian
   if (mParentBodyNode)
