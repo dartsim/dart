@@ -1,0 +1,183 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="pinataWorld">
+        <physics>
+            <time_step>0.001</time_step>
+            <gravity>0 -9.81 0</gravity>
+        </physics>
+        <skeleton name="pinata">
+            <body name="hook">
+                <gravity>1</gravity>
+                <transformation>0 0 0 0 0 0</transformation>
+                <inertia>
+                    <mass>1.0</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>0.05 0.2 0.05</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="top">
+                <gravity>1</gravity>
+                <transformation>0 -0.1 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 0.02 1.0</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="left">
+                <gravity>1</gravity>
+                <transformation>-0.5 -0.6 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>0.02 1.0 1.0</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="right">
+                <gravity>1</gravity>
+                <transformation>0.5 -0.6 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>0.02 1.0 1.0</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="back">
+                <gravity>1</gravity>
+                <transformation>0 -0.6 -0.5 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 1.0 0.02</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="front">
+                <gravity>1</gravity>
+                <transformation>0 -0.6 0.5 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 1.0 0.02</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+            </body>
+            <body name="bottom">
+                <gravity>1</gravity>
+                <transformation>0 -1.1 0 0 0 0</transformation>
+                <inertia>
+                    <mass>0.5</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 0.02 1.0</size>
+                        </box>
+                    </geometry>
+                </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 0.02 1.0</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <joint type="ball" name="joint 1">
+                <parent>world</parent>
+                <child>hook</child>
+                <transformation>0 0.1 0 0 0 0</transformation>
+            </joint>
+            <joint type="ball" name="joint 2">
+                <parent>hook</parent>
+                <child>top</child>
+                <transformation>0 0.0 0 0 0 0</transformation>
+            </joint>
+            <joint type="revolute" name="joint 3">
+                <parent>top</parent>
+                <child>left</child>
+                <transformation>0 0.5 0 0 0 0</transformation>
+                   <axis>
+                    <xyz>0.0 0.0 1.0</xyz>
+                </axis>
+                <init_pos>0.0</init_pos>
+                <init_vel>0.0</init_vel>
+            </joint>
+            <joint type="revolute" name="joint 4">
+                <parent>left</parent>
+                <child>bottom</child>
+                <transformation>-0.5 0 0 0 0 0</transformation>
+                   <axis>
+                    <xyz>0.0 0.0 1.0</xyz>
+                </axis>
+                <init_pos>0.0</init_pos>
+                <init_vel>0.0</init_vel>
+            </joint>
+            <joint type="ball" name="joint 5">
+                <parent>bottom</parent>
+                <child>right</child>
+                <transformation>0 -0.5 0 0 0 0</transformation>
+                   <axis>
+                    <xyz>0.0 1.0 0.0</xyz>
+                </axis>
+                <init_pos>0.0</init_pos>
+                <init_vel>0.0</init_vel>
+            </joint>
+            <joint type="revolute" name="joint 6">
+                <parent>right</parent>
+                <child>front</child>
+                <transformation>0.5 0 0 0 0 0</transformation>
+                   <axis>
+                    <xyz>0.0 1.0 0.0</xyz>
+                </axis>
+                <init_pos>0.0</init_pos>
+                <init_vel>0.0</init_vel>
+            </joint>
+            <joint type="revolute" name="joint 7">
+                <parent>right</parent>
+                <child>back</child>
+                <transformation>0.5 0 0 0 0 0</transformation>
+                   <axis>
+                    <xyz>0.0 1.0 0.0</xyz>
+                </axis>
+                <init_pos>0.0</init_pos>
+                <init_vel>0.0</init_vel>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>
