@@ -179,6 +179,9 @@ public:
   /// Get const soft body node whose name is _name
   const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
+  /// Get number of joints
+  size_t getNumJoints() const;
+
   /// Get joint whose index is _idx
   Joint* getJoint(size_t _idx);
 

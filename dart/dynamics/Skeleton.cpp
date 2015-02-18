@@ -343,6 +343,13 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 }
 
 //==============================================================================
+size_t Skeleton::getNumJoints() const
+{
+  // The number of joints and body nodes are identical
+  return getNumBodyNodes();
+}
+
+//==============================================================================
 Joint* Skeleton::getJoint(size_t _idx)
 {
   BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
