@@ -18,7 +18,7 @@ if(WIN32)
 endif()
 
 #===============================================================================
-# Poject settings
+# Project settings
 #===============================================================================
 project(dart)
 
@@ -48,6 +48,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
+option(DART_BUILD_OSGDART "Build osgDart library" ON)
 option(DART_BUILD_EXAMPLES "Build examples" ON)
 option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 
@@ -440,6 +441,7 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
+message(STATUS "Build osgDart    : ${DART_BUILD_OSGDART}")
 message(STATUS "Build examples   : ${DART_BUILD_EXAMPLES}")
 message(STATUS "Build unit tests : ${DART_BUILD_UNITTESTS}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
@@ -503,18 +505,22 @@ add_subdirectory(dart)
 
 if(NOT BUILD_CORE_ONLY)
 
+  if(DART_BUILD_OSGDART)
+    add_subdirectory(osgDart)
+  endif(DART_BUILD_OSGDART)
+
   # Unit tests
   if(DART_BUILD_UNITTESTS)
     enable_testing()
     add_subdirectory(unittests)
-  endif()
+  endif(DART_BUILD_UNITTESTS)
 
   # Examples
   if(DART_BUILD_EXAMPLES)
     add_subdirectory(apps)
-  endif()
+  endif(DART_BUILD_EXAMPLES)
 
-endif()
+endif(NOT BUILD_CORE_ONLY)
 
 #===============================================================================
 # Export targets
