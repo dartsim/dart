@@ -101,6 +101,9 @@ public:
   /// _someFrame. If _someFrame is NULL, this returns false.
   bool descendsFrom(const Frame* _someFrame) const;
 
+  /// True iff this Entity is also a Frame.
+  bool isFrame() const;
+
   /// Returns true if this Entity is set to be quiet.
   ///
   /// A quiet entity is unknown to its parent Frame. It will not be tracked by
@@ -155,6 +158,8 @@ private:
   /// Whether or not this Entity is set to be quiet
   const bool mAmQuiet;
 
+  /// Whether or not this ENtity is a Frame
+  bool mAmFrame;
 };
 
 /// The Detachable class is a special case of the Entity base class. Detachable

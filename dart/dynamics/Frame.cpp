@@ -53,7 +53,7 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
     mAcceleration(Eigen::Vector6d::Zero()),
     mAmWorld(false)
 {
-
+  mAmFrame = true;
 }
 
 //==============================================================================
@@ -561,7 +561,7 @@ Frame::Frame()
     mAcceleration(Eigen::Vector6d::Zero()),
     mAmWorld(true)
 {
-
+  mAmFrame = true;
 }
 
 //==============================================================================

@@ -65,6 +65,17 @@ public:
     SOFT_MESH
   };
 
+  /// DataVariance can be used by renderers to determine whether it should
+  /// expect vertex or data for this shape to change during each update.
+  /// STATIC means that vertex data will not change relative to this Shape's
+  /// parent Frame. This is appropriate for rigid bodies. DYNAMIC means that
+  /// the vertex data might change relative to the Shape's parent Frame. This is
+  /// appropriate for soft/flexible bodies or fluids.
+  enum DataVariance {
+    STATIC=0,
+    DYNAMIC
+  };
+
   /// \brief Constructor
   explicit Shape(ShapeType _type);
 
@@ -116,6 +127,12 @@ public:
   /// \brief
   ShapeType getShapeType() const;
 
+  /// Set the data variance of this shape
+  void setDataVariance(DataVariance _variance);
+
+  /// Get the data variance of this shape
+  DataVariance getDataVariance() const;
+
   /// \brief
   virtual void draw(renderer::RenderInterface* _ri = NULL,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -142,6 +159,9 @@ protected:
 
   /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
   Eigen::Isometry3d mTransform;
+
+  /// The DataVariance of this Shape
+  DataVariance mVariance;
 
   /// \brief
   static int mCounter;

@@ -150,6 +150,12 @@ bool Entity::isQuiet() const
 }
 
 //==============================================================================
+bool Entity::isFrame() const
+{
+  return mAmFrame;
+}
+
+//==============================================================================
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,68 +34,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#include "osgDart/EntityNode.h"
 
-#define PRIMITIVE_MAGIC_NUMBER 1000
-
-namespace dart {
-namespace dynamics {
-
-Shape::Shape(ShapeType _type)
-  : mBoundingBoxDim(0, 0, 0),
-    mVolume(0.0),
-    mID(mCounter++),
-    mColor(0.5, 0.5, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()),
-    mType(_type),
-    mVariance(STATIC)
+namespace osgDart
 {
+
+EntityNode::EntityNode(dart::dynamics::Entity* _entity) :
+  mEntity(_entity),
+  mUtilized(false)
+{
+
 }
 
-Shape::~Shape() {
+//==============================================================================
+dart::dynamics::Entity* EntityNode::entity()
+{
+  return mEntity;
 }
 
-void Shape::setColor(const Eigen::Vector3d& _color) {
-  mColor = _color;
+//==============================================================================
+const dart::dynamics::Entity* EntityNode::entity() const
+{
+  return mEntity;
 }
 
-const Eigen::Vector3d& Shape::getColor() const {
-  return mColor;
+//==============================================================================
+bool EntityNode::wasUtilized() const
+{
+  return mUtilized;
 }
 
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const {
-  return mBoundingBoxDim;
+//==============================================================================
+void EntityNode::clearUtilization()
+{
+  mUtilized = false;
 }
 
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
-  mTransform = _Transform;
-}
-
-const Eigen::Isometry3d& Shape::getLocalTransform() const {
-  return mTransform;
-}
-
-void Shape::setOffset(const Eigen::Vector3d& _offset) {
-  mTransform.translation() = _offset;
-}
-
-Eigen::Vector3d Shape::getOffset() const {
-  return mTransform.translation();
-}
-
-double Shape::getVolume() const {
-  return mVolume;
-}
-
-int Shape::getID() const {
-  return mID;
-}
-
-Shape::ShapeType Shape::getShapeType() const {
-  return mType;
-}
-
-int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
-
-}  // namespace dynamics
-}  // namespace dart
+} // namespace osgDart

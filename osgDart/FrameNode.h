@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,68 +34,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#ifndef OSGDART_FRAMENODE_H
+#define OSGDART_FRAMENODE_H
 
-#define PRIMITIVE_MAGIC_NUMBER 1000
+#include <osg/MatrixTransform>
+#include <map>
 
 namespace dart {
 namespace dynamics {
+class Frame;
+class Entity;
+} // namespace dynamics
+} // namespace dart
 
-Shape::Shape(ShapeType _type)
-  : mBoundingBoxDim(0, 0, 0),
-    mVolume(0.0),
-    mID(mCounter++),
-    mColor(0.5, 0.5, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()),
-    mType(_type),
-    mVariance(STATIC)
+namespace osgDart
 {
-}
 
-Shape::~Shape() {
-}
+class EntityNode;
 
-void Shape::setColor(const Eigen::Vector3d& _color) {
-  mColor = _color;
-}
+class FrameNode : public osg::MatrixTransform
+{
+public:
 
-const Eigen::Vector3d& Shape::getColor() const {
-  return mColor;
-}
+  FrameNode(dart::dynamics::Frame* _frame);
 
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const {
-  return mBoundingBoxDim;
-}
+  /// Pointer to the Frame associated with this FrameNode
+  dart::dynamics::Frame* frame();
 
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
-  mTransform = _Transform;
-}
+  /// Pointer to the Frame associated with this FrameNode
+  const dart::dynamics::Frame* frame() const;
 
-const Eigen::Isometry3d& Shape::getLocalTransform() const {
-  return mTransform;
-}
+protected:
+  /// Pointer to the Frame that this FrameNode is associated with
+  dart::dynamics::Frame* mFrame;
 
-void Shape::setOffset(const Eigen::Vector3d& _offset) {
-  mTransform.translation() = _offset;
-}
+  /// Pointer to the EntityNode of this Frame's own shapes
+  EntityNode* mPersonalEntityNode;
 
-Eigen::Vector3d Shape::getOffset() const {
-  return mTransform.translation();
-}
+  /// Map from child Entities to child EntityNodes
+  std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
 
-double Shape::getVolume() const {
-  return mVolume;
-}
+  /// Map from child EntityNodes to child Entities
+  std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
 
-int Shape::getID() const {
-  return mID;
-}
+  /// Map from child Frames to child FrameNodes
+  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
 
-Shape::ShapeType Shape::getShapeType() const {
-  return mType;
-}
+  /// Map from child FrameNodes to child Frames
+  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
 
-int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
+};
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace osgDart
+
+#endif // OSGDART_FRAMENODE_H

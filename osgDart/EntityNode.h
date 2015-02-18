@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,68 +34,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#ifndef OSGDART_ENTITYNODE_H
+#define OSGDART_ENTITYNODE_H
 
-#define PRIMITIVE_MAGIC_NUMBER 1000
+#include <osg/Geode>
+#include <map>
 
 namespace dart {
 namespace dynamics {
+class Entity;
+class Shape;
+} // namespace dynamics
+} // namespace dart
 
-Shape::Shape(ShapeType _type)
-  : mBoundingBoxDim(0, 0, 0),
-    mVolume(0.0),
-    mID(mCounter++),
-    mColor(0.5, 0.5, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()),
-    mType(_type),
-    mVariance(STATIC)
+namespace osgDart
 {
-}
 
-Shape::~Shape() {
-}
+class EntityNode : public osg::Geode
+{
+public:
 
-void Shape::setColor(const Eigen::Vector3d& _color) {
-  mColor = _color;
-}
+  EntityNode(dart::dynamics::Entity* _entity);
 
-const Eigen::Vector3d& Shape::getColor() const {
-  return mColor;
-}
+  /// Pointer to the Entity associated with this EntityNode
+  dart::dynamics::Entity* entity();
 
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const {
-  return mBoundingBoxDim;
-}
+  /// Pointer to the Entity associated with this EntityNode
+  const dart::dynamics::Entity* entity() const;
 
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
-  mTransform = _Transform;
-}
+  /// True iff this EntityNode has been utilized on the latest rendering
+  /// traversal.
+  bool wasUtilized() const;
 
-const Eigen::Isometry3d& Shape::getLocalTransform() const {
-  return mTransform;
-}
+  /// Set mUtilized to false
+  void clearUtilization();
 
-void Shape::setOffset(const Eigen::Vector3d& _offset) {
-  mTransform.translation() = _offset;
-}
+protected:
+  /// Pointer to the Entity that this EntityNode is associated with
+  dart::dynamics::Entity* mEntity;
 
-Eigen::Vector3d Shape::getOffset() const {
-  return mTransform.translation();
-}
+  /// True iff this EntityNode has been utilized on the latest rendering
+  /// traversal. If it has not, that is an indication that it is no longer being
+  /// used and should be deleted.
+  bool mUtilized;
 
-double Shape::getVolume() const {
-  return mVolume;
-}
+};
 
-int Shape::getID() const {
-  return mID;
-}
+} // namespace osgDart
 
-Shape::ShapeType Shape::getShapeType() const {
-  return mType;
-}
-
-int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
-
-}  // namespace dynamics
-}  // namespace dart
+#endif // OSGDART_ENTITYNODE_H
