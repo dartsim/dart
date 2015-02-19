@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,80 +34,68 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_BOXSHAPENODE_H
-#define OSGDART_BOXSHAPENODE_H
+#include "osgDart/render/ShapeNode.h"
 
-#include <osg/ShapeDrawable>
-#include <osg/Geode>
-#include <osg/MatrixTransform>
+namespace osgDart {
+namespace render {
 
-#include "osgDart/ShapeNode.h"
-
-namespace dart {
-namespace dynamics {
-class BoxShape;
-} // namespace dynamics
-} // namespace dart
-
-namespace osgDart
+ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
+                     osg::Node* _node)
+  : mShape(_shape),
+    mNode(_node),
+    mParent(_parent),
+    mUtilized(false)
 {
+  // Do nothing
+}
 
-class BoxShapeGeode;
-class BoxShapeDrawable;
-
-class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
+//==============================================================================
+ShapeNode::~ShapeNode()
 {
-public:
+  // Do nothing
+}
 
-  BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
-
-  void refresh();
-  void initialize();
-
-protected:
-
-  virtual ~BoxShapeNode();
-
-protected:
-
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mGeode;
-
-};
-
-class BoxShapeGeode : public ShapeNode, public osg::Geode
+//==============================================================================
+dart::dynamics::Shape* ShapeNode::getShape() const
 {
-public:
+  return mShape;
+}
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
-
-  void refresh();
-
-protected:
-
-  virtual ~BoxShapeGeode();
-
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeDrawable* mDrawable;
-
-};
-
-class BoxShapeDrawable : public osg::ShapeDrawable
+//==============================================================================
+osg::Node* ShapeNode::getNode()
 {
-public:
+  return mNode;
+}
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
+//==============================================================================
+const osg::Node* ShapeNode::getNode() const
+{
+  return mNode;
+}
 
-  void refresh();
+//==============================================================================
+EntityNode* ShapeNode::getParentEntityNode()
+{
+  return mParent;
+}
 
-protected:
+//==============================================================================
+const EntityNode* ShapeNode::getParentEntityNode() const
+{
+  return mParent;
+}
 
-  virtual ~BoxShapeDrawable();
+//==============================================================================
+bool ShapeNode::wasUtilized() const
+{
+  return mUtilized;
+}
 
-  dart::dynamics::BoxShape* mBoxShape;
+//==============================================================================
+void ShapeNode::clearUtilization()
+{
+  mUtilized = false;
+}
 
-};
-
+} // namespace render
 } // namespace osgDart
-
-#endif // OSGDART_BOXSHAPENODE_H

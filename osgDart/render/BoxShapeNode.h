@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
+ * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,74 +35,81 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_SHAPEGEODE_H
-#define OSGDART_SHAPEGEODE_H
+#ifndef OSGDART_BOXSHAPENODE_H
+#define OSGDART_BOXSHAPENODE_H
 
-namespace osg {
-class Node;
-} // namespace osg
+#include <osg/ShapeDrawable>
+#include <osg/Geode>
+#include <osg/MatrixTransform>
+
+#include "osgDart/render/ShapeNode.h"
 
 namespace dart {
 namespace dynamics {
-class Shape;
+class BoxShape;
 } // namespace dynamics
 } // namespace dart
 
-namespace osgDart
-{
+namespace osgDart {
+namespace render {
 
-class EntityNode;
+class BoxShapeGeode;
+class BoxShapeDrawable;
 
-class ShapeNode
+class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
-            osg::Node* _node);
+  BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
 
-  virtual ~ShapeNode();
-
-  /// Pointer to the Shape associated with this ShapeNode
-  dart::dynamics::Shape* getShape() const;
-
-  /// Cast this ShapeNode into an osg::Node
-  osg::Node* getNode();
-
-  /// Cast this ShapeNode into an osg::Node
-  const osg::Node* getNode() const;
-
-  /// Pointer to the parent EntityNode of this ShapeNode
-  EntityNode* getParentEntityNode();
-
-  /// Pointer to the parent EntityNode of this ShapeNode
-  const EntityNode* getParentEntityNode() const;
-
-  /// Update all rendering data for this ShapeNode
-  virtual void refresh() = 0;
-
-  /// True iff this ShapeNode has been utilized on the latest update
-  bool wasUtilized() const;
-
-  /// Set mUtilized to false
-  void clearUtilization();
+  void refresh();
+  void initialize();
 
 protected:
-  /// Pointer to the Shape associated with this ShapeNode
-  dart::dynamics::Shape* const mShape;
 
-  /// Should generally be equal to 'this'
-  osg::Node* const mNode;
+  virtual ~BoxShapeNode();
 
-  /// Pointer to the parent EntityNode of this ShapeNode
-  EntityNode* mParent;
+protected:
 
-  /// True iff this ShapeNode has been utilized on the latest update. If it has
-  /// not, that is an indication that it is no longer being used and should be
-  /// deleted.
-  bool mUtilized;
+  dart::dynamics::BoxShape* mBoxShape;
+  BoxShapeGeode* mGeode;
 
 };
 
-}
+class BoxShapeGeode : public ShapeNode, public osg::Geode
+{
+public:
 
-#endif // OSGDART_SHAPEGEODE_H
+  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
+
+  void refresh();
+
+protected:
+
+  virtual ~BoxShapeGeode();
+
+  dart::dynamics::BoxShape* mBoxShape;
+  BoxShapeDrawable* mDrawable;
+
+};
+
+class BoxShapeDrawable : public osg::ShapeDrawable
+{
+public:
+
+  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
+
+  void refresh();
+
+protected:
+
+  virtual ~BoxShapeDrawable();
+
+  dart::dynamics::BoxShape* mBoxShape;
+
+};
+
+} // namespace render
+} // namespace osgDart
+
+#endif // OSGDART_BOXSHAPENODE_H

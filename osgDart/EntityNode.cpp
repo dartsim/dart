@@ -35,14 +35,13 @@
  */
 
 #include "osgDart/EntityNode.h"
-#include "osgDart/ShapeNode.h"
-#include "osgDart/BoxShapeNode.h"
+#include "osgDart/render/ShapeNode.h"
+#include "osgDart/render/BoxShapeNode.h"
 
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/BoxShape.h"
 
-namespace osgDart
-{
+namespace osgDart {
 
 EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
   : mEntity(_entity),
@@ -112,7 +111,7 @@ void EntityNode::clearUnusedNodes()
 {
   for(auto& node_pair : mNodeToShape)
   {
-    ShapeNode* node = node_pair.first;
+    render::ShapeNode* node = node_pair.first;
     if(!node->wasUtilized())
     {
       mNodeToShape.erase(node);
@@ -126,7 +125,7 @@ void EntityNode::clearUnusedNodes()
 //==============================================================================
 void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
 {
-  std::map<dart::dynamics::Shape*, ShapeNode*>::iterator it =
+  std::map<dart::dynamics::Shape*, render::ShapeNode*>::iterator it =
       mShapeToNode.find(shape);
 
   if(it == mShapeToNode.end())
@@ -142,13 +141,13 @@ void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
 void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 {
   using namespace dart::dynamics;
-  ShapeNode* node = nullptr;
+  render::ShapeNode* node = nullptr;
 
 
   BoxShape* bs = dynamic_cast<BoxShape*>(shape);
   if(bs)
   {
-    node = new BoxShapeNode(bs, this);
+    node = new render::BoxShapeNode(bs, this);
   }
 
   if(nullptr == node)

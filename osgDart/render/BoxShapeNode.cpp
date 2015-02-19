@@ -35,13 +35,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/BoxShapeNode.h"
+#include "osgDart/render/BoxShapeNode.h"
 #include "osgDart/utils.h"
 
 #include "dart/dynamics/BoxShape.h"
 
-namespace osgDart
-{
+namespace osgDart {
+namespace render {
 
 BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent)
   : ShapeNode(shape, _parent, this),
@@ -134,4 +134,5 @@ BoxShapeDrawable::~BoxShapeDrawable()
   // Do nothing
 }
 
+} // namespace render
 } // namespace osgDart

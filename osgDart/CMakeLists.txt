@@ -8,12 +8,13 @@ if(${OPENSCENEGRAPH_FOUND})
 
   include_directories(${OpenSceneGraph_INCLUDE_DIRS})
 
-  file(GLOB osgDart_srcs "*.cpp")
+  file(GLOB osgDart_srcs "*.cpp" "render/*.cpp" "render/*.h")
   file(GLOB osgDart_hdrs "*.h")
 
   dart_add_library(osgDart ${osgDart_srcs} ${osgDart_hdrs})
 
   dart_get_filename_components(header_names "osgDart headers" ${osgDart_hdrs})
+  list(APPEND header_names "render/render.h")
   dart_generate_include_header_list(
     osgDart_headers
     "osgDart/"
@@ -26,11 +27,12 @@ if(${OPENSCENEGRAPH_FOUND})
   )
 
   install(
-    FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
+    FILES ${osgDart_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
     DESTINATION include/osgDart
     COMPONENT headers
   )
 
+  #add_subdirectory(render)
   add_subdirectory(examples)
 
 else(${OPENSCENEGRAPH_FOUND})

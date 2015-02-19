@@ -50,7 +50,10 @@ class Shape;
 namespace osgDart
 {
 
+namespace render {
 class ShapeNode;
+} // namespace render
+
 class FrameNode;
 
 class EntityNode : public osg::Group
@@ -96,10 +99,10 @@ protected:
   FrameNode* mParent;
 
   /// Map from Shapes to ShapeGeodes
-  std::map<dart::dynamics::Shape*, ShapeNode*> mShapeToNode;
+  std::map<dart::dynamics::Shape*, render::ShapeNode*> mShapeToNode;
 
   /// Map from ShapeGeodes to Shapes
-  std::map<ShapeNode*, dart::dynamics::Shape*> mNodeToShape;
+  std::map<render::ShapeNode*, dart::dynamics::Shape*> mNodeToShape;
 
   /// True iff this EntityNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being
