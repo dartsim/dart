@@ -76,41 +76,6 @@ protected:
 
 };
 
-class BoxShapeGeode : public ShapeNode, public osg::Geode
-{
-public:
-
-  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
-
-  void refresh();
-  void extractData();
-
-protected:
-
-  virtual ~BoxShapeGeode();
-
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeDrawable* mDrawable;
-
-};
-
-class BoxShapeDrawable : public osg::ShapeDrawable
-{
-public:
-
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape, BoxShapeGeode* parent);
-
-  void refresh(bool firstTime);
-
-protected:
-
-  virtual ~BoxShapeDrawable();
-
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mParent;
-
-};
-
 } // namespace render
 } // namespace osgDart
 
