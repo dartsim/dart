@@ -50,29 +50,40 @@ class CustomWorldNode : public osgDart::WorldNode
 public:
 
   CustomWorldNode(dart::simulation::World* _world)
-    : WorldNode(_world), t(0.0) { }
+    : WorldNode(_world), F(nullptr), T(nullptr), S(nullptr), t(0.0) { }
 
   void customUpdate() override
   {
+    t += 0.002;
+
     if(F)
     {
-      t += 0.001;
       Eigen::Isometry3d tf = F->getRelativeTransform();
       tf.rotate(Eigen::AngleAxisd(0.005, Eigen::Vector3d(0,0,1)));
       tf.translation() = Eigen::Vector3d(0,0,0.5)*sin(t);
       F->setRelativeTransform(tf);
     }
 
+    if(T)
+    {
+      Eigen::Isometry3d tf = T->getLocalTransform();
+      tf.rotate(Eigen::AngleAxisd(0.01, Eigen::Vector3d(1,0,0)));
+      T->setLocalTransform(tf);
+    }
+
     if(S)
     {
-      Eigen::Isometry3d tf = S->getLocalTransform();
-      tf.rotate(Eigen::AngleAxisd(0.01, Eigen::Vector3d(1,0,0)));
-      S->setLocalTransform(tf);
+      Eigen::Vector3d scale(0.15,0.15,0.15);
+      scale[0] *= 2*fabs(cos(5*t))+0.05;
+      scale[1] *= 2*fabs(sin(5*t))+0.05;
+      S->setSize(scale);
+      S->setColor(scale);
     }
   }
 
-  SimpleFrame* F;
-  Shape* S;
+  SimpleFrame* F; // Change the transform of this Frame over time
+  Shape* T;       // Change the transform of this Shape over time
+  BoxShape* S;    // Change the scaling and color of this Shape over time
 
   double t;
 
@@ -93,7 +104,7 @@ int main()
   tf.translate(Eigen::Vector3d(0.5,0,0));
   shape2->setLocalTransform(tf);
   shape2->setColor(Eigen::Vector3d(1,0,0));
-  shape2->setDataVariance(Shape::DYNAMIC);
+  shape2->setDataVariance(Shape::DYNAMIC_TRANSFORM);
   box2.addVisualizationShape(shape2);
 
   myWorld->addEntity(&box1);
@@ -111,13 +122,15 @@ int main()
   Entity box4(&F, "box4", false);
   BoxShape* shape4 = new BoxShape(Eigen::Vector3d(0.15,0.15,0.15));
   shape4->setLocalTransform(tf.inverse());
+  shape4->setDataVariance(Shape::DYNAMIC_SCALING | Shape::DYNAMIC_COLOR);
   box4.addVisualizationShape(shape4);
 
   myWorld->addFrame(&F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
   node->F = &F;
-  node->S = shape2;
+  node->T = shape2;
+  node->S = shape4;
 
   osgViewer::Viewer viewer;
   viewer.getCamera()->setClearColor(osg::Vec4(0.9,0.9,0.9,1));

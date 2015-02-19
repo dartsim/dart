@@ -44,7 +44,7 @@ ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
   : mShape(_shape),
     mNode(_node),
     mParent(_parent),
-    mUtilized(false)
+    mUtilized(true)
 {
   // Do nothing
 }

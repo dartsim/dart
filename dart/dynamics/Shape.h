@@ -68,9 +68,13 @@ public:
   /// DataVariance can be used by renderers to determine whether it should
   /// expect data for this shape to change during each update.
   enum DataVariance {
-    STATIC=0,           /// No data will change
-    DYNAMIC_VERTICES,   /// Vertex positions should be expected to change
-    DYNAMIC             /// All data is subject to changing
+    STATIC=0,                   /// No data will ever change
+    DYNAMIC_TRANSFORM = 1 << 1, /// The relative transform of the Shape might change
+    DYNAMIC_SCALING   = 1 << 2, /// The scaling of the shape (or sizes for primitives) might change
+    DYNAMIC_COLOR     = 1 << 3, /// The coloring of the shape might change
+    DYNAMIC_VERTICES  = 1 << 4, /// Vertex positions of a mesh might change (this does not include adding or removing vertices)
+    DYNAMIC_ELEMENTS  = 1 << 5, /// The number of elements and/or arrangement of elements might change (this includes adding and removing vertices)
+    DYNAMIC           = 0xFF    /// All data is subject to changing
   };
 
   /// \brief Constructor
@@ -125,11 +129,14 @@ public:
   /// \brief
   ShapeType getShapeType() const;
 
-  /// Set the data variance of this shape
-  void setDataVariance(DataVariance _variance);
+  /// Set the data variance of this shape. Use the DataVariance
+  void setDataVariance(unsigned int _variance);
 
   /// Get the data variance of this shape
-  DataVariance getDataVariance() const;
+  unsigned int getDataVariance() const;
+
+  /// True iff this Shape has the specified type of DataVariance
+  bool checkDataVariance(DataVariance type) const;
 
   /// Instruct this shape to update its data
   virtual void refreshData();
@@ -162,7 +169,7 @@ protected:
   Eigen::Isometry3d mTransform;
 
   /// The DataVariance of this Shape
-  DataVariance mVariance;
+  unsigned int mVariance;
 
   /// \brief
   static int mCounter;

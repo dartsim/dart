@@ -120,15 +120,24 @@ Shape::ShapeType Shape::getShapeType() const
 }
 
 //==============================================================================
-void Shape::setDataVariance(DataVariance _variance)
+void Shape::setDataVariance(unsigned int _variance)
 {
   mVariance = _variance;
 }
 
 //==============================================================================
-Shape::DataVariance Shape::getDataVariance() const
+unsigned int Shape::getDataVariance() const
 {
   return mVariance;
+}
+
+//==============================================================================
+bool Shape::checkDataVariance(DataVariance type) const
+{
+  if(STATIC == type)
+    return STATIC == mVariance;
+
+  return (type & mVariance) != 0x00;
 }
 
 //==============================================================================

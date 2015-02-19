@@ -63,7 +63,7 @@ public:
   BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
 
   void refresh();
-  void initialize();
+  void extractData(bool firstTime);
 
 protected:
 
@@ -83,6 +83,7 @@ public:
   BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _parent);
 
   void refresh();
+  void extractData();
 
 protected:
 
@@ -97,15 +98,16 @@ class BoxShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
+  BoxShapeDrawable(dart::dynamics::BoxShape* shape, BoxShapeGeode* parent);
 
-  void refresh();
+  void refresh(bool firstTime);
 
 protected:
 
   virtual ~BoxShapeDrawable();
 
   dart::dynamics::BoxShape* mBoxShape;
+  BoxShapeGeode* mParent;
 
 };
 

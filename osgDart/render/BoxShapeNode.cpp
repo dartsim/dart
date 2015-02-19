@@ -48,7 +48,7 @@ BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent)
     mBoxShape(shape),
     mGeode(nullptr)
 {
-  initialize();
+  extractData(true);
 }
 
 //==============================================================================
@@ -59,18 +59,21 @@ void BoxShapeNode::refresh()
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
 
-  initialize();
+  extractData(false);
 }
 
 //==============================================================================
-void BoxShapeNode::initialize()
+void BoxShapeNode::extractData(bool firstTime)
 {
-  setMatrix(eigToOsg(mShape->getLocalTransform()));
+  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+     || firstTime)
+    setMatrix(eigToOsg(mShape->getLocalTransform()));
 
   if(nullptr == mGeode)
   {
     mGeode = new BoxShapeGeode(mBoxShape, mParent);
     addChild(mGeode);
+    return;
   }
 
   mGeode->refresh();
@@ -88,19 +91,27 @@ BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _paren
     mBoxShape(shape),
     mDrawable(nullptr)
 {
-
+  extractData();
 }
 
 //==============================================================================
 void BoxShapeGeode::refresh()
 {
+  mUtilized = true;
+
+  extractData();
+}
+
+//==============================================================================
+void BoxShapeGeode::extractData()
+{
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape);
+    mDrawable = new BoxShapeDrawable(mBoxShape, this);
     addDrawable(mDrawable);
   }
 
-  mDrawable->refresh();
+  mDrawable->refresh(false);
 }
 
 //==============================================================================
@@ -110,22 +121,36 @@ BoxShapeGeode::~BoxShapeGeode()
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
-  : mBoxShape(shape)
+BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
+                                   BoxShapeGeode* parent)
+  : mBoxShape(shape),
+    mParent(parent)
 {
-
+  refresh(true);
 }
 
 //==============================================================================
-void BoxShapeDrawable::refresh()
+void BoxShapeDrawable::refresh(bool firstTime)
 {
-  const Eigen::Vector3d& d = mBoxShape->getSize();
-  osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
-                                                  d[0], d[1], d[2]);
+  if(mBoxShape->getDataVariance() != dart::dynamics::Shape::STATIC)
+    setDataVariance(osg::Object::DYNAMIC);
 
-  setShape(osg_shape);
-  const Eigen::Vector3d& c = mBoxShape->getColor();
-  setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
+  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+     || firstTime)
+  {
+    const Eigen::Vector3d& d = mBoxShape->getSize();
+    osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
+                                                    d[0], d[1], d[2]);
+    setShape(osg_shape);
+    dirtyDisplayList();
+  }
+
+  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+     || firstTime)
+  {
+    const Eigen::Vector3d& c = mBoxShape->getColor();
+    setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
+  }
 }
 
 //==============================================================================
