@@ -66,14 +66,11 @@ public:
   };
 
   /// DataVariance can be used by renderers to determine whether it should
-  /// expect vertex or data for this shape to change during each update.
-  /// STATIC means that vertex data will not change relative to this Shape's
-  /// parent Frame. This is appropriate for rigid bodies. DYNAMIC means that
-  /// the vertex data might change relative to the Shape's parent Frame. This is
-  /// appropriate for soft/flexible bodies or fluids.
+  /// expect data for this shape to change during each update.
   enum DataVariance {
-    STATIC=0,
-    DYNAMIC
+    STATIC=0,           /// No data will change
+    DYNAMIC_VERTICES,   /// Vertex positions should be expected to change
+    DYNAMIC             /// All data is subject to changing
   };
 
   /// \brief Constructor
@@ -85,6 +82,7 @@ public:
   /// \brief Set color.
   void setColor(const Eigen::Vector3d& _color);
 
+  /// TODO(MXG): Add support for alpha channel
   /// \brief Get color.
   const Eigen::Vector3d& getColor() const;
 
@@ -132,6 +130,9 @@ public:
 
   /// Get the data variance of this shape
   DataVariance getDataVariance() const;
+
+  /// Instruct this shape to update its data
+  virtual void refreshData();
 
   /// \brief
   virtual void draw(renderer::RenderInterface* _ri = NULL,

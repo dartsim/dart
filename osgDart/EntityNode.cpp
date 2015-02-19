@@ -35,27 +35,51 @@
  */
 
 #include "osgDart/EntityNode.h"
+#include "osgDart/ShapeNode.h"
+#include "osgDart/BoxShapeNode.h"
+
+#include "dart/dynamics/Entity.h"
+#include "dart/dynamics/BoxShape.h"
 
 namespace osgDart
 {
 
-EntityNode::EntityNode(dart::dynamics::Entity* _entity) :
-  mEntity(_entity),
-  mUtilized(false)
+EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
+  : mEntity(_entity),
+    mParent(_parent),
+    mUtilized(false)
 {
-
+  refresh();
 }
 
 //==============================================================================
-dart::dynamics::Entity* EntityNode::entity()
+dart::dynamics::Entity* EntityNode::getEntity() const
 {
   return mEntity;
 }
 
 //==============================================================================
-const dart::dynamics::Entity* EntityNode::entity() const
+FrameNode* EntityNode::getParentFrameNode()
 {
-  return mEntity;
+  return mParent;
+}
+
+//==============================================================================
+const FrameNode* EntityNode::getParentFrameNode() const
+{
+  return mParent;
+}
+
+//==============================================================================
+void EntityNode::refresh()
+{
+  mUtilized = true;
+
+  const std::vector<dart::dynamics::Shape*>& visShapes =
+      mEntity->getVisualizationShapes();
+
+  for(dart::dynamics::Shape* shape : visShapes)
+    refreshShapeNode(shape);
 }
 
 //==============================================================================
@@ -68,6 +92,72 @@ bool EntityNode::wasUtilized() const
 void EntityNode::clearUtilization()
 {
   mUtilized = false;
+}
+
+//==============================================================================
+EntityNode::~EntityNode()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void EntityNode::clearChildUtilizationFlags()
+{
+  for(auto& node : mNodeToShape)
+    node.first->clearUtilization();
+}
+
+//==============================================================================
+void EntityNode::clearUnusedNodes()
+{
+  for(auto& node_pair : mNodeToShape)
+  {
+    ShapeNode* node = node_pair.first;
+    if(!node->wasUtilized())
+    {
+      mNodeToShape.erase(node);
+      mShapeToNode.erase(node_pair.second);
+
+      removeChild(node->getNode());
+    }
+  }
+}
+
+//==============================================================================
+void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
+{
+  std::map<dart::dynamics::Shape*, ShapeNode*>::iterator it =
+      mShapeToNode.find(shape);
+
+  if(it == mShapeToNode.end())
+  {
+    createShapeNode(shape);
+    return;
+  }
+
+  (it->second)->refresh();
+}
+
+//==============================================================================
+void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
+{
+  using namespace dart::dynamics;
+  ShapeNode* node = nullptr;
+
+
+  BoxShape* bs = dynamic_cast<BoxShape*>(shape);
+  if(bs)
+  {
+    node = new BoxShapeNode(bs, this);
+  }
+
+  if(nullptr == node)
+    return;
+
+  mShapeToNode[shape] = node;
+  mNodeToShape[node] = shape;
+
+  addChild(node->getNode());
 }
 
 } // namespace osgDart

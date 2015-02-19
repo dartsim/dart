@@ -86,6 +86,13 @@ public:
   /// Add a visualization shape for this Entity
   virtual void addVisualizationShape(Shape* _p);
 
+  /// Get the visualization shapes of this Entity
+  const std::vector<Shape*>& getVisualizationShapes();
+
+  /// Get a vector of const visualization Shapes for this Entity. Note that this
+  /// is slightly less efficient than the non-const version.
+  std::vector<const Shape*> getVisualizationShapes() const;
+
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),

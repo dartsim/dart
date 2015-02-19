@@ -34,80 +34,67 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_ENTITYNODE_H
-#define OSGDART_ENTITYNODE_H
-
-#include <osg/Group>
-#include <map>
-
-namespace dart {
-namespace dynamics {
-class Entity;
-class Shape;
-} // namespace dynamics
-} // namespace dart
+#include "osgDart/ShapeNode.h"
 
 namespace osgDart
 {
 
-class ShapeNode;
-class FrameNode;
-
-class EntityNode : public osg::Group
+ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
+                     osg::Node* _node)
+  : mShape(_shape),
+    mNode(_node),
+    mParent(_parent),
+    mUtilized(false)
 {
-public:
+  // Do nothing
+}
 
-  EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent);
+//==============================================================================
+ShapeNode::~ShapeNode()
+{
+  // Do nothing
+}
 
-  /// Pointer to the Entity associated with this EntityNode
-  dart::dynamics::Entity* getEntity() const;
+//==============================================================================
+dart::dynamics::Shape* ShapeNode::getShape() const
+{
+  return mShape;
+}
 
-  /// Pointer to the parent FrameNode of this EntityNode
-  FrameNode* getParentFrameNode();
+//==============================================================================
+osg::Node* ShapeNode::getNode()
+{
+  return mNode;
+}
 
-  /// Pointer to the parent FrameNode of this EntityNode
-  const FrameNode* getParentFrameNode() const;
+//==============================================================================
+const osg::Node* ShapeNode::getNode() const
+{
+  return mNode;
+}
 
-  /// Update all rendering data for this EntityNode
-  void refresh();
+//==============================================================================
+EntityNode* ShapeNode::getParentEntityNode()
+{
+  return mParent;
+}
 
-  /// True iff this EntityNode has been utilized on the latest update
-  bool wasUtilized() const;
+//==============================================================================
+const EntityNode* ShapeNode::getParentEntityNode() const
+{
+  return mParent;
+}
 
-  /// Set mUtilized to false
-  void clearUtilization();
+//==============================================================================
+bool ShapeNode::wasUtilized() const
+{
+  return mUtilized;
+}
 
-protected:
-
-  virtual ~EntityNode();
-
-  void clearChildUtilizationFlags();
-
-  void clearUnusedNodes();
-
-  void refreshShapeNode(dart::dynamics::Shape* shape);
-
-  void createShapeNode(dart::dynamics::Shape* shape);
-
-  /// Pointer to the Entity that this EntityNode is associated with
-  dart::dynamics::Entity* mEntity;
-
-  /// Pointer to the parent FrameNode of this EntityNode
-  FrameNode* mParent;
-
-  /// Map from Shapes to ShapeGeodes
-  std::map<dart::dynamics::Shape*, ShapeNode*> mShapeToNode;
-
-  /// Map from ShapeGeodes to Shapes
-  std::map<ShapeNode*, dart::dynamics::Shape*> mNodeToShape;
-
-  /// True iff this EntityNode has been utilized on the latest update.
-  /// If it has not, that is an indication that it is no longer being
-  /// used and should be deleted.
-  bool mUtilized;
-
-};
+//==============================================================================
+void ShapeNode::clearUtilization()
+{
+  mUtilized = false;
+}
 
 } // namespace osgDart
-
-#endif // OSGDART_ENTITYNODE_H

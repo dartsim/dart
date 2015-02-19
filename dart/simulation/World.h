@@ -80,7 +80,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Constructor
-  World();
+  World(const std::string& _name = "World");
 
   /// Destructor
   virtual ~World();
@@ -88,6 +88,12 @@ public:
   //--------------------------------------------------------------------------
   // Properties
   //--------------------------------------------------------------------------
+
+  /// Set the name of this World
+  void setName(const std::string& _newName);
+
+  /// Get the name of this World
+  const std::string& getName() const;
 
   /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
@@ -134,29 +140,57 @@ public:
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
 
-  /// Get the indexed Entity
+  /// Get the indexed custom Entity
   dynamics::Entity* getEntity(size_t _index) const;
 
-  /// Find an Entity by name
+  /// Find a custom Entity by name
   dynamics::Entity* getEntity(const std::string& _name) const;
 
-  /// Get the number of Entities
+  /// Get the number of custom Entities in this World
   size_t getNumEntities() const;
 
-  /// Add an Entity to this world
+  /// Add a custom Entity to this World
   std::string addEntity(dynamics::Entity* _entity);
 
-  /// Remove an Entity from this world without deleting it
+  /// Remove a custom Entity from this World without deleting it
   void withdrawEntity(dynamics::Entity* _entity);
 
-  /// Remove an Entity from this world and delete it
+  /// Remove a custom Entity from this World and delete it
   void removeEntity(dynamics::Entity* _entity);
 
-  /// Remove all Entities from this world, and get pointers to them
+  /// Remove all custom Entities from this World, and get pointers to them.
+  /// Do not delete any.
   std::set<dynamics::Entity*> withdrawAllEntities();
 
-  /// Remove all Entities in this world. Note: Does not remove any Skeletons
+  /// Remove all custom Entities from this World, and delete them.
+  /// Note: Does not remove any Skeletons
   void removeAllEntities();
+
+  /// Get the indexed custom Frame
+  dynamics::Frame* getFrame(size_t _index) const;
+
+  /// Find a custom Frame by name
+  dynamics::Frame* getFrame(const std::string& _name) const;
+
+  /// Get the number of custom Frames in this World
+  size_t getNumFrames() const;
+
+  /// Add a custom Frame to this World
+  std::string addFrame(dynamics::Frame* _frame);
+
+  /// Remove a custom Frame from this World without deleting it
+  void withdrawFrame(dynamics::Frame* _frame);
+
+  /// Remove a custom Frame from this World and delete it
+  void removeFrame(dynamics::Frame* _frame);
+
+  /// Remove all custom Frames from this World, and get pointers to them.
+  /// Do not delete any.
+  std::set<dynamics::Frame*> withdrawAllFrames();
+
+  /// Remove all custom Frames from this World, and delete them.
+  /// Note: Does not remove any Skeletons
+  void removeAllFrames();
 
   //--------------------------------------------------------------------------
   // Kinematics
@@ -200,17 +234,27 @@ public:
   Recording* getRecording();
 
 protected:
+
+  /// Name of this World
+  std::string mName;
+
   /// Skeletones in this world
   std::vector<dynamics::Skeleton*> mSkeletons;
 
   /// NameManager for keeping track of Skeletons
   dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
 
-  /// Entities in this world
-  std::vector<dynamics::Entity*> mEntities;
+  /// Custom Entities in this World
+  std::vector<dynamics::Entity*> mCustomEntities;
 
-  /// NameManager for keeping track of Entities
+  /// NameManager for keeping track of custom Entities
   dart::common::NameManager<dynamics::Entity> mNameMgrForEntities;
+
+  /// Custom Frames in this World
+  std::vector<dynamics::Frame*> mCustomFrames;
+
+  /// NameManager for keeping track of custom Frames
+  dart::common::NameManager<dynamics::Frame> mNameMgrForFrames;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

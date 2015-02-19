@@ -35,110 +35,103 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#include "osgDart/BoxShapeNode.h"
+#include "osgDart/utils.h"
 
-#define PRIMITIVE_MAGIC_NUMBER 1000
+#include "dart/dynamics/BoxShape.h"
 
-namespace dart {
-namespace dynamics {
-
-Shape::Shape(ShapeType _type)
-  : mBoundingBoxDim(0, 0, 0),
-    mVolume(0.0),
-    mID(mCounter++),
-    mColor(0.5, 0.5, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()),
-    mType(_type),
-    mVariance(STATIC)
+namespace osgDart
 {
+
+BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* _parent)
+  : ShapeNode(shape, _parent, this),
+    mBoxShape(shape),
+    mGeode(nullptr)
+{
+  initialize();
 }
 
 //==============================================================================
-Shape::~Shape()
+void BoxShapeNode::refresh()
 {
-  // Do nothing
+  mUtilized = true;
+
+  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+    return;
+
+  initialize();
 }
 
 //==============================================================================
-void Shape::setColor(const Eigen::Vector3d& _color)
+void BoxShapeNode::initialize()
 {
-  mColor = _color;
+  setMatrix(eigToOsg(mShape->getLocalTransform()));
+
+  if(nullptr == mGeode)
+  {
+    mGeode = new BoxShapeGeode(mBoxShape, mParent);
+    addChild(mGeode);
+  }
+
+  mGeode->refresh();
 }
 
 //==============================================================================
-const Eigen::Vector3d& Shape::getColor() const
-{
-  return mColor;
-}
-
-//==============================================================================
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const
-{
-  return mBoundingBoxDim;
-}
-
-//==============================================================================
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
-{
-  mTransform = _Transform;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& Shape::getLocalTransform() const
-{
-  return mTransform;
-}
-
-//==============================================================================
-void Shape::setOffset(const Eigen::Vector3d& _offset)
-{
-  mTransform.translation() = _offset;
-}
-
-//==============================================================================
-Eigen::Vector3d Shape::getOffset() const
-{
-  return mTransform.translation();
-}
-
-//==============================================================================
-double Shape::getVolume() const
-{
-  return mVolume;
-}
-
-//==============================================================================
-int Shape::getID() const
-{
-  return mID;
-}
-
-//==============================================================================
-Shape::ShapeType Shape::getShapeType() const
-{
-  return mType;
-}
-
-//==============================================================================
-void Shape::setDataVariance(DataVariance _variance)
-{
-  mVariance = _variance;
-}
-
-//==============================================================================
-Shape::DataVariance Shape::getDataVariance() const
-{
-  return mVariance;
-}
-
-//==============================================================================
-void Shape::refreshData()
+BoxShapeNode::~BoxShapeNode()
 {
   // Do nothing
 }
 
 //==============================================================================
-int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
+BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* _parent)
+  : ShapeNode(shape, _parent, this),
+    mBoxShape(shape),
+    mDrawable(nullptr)
+{
 
-}  // namespace dynamics
-}  // namespace dart
+}
+
+//==============================================================================
+void BoxShapeGeode::refresh()
+{
+  if(nullptr == mDrawable)
+  {
+    mDrawable = new BoxShapeDrawable(mBoxShape);
+    addDrawable(mDrawable);
+  }
+
+  mDrawable->refresh();
+}
+
+//==============================================================================
+BoxShapeGeode::~BoxShapeGeode()
+{
+  // Do nothing
+}
+
+//==============================================================================
+BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
+  : mBoxShape(shape)
+{
+
+}
+
+//==============================================================================
+void BoxShapeDrawable::refresh()
+{
+  const Eigen::Vector3d& d = mBoxShape->getSize();
+  osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
+                                                  d[0], d[1], d[2]);
+
+  setShape(osg_shape);
+  const Eigen::Vector3d& c = mBoxShape->getColor();
+  setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
+}
+
+//==============================================================================
+BoxShapeDrawable::~BoxShapeDrawable()
+{
+  // Do nothing
+}
+
+} // namespace osgDart

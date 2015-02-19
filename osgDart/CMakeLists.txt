@@ -31,6 +31,8 @@ if(${OPENSCENEGRAPH_FOUND})
     COMPONENT headers
   )
 
+  add_subdirectory(examples)
+
 else(${OPENSCENEGRAPH_FOUND})
 
   # osgDart requires both OSG and OpenThreads. This section attempts to identify

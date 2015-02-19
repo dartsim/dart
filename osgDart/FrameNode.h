@@ -50,26 +50,58 @@ class Entity;
 namespace osgDart
 {
 
+class WorldNode;
 class EntityNode;
 
 class FrameNode : public osg::MatrixTransform
 {
 public:
 
-  FrameNode(dart::dynamics::Frame* _frame);
+  /// Create a FrameNode. If _recursive is set to true, it will also create
+  /// nodes for all child Entities and child Frames
+  FrameNode(dart::dynamics::Frame* _frame, WorldNode* _worldNode,
+            bool _relative, bool _recursive);
 
   /// Pointer to the Frame associated with this FrameNode
-  dart::dynamics::Frame* frame();
+  dart::dynamics::Frame* getFrame() const;
 
-  /// Pointer to the Frame associated with this FrameNode
-  const dart::dynamics::Frame* frame() const;
+  WorldNode* getWorldNode();
+
+  const WorldNode* getWorldNode() const;
+
+  /// Update all rendering data for this Frame
+  ///
+  /// If _recursive is set to true, this FrameNode will also trigger refreshing
+  /// on all child Entities and child Frames
+  void refresh(bool _relative, bool _recursive);
+
+  /// True iff this FrameNode has been utilized on the latest update
+  bool wasUtilized() const;
+
+  /// Set mUtilized to false
+  void clearUtilization();
 
 protected:
+
+  virtual ~FrameNode();
+
+  void clearChildUtilizationFlags();
+
+  void clearUnusedNodes();
+
+  void refreshFrameNode(dart::dynamics::Frame* _frame);
+
+  void createFrameNode(dart::dynamics::Frame* _frame);
+
+  void refreshEntityNode(dart::dynamics::Entity* _entity);
+
+  void createEntityNode(dart::dynamics::Entity* _entity);
+
   /// Pointer to the Frame that this FrameNode is associated with
   dart::dynamics::Frame* mFrame;
 
-  /// Pointer to the EntityNode of this Frame's own shapes
-  EntityNode* mPersonalEntityNode;
+  /// Pointer to the WorldNode that this FrameNode belongs to
+  WorldNode* mWorldNode;
 
   /// Map from child Entities to child EntityNodes
   std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
@@ -82,6 +114,11 @@ protected:
 
   /// Map from child FrameNodes to child Frames
   std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
+
+  /// True iff this FrameNode has been utilized on the latest update.
+  /// If it has not, that is an indication that it is no longer being
+  /// used and should be deleted.
+  bool mUtilized;
 
 };
 

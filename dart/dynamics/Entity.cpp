@@ -83,6 +83,22 @@ void Entity::addVisualizationShape(Shape* _p)
 }
 
 //==============================================================================
+const std::vector<Shape*>& Entity::getVisualizationShapes()
+{
+  return mVizShapes;
+}
+
+//==============================================================================
+std::vector<const Shape*> Entity::getVisualizationShapes() const
+{
+  std::vector<const Shape*> const_shapes;
+  for(const auto& shape : mVizShapes)
+    const_shapes.push_back(shape);
+
+  return const_shapes;
+}
+
+//==============================================================================
 void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
                   bool _useDefaultColor, int) const
 {

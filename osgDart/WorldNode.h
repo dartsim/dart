@@ -38,24 +38,88 @@
 #define OSGDART_WORLDNODE_H
 
 #include <osg/Group>
+#include <map>
 
 namespace dart {
+
 namespace simulation {
 class World;
 } // namespace simulation
+
+namespace dynamics {
+class Frame;
+class Entity;
+}
+
 } // namespace dart
 
 namespace osgDart
 {
+
+class FrameNode;
+class EntityNode;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
 class WorldNode : public osg::Group
 {
 public:
 
-  WorldNode(dart::simulation::World* _world);
+  explicit WorldNode(dart::simulation::World* _world = nullptr);
+
+  /// Set the World that this WorldNode is associated with
+  void setWorld(dart::simulation::World* _newWorld);
+
+  /// Get the World that this WorldNode is associated with
+  dart::simulation::World* getWorld() const;
+
+  /// This function is called at the beginning of each rendering cycle. It
+  /// updates the tree of Frames and Entities that need to be rendered. It may
+  /// also take a simulation step if the simulation is not paused.
+  ///
+  /// If you want to customize what happens at the beginning of each rendering
+  /// cycle, you can either overload this function, or you can overload
+  /// customUpdate(). This update() function will automatically call
+  /// customUpdate() at the beginning of each rendering cycle. By default,
+  /// customUpdate() does nothing.
+  virtual void update();
+
+  /// If update() is not overloaded, this function will be called at the
+  /// beginning of each rendering cycle. This function can be overloaded to
+  /// customize the behavior of each update. The default behavior is to do
+  /// nothing, so overloading this function will not interfere with the usual
+  /// update() operation.
+  virtual void customUpdate();
 
 protected:
+
+  virtual ~WorldNode();
+
+  void clearUtilizationFlags();
+
+  void clearUnusedNodes();
+
+  void refreshSkeletons();
+
+  void refreshCustomFrames();
+
+  void refreshCustomEntities();
+
+  void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
+
+  void createBaseFrameNode(dart::dynamics::Frame* _frame);
+
+  void refreshBaseEntityNode(dart::dynamics::Entity* _entity);
+
+  void createBaseEntityNode(dart::dynamics::Entity* _entity);
+
+  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
+  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
+
+  std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
+  std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
+
+
+  dart::simulation::World* mWorld;
 
 };
 
