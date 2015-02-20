@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_SHAPEGEODE_H
-#define OSGDART_SHAPEGEODE_H
+#ifndef OSGDART_RENDER_SHAPEGEODE_H
+#define OSGDART_RENDER_SHAPEGEODE_H
 
 namespace osg {
 class Node;
@@ -106,4 +106,4 @@ protected:
 } // namespace render
 } // namespace osgDart
 
-#endif // OSGDART_SHAPEGEODE_H
+#endif // OSGDART_RENDER_SHAPEGEODE_H

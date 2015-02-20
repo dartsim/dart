@@ -41,7 +41,7 @@
 #include "dart/simulation/World.h"
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
 
 using namespace dart::dynamics;
 
@@ -50,9 +50,7 @@ class CustomWorldNode : public osgDart::WorldNode
 public:
 
   CustomWorldNode(dart::simulation::World* _world)
-    : WorldNode(_world), F(nullptr), T(nullptr),
-      C(nullptr), S(nullptr), SC(nullptr), t(0.0)
-  { }
+    : WorldNode(_world), F(nullptr), T(nullptr), S(nullptr), t(0.0) { }
 
   void customUpdate() override
   {
@@ -93,7 +91,7 @@ public:
 
     if(SC)
     {
-      Eigen::Vector3d scale(0.15,0.15,0.15);
+      Eigen::Vector3d scale(0.15, 0.15, 0.15);
       scale[0] *= 2*fabs(cos(5*t))+0.05;
       scale[1] *= 2*fabs(sin(5*t))+0.05;
       SC->setSize(scale);
@@ -101,50 +99,49 @@ public:
     }
   }
 
-  SimpleFrame* F; // Change the transform of this Frame over time
-  Shape* T;       // Change the transform of this Shape over time
-  Shape* C;       // Change the color of this Shape over time
-  BoxShape* S;    // Change the scaling of this Shape over time
-  BoxShape* SC;   // Change the scaling and color of this Shape over time
+  SimpleFrame* F;     // Change the transform of this Frame over time
+  Shape* T;           // Change the transform of this Shape over time
+  Shape* C;           // Change the color of this Shape over time
+  EllipsoidShape* S;  // Change the scaling of this Shape over time
+  EllipsoidShape* SC; // Change the scaling and color this Shape over time
 
   double t;
-
 };
 
 int main()
 {
   dart::simulation::World* myWorld = new dart::simulation::World;
 
-  SimpleFrame box1(Frame::World(), "box1");
-  BoxShape* shape1 = new BoxShape(Eigen::Vector3d(0.1,0.1,0.1));
-  box1.addVisualizationShape(shape1);
+  SimpleFrame ellipsoid1(Frame::World(), "ellipsoid1");
+  EllipsoidShape* shape1 = new EllipsoidShape(Eigen::Vector3d(0.1,0.1,0.1));
+  ellipsoid1.addVisualizationShape(shape1);
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translate(Eigen::Vector3d(0,-0.5,0.5));
-  box1.setRelativeTransform(tf);
+  ellipsoid1.setRelativeTransform(tf);
 
-  Entity box2(Frame::World(), "box2", false);
-  BoxShape* shape2 = new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2));
+  Entity ellipsoid2(Frame::World(), "ellipsoid2", false);
+  EllipsoidShape* shape2 = new EllipsoidShape(Eigen::Vector3d(0.15, 0.3, 0.15));
   tf.translate(Eigen::Vector3d(0.5,0,0));
   shape2->setLocalTransform(tf);
   shape2->setColor(Eigen::Vector3d(1,0,0));
-  box2.addVisualizationShape(shape2);
+  ellipsoid2.addVisualizationShape(shape2);
 
   SimpleFrame F(Frame::World(), "F");
-  F.addVisualizationShape(new BoxShape(Eigen::Vector3d(0.1,0.3,0.1)));
+  F.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.1,0.3,0.1)));
 
-  Entity box3(&F, "box3", false);
-  BoxShape* shape3 = new BoxShape(Eigen::Vector3d(0.05,0.05,0.05));
+  Entity ellipsoid3(&F, "ellipsoid3", false);
+  EllipsoidShape* shape3 = new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05));
   shape3->setLocalTransform(tf);
   shape3->setColor(Eigen::Vector3d(0,1,0));
-  box3.addVisualizationShape(shape3);
+  ellipsoid3.addVisualizationShape(shape3);
 
-  Entity box4(&F, "box4", false);
-  BoxShape* shape4 = new BoxShape(Eigen::Vector3d(0.15,0.15,0.15));
+  Entity ellipsoid4(&F, "ellipsoid4", false);
+  EllipsoidShape* shape4 = new EllipsoidShape(Eigen::Vector3d(0.15,0.15,0.15));
   shape4->setLocalTransform(tf.inverse());
-  box4.addVisualizationShape(shape4);
+  ellipsoid4.addVisualizationShape(shape4);
 
-  myWorld->addEntity(&box1);
-  myWorld->addEntity(&box2);
+  myWorld->addEntity(&ellipsoid1);
+  myWorld->addEntity(&ellipsoid2);
   myWorld->addFrame(&F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
@@ -164,6 +161,8 @@ int main()
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
   viewer.realize();
+
+  viewer.getCamera()->getOrCreateStateSet()->setGlobalDefaults();
 
   viewer.run();
 }

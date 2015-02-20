@@ -34,44 +34,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_BOXSHAPENODE_H
-#define OSGDART_RENDER_BOXSHAPENODE_H
+#ifndef OSGDART_RENDER_ELLIPSOIDSHAPENODE_H
+#define OSGDART_RENDER_ELLIPSOIDSHAPENODE_H
 
+#include <osg/ShapeDrawable>
 #include <osg/MatrixTransform>
 
 #include "osgDart/render/ShapeNode.h"
 
 namespace dart {
 namespace dynamics {
-class BoxShape;
+class EllipsoidShape;
 } // namespace dynamics
 } // namespace dart
 
 namespace osgDart {
 namespace render {
 
-class BoxShapeGeode;
-class BoxShapeDrawable;
+class EllipsoidShapeGeode;
+class EllipsoidShapeDrawable;
 
-class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
+class EllipsoidShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent);
+  EllipsoidShapeNode(dart::dynamics::EllipsoidShape* shape, EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
 
 protected:
 
-  virtual ~BoxShapeNode();
+  virtual ~EllipsoidShapeNode();
 
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mGeode;
+  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  EllipsoidShapeGeode* mGeode;
 
 };
 
 } // namespace render
 } // namespace osgDart
 
-#endif // OSGDART_RENDER_BOXSHAPENODE_H
+#endif // OSGDART_RENDER_ELLIPSOIDSHAPENODE_H

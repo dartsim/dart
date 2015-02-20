@@ -37,9 +37,11 @@
 #include "osgDart/EntityNode.h"
 #include "osgDart/render/ShapeNode.h"
 #include "osgDart/render/BoxShapeNode.h"
+#include "osgDart/render/EllipsoidShapeNode.h"
 
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
 
 namespace osgDart {
 
@@ -143,11 +145,24 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
   using namespace dart::dynamics;
   render::ShapeNode* node = nullptr;
 
-
-  BoxShape* bs = dynamic_cast<BoxShape*>(shape);
-  if(bs)
+  switch(shape->getShapeType())
   {
-    node = new render::BoxShapeNode(bs, this);
+    case Shape::BOX:
+    {
+      BoxShape* bs = dynamic_cast<BoxShape*>(shape);
+      if(bs)
+        node = new render::BoxShapeNode(bs, this);
+      break;
+    }
+    case Shape::ELLIPSOID:
+    {
+      EllipsoidShape* es = dynamic_cast<EllipsoidShape*>(shape);
+      if(es)
+        node = new render::EllipsoidShapeNode(es, this);
+      break;
+    }
+    default:
+      break;
   }
 
   if(nullptr == node)

@@ -37,61 +37,63 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgDart/render/BoxShapeNode.h"
+#include "osgDart/render/EllipsoidShapeNode.h"
 #include "osgDart/utils.h"
 
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
 
 namespace osgDart {
 namespace render {
 
-class BoxShapeGeode : public ShapeNode, public osg::Geode
+class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* parent);
+  EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape, EntityNode* parent);
 
   void refresh();
   void extractData();
 
 protected:
 
-  virtual ~BoxShapeGeode();
+  virtual ~EllipsoidShapeGeode();
 
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeDrawable* mDrawable;
+  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  EllipsoidShapeDrawable* mDrawable;
 
 };
 
 //==============================================================================
-class BoxShapeDrawable : public osg::ShapeDrawable
+class EllipsoidShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape, BoxShapeGeode* parent);
+  EllipsoidShapeDrawable(dart::dynamics::EllipsoidShape* shape,
+                         EllipsoidShapeGeode* parent);
 
   void refresh(bool firstTime);
 
 protected:
 
-  virtual ~BoxShapeDrawable();
+  virtual ~EllipsoidShapeDrawable();
 
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mParent;
+  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  EllipsoidShapeGeode* mParent;
 
 };
 
 //==============================================================================
-BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent)
+EllipsoidShapeNode::EllipsoidShapeNode(dart::dynamics::EllipsoidShape* shape,
+                                       EntityNode* parent)
   : ShapeNode(shape, parent, this),
-    mBoxShape(shape),
+    mEllipsoidShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
 }
 
 //==============================================================================
-void BoxShapeNode::refresh()
+void EllipsoidShapeNode::refresh()
 {
   mUtilized = true;
 
@@ -102,15 +104,30 @@ void BoxShapeNode::refresh()
 }
 
 //==============================================================================
-void BoxShapeNode::extractData(bool firstTime)
+Eigen::Matrix4d makeScalingMatrix(const Eigen::Vector3d& s)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
-    setMatrix(eigToOsg(mShape->getLocalTransform()));
+  Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
+  for(size_t i=0; i<3; ++i)
+    S(i,i) = s[i];
+  S(3,3) = 1.0;
+
+  return S;
+}
+
+//==============================================================================
+void EllipsoidShapeNode::extractData(bool firstTime)
+{
+  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+     || firstTime )
+  {
+    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()
+                             *makeScalingMatrix(mEllipsoidShape->getSize())));
+  }
 
   if(nullptr == mGeode)
   {
-    mGeode = new BoxShapeGeode(mBoxShape, mParent);
+    mGeode = new EllipsoidShapeGeode(mEllipsoidShape, mParent);
     addChild(mGeode);
     return;
   }
@@ -119,23 +136,23 @@ void BoxShapeNode::extractData(bool firstTime)
 }
 
 //==============================================================================
-BoxShapeNode::~BoxShapeNode()
+EllipsoidShapeNode::~EllipsoidShapeNode()
 {
   // Do nothing
 }
 
 //==============================================================================
-BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
-                             EntityNode* parent)
+EllipsoidShapeGeode::EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
+                                         EntityNode* parent)
   : ShapeNode(shape, parent, this),
-    mBoxShape(shape),
+    mEllipsoidShape(shape),
     mDrawable(nullptr)
 {
   extractData();
 }
 
 //==============================================================================
-void BoxShapeGeode::refresh()
+void EllipsoidShapeGeode::refresh()
 {
   mUtilized = true;
 
@@ -143,11 +160,11 @@ void BoxShapeGeode::refresh()
 }
 
 //==============================================================================
-void BoxShapeGeode::extractData()
+void EllipsoidShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape, this);
+    mDrawable = new EllipsoidShapeDrawable(mEllipsoidShape, this);
     addDrawable(mDrawable);
     return;
   }
@@ -156,48 +173,45 @@ void BoxShapeGeode::extractData()
 }
 
 //==============================================================================
-BoxShapeGeode::~BoxShapeGeode()
+EllipsoidShapeGeode::~EllipsoidShapeGeode()
 {
   // Do nothing
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
-                                   BoxShapeGeode* parent)
-  : mBoxShape(shape),
+EllipsoidShapeDrawable::EllipsoidShapeDrawable(
+    dart::dynamics::EllipsoidShape* shape, EllipsoidShapeGeode* parent)
+  : mEllipsoidShape(shape),
     mParent(parent)
 {
   refresh(true);
 }
 
 //==============================================================================
-void BoxShapeDrawable::refresh(bool firstTime)
+void EllipsoidShapeDrawable::refresh(bool firstTime)
 {
-  if(mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
-     || firstTime)
+  if(firstTime)
   {
-    const Eigen::Vector3d& d = mBoxShape->getSize();
-    osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
-                                                    d[0], d[1], d[2]);
+    osg::ref_ptr<osg::Sphere> osg_shape = new osg::Sphere(osg::Vec3(0,0,0), 1.0);
     setShape(osg_shape);
     dirtyDisplayList();
   }
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    const Eigen::Vector3d& c = mBoxShape->getColor();
+    const Eigen::Vector3d& c = mEllipsoidShape->getColor();
     setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
   }
 }
 
 //==============================================================================
-BoxShapeDrawable::~BoxShapeDrawable()
+EllipsoidShapeDrawable::~EllipsoidShapeDrawable()
 {
   // Do nothing
 }
