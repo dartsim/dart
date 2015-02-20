@@ -36,6 +36,8 @@
 
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
+#include <osg/Light>
+#include <osg/Material>
 
 #include "osgDart/render/EllipsoidShapeNode.h"
 #include "osgDart/utils.h"
@@ -49,7 +51,9 @@ class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape, EntityNode* parent);
+  EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
+                      EntityNode* parentEntity,
+                      EllipsoidShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -58,6 +62,7 @@ protected:
 
   virtual ~EllipsoidShapeGeode();
 
+  EllipsoidShapeNode* mParentNode;
   dart::dynamics::EllipsoidShape* mEllipsoidShape;
   EllipsoidShapeDrawable* mDrawable;
 
@@ -104,14 +109,9 @@ void EllipsoidShapeNode::refresh()
 }
 
 //==============================================================================
-Eigen::Matrix4d makeScalingMatrix(const Eigen::Vector3d& s)
+double smallestComponent(const Eigen::Vector3d& v)
 {
-  Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
-  for(size_t i=0; i<3; ++i)
-    S(i,i) = s[i];
-  S(3,3) = 1.0;
-
-  return S;
+  return std::min( v[0], std::min( v[1], v[2] ) );
 }
 
 //==============================================================================
@@ -121,13 +121,14 @@ void EllipsoidShapeNode::extractData(bool firstTime)
      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
      || firstTime )
   {
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()
-                             *makeScalingMatrix(mEllipsoidShape->getSize())));
+    setMatrix(osg::Matrix::scale(eigToOsgVec3(
+    mEllipsoidShape->getSize()/smallestComponent(mEllipsoidShape->getSize())))
+              * eigToOsgMatrix(mShape->getLocalTransform()));
   }
 
   if(nullptr == mGeode)
   {
-    mGeode = new EllipsoidShapeGeode(mEllipsoidShape, mParent);
+    mGeode = new EllipsoidShapeGeode(mEllipsoidShape, mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -143,8 +144,10 @@ EllipsoidShapeNode::~EllipsoidShapeNode()
 
 //==============================================================================
 EllipsoidShapeGeode::EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
-                                         EntityNode* parent)
-  : ShapeNode(shape, parent, this),
+                                         EntityNode* parentEntity,
+                                         EllipsoidShapeNode* parentNode)
+  : ShapeNode(shape, parentEntity, this),
+    mParentNode(parentNode),
     mEllipsoidShape(shape),
     mDrawable(nullptr)
 {
@@ -195,9 +198,13 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(firstTime)
+  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+     || firstTime)
   {
-    osg::ref_ptr<osg::Sphere> osg_shape = new osg::Sphere(osg::Vec3(0,0,0), 1.0);
+    osg::ref_ptr<osg::Sphere> osg_shape = nullptr;
+    osg_shape = new osg::Sphere(osg::Vec3(0,0,0),
+                          0.5*smallestComponent(mEllipsoidShape->getSize()));
+
     setShape(osg_shape);
     dirtyDisplayList();
   }

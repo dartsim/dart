@@ -43,7 +43,7 @@ ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
                      osg::Node* _node)
   : mShape(_shape),
     mNode(_node),
-    mParent(_parent),
+    mParentEntity(_parent),
     mUtilized(true)
 {
   // Do nothing
@@ -76,13 +76,13 @@ const osg::Node* ShapeNode::getNode() const
 //==============================================================================
 EntityNode* ShapeNode::getParentEntityNode()
 {
-  return mParent;
+  return mParentEntity;
 }
 
 //==============================================================================
 const EntityNode* ShapeNode::getParentEntityNode() const
 {
-  return mParent;
+  return mParentEntity;
 }
 
 //==============================================================================

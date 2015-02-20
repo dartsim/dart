@@ -43,7 +43,7 @@
 #include <osg/Matrix>
 
 template<typename Scalar>
-osg::Matrix eigToOsg(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
+osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
 {
   // TODO(MXG): See if this can be made more efficient. osg::Matrix is
   // automatically initialized to Identity, which is a waste.
@@ -66,10 +66,17 @@ osg::Matrix eigToOsgMatrix(const Eigen::MatrixBase<Derived>& M)
 }
 
 //==============================================================================
-template<typename Scalar>
-osg::Vec3d eigToOsgVec(const Eigen::Matrix<Scalar, 3, 1>& vec)
+template<typename Derived>
+osg::Vec3d eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
 {
   return osg::Vec3d(vec[0], vec[1], vec[2]);
+}
+
+//==============================================================================
+template<typename Derived>
+osg::Vec4d eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
+{
+  return osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
 }
 
 #endif // OSGDART_UTILS_H

@@ -94,7 +94,7 @@ protected:
   osg::Node* const mNode;
 
   /// Pointer to the parent EntityNode of this ShapeNode
-  EntityNode* mParent;
+  EntityNode* mParentEntity;
 
   /// True iff this ShapeNode has been utilized on the latest update. If it has
   /// not, that is an indication that it is no longer being used and should be

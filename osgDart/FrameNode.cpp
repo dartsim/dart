@@ -76,9 +76,9 @@ void FrameNode::refresh(bool _relative, bool _recursive)
   mUtilized = true;
 
   if(_relative)
-    setMatrix(eigToOsg(mFrame->getRelativeTransform()));
+    setMatrix(eigToOsgMatrix(mFrame->getRelativeTransform()));
   else
-    setMatrix(eigToOsg(mFrame->getWorldTransform()));
+    setMatrix(eigToOsgMatrix(mFrame->getWorldTransform()));
 
   if(!_recursive)
     return;

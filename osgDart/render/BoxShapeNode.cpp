@@ -106,11 +106,11 @@ void BoxShapeNode::extractData(bool firstTime)
 {
   if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
-    setMatrix(eigToOsg(mShape->getLocalTransform()));
+    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
 
   if(nullptr == mGeode)
   {
-    mGeode = new BoxShapeGeode(mBoxShape, mParent);
+    mGeode = new BoxShapeGeode(mBoxShape, mParentEntity);
     addChild(mGeode);
     return;
   }
