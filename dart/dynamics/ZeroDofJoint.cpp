@@ -129,7 +129,7 @@ void ZeroDofJoint::resetCommands()
 }
 
 //==============================================================================
-void ZeroDofJoint::setPosition(size_t _index, double _position)
+void ZeroDofJoint::setPosition(size_t, double)
 {
   // Do nothing
 }
@@ -510,7 +510,8 @@ void ZeroDofJoint::addChildArtInertiaTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+                                              _childArtInertia);
 }
 
 //==============================================================================
@@ -519,7 +520,8 @@ void ZeroDofJoint::addChildArtInertiaImplicitTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
+  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+                                              _childArtInertia);
 }
 
 //==============================================================================
@@ -546,7 +548,7 @@ void ZeroDofJoint::addChildBiasForceTo(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(mT, _childBiasForce
+  _parentBiasForce += math::dAdInvT(getLocalTransform(), _childBiasForce
                                     + _childArtInertia*_childPartialAcc);
 }
 
@@ -558,7 +560,7 @@ void ZeroDofJoint::addChildBiasImpulseTo(
 {
   // Add child body's bias force to parent body's bias impulse. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(mT, _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
 }
 
 //==============================================================================

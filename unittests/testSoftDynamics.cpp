@@ -141,8 +141,8 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 
   MatrixXd skelM = MatrixXd::Zero(skelDof, skelDof);  // Mass matrix of skeleton
   MatrixXd M;  // Body mass
-  MatrixXd I;  // Body inertia
-  MatrixXd J;  // Body Jacobian
+  Eigen::Matrix6d I;  // Body inertia
+  math::Jacobian J;  // Body Jacobian
 
   for (size_t i = 0; i < _skel->getNumBodyNodes(); ++i)
   {
@@ -150,7 +150,7 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 
     int dof = body->getNumDependentGenCoords();
     I = body->getSpatialInertia();
-    J = body->getBodyJacobian();
+    J = body->getJacobian();
 
     EXPECT_EQ(I.rows(), 6);
     EXPECT_EQ(I.cols(), 6);

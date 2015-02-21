@@ -26,7 +26,7 @@ TEST(NEAREST_NEIGHBOR, 2D) {
     index.addPoints(flann::Matrix<double>((double*)p3.data(), 1, p3.size()));
 
     // Check the size of the tree
-    EXPECT_EQ(3, index.size());
+    EXPECT_EQ(3, (int)index.size());
 
     // Get the nearest neighbor index for a sample point
     Eigen::Vector2d sample (-2.26654, 2.2874);

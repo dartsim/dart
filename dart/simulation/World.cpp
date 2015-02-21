@@ -121,7 +121,6 @@ void World::step(bool _resetCommand)
 
     skel->computeForwardDynamicsRecursionPartB();
     skel->integrateVelocities(mTimeStep);
-    skel->computeForwardKinematics(false, true, false);
   }
 
   // Detect activated constraints and compute constraint impulses
@@ -140,7 +139,6 @@ void World::step(bool _resetCommand)
     }
 
     skel->integratePositions(mTimeStep);
-    skel->computeForwardDynamicsRecursionPartA();
 
     if (_resetCommand)
     {
@@ -214,7 +212,7 @@ size_t World::getNumSkeletons() const
 //==============================================================================
 std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 {
-  assert(_skeleton != NULL && "Invalid skeleton.");
+  assert(_skeleton != NULL && "Attempted to add NULL skeleton to world.");
 
   if(NULL == _skeleton)
   {
@@ -244,9 +242,9 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 {
-  assert(_skeleton != NULL && "Invalid skeleton.");
+  assert(_skeleton != NULL && "Attempted to remove NULL Skeleton from world");
 
   // Find index of _skeleton in mSkeleton.
   size_t i = 0;
@@ -260,8 +258,8 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
   // mSkeleton. We do nothing.
   if (i == mSkeletons.size())
   {
-    std::cout << "Skeleton [" << _skeleton->getName()
-              << "] is not in the world." << std::endl;
+    dtwarn << "Skeleton [" << _skeleton->getName()
+           << "] is not in the world.\n";
     return;
   }
 
@@ -276,14 +274,40 @@ void World::removeSkeleton(dynamics::Skeleton* _skeleton)
   // Remove _skeleton in mSkeletons and delete it.
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
+  // TODO(MXG): This approach invalidates the indices of all Skeletons in the
+  // vector that came after the one that was deleted. Now if the user attempts
+  // to access those Skeletons by their previously assigned indices, it will not
+  // work correctly. This isn't really a problem since the user has the freedom
+  // to always access Skeletons by name, but it might be worth mentioning in
+  // documentation that the user cannot expect the index of a Skeleton to remain
+  // valid after a deletion has happened.
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
 
   // Remove from NameManager
   mNameMgrForSkeletons.removeName(_skeleton->getName());
+}
 
+//==============================================================================
+void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+{
+  withdrawSkeleton(_skeleton);
   delete _skeleton;
+}
+
+//==============================================================================
+std::set<dynamics::Skeleton*> World::withdrawAllSkeletons()
+{
+  std::set<dynamics::Skeleton*> ptrs;
+  for(std::vector<dynamics::Skeleton*>::iterator it=mSkeletons.begin(),
+      end=mSkeletons.end(); it != end; ++it)
+    ptrs.insert(*it);
+
+  while (getNumSkeletons() > 0)
+    withdrawSkeleton(getSkeleton(0));
+
+  return ptrs;
 }
 
 //==============================================================================
@@ -297,6 +321,100 @@ void World::removeAllSkeletons()
 int World::getIndex(int _index) const
 {
   return mIndices[_index];
+}
+
+//==============================================================================
+dynamics::Entity* World::getEntity(size_t _index) const
+{
+  if(_index < mEntities.size())
+    return mEntities[_index];
+
+  return NULL;
+}
+
+//==============================================================================
+dynamics::Entity* World::getEntity(const std::string& _name) const
+{
+  return mNameMgrForEntities.getObject(_name);
+}
+
+//==============================================================================
+size_t World::getNumEntities() const
+{
+  return mEntities.size();
+}
+
+//==============================================================================
+std::string World::addEntity(dynamics::Entity* _entity)
+{
+  assert(_entity != NULL && "Attempted to add NULL Entity to world");
+
+  if(NULL == _entity)
+  {
+    dtwarn << "Attempting to add a nullptr Entity to the world!\n";
+    return "";
+  }
+
+  if( find(mEntities.begin(), mEntities.end(), _entity) != mEntities.end() )
+  {
+    std::cout << "Entity [" << _entity->getName()
+              << "] is already in the world." << std::endl;
+    return _entity->getName();
+  }
+
+  mEntities.push_back(_entity);
+  _entity->setName(mNameMgrForEntities.issueNewNameAndAdd(
+                     _entity->getName(), _entity));
+
+  return _entity->getName();
+}
+
+//==============================================================================
+void World::withdrawEntity(dynamics::Entity *_entity)
+{
+  assert(_entity != NULL && "Attempted to remove NULL entity from world");
+
+  std::vector<dynamics::Entity*>::iterator it =
+      find(mEntities.begin(), mEntities.end(), _entity);
+
+  if(it == mEntities.end())
+  {
+    dtwarn << "Entity [" << _entity->getName()
+           << "] is not in the world.\n";
+    return;
+  }
+
+  mEntities.erase(remove(mEntities.begin(), mEntities.end(), _entity),
+                  mEntities.end());
+  // TODO(MXG): Same issue as the one above for withdrawSkeleton()
+}
+
+//==============================================================================
+void World::removeEntity(dynamics::Entity* _entity)
+{
+  withdrawEntity(_entity);
+  delete _entity;
+}
+
+//==============================================================================
+std::set<dynamics::Entity*> World::withdrawAllEntities()
+{
+  std::set<dynamics::Entity*> ptrs;
+  for(std::vector<dynamics::Entity*>::iterator it=mEntities.begin(),
+      end=mEntities.end(); it != end; ++it)
+    ptrs.insert(*it);
+
+  while(getNumEntities() > 0)
+    withdrawEntity(getEntity(0));
+
+  return ptrs;
+}
+
+//==============================================================================
+void World::removeAllEntities()
+{
+  while(getNumEntities() > 0)
+    removeEntity(getEntity(0));
 }
 
 //==============================================================================

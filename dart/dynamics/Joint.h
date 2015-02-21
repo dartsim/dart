@@ -470,8 +470,17 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get transformation from parent body node to child body node
+  /// Get transformation from parent BodyNode to child BodyNode
   const Eigen::Isometry3d& getLocalTransform() const;
+
+  /// Get the velocity from the parent BodyNode to the child BodyNode
+  const Eigen::Vector6d& getLocalSpatialVelocity() const;
+
+  /// Get the acceleration from the parent BodyNode to the child BodyNode
+  const Eigen::Vector6d& getLocalSpatialAcceleration() const;
+
+  /// Get the J * q_dd of this joint
+  const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
 
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
@@ -552,23 +561,43 @@ protected:
                                     size_t _indexInJoint);
 
   /// Update the names of the joint's degrees of freedom. Used when setName() is
-  /// called with _rename_dofs set to true.
+  /// called with _renameDofs set to true.
   virtual void updateDegreeOfFreedomNames() = 0;
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Update transformation from parent body node to child body node
-  virtual void updateLocalTransform() = 0;
+  /// Update transformation from parent BodyNode to child BodyNode
+  virtual void updateLocalTransform() const = 0;
+
+  /// Update velocity from the parent BodyNode to the child BodyNode
+  virtual void updateLocalSpatialVelocity() const = 0;
+
+  /// Update acceleration from the parent BodyNode to the child BodyNode
+  virtual void updateLocalSpatialAcceleration() const = 0;
+
+  /// Update the J * q_dd of this joint
+  virtual void updateLocalPrimaryAcceleration() const = 0;
 
   /// Update generalized Jacobian from parent body node to child body
   /// node w.r.t. local generalized coordinate
-  virtual void updateLocalJacobian() = 0;
+  ///
+  /// The _mandatory argument can be set to false if the Jacobian update request
+  /// is due to a change in Joint positions, because not all Joint types have a
+  /// Local Jacobian that depends on their Joint positions, so a Local Jacobian
+  /// update would not actually be required.
+  virtual void updateLocalJacobian(bool _mandatory=true) const = 0;
 
   /// Update time derivative of generalized Jacobian from parent body
   /// node to child body node w.r.t. local generalized coordinate
-  virtual void updateLocalJacobianTimeDeriv() = 0;
+  ///
+  /// If the Local Jacobian Time Derivative of this Joint is zero, then this
+  /// function will be a no op.
+  virtual void updateLocalJacobianTimeDeriv() const = 0;
+
+  /// Tells the Skeleton to update the articulated inertia if it needs updating
+  void updateArticulatedInertia() const;
 
   /// Add joint velocity to _vel
   virtual void addVelocityTo(Eigen::Vector6d& _vel) = 0;
@@ -725,6 +754,15 @@ protected:
 
   /// \}
 
+  /// Notify that a position update is needed
+  void notifyPositionUpdate();
+
+  /// Notify that a velocity update is needed
+  void notifyVelocityUpdate();
+
+  /// Notify that an acceleration update is needed
+  void notifyAccelerationUpdate();
+
 protected:
   /// Joint name
   std::string mName;
@@ -745,11 +783,50 @@ protected:
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
   /// Local transformation
-  Eigen::Isometry3d mT;
+  ///
+  /// Do not use directly! Use getLocalTransform() to access this
+  mutable Eigen::Isometry3d mT;
 
-  /// Relative spatial velocity from parent body to child body where the
-  /// velocity is expressed in child body frame
-  Eigen::Vector6d mSpatialVelocity;
+  /// Relative spatial velocity from parent BodyNode to child BodyNode where the
+  /// velocity is expressed in child body Frame
+  ///
+  /// Do not use directly! Use getLocalSpatialVelocity() to access this
+  mutable Eigen::Vector6d mSpatialVelocity;
+
+  /// Relative spatial acceleration from parent BodyNode to child BodyNode where
+  /// the acceleration is expressed in the child body Frame
+  ///
+  /// Do not use directly! Use getLocalSpatialAcceleration() to access this
+  mutable Eigen::Vector6d mSpatialAcceleration;
+
+  /// J * q_dd
+  ///
+  /// Do not use directly! Use getLocalPrimaryAcceleration() to access this
+  mutable Eigen::Vector6d mPrimaryAcceleration;
+
+  /// True iff this joint's position has changed since the last call to
+  /// getLocalTransform()
+  mutable bool mNeedTransformUpdate;
+
+  /// True iff this joint's position or velocity has changed since the last call
+  /// to getLocalSpatialVelocity()
+  mutable bool mNeedSpatialVelocityUpdate;
+
+  /// True iff this joint's position, velocity, or acceleration has changed
+  /// since the last call to getLocalSpatialAcceleration()
+  mutable bool mNeedSpatialAccelerationUpdate;
+
+  /// True iff this joint's position, velocity, or acceleration has changed
+  /// since the last call to getLocalPrimaryAcceleration()
+  mutable bool mNeedPrimaryAccelerationUpdate;
+
+  /// True iff this joint's local Jacobian has not been updated since the last
+  /// position change
+  mutable bool mIsLocalJacobianDirty;
+
+  /// True iff this joint's local Jacobian time derivative has not been updated
+  /// since the last position or velocity change
+  mutable bool mIsLocalJacobianTimeDerivDirty;
 
   /// Transmitting wrench from parent body to child body expressed in child body
   DEPRECATED(4.3)

@@ -156,7 +156,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   EXPECT_EQ(groundSkel->getGravity(), world->getGravity());
   // assert(ground);
 
-  EXPECT_EQ(world->getNumSkeletons(), 2);
+  EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
   ConstraintSolver* cs = world->getConstraintSolver();
   CollisionDetector* cd = cs->getCollisionDetector();
@@ -197,7 +197,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
     {
       Contact contact = cd->getContact(j);
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
-      Vector3d vel1 = sphere->getWorldLinearVelocity(pos1);
+      Vector3d vel1 = sphere->getLinearVelocity(pos1);
 
 //      std::cout << "pos1:" << pos1.transpose() << std::endl;
 

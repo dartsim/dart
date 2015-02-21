@@ -89,8 +89,8 @@ TEST(FileInfoWorld, Basic)
   EXPECT_TRUE(recording2 != nullptr);
 
   // Check number of frames
-  EXPECT_EQ(recording1->getNumFrames(), numFrames);
-  EXPECT_EQ(recording2->getNumFrames(), numFrames);
+  EXPECT_EQ(recording1->getNumFrames(), (int)numFrames);
+  EXPECT_EQ(recording2->getNumFrames(), (int)numFrames);
 
   // Check number of skeletons
   size_t numSkeletons = recording1->getNumSkeletons();

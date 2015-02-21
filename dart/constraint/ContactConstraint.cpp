@@ -757,10 +757,10 @@ void ContactConstraint::getRelVelocity(double* _relVel)
     _relVel[i] = 0.0;
 
     if (mBodyNode1->isReactive())
-      _relVel[i] -= mJacobians1[i].dot(mBodyNode1->getBodyVelocity());
+      _relVel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
 
     if (mBodyNode2->isReactive())
-      _relVel[i] -= mJacobians2[i].dot(mBodyNode2->getBodyVelocity());
+      _relVel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
 //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
   }

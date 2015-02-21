@@ -45,7 +45,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2,
+UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1,
+                               const Eigen::Vector3d& _axis2,
                                const std::string& _name)
   : MultiDofJoint(_name)
 {
@@ -53,6 +54,7 @@ UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1, const Eigen::Vecto
   mAxis[1] = _axis1.normalized();
 
   updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -64,12 +66,14 @@ UniversalJoint::~UniversalJoint()
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAxis[0] = _axis.normalized();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAxis[1] = _axis.normalized();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -94,32 +98,34 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalTransform()
+void UniversalJoint::updateLocalTransform() const
 {
+  const Eigen::Vector2d& positions = getPositionsStatic();
   mT = mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(mPositions[0], mAxis[0])
-       * Eigen::AngleAxisd(mPositions[1], mAxis[1])
+       * Eigen::AngleAxisd(positions[0], mAxis[0])
+       * Eigen::AngleAxisd(positions[1], mAxis[1])
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobian()
+void UniversalJoint::updateLocalJacobian(bool) const
 {
   mJacobian.col(0) = math::AdTAngular(
                        mT_ChildBodyToJoint
-                       * math::expAngular(-mAxis[1] * mPositions[1]),
+                       * math::expAngular(-mAxis[1] * getPositionsStatic()[1]),
                                           mAxis[0]);
   mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
   assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobianTimeDeriv()
+void UniversalJoint::updateLocalJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1 = mJacobian.col(1) * mVelocities[1];
+  Eigen::Vector6d tmpV1 = getLocalJacobianStatic().col(1)
+                        * getVelocitiesStatic()[1];
 
-  Eigen::Isometry3d tmpT = math::expAngular(-mAxis[1] * mPositions[1]);
+  Eigen::Isometry3d tmpT = math::expAngular(-mAxis[1] * getPositionsStatic()[1]);
 
   Eigen::Vector6d tmpV2
       = math::AdTAngular(mT_ChildBodyToJoint * tmpT, mAxis[0]);

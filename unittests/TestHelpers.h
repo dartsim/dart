@@ -82,29 +82,35 @@ enum TypeOfDOF
 /******************************************************************************/
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
-bool equals(const Eigen::DenseBase<MATRIX>& A,
-            const Eigen::DenseBase<MATRIX>& B, double tol = 1e-5)
+bool equals(const Eigen::DenseBase<MATRIX>& _expected,
+            const Eigen::DenseBase<MATRIX>& _actual, double tol = 1e-5)
 {
-    // Get the matrix sizes and sanity check the call
-    const size_t n1 = A.cols(), m1 = A.rows();
-    const size_t n2 = B.cols(), m2 = B.rows();
-    if (m1 != m2 || n1 != n2)
-        return false;
+  // Get the matrix sizes and sanity check the call
+  const size_t n1 = _expected.cols(), m1 = _expected.rows();
+  const size_t n2 = _actual.cols(), m2 = _actual.rows();
+  if (m1 != m2 || n1 != n2)
+      return false;
 
-    // Check each index
-    for (size_t i = 0; i < m1; i++)
+  // Check each index
+  for (size_t i = 0; i < m1; i++)
+  {
+    for (size_t j = 0; j < n1; j++)
     {
-        for (size_t j = 0; j < n1; j++)
-        {
-            if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
-                return false;
-            else if (fabs(A(i,j) - B(i,j)) > tol)
-                return false;
-        }
+      if (boost::math::isnan(_expected(i,j)) ^ boost::math::isnan(_actual(i,j)))
+        return false;
+      else if (fabs(_expected(i,j)) > 1)
+      {
+        // Test relative error for values that are larger than 1
+        if (fabs( (_expected(i,j) - _actual(i,j))/_expected(i,j) ) > tol)
+          return false;
+      }
+      else if (fabs(_expected(i,j) - _actual(i,j)) > tol)
+          return false;
     }
+  }
 
-    // If no problems, the two matrices are equal
-    return true;
+  // If no problems, the two matrices are equal
+  return true;
 }
 
 /******************************************************************************/

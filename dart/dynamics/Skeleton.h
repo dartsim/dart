@@ -46,6 +46,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
+#include "dart/dynamics/Frame.h"
 
 namespace dart {
 namespace renderer {
@@ -279,8 +280,7 @@ public:
 
   /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
-  Eigen::VectorXd getPositionSegment(
-      const std::vector<size_t>& _id) const;
+  Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the positions
   void resetPositions();
@@ -310,8 +310,17 @@ public:
   /// Set generalized velocities
   void setVelocities(const Eigen::VectorXd& _velocities);
 
+  /// Set the generalized velocities of a segment of this Skeleton. The order of
+  /// input is determined by _id
+  void setVelocitySegment(const std::vector<size_t>& _id,
+                          const Eigen::VectorXd& _velocities);
+
   /// Get generalized velocities
   Eigen::VectorXd getVelocities() const;
+
+  /// Get the generalized velocities of a segment of this Skeleton. The returned
+  /// order of the velocities is determined by _id.
+  Eigen::VectorXd getVelocitySegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the velocities
   void resetVelocities();
@@ -342,8 +351,17 @@ public:
   /// Set generalized accelerations
   void setAccelerations(const Eigen::VectorXd& _accelerations);
 
+  /// Set the generalized accelerations of a segment of this Skeleton. The order
+  /// of input is determined by _id
+  void setAccelerationSegment(const std::vector<size_t>& _id,
+                              const Eigen::VectorXd& _accelerations);
+
   /// Get accelerations
   Eigen::VectorXd getAccelerations() const;
+
+  /// Get the generalized accelerations of a segment of this Skeleton. The
+  /// returned order of the accelerations is determined by _id
+  Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _id) const;
 
   /// Set zero all the accelerations
   void resetAccelerations();
@@ -569,19 +587,85 @@ public:
 
   //----------------------------------------------------------------------------
 
+  /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
+  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+
+  /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
+  /// World Frame)
+  Eigen::Vector6d getCOMSpatialVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM linear velocity in terms of any Frame (default is
+  /// World Frame)
+  Eigen::Vector3d getCOMLinearVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM spatial acceleration in terms of any Frame (default
+  /// is World Frame)
+  Eigen::Vector6d getCOMSpatialAcceleration(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM linear acceleration in terms of any Frame (default
+  /// is World Frame)
+  Eigen::Vector3d getCOMLinearAcceleration(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM Jacobian in terms of any Frame (default is World
+  /// Frame)
+  math::Jacobian getCOMJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM Linear Jacobian in terms of any Frame (default is
+  /// World Frame)
+  math::LinearJacobian getCOMLinearJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM Jacobian spatial time derivative in terms of any
+  /// Frame (default is World Frame).
+  ///
+  /// NOTE: Since this is a spatial time derivative, it is only meant to be used
+  /// with spatial acceleration vectors. If you are using classical linear
+  /// vectors, then use getCOMLinearJacobianDeriv() instead.
+  math::Jacobian getCOMJacobianSpatialDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the Skeleton's COM Linear Jacobian time derivative in terms of any
+  /// Frame (default is World Frame).
+  ///
+  /// NOTE: Since this is a classical time derivative, it is only meant to be
+  /// used with classical acceleration vectors. If you are using spatial
+  /// vectors, then use getCOMJacobianSpatialDeriv() instead.
+  math::LinearJacobian getCOMLinearJacobianDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
   /// Get skeleton's COM w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOM() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOM();
 
   /// Get skeleton's COM velocity w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMLinearVelocity() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMVelocity();
 
   /// Get skeleton's COM acceleration w.r.t. world frame.
+  ///
+  /// Deprecated in 4.4. Please use getCOMAcceleration() instead
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration();
 
   /// Get skeleton's COM Jacobian w.r.t. world frame.
+  DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobian();
 
   /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
+  DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
 
   /// Get kinetic energy of this skeleton.
@@ -606,12 +690,18 @@ public:
 
 public:
   /// Compute recursion part A of forward dynamics
+  ///
+  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
+  DEPRECATED(4.4)
   void computeForwardDynamicsRecursionPartA();
 
   /// Compute recursion part B of forward dynamics
   void computeForwardDynamicsRecursionPartB();
 
   /// Compute recursion part A of inverse dynamics
+  ///
+  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
+  DEPRECATED(4.4)
   void computeInverseDynamicsRecursionA();
 
   /// Compute recursion part B of inverse dynamics
@@ -623,6 +713,7 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
   friend class BodyNode;
+  friend class SoftBodyNode;
   friend class Joint;
   friend class DegreeOfFreedom;
 
@@ -632,6 +723,13 @@ protected:
 
   /// Remove a joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
+
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void notifyArticulatedInertiaUpdate();
+
+  /// Update the articulated inertias of the skeleton
+  void updateArticulatedInertia() const;
 
   /// Update mass matrix of the skeleton.
   void updateMassMatrix();
@@ -661,12 +759,12 @@ protected:
   /// Update gravity force vector of the skeleton.
   void updateGravityForces();
 
-  /// Update combined vector of the skeletong.
+  /// Update combined vector of the skeleton.
   /// \remarks Please use updateCoriolisAndGravityForces() instead.
   DEPRECATED(4.2)
   virtual void updateCombinedVector();
 
-  /// Update combined vector of the skeletong.
+  /// Update combined vector of the skeleton.
   void updateCoriolisAndGravityForces();
 
   /// update external force vector to generalized forces.
@@ -760,7 +858,7 @@ protected:
   double mTotalMass;
 
   /// Dirty flag for articulated body inertia
-  bool mIsArticulatedInertiaDirty;
+  mutable bool mIsArticulatedInertiaDirty;
 
   /// Mass matrix for the skeleton.
   Eigen::MatrixXd mM;

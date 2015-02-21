@@ -52,6 +52,7 @@ PlanarJoint::PlanarJoint(const std::string& _name)
 {
   setXYPlane();
   updateDegreeOfFreedomNames();
+  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -69,6 +70,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -81,6 +83,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -93,6 +96,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -120,6 +124,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -184,12 +189,13 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalTransform()
+void PlanarJoint::updateLocalTransform() const
 {
+  const Eigen::Vector3d& positions = getPositionsStatic();
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTransAxis1 * mPositions[0])
-       * Eigen::Translation3d(mTransAxis2 * mPositions[1])
-       * math::expAngular    (mRotAxis    * mPositions[2])
+       * Eigen::Translation3d(mTransAxis1 * positions[0])
+       * Eigen::Translation3d(mTransAxis2 * positions[1])
+       * math::expAngular    (mRotAxis    * positions[2])
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -197,7 +203,7 @@ void PlanarJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobian()
+void PlanarJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mTransAxis1;
@@ -206,8 +212,8 @@ void PlanarJoint::updateLocalJacobian()
 
   mJacobian.leftCols<2>()
       = math::AdTJacFixed(mT_ChildBodyToJoint
-                          * math::expAngular(mRotAxis * -mPositions[2]),
-                          J.leftCols<2>());
+                        * math::expAngular(mRotAxis * -getPositionsStatic()[2]),
+                        J.leftCols<2>());
   mJacobian.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
 
   // Verification
@@ -215,25 +221,27 @@ void PlanarJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobianTimeDeriv()
+void PlanarJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mTransAxis1;
   J.block<3, 1>(3, 1) = mTransAxis2;
   J.block<3, 1>(0, 2) = mRotAxis;
 
+  const Eigen::Matrix<double, 6, 3>& Jacobian = getLocalJacobianStatic();
+  const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
-      = -math::ad(mJacobian.col(2) * mVelocities[2],
+      = -math::ad(Jacobian.col(2) * velocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mPositions[2]),
+                                               * -getPositionsStatic()[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
-      = -math::ad(mJacobian.col(2) * mVelocities[2],
+      = -math::ad(Jacobian.col(2) * velocities[2],
                   math::AdT(mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
-                                               * -mPositions[2]),
+                                               * -getPositionsStatic()[2]),
                             J.col(1)));
 
   assert(mJacobianDeriv.col(2) == Eigen::Vector6d::Zero());
