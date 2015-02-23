@@ -151,9 +151,9 @@ int main()
   node->C = shape3;
   shape3->setDataVariance(Shape::DYNAMIC_COLOR);
   node->S = shape1;
-  shape1->setDataVariance(Shape::DYNAMIC_SCALING);
+  shape1->setDataVariance(Shape::DYNAMIC_PRIMITIVE);
   node->SC = shape4;
-  shape4->setDataVariance(Shape::DYNAMIC_SCALING | Shape::DYNAMIC_COLOR);
+  shape4->setDataVariance(Shape::DYNAMIC_PRIMITIVE | Shape::DYNAMIC_COLOR);
 
   osgViewer::Viewer viewer;
   viewer.getCamera()->setClearColor(osg::Vec4(0.9,0.9,0.9,1.0));

@@ -37,61 +37,62 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgDart/render/BoxShapeNode.h"
+#include "osgDart/render/PlaneShapeNode.h"
 #include "osgDart/utils.h"
 
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/PlaneShape.h"
 
 namespace osgDart {
 namespace render {
 
-class BoxShapeGeode : public ShapeNode, public osg::Geode
+class PlaneShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* parent);
+  PlaneShapeGeode(dart::dynamics::PlaneShape* shape, EntityNode* parent);
 
   void refresh();
   void extractData();
 
 protected:
 
-  virtual ~BoxShapeGeode();
+  virtual ~PlaneShapeGeode();
 
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeDrawable* mDrawable;
+  dart::dynamics::PlaneShape* mPlaneShape;
+  PlaneShapeDrawable* mDrawable;
 
 };
 
 //==============================================================================
-class BoxShapeDrawable : public osg::ShapeDrawable
+class PlaneShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape, BoxShapeGeode* parent);
+  PlaneShapeDrawable(dart::dynamics::PlaneShape* shape, PlaneShapeGeode* parent);
 
   void refresh(bool firstTime);
 
 protected:
 
-  virtual ~BoxShapeDrawable();
+  virtual ~PlaneShapeDrawable();
 
-  dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mParent;
+  dart::dynamics::PlaneShape* mPlaneShape;
+  PlaneShapeGeode* mParent;
 
 };
 
 //==============================================================================
-BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent)
+PlaneShapeNode::PlaneShapeNode(dart::dynamics::PlaneShape* shape,
+                               EntityNode* parent)
   : ShapeNode(shape, parent, this),
-    mBoxShape(shape),
+    mPlaneShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
 }
 
 //==============================================================================
-void BoxShapeNode::refresh()
+void PlaneShapeNode::refresh()
 {
   mUtilized = true;
 
@@ -102,7 +103,7 @@ void BoxShapeNode::refresh()
 }
 
 //==============================================================================
-void BoxShapeNode::extractData(bool firstTime)
+void PlaneShapeNode::extractData(bool firstTime)
 {
   if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
@@ -110,7 +111,7 @@ void BoxShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new BoxShapeGeode(mBoxShape, mParentEntity);
+    mGeode = new PlaneShapeGeode(mPlaneShape, mParentEntity);
     addChild(mGeode);
     return;
   }
@@ -119,23 +120,23 @@ void BoxShapeNode::extractData(bool firstTime)
 }
 
 //==============================================================================
-BoxShapeNode::~BoxShapeNode()
+PlaneShapeNode::~PlaneShapeNode()
 {
   // Do nothing
 }
 
 //==============================================================================
-BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
-                             EntityNode* parent)
+PlaneShapeGeode::PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
+                                 EntityNode* parent)
   : ShapeNode(shape, parent, this),
-    mBoxShape(shape),
+    mPlaneShape(shape),
     mDrawable(nullptr)
 {
   extractData();
 }
 
 //==============================================================================
-void BoxShapeGeode::refresh()
+void PlaneShapeGeode::refresh()
 {
   mUtilized = true;
 
@@ -143,11 +144,11 @@ void BoxShapeGeode::refresh()
 }
 
 //==============================================================================
-void BoxShapeGeode::extractData()
+void PlaneShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape, this);
+    mDrawable = new PlaneShapeDrawable(mPlaneShape, this);
     addDrawable(mDrawable);
     return;
   }
@@ -156,48 +157,51 @@ void BoxShapeGeode::extractData()
 }
 
 //==============================================================================
-BoxShapeGeode::~BoxShapeGeode()
+PlaneShapeGeode::~PlaneShapeGeode()
 {
   // Do nothing
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
-                                   BoxShapeGeode* parent)
-  : mBoxShape(shape),
+PlaneShapeDrawable::PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
+                                       PlaneShapeGeode* parent)
+  : mPlaneShape(shape),
     mParent(parent)
 {
   refresh(true);
 }
 
 //==============================================================================
-void BoxShapeDrawable::refresh(bool firstTime)
+void PlaneShapeDrawable::refresh(bool firstTime)
 {
-  if(mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mPlaneShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
-    const Eigen::Vector3d& d = mBoxShape->getSize();
-    osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
-                                                    d[0], d[1], d[2]);
+    const Eigen::Vector3d& n = mPlaneShape->getNormal();
+    const Eigen::Vector3d& p = mPlaneShape->getPoint();
+    osg::ref_ptr<osg::InfinitePlane> osg_shape = new osg::InfinitePlane;
+    static_cast<osg::Plane&>(*osg_shape) =
+        osg::Plane(eigToOsgVec3(n), eigToOsgVec3(p));
+
     setShape(osg_shape);
     dirtyDisplayList();
   }
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    const Eigen::Vector3d& c = mBoxShape->getColor();
+    const Eigen::Vector3d& c = mPlaneShape->getColor();
     setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
   }
 }
 
 //==============================================================================
-BoxShapeDrawable::~BoxShapeDrawable()
+PlaneShapeDrawable::~PlaneShapeDrawable()
 {
   // Do nothing
 }

@@ -70,10 +70,10 @@ public:
   enum DataVariance {
     STATIC=0,                   /// No data will ever change
     DYNAMIC_TRANSFORM = 1 << 1, /// The relative transform of the Shape might change
-    DYNAMIC_SCALING   = 1 << 2, /// The scaling of the shape (or sizes for primitives) might change
+    DYNAMIC_PRIMITIVE = 1 << 2, /// The primitive properties (such as x/y/z scaling) of the shape might change (this enum is not relevant for mesh shapes)
     DYNAMIC_COLOR     = 1 << 3, /// The coloring of the shape might change
-    DYNAMIC_VERTICES  = 1 << 4, /// Vertex positions of a mesh might change (this does not include adding or removing vertices)
-    DYNAMIC_ELEMENTS  = 1 << 5, /// The number of elements and/or arrangement of elements might change (this includes adding and removing vertices)
+    DYNAMIC_VERTICES  = 1 << 4, /// Vertex positions of a mesh might change (this does not include adding or removing vertices) (this enum is not relevant for primitive shapes)
+    DYNAMIC_ELEMENTS  = 1 << 5, /// The number of elements and/or arrangement of elements might change (this includes adding and removing vertices)  (this enum is not relevant for primitive shapes)
     DYNAMIC           = 0xFF    /// All data is subject to changing
   };
 

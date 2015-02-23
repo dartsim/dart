@@ -39,12 +39,14 @@
 #include "osgDart/render/BoxShapeNode.h"
 #include "osgDart/render/EllipsoidShapeNode.h"
 #include "osgDart/render/CylinderShapeNode.h"
+#include "osgDart/render/PlaneShapeNode.h"
 
 #include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/PlaneShape.h"
 
 namespace osgDart {
 
@@ -184,6 +186,15 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
         node = new render::CylinderShapeNode(cs, this);
       else
         warnAboutUnsuccessfulCast("CylinderShape");
+      break;
+    }
+    case Shape::PLANE:
+    {
+      PlaneShape* ps = dynamic_cast<PlaneShape*>(shape);
+      if(ps)
+        node = new render::PlaneShapeNode(ps, this);
+      else
+        warnAboutUnsuccessfulCast("PlaneShape");
       break;
     }
     default:

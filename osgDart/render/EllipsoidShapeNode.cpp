@@ -118,7 +118,7 @@ double smallestComponent(const Eigen::Vector3d& v)
 void EllipsoidShapeNode::extractData(bool firstTime)
 {
   if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime )
   {
     setMatrix(osg::Matrix::scale(eigToOsgVec3(
@@ -198,7 +198,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     osg::ref_ptr<osg::Sphere> osg_shape = nullptr;

@@ -180,7 +180,7 @@ void CylinderShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_SCALING)
+  if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     double R = mCylinderShape->getRadius();
