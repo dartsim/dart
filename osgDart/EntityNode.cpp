@@ -38,10 +38,13 @@
 #include "osgDart/render/ShapeNode.h"
 #include "osgDart/render/BoxShapeNode.h"
 #include "osgDart/render/EllipsoidShapeNode.h"
+#include "osgDart/render/CylinderShapeNode.h"
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
 
 namespace osgDart {
 
@@ -140,6 +143,15 @@ void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
 }
 
 //==============================================================================
+static void warnAboutUnsuccessfulCast(const std::string& shapeType)
+{
+  dtwarn << "[osgDart::EntityNode::createShapeNode] Shape claimed to be '"
+         << shapeType << "' but it failed to be dynamically cast to that type. "
+         << "It will not be added to the OSG tree, "
+         << "and therefore will not be rendered\n";
+}
+
+//==============================================================================
 void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 {
   using namespace dart::dynamics;
@@ -152,6 +164,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
       BoxShape* bs = dynamic_cast<BoxShape*>(shape);
       if(bs)
         node = new render::BoxShapeNode(bs, this);
+      else
+        warnAboutUnsuccessfulCast("BoxShape");
       break;
     }
     case Shape::ELLIPSOID:
@@ -159,6 +173,17 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
       EllipsoidShape* es = dynamic_cast<EllipsoidShape*>(shape);
       if(es)
         node = new render::EllipsoidShapeNode(es, this);
+      else
+        warnAboutUnsuccessfulCast("EllipsoidShape");
+      break;
+    }
+    case Shape::CYLINDER:
+    {
+      CylinderShape* cs = dynamic_cast<CylinderShape*>(shape);
+      if(cs)
+        node = new render::CylinderShapeNode(cs, this);
+      else
+        warnAboutUnsuccessfulCast("CylinderShape");
       break;
     }
     default:
