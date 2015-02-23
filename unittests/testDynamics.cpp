@@ -435,9 +435,9 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
 #ifndef NDEBUG  // Debug mode
-  int nTestItr = 10;
-#else
   int nTestItr = 1;
+#else
+  int nTestItr = 100;
 #endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
@@ -957,7 +957,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 10;
+  size_t nRandomItr = 1;
 #else
   size_t nRandomItr = 100;
 #endif
