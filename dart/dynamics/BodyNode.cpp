@@ -1186,9 +1186,9 @@ void BodyNode::init(Skeleton* _skeleton)
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
   size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (size_t i = 0; i < nDepGenCoordIndices - 1; i++)
+  for (size_t i = 0; i < nDepGenCoordIndices; ++i)
   {
-    for (size_t j = i + 1; j < nDepGenCoordIndices; j++)
+    for (size_t j = i + 1; j < nDepGenCoordIndices; ++j)
     {
       assert(mDependentGenCoordIndices[i] !=
           mDependentGenCoordIndices[j] &&
@@ -2191,6 +2191,7 @@ void BodyNode::_updateBodyJacobianSpatialDeriv() const
     return;
 
   const size_t numLocalDOFs = mParentJoint->getNumDofs();
+  assert(getNumDependentGenCoords() >= numLocalDOFs);
   const size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
   // Parent Jacobian
@@ -2240,6 +2241,7 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
     return;
 
   const size_t numLocalDOFs = mParentJoint->getNumDofs();
+  assert(getNumDependentGenCoords() >= numLocalDOFs);
   const size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
 

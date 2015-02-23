@@ -70,7 +70,7 @@ Eigen::Vector6d FreeJoint::convertToPositions(const Eigen::Isometry3d& _tf)
 Eigen::Isometry3d FreeJoint::convertToTransform(
     const Eigen::Vector6d& _positions)
 {
-  Eigen::Isometry3d tf;
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.linear() = math::expMapRot(_positions.head<3>());
   tf.translation() = _positions.tail<3>();
   return tf;
