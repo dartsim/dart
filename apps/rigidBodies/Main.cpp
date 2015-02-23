@@ -1,5 +1,5 @@
 #include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
+#include "build/dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 #include "MyWindow.h"
 #include <iostream>

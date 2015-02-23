@@ -155,8 +155,6 @@
                    <axis>
                     <xyz>0.0 1.0 0.0</xyz>
                 </axis>
-                <init_pos>0.0</init_pos>
-                <init_vel>0.0</init_vel>
             </joint>
             <joint type="revolute" name="joint 6">
                 <parent>right</parent>
