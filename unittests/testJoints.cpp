@@ -417,7 +417,12 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
   double simTime = 2.0;
+#endif
+
   double timeStep = myWorld->getTimeStep();
   int nSteps = simTime / timeStep;
 
