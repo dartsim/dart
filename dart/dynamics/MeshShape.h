@@ -59,6 +59,11 @@ public:
   /// \brief
   const aiScene* getMesh() const;
 
+  /// Update positions of the vertices or the elements. By default, this does
+  /// nothing; you must extend the MeshShape class and implement your own
+  /// version of this function if you want
+  virtual void update();
+
   /// \brief
   void setMesh(const aiScene* _mesh);
 

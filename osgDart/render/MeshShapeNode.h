@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
+ *            Pete Vieira <pete.vieira@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,62 +35,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_H_
-#define DART_DYNAMICS_SOFTMESHSHAPE_H_
+#ifndef OSGDART_RENDER_MESHSHAPENODE_H
+#define OSGDART_RENDER_MESHSHAPENODE_H
 
-#include <assimp/scene.h>
-#include "dart/dynamics/Shape.h"
-#include <Eigen/Dense>
+#include <map>
+
+#include <osg/MatrixTransform>
+
+#include "osgDart/render/ShapeNode.h"
+
+struct aiNode;
 
 namespace dart {
 namespace dynamics {
+class MeshShape;
+} // namespace dynamics
+} // namespace dart
 
-class SoftBodyNode;
+namespace osgDart {
+namespace render {
 
-// TODO(JS): Implement
-class SoftMeshShape : public Shape
+class osgAiNode;
+class MeshShapeGeode;
+class MeshShapeGeometry;
+
+class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
-  /// \brief Constructor.
-  explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
 
-  /// \brief Destructor.
-  virtual ~SoftMeshShape();
+  MeshShapeNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity);
 
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
-
-  /// Get the SoftBodyNode that is associated with this SoftMeshShape
-  const SoftBodyNode* getSoftBodyNode() const;
-
-  /// \brief Update positions of the vertices using the parent soft body node.
-  void update();
-
-  // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
-
-  // Documentation inherited.
-  virtual void draw(
-      renderer::RenderInterface* _ri      = NULL,
-      const Eigen::Vector4d&     _col     = Eigen::Vector4d::Ones(),
-      bool                       _default = true) const;
+  void refresh();
+  void extractData(bool firstTime);
 
 protected:
-  // Documentation inherited.
-  virtual void computeVolume();
 
-private:
-  /// \brief Build mesh using SoftBodyNode data
-  void _buildMesh();
+  virtual ~MeshShapeNode();
 
-  /// \brief
-  SoftBodyNode* mSoftBodyNode;
+  dart::dynamics::MeshShape* mMeshShape;
+  osgAiNode* mRootAiNode;
 
-  /// \brief
-  aiMesh* mAssimpMesh;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace render
+} // namespace osgDart
 
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_
+#endif // OSGDART_RENDER_MESHSHAPENODE_H

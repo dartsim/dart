@@ -40,6 +40,7 @@
 #include "osgDart/render/EllipsoidShapeNode.h"
 #include "osgDart/render/CylinderShapeNode.h"
 #include "osgDart/render/PlaneShapeNode.h"
+#include "osgDart/render/MeshShapeNode.h"
 
 #include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
@@ -47,6 +48,7 @@
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/MeshShape.h"
 
 namespace osgDart {
 
@@ -195,6 +197,16 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
         node = new render::PlaneShapeNode(ps, this);
       else
         warnAboutUnsuccessfulCast("PlaneShape");
+      break;
+    }
+    case Shape::MESH:
+    {
+      std::cout << "recognized a mesh shape" << std::endl;
+      MeshShape* ms = dynamic_cast<MeshShape*>(shape);
+      if(ms)
+        node = new render::MeshShapeNode(ms, this);
+      else
+        warnAboutUnsuccessfulCast("MeshShape");
       break;
     }
     default:

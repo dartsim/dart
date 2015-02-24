@@ -72,6 +72,11 @@ const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
+void MeshShape::update()
+{
+  // Do nothing
+}
+
 void MeshShape::setMesh(const aiScene* _mesh) {
   assert(_mesh);
   mMesh = _mesh;

@@ -121,9 +121,11 @@ void EllipsoidShapeNode::extractData(bool firstTime)
      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime )
   {
-    setMatrix(osg::Matrix::scale(eigToOsgVec3(
-    mEllipsoidShape->getSize()/smallestComponent(mEllipsoidShape->getSize())))
-              * eigToOsgMatrix(mShape->getLocalTransform()));
+    Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
+    const Eigen::Vector3d& s =
+       mEllipsoidShape->getSize()/smallestComponent(mEllipsoidShape->getSize());
+    S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
+    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()*S));
   }
 
   if(nullptr == mGeode)

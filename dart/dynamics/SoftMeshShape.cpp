@@ -53,6 +53,7 @@ SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
   // Build mesh here using soft body node
   // TODO(JS): Not implemented.
   _buildMesh();
+  mVariance = DYNAMIC_VERTICES;
 }
 
 SoftMeshShape::~SoftMeshShape()
@@ -63,6 +64,11 @@ SoftMeshShape::~SoftMeshShape()
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
   return mAssimpMesh;
+}
+
+const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
+{
+  return mSoftBodyNode;
 }
 
 Eigen::Matrix3d SoftMeshShape::computeInertia(double _mass) const
@@ -123,10 +129,10 @@ void SoftMeshShape::_buildMesh()
 
 void SoftMeshShape::update()
 {
-  int nVertices = mSoftBodyNode->getNumPointMasses();
+  size_t nVertices = mSoftBodyNode->getNumPointMasses();
 
   aiVector3D itAIVector3d;
-  for (int i = 0; i < nVertices; ++i)
+  for (size_t i = 0; i < nVertices; ++i)
   {
     PointMass* itPointMass        = mSoftBodyNode->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();

@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,62 +34,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_H_
-#define DART_DYNAMICS_SOFTMESHSHAPE_H_
+#include <osgViewer/Viewer>
 
-#include <assimp/scene.h>
-#include "dart/dynamics/Shape.h"
-#include <Eigen/Dense>
+#include "osgDart/WorldNode.h"
 
-namespace dart {
-namespace dynamics {
+#include "dart/dart.h"
 
-class SoftBodyNode;
-
-// TODO(JS): Implement
-class SoftMeshShape : public Shape
+int main()
 {
-public:
-  /// \brief Constructor.
-  explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
+  dart::utils::DartLoader loader;
+  dart::simulation::World* world = new dart::simulation::World;
+  dart::dynamics::Skeleton* robot =
+      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+  dart::dynamics::Skeleton* ground =
+      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
+  world->addSkeleton(robot);
+  world->addSkeleton(ground);
 
-  /// \brief Destructor.
-  virtual ~SoftMeshShape();
+  assert(world != nullptr);
 
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
+  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
-  /// Get the SoftBodyNode that is associated with this SoftMeshShape
-  const SoftBodyNode* getSoftBodyNode() const;
+  osgViewer::Viewer viewer;
+  viewer.getCamera()->setClearColor(osg::Vec4(0.9, 0.9, 0.9, 1.0));
+  viewer.setSceneData(node);
 
-  /// \brief Update positions of the vertices using the parent soft body node.
-  void update();
+  viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
-
-  // Documentation inherited.
-  virtual void draw(
-      renderer::RenderInterface* _ri      = NULL,
-      const Eigen::Vector4d&     _col     = Eigen::Vector4d::Ones(),
-      bool                       _default = true) const;
-
-protected:
-  // Documentation inherited.
-  virtual void computeVolume();
-
-private:
-  /// \brief Build mesh using SoftBodyNode data
-  void _buildMesh();
-
-  /// \brief
-  SoftBodyNode* mSoftBodyNode;
-
-  /// \brief
-  aiMesh* mAssimpMesh;
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_
+  viewer.run();
+}
