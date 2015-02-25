@@ -68,7 +68,7 @@ class BoxShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape, BoxShapeGeode* parent);
+  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
 
   void refresh(bool firstTime);
 
@@ -77,7 +77,6 @@ protected:
   virtual ~BoxShapeDrawable();
 
   dart::dynamics::BoxShape* mBoxShape;
-  BoxShapeGeode* mParent;
 
 };
 
@@ -147,7 +146,7 @@ void BoxShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape, this);
+    mDrawable = new BoxShapeDrawable(mBoxShape);
     addDrawable(mDrawable);
     return;
   }
@@ -162,10 +161,8 @@ BoxShapeGeode::~BoxShapeGeode()
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
-                                   BoxShapeGeode* parent)
-  : mBoxShape(shape),
-    mParent(parent)
+BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
+  : mBoxShape(shape)
 {
   refresh(true);
 }

@@ -45,10 +45,6 @@
 
 #include "dart/dynamics/MeshShape.h"
 
-
-
-#include <iostream>
-
 namespace osgDart {
 namespace render {
 
@@ -300,15 +296,13 @@ void MeshShapeGeode::refresh()
 }
 
 //==============================================================================
-void MeshShapeGeode::extractData(bool firstTime)
+void MeshShapeGeode::extractData(bool)
 {
-  std::cout << "Extracting MeshShapeGeode" << std::endl;
   clearChildUtilizationFlags();
 
   const aiScene* scene = mMeshShape->getMesh();
   for(size_t i=0; i<mAiNode->mNumMeshes; ++i)
   {
-    std::cout << "Cylcing through meshes (" << i << ":" << mAiNode->mNumMeshes << ")" << std::endl;
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 
     std::map<const aiMesh*,MeshShapeGeometry*>::iterator it =
@@ -316,7 +310,6 @@ void MeshShapeGeode::extractData(bool firstTime)
 
     if(it == mMeshes.end())
     {
-      std::cout << "need a new MeshShapeGeometry" << std::endl;
       MeshShapeGeometry* newMesh =
           new MeshShapeGeometry(mMeshShape, mParentEntity, this, mesh);
       addDrawable(newMesh);
@@ -388,7 +381,6 @@ void MeshShapeGeometry::refresh()
 //==============================================================================
 void MeshShapeGeometry::extractData(bool firstTime)
 {
-  std::cout << "Extracting MeshShapeGeometry" << std::endl;
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
@@ -454,10 +446,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
     setVertexArray(mVertices);
     if(mAiMesh->mNormals)
-    {
-      setNormalArray(mNormals);
-      setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
-    }
+      setNormalArray(mNormals, osg::Array::BIND_PER_VERTEX);
   }
 
   if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
@@ -528,7 +517,6 @@ MeshShapeGeometry::~MeshShapeGeometry()
 {
   // Do nothing
 }
-
 
 } // render
 } // osgDart

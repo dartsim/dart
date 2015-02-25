@@ -127,7 +127,7 @@ public:
   const Eigen::Vector3i& getFace(size_t _idx) const;
 
   /// \brief
-  size_t getNumFaces();
+  size_t getNumFaces() const;
 
   // Documentation inherited.
   virtual void clearConstraintImpulse();

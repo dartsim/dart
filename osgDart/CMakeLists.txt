@@ -32,7 +32,7 @@ if(${OPENSCENEGRAPH_FOUND})
     COMPONENT headers
   )
 
-  #add_subdirectory(render)
+  add_subdirectory(render)
   add_subdirectory(examples)
 
 else(${OPENSCENEGRAPH_FOUND})

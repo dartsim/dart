@@ -41,6 +41,8 @@
 #include "osgDart/render/CylinderShapeNode.h"
 #include "osgDart/render/PlaneShapeNode.h"
 #include "osgDart/render/MeshShapeNode.h"
+#include "osgDart/render/SoftMeshShapeNode.h"
+#include "osgDart/render/WarningShapeNode.h"
 
 #include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
@@ -49,6 +51,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/SoftMeshShape.h"
 
 namespace osgDart {
 
@@ -147,10 +150,12 @@ void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
 }
 
 //==============================================================================
-static void warnAboutUnsuccessfulCast(const std::string& shapeType)
+static void warnAboutUnsuccessfulCast(const std::string& shapeType,
+                                      const std::string& entityName)
 {
-  dtwarn << "[osgDart::EntityNode::createShapeNode] Shape claimed to be '"
-         << shapeType << "' but it failed to be dynamically cast to that type. "
+  dtwarn << "[osgDart::EntityNode::createShapeNode] A Shape in '" << entityName
+         << "' claimed to be a '" << shapeType << "' but it failed to be "
+         << "dynamically cast to that type. "
          << "It will not be added to the OSG tree, "
          << "and therefore will not be rendered\n";
 }
@@ -169,47 +174,65 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
       if(bs)
         node = new render::BoxShapeNode(bs, this);
       else
-        warnAboutUnsuccessfulCast("BoxShape");
+        warnAboutUnsuccessfulCast("BoxShape", mEntity->getName());
       break;
     }
+
     case Shape::ELLIPSOID:
     {
       EllipsoidShape* es = dynamic_cast<EllipsoidShape*>(shape);
       if(es)
         node = new render::EllipsoidShapeNode(es, this);
       else
-        warnAboutUnsuccessfulCast("EllipsoidShape");
+        warnAboutUnsuccessfulCast("EllipsoidShape", mEntity->getName());
       break;
     }
+
     case Shape::CYLINDER:
     {
       CylinderShape* cs = dynamic_cast<CylinderShape*>(shape);
       if(cs)
         node = new render::CylinderShapeNode(cs, this);
       else
-        warnAboutUnsuccessfulCast("CylinderShape");
+        warnAboutUnsuccessfulCast("CylinderShape", mEntity->getName());
       break;
     }
+
     case Shape::PLANE:
     {
       PlaneShape* ps = dynamic_cast<PlaneShape*>(shape);
       if(ps)
         node = new render::PlaneShapeNode(ps, this);
       else
-        warnAboutUnsuccessfulCast("PlaneShape");
+        warnAboutUnsuccessfulCast("PlaneShape", mEntity->getName());
       break;
     }
+
     case Shape::MESH:
     {
-      std::cout << "recognized a mesh shape" << std::endl;
       MeshShape* ms = dynamic_cast<MeshShape*>(shape);
       if(ms)
         node = new render::MeshShapeNode(ms, this);
       else
-        warnAboutUnsuccessfulCast("MeshShape");
+        warnAboutUnsuccessfulCast("MeshShape", mEntity->getName());
       break;
     }
+
+    case Shape::SOFT_MESH:
+    {
+      SoftMeshShape* sms = dynamic_cast<SoftMeshShape*>(shape);
+      if(sms)
+        node = new render::SoftMeshShapeNode(sms, this);
+      else
+        warnAboutUnsuccessfulCast("SoftMeshShape", mEntity->getName());
+      break;
+    }
+
     default:
+      node = new render::WarningShapeNode(shape, this);
+      // TODO(MXG): Should we create a WarningShapeNode for unsuccessful
+      // dynamic cast attempts as well? That would avoid spamming the error
+      // message.
       break;
   }
 

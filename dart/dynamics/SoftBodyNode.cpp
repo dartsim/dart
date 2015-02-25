@@ -247,7 +247,7 @@ const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 }
 
 //==============================================================================
-size_t SoftBodyNode::getNumFaces()
+size_t SoftBodyNode::getNumFaces() const
 {
   return mFaces.size();
 }
