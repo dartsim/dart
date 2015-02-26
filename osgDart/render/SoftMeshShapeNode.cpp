@@ -44,6 +44,11 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 
+
+
+#include <iostream>
+#include "dart/dynamics/Skeleton.h"
+
 namespace osgDart {
 namespace render {
 
@@ -201,12 +206,15 @@ static void computeNormals(std::vector<Eigen::Vector3d>& normals,
   for(size_t i=0; i<normals.size(); ++i)
     normals[i] = Eigen::Vector3d::Zero();
 
+//  std::cout << bn->getSkeleton()->getName() << "\n";
   for(size_t i=0; i<bn->getNumFaces(); ++i)
   {
     const Eigen::Vector3i& face = bn->getFace(i);
+//    std::cout << "#" << i << ": " << face.transpose() << "\n";
     for(size_t j=0; j<3; ++j)
       normals[face[j]] += normalFromVertex(bn, face, j);
   }
+//  std::cout << "\n";
 
   for(size_t i=0; i<normals.size(); ++i)
     normals[i].normalize();
