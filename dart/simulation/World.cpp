@@ -260,6 +260,11 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 {
   assert(_skeleton != nullptr && "Attempted to remove nullptr Skeleton from World");
+  if(nullptr == _skeleton)
+  {
+    dtwarn << "Attempting to remove a nullptr Skeleton from the World\n";
+    return;
+  }
 
   // Find index of _skeleton in mSkeleton.
   size_t i = 0;
