@@ -1153,11 +1153,11 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  // -- +Z
+  // -- -Z
   _softBodyNode->addFace(Eigen::Vector3i(1, 0, 2));  // 0
   _softBodyNode->addFace(Eigen::Vector3i(1, 2, 3));  // 1
 
-  // -- -Z
+  // -- +Z
   _softBodyNode->addFace(Eigen::Vector3i(5, 6, 4));  // 2
   _softBodyNode->addFace(Eigen::Vector3i(5, 7, 6));  // 3
 
@@ -1671,8 +1671,8 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
 
   // Corners[4] faces
   faces[fIdx][0] = map[corners[4]];
-  faces[fIdx][1] = map[edgeZ[0].back()];
-  faces[fIdx][2] = map[edgeY[1][0]];
+  faces[fIdx][1] = map[edgeY[1][0]];
+  faces[fIdx][2] = map[edgeZ[0].back()];
   fIdx++;
 
   faces[fIdx][0] = map[sideXNeg[0].back()];
@@ -1681,8 +1681,8 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   fIdx++;
 
   faces[fIdx][0] = map[corners[4]];
-  faces[fIdx][1] = map[edgeX[3][0]];
-  faces[fIdx][2] = map[edgeZ[0].back()];
+  faces[fIdx][1] = map[edgeZ[0].back()];
+  faces[fIdx][2] = map[edgeX[3][0]];
   fIdx++;
 
   faces[fIdx][0] = map[sideYNeg.back()[0]];
@@ -1691,8 +1691,8 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
   fIdx++;
 
   faces[fIdx][0] = map[corners[4]];
-  faces[fIdx][1] = map[edgeY[1][0]];
-  faces[fIdx][2] = map[edgeX[3][0]];
+  faces[fIdx][1] = map[edgeX[3][0]];
+  faces[fIdx][2] = map[edgeY[1][0]];
   fIdx++;
 
   faces[fIdx][0] = map[sideZPos[0][0]];

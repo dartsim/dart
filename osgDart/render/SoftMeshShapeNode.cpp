@@ -188,10 +188,10 @@ static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
   const Eigen::Vector3d& v1 = bn->getPointMass(face[(v+1)%3])->getLocalPosition();
   const Eigen::Vector3d& v2 = bn->getPointMass(face[(v+2)%3])->getLocalPosition();
 
-  const Eigen::Vector3d& dv1 = (v1-v0).eval();
-  const Eigen::Vector3d& dv2 = (v2-v0).eval();
+  const Eigen::Vector3d dv1 = v1-v0;
+  const Eigen::Vector3d dv2 = v2-v0;
+  const Eigen::Vector3d n = dv1.cross(dv2);
 
-  const Eigen::Vector3d& n = dv1.cross(dv2).eval();
   return n.normalized() * asin(n.norm()/(dv1.norm()*dv2.norm()));
 }
 
@@ -205,9 +205,7 @@ static void computeNormals(std::vector<Eigen::Vector3d>& normals,
   {
     const Eigen::Vector3i& face = bn->getFace(i);
     for(size_t j=0; j<3; ++j)
-    {
       normals[face[j]] += normalFromVertex(bn, face, j);
-    }
   }
 
   for(size_t i=0; i<normals.size(); ++i)

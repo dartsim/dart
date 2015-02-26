@@ -47,6 +47,14 @@ int main()
       dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
   assert(world != nullptr);
 
+  world->removeSkeleton(world->getSkeleton(0));
+  world->removeSkeleton(world->getSkeleton(0));
+  world->removeSkeleton(world->getSkeleton(0));
+  world->removeSkeleton(world->getSkeleton(0));
+  world->removeSkeleton(world->getSkeleton(0));
+  while(world->getNumSkeletons() > 1)
+    world->removeSkeleton(world->getSkeleton(1));
+
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
   osgViewer::Viewer viewer;
