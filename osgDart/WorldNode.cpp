@@ -63,7 +63,9 @@ public:
 
 //==============================================================================
 WorldNode::WorldNode(dart::simulation::World* _world)
-  : mWorld(_world)
+  : mWorld(_world),
+    mSimulating(false),
+    mNumStepsPerCycle(1)
 {
   setUpdateCallback(new WorldNodeCallback);
 }
@@ -83,24 +85,75 @@ dart::simulation::World* WorldNode::getWorld() const
 //==============================================================================
 void WorldNode::update()
 {
-  if(!mWorld)
-    return;
+  customPreUpdate();
 
-  customUpdate();
+  clearChildUtilizationFlags();
 
-  clearUtilizationFlags();
+  if(mSimulating)
+  {
+    for(size_t i=0; i<mNumStepsPerCycle; ++i)
+    {
+      customPreStep();
+      mWorld->step();
+      customPostStep();
+    }
+  }
 
   refreshSkeletons();
   refreshCustomFrames();
   refreshCustomEntities();
 
   clearUnusedNodes();
+
+  customPostUpdate();
 }
 
 //==============================================================================
-void WorldNode::customUpdate()
+void WorldNode::customPreUpdate()
 {
   // Do nothing
+}
+
+//==============================================================================
+void WorldNode::customPostUpdate()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WorldNode::customPreStep()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void WorldNode::customPostStep()
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool WorldNode::isSimulating() const
+{
+  return mSimulating;
+}
+
+//==============================================================================
+void WorldNode::simulate(bool _on)
+{
+  mSimulating = _on;
+}
+
+//==============================================================================
+void WorldNode::setNumStepsPerCycle(size_t _steps)
+{
+  mNumStepsPerCycle = _steps;
+}
+
+//==============================================================================
+size_t WorldNode::getNumStepsPerCycle() const
+{
+  return mNumStepsPerCycle;
 }
 
 //==============================================================================
@@ -110,7 +163,7 @@ WorldNode::~WorldNode()
 }
 
 //==============================================================================
-void WorldNode::clearUtilizationFlags()
+void WorldNode::clearChildUtilizationFlags()
 {
   for(auto& node : mNodeToFrame)
     node.first->clearUtilization();
@@ -151,6 +204,9 @@ void WorldNode::clearUnusedNodes()
 //==============================================================================
 void WorldNode::refreshSkeletons()
 {
+  if(!mWorld)
+    return;
+
   // Apply the recursive Frame refreshing functionality to the root BodyNode of
   // each Skeleton
   for(size_t i=0, end=mWorld->getNumSkeletons(); i<end; ++i)
@@ -160,6 +216,9 @@ void WorldNode::refreshSkeletons()
 //==============================================================================
 void WorldNode::refreshCustomFrames()
 {
+  if(!mWorld)
+    return;
+
   for(size_t i=0, end=mWorld->getNumFrames(); i<end; ++i)
     refreshBaseFrameNode(mWorld->getFrame(i));
 }
@@ -167,6 +226,9 @@ void WorldNode::refreshCustomFrames()
 //==============================================================================
 void WorldNode::refreshCustomEntities()
 {
+  if(!mWorld)
+    return;
+
   for(size_t i=0, end=mWorld->getNumEntities(); i<end; ++i)
     refreshBaseEntityNode(mWorld->getEntity(i));
 }

@@ -48,6 +48,8 @@ int main()
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
+  node->simulate(true);
+
   osgViewer::Viewer viewer;
   viewer.getCamera()->setClearColor(osg::Vec4(0.9,0.9,0.9,1.0));
   viewer.setSceneData(node);

@@ -88,38 +88,97 @@ public:
   /// customize the behavior of each update. The default behavior is to do
   /// nothing, so overloading this function will not interfere with the usual
   /// update() operation.
-  virtual void customUpdate();
+  virtual void customPreUpdate();
+
+  /// If update() is not overloaded, this function will be called at the end of
+  /// each rendering cycle. This function can be overloaded to customize the
+  /// behavior of each update. The default behavior is to do nothing, so
+  /// overloading this function will not interfere with the usual update()
+  /// operation.
+  virtual void customPostUpdate();
+
+  /// If update() is not overloaded, this function will be called at the
+  /// beginning of each simulation step. This function can be overloaded to
+  /// customize the behavior of each step. The default behavior is to do
+  /// nothing, so overloading this function will not interfere with the usual
+  /// update() operation. This will not get called if the simulation is paused.
+  virtual void customPreStep();
+
+  /// If update() is not overloaded, this function will be called at the end of
+  /// each simulation step. This function can be overloaded to customize the
+  /// behavior of each step. The default behavior is to do nothing, so
+  /// overloading this function will not interfere with the usual update()
+  /// operation. This will not get called if the simulation is paused.
+  virtual void customPostStep();
+
+  /// Returns true iff the WorldNode is stepping between render cycles
+  bool isSimulating() const;
+
+  /// Pass in true to take steps between render cycles; pass in false to turn
+  /// off steps between render cycles.
+  void simulate(bool _on);
+
+  /// Set the number of steps to take between each render cycle (only if the
+  /// simulation is not paused)
+  void setNumStepsPerCycle(size_t _steps);
+
+  /// Get the number of steps that will be taken between each render cycle (only
+  /// if the simulation is not paused)
+  size_t getNumStepsPerCycle() const;
 
 protected:
 
+  /// Destructor
   virtual ~WorldNode();
 
-  void clearUtilizationFlags();
+  /// Clear the utilization flags of each child node
+  void clearChildUtilizationFlags();
 
+  /// Clear any nodes whose utilization flags were not triggered on this render
+  /// cycle
   void clearUnusedNodes();
 
+  /// Refresh all the Skeleton rendering data
   void refreshSkeletons();
 
+  /// Refresh all the custom Frame rendering data
   void refreshCustomFrames();
 
+  /// Refresh all the custom Entity rendering data
   void refreshCustomEntities();
 
+  /// Refresh the specified Frame's rendering data
   void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
 
+  /// Create a node for the specified Frame
   void createBaseFrameNode(dart::dynamics::Frame* _frame);
 
+  /// Refresh the specified Entity's rendering data
   void refreshBaseEntityNode(dart::dynamics::Entity* _entity);
 
+  /// Create a node for the specified Entity
   void createBaseEntityNode(dart::dynamics::Entity* _entity);
 
+  /// Map from Frame pointers to child FrameNode pointers
   std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
+
+  /// Map from child FrameNode pointers to Frame pointers
   std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
 
+  /// Map from Entity pointers to child EntityNode pointers
   std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
+
+  /// Map from child EntityNode pointers to Entity pointers
   std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
 
-
+  /// The World that this WorldNode is associated with
   dart::simulation::World* mWorld;
+
+  /// True iff simulation is active
+  bool mSimulating;
+
+  /// Number of steps to take between rendering cycles
+  size_t mNumStepsPerCycle;
 
 };
 
