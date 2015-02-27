@@ -45,37 +45,6 @@ int main()
 {
   dart::simulation::World* world =
       dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
-  assert(world != nullptr);
-
-
-
-
-  dart::dynamics::Skeleton* skel = world->getSkeleton(5);
-  for(size_t i=0; i<skel->getNumBodyNodes(); ++i)
-  {
-    dart::dynamics::BodyNode* bn = skel->getBodyNode(i);
-    std::cout << i << ")\n";
-    std::cout << bn->getWorldTransform().matrix() << "\n\n";
-  }
-
-  world->getSkeleton(1)->setPositions(
-        dart::dynamics::FreeJoint::convertToPositions(
-          world->getSkeleton(5)->getBodyNode(0)->getTransform()));
-
-
-
-  world->removeSkeleton(world->getSkeleton(0));
-  world->removeSkeleton(world->getSkeleton(1));
-  world->removeSkeleton(world->getSkeleton(1));
-  world->removeSkeleton(world->getSkeleton(1));
-  while(world->getNumSkeletons() > 2)
-    world->removeSkeleton(world->getSkeleton(2));
-
-
-
-//  world->removeSkeleton(world->getSkeleton(0));
-//  while(world->getNumSkeletons() > 1)
-//    world->removeSkeleton(world->getSkeleton(1));
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 

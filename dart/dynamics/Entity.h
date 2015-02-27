@@ -93,6 +93,14 @@ public:
   /// is slightly less efficient than the non-const version.
   std::vector<const Shape*> getVisualizationShapes() const;
 
+  /// Remove a visualization shape from this Entity without deleting it. Returns
+  /// true if successful; false if the shape was not in this Entity.
+  virtual bool withdrawVisualizationShape(Shape* _p);
+
+  /// Remove a visualization shape from this Entity and delete it. Returns true
+  /// if successful; false if the shape was not in this Entity.
+  virtual bool deleteVisualizationShape(Shape* _p);
+
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),

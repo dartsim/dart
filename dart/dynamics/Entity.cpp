@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
@@ -96,6 +97,38 @@ std::vector<const Shape*> Entity::getVisualizationShapes() const
     const_shapes.push_back(shape);
 
   return const_shapes;
+}
+
+//==============================================================================
+bool Entity::withdrawVisualizationShape(Shape* _p)
+{
+  if(nullptr == _p)
+  {
+    dtwarn << "Attempting to remove a nullptr visualization shape from the "
+           << "Entity named '" << getName() << "'\n";
+    return false;
+  }
+
+  std::vector<Shape*>::iterator it =
+      std::find(mVizShapes.begin(), mVizShapes.end(), _p);
+
+  if(it == mVizShapes.end())
+    return false;
+
+  mVizShapes.erase(it);
+  return true;
+}
+
+//==============================================================================
+bool Entity::deleteVisualizationShape(Shape* _p)
+{
+  if(withdrawVisualizationShape(_p))
+  {
+    delete _p;
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================

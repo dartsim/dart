@@ -126,10 +126,10 @@ public:
   std::string addSkeleton(dynamics::Skeleton* _skeleton);
 
   /// Remove a skeleton from this world without deleting it
-  void withdrawSkeleton(dynamics::Skeleton* _skeleton);
+  bool withdrawSkeleton(dynamics::Skeleton* _skeleton);
 
   /// Remove a skeleton in this world and delete it
-  void removeSkeleton(dynamics::Skeleton* _skeleton);
+  bool removeSkeleton(dynamics::Skeleton* _skeleton);
 
   /// Remove all skeletons from this world, and get pointers to them
   std::set<dynamics::Skeleton*> withdrawAllSkeletons();

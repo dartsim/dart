@@ -257,13 +257,13 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 }
 
 //==============================================================================
-void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
+bool World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 {
   assert(_skeleton != nullptr && "Attempted to remove nullptr Skeleton from World");
   if(nullptr == _skeleton)
   {
     dtwarn << "Attempting to remove a nullptr Skeleton from the World\n";
-    return;
+    return false;
   }
 
   // Find index of _skeleton in mSkeleton.
@@ -280,7 +280,7 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
   {
     dtwarn << "Skeleton [" << _skeleton->getName()
            << "] is not in the World.\n";
-    return;
+    return false;
   }
 
   // Update mIndices.
@@ -307,13 +307,20 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 
   // Remove from NameManager
   mNameMgrForSkeletons.removeName(_skeleton->getName());
+
+  return true;
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+bool World::removeSkeleton(dynamics::Skeleton* _skeleton)
 {
-  withdrawSkeleton(_skeleton);
-  delete _skeleton;
+  if(withdrawSkeleton(_skeleton))
+  {
+    delete _skeleton;
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
