@@ -34,9 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <osgViewer/Viewer>
-
-#include "osgDart/WorldNode.h"
+#include "osgDart/osgDart.h"
 
 #include "dart/dart.h"
 
@@ -55,9 +53,10 @@ int main()
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
-  osgViewer::Viewer viewer;
-  viewer.getCamera()->setClearColor(osg::Vec4(0.9, 0.9, 0.9, 1.0));
-  viewer.setSceneData(node);
+  osgDart::Viewer viewer;
+  viewer.addWorldNode(node);
+
+  std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
