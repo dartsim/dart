@@ -2764,16 +2764,18 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
                                              nTopPointMasses + meshIdx3));
     }
 
+
     meshIdx1 = (i + 0) * _nSlices;
-    meshIdx2 = (i + 1) * _nSlices;
-    meshIdx3 = (i + 0) * _nSlices + _nSlices - 1;
+    meshIdx2 = (i + 0) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 1) * _nSlices;
     _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
                                            nTopPointMasses + meshIdx2,
                                            nTopPointMasses + meshIdx3));
 
+
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
-    meshIdx2 = (i + 1) * _nSlices + 0;
-    meshIdx3 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;
+    meshIdx3 = (i + 1) * _nSlices + 0;
     _softBodyNode->addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
                                            nTopPointMasses + meshIdx2,
                                            nTopPointMasses + meshIdx3));
