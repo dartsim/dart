@@ -34,39 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_WORLDNODEEVENTHANDLER_H
-#define OSGDART_WORLDNODEEVENTHANDLER_H
+#include <osgGA/GUIEventAdapter>
 
-#include <osgGA/GUIEventHandler>
+#include "osgDart/DefaultEventHandler.h"
+#include "osgDart/Viewer.h"
 
 namespace osgDart
 {
 
-class Viewer;
-
-class WorldNodeEventHandler : public osgGA::GUIEventHandler
+DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
+  : mViewer(_viewer)
 {
-public:
+  mViewer->addInstructionText("Spacebar: Turn simulation on/off for any active worlds\n");
+  mViewer->addInstructionText("Ctrl+H: Turn headlights on/off\n");
+}
 
-  /// Constructor takes in a pointer to a viewer
-  explicit WorldNodeEventHandler(Viewer* _viewer);
+//==============================================================================
+DefaultEventHandler::~DefaultEventHandler()
+{
+  // Do nothing
+}
 
-  /// Handle incoming user input
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter &);
+//==============================================================================
+bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
+                                 osgGA::GUIActionAdapter &)
+{
+  switch(ea.getEventType())
+  {
+    case osgGA::GUIEventAdapter::KEYDOWN:
+    {
+      switch(ea.getKey())
+      {
+        case 8: // ctrl+h
+        {
+          mViewer->switchHeadlights(!mViewer->checkHeadlights());
+          return true;
+          break;
+        }
 
+        case ' ':
+        {
+          mViewer->simulate(!mViewer->isSimulating());
+          return true;
+          break;
+        }
+      }
+    }
 
-//  virtual void accept(osgGA::GUIEventHandlerVisitor& v);
+    default:
+      break;
+  }
 
-  virtual ~WorldNodeEventHandler();
-
-protected:
-
-  /// osgDart::Viewer that this event handler is tied to
-  Viewer* mViewer;
-
-};
+  return false;
+}
 
 } // namespace osgDart
-
-#endif // OSGDART_WORLDNODEEVENTHANDLER_H

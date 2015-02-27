@@ -34,3 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef OSGDART_DEFAULTEVENTHANDLER_H
+#define OSGDART_DEFAULTEVENTHANDLER_H
+
+#include <osgGA/GUIEventHandler>
+
+namespace osgDart
+{
+
+class Viewer;
+
+class DefaultEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  /// Constructor takes in a pointer to a viewer
+  explicit DefaultEventHandler(Viewer* _viewer);
+
+  /// Destructor
+  virtual ~DefaultEventHandler();
+
+  /// Handle incoming user input
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter &);
+
+
+//  virtual void accept(osgGA::GUIEventHandlerVisitor& v);
+
+
+protected:
+
+  /// osgDart::Viewer that this event handler is tied to
+  Viewer* mViewer;
+
+};
+
+} // namespace osgDart
+
+#endif // OSGDART_DEFAULTEVENTHANDLER_H
