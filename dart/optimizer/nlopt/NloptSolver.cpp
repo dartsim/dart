@@ -97,6 +97,18 @@ NloptSolver::~NloptSolver()
 }
 
 //==============================================================================
+void NloptSolver::setNumMaxEvaluations(size_t _numVal)
+{
+  nlopt_set_maxeval(mOpt, _numVal);
+}
+
+//==============================================================================
+size_t NloptSolver::getNumEvaluationMax() const
+{
+  return nlopt_get_maxeval(mOpt);
+}
+
+//==============================================================================
 bool NloptSolver::solve()
 {
   // Optimize
