@@ -69,6 +69,9 @@ public:
   /// Creates the default event handler for this osgDart::Viewer
   virtual void switchDefaultEventHandler(bool _on);
 
+  /// Return a pointer to the default event handler
+  DefaultEventHandler* getDefaultEventHandler() const;
+
   /// Pass in true to turn headlights on, false to turn headlights off
   virtual void switchHeadlights(bool _on);
 

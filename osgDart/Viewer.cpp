@@ -87,6 +87,12 @@ void Viewer::switchDefaultEventHandler(bool _on)
 }
 
 //==============================================================================
+DefaultEventHandler* Viewer::getDefaultEventHandler() const
+{
+  return mDefaultEventHandler;
+}
+
+//==============================================================================
 void Viewer::switchHeadlights(bool _on)
 {
   mHeadlights = _on;
@@ -155,6 +161,7 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
   mRootGroup->addChild(_newWorldNode);
   if(_active)
     _newWorldNode->simulate(mSimulating);
+  _newWorldNode->mViewer = this;
 }
 
 //==============================================================================

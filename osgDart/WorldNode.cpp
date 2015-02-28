@@ -65,7 +65,8 @@ public:
 WorldNode::WorldNode(dart::simulation::World* _world)
   : mWorld(_world),
     mSimulating(false),
-    mNumStepsPerCycle(1)
+    mNumStepsPerCycle(1),
+    mViewer(nullptr)
 {
   setUpdateCallback(new WorldNodeCallback);
 }

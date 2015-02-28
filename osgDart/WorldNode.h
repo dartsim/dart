@@ -58,11 +58,14 @@ namespace osgDart
 
 class FrameNode;
 class EntityNode;
+class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
 class WorldNode : public osg::Group
 {
 public:
+
+  friend class Viewer;
 
   explicit WorldNode(dart::simulation::World* _world = nullptr);
 
@@ -179,6 +182,9 @@ protected:
 
   /// Number of steps to take between rendering cycles
   size_t mNumStepsPerCycle;
+
+  /// Viewer that this WorldNode is inside of
+  Viewer* mViewer;
 
 };
 

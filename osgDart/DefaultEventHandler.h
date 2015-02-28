@@ -92,14 +92,10 @@ public:
   /// Destructor
   virtual ~DefaultEventHandler();
 
-  /// Handle incoming user input
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&);
-
-  /// Detect picks
-  /// TODO(MXG): Consider putting this functionality in a more accessible place
-  void pick(std::vector<PickInfo>& infoVector,
-            const osgGA::GUIEventAdapter& ea);
+  /// Get the change change in the cursor position with respect to some previous
+  /// location in the world. This change is projected onto a plane parallel to
+  /// the camera's orientation.
+  Eigen::Vector3d getDeltaCursor(const Eigen::Vector3d& _fromPosition) const;
 
   /// Get the most recent picks for the specified button and event type
   const std::vector<PickInfo>& getButtonPicks(MouseButton button,
@@ -120,6 +116,15 @@ public:
 
   /// Activate pick detection for mouse movements (on by default)
   void activateMovePicks();
+
+  /// Detect picks
+  /// TODO(MXG): Consider putting this functionality in a more accessible place
+  void pick(std::vector<PickInfo>& infoVector,
+            const osgGA::GUIEventAdapter& ea);
+
+  /// Handle incoming user input
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter&);
 
 protected:
 

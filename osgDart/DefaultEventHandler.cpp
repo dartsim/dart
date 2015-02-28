@@ -66,6 +66,82 @@ DefaultEventHandler::~DefaultEventHandler()
 }
 
 //==============================================================================
+Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
+    const Eigen::Vector3d& _fromPosition) const
+{
+  // TODO(MXG): Make this work
+  return Eigen::Vector3d::Zero();
+}
+
+//==============================================================================
+const std::vector<PickInfo>& DefaultEventHandler::getButtonPicks(
+    MouseButton button, MouseButtonEvent event) const
+{
+  return mButtonPicks[button][event];
+}
+
+//==============================================================================
+const std::vector<PickInfo>& DefaultEventHandler::getMovePicks() const
+{
+  return mMovePicks;
+}
+
+//==============================================================================
+void DefaultEventHandler::suppressButtonPicks(MouseButton button,
+                                             MouseButtonEvent event)
+{
+  mSuppressButtonPicks[button][event] = true;
+}
+
+//==============================================================================
+void DefaultEventHandler::suppressMovePicks()
+{
+  mSuppressMovePicks = true;
+}
+
+//==============================================================================
+void DefaultEventHandler::activateButtonPicks(MouseButton button,
+                                             MouseButtonEvent event)
+{
+  mSuppressButtonPicks[button][event] = false;
+}
+
+//==============================================================================
+void DefaultEventHandler::activateMovePicks()
+{
+  mSuppressMovePicks = false;
+}
+
+//==============================================================================
+void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
+                               const osgGA::GUIEventAdapter& ea)
+{
+  osgUtil::LineSegmentIntersector::Intersections hlist;
+
+  infoVector.clear();
+  if(mViewer->computeIntersections(ea, hlist))
+  {
+    infoVector.reserve(hlist.size());
+    for(const osgUtil::LineSegmentIntersector::Intersection& intersect : hlist)
+    {
+      osg::Drawable* drawable = intersect.drawable;
+      render::ShapeNode* shape =
+          dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
+      if(shape)
+      {
+        PickInfo info;
+        info.shape = shape->getShape();
+        info.entity = shape->getParentEntityNode()->getEntity();
+        info.normal = osgToEigVec3(intersect.getWorldIntersectNormal());
+        info.position = osgToEigVec3(intersect.getWorldIntersectPoint());
+
+        infoVector.push_back(info);
+      }
+    }
+  }
+}
+
+//==============================================================================
 bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
                                  osgGA::GUIActionAdapter&)
 {
@@ -109,74 +185,6 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
   }
 
   return false;
-}
-
-//==============================================================================
-void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
-                               const osgGA::GUIEventAdapter& ea)
-{
-  osgUtil::LineSegmentIntersector::Intersections hlist;
-
-  infoVector.clear();
-  if(mViewer->computeIntersections(ea.getX(), ea.getY(), hlist))
-  {
-    infoVector.reserve(hlist.size());
-    for(const osgUtil::LineSegmentIntersector::Intersection& intersect : hlist)
-    {
-      osg::Drawable* drawable = intersect.drawable;
-      render::ShapeNode* shape =
-          dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
-      if(shape)
-      {
-        PickInfo info;
-        info.shape = shape->getShape();
-        info.entity = shape->getParentEntityNode()->getEntity();
-        info.normal = osgToEigVec3(intersect.getWorldIntersectNormal());
-        info.position = osgToEigVec3(intersect.getWorldIntersectPoint());
-
-        infoVector.push_back(info);
-      }
-    }
-  }
-}
-
-//==============================================================================
-const std::vector<PickInfo>& DefaultEventHandler::getButtonPicks(
-    MouseButton button, MouseButtonEvent event) const
-{
-  return mButtonPicks[button][event];
-}
-
-//==============================================================================
-const std::vector<PickInfo>& DefaultEventHandler::getMovePicks() const
-{
-  return mMovePicks;
-}
-
-//==============================================================================
-void DefaultEventHandler::suppressButtonPicks(MouseButton button,
-                                             MouseButtonEvent event)
-{
-  mSuppressButtonPicks[button][event] = true;
-}
-
-//==============================================================================
-void DefaultEventHandler::suppressMovePicks()
-{
-  mSuppressMovePicks = true;
-}
-
-//==============================================================================
-void DefaultEventHandler::activateButtonPicks(MouseButton button,
-                                             MouseButtonEvent event)
-{
-  mSuppressButtonPicks[button][event] = false;
-}
-
-//==============================================================================
-void DefaultEventHandler::activateMovePicks()
-{
-  mSuppressMovePicks = false;
 }
 
 //==============================================================================
