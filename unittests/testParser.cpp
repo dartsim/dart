@@ -98,11 +98,6 @@ TEST(Parser, DataStructure)
 }
 
 //==============================================================================
-TEST(Parser, DataStructure2)
-{
-}
-
-//==============================================================================
 TEST(Parser, EmptyWorld)
 {
   World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
