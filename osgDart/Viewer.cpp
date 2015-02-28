@@ -35,6 +35,7 @@
  */
 
 #include "osgDart/Viewer.h"
+#include "osgDart/TrackballManipulator.h"
 #include "osgDart/DefaultEventHandler.h"
 #include "osgDart/WorldNode.h"
 #include "osgDart/utils.h"
@@ -56,6 +57,12 @@ Viewer::Viewer(const osg::Vec4& clearColor)
     mSimulating(false),
     mHeadlights(true)
 {
+  setCameraManipulator(new osgDart::TrackballManipulator);
+  addInstructionText("Left-click:   Interaction\n");
+  addInstructionText("Right-click:  Rotate view\n");
+  addInstructionText("Middle-click: Translate view\n");
+  addInstructionText("Wheel Scroll: Zoom in/out\n");
+
   mDefaultEventHandler = new DefaultEventHandler(this);
   // ^ Cannot construct this in the initialization list, because its constructor calls member functions of this object
 

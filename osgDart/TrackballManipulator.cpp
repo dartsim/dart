@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *            Pete Vieira <pete.vieira@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,60 +34,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_UTILS_H
-#define OSGDART_UTILS_H
+#include "osgDart/TrackballManipulator.h"
 
-#include <Eigen/Geometry>
-
-#include <osg/Matrix>
-
-template<typename Scalar>
-osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
+namespace osgDart
 {
-  // TODO(MXG): See if this can be made more efficient. osg::Matrix is
-  // automatically initialized to Identity, which is a waste.
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = tf(j,i);
-  return output;
+
+TrackballManipulator::TrackballManipulator(int flags)
+  : osgGA::OrbitManipulator(flags)
+{
+  setVerticalAxisFixed(false);
 }
 
 //==============================================================================
-template<typename Derived>
-osg::Matrix eigToOsgMatrix(const Eigen::MatrixBase<Derived>& M)
+TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
+                                           const osg::CopyOp& copyOp)
+  : osgGA::OrbitManipulator(tm, copyOp)
 {
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = M(j,i);
-  return output;
+
 }
 
 //==============================================================================
-template<typename Derived>
-osg::Vec3d eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
+TrackballManipulator::~TrackballManipulator()
 {
-  return osg::Vec3d(vec[0], vec[1], vec[2]);
+  // Do nothing
 }
 
 //==============================================================================
-inline Eigen::Vector3d osgToEigVec3(const osg::Vec3d& vec)
+bool TrackballManipulator::performMovementLeftMouseButton(
+    const double, const double, const double)
 {
-  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
+  // Do nothing
+  return false;
 }
 
 //==============================================================================
-template<typename Derived>
-osg::Vec4d eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
+bool TrackballManipulator::performMovementRightMouseButton(
+    const double eventTimeDelta, const double dx, const double dy)
 {
-  return osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
+  return OrbitManipulator::performMovementLeftMouseButton(
+        eventTimeDelta, dx, dy);
 }
 
-//==============================================================================
-inline Eigen::Vector4d osgToEigVec4(const osg::Vec4d& vec)
-{
-  return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
-}
-
-#endif // OSGDART_UTILS_H
+} // namespace osgDart

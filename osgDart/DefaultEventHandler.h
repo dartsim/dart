@@ -37,12 +37,50 @@
 #ifndef OSGDART_DEFAULTEVENTHANDLER_H
 #define OSGDART_DEFAULTEVENTHANDLER_H
 
+#include <vector>
+#include <array>
+
+#include <Eigen/Core>
+
 #include <osgGA/GUIEventHandler>
+
+namespace dart {
+namespace dynamics {
+class Entity;
+class Shape;
+} // dynamics
+} // dart
 
 namespace osgDart
 {
 
+struct PickInfo
+{
+  dart::dynamics::Entity* entity;
+  dart::dynamics::Shape* shape;
+  Eigen::Vector3d position;
+  Eigen::Vector3d normal;
+};
+
 class Viewer;
+
+enum MouseButton {
+
+  LEFT_MOUSE = 0,
+  RIGHT_MOUSE,
+  MIDDLE_MOUSE,
+
+  NUM_MOUSE_BUTTONS
+};
+
+enum MouseButtonEvent {
+
+  BUTTON_PUSH = 0,
+  BUTTON_DRAG,
+  BUTTON_RELEASE,
+
+  NUM_MOUSE_BUTTON_EVENTS
+};
 
 class DefaultEventHandler : public osgGA::GUIEventHandler
 {
@@ -56,16 +94,54 @@ public:
 
   /// Handle incoming user input
   virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter &);
+                      osgGA::GUIActionAdapter&);
 
+  /// Detect picks
+  /// TODO(MXG): Consider putting this functionality in a more accessible place
+  void pick(std::vector<PickInfo>& infoVector,
+            const osgGA::GUIEventAdapter& ea);
 
-//  virtual void accept(osgGA::GUIEventHandlerVisitor& v);
+  /// Get the most recent picks for the specified button and event type
+  const std::vector<PickInfo>& getButtonPicks(MouseButton button,
+                                              MouseButtonEvent event) const;
 
+  /// Get the most recent picks for a mouse movement (click-and-drag actions do
+  /// not qualify as movements)
+  const std::vector<PickInfo>& getMovePicks() const;
+
+  /// Suppress pick detection for the specified button event
+  void suppressButtonPicks(MouseButton button, MouseButtonEvent event);
+
+  /// Suppress pick detection for mouse movements
+  void suppressMovePicks();
+
+  /// Activate pick detection for the specified button event (on by default)
+  void activateButtonPicks(MouseButton button, MouseButtonEvent event);
+
+  /// Activate pick detection for mouse movements (on by default)
+  void activateMovePicks();
 
 protected:
 
+  void eventPick(const osgGA::GUIEventAdapter& ea);
+
   /// osgDart::Viewer that this event handler is tied to
   Viewer* mViewer;
+
+  /// The objects that were under the cursor during the last button event
+  std::vector<PickInfo> mButtonPicks[NUM_MOUSE_BUTTONS][NUM_MOUSE_BUTTON_EVENTS];
+
+  /// Suppress pick detection
+  bool mSuppressButtonPicks[NUM_MOUSE_BUTTONS][NUM_MOUSE_BUTTON_EVENTS];
+
+  /// The objects that were under the cursor during the last move
+  std::vector<PickInfo> mMovePicks;
+
+  /// Suppress pick detection for moves
+  bool mSuppressMovePicks;
+
+  /// Cache for pick data
+  std::vector<PickInfo> mTempPicks;
 
 };
 

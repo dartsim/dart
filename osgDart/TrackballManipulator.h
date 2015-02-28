@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *            Pete Vieira <pete.vieira@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,60 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_UTILS_H
-#define OSGDART_UTILS_H
+#ifndef OSGDART_TRACKBALLMANIPULATOR_H
+#define OSGDART_TRACKBALLMANIPULATOR_H
 
-#include <Eigen/Geometry>
+#include <osgGA/OrbitManipulator>
 
-#include <osg/Matrix>
-
-template<typename Scalar>
-osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
+namespace osgDart
 {
-  // TODO(MXG): See if this can be made more efficient. osg::Matrix is
-  // automatically initialized to Identity, which is a waste.
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = tf(j,i);
-  return output;
-}
 
-//==============================================================================
-template<typename Derived>
-osg::Matrix eigToOsgMatrix(const Eigen::MatrixBase<Derived>& M)
+class OSGGA_EXPORT TrackballManipulator : public osgGA::OrbitManipulator
 {
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = M(j,i);
-  return output;
-}
+public:
+  /// Constructor
+  TrackballManipulator(int flags=DEFAULT_SETTINGS);
 
-//==============================================================================
-template<typename Derived>
-osg::Vec3d eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
-{
-  return osg::Vec3d(vec[0], vec[1], vec[2]);
-}
+  /// Copy-constructor
+  TrackballManipulator(const TrackballManipulator& tm,
+                       const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
 
-//==============================================================================
-inline Eigen::Vector3d osgToEigVec3(const osg::Vec3d& vec)
-{
-  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
-}
+  /// Destructor
+  virtual ~TrackballManipulator();
 
-//==============================================================================
-template<typename Derived>
-osg::Vec4d eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
-{
-  return osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
-}
+  /// Overriding behavior of left mouse button
+  virtual bool performMovementLeftMouseButton(const double eventTimeDelta,
+                                              const double dx,
+                                              const double dy) override;
 
-//==============================================================================
-inline Eigen::Vector4d osgToEigVec4(const osg::Vec4d& vec)
-{
-  return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
-}
+  /// Overriding behavior of right mouse button
+  virtual bool performMovementRightMouseButton(const double eventTimeDelta,
+                                               const double dx,
+                                               const double dy) override;
 
-#endif // OSGDART_UTILS_H
+  META_Object( osgDart, TrackballManipulator )
+  // TODO(MXG): Consider applying the META macros to every osgDart Node
+};
+
+} // namespace osgDart
+
+#endif // OSGDART_TRACKBALLMANIPULATOR_H
