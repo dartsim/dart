@@ -78,8 +78,8 @@ enum MouseButtonEvent {
   BUTTON_PUSH = 0,
   BUTTON_DRAG,
   BUTTON_RELEASE,
+  BUTTON_NOTHING
 
-  NUM_MOUSE_BUTTON_EVENTS
 };
 
 class DefaultEventHandler : public osgGA::GUIEventHandler
@@ -92,10 +92,29 @@ public:
   /// Destructor
   virtual ~DefaultEventHandler();
 
+  /// Returns the last event performed by a mouse button
+  MouseButtonEvent getButtonEvent() const;
+
+  /// Returns true iff 'button' was used in the last button event
+  bool checkButton(MouseButton button) const;
+
+  /// Get the last x value of the cursor in Window coordinates
+  double getWindowCursorX() const;
+
+  /// Get the last y value of the cursor in Window coordinates
+  double getWindowCursorY() const;
+
   /// Get the change change in the cursor position with respect to some previous
   /// location in the world. This change is projected onto a plane parallel to
   /// the camera's orientation.
   Eigen::Vector3d getDeltaCursor(const Eigen::Vector3d& _fromPosition) const;
+
+  /// Get two points that are under the current cursor position. The near point
+  /// will be inside the plane of the camera. The far point will have the given
+  /// distance from the plane of the camera (default is 1.0).
+  void getNearAndFarPointUnderCursor(Eigen::Vector3d& near,
+                                     Eigen::Vector3d& far,
+                                     double distance=1.0) const;
 
   /// Get the most recent picks for the specified button and event type
   const std::vector<PickInfo>& getButtonPicks(MouseButton button,
@@ -134,10 +153,10 @@ protected:
   Viewer* mViewer;
 
   /// The objects that were under the cursor during the last button event
-  std::vector<PickInfo> mButtonPicks[NUM_MOUSE_BUTTONS][NUM_MOUSE_BUTTON_EVENTS];
+  std::vector<PickInfo> mButtonPicks[NUM_MOUSE_BUTTONS][BUTTON_NOTHING];
 
   /// Suppress pick detection
-  bool mSuppressButtonPicks[NUM_MOUSE_BUTTONS][NUM_MOUSE_BUTTON_EVENTS];
+  bool mSuppressButtonPicks[NUM_MOUSE_BUTTONS][BUTTON_NOTHING];
 
   /// The objects that were under the cursor during the last move
   std::vector<PickInfo> mMovePicks;
@@ -147,6 +166,21 @@ protected:
 
   /// Cache for pick data
   std::vector<PickInfo> mTempPicks;
+
+  /// The last mouse event that was registered by the event handler
+  MouseButtonEvent mLastButtonEvent;
+
+  /// True iff the last event performed by the mouse was a move (does not
+  /// include drags)
+  bool mLastEventWasMove;
+
+  /// Bool array for whether each mouse button was active during the last mouse
+  /// event
+  bool mLastButtonsActive[NUM_MOUSE_BUTTONS];
+
+  /// X/Y values of the cursor (in the window coordinates) during the last mouse
+  /// event
+  Eigen::Vector2d mLastCursorPosition;
 
 };
 

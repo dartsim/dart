@@ -54,7 +54,7 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
   for(size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
-    for(size_t j=0; j<NUM_MOUSE_BUTTON_EVENTS; ++j)
+    for(size_t j=0; j<BUTTON_NOTHING; ++j)
       mSuppressButtonPicks[i][j] = false;
   mSuppressMovePicks = false;
 }
@@ -66,17 +66,72 @@ DefaultEventHandler::~DefaultEventHandler()
 }
 
 //==============================================================================
+MouseButtonEvent DefaultEventHandler::getButtonEvent() const
+{
+  return mLastButtonEvent;
+}
+
+//==============================================================================
+bool DefaultEventHandler::checkButton(MouseButton button) const
+{
+  return mLastButtonsActive[button];
+}
+
+//==============================================================================
+double DefaultEventHandler::getWindowCursorX() const
+{
+  return mLastCursorPosition[0];
+}
+
+//==============================================================================
+double DefaultEventHandler::getWindowCursorY() const
+{
+  return mLastCursorPosition[1];
+}
+
+//==============================================================================
 Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
     const Eigen::Vector3d& _fromPosition) const
 {
-  // TODO(MXG): Make this work
-  return Eigen::Vector3d::Zero();
+  osg::Vec3d eye, center, up;
+  mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+  Eigen::Vector3d n = osgToEigVec3(center - eye);
+
+  Eigen::Vector3d near, far;
+  getNearAndFarPointUnderCursor(near, far);
+  Eigen::Vector3d v = far-near;
+
+  double s = n.dot(_fromPosition - near) / n.dot(v);
+
+  return near - _fromPosition + s*v;
+}
+
+//==============================================================================
+void DefaultEventHandler::getNearAndFarPointUnderCursor(Eigen::Vector3d& near,
+                                                        Eigen::Vector3d& far,
+                                                        double distance) const
+{
+  osg::Camera* C = mViewer->getCamera();
+  osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
+      * C->getViewport()->computeWindowMatrix();
+  osg::Matrix invVPW;
+  invVPW.invert(VPW);
+
+  double x = getWindowCursorX(), y = getWindowCursorY();
+  osg::Vec3 osgNear = osg::Vec3(x,y,0.0) * invVPW;
+  osg::Vec3 osgFar = osg::Vec3(x,y,distance) * invVPW;
+
+  near = osgToEigVec3(osgNear);
+  far = osgToEigVec3(osgFar);
 }
 
 //==============================================================================
 const std::vector<PickInfo>& DefaultEventHandler::getButtonPicks(
     MouseButton button, MouseButtonEvent event) const
 {
+  if(BUTTON_NOTHING == event)
+    return mMovePicks;
+
   return mButtonPicks[button][event];
 }
 
@@ -88,9 +143,12 @@ const std::vector<PickInfo>& DefaultEventHandler::getMovePicks() const
 
 //==============================================================================
 void DefaultEventHandler::suppressButtonPicks(MouseButton button,
-                                             MouseButtonEvent event)
+                                              MouseButtonEvent event)
 {
-  mSuppressButtonPicks[button][event] = true;
+  if(BUTTON_NOTHING == event)
+    mSuppressMovePicks = true;
+  else
+    mSuppressButtonPicks[button][event] = true;
 }
 
 //==============================================================================
@@ -101,9 +159,12 @@ void DefaultEventHandler::suppressMovePicks()
 
 //==============================================================================
 void DefaultEventHandler::activateButtonPicks(MouseButton button,
-                                             MouseButtonEvent event)
+                                              MouseButtonEvent event)
 {
-  mSuppressButtonPicks[button][event] = false;
+  if(BUTTON_NOTHING == event)
+    mSuppressMovePicks = false;
+  else
+    mSuppressButtonPicks[button][event] = false;
 }
 
 //==============================================================================
@@ -147,6 +208,21 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 {
   switch(ea.getEventType())
   {
+    case osgGA::GUIEventAdapter::PUSH:
+    case osgGA::GUIEventAdapter::DRAG:
+    case osgGA::GUIEventAdapter::RELEASE:
+    case osgGA::GUIEventAdapter::MOVE:
+      mLastCursorPosition[0] = ea.getX();
+      mLastCursorPosition[1] = ea.getY();
+
+      break;
+
+    default:
+      break;
+  }
+
+  switch(ea.getEventType())
+  {
     case osgGA::GUIEventAdapter::KEYDOWN:
     {
       switch(ea.getKey())
@@ -169,6 +245,7 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 
     case osgGA::GUIEventAdapter::MOVE:
     {
+      mLastButtonEvent = BUTTON_NOTHING;
       if(!mSuppressMovePicks)
         pick(mMovePicks, ea);
       break;
@@ -177,6 +254,23 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
     case osgGA::GUIEventAdapter::PUSH:
     case osgGA::GUIEventAdapter::DRAG:
     case osgGA::GUIEventAdapter::RELEASE:
+
+      if(ea.getEventType() == osgGA::GUIEventAdapter::PUSH)
+        mLastButtonEvent = BUTTON_PUSH;
+      else if(ea.getEventType() == osgGA::GUIEventAdapter::DRAG)
+        mLastButtonEvent = BUTTON_DRAG;
+      else if(ea.getEventType() == osgGA::GUIEventAdapter::RELEASE)
+        mLastButtonEvent = BUTTON_RELEASE;
+
+      mLastButtonsActive[LEFT_MOUSE] =
+        (ea.getButtonMask() & osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) != 0;
+
+      mLastButtonsActive[RIGHT_MOUSE] =
+        (ea.getButtonMask() & osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) != 0;
+
+      mLastButtonsActive[MIDDLE_MOUSE] =
+        (ea.getButtonMask() & osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) != 0;
+
       eventPick(ea);
       break;
 

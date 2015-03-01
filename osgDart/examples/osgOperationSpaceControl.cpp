@@ -47,7 +47,8 @@ class OperationalSpaceControlWorld : public osgDart::WorldNode
 public:
 
   OperationalSpaceControlWorld(dart::simulation::World* _world)
-    : osgDart::WorldNode(_world)
+    : osgDart::WorldNode(_world),
+      moving(false)
   {
     // Extract relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -80,10 +81,45 @@ public:
     mWorld->addFrame(mTarget);
   }
 
-  // Triggered at the beginning of each osg cycle
+  // Triggered at the beginning of each rendering cycle
   void customPreUpdate()
   {
+    osgDart::MouseButtonEvent event =
+        mViewer->getDefaultEventHandler()->getButtonEvent();
 
+    if(moving)
+    {
+      if(osgDart::BUTTON_RELEASE == event)
+        moving = false;
+
+      Eigen::Vector3d dx =
+          mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition);
+
+      Eigen::Isometry3d tf = mTarget->getWorldTransform();
+      tf.translation() = mSavedPosition + dx;
+      mTarget->setRelativeTransform(tf);
+    }
+    else // not moving
+    {
+      if(osgDart::BUTTON_PUSH == event &&
+         mViewer->getDefaultEventHandler()->checkButton(osgDart::LEFT_MOUSE))
+      {
+        const std::vector<osgDart::PickInfo>& picks =
+            mViewer->getDefaultEventHandler()->getButtonPicks(
+              osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+
+        for(const osgDart::PickInfo& pick : picks)
+        {
+          if(pick.entity == mTarget)
+          {
+            moving = true;
+            mPickedPosition = pick.position;
+            mSavedPosition = mTarget->getWorldTransform().translation();
+            return;
+          }
+        }
+      }
+    }
   }
 
   // Triggered at the beginning of each simulation step
@@ -124,6 +160,11 @@ protected:
   Eigen::MatrixXd mKv;
   Eigen::VectorXd mForces;
 
+  Eigen::Vector3d mPickedPosition;
+  Eigen::Vector3d mSavedPosition;
+
+  bool moving;
+
 };
 
 int main()
@@ -141,9 +182,11 @@ int main()
 
   osg::ref_ptr<osgDart::WorldNode> node =
       new OperationalSpaceControlWorld(world);
+  node->setNumStepsPerCycle(10);
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
+  viewer.simulate(true);
 
   std::cout << viewer.getInstructions() << std::endl;
 
