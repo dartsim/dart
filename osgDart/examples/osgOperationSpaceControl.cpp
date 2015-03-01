@@ -188,6 +188,10 @@ int main()
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
+
+
+  viewer.addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
+
   std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
