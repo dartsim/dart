@@ -50,6 +50,7 @@ public:
 
   friend class Subscription;
 
+  /// Destructor will notify all Subscriptions that it is destructing
   virtual ~Subscriber();
 
 protected:
@@ -77,6 +78,7 @@ protected:
   /// Remove all Subscriptions from this Subscriber
   void clearSubscriptions();
 
+  /// List of current Subscriptions for this Subscriber
   std::set<const Subscription*> mSubscriptions;
 
 };

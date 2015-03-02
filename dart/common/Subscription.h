@@ -50,18 +50,26 @@ public:
 
   friend class Subscriber;
 
+  /// Destructor will notify all Subscribers that it is destructing
   virtual ~Subscription();
 
 protected:
 
+  /// Send a notification to all Subscribers
   void sendNotification(int _notice) const;
 
-  void addSubscriber(Subscriber* _subscriber) const;
-
-  void removeSubscriber(Subscriber* _subscriber) const;
-
+  /// Send a destruction notification to all Subscribers. This will cause all
+  /// Subscribers to behave as if this Subscription has been permanently
+  /// deleted, so it should only be called when that behavior is desired.
   void sendDestructionNotification() const;
 
+  /// Add a Subscriber to the list of Subscribers
+  void addSubscriber(Subscriber* _subscriber) const;
+
+  /// Remove a Subscriber from the list of Subscribers
+  void removeSubscriber(Subscriber* _subscriber) const;
+
+  /// List of current Subscribers
   mutable std::set<Subscriber*> mSubscribers;
 
 };
