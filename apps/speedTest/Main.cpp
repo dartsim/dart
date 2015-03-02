@@ -222,9 +222,9 @@ int main(int argc, char* argv[])
 
   std::vector<dart::simulation::World*> worlds = getWorlds();
 
-  std::cout << "Testing kinematics" << std::endl;
   if(test_kinematics)
   {
+    std::cout << "Testing Kinematics" << std::endl;
     std::vector<double> acceleration_results;
     std::vector<double> velocity_results;
     std::vector<double> position_results;
