@@ -51,6 +51,7 @@ namespace common {
 template <class T>
 class sub_ptr : public Subscriber
 {
+public:
   /// Default constructor
   sub_ptr() : mSubscription(nullptr) { }
 
@@ -101,7 +102,6 @@ class sub_ptr : public Subscriber
   bool valid() { return mSubscription != nullptr; }
 
 protected:
-
   /// Saves the latest notification received from its Subscription
   virtual void receiveNotification(const Subscription* _subscription,
                                    int _notice) override

@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "dart/dynamics/Shape.h"
+#include "dart/common/Subscription.h"
 
 namespace dart {
 namespace renderer {
@@ -63,10 +63,22 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity
+class Entity : public common::Subscription
 {
 public:
   friend class Frame;
+
+  enum Notification {
+
+    FRAME_CHANGE_NOTICE = 0,
+    NAME_CHANGE_NOTICE,
+    VISUALIZATION_CHANGE_NOTICE,
+    TRANSFORM_NOTICE,
+    VELOCITY_NOTICE,
+    ACCELERATION_NOTICE,
+
+    NUM_ENTITY_NOTIFICATIONS
+  };
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name,
