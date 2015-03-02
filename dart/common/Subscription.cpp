@@ -66,6 +66,9 @@ void Subscription::sendDestructionNotification() const
 //==============================================================================
 void Subscription::addSubscriber(Subscriber* _subscriber) const
 {
+  if(nullptr == _subscriber)
+    return;
+
   if(mSubscribers.find(_subscriber) != mSubscribers.end())
     return;
 
@@ -74,8 +77,11 @@ void Subscription::addSubscriber(Subscriber* _subscriber) const
 }
 
 //==============================================================================
-void Subscription::removeSubscriber(Subscriber *_subscriber) const
+void Subscription::removeSubscriber(Subscriber* _subscriber) const
 {
+  if(nullptr == _subscriber)
+    return;
+
   if(mSubscribers.find(_subscriber) == mSubscribers.end())
     return;
 

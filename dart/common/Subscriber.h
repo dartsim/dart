@@ -54,17 +54,27 @@ public:
 
 protected:
 
+  /// Called whenever a Subscription sends out a notice. Override this in order
+  /// to respond to notifications
   virtual void receiveNotification(const Subscription* _subscription,
                                    int _notice);
 
+  /// Called whenever a Subscription is destroyed (or sends out a destruction
+  /// notification). Override handleDestructionNotification() in order to
+  /// customize your class's response to destruction notifications.
   void receiveDestructionNotification(const Subscription* _subscription);
 
+  /// Called by receiveDestructionNotification(). Override this function to
+  /// customize your class's response to destruction notifications.
   virtual void handleDestructionNotification(const Subscription* _subscription);
 
+  /// Add a Subscription for this Subscriber
   void addSubscription(const Subscription* _subscription);
 
+  /// Remove a Subscription from this Subscriber
   void removeSubscription(const Subscription* _subscription);
 
+  /// Remove all Subscriptions from this Subscriber
   void clearSubscriptions();
 
   std::set<const Subscription*> mSubscriptions;

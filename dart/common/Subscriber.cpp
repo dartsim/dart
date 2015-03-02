@@ -57,26 +57,6 @@ void Subscriber::receiveNotification(const Subscription*, int)
 }
 
 //==============================================================================
-void Subscriber::addSubscription(const Subscription* _subscription)
-{
-  if(mSubscriptions.find(_subscription) != mSubscriptions.end())
-    return;
-
-  mSubscriptions.insert(_subscription);
-  _subscription->addSubscriber(this);
-}
-
-//==============================================================================
-void Subscriber::removeSubscription(const Subscription* _subscription)
-{
-  if(mSubscriptions.find(_subscription) == mSubscriptions.end())
-    return;
-
-  mSubscriptions.erase(_subscription);
-  _subscription->removeSubscriber(this);
-}
-
-//==============================================================================
 void Subscriber::receiveDestructionNotification(
     const Subscription* _subscription)
 {
@@ -91,6 +71,40 @@ void Subscriber::handleDestructionNotification(const Subscription*)
 }
 
 //==============================================================================
+void Subscriber::addSubscription(const Subscription* _subscription)
+{
+  if(nullptr == _subscription)
+    return;
+
+  if(mSubscriptions.find(_subscription) != mSubscriptions.end())
+    return;
+
+  mSubscriptions.insert(_subscription);
+  _subscription->addSubscriber(this);
+}
+
+//==============================================================================
+void Subscriber::removeSubscription(const Subscription* _subscription)
+{
+  if(nullptr == _subscription)
+    return;
+
+  if(mSubscriptions.find(_subscription) == mSubscriptions.end())
+    return;
+
+  mSubscriptions.erase(_subscription);
+  _subscription->removeSubscriber(this);
+}
+
+//==============================================================================
+void Subscriber::clearSubscriptions()
+{
+  std::set<const Subscription*>::iterator it = mSubscriptions.begin(),
+                                          end = mSubscriptions.end();
+
+  while(it != end)
+    removeSubscription(*(it++));
+}
 
 } // namespace common
 } // namespace dart

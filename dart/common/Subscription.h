@@ -48,15 +48,17 @@ class Subscription
 {
 public:
 
+  friend class Subscriber;
+
   virtual ~Subscription();
+
+protected:
 
   void sendNotification(int _notice) const;
 
   void addSubscriber(Subscriber* _subscriber) const;
 
   void removeSubscriber(Subscriber* _subscriber) const;
-
-protected:
 
   void sendDestructionNotification() const;
 
