@@ -54,6 +54,7 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
     mAmWorld(false)
 {
   mAmFrame = true;
+  changeParentFrame(_refFrame);
 }
 
 //==============================================================================
@@ -542,9 +543,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     return;
   }
 
-  Entity::changeParentFrame(_newParentFrame);
   if(!mAmQuiet)
-    mParentFrame->mChildFrames.insert(this);
+    _newParentFrame->mChildFrames.insert(this);
+  Entity::changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================
