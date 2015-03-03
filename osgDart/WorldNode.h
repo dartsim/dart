@@ -134,6 +134,11 @@ protected:
   /// Destructor
   virtual ~WorldNode();
 
+  /// Called when this world gets added to an osgDart::Viewer. Override this
+  /// function to customize the way your WorldNode starts up in an
+  /// osgDart::Viewer. Default behavior does nothing.
+  virtual void setupViewer();
+
   /// Clear the utilization flags of each child node
   void clearChildUtilizationFlags();
 

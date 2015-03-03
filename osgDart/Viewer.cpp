@@ -50,21 +50,8 @@
 namespace osgDart
 {
 
-class ViewerUpdateOperation : public osg::Operation
-{
-public:
-
-  void operator() (osg::Object* object)
-  {
-    osg::ref_ptr<Viewer> viewer = dynamic_cast<Viewer*>(object);
-    if(viewer)
-      viewer->updateViewer();
-  }
-
-};
-
 Viewer::Viewer(const osg::Vec4& clearColor)
-  : mRootGroup(new osg::Group),
+  : mDartGroup(new DartNode(this)),
     mLightGroup(new osg::Group),
     mLight1(new osg::Light),
     mLightSource1(new osg::LightSource),
@@ -84,12 +71,10 @@ Viewer::Viewer(const osg::Vec4& clearColor)
   mDefaultEventHandler = new DefaultEventHandler(this);
   // ^ Cannot construct this in the initialization list, because its constructor calls member functions of this object
 
-  setSceneData(mRootGroup);
+  setSceneData(mDartGroup);
   addEventHandler(mDefaultEventHandler);
   setupDefaultLights();
   getCamera()->setClearColor(clearColor);
-
-//  addUpdateOperation(new ViewerUpdateOperation);
 }
 
 //==============================================================================
@@ -178,10 +163,11 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
     return;
 
   mWorldNodes[_newWorldNode] = _active;
-  mRootGroup->addChild(_newWorldNode);
+  mDartGroup->addChild(_newWorldNode);
   if(_active)
     _newWorldNode->simulate(mSimulating);
   _newWorldNode->mViewer = this;
+  _newWorldNode->setupViewer();
 }
 
 //==============================================================================
@@ -191,7 +177,7 @@ void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
   if(it == mWorldNodes.end())
     return;
 
-  mRootGroup->removeChild(it->first);
+  mDartGroup->removeChild(it->first);
   mWorldNodes.erase(it);
 }
 
@@ -203,7 +189,7 @@ void Viewer::removeWorldNode(dart::simulation::World* _oldWorld)
   if(nullptr == node)
     return;
 
-  mRootGroup->removeChild(node);
+  mDartGroup->removeChild(node);
   mWorldNodes.erase(node);
 }
 
@@ -244,7 +230,7 @@ void Viewer::setupDefaultLights()
   setUpwardsDirection(mUpwards);
   switchHeadlights(true);
 
-  osg::ref_ptr<osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
+  osg::ref_ptr<osg::StateSet> lightSS = mDartGroup->getOrCreateStateSet();
 
   mLight1->setLightNum(1);
   mLightSource1->setLight(mLight1);
@@ -260,8 +246,8 @@ void Viewer::setupDefaultLights()
   mLightGroup->removeChild(mLightSource2);
   mLightGroup->addChild(mLightSource2);
 
-  mRootGroup->removeChild(mLightGroup);
-  mRootGroup->addChild(mLightGroup);
+  mDartGroup->removeChild(mLightGroup);
+  mDartGroup->addChild(mLightGroup);
 }
 
 //==============================================================================
@@ -387,7 +373,17 @@ void Viewer::addInstructionText(const std::string& _instruction)
 //==============================================================================
 void Viewer::updateViewer()
 {
-  std::cout << "UPDATING VIEWER" << std::endl;
+  updateDragAndDrops();
+}
+
+//==============================================================================
+void Viewer::updateDragAndDrops()
+{
+  for(auto& dnd_pair : mSimpleFrameDnDMap)
+  {
+    SimpleFrameDnD* dnd = dnd_pair.second;
+    dnd->update();
+  }
 }
 
 } // namespace osgDart

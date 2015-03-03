@@ -43,6 +43,8 @@
 
 #include <Eigen/Core>
 
+#include "osgDart/DartNode.h"
+
 namespace dart {
 
 namespace simulation {
@@ -162,7 +164,7 @@ protected:
   osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
 
   /// The root node of this Viewer
-  osg::ref_ptr<osg::Group> mRootGroup;
+  osg::ref_ptr<DartNode> mDartGroup;
 
   /// The Group Node containing light sources
   osg::ref_ptr<osg::Group> mLightGroup;

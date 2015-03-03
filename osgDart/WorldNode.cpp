@@ -164,6 +164,12 @@ WorldNode::~WorldNode()
 }
 
 //==============================================================================
+void WorldNode::setupViewer()
+{
+  // Do nothing
+}
+
+//==============================================================================
 void WorldNode::clearChildUtilizationFlags()
 {
   for(auto& node : mNodeToFrame)
