@@ -49,20 +49,19 @@ public:
   OperationalSpaceControlWorld(dart::simulation::World* _world)
     : osgDart::WorldNode(_world)
   {
-    // Extract relevant pointers
+    // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
     mEndEffector = mRobot->getBodyNode(mRobot->getNumBodyNodes()-1);
 
     // Setup gain matrices
-    size_t dofs = 3;
-    mKp.setZero(dofs,dofs);
-    mKv.setZero(dofs,dofs);
+    size_t dofs = mEndEffector->getNumDependentGenCoords();
+    mKp.setZero();
+    for(size_t i=0; i<3; ++i)
+      mKp(i,i) = 50.0;
 
+    mKd.setZero(dofs,dofs);
     for(size_t i=0; i<dofs; ++i)
-    {
-      mKp(i,i) = 750.0;
-      mKv(i,i) = 250.0;
-    }
+      mKd(i,i) = 5.0;
 
     // Set joint properties
     for(size_t i=0; i<mRobot->getNumJoints(); ++i)
@@ -71,39 +70,43 @@ public:
       mRobot->getJoint(i)->setDampingCoefficient(0, 0.5);
     }
 
+    mOffset = Eigen::Vector3d(0.05,0,0);
+
     // Create target Frame
-    mTarget = new SimpleFrame(Frame::World(), "target",
-                              mEndEffector->getWorldTransform());
+    Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
+    tf.pretranslate(mOffset);
+    mTarget = new SimpleFrame(Frame::World(), "target", tf);
     Shape* ball = new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05));
     ball->setColor(Eigen::Vector3d(0.9,0,0));
     mTarget->addVisualizationShape(ball);
     mWorld->addFrame(mTarget);
+
+    mOffset = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
   }
 
   // Triggered at the beginning of each simulation step
   void customPreStep() override
   {
-    Eigen::Vector3d x    = mEndEffector->getWorldTransform().translation();
-    Eigen::Vector3d dx   = mEndEffector->getLinearVelocity();
-    Eigen::MatrixXd invM = mRobot->getInvMassMatrix();
-    Eigen::VectorXd Cg   = mRobot->getCoriolisAndGravityForces();
-    LinearJacobian Jv    = mEndEffector->getLinearJacobian();
-    LinearJacobian dJv   = mEndEffector->getLinearJacobianDeriv();
-    Eigen::VectorXd dq   = mRobot->getVelocities();
+    Eigen::MatrixXd M = mRobot->getMassMatrix();
 
-    Eigen::MatrixXd A = Jv*invM;
-    Eigen::Vector3d b = dJv*dq;
-    Eigen::Matrix3d M2 = Jv*invM*Jv.transpose();
+    LinearJacobian J = mEndEffector->getLinearJacobian(mOffset);
+    Eigen::MatrixXd pinv_J = J.transpose()*(J*J.transpose()
+                                +0.0025*Eigen::Matrix3d::Identity()).inverse();
 
-    Eigen::Vector3d target = mTarget->getWorldTransform().translation();
+    LinearJacobian dJ = mEndEffector->getLinearJacobianDeriv(mOffset);
 
-    Eigen::Vector3d f = -mKp*(x - target) - mKv*dx;
+    Eigen::MatrixXd pinv_dJ = dJ.transpose()*(dJ*dJ.transpose()
+                                +0.0025*Eigen::Matrix3d::Identity()).inverse();
 
-    Eigen::Vector3d desired_ddx = b + M2*f;
 
-    mForces = Cg;
+    Eigen::Vector3d e = mTarget->getWorldTransform().translation()
+                        - mEndEffector->getWorldTransform()*mOffset;
 
-    mForces += A.colPivHouseholderQr().solve(desired_ddx - b);
+    Eigen::Vector3d de = - mEndEffector->getLinearVelocity(mOffset);
+
+    Eigen::VectorXd Cg = mRobot->getCoriolisAndGravityForces();
+
+    mForces = M*(pinv_J*mKp*de + pinv_dJ*mKp*e) + Cg + mKd*pinv_J*mKp*e;
 
     mRobot->setForces(mForces);
   }
@@ -121,8 +124,9 @@ protected:
   BodyNode* mEndEffector;
   SimpleFrame* mTarget;
 
+  Eigen::Vector3d mOffset;
   Eigen::Matrix3d mKp;
-  Eigen::Matrix3d mKv;
+  Eigen::MatrixXd mKd;
   Eigen::VectorXd mForces;
 };
 
