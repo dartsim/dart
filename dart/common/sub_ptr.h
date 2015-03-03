@@ -53,33 +53,26 @@ class sub_ptr : public Subscriber
 {
 public:
   /// Default constructor
-  sub_ptr() : mSubscription(nullptr) { }
+  sub_ptr() : mSubscription(nullptr), mLatestNotification(0) { }
 
   /// Alternative constructor. _ptr must be a valid pointer when passed to this
   /// constructor.
-  sub_ptr(T* _ptr) : mSubscription(_ptr) { addSubscription(mSubscription); }
+  sub_ptr(T* _ptr) : mSubscription(nullptr), mLatestNotification(0)
+  {
+    set(_ptr);
+  }
 
   /// Change the subscription of this sub_ptr
   sub_ptr& operator = (const sub_ptr& _sp)
   {
-    if(mSubscription == _sp.get())
-      return *this;
-
-    removeSubscription(mSubscription);
-    mSubscription = _sp.get();
-    addSubscription(mSubscription);
+    set(_sp.get());
     return *this;
   }
 
   /// Change the subscription of this sub_ptr
   sub_ptr& operator = (T* _ptr)
   {
-    if(mSubscription == _ptr)
-      return *this;
-
-    removeSubscription(mSubscription);
-    mSubscription = _ptr;
-    addSubscription(mSubscription);
+    set(_ptr);
     return *this;
   }
 
@@ -94,6 +87,17 @@ public:
 
   /// Get the subscription of this sub_ptr
   T* get() const { return mSubscription; }
+
+  void set(T* _ptr)
+  {
+    if(mSubscription == _ptr)
+      return;
+
+    removeSubscription(mSubscription);
+    mSubscription = _ptr;
+    mLatestNotification = 0;
+    addSubscription(mSubscription);
+  }
 
   /// Get the latest notification produced by the subscription of this sub_ptr
   int getLatestNotification() const { return mLatestNotification; }
