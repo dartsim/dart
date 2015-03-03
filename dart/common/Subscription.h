@@ -2,7 +2,7 @@
  * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,64 +34,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#ifndef DART_COMMON_SUBSCRIPTION_H_
+#define DART_COMMON_SUBSCRIPTION_H_
 
-#include <nlopt.h>
-
-#include "dart/optimizer/Solver.h"
+#include <set>
 
 namespace dart {
-namespace optimizer {
+namespace common {
 
-class Problem;
+class Subscriber;
 
-/// \brief class NloptSolver
-class NloptSolver : public Solver
+class Subscription
 {
 public:
-  /// \brief Constructor
-  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
-  /// \brief Destructor
-  virtual ~NloptSolver();
+  friend class Subscriber;
 
-  /// Set number of maximum evaluations
-  virtual void setNumMaxEvaluations(size_t _numVal);
+  /// Destructor will notify all Subscribers that it is destructing
+  virtual ~Subscription();
 
-  /// Get number of maximum evaluations
-  virtual size_t getNumEvaluationMax() const;
+protected:
 
-  /// \copydoc Solver::solve
-  virtual bool solve();
+  /// Send a notification to all Subscribers
+  void sendNotification(int _notice) const;
 
-private:
-  /// \brief Wrapping function for nlopt callback function, nlopt_func
-  static double _nlopt_func(unsigned _n,
-                            const double* _x,
-                            double* _gradient,  // NULL if not needed
-                            void* _func_data);
+  /// Send a destruction notification to all Subscribers. This will cause all
+  /// Subscribers to behave as if this Subscription has been permanently
+  /// deleted, so it should only be called when that behavior is desired.
+  void sendDestructionNotification() const;
 
-  /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
-  static void _nlopt_mfunc(unsigned _m,
-                           double* _result,
-                           unsigned _n,
-                           const double* _x,
-                           double* _gradient,  // NULL if not needed
-                           void* _func_data);
+  /// Add a Subscriber to the list of Subscribers
+  void addSubscriber(Subscriber* _subscriber) const;
 
-  /// \brief NLOPT data structure
-  nlopt_opt mOpt;
+  /// Remove a Subscriber from the list of Subscribers
+  void removeSubscriber(Subscriber* _subscriber) const;
 
-  /// \brief Optimization parameters
-  Eigen::VectorXd mX;
+  /// List of current Subscribers
+  mutable std::set<Subscriber*> mSubscribers;
 
-  /// \brief Optimum value of the objective function
-  double mMinF;
 };
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace common
+} // namespace dart
 
-#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-
+#endif // DART_COMMON_SUBSCRIPTION_H_

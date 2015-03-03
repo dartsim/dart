@@ -1294,6 +1294,8 @@ void BodyNode::notifyTransformUpdate()
 
   for(Entity* entity : mNonBodyNodeEntities)
     entity->notifyTransformUpdate();
+
+  sendNotification(TRANSFORM_NOTICE);
 }
 
 //==============================================================================
@@ -1322,6 +1324,8 @@ void BodyNode::notifyVelocityUpdate()
 
   for(Entity* entity : mNonBodyNodeEntities)
     entity->notifyVelocityUpdate();
+
+  sendNotification(VELOCITY_NOTICE);
 }
 
 //==============================================================================
@@ -1338,6 +1342,8 @@ void BodyNode::notifyAccelerationUpdate()
 
   for(Entity* entity : mNonBodyNodeEntities)
     entity->notifyAccelerationUpdate();
+
+  sendNotification(ACCELERATION_NOTICE);
 }
 
 //==============================================================================

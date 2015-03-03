@@ -2,7 +2,7 @@
  * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,64 +34,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#ifndef DART_COMMON_SUBSCRIBER_H_
+#define DART_COMMON_SUBSCRIBER_H_
 
-#include <nlopt.h>
-
-#include "dart/optimizer/Solver.h"
+#include <set>
 
 namespace dart {
-namespace optimizer {
+namespace common {
 
-class Problem;
+class Subscription;
 
-/// \brief class NloptSolver
-class NloptSolver : public Solver
+class Subscriber
 {
 public:
-  /// \brief Constructor
-  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
-  /// \brief Destructor
-  virtual ~NloptSolver();
+  friend class Subscription;
 
-  /// Set number of maximum evaluations
-  virtual void setNumMaxEvaluations(size_t _numVal);
+  /// Destructor will notify all Subscriptions that it is destructing
+  virtual ~Subscriber();
 
-  /// Get number of maximum evaluations
-  virtual size_t getNumEvaluationMax() const;
+protected:
 
-  /// \copydoc Solver::solve
-  virtual bool solve();
+  /// Called whenever a Subscription sends out a notice. Override this in order
+  /// to respond to notifications
+  virtual void receiveNotification(const Subscription* _subscription,
+                                   int _notice);
 
-private:
-  /// \brief Wrapping function for nlopt callback function, nlopt_func
-  static double _nlopt_func(unsigned _n,
-                            const double* _x,
-                            double* _gradient,  // NULL if not needed
-                            void* _func_data);
+  /// Called whenever a Subscription is destroyed (or sends out a destruction
+  /// notification). Override handleDestructionNotification() in order to
+  /// customize your class's response to destruction notifications.
+  void receiveDestructionNotification(const Subscription* _subscription);
 
-  /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
-  static void _nlopt_mfunc(unsigned _m,
-                           double* _result,
-                           unsigned _n,
-                           const double* _x,
-                           double* _gradient,  // NULL if not needed
-                           void* _func_data);
+  /// Called by receiveDestructionNotification(). Override this function to
+  /// customize your class's response to destruction notifications.
+  virtual void handleDestructionNotification(const Subscription* _subscription);
 
-  /// \brief NLOPT data structure
-  nlopt_opt mOpt;
+  /// Add a Subscription for this Subscriber
+  void addSubscription(const Subscription* _subscription);
 
-  /// \brief Optimization parameters
-  Eigen::VectorXd mX;
+  /// Remove a Subscription from this Subscriber
+  void removeSubscription(const Subscription* _subscription);
 
-  /// \brief Optimum value of the objective function
-  double mMinF;
+  /// Remove all Subscriptions from this Subscriber
+  void clearSubscriptions();
+
+  /// List of current Subscriptions for this Subscriber
+  std::set<const Subscription*> mSubscriptions;
+
 };
 
-}  // namespace optimizer
-}  // namespace dart
+} // namespace dart
+} // namespace common
 
-#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-
+#endif // DART_COMMON_SUBSCRIBER_H_

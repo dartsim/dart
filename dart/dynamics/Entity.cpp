@@ -68,6 +68,7 @@ Entity::~Entity()
 const std::string& Entity::setName(const std::string &_name)
 {
   mName = _name;
+  sendNotification(NAME_CHANGE_NOTICE);
   return mName;
 }
 
@@ -81,6 +82,7 @@ const std::string& Entity::getName() const
 void Entity::addVisualizationShape(Shape* _p)
 {
   mVizShapes.push_back(_p);
+  sendNotification(VISUALIZATION_CHANGE_NOTICE);
 }
 
 //==============================================================================
@@ -208,6 +210,7 @@ bool Entity::isFrame() const
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;
+  sendNotification(TRANSFORM_NOTICE);
 }
 
 //==============================================================================
@@ -220,6 +223,7 @@ bool Entity::needsTransformUpdate() const
 void Entity::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
+  sendNotification(VELOCITY_NOTICE);
 }
 
 //==============================================================================
@@ -232,6 +236,7 @@ bool Entity::needsVelocityUpdate() const
 void Entity::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+  sendNotification(ACCELERATION_NOTICE);
 }
 
 //==============================================================================
@@ -256,9 +261,9 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  if(NULL == _newParentFrame)
+  if(nullptr == _newParentFrame)
   {
-    mParentFrame = NULL;
+    mParentFrame = nullptr;
     return;
   }
 
@@ -269,6 +274,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
+
+  sendNotification(FRAME_CHANGE_NOTICE);
 }
 
 //==============================================================================

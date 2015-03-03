@@ -474,6 +474,8 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
+
+  sendNotification(TRANSFORM_NOTICE);
 }
 
 //==============================================================================
@@ -489,6 +491,8 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
+
+  sendNotification(VELOCITY_NOTICE);
 }
 
 //==============================================================================
@@ -502,6 +506,8 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
+
+  sendNotification(ACCELERATION_NOTICE);
 }
 
 //==============================================================================
@@ -530,15 +536,15 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       mParentFrame->mChildFrames.erase(it);
   }
 
-  if(NULL==_newParentFrame)
+  if(nullptr==_newParentFrame)
   {
     Entity::changeParentFrame(_newParentFrame);
     return;
   }
 
-  Entity::changeParentFrame(_newParentFrame);
   if(!mAmQuiet)
     mParentFrame->mChildFrames.insert(this);
+  Entity::changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================

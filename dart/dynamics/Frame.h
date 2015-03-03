@@ -63,6 +63,13 @@ public:
   friend class Entity;
   friend class WorldFrame;
 
+  enum Notification {
+
+    LOSE_CHILD = NUM_ENTITY_NOTIFICATIONS,
+    GAIN_CHILD
+
+  };
+
   /// Constructor for typical usage
   explicit Frame(Frame* _refFrame, const std::string& _name);
 

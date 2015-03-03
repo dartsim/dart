@@ -2,7 +2,7 @@
  * Copyright (c) 2014-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,64 +34,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-
-#include <nlopt.h>
-
-#include "dart/optimizer/Solver.h"
+#include "dart/common/Subscription.h"
+#include "dart/common/Subscriber.h"
 
 namespace dart {
-namespace optimizer {
+namespace common {
 
-class Problem;
-
-/// \brief class NloptSolver
-class NloptSolver : public Solver
+Subscription::~Subscription()
 {
-public:
-  /// \brief Constructor
-  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
+  sendDestructionNotification();
+}
 
-  /// \brief Destructor
-  virtual ~NloptSolver();
+//==============================================================================
+void Subscription::sendNotification(int _notice) const
+{
+  for(Subscriber* sub : mSubscribers)
+    sub->receiveNotification(this, _notice);
+}
 
-  /// Set number of maximum evaluations
-  virtual void setNumMaxEvaluations(size_t _numVal);
+//==============================================================================
+void Subscription::sendDestructionNotification() const
+{
+  std::set<Subscriber*>::iterator sub = mSubscribers.begin(),
+                                  end = mSubscribers.end();
+  while( sub != end )
+    (*(sub++))->receiveDestructionNotification(this);
+  // We do this tricky iterator method to deal with the fact that mSubscribers
+  // will be changing as we go through the loop
+}
 
-  /// Get number of maximum evaluations
-  virtual size_t getNumEvaluationMax() const;
+//==============================================================================
+void Subscription::addSubscriber(Subscriber* _subscriber) const
+{
+  if(nullptr == _subscriber)
+    return;
 
-  /// \copydoc Solver::solve
-  virtual bool solve();
+  if(mSubscribers.find(_subscriber) != mSubscribers.end())
+    return;
 
-private:
-  /// \brief Wrapping function for nlopt callback function, nlopt_func
-  static double _nlopt_func(unsigned _n,
-                            const double* _x,
-                            double* _gradient,  // NULL if not needed
-                            void* _func_data);
+  mSubscribers.insert(_subscriber);
+  _subscriber->addSubscription(this);
+}
 
-  /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
-  static void _nlopt_mfunc(unsigned _m,
-                           double* _result,
-                           unsigned _n,
-                           const double* _x,
-                           double* _gradient,  // NULL if not needed
-                           void* _func_data);
+//==============================================================================
+void Subscription::removeSubscriber(Subscriber* _subscriber) const
+{
+  if(nullptr == _subscriber)
+    return;
 
-  /// \brief NLOPT data structure
-  nlopt_opt mOpt;
+  if(mSubscribers.find(_subscriber) == mSubscribers.end())
+    return;
 
-  /// \brief Optimization parameters
-  Eigen::VectorXd mX;
+  mSubscribers.erase(_subscriber);
+  _subscriber->removeSubscription(this);
+}
 
-  /// \brief Optimum value of the objective function
-  double mMinF;
-};
-
-}  // namespace optimizer
-}  // namespace dart
-
-#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-
+} // namespace common
+} // namespace dart
