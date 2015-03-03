@@ -47,8 +47,7 @@ class OperationalSpaceControlWorld : public osgDart::WorldNode
 public:
 
   OperationalSpaceControlWorld(dart::simulation::World* _world)
-    : osgDart::WorldNode(_world),
-      moving(false)
+    : osgDart::WorldNode(_world)
   {
     // Extract relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -122,15 +121,9 @@ protected:
   BodyNode* mEndEffector;
   SimpleFrame* mTarget;
 
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKv;
+  Eigen::Matrix3d mKp;
+  Eigen::Matrix3d mKv;
   Eigen::VectorXd mForces;
-
-  Eigen::Vector3d mPickedPosition;
-  Eigen::Vector3d mSavedPosition;
-
-  bool moving;
-
 };
 
 int main()
