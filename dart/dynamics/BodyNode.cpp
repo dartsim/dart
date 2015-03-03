@@ -753,7 +753,7 @@ math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
 {
   if(this == _inCoordinatesOf)
     return getJacobian(_offset);
-  if(_inCoordinatesOf->isWorld())
+  else if(_inCoordinatesOf->isWorld())
     return getWorldJacobian(_offset);
 
   Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
@@ -787,6 +787,8 @@ math::LinearJacobian BodyNode::getLinearJacobian(
 {
   if(this == _inCoordinatesOf)
     return getJacobian().bottomRows<3>();
+  else if(_inCoordinatesOf->isWorld())
+    return getWorldJacobian().bottomRows<3>();
 
   return getTransform(_inCoordinatesOf).linear() * getJacobian().bottomRows<3>();
 }
@@ -811,6 +813,8 @@ math::AngularJacobian BodyNode::getAngularJacobian(
 {
   if(this == _inCoordinatesOf)
     return getJacobian().topRows<3>();
+  else if(_inCoordinatesOf->isWorld())
+    return getWorldJacobian().topRows<3>();
 
   return getTransform(_inCoordinatesOf).linear() * getJacobian().topRows<3>();
 }
