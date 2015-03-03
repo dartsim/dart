@@ -720,6 +720,14 @@ TEST(RELATIVE_FRAMES, CLASSIC_SPATIAL)
   test_relative_values(false, true);
 }
 
+TEST(FRAMES, CHILDHOOD)
+{
+  SimpleFrame F1(Frame::World(), "F1");
+  SimpleFrame F2(&F1, "F2");
+
+  EXPECT_TRUE(F1.getNumChildFrames() == 1);
+}
+
 int main(int argc, char* argv[])
 {
   srand(271828); // Seed with an arbitrary fixed integer. Don't seed with time,
