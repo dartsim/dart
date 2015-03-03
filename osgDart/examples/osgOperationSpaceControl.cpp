@@ -55,7 +55,7 @@ public:
     mEndEffector = mRobot->getBodyNode(mRobot->getNumBodyNodes()-1);
 
     // Setup gain matrices
-    size_t dofs = mEndEffector->getNumDependentGenCoords();
+    size_t dofs = 3;
     mKp.setZero(dofs,dofs);
     mKv.setZero(dofs,dofs);
 
@@ -84,70 +84,73 @@ public:
   // Triggered at the beginning of each rendering cycle
   void customPreUpdate()
   {
-    osgDart::MouseButtonEvent event =
-        mViewer->getDefaultEventHandler()->getButtonEvent();
+//    osgDart::MouseButtonEvent event =
+//        mViewer->getDefaultEventHandler()->getButtonEvent();
 
-    if(moving)
-    {
-      if(osgDart::BUTTON_RELEASE == event)
-        moving = false;
+//    if(moving)
+//    {
+//      if(osgDart::BUTTON_RELEASE == event)
+//        moving = false;
 
-      Eigen::Vector3d dx =
-          mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition);
+//      Eigen::Vector3d dx =
+//          mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition);
 
-      Eigen::Isometry3d tf = mTarget->getWorldTransform();
-      tf.translation() = mSavedPosition + dx;
-      mTarget->setRelativeTransform(tf);
-    }
-    else // not moving
-    {
-      if(osgDart::BUTTON_PUSH == event &&
-         mViewer->getDefaultEventHandler()->checkButton(osgDart::LEFT_MOUSE))
-      {
-        const std::vector<osgDart::PickInfo>& picks =
-            mViewer->getDefaultEventHandler()->getButtonPicks(
-              osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+//      Eigen::Isometry3d tf = mTarget->getWorldTransform();
+//      tf.translation() = mSavedPosition + dx;
+//      mTarget->setRelativeTransform(tf);
+//    }
+//    else // not moving
+//    {
+//      if(osgDart::BUTTON_PUSH == event &&
+//         mViewer->getDefaultEventHandler()->checkButton(osgDart::LEFT_MOUSE))
+//      {
+//        const std::vector<osgDart::PickInfo>& picks =
+//            mViewer->getDefaultEventHandler()->getButtonPicks(
+//              osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
 
-        for(const osgDart::PickInfo& pick : picks)
-        {
-          if(pick.entity == mTarget)
-          {
-            moving = true;
-            mPickedPosition = pick.position;
-            mSavedPosition = mTarget->getWorldTransform().translation();
-            return;
-          }
-        }
-      }
-    }
+//        for(const osgDart::PickInfo& pick : picks)
+//        {
+//          if(pick.entity == mTarget)
+//          {
+//            moving = true;
+//            mPickedPosition = pick.position;
+//            mSavedPosition = mTarget->getWorldTransform().translation();
+//            return;
+//          }
+//        }
+//      }
+//    }
   }
 
   // Triggered at the beginning of each simulation step
   void customPreStep()
   {
-    Eigen::Vector3d x    = mEndEffector->getWorldTransform().translation();
-    Eigen::Vector3d dx   = mEndEffector->getLinearVelocity();
-    Eigen::MatrixXd invM = mRobot->getInvMassMatrix();
-    Eigen::VectorXd Cg   = mRobot->getCoriolisAndGravityForces();
-    LinearJacobian Jv    = mEndEffector->getLinearJacobian();
-    LinearJacobian dJv   = mEndEffector->getLinearJacobianDeriv();
-    Eigen::VectorXd dq   = mRobot->getVelocities();
+//    Eigen::Vector3d x    = mEndEffector->getWorldTransform().translation();
+//    Eigen::Vector3d dx   = mEndEffector->getLinearVelocity();
+//    Eigen::MatrixXd invM = mRobot->getInvMassMatrix();
+//    Eigen::VectorXd Cg   = mRobot->getCoriolisAndGravityForces();
+//    LinearJacobian Jv    = mEndEffector->getLinearJacobian();
+//    LinearJacobian dJv   = mEndEffector->getLinearJacobianDeriv();
+//    Eigen::VectorXd dq   = mRobot->getVelocities();
 
-    Eigen::MatrixXd A = Jv*invM;
-    Eigen::Vector3d b = dJv*dq;
-    Eigen::MatrixXd M2 = Jv*invM*Jv.transpose();
+//    Eigen::MatrixXd A = Jv*invM;
+//    Eigen::Vector3d b = dJv*dq;
+//    Eigen::Matrix3d M2 = Jv*invM*Jv.transpose();
 
-    Eigen::Vector3d target = mTarget->getWorldTransform().translation();
+//    Eigen::Vector3d target = mTarget->getWorldTransform().translation();
 
-    Eigen::Vector3d f = -mKp*(x - target) - mKv*dx;
+//    Eigen::Vector3d f = -mKp*(x - target) - mKv*dx;
 
-    Eigen::Vector3d desired_ddx = b + M2*f;
+//    Eigen::Vector3d desired_ddx = b + M2*f;
 
-    mForces = Cg;
+//    mForces = Cg;
 
-    mForces += A.colPivHouseholderQr().solve(desired_ddx - b);
+//    mForces += A.colPivHouseholderQr().solve(desired_ddx - b);
 
-    mRobot->setForces(mForces);
+//    mRobot->setForces(mForces);
+
+//    std::cout << "Positions: " << mRobot->getPositions().transpose() << "\n";
+//    std::cout << "Forces: " << mForces.transpose() << "\n" << std::endl;
   }
 
 protected:
@@ -171,14 +174,23 @@ int main()
 {
   dart::utils::DartLoader loader;
   dart::simulation::World* world = new dart::simulation::World;
+
   dart::dynamics::Skeleton* robot =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
-  dart::dynamics::Skeleton* ground =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
   world->addSkeleton(robot);
-  world->addSkeleton(ground);
 
-  assert(world != nullptr);
+  std::cout << robot->getNumBodyNodes() << "\n" << robot->getPositions().transpose() << std::endl;
+  for(size_t i=0; i<robot->getNumBodyNodes(); ++i)
+  {
+    BodyNode* bn = robot->getBodyNode(i);
+    std::cout << bn->getName() << ": " << bn->getNumVisualizationShapes() << std::endl;
+    std::cout << "child frames: " << bn->getNumChildFrames() << std::endl;
+    std::cout << "child bns: " << bn->getNumChildBodyNodes() << std::endl;
+  }
+
+//  dart::dynamics::Skeleton* ground =
+//      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
+//  world->addSkeleton(ground);
 
   osg::ref_ptr<osgDart::WorldNode> node =
       new OperationalSpaceControlWorld(world);
@@ -186,7 +198,7 @@ int main()
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
-  viewer.simulate(true);
+//  viewer.simulate(true);
 
 
 

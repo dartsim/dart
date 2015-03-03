@@ -40,6 +40,9 @@
 
 #include "dart/dynamics/Frame.h"
 
+
+#include <iostream>
+
 namespace osgDart
 {
 
@@ -96,6 +99,8 @@ void FrameNode::refresh(bool _relative, bool _recursive)
 
   const std::set<dart::dynamics::Frame*>& frames =
       mFrame->getChildFrames();
+
+  std::cout << mFrame->getName() << " has " << frames.size() << " children" << std::endl;
 
   for(dart::dynamics::Frame* frame : frames)
     refreshFrameNode(frame);

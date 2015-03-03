@@ -53,7 +53,8 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
-    mAmQuiet(_quiet)
+    mAmQuiet(_quiet),
+    mAmFrame(false)
 {
   changeParentFrame(_refFrame);
 }
@@ -252,6 +253,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
   {
     if(mParentFrame)
     {
+      // If this entity has a parent Frame, tell that parent that it is losing
+      // this child
       EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
       if(it != mParentFrame->mChildEntities.end())
       {

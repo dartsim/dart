@@ -60,6 +60,7 @@ EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
     mParent(_parent),
     mUtilized(false)
 {
+  std::cout << "Creating EntityNode for " << _entity->getName() << std::endl;
   refresh();
 }
 

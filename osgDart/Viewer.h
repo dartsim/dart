@@ -44,9 +44,16 @@
 #include <Eigen/Core>
 
 namespace dart {
+
 namespace simulation {
 class World;
 } // namespace simulation
+
+namespace dynamics {
+class Entity;
+class SimpleFrame;
+} // namespace dynamics
+
 } // namespace dart
 
 namespace osgDart
@@ -54,6 +61,7 @@ namespace osgDart
 
 class WorldNode;
 class DefaultEventHandler;
+class SimpleFrameDnD;
 
 class Viewer : public osgViewer::Viewer
 {
@@ -122,6 +130,18 @@ public:
   /// Returns true iff this Viewer is currently set to simulate
   bool isSimulating() const;
 
+  /// Returns true iff _entity is a type that can support the built-in drag and
+  /// drop features
+  bool enableDragAndDrop(dart::dynamics::Entity* _entity);
+
+  void disableDragAndDrop(dart::dynamics::Entity* _entity);
+
+  /// Turn on drag and drop functionality for this SimpleFrame
+  void enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
+
+  /// Turn off drag and drop functionality for this SimpleFrame
+  void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
+
   /// Get a string containing the user interface constructions for this Viewer
   const std::string& getInstructions() const;
 
@@ -129,6 +149,12 @@ public:
   /// recommended to end your string with an end-of-line character. An
   /// end-of-line character will NOT be added automatically.
   void addInstructionText(const std::string& _instruction);
+
+  /// Called automatically at the beginning of each render cycle
+  virtual void updateViewer();
+
+  /// Called automatically by updateViewer()
+  void updateDragAndDrops();
 
 protected:
 
@@ -171,6 +197,9 @@ protected:
 
   /// string of instructions for this Viewer
   std::string mInstructions;
+
+  /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
+  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
 
 };
 

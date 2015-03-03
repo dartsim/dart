@@ -34,16 +34,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <osg/OperationThread>
+
 #include "osgDart/Viewer.h"
 #include "osgDart/TrackballManipulator.h"
 #include "osgDart/DefaultEventHandler.h"
+#include "osgDart/DragAndDrop.h"
 #include "osgDart/WorldNode.h"
 #include "osgDart/utils.h"
 
 #include "dart/simulation/World.h"
 
+#include "dart/dynamics/SimpleFrame.h"
+
 namespace osgDart
 {
+
+class ViewerUpdateOperation : public osg::Operation
+{
+public:
+
+  void operator() (osg::Object* object)
+  {
+    osg::ref_ptr<Viewer> viewer = dynamic_cast<Viewer*>(object);
+    if(viewer)
+      viewer->updateViewer();
+  }
+
+};
 
 Viewer::Viewer(const osg::Vec4& clearColor)
   : mRootGroup(new osg::Group),
@@ -70,6 +88,8 @@ Viewer::Viewer(const osg::Vec4& clearColor)
   addEventHandler(mDefaultEventHandler);
   setupDefaultLights();
   getCamera()->setClearColor(clearColor);
+
+//  addUpdateOperation(new ViewerUpdateOperation);
 }
 
 //==============================================================================
@@ -306,6 +326,53 @@ bool Viewer::isSimulating() const
 }
 
 //==============================================================================
+bool Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
+{
+  dart::dynamics::SimpleFrame* sf =
+      dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
+  if(sf)
+  {
+    enableDragAndDrop(sf);
+    return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void Viewer::disableDragAndDrop(dart::dynamics::Entity *_entity)
+{
+  dart::dynamics::SimpleFrame* sf =
+      dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
+  if(sf)
+    disableDragAndDrop(sf);
+}
+
+//==============================================================================
+void Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
+{
+  if(nullptr == _frame)
+    return;
+
+  if(mSimpleFrameDnDMap.find(_frame) != mSimpleFrameDnDMap.end())
+    return;
+
+  mSimpleFrameDnDMap[_frame] = new SimpleFrameDnD(this, _frame);
+}
+
+//==============================================================================
+void Viewer::disableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
+{
+  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
+      mSimpleFrameDnDMap.find(_frame);
+  if(it == mSimpleFrameDnDMap.end())
+    return;
+
+  delete it->second;
+  mSimpleFrameDnDMap.erase(it);
+}
+
+//==============================================================================
 const std::string& Viewer::getInstructions() const
 {
   return mInstructions;
@@ -315,6 +382,12 @@ const std::string& Viewer::getInstructions() const
 void Viewer::addInstructionText(const std::string& _instruction)
 {
   mInstructions.append(_instruction);
+}
+
+//==============================================================================
+void Viewer::updateViewer()
+{
+  std::cout << "UPDATING VIEWER" << std::endl;
 }
 
 } // namespace osgDart

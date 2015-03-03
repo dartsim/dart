@@ -542,9 +542,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     return;
   }
 
+  Entity::changeParentFrame(_newParentFrame);
   if(!mAmQuiet)
     mParentFrame->mChildFrames.insert(this);
-  Entity::changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================

@@ -41,12 +41,21 @@
 
 #include <Eigen/Core>
 
+#include "dart/common/Subscriber.h"
+#include "dart/dynamics/Entity.h"
+
+namespace dart {
+namespace dynamics {
+class SimpleFrame;
+} // namespace dynamics
+} // namespace dart
+
 namespace osgDart
 {
 
-class DefaultEventHandler;
+class Viewer;
 
-class DragAndDrop
+class DragAndDrop : public dart::common::Subscriber
 {
 public:
 
@@ -60,11 +69,15 @@ public:
     NUM_CONSTRAINT_TYPES
   };
 
-  DragAndDrop(DefaultEventHandler* ehandler);
+  DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
+
+  virtual ~DragAndDrop();
 
   void update();
 
   virtual void move() = 0;
+
+  virtual void saveState() = 0;
 
   void unconstrain();
 
@@ -74,12 +87,47 @@ public:
   void constrainToPlane(const Eigen::Vector3d& point,
                         const Eigen::Vector3d& normal);
 
-  void customConstraint(std::function<void()> f);
-
 protected:
+
+  virtual void handleDestructionNotification(
+      const dart::common::Subscription* subscription) override;
+
+  Viewer* mViewer;
+
+  dart::dynamics::Entity* mEntity;
+
+  Eigen::Vector3d mPickedPosition;
+
+  /// Reference point for constraint
+  Eigen::Vector3d mPoint;
+
+  /// Reference vector for constraint (slope for line constraint, or normal for
+  /// plane constraint)
+  Eigen::Vector3d mVector;
+
+  ConstraintType mConstraintType;
 
   bool mAmMoving;
 
+};
+
+class SimpleFrameDnD : public DragAndDrop
+{
+public:
+
+  SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame=nullptr);
+
+  ~SimpleFrameDnD();
+
+  virtual void move() override;
+
+  virtual void saveState() override;
+
+protected:
+
+  dart::dynamics::SimpleFrame* mFrame;
+
+  Eigen::Vector3d mSavedPosition;
 };
 
 } // namespace osgDart
