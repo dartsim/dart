@@ -60,14 +60,30 @@ TEST(Subscriptions, Notifications)
   entity_ptr->addVisualizationShape(new BoxShape(Eigen::Vector3d::Ones()));
   EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::VISUALIZATION_CHANGE_NOTICE);
 
-  delete entity_ptr.get();
-  delete frame_ptr.get();
+  delete entity_ptr;
+  delete frame_ptr;
 
   EXPECT_FALSE(entity_ptr.valid());
   EXPECT_FALSE(frame_ptr.valid());
 
   EXPECT_TRUE(entity_ptr.get() == nullptr);
   EXPECT_TRUE(frame_ptr.get() == nullptr);
+}
+
+Entity* getPointer(Entity* _ptr)
+{
+  return _ptr;
+}
+
+TEST(Subscriptions, ImplicitConversion)
+{
+  sub_ptr<Entity> entity_ptr = new Entity(Frame::World(), "entity", false);
+
+  // This checks whether the sub_ptr class can successfully be implicitly
+  // converted to the type of class it's supposed to be pointing to
+  EXPECT_TRUE( getPointer(entity_ptr) == entity_ptr.get() );
+
+  delete entity_ptr;
 }
 
 int main(int argc, char* argv[])
