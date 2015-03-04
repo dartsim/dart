@@ -55,7 +55,7 @@ public:
     osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
 
     if(currentNode)
-      currentNode->update();
+      currentNode->refresh();
 
     traverse(node, nv);
   }
@@ -84,9 +84,9 @@ dart::simulation::World* WorldNode::getWorld() const
 }
 
 //==============================================================================
-void WorldNode::update()
+void WorldNode::refresh()
 {
-  customPreUpdate();
+  customPreRefresh();
 
   clearChildUtilizationFlags();
 
@@ -106,17 +106,17 @@ void WorldNode::update()
 
   clearUnusedNodes();
 
-  customPostUpdate();
+  customPostRefresh();
 }
 
 //==============================================================================
-void WorldNode::customPreUpdate()
+void WorldNode::customPreRefresh()
 {
   // Do nothing
 }
 
 //==============================================================================
-void WorldNode::customPostUpdate()
+void WorldNode::customPostRefresh()
 {
   // Do nothing
 }

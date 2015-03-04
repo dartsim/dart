@@ -94,7 +94,6 @@ public:
                                 +0.0025*Eigen::Matrix3d::Identity()).inverse();
 
     LinearJacobian dJ = mEndEffector->getLinearJacobianDeriv(mOffset);
-
     Eigen::MatrixXd pinv_dJ = dJ.transpose()*(dJ*dJ.transpose()
                                 +0.0025*Eigen::Matrix3d::Identity()).inverse();
 
@@ -117,7 +116,10 @@ protected:
   void setupViewer() override
   {
     if(mViewer)
+    {
       mViewer->enableDragAndDrop(mTarget);
+      mViewer->addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
+    }
   }
 
   Skeleton* mRobot;
@@ -151,11 +153,16 @@ int main()
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
-  viewer.addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
-
   std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  viewer.getCameraManipulator()->setHomePosition(osg::Vec3(3.13,  0.68, -2.36),
+                                                 osg::Vec3(0,  0, 0),
+                                                 osg::Vec3(-0.18, 0.98,  0.09));
+  // We need to re-dirty the CameraManipulator by passing it into the viewer
+  // again, so that the viewer knows to update its HomePosition setting
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   viewer.run();
 }

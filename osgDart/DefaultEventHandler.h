@@ -93,10 +93,7 @@ public:
   virtual ~DefaultEventHandler();
 
   /// Returns the last event performed by a mouse button
-  MouseButtonEvent getButtonEvent() const;
-
-  /// Returns true iff 'button' was used in the last button event
-  bool checkButton(MouseButton button) const;
+  MouseButtonEvent getButtonEvent(MouseButton button) const;
 
   /// Get the last x value of the cursor in Window coordinates
   double getWindowCursorX() const;
@@ -147,7 +144,11 @@ public:
 
 protected:
 
+  /// Gather current picks and assign them to the latest event
   void eventPick(const osgGA::GUIEventAdapter& ea);
+
+  /// Clear out the current button events
+  void clearButtonEvents();
 
   /// osgDart::Viewer that this event handler is tied to
   Viewer* mViewer;
@@ -168,7 +169,7 @@ protected:
   std::vector<PickInfo> mTempPicks;
 
   /// The last mouse event that was registered by the event handler
-  MouseButtonEvent mLastButtonEvent;
+  MouseButtonEvent mLastButtonEvent[NUM_MOUSE_BUTTONS];
 
   /// True iff the last event performed by the mouse was a move (does not
   /// include drags)

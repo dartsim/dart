@@ -63,6 +63,7 @@ namespace osgDart
 
 class WorldNode;
 class DefaultEventHandler;
+class DragAndDrop;
 class SimpleFrameDnD;
 
 class Viewer : public osgViewer::Viewer
@@ -132,16 +133,23 @@ public:
   /// Returns true iff this Viewer is currently set to simulate
   bool isSimulating() const;
 
-  /// Returns true iff _entity is a type that can support the built-in drag and
-  /// drop features
-  bool enableDragAndDrop(dart::dynamics::Entity* _entity);
+  /// Returns a nullptr if _entity is not a type that can support the built-in
+  /// drag and drop features, otherwise it returns a pointer to the DragAndDrop
+  /// interface object that has been created (allowing you to configure it). If
+  /// a DragAndDrop interface already existed for this object, the existing one
+  /// will be returned.
+  DragAndDrop* enableDragAndDrop(dart::dynamics::Entity* _entity);
 
+  /// Turn off DragAndDrop for this Entity. NOTE: The previously created
+  /// DragAndDrop interface will be destroyed, and its pointers will be invalid,
+  /// even if DragAndDrop is enabled again (because a new interface will be
+  /// created at that time).
   void disableDragAndDrop(dart::dynamics::Entity* _entity);
 
-  /// Turn on drag and drop functionality for this SimpleFrame
-  void enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
+  /// A version of enableDragAndDrop specifically for SimpleFrame objects.
+  SimpleFrameDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
 
-  /// Turn off drag and drop functionality for this SimpleFrame
+  /// A version of disableDragAndDrop specifically for SimpleFrame objects.
   void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
 
   /// Get a string containing the user interface constructions for this Viewer

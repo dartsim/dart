@@ -84,21 +84,21 @@ public:
   /// customUpdate(). This update() function will automatically call
   /// customUpdate() at the beginning of each rendering cycle. By default,
   /// customUpdate() does nothing.
-  virtual void update();
+  virtual void refresh();
 
   /// If update() is not overloaded, this function will be called at the
   /// beginning of each rendering cycle. This function can be overloaded to
   /// customize the behavior of each update. The default behavior is to do
   /// nothing, so overloading this function will not interfere with the usual
   /// update() operation.
-  virtual void customPreUpdate();
+  virtual void customPreRefresh();
 
   /// If update() is not overloaded, this function will be called at the end of
   /// each rendering cycle. This function can be overloaded to customize the
   /// behavior of each update. The default behavior is to do nothing, so
   /// overloading this function will not interfere with the usual update()
   /// operation.
-  virtual void customPostUpdate();
+  virtual void customPostRefresh();
 
   /// If update() is not overloaded, this function will be called at the
   /// beginning of each simulation step. This function can be overloaded to

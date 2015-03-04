@@ -54,7 +54,7 @@ public:
       C(nullptr), S(nullptr), SC(nullptr), t(0.0)
   { }
 
-  void customPreUpdate() override
+  void customPreRefresh() override
   {
     t += 0.002;
 

@@ -52,7 +52,7 @@ public:
   CustomWorldNode(dart::simulation::World* _world)
     : WorldNode(_world), F(nullptr), T(nullptr), S(nullptr), t(0.0) { }
 
-  void customPreUpdate() override
+  void customPreRefresh() override
   {
     t += 0.002;
 

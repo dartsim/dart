@@ -312,17 +312,14 @@ bool Viewer::isSimulating() const
 }
 
 //==============================================================================
-bool Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
+DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 {
   dart::dynamics::SimpleFrame* sf =
       dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
   if(sf)
-  {
-    enableDragAndDrop(sf);
-    return true;
-  }
+    return enableDragAndDrop(sf);
 
-  return false;
+  return nullptr;
 }
 
 //==============================================================================
@@ -335,15 +332,19 @@ void Viewer::disableDragAndDrop(dart::dynamics::Entity *_entity)
 }
 
 //==============================================================================
-void Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
+SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 {
   if(nullptr == _frame)
-    return;
+    return nullptr;
 
-  if(mSimpleFrameDnDMap.find(_frame) != mSimpleFrameDnDMap.end())
-    return;
+  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
+      mSimpleFrameDnDMap.find(_frame);
+  if(it != mSimpleFrameDnDMap.end())
+    return it->second;
 
-  mSimpleFrameDnDMap[_frame] = new SimpleFrameDnD(this, _frame);
+  SimpleFrameDnD* dnd = new SimpleFrameDnD(this, _frame);
+  mSimpleFrameDnDMap[_frame] = dnd;
+  return dnd;
 }
 
 //==============================================================================

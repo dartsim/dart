@@ -65,7 +65,7 @@ void DragAndDrop::update()
     return;
 
   osgDart::MouseButtonEvent event =
-      mViewer->getDefaultEventHandler()->getButtonEvent();
+      mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
@@ -76,8 +76,7 @@ void DragAndDrop::update()
   }
   else // not moving
   {
-    if(osgDart::BUTTON_PUSH == event &&
-       mViewer->getDefaultEventHandler()->checkButton(osgDart::LEFT_MOUSE))
+    if(osgDart::BUTTON_PUSH == event)
     {
       const std::vector<osgDart::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
