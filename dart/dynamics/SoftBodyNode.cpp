@@ -1192,12 +1192,13 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
 
   for (int i = 0; i < 3; ++i)
   {
-    if (frags[i] == 2)
+    if (frags[i] <= 2)
     {
       dtwarn << "Invalid property of soft body '" << _softBodyNode->getName()
              << "'. "
-             << "The number of vertices of each soft box edge should be "
-             << "equal to or greater than 3. It's set to 3."
+             << "The number of vertices assigned to soft box edge #" << i
+             << " is " << frags[i] << ", but it must be greater than or "
+             << "equal to 3. We will set it to 3."
              << std::endl;
       frags[i] = 3;
     }
