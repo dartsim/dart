@@ -58,9 +58,9 @@ void CollisionInterface::updateBodyNodes() {
     for (std::map<BodyNode*, RigidBody*>::iterator it = mNodeMap.begin(); it != mNodeMap.end(); ++it) {
         BodyNode *bn = it->first;
         RigidBody *rb = it->second;
-        if (rb == NULL)
+        if (bn->getSkeleton()->getName() == "pinata")
             continue;
-        Eigen::Isometry3d W;
+        Isometry3d W;
         W.setIdentity();
         W.linear() = rb->mOrientation;
         W.translation() = rb->mPosition;
@@ -80,5 +80,16 @@ void CollisionInterface::postProcess() {
         mContacts[i].normal = mCollisionChecker->getContact(i).normal;
         mContacts[i].rb1 = mNodeMap[mCollisionChecker->getContact(i).bodyNode1];
         mContacts[i].rb2 = mNodeMap[mCollisionChecker->getContact(i).bodyNode2];
+        if(mContacts[i].rb1 == NULL) {
+          BodyNode* bd = mCollisionChecker->getContact(i).bodyNode1;
+          Vector3d localPoint = bd->getTransform().inverse() * mContacts[i].point;
+          mContacts[i].pinataVelocity = bd->getWorldLinearVelocity(localPoint);
+        } else if(mContacts[i].rb2 == NULL) {
+          BodyNode* bd = mCollisionChecker->getContact(i).bodyNode2;
+          Vector3d localPoint = bd->getTransform().inverse() * mContacts[i].point;
+          mContacts[i].pinataVelocity = bd->getWorldLinearVelocity(localPoint);
+        } else {
+          mContacts[i].pinataVelocity.setZero();
+        }        
     }
 }
