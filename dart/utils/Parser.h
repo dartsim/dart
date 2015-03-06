@@ -56,6 +56,9 @@ std::string toString(double _v);
 std::string toString(char _v);
 std::string toString(const Eigen::Vector2d& _v);
 std::string toString(const Eigen::Vector3d& _v);
+std::string toString(const Eigen::Vector3i& _v);
+std::string toString(const Eigen::Vector6d& _v);
+std::string toString(const Eigen::VectorXd& _v);
 std::string toString(const Eigen::Isometry3d& _v);
 
 bool              toBool      (const std::string& _str);
@@ -68,6 +71,7 @@ Eigen::Vector2d   toVector2d  (const std::string& _str);
 Eigen::Vector3d   toVector3d  (const std::string& _str);
 Eigen::Vector3i   toVector3i  (const std::string& _str);
 Eigen::Vector6d   toVector6d  (const std::string& _str);
+Eigen::VectorXd   toVectorXd  (const std::string& _str);
 // TODO: The definition of _str is not clear for transform (see: #250)
 Eigen::Isometry3d toIsometry3d(const std::string& _str);
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str);
@@ -83,6 +87,7 @@ Eigen::Vector2d   getValueVector2d  (tinyxml2::XMLElement* _parentElement, const
 Eigen::Vector3d   getValueVector3d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Vector3i   getValueVector3i  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Vector6d   getValueVector6d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::VectorXd   getValueVectorXd  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
