@@ -50,6 +50,13 @@
                         </box>
                     </geometry>
                 </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>0.02 1.0 1.0</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
             </body>
             <body name="right">
                 <gravity>1</gravity>
@@ -65,6 +72,13 @@
                         </box>
                     </geometry>
                 </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>0.02 1.0 1.0</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
             </body>
             <body name="back">
                 <gravity>1</gravity>
@@ -80,6 +94,13 @@
                         </box>
                     </geometry>
                 </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 1.0 0.02</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
             </body>
             <body name="front">
                 <gravity>1</gravity>
@@ -95,6 +116,13 @@
                         </box>
                     </geometry>
                 </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 1.0 0.02</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
             </body>
             <body name="bottom">
                 <gravity>1</gravity>
