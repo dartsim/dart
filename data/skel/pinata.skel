@@ -35,6 +35,13 @@
                         </box>
                     </geometry>
                 </visualization_shape>
+                <collision_shape>
+                    <geometry>
+                        <box>
+                            <size>1.0 0.02 1.0</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
             </body>
             <body name="left">
                 <gravity>1</gravity>
