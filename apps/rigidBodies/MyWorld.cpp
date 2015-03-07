@@ -31,7 +31,7 @@ MyWorld::MyWorld() {
   mCollisionDetector->addRigidBody(rb2, "ellipse"); // Put rb2 in collision detector
   rb2->mPosition[0] = 0.3;
   rb2->mPosition[1] = -0.5;
-  rb1->mAngMomentum = Vector3d(0.1, 0.0, 0.0);
+  rb2->mAngMomentum = Vector3d(0.1, 0.0, 0.0);
   rb2->mColor = Vector4d(0.2, 0.8, 0.2, 1.0); // Blue
   mRigidBodies.push_back(rb2);
 }
