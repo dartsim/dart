@@ -55,9 +55,20 @@ option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo Profile." FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Release Debug." FORCE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+
+set(BUILD_TYPE_RELEASE FALSE)
+set(BUILD_TYPE_DEBUG FALSE)
+
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
+  set(BUILD_TYPE_RELEASE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
+  set(BUILD_TYPE_DEBUG TRUE)
+else()
+  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Release Debug")
+endif()
 
 #===============================================================================
 # Find dependencies
