@@ -321,7 +321,6 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 
     case osgGA::GUIEventAdapter::MOVE:
     {
-//      clearButtonEvents();
       if(!mSuppressMovePicks)
         pick(mMovePicks, ea);
       break;
@@ -333,6 +332,8 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 
       assignEventToButtons(mLastButtonEvent, ea);
       eventPick(ea);
+
+      mViewer->updateDragAndDrops();
       break;
 
     default:

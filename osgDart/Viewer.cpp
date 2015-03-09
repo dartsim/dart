@@ -51,7 +51,7 @@ namespace osgDart
 {
 
 Viewer::Viewer(const osg::Vec4& clearColor)
-  : mDartGroup(new DartNode(this)),
+  : mRootGroup(new osg::Group),
     mLightGroup(new osg::Group),
     mLight1(new osg::Light),
     mLightSource1(new osg::LightSource),
@@ -71,7 +71,7 @@ Viewer::Viewer(const osg::Vec4& clearColor)
   mDefaultEventHandler = new DefaultEventHandler(this);
   // ^ Cannot construct this in the initialization list, because its constructor calls member functions of this object
 
-  setSceneData(mDartGroup);
+  setSceneData(mRootGroup);
   addEventHandler(mDefaultEventHandler);
   setupDefaultLights();
   getCamera()->setClearColor(clearColor);
@@ -163,7 +163,7 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
     return;
 
   mWorldNodes[_newWorldNode] = _active;
-  mDartGroup->addChild(_newWorldNode);
+  mRootGroup->addChild(_newWorldNode);
   if(_active)
     _newWorldNode->simulate(mSimulating);
   _newWorldNode->mViewer = this;
@@ -177,7 +177,7 @@ void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
   if(it == mWorldNodes.end())
     return;
 
-  mDartGroup->removeChild(it->first);
+  mRootGroup->removeChild(it->first);
   mWorldNodes.erase(it);
 }
 
@@ -189,7 +189,7 @@ void Viewer::removeWorldNode(dart::simulation::World* _oldWorld)
   if(nullptr == node)
     return;
 
-  mDartGroup->removeChild(node);
+  mRootGroup->removeChild(node);
   mWorldNodes.erase(node);
 }
 
@@ -230,7 +230,7 @@ void Viewer::setupDefaultLights()
   setUpwardsDirection(mUpwards);
   switchHeadlights(true);
 
-  osg::ref_ptr<osg::StateSet> lightSS = mDartGroup->getOrCreateStateSet();
+  osg::ref_ptr<osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
 
   mLight1->setLightNum(1);
   mLightSource1->setLight(mLight1);
@@ -246,8 +246,8 @@ void Viewer::setupDefaultLights()
   mLightGroup->removeChild(mLightSource2);
   mLightGroup->addChild(mLightSource2);
 
-  mDartGroup->removeChild(mLightGroup);
-  mDartGroup->addChild(mLightGroup);
+  mRootGroup->removeChild(mLightGroup);
+  mRootGroup->addChild(mLightGroup);
 }
 
 //==============================================================================
