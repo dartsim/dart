@@ -96,7 +96,6 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 {
   osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
-  Eigen::Vector3d n = osgToEigVec3(center - eye);
 
   Eigen::Vector3d near, far;
   getNearAndFarPointUnderCursor(near, far);
@@ -123,10 +122,13 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
   }
   else if(PLANE_CONSTRAINT == _constraint)
   {
-    // TODO(MXG)
+    const Eigen::Vector3d& n = _constraintVector;
+    double s = n.dot(_fromPosition - near) / n.dot(v1);
+    return near - _fromPosition + s*v1;
   }
   else
   {
+    Eigen::Vector3d n = osgToEigVec3(center - eye);
     double s = n.dot(_fromPosition - near) / n.dot(v1);
     return near - _fromPosition + s*v1;
   }

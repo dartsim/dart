@@ -215,22 +215,32 @@ public:
       return handled;
 
     size_t constraintDofs = 0;
-    Eigen::Vector3d v(Eigen::Vector3d::Zero());
     for(size_t i=0; i<3; ++i)
-    {
       if(mConstrained[i])
-      {
-        v[i] = 1.0;
         ++constraintDofs;
-      }
-    }
 
     if(constraintDofs==0 || constraintDofs==3)
+    {
       mDnD->unconstrain();
+    }
     else if(constraintDofs == 1)
+    {
+      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      for(size_t i=0; i<3; ++i)
+        if(mConstrained[i])
+          v[i] = 1.0;
+
       mDnD->constrainToLine(v);
+    }
     else if(constraintDofs == 2)
+    {
+      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      for(size_t i=0; i<3; ++i)
+        if(!mConstrained[i])
+          v[i] = 1.0;
+
       mDnD->constrainToPlane(v);
+    }
 
     return handled;
   }

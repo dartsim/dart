@@ -259,7 +259,7 @@ void Viewer::setUpwardsDirection(const osg::Vec3& _up)
   else
     mUpwards = osg::Vec3(0,0,1);
 
-  mOver = _up^osg::Vec3(1,0,0);
+  mOver = _up^osg::Vec3(1,0,0); // Note: operator^ is the cross product operator in OSG
   if(mOver.length() < 1e-12)
     mOver = osg::Vec3(0,0,1)^_up;
   mOver.normalize();
