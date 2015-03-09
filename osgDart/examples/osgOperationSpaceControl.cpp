@@ -110,6 +110,8 @@ public:
     mRobot->setForces(mForces);
   }
 
+  osgDart::DragAndDrop* dnd;
+
 protected:
 
   // Triggered when this node gets added to the Viewer
@@ -117,8 +119,11 @@ protected:
   {
     if(mViewer)
     {
-      mViewer->enableDragAndDrop(mTarget);
+      dnd = mViewer->enableDragAndDrop(mTarget);
       mViewer->addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
+      mViewer->addInstructionText("Hold key 1 to constrain movements to the x-axis\n");
+      mViewer->addInstructionText("Hold key 2 to constrain movements to the y-axis\n");
+      mViewer->addInstructionText("Hold key 3 to constrain movements to the z-axis\n");
     }
   }
 
@@ -132,37 +137,160 @@ protected:
   Eigen::VectorXd mForces;
 };
 
+class ConstraintEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  ConstraintEventHandler(osgDart::DragAndDrop* dnd = nullptr)
+    : mDnD(dnd)
+  {
+    clearConstraints();
+    if(mDnD)
+      mDnD->unconstrain();
+  }
+
+  void clearConstraints()
+  {
+    for(size_t i=0; i<3; ++i)
+      mConstrained[i] = false;
+  }
+
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter&) override
+  {
+    if(nullptr == mDnD)
+    {
+      clearConstraints();
+      return false;
+    }
+
+    bool handled = false;
+    switch(ea.getEventType())
+    {
+      case osgGA::GUIEventAdapter::KEYDOWN:
+      {
+        switch(ea.getKey())
+        {
+          case '1':
+            mConstrained[0] = true;
+            handled = true;
+            break;
+          case '2':
+            mConstrained[1] = true;
+            handled = true;
+            break;
+          case '3':
+            mConstrained[2] = true;
+            handled = true;
+            break;
+        }
+        break;
+      }
+
+      case osgGA::GUIEventAdapter::KEYUP:
+      {
+        switch(ea.getKey())
+        {
+          case '1':
+            mConstrained[0] = false;
+            handled = true;
+            break;
+          case '2':
+            mConstrained[1] = false;
+            handled = true;
+            break;
+          case '3':
+            mConstrained[2] = false;
+            handled = true;
+            break;
+        }
+        break;
+      }
+
+      default:
+        return false;
+    }
+
+    if(!handled)
+      return handled;
+
+    size_t constraintDofs = 0;
+    Eigen::Vector3d v(Eigen::Vector3d::Zero());
+    for(size_t i=0; i<3; ++i)
+    {
+      if(mConstrained[i])
+      {
+        v[i] = 1.0;
+        ++constraintDofs;
+      }
+    }
+
+    if(constraintDofs==0 || constraintDofs==3)
+      mDnD->unconstrain();
+    else if(constraintDofs == 1)
+      mDnD->constrainToLine(v);
+    else if(constraintDofs == 2)
+      mDnD->constrainToPlane(v);
+
+    return handled;
+  }
+
+  bool mConstrained[3];
+
+  dart::sub_ptr<osgDart::DragAndDrop> mDnD;
+};
+
 int main()
 {
-  dart::utils::DartLoader loader;
   dart::simulation::World* world = new dart::simulation::World;
+  dart::utils::DartLoader loader;
 
+  // Load the robot
   dart::dynamics::Skeleton* robot =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
+  // Rotate the robot so that z is upwards (default transform is not Identity)
+  robot->getJoint(0)->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+
+  // Load the ground
   dart::dynamics::Skeleton* ground =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 
+  // Rotate and move the ground so that z is upwards
+  Eigen::Isometry3d ground_tf =
+      ground->getJoint(0)->getTransformFromParentBodyNode();
+  ground_tf.pretranslate(Eigen::Vector3d(0,0,0.5));
+  ground_tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(1,0,0)));
+  ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
+
+  // Create an instance of our customized WorldNode
   osg::ref_ptr<OperationalSpaceControlWorld> node =
       new OperationalSpaceControlWorld(world);
   node->setNumStepsPerCycle(10);
 
+  // Create the Viewer instance
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
+  // Add our custom event handler to the Viewer
+  viewer.addEventHandler(new ConstraintEventHandler(node->dnd));
+
+  // Print out instructions
   std::cout << viewer.getInstructions() << std::endl;
 
+  // Set up the window to be 640x480 pixels
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3(3.13,  0.68, -2.36),
-                                                 osg::Vec3(0,  0, 0),
-                                                 osg::Vec3(-0.18, 0.98,  0.09));
+  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 2.57,  3.14, 1.64),
+                                                 osg::Vec3( 0.00,  0.00, 0.00),
+                                                 osg::Vec3(-0.24, -0.25, 0.94));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
+  // Begin the application loop
   viewer.run();
 }

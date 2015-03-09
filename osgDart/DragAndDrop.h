@@ -43,6 +43,7 @@
 
 #include "dart/common/Subscriber.h"
 #include "dart/dynamics/Entity.h"
+#include "DefaultEventHandler.h"
 
 namespace dart {
 namespace dynamics {
@@ -55,19 +56,10 @@ namespace osgDart
 
 class Viewer;
 
-class DragAndDrop : public dart::common::Subscriber
+class DragAndDrop : public dart::common::Subscriber,
+                    public dart::common::Subscription
 {
 public:
-
-  enum ConstraintType {
-
-    UNCONSTRAINED = 0,
-    LINE_CONSTRAINT,
-    PLANE_CONSTRAINT,
-    CUSTOM_CONSTRAINT,
-
-    NUM_CONSTRAINT_TYPES
-  };
 
   DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
 
@@ -79,13 +71,13 @@ public:
 
   virtual void saveState() = 0;
 
+  virtual Eigen::Vector3d getConstrainedDx() const;
+
   void unconstrain();
 
-  void constrainToLine(const Eigen::Vector3d& point,
-                       const Eigen::Vector3d& slope);
+  void constrainToLine(const Eigen::Vector3d& slope);
 
-  void constrainToPlane(const Eigen::Vector3d& point,
-                        const Eigen::Vector3d& normal);
+  void constrainToPlane(const Eigen::Vector3d& normal);
 
 protected:
 
@@ -97,9 +89,6 @@ protected:
   dart::dynamics::Entity* mEntity;
 
   Eigen::Vector3d mPickedPosition;
-
-  /// Reference point for constraint
-  Eigen::Vector3d mPoint;
 
   /// Reference vector for constraint (slope for line constraint, or normal for
   /// plane constraint)

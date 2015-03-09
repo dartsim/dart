@@ -97,26 +97,29 @@ void DragAndDrop::update()
 }
 
 //==============================================================================
+Eigen::Vector3d DragAndDrop::getConstrainedDx() const
+{
+  return mViewer->getDefaultEventHandler()->getDeltaCursor(
+        mPickedPosition, mConstraintType, mVector);
+}
+
+//==============================================================================
 void DragAndDrop::unconstrain()
 {
   mConstraintType = UNCONSTRAINED;
 }
 
 //==============================================================================
-void DragAndDrop::constrainToLine(const Eigen::Vector3d& point,
-                                  const Eigen::Vector3d& slope)
+void DragAndDrop::constrainToLine(const Eigen::Vector3d& slope)
 {
   mConstraintType = LINE_CONSTRAINT;
-  mPoint = point;
   mVector = slope;
 }
 
 //==============================================================================
-void DragAndDrop::constrainToPlane(const Eigen::Vector3d& point,
-                                   const Eigen::Vector3d& normal)
+void DragAndDrop::constrainToPlane(const Eigen::Vector3d& normal)
 {
   mConstraintType = PLANE_CONSTRAINT;
-  mPoint = point;
   mVector = normal;
 }
 
@@ -147,9 +150,7 @@ SimpleFrameDnD::~SimpleFrameDnD()
 //==============================================================================
 void SimpleFrameDnD::move()
 {
-  // TODO(MXG): Handle constraints in here
-  Eigen::Vector3d dx =
-      mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition);
+  Eigen::Vector3d dx = getConstrainedDx();
 
   Eigen::Isometry3d tf = mFrame->getWorldTransform();
   tf.translation() = mSavedPosition + dx;

@@ -90,7 +90,9 @@ double DefaultEventHandler::getWindowCursorY() const
 
 //==============================================================================
 Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
-    const Eigen::Vector3d& _fromPosition) const
+    const Eigen::Vector3d& _fromPosition,
+    ConstraintType _constraint,
+    const Eigen::Vector3d& _constraintVector) const
 {
   osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
@@ -98,11 +100,38 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 
   Eigen::Vector3d near, far;
   getNearAndFarPointUnderCursor(near, far);
-  Eigen::Vector3d v = far-near;
+  Eigen::Vector3d v1 = far-near;
 
-  double s = n.dot(_fromPosition - near) / n.dot(v);
+  if(LINE_CONSTRAINT == _constraint)
+  {
+    const Eigen::Vector3d& b1 = near;
+    const Eigen::Vector3d& v2 = _constraintVector;
+    const Eigen::Vector3d& b2 = _fromPosition;
 
-  return near - _fromPosition + s*v;
+    double v1_v1 = v1.dot(v1);
+    double v2_v2 = v2.dot(v2);
+    double v2_v1 = v2.dot(v1);
+
+    double denominator = v1_v1*v2_v2 - v2_v1*v2_v1;
+    double s;
+    if(fabs(denominator) < 1e-10)
+      s = 0;
+    else
+      s = (v1_v1*(v2.dot(b1)-v2.dot(b2)) + v2_v1*(v1.dot(b2)-v1.dot(b1)))/denominator;
+
+    return v2*s;
+  }
+  else if(PLANE_CONSTRAINT == _constraint)
+  {
+    // TODO(MXG)
+  }
+  else
+  {
+    double s = n.dot(_fromPosition - near) / n.dot(v1);
+    return near - _fromPosition + s*v1;
+  }
+
+  return Eigen::Vector3d::Zero();
 }
 
 //==============================================================================
@@ -212,7 +241,7 @@ static void assignEventToButtons(
     MouseButtonEvent (&mLastButtonEvent)[NUM_MOUSE_BUTTONS],
     const osgGA::GUIEventAdapter& ea)
 {
-  MouseButtonEvent event;
+  MouseButtonEvent event = BUTTON_NOTHING;
   if(ea.getEventType() == osgGA::GUIEventAdapter::PUSH)
     event = BUTTON_PUSH;
   else if(ea.getEventType() == osgGA::GUIEventAdapter::DRAG)

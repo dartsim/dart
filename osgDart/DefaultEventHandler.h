@@ -82,6 +82,16 @@ enum MouseButtonEvent {
 
 };
 
+enum ConstraintType {
+
+  UNCONSTRAINED = 0,
+  LINE_CONSTRAINT,
+  PLANE_CONSTRAINT,
+  CUSTOM_CONSTRAINT,
+
+  NUM_CONSTRAINT_TYPES
+};
+
 class DefaultEventHandler : public osgGA::GUIEventHandler
 {
 public:
@@ -102,9 +112,20 @@ public:
   double getWindowCursorY() const;
 
   /// Get the change change in the cursor position with respect to some previous
-  /// location in the world. This change is projected onto a plane parallel to
-  /// the camera's orientation.
-  Eigen::Vector3d getDeltaCursor(const Eigen::Vector3d& _fromPosition) const;
+  /// location in the world (_fromPosition). For the unconstrained case, this
+  /// change is projected onto a plane parallel to the camera's orientation.
+  ///
+  /// If _constraint is set to LINE_CONSTRAINT, the change in cursor position
+  /// will be constrained to a line that passes through _fromPosition with a
+  /// slope of _constraintVector.
+  ///
+  /// If _constraint is set to PLANE_CONSTRAINT, the change in cursor position
+  /// will be constrained to a plane that passes through _fromPosition with a
+  /// normal vector of _constraintVector.
+  Eigen::Vector3d getDeltaCursor(const Eigen::Vector3d& _fromPosition,
+                                 ConstraintType _constraint=UNCONSTRAINED,
+                                 const Eigen::Vector3d& _constraintVector =
+                                                Eigen::Vector3d::UnitZ()) const;
 
   /// Get two points that are under the current cursor position. The near point
   /// will be inside the plane of the camera. The far point will have the given
@@ -140,7 +161,7 @@ public:
 
   /// Handle incoming user input
   virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&);
+                      osgGA::GUIActionAdapter&) override;
 
 protected:
 
