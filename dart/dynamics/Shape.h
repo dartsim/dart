@@ -41,7 +41,7 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 
 namespace dart {
 namespace renderer {

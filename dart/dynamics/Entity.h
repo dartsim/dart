@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 
 namespace dart {
 namespace renderer {

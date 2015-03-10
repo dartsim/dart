@@ -52,7 +52,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/Timer.h"
 #include "dart/common/NameManager.h"
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 #include "dart/simulation/Recording.h"
 #include "dart/dynamics/Entity.h"
 

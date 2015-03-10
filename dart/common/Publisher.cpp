@@ -34,47 +34,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBSCRIPTION_H_
-#define DART_COMMON_SUBSCRIPTION_H_
-
-#include <set>
+#include "dart/common/Publisher.h"
+#include "dart/common/Subscriber.h"
 
 namespace dart {
 namespace common {
 
-class Subscriber;
-
-class Publisher
+//==============================================================================
+Publisher::~Publisher()
 {
-public:
+  sendDestructionNotification();
+}
 
-  friend class Subscriber;
+//==============================================================================
+void Publisher::sendNotification(int _notice) const
+{
+  for(Subscriber* sub : mSubscribers)
+    sub->receiveNotification(this, _notice);
+}
 
-  /// Destructor will notify all Subscribers that it is destructing
-  virtual ~Publisher();
+//==============================================================================
+void Publisher::sendDestructionNotification() const
+{
+  std::set<Subscriber*>::iterator sub = mSubscribers.begin(),
+                                  end = mSubscribers.end();
+  while( sub != end )
+    (*(sub++))->receiveDestructionNotification(this);
+  // We do this tricky iterator method to deal with the fact that mSubscribers
+  // will be changing as we go through the loop
+}
 
-protected:
+//==============================================================================
+void Publisher::addSubscriber(Subscriber* _subscriber) const
+{
+  if(nullptr == _subscriber)
+    return;
 
-  /// Send a notification to all Subscribers
-  void sendNotification(int _notice) const;
+  if(mSubscribers.find(_subscriber) != mSubscribers.end())
+    return;
 
-  /// Send a destruction notification to all Subscribers. This will cause all
-  /// Subscribers to behave as if this Subscription has been permanently
-  /// deleted, so it should only be called when that behavior is desired.
-  void sendDestructionNotification() const;
+  mSubscribers.insert(_subscriber);
+  _subscriber->addSubscription(this);
+}
 
-  /// Add a Subscriber to the list of Subscribers
-  void addSubscriber(Subscriber* _subscriber) const;
+//==============================================================================
+void Publisher::removeSubscriber(Subscriber* _subscriber) const
+{
+  if(nullptr == _subscriber)
+    return;
 
-  /// Remove a Subscriber from the list of Subscribers
-  void removeSubscriber(Subscriber* _subscriber) const;
+  if(mSubscribers.find(_subscriber) == mSubscribers.end())
+    return;
 
-  /// List of current Subscribers
-  mutable std::set<Subscriber*> mSubscribers;
-
-};
+  mSubscribers.erase(_subscriber);
+  _subscriber->removeSubscription(this);
+}
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_SUBSCRIPTION_H_

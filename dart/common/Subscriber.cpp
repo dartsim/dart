@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 #include "dart/common/Subscriber.h"
 
 namespace dart {
@@ -98,7 +98,7 @@ void Subscriber::removeSubscription(const Publisher* _subscription)
 }
 
 //==============================================================================
-void Subscriber::clearSubscriptions()
+void Subscriber::removeAllSubscriptions()
 {
   std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
                                           end = mSubscriptions.end();

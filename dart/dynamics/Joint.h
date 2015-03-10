@@ -42,7 +42,7 @@
 #include <vector>
 
 #include "dart/common/Deprecated.h"
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 #include "dart/math/Geometry.h"
 
 namespace dart {

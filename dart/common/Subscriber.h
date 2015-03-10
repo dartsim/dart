@@ -50,17 +50,17 @@ public:
 
   friend class Publisher;
 
-  /// Destructor will notify all Subscriptions that it is destructing
+  /// Destructor will notify all subscriptions that it is destructing
   virtual ~Subscriber();
 
 protected:
 
-  /// Called whenever a Subscription sends out a notice. Override this in order
+  /// Called whenever a subscription sends out a notice. Override this in order
   /// to respond to notifications
   virtual void receiveNotification(const Publisher* _subscription,
                                    int _notice);
 
-  /// Called whenever a Subscription is destroyed (or sends out a destruction
+  /// Called whenever a subscription is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
   void receiveDestructionNotification(const Publisher* _subscription);
@@ -69,16 +69,16 @@ protected:
   /// customize your class's response to destruction notifications.
   virtual void handleDestructionNotification(const Publisher* _subscription);
 
-  /// Add a Subscription for this Subscriber
+  /// Add a subscription for this Subscriber
   void addSubscription(const Publisher* _subscription);
 
-  /// Remove a Subscription from this Subscriber
+  /// Remove a subscription from this Subscriber
   void removeSubscription(const Publisher* _subscription);
 
-  /// Remove all Subscriptions from this Subscriber
-  void clearSubscriptions();
+  /// Remove all subscriptions from this Subscriber
+  void removeAllSubscriptions();
 
-  /// List of current Subscriptions for this Subscriber
+  /// List of current subscriptions for this Subscriber
   std::set<const Publisher*> mSubscriptions;
 
 };

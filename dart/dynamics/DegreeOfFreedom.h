@@ -40,7 +40,7 @@
 #include <string>
 #include <Eigen/Core>
 
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 
 namespace dart {
 namespace dynamics {
