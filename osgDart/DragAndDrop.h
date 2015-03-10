@@ -57,7 +57,7 @@ namespace osgDart
 class Viewer;
 
 class DragAndDrop : public dart::common::Subscriber,
-                    public dart::common::Subscription
+                    public dart::common::Publisher
 {
 public:
 
@@ -65,26 +65,39 @@ public:
 
   virtual ~DragAndDrop();
 
-  void update();
+  /// Called when mouse events are being handled
+  virtual void update();
 
+  /// Called to specify how the Entity should be moved
   virtual void move() = 0;
 
+  /// Called when a point gets picked, and is used to save the current state of
+  /// the Entity
   virtual void saveState() = 0;
 
+  /// Default method for getting the translation requested by the user
   virtual Eigen::Vector3d getConstrainedDx() const;
 
+  /// Default method for getting the rotation requested by the user
   virtual Eigen::AngleAxisd getConstrainedRotation() const;
 
+  /// Remove all constraints from the dragging and dropping.
   void unconstrain();
 
+  /// Constrain translation to only occur along the given slope, or constrain
+  /// rotation to only occur about the given slope. For rotation, this function
+  /// is equivalent to constrainToPlane
   void constrainToLine(const Eigen::Vector3d& slope);
 
+  /// Constrain translation to only occur within the plane defined by the given
+  /// normal, or constrain rotation to only occur about the given normal. For
+  /// rotation, this function is equivalent to constrainToLine
   void constrainToPlane(const Eigen::Vector3d& normal);
 
 protected:
 
   virtual void handleDestructionNotification(
-      const dart::common::Subscription* subscription) override;
+      const dart::common::Publisher* subscription) override;
 
   Viewer* mViewer;
 

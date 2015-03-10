@@ -106,11 +106,16 @@ Eigen::Vector3d DragAndDrop::getConstrainedDx() const
 //==============================================================================
 Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
 {
-  // TODO(MXG): Handle constraints
   Eigen::Vector3d v1 = mPickedPosition - mPivot;
   Eigen::Vector3d v2 =
       mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition)
       + mPickedPosition - mPivot;
+
+  if(LINE_CONSTRAINT == mConstraintType || PLANE_CONSTRAINT == mConstraintType)
+  {
+    v1 = v1 - mVector.dot(v1)*mVector;
+    v2 = v2 - mVector.dot(v2)*mVector;
+  }
 
   if(v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0)
     return Eigen::AngleAxisd(0, Eigen::Vector3d(1,0,0));
@@ -146,7 +151,7 @@ void DragAndDrop::constrainToPlane(const Eigen::Vector3d& normal)
 
 //==============================================================================
 void DragAndDrop::handleDestructionNotification(
-    const dart::common::Subscription* subscription)
+    const dart::common::Publisher* subscription)
 {
   if(mEntity == subscription)
     mViewer->disableDragAndDrop(mEntity);
