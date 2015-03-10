@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -42,44 +42,44 @@
 namespace dart {
 namespace common {
 
-class Subscription;
+class Publisher;
 
 class Subscriber
 {
 public:
 
-  friend class Subscription;
+  friend class Publisher;
 
-  /// Destructor will notify all Subscriptions that it is destructing
+  /// Destructor will notify all subscriptions that it is destructing
   virtual ~Subscriber();
 
 protected:
 
-  /// Called whenever a Subscription sends out a notice. Override this in order
+  /// Called whenever a subscription sends out a notice. Override this in order
   /// to respond to notifications
-  virtual void receiveNotification(const Subscription* _subscription,
+  virtual void receiveNotification(const Publisher* _subscription,
                                    int _notice);
 
-  /// Called whenever a Subscription is destroyed (or sends out a destruction
+  /// Called whenever a subscription is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
-  void receiveDestructionNotification(const Subscription* _subscription);
+  void receiveDestructionNotification(const Publisher* _subscription);
 
   /// Called by receiveDestructionNotification(). Override this function to
   /// customize your class's response to destruction notifications.
-  virtual void handleDestructionNotification(const Subscription* _subscription);
+  virtual void handleDestructionNotification(const Publisher* _subscription);
 
-  /// Add a Subscription for this Subscriber
-  void addSubscription(const Subscription* _subscription);
+  /// Add a subscription for this Subscriber
+  void addSubscription(const Publisher* _subscription);
 
-  /// Remove a Subscription from this Subscriber
-  void removeSubscription(const Subscription* _subscription);
+  /// Remove a subscription from this Subscriber
+  void removeSubscription(const Publisher* _subscription);
 
-  /// Remove all Subscriptions from this Subscriber
-  void clearSubscriptions();
+  /// Remove all subscriptions from this Subscriber
+  void removeAllSubscriptions();
 
-  /// List of current Subscriptions for this Subscriber
-  std::set<const Subscription*> mSubscriptions;
+  /// List of current subscriptions for this Subscriber
+  std::set<const Publisher*> mSubscriptions;
 
 };
 

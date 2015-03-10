@@ -42,7 +42,7 @@
 #include <vector>
 
 #include "dart/common/Deprecated.h"
-#include "dart/common/Subscription.h"
+#include "dart/common/Publisher.h"
 #include "dart/math/Geometry.h"
 
 namespace dart {
@@ -59,7 +59,7 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
-class Joint : public common::Subscription
+class Joint : public common::Publisher
 {
 public:
   /// Actuator type

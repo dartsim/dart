@@ -65,8 +65,8 @@ public:
 
   enum Notification {
 
-    LOSE_CHILD = NUM_ENTITY_NOTIFICATIONS,
-    GAIN_CHILD
+    LOST_CHILD = NUM_ENTITY_NOTIFICATIONS,
+    GAINED_CHILD
 
   };
 
