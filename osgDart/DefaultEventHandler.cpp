@@ -51,7 +51,9 @@ namespace osgDart
 {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
-  : mViewer(_viewer)
+  : mViewer(_viewer),
+    mLastCursorPosition(Eigen::Vector2d::Zero()),
+    mLastModKeyMask(0)
 {
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off for any active worlds\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
@@ -74,6 +76,12 @@ DefaultEventHandler::~DefaultEventHandler()
 MouseButtonEvent DefaultEventHandler::getButtonEvent(MouseButton button) const
 {
   return mLastButtonEvent[button];
+}
+
+//==============================================================================
+int DefaultEventHandler::getModKeyMask() const
+{
+  return mLastModKeyMask;
 }
 
 //==============================================================================
@@ -282,6 +290,8 @@ static void assignEventToButtons(
 bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
                                  osgGA::GUIActionAdapter&)
 {
+  mLastModKeyMask = ea.getModKeyMask();
+
   switch(ea.getEventType())
   {
     case osgGA::GUIEventAdapter::PUSH:

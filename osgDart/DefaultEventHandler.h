@@ -105,6 +105,9 @@ public:
   /// Returns the last event performed by a mouse button
   MouseButtonEvent getButtonEvent(MouseButton button) const;
 
+  /// Returns the last modkey mask
+  int getModKeyMask() const;
+
   /// Get the last x value of the cursor in Window coordinates
   double getWindowCursorX() const;
 
@@ -192,17 +195,12 @@ protected:
   /// The last mouse event that was registered by the event handler
   MouseButtonEvent mLastButtonEvent[NUM_MOUSE_BUTTONS];
 
-  /// True iff the last event performed by the mouse was a move (does not
-  /// include drags)
-  bool mLastEventWasMove;
-
-  /// Bool array for whether each mouse button was active during the last mouse
-  /// event
-  bool mLastButtonsActive[NUM_MOUSE_BUTTONS];
-
   /// X/Y values of the cursor (in the window coordinates) during the last mouse
   /// event
   Eigen::Vector2d mLastCursorPosition;
+
+  /// Storage for the last modkey mask
+  int mLastModKeyMask;
 
 };
 

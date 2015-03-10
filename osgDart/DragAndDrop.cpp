@@ -104,6 +104,27 @@ Eigen::Vector3d DragAndDrop::getConstrainedDx() const
 }
 
 //==============================================================================
+Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
+{
+  // TODO(MXG): Handle constraints
+  Eigen::Vector3d v1 = mPickedPosition - mPivot;
+  Eigen::Vector3d v2 =
+      mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition)
+      + mPickedPosition - mPivot;
+
+  if(v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0)
+    return Eigen::AngleAxisd(0, Eigen::Vector3d(1,0,0));
+
+  v1.normalize();
+  v2.normalize();
+
+  Eigen::Vector3d axis = v1.cross(v2);
+  axis.normalize();
+
+  return Eigen::AngleAxisd(acos(v1.dot(v2)), axis);
+}
+
+//==============================================================================
 void DragAndDrop::unconstrain()
 {
   mConstraintType = UNCONSTRAINED;
@@ -136,7 +157,7 @@ SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
                                dart::dynamics::SimpleFrame* frame)
   : DragAndDrop(viewer, frame),
     mFrame(frame),
-    mSavedPosition(Eigen::Vector3d::Zero())
+    mPivot(Eigen::Vector3d::Zero())
 {
 
 }
@@ -150,10 +171,30 @@ SimpleFrameDnD::~SimpleFrameDnD()
 //==============================================================================
 void SimpleFrameDnD::move()
 {
-  Eigen::Vector3d dx = getConstrainedDx();
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-  Eigen::Isometry3d tf = mFrame->getWorldTransform();
-  tf.translation() = mSavedPosition + dx;
+  if( (mViewer->getDefaultEventHandler()->getModKeyMask()
+       & osgGA::GUIEventAdapter::MODKEY_CTRL) )
+  {
+    // Rotate
+
+    Eigen::AngleAxisd R = getConstrainedRotation();
+
+    tf.translation() = mPivot;
+//    tf.rotate(mSavedRotation * R);
+//    tf.rotate(R * mSavedRotation);
+    tf.linear() = (R * mSavedRotation).matrix();
+  }
+  else
+  {
+    // Translate
+
+    Eigen::Vector3d dx = getConstrainedDx();
+
+    tf.translation() = mPivot + dx;
+    tf.rotate(mSavedRotation);
+  }
+
   dart::dynamics::Frame* parent = mFrame->getParentFrame();
   if(parent->isWorld())
     mFrame->setRelativeTransform(tf);
@@ -164,7 +205,8 @@ void SimpleFrameDnD::move()
 //==============================================================================
 void SimpleFrameDnD::saveState()
 {
-  mSavedPosition = mFrame->getWorldTransform().translation();
+  mPivot = mFrame->getWorldTransform().translation();
+  mSavedRotation = mFrame->getWorldTransform().rotation();
 }
 
 } // namespace osgDart

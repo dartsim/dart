@@ -39,7 +39,7 @@
 
 #include <functional>
 
-#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include "dart/common/Subscriber.h"
 #include "dart/dynamics/Entity.h"
@@ -73,6 +73,8 @@ public:
 
   virtual Eigen::Vector3d getConstrainedDx() const;
 
+  virtual Eigen::AngleAxisd getConstrainedRotation() const;
+
   void unconstrain();
 
   void constrainToLine(const Eigen::Vector3d& slope);
@@ -93,6 +95,9 @@ protected:
   /// Reference vector for constraint (slope for line constraint, or normal for
   /// plane constraint)
   Eigen::Vector3d mVector;
+
+  /// Point in space about which rotations should happen
+  Eigen::Vector3d mPivot;
 
   ConstraintType mConstraintType;
 
@@ -116,7 +121,8 @@ protected:
 
   dart::dynamics::SimpleFrame* mFrame;
 
-  Eigen::Vector3d mSavedPosition;
+  Eigen::Vector3d mPivot;
+  Eigen::AngleAxisd mSavedRotation;
 };
 
 } // namespace osgDart
