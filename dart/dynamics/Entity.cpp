@@ -67,7 +67,7 @@ Entity::~Entity()
 const std::string& Entity::setName(const std::string &_name)
 {
   mName = _name;
-  sendNotification(NAME_CHANGE_NOTICE);
+  sendNotification(NAME_CHANGED_NOTICE);
   return mName;
 }
 
@@ -220,7 +220,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     notifyTransformUpdate();
   }
 
-  sendNotification(FRAME_CHANGE_NOTICE);
+  sendNotification(FRAME_CHANGED_NOTICE);
 }
 
 //==============================================================================

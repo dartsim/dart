@@ -52,10 +52,10 @@ TEST(Subscriptions, Notifications)
   EXPECT_TRUE(frame_ptr.valid());
 
   entity_ptr->setParentFrame(frame_ptr);
-  EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::FRAME_CHANGE_NOTICE);
+  EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::FRAME_CHANGED_NOTICE);
 
   entity_ptr->setName("new entity name");
-  EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::NAME_CHANGE_NOTICE);
+  EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::NAME_CHANGED_NOTICE);
 
   entity_ptr->addVisualizationShape(new BoxShape(Eigen::Vector3d::Ones()));
   EXPECT_TRUE(entity_ptr.getLatestNotification() == Entity::VISUALIZATION_CHANGE_NOTICE);
