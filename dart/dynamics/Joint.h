@@ -59,7 +59,7 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
-class Joint : public common::Subscription
+class Joint : public common::Publisher
 {
 public:
   /// Actuator type

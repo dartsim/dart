@@ -44,14 +44,14 @@ namespace common {
 
 class Subscriber;
 
-class Subscription
+class Publisher
 {
 public:
 
   friend class Subscriber;
 
   /// Destructor will notify all Subscribers that it is destructing
-  virtual ~Subscription();
+  virtual ~Publisher();
 
 protected:
 

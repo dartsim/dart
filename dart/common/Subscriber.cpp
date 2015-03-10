@@ -42,7 +42,7 @@ namespace common {
 
 Subscriber::~Subscriber()
 {
-  std::set<const Subscription*>::iterator it = mSubscriptions.begin(),
+  std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
                                           end = mSubscriptions.end();
   while( it != end )
     (*(it++))->removeSubscriber(this);
@@ -51,27 +51,27 @@ Subscriber::~Subscriber()
 }
 
 //==============================================================================
-void Subscriber::receiveNotification(const Subscription*, int)
+void Subscriber::receiveNotification(const Publisher*, int)
 {
   // Do nothing
 }
 
 //==============================================================================
 void Subscriber::receiveDestructionNotification(
-    const Subscription* _subscription)
+    const Publisher* _subscription)
 {
   removeSubscription(_subscription);
   handleDestructionNotification(_subscription);
 }
 
 //==============================================================================
-void Subscriber::handleDestructionNotification(const Subscription*)
+void Subscriber::handleDestructionNotification(const Publisher*)
 {
   // Do nothing
 }
 
 //==============================================================================
-void Subscriber::addSubscription(const Subscription* _subscription)
+void Subscriber::addSubscription(const Publisher* _subscription)
 {
   if(nullptr == _subscription)
     return;
@@ -84,7 +84,7 @@ void Subscriber::addSubscription(const Subscription* _subscription)
 }
 
 //==============================================================================
-void Subscriber::removeSubscription(const Subscription* _subscription)
+void Subscriber::removeSubscription(const Publisher* _subscription)
 {
   if(nullptr == _subscription)
     return;
@@ -99,7 +99,7 @@ void Subscriber::removeSubscription(const Subscription* _subscription)
 //==============================================================================
 void Subscriber::clearSubscriptions()
 {
-  std::set<const Subscription*>::iterator it = mSubscriptions.begin(),
+  std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
                                           end = mSubscriptions.end();
 
   while(it != end)

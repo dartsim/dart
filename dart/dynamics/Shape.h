@@ -53,7 +53,7 @@ namespace dart {
 namespace dynamics {
 
 /// \brief
-class Shape : public common::Subscription
+class Shape : public common::Publisher
 {
 public:
   // TODO(JS): We should not use ShapeType because this is not extendable.

@@ -63,7 +63,7 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity : public common::Subscription
+class Entity : public common::Publisher
 {
 public:
   friend class Frame;

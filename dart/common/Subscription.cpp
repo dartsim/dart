@@ -40,20 +40,20 @@
 namespace dart {
 namespace common {
 
-Subscription::~Subscription()
+Publisher::~Publisher()
 {
   sendDestructionNotification();
 }
 
 //==============================================================================
-void Subscription::sendNotification(int _notice) const
+void Publisher::sendNotification(int _notice) const
 {
   for(Subscriber* sub : mSubscribers)
     sub->receiveNotification(this, _notice);
 }
 
 //==============================================================================
-void Subscription::sendDestructionNotification() const
+void Publisher::sendDestructionNotification() const
 {
   std::set<Subscriber*>::iterator sub = mSubscribers.begin(),
                                   end = mSubscribers.end();
@@ -64,7 +64,7 @@ void Subscription::sendDestructionNotification() const
 }
 
 //==============================================================================
-void Subscription::addSubscriber(Subscriber* _subscriber) const
+void Publisher::addSubscriber(Subscriber* _subscriber) const
 {
   if(nullptr == _subscriber)
     return;
@@ -77,7 +77,7 @@ void Subscription::addSubscriber(Subscriber* _subscriber) const
 }
 
 //==============================================================================
-void Subscription::removeSubscriber(Subscriber* _subscriber) const
+void Publisher::removeSubscriber(Subscriber* _subscriber) const
 {
   if(nullptr == _subscriber)
     return;

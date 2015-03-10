@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -107,7 +107,7 @@ public:
 
 protected:
   /// Saves the latest notification received from its Subscription
-  virtual void receiveNotification(const Subscription* _subscription,
+  virtual void receiveNotification(const Publisher* _subscription,
                                    int _notice) override
   {
     if(_subscription == mSubscription)
@@ -115,7 +115,7 @@ protected:
   }
 
   virtual void handleDestructionNotification(
-      const Subscription* _subscription) override
+      const Publisher* _subscription) override
   {
     if(_subscription == mSubscription)
       mSubscription = nullptr;

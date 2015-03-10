@@ -42,13 +42,13 @@
 namespace dart {
 namespace common {
 
-class Subscription;
+class Publisher;
 
 class Subscriber
 {
 public:
 
-  friend class Subscription;
+  friend class Publisher;
 
   /// Destructor will notify all Subscriptions that it is destructing
   virtual ~Subscriber();
@@ -57,29 +57,29 @@ protected:
 
   /// Called whenever a Subscription sends out a notice. Override this in order
   /// to respond to notifications
-  virtual void receiveNotification(const Subscription* _subscription,
+  virtual void receiveNotification(const Publisher* _subscription,
                                    int _notice);
 
   /// Called whenever a Subscription is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
-  void receiveDestructionNotification(const Subscription* _subscription);
+  void receiveDestructionNotification(const Publisher* _subscription);
 
   /// Called by receiveDestructionNotification(). Override this function to
   /// customize your class's response to destruction notifications.
-  virtual void handleDestructionNotification(const Subscription* _subscription);
+  virtual void handleDestructionNotification(const Publisher* _subscription);
 
   /// Add a Subscription for this Subscriber
-  void addSubscription(const Subscription* _subscription);
+  void addSubscription(const Publisher* _subscription);
 
   /// Remove a Subscription from this Subscriber
-  void removeSubscription(const Subscription* _subscription);
+  void removeSubscription(const Publisher* _subscription);
 
   /// Remove all Subscriptions from this Subscriber
   void clearSubscriptions();
 
   /// List of current Subscriptions for this Subscriber
-  std::set<const Subscription*> mSubscriptions;
+  std::set<const Publisher*> mSubscriptions;
 
 };
 

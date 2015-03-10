@@ -73,7 +73,7 @@ class ConstraintSolver;
 namespace simulation {
 
 /// class World
-class World : public common::Subscription
+class World : public common::Publisher
 {
 public:
   //--------------------------------------------------------------------------
