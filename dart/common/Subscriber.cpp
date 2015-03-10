@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -40,6 +40,7 @@
 namespace dart {
 namespace common {
 
+//==============================================================================
 Subscriber::~Subscriber()
 {
   std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
