@@ -60,6 +60,12 @@ DragAndDrop::~DragAndDrop()
 }
 
 //==============================================================================
+dart::dynamics::Entity* DragAndDrop::getEntity() const
+{
+  return mEntity;
+}
+
+//==============================================================================
 void DragAndDrop::update()
 {
   if(nullptr == mEntity)
@@ -173,7 +179,7 @@ void DragAndDrop::handleDestructionNotification(
     const dart::common::Publisher* subscription)
 {
   if(mEntity == subscription)
-    mViewer->disableDragAndDrop(mEntity);
+    mViewer->disableDragAndDrop(this);
 }
 
 //==============================================================================
@@ -189,6 +195,21 @@ SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
 SimpleFrameDnD::~SimpleFrameDnD()
 {
   // Do nothing
+}
+
+//==============================================================================
+void SimpleFrameDnD::setSimpleFrame(dart::dynamics::SimpleFrame* _frame)
+{
+  removeSubscription(mEntity);
+  mEntity = _frame;
+  mFrame = _frame;
+  addSubscription(mEntity);
+}
+
+//==============================================================================
+dart::dynamics::SimpleFrame* SimpleFrameDnD::getSimpleFrame() const
+{
+  return mFrame;
 }
 
 //==============================================================================
@@ -230,6 +251,67 @@ void SimpleFrameDnD::saveState()
 {
   mPivot = mFrame->getWorldTransform().translation();
   mSavedRotation = mFrame->getWorldTransform().rotation();
+}
+
+//==============================================================================
+SimpleFrameShapeDnD::SimpleFrameShapeDnD(
+    Viewer* viewer,
+    dart::dynamics::SimpleFrame* frame,
+    dart::dynamics::Shape* shape)
+  : SimpleFrameDnD(viewer, frame),
+    mShape(shape)
+{
+  // Do nothing
+}
+
+//==============================================================================
+SimpleFrameShapeDnD::~SimpleFrameShapeDnD()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void SimpleFrameShapeDnD::update()
+{
+  // This is almost identical to the original DragAndDrop::update() except that
+  // it also checks that the picked shape matches
+
+  if(nullptr == mEntity || nullptr == mShape)
+    return;
+
+  osgDart::MouseButtonEvent event =
+      mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+
+  if(mAmMoving)
+  {
+    if(osgDart::BUTTON_RELEASE == event)
+      mAmMoving = false;
+
+    move();
+  }
+  else
+  {
+    if(osgDart::BUTTON_PUSH == event)
+    {
+      const std::vector<osgDart::PickInfo>& picks =
+          mViewer->getDefaultEventHandler()->getButtonPicks(
+            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+
+      for(const osgDart::PickInfo& pick : picks)
+      {
+        if(pick.entity == mEntity && pick.shape == mShape)
+        {
+          mAmMoving = true;
+          mPickedPosition = pick.position;
+          saveState();
+          return;
+        }
+
+        if(mAmObstructable)
+          return;
+      }
+    }
+  }
 }
 
 } // namespace osgDart

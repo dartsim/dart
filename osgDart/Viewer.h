@@ -52,6 +52,7 @@ class World;
 namespace dynamics {
 class Entity;
 class SimpleFrame;
+class Shape;
 } // namespace dynamics
 
 } // namespace dart
@@ -63,6 +64,7 @@ class WorldNode;
 class DefaultEventHandler;
 class DragAndDrop;
 class SimpleFrameDnD;
+class SimpleFrameShapeDnD;
 
 class Viewer : public osgViewer::Viewer
 {
@@ -131,6 +133,9 @@ public:
   /// Returns true iff this Viewer is currently set to simulate
   bool isSimulating() const;
 
+  /// Delete a specific DragAndDrop object
+  void disableDragAndDrop(DragAndDrop* _dnd);
+
   /// Returns a nullptr if _entity is not a type that can support the built-in
   /// drag and drop features, otherwise it returns a pointer to the DragAndDrop
   /// interface object that has been created (allowing you to configure it). If
@@ -149,6 +154,16 @@ public:
 
   /// A version of disableDragAndDrop specifically for SimpleFrame objects.
   void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
+
+  /// A version of disableDragAndDrop specifically for a single shape within a
+  /// SimpleFrame object. Dragging and Dropping the shape will also drag and
+  /// drop the entire Frame
+  SimpleFrameShapeDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
+                                         dart::dynamics::Shape* _shape);
+
+  /// A version of disableDragAndDrop specifically for a Shape in a SimpleFrame
+  void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
+                          dart::dynamics::Shape* _shape);
 
   /// Get a string containing the user interface constructions for this Viewer
   const std::string& getInstructions() const;
@@ -208,6 +223,11 @@ protected:
 
   /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
   std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
+
+  /// Multimap from Shape ptrs to SimpleFrameShapeDnD ptrs. We use a multimap
+  /// in order to support the possibility of a single Shape being used by
+  /// multiple objects
+  std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*> mSimpleFrameShapeDnDMap;
 
 };
 

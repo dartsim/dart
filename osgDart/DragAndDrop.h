@@ -41,8 +41,9 @@
 
 #include <Eigen/Geometry>
 
-#include "dart/common/Subscriber.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Entity.h"
+#include "dart/dynamics/Shape.h"
 #include "DefaultEventHandler.h"
 
 namespace dart {
@@ -56,6 +57,8 @@ namespace osgDart
 
 class Viewer;
 
+/// DragAndDrop is a class that facilitates enabling various kinds of dart
+/// Entities to be dragged and dropped in an osgDart environment
 class DragAndDrop : public dart::common::Subscriber,
                     public dart::common::Publisher
 {
@@ -64,6 +67,9 @@ public:
   DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
 
   virtual ~DragAndDrop();
+
+  /// Get the Entity that this DragAndDrop is associated with
+  dart::dynamics::Entity* getEntity() const;
 
   /// Called when mouse events are being handled
   virtual void update();
@@ -129,6 +135,8 @@ protected:
 
 };
 
+//==============================================================================
+/// SimpleFrameDnD is a DragAndDrop implementation for SimpleFrame objects
 class SimpleFrameDnD : public DragAndDrop
 {
 public:
@@ -136,6 +144,10 @@ public:
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame=nullptr);
 
   ~SimpleFrameDnD();
+
+  void setSimpleFrame(dart::dynamics::SimpleFrame* _frame);
+
+  dart::dynamics::SimpleFrame* getSimpleFrame() const;
 
   virtual void move() override;
 
@@ -146,6 +158,27 @@ protected:
   dart::dynamics::SimpleFrame* mFrame;
 
   Eigen::AngleAxisd mSavedRotation;
+};
+
+//==============================================================================
+/// SimpleFrameShapeDnD is a version of SimpleFrameDnD that allows a specific
+/// Shape within the SimpleFrame to be dragged and dropped (although it will
+/// carry the entire SimpleFrame with it)
+class SimpleFrameShapeDnD : public SimpleFrameDnD
+{
+public:
+
+  SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame=nullptr,
+                      dart::dynamics::Shape* shape=nullptr);
+
+  ~SimpleFrameShapeDnD();
+
+  virtual void update() override;
+
+protected:
+
+  dart::sub_ptr<dart::dynamics::Shape> mShape;
+
 };
 
 } // namespace osgDart

@@ -46,6 +46,7 @@
 #include "dart/simulation/World.h"
 
 #include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/Shape.h"
 
 namespace osgDart
 {
@@ -312,6 +313,16 @@ bool Viewer::isSimulating() const
 }
 
 //==============================================================================
+void Viewer::disableDragAndDrop(DragAndDrop* _dnd)
+{
+  SimpleFrameDnD* sf = dynamic_cast<SimpleFrameDnD*>(_dnd);
+  if(sf)
+    disableDragAndDrop(sf->getSimpleFrame());
+
+  // TODO(MXG): implement disabling for SimpleFrameShapeDnD
+}
+
+//==============================================================================
 DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 {
   dart::dynamics::SimpleFrame* sf =
@@ -323,7 +334,7 @@ DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 }
 
 //==============================================================================
-void Viewer::disableDragAndDrop(dart::dynamics::Entity *_entity)
+void Viewer::disableDragAndDrop(dart::dynamics::Entity* _entity)
 {
   dart::dynamics::SimpleFrame* sf =
       dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
@@ -360,6 +371,60 @@ void Viewer::disableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 }
 
 //==============================================================================
+static SimpleFrameShapeDnD* getSimpleFrameShapeDnDFromMultimap(
+    dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape,
+    const std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>& map)
+{
+  typedef std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>::const_iterator iterator;
+  std::pair<iterator,iterator> range = map.equal_range(_shape);
+  iterator it = range.first, end = range.second;
+  while(it != map.end())
+  {
+    SimpleFrameShapeDnD* dnd = it->second;
+    if(dnd->getSimpleFrame() == _frame)
+    {
+      return dnd;
+    }
+
+    if(it == end)
+      break;
+    ++it;
+  }
+
+  return nullptr;
+}
+
+//==============================================================================
+SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
+    dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape)
+{
+  if(nullptr == _frame || nullptr == _shape)
+    return nullptr;
+
+  SimpleFrameShapeDnD* existingDnD = getSimpleFrameShapeDnDFromMultimap(
+        _frame, _shape, mSimpleFrameShapeDnDMap);
+  if(existingDnD)
+    return existingDnD;
+
+  SimpleFrameShapeDnD* dnd = new SimpleFrameShapeDnD(this, _frame, _shape);
+  mSimpleFrameShapeDnDMap.insert(
+        std::pair<dart::dynamics::Shape*,SimpleFrameShapeDnD*>(_shape,dnd));
+
+  return dnd;
+}
+
+//==============================================================================
+void Viewer::disableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
+                                dart::dynamics::Shape* _shape)
+{
+  if(nullptr == _frame || nullptr == _shape)
+    return;
+
+
+
+}
+
+//==============================================================================
 const std::string& Viewer::getInstructions() const
 {
   return mInstructions;
@@ -383,6 +448,12 @@ void Viewer::updateDragAndDrops()
   for(auto& dnd_pair : mSimpleFrameDnDMap)
   {
     SimpleFrameDnD* dnd = dnd_pair.second;
+    dnd->update();
+  }
+
+  for(auto& dnd_pair : mSimpleFrameShapeDnDMap)
+  {
+    SimpleFrameShapeDnD* dnd = dnd_pair.second;
     dnd->update();
   }
 }
