@@ -47,6 +47,7 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mEntity(entity),
     mPickedPosition(Eigen::Vector3d::Zero()),
     mConstraintType(UNCONSTRAINED),
+    mAmObstructable(true),
     mAmMoving(false)
 {
   addSubscription(mEntity);
@@ -91,9 +92,27 @@ void DragAndDrop::update()
           saveState();
           return;
         }
+
+        // The picks are always ordered from closest to furthest. If the closest
+        // pick is not our Entity, then something is blocking the way, so if we
+        // are obstructable, then we should quit.
+        if(mAmObstructable)
+          return;
       }
     }
   }
+}
+
+//==============================================================================
+void DragAndDrop::setObstructable(bool _obstructable)
+{
+  mAmObstructable = _obstructable;
+}
+
+//==============================================================================
+bool DragAndDrop::isObstructable() const
+{
+  return mAmObstructable;
 }
 
 //==============================================================================

@@ -68,6 +68,15 @@ public:
   /// Called when mouse events are being handled
   virtual void update();
 
+  /// If true is passed in, this object will only be drag and droppable if there
+  /// are no other objects between its picked point and the camera.
+  void setObstructable(bool _obstructable);
+
+  /// If this is true, then this object will only be drag and droppable if there
+  /// are no other objects between its picked point and the camera. Default is
+  /// true.
+  bool isObstructable() const;
+
   /// Called to specify how the Entity should be moved
   virtual void move() = 0;
 
@@ -113,6 +122,8 @@ protected:
   Eigen::Vector3d mPivot;
 
   ConstraintType mConstraintType;
+
+  bool mAmObstructable;
 
   bool mAmMoving;
 

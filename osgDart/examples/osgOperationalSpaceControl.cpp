@@ -120,6 +120,7 @@ protected:
     if(mViewer)
     {
       dnd = mViewer->enableDragAndDrop(mTarget);
+      dnd->setObstructable(false);
       mViewer->addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
       mViewer->addInstructionText("Hold key 1 to constrain movements to the x-axis\n");
       mViewer->addInstructionText("Hold key 2 to constrain movements to the y-axis\n");
