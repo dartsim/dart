@@ -134,7 +134,6 @@ protected:
 
   dart::dynamics::SimpleFrame* mFrame;
 
-  Eigen::Vector3d mPivot;
   Eigen::AngleAxisd mSavedRotation;
 };
 

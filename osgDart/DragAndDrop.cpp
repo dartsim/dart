@@ -161,8 +161,7 @@ void DragAndDrop::handleDestructionNotification(
 SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
                                dart::dynamics::SimpleFrame* frame)
   : DragAndDrop(viewer, frame),
-    mFrame(frame),
-    mPivot(Eigen::Vector3d::Zero())
+    mFrame(frame)
 {
 
 }

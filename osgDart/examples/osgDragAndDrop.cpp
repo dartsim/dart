@@ -38,6 +38,119 @@
 
 #include "dart/dart.h"
 
+class ConstraintEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  ConstraintEventHandler(osgDart::DragAndDrop* dnd = nullptr)
+    : mDnD(dnd)
+  {
+    clearConstraints();
+    if(mDnD)
+      mDnD->unconstrain();
+  }
+
+  void clearConstraints()
+  {
+    for(size_t i=0; i<3; ++i)
+      mConstrained[i] = false;
+  }
+
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter&) override
+  {
+    if(nullptr == mDnD)
+    {
+      clearConstraints();
+      return false;
+    }
+
+    bool handled = false;
+    switch(ea.getEventType())
+    {
+      case osgGA::GUIEventAdapter::KEYDOWN:
+      {
+        switch(ea.getUnmodifiedKey())
+        {
+          case '1':
+            mConstrained[0] = true;
+            handled = true;
+            break;
+          case '2':
+            mConstrained[1] = true;
+            handled = true;
+            break;
+          case '3':
+            mConstrained[2] = true;
+            handled = true;
+            break;
+        }
+        break;
+      }
+
+      case osgGA::GUIEventAdapter::KEYUP:
+      {
+        switch(ea.getUnmodifiedKey())
+        {
+          case '1':
+            mConstrained[0] = false;
+            handled = true;
+            break;
+          case '2':
+            mConstrained[1] = false;
+            handled = true;
+            break;
+          case '3':
+            mConstrained[2] = false;
+            handled = true;
+            break;
+        }
+        break;
+      }
+
+      default:
+        return false;
+    }
+
+    if(!handled)
+      return handled;
+
+    size_t constraintDofs = 0;
+    for(size_t i=0; i<3; ++i)
+      if(mConstrained[i])
+        ++constraintDofs;
+
+    if(constraintDofs==0 || constraintDofs==3)
+    {
+      mDnD->unconstrain();
+    }
+    else if(constraintDofs == 1)
+    {
+      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      for(size_t i=0; i<3; ++i)
+        if(mConstrained[i])
+          v[i] = 1.0;
+
+      mDnD->constrainToLine(v);
+    }
+    else if(constraintDofs == 2)
+    {
+      Eigen::Vector3d v(Eigen::Vector3d::Zero());
+      for(size_t i=0; i<3; ++i)
+        if(!mConstrained[i])
+          v[i] = 1.0;
+
+      mDnD->constrainToPlane(v);
+    }
+
+    return handled;
+  }
+
+  bool mConstrained[3];
+
+  dart::sub_ptr<osgDart::DragAndDrop> mDnD;
+};
+
 using namespace dart::dynamics;
 
 int main()
@@ -76,11 +189,17 @@ int main()
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
-  viewer.enableDragAndDrop(&draggable);
+  osgDart::DragAndDrop* dnd = viewer.enableDragAndDrop(&draggable);
+  viewer.addEventHandler(new ConstraintEventHandler(dnd));
 
   std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  viewer.getCameraManipulator()->setHomePosition(osg::Vec3(20.0, 17.0, 17.0),
+                                                 osg::Vec3(0.0, 0.0, 0.0),
+                                                 osg::Vec3(0, 0, 1));
+  viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   viewer.run();
 }
