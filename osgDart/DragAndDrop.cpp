@@ -198,15 +198,6 @@ SimpleFrameDnD::~SimpleFrameDnD()
 }
 
 //==============================================================================
-void SimpleFrameDnD::setSimpleFrame(dart::dynamics::SimpleFrame* _frame)
-{
-  removeSubscription(mEntity);
-  mEntity = _frame;
-  mFrame = _frame;
-  addSubscription(mEntity);
-}
-
-//==============================================================================
 dart::dynamics::SimpleFrame* SimpleFrameDnD::getSimpleFrame() const
 {
   return mFrame;
@@ -268,6 +259,12 @@ SimpleFrameShapeDnD::SimpleFrameShapeDnD(
 SimpleFrameShapeDnD::~SimpleFrameShapeDnD()
 {
   // Do nothing
+}
+
+//==============================================================================
+dart::dynamics::Shape* SimpleFrameShapeDnD::getShape() const
+{
+  return mShape;
 }
 
 //==============================================================================

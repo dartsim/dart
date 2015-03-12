@@ -160,6 +160,7 @@ int main()
   SimpleFrame draggable(Frame::World(), "draggable");
   draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
   world->addFrame(&draggable);
+  std::cout << "draggable ptr: " << &draggable << std::endl;
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 

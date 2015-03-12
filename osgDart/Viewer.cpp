@@ -313,16 +313,6 @@ bool Viewer::isSimulating() const
 }
 
 //==============================================================================
-void Viewer::disableDragAndDrop(DragAndDrop* _dnd)
-{
-  SimpleFrameDnD* sf = dynamic_cast<SimpleFrameDnD*>(_dnd);
-  if(sf)
-    disableDragAndDrop(sf->getSimpleFrame());
-
-  // TODO(MXG): implement disabling for SimpleFrameShapeDnD
-}
-
-//==============================================================================
 DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 {
   dart::dynamics::SimpleFrame* sf =
@@ -331,15 +321,6 @@ DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
     return enableDragAndDrop(sf);
 
   return nullptr;
-}
-
-//==============================================================================
-void Viewer::disableDragAndDrop(dart::dynamics::Entity* _entity)
-{
-  dart::dynamics::SimpleFrame* sf =
-      dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
-  if(sf)
-    disableDragAndDrop(sf);
 }
 
 //==============================================================================
@@ -359,23 +340,18 @@ SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 }
 
 //==============================================================================
-void Viewer::disableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
-{
-  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
-      mSimpleFrameDnDMap.find(_frame);
-  if(it == mSimpleFrameDnDMap.end())
-    return;
-
-  delete it->second;
-  mSimpleFrameDnDMap.erase(it);
-}
+// Creating a typedef for a very long and ugly template
+namespace sfs_dnd {
+typedef std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>::iterator iterator;
+} // namespace sfs_dnd
 
 //==============================================================================
-static SimpleFrameShapeDnD* getSimpleFrameShapeDnDFromMultimap(
+static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
     dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape,
-    const std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>& map)
+    std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>& map)
 {
-  typedef std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>::const_iterator iterator;
+  using namespace sfs_dnd;
+
   std::pair<iterator,iterator> range = map.equal_range(_shape);
   iterator it = range.first, end = range.second;
   while(it != map.end())
@@ -383,7 +359,7 @@ static SimpleFrameShapeDnD* getSimpleFrameShapeDnDFromMultimap(
     SimpleFrameShapeDnD* dnd = it->second;
     if(dnd->getSimpleFrame() == _frame)
     {
-      return dnd;
+      return it;
     }
 
     if(it == end)
@@ -391,7 +367,7 @@ static SimpleFrameShapeDnD* getSimpleFrameShapeDnDFromMultimap(
     ++it;
   }
 
-  return nullptr;
+  return map.end();
 }
 
 //==============================================================================
@@ -401,10 +377,12 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
   if(nullptr == _frame || nullptr == _shape)
     return nullptr;
 
-  SimpleFrameShapeDnD* existingDnD = getSimpleFrameShapeDnDFromMultimap(
+  using namespace sfs_dnd;
+
+  iterator existingDnD = getSimpleFrameShapeDnDFromMultimap(
         _frame, _shape, mSimpleFrameShapeDnDMap);
-  if(existingDnD)
-    return existingDnD;
+  if(existingDnD != mSimpleFrameShapeDnDMap.end())
+    return existingDnD->second;
 
   SimpleFrameShapeDnD* dnd = new SimpleFrameShapeDnD(this, _frame, _shape);
   mSimpleFrameShapeDnDMap.insert(
@@ -414,14 +392,60 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 }
 
 //==============================================================================
-void Viewer::disableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
-                                dart::dynamics::Shape* _shape)
+bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
 {
-  if(nullptr == _frame || nullptr == _shape)
-    return;
+  SimpleFrameShapeDnD* ssf = dynamic_cast<SimpleFrameShapeDnD*>(_dnd);
+  if(disableDragAndDrop(ssf))
+    return true;
 
+  SimpleFrameDnD* sf = dynamic_cast<SimpleFrameDnD*>(_dnd);
+  if(disableDragAndDrop(sf))
+    return true;
 
+  return false;
+}
 
+//==============================================================================
+bool Viewer::disableDragAndDrop(SimpleFrameDnD* _dnd)
+{
+  if(nullptr == _dnd)
+    return false;
+
+  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
+      mSimpleFrameDnDMap.find(_dnd->getSimpleFrame());
+  if(it == mSimpleFrameDnDMap.end())
+    return false;
+
+  delete it->second;
+  mSimpleFrameDnDMap.erase(it);
+
+  return true;
+}
+
+//==============================================================================
+bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
+{
+  if(nullptr == _dnd)
+    return false;
+
+  using namespace sfs_dnd;
+
+  std::cout << "SimpleFrameShape pairs:" << std::endl;
+  for(auto& pair : mSimpleFrameShapeDnDMap)
+  {
+    std::cout << pair.first << " : " << pair.second << std::endl;
+  }
+
+  iterator it = getSimpleFrameShapeDnDFromMultimap(
+        _dnd->getSimpleFrame(), _dnd->getShape(), mSimpleFrameShapeDnDMap);
+
+  if(it == mSimpleFrameShapeDnDMap.end())
+    return false;
+
+  delete it->second;
+  mSimpleFrameShapeDnDMap.erase(it);
+
+  return true;
 }
 
 //==============================================================================

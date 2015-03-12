@@ -59,8 +59,8 @@ class Viewer;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an osgDart environment
-class DragAndDrop : public dart::common::Subscriber,
-                    public dart::common::Publisher
+class DragAndDrop : public dart::common::Publisher,
+                    public dart::common::Subscriber
 {
 public:
 
@@ -141,11 +141,9 @@ class SimpleFrameDnD : public DragAndDrop
 {
 public:
 
-  SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame=nullptr);
+  SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
   ~SimpleFrameDnD();
-
-  void setSimpleFrame(dart::dynamics::SimpleFrame* _frame);
 
   dart::dynamics::SimpleFrame* getSimpleFrame() const;
 
@@ -168,16 +166,18 @@ class SimpleFrameShapeDnD : public SimpleFrameDnD
 {
 public:
 
-  SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame=nullptr,
-                      dart::dynamics::Shape* shape=nullptr);
+  SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame,
+                      dart::dynamics::Shape* shape);
 
   ~SimpleFrameShapeDnD();
+
+  dart::dynamics::Shape* getShape() const;
 
   virtual void update() override;
 
 protected:
 
-  dart::sub_ptr<dart::dynamics::Shape> mShape;
+  dart::dynamics::Shape* mShape;
 
 };
 

@@ -77,7 +77,7 @@ public:
   }
 
   /// Implicit conversion to pointer type
-  operator T*() const { return mSubscription; }
+  operator T* () const { return mSubscription; }
 
   /// Dereferencing operator
   T& operator*() const { return *mSubscription; }

@@ -133,9 +133,6 @@ public:
   /// Returns true iff this Viewer is currently set to simulate
   bool isSimulating() const;
 
-  /// Delete a specific DragAndDrop object
-  void disableDragAndDrop(DragAndDrop* _dnd);
-
   /// Returns a nullptr if _entity is not a type that can support the built-in
   /// drag and drop features, otherwise it returns a pointer to the DragAndDrop
   /// interface object that has been created (allowing you to configure it). If
@@ -143,17 +140,8 @@ public:
   /// will be returned.
   DragAndDrop* enableDragAndDrop(dart::dynamics::Entity* _entity);
 
-  /// Turn off DragAndDrop for this Entity. NOTE: The previously created
-  /// DragAndDrop interface will be destroyed, and its pointers will be invalid,
-  /// even if DragAndDrop is enabled again (because a new interface will be
-  /// created at that time).
-  void disableDragAndDrop(dart::dynamics::Entity* _entity);
-
   /// A version of enableDragAndDrop specifically for SimpleFrame objects.
   SimpleFrameDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
-
-  /// A version of disableDragAndDrop specifically for SimpleFrame objects.
-  void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
 
   /// A version of disableDragAndDrop specifically for a single shape within a
   /// SimpleFrame object. Dragging and Dropping the shape will also drag and
@@ -161,9 +149,17 @@ public:
   SimpleFrameShapeDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
                                          dart::dynamics::Shape* _shape);
 
-  /// A version of disableDragAndDrop specifically for a Shape in a SimpleFrame
-  void disableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
-                          dart::dynamics::Shape* _shape);
+  /// Delete a DragAndDrop object. Returns true if the DnD was active and has
+  /// now been deleted
+  bool disableDragAndDrop(DragAndDrop* _dnd);
+
+  /// Delete a SimpleFrameDnD object. Returns true if the DnD was active and has
+  /// now been deleted
+  bool disableDragAndDrop(SimpleFrameDnD* _dnd);
+
+  /// Delete a SimpleFrameShapeDnD object. Returns true if a DnD existed and
+  /// could be deleted
+  bool disableDragAndDrop(SimpleFrameShapeDnD* _dnd);
 
   /// Get a string containing the user interface constructions for this Viewer
   const std::string& getInstructions() const;
