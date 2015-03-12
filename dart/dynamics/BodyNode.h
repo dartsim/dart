@@ -48,6 +48,8 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 
+#include "dart/dynamics/Frame.h"
+
 namespace dart {
 namespace renderer {
 class RenderInterface;
@@ -60,6 +62,7 @@ namespace dynamics {
 class GenCoord;
 class Skeleton;
 class Joint;
+class DegreeOfFreedom;
 class Shape;
 class Marker;
 
@@ -67,7 +70,10 @@ class Marker;
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
 /// connected and have a set of core functions for calculating derivatives.
-class BodyNode
+///
+/// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
+/// BodyNode of the BodyNode.
+class BodyNode : public Frame
 {
 public:
   /// Constructor
@@ -119,6 +125,13 @@ public:
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
 
+  /// Return the articulated body inertia
+  const math::Inertia& getArticulatedInertia() const;
+
+  /// Return the articulated body inertia for implicit joint damping and spring
+  /// forces
+  const math::Inertia& getArticulatedInertiaImplicit() const;
+
   /// Set center of mass expressed in body frame
   void setLocalCOM(const Eigen::Vector3d& _com);
 
@@ -126,13 +139,57 @@ public:
   const Eigen::Vector3d& getLocalCOM() const;
 
   /// Return center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOM()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOM() const;
 
   /// Return velocity of center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOMLinearVelocity() or
+  /// getCOMSpatialVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMVelocity() const;
 
   /// Return acceleration of center of mass expressed in world frame
+  ///
+  /// Deprecated in 4.4. Please use getCOMLinearAcceleration() or
+  /// getCOMSpatialAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldCOMAcceleration() const;
+
+  /// Return the center of mass with respect to an arbitrary Frame
+  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+
+  /// Return the linear velocity of the center of mass, expressed in terms of
+  /// arbitrary Frames
+  Eigen::Vector3d getCOMLinearVelocity(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the spatial velocity of the center of mass, expressed in
+  /// coordinates of this Frame and relative to the World Frame
+  Eigen::Vector6d getCOMSpatialVelocity() const;
+
+  /// Return the spatial velocity of the center of mass, expressed in terms of
+  /// arbitrary Frames
+  Eigen::Vector6d getCOMSpatialVelocity(const Frame* _relativeTo,
+                                        const Frame* _inCoordinatesOf) const;
+
+  /// Return the linear acceleration of the center of mass, expressed in terms
+  /// of arbitary Frames
+  Eigen::Vector3d getCOMLinearAcceleration(
+                          const Frame* _relativeTo = Frame::World(),
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the acceleration of the center of mass expressed in coordinates of
+  /// this BodyNode Frame and relative to the World Frame
+  Eigen::Vector6d getCOMSpatialAcceleration() const;
+
+  /// Return the spatial acceleration of the center of mass, expressed in terms
+  /// of arbitrary Frames
+  Eigen::Vector6d getCOMSpatialAcceleration(const Frame* _relativeTo,
+                                            const Frame* _inCoordinatesOf) const;
 
   /// Set coefficient of friction in range of [0, ~]
   void setFrictionCoeff(double _coeff);
@@ -147,7 +204,7 @@ public:
   double getRestitutionCoeff() const;
 
   //--------------------------------------------------------------------------
-  // Structueral Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
 
   /// Add a visualization shape into the bodynode
@@ -157,9 +214,10 @@ public:
   size_t getNumVisualizationShapes() const;
 
   /// Return _index-th visualization shape
-  Shape* getVisualizationShape(int _index);
+  Shape* getVisualizationShape(size_t _index);
+
   /// Return (const) _index-th visualization shape
-  const Shape* getVisualizationShape(int _index) const;
+  const Shape* getVisualizationShape(size_t _index) const;
 
   /// Add a collision shape into the bodynode
   void addCollisionShape(Shape* _p);
@@ -168,10 +226,10 @@ public:
   size_t getNumCollisionShapes() const;
 
   /// Return _index-th collision shape
-  Shape* getCollisionShape(int _index);
+  Shape* getCollisionShape(size_t _index);
 
   /// Return (const) _index-th collision shape
-  const Shape* getCollisionShape(int _index) const;
+  const Shape* getCollisionShape(size_t _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
   Skeleton* getSkeleton();
@@ -219,7 +277,7 @@ public:
   const Marker* getMarker(size_t _index) const;
 
   /// Return true if _genCoordIndex-th generalized coordinate
-  bool dependsOn(int _genCoordIndex) const;
+  bool dependsOn(size_t _genCoordIndex) const;
 
   /// The number of the generalized coordinates by which this node is affected
   size_t getNumDependentGenCoords() const;
@@ -228,137 +286,408 @@ public:
   /// (< getNumDependentDofs)
   size_t getDependentGenCoordIndex(size_t _arrayIndex) const;
 
+  /// Return a std::vector of generalized coordinate indices that this BodyNode
+  /// depends on.
+  const std::vector<size_t>& getDependentGenCoordIndices() const;
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
+  /// depends on.
+  std::vector<DegreeOfFreedom*> getDependentDofs();
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
+  /// depends on.
+  std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
   //--------------------------------------------------------------------------
 
-  /// Return the current position and orientation expressed in world frame
-  const Eigen::Isometry3d& getTransform() const;
+  /// Get the transform of this BodyNode with respect to its parent BodyNode,
+  /// which is also its parent Frame.
+  const Eigen::Isometry3d& getRelativeTransform() const;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+
+  // Documentation inherited
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+
+  /// Return the partial acceleration of this body
+  const Eigen::Vector6d& getPartialAcceleration() const override;
+
+  /// Return the generalized Jacobian targeting the origin of this BodyNode. The
+  /// Jacobian is expressed in the Frame of this BodyNode.
+  const math::Jacobian& getJacobian() const;
+
+  /// A version of getJacobian() that lets you specify a coordinate Frame to
+  /// express the Jacobian in.
+  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const;
+
+  /// Return the generalized Jacobian targeting an offset within the Frame of
+  /// this BodyNode.
+  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const;
+
+  /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
+  /// coordinate Frame to express the Jacobian in.
+  math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
+                             const Frame* _inCoordinatesOf) const;
+
+  /// Return the generalized Jacobian targeting the origin of this BodyNode. The
+  /// Jacobian is expressed in the World Frame.
+  const math::Jacobian& getWorldJacobian() const;
+
+  /// Return the generalized Jacobian targeting an offset in this BodyNode. The
+  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
+  /// expressed in the World Frame.
+  math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
+
+  /// Return the linear Jacobian targeting the origin of this BodyNode. You can
+  /// specify a coordinate Frame to express the Jacobian in.
+  math::LinearJacobian getLinearJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the generalized Jacobian targeting an offset within the Frame of
+  /// this BodyNode.
+  math::LinearJacobian getLinearJacobian(const Eigen::Vector3d& _offset,
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the angular Jacobian targeting the origin of this BodyNode. You can
+  /// specify a coordinate Frame to express the Jacobian in.
+  math::AngularJacobian getAngularJacobian(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the spatial time derivative of the generalized Jacobian targeting
+  /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a spatial time derivative, it should be used with
+  /// spatial vectors. If you are using classical linear and angular
+  /// acceleration vectors, then use getJacobianClassicDeriv(),
+  /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
+  const math::Jacobian& getJacobianSpatialDeriv() const;
+
+  /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
+  /// coordinates of any Frame.
+  ///
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classical linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
+  math::Jacobian getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const;
+
+  /// Return the spatial time derivative of the generalized Jacobian targeting
+  /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
+  /// this BodyNode's coordinate Frame.
+  ///
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classic linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
+  ///
+  /// \sa getJacobianSpatialDeriv()
+  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const;
+
+  /// A version of getJacobianSpatialDeriv(const Eigen::Vector3d&) that allows
+  /// an arbitrary coordinate Frame to be specified.
+  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
+                                         const Frame* _inCoordinatesOf) const;
+
+  /// Return the classical time derivative of the generalized Jacobian targeting
+  /// the origin of this BodyNode. The Jacobian is expressed in the World
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  const math::Jacobian& getJacobianClassicDeriv() const;
+
+  /// A version of getJacobianClassicDeriv() that can return the Jacobian in
+  /// coordinates of any Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
+
+  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in the coordinates of this BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  math::Jacobian getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the linear Jacobian (classical) time derivative, in terms of any
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  math::LinearJacobian getLinearJacobianDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in coordinates of this BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  math::LinearJacobian getLinearJacobianDeriv(
+                          const Eigen::Vector3d& _offset,
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Return the angular Jacobian time derivative, in terms of any coordinate
+  /// Frame.
+  math::AngularJacobian getAngularJacobianDeriv(
+                          const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  //----------------------------------------------------------------------------
+  // Deprecated velocity, acceleration, and Jacobian functions
+  //----------------------------------------------------------------------------
 
   /// Return the spatial velocity at the origin of the bodynode expressed in
   /// the body-fixed frame
+  ///
+  /// Deprecated in 4.4. Please use getSpatialVelocity() instead.
+  DEPRECATED(4.4)
   const Eigen::Vector6d& getBodyVelocity() const;
 
   /// Return the linear velocity of the origin of the bodynode expressed in
   /// body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getLinearVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyLinearVelocity() const;
 
   /// Return the linear velocity of a point on the bodynode expressed in
   /// body-fixed frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getLinearVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyLinearVelocity(const Eigen::Vector3d& _offset) const;
 
   /// Return the angular velocity expressed in body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getAngularVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyAngularVelocity() const;
 
   /// Return the linear velocity of the origin of the bodynode expressed in
   /// world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getLinearVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldLinearVelocity() const;
 
   /// Return the linear velocity of a point on the bodynode expressed in world
   /// frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getLinearVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldLinearVelocity(const Eigen::Vector3d& _offset) const;
 
   /// Return the angular velocity expressed in world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialVelocity(), getAngularVelocity()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldAngularVelocity() const;
 
   /// Return generalized acceleration at the origin of this body node where the
   /// acceleration is expressed in this body node frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration()
+  DEPRECATED(4.4)
   const Eigen::Vector6d& getBodyAcceleration() const;
 
   /// Return the linear acceleration of the origin of the bodynode expressed in
   /// body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getLinearAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyLinearAcceleration() const;
 
   /// Return the linear acceleration of a point on the bodynode expressed in
   /// body-fixed frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getLinearAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyLinearAcceleration(
       const Eigen::Vector3d& _offset) const;
 
   /// Return the angular acceleration expressed in body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getAngularAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getBodyAngularAcceleration() const;
 
   /// Return the linear acceleration of the origin of the bodynode expressed in
   /// world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getLinearAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldLinearAcceleration() const;
 
   /// Return the linear acceleration of a point on the bodynode expressed in
   /// world frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getLinearAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldLinearAcceleration(
       const Eigen::Vector3d& _offset) const;
 
   /// Return the angular acceleration expressed in world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getSpatialAcceleration(), getAngularAcceleration()
+  DEPRECATED(4.4)
   Eigen::Vector3d getWorldAngularAcceleration() const;
 
   /// Return generalized Jacobian at the origin of this body node where the
   /// Jacobian is expressed in this body node frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian()
+  DEPRECATED(4.4)
   const math::Jacobian& getBodyJacobian();
 
   /// Return the linear Jacobian of the origin of the bodynode expressed in
   /// body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getLinearJacobian()
+  DEPRECATED(4.4)
   math::LinearJacobian getBodyLinearJacobian();
 
   /// Return the linear Jacobian of a point on the bodynode expressed in
   /// body-fixed frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getLinearJacobian()
+  DEPRECATED(4.4)
   math::LinearJacobian getBodyLinearJacobian(const Eigen::Vector3d& _offset);
 
   /// Return the angular Jacobian expressed in body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getAngularJacobian()
+  DEPRECATED(4.4)
   math::AngularJacobian getBodyAngularJacobian();
 
   /// Return the linear Jacobian of the origin of the bodynode expressed in
   /// world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getLinearJacobian()
+  DEPRECATED(4.4)
   math::LinearJacobian getWorldLinearJacobian();
 
   /// Return the linear Jacobian of a point on the bodynode expressed in world
   /// frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getLinearJacobian()
+  DEPRECATED(4.4)
   math::LinearJacobian getWorldLinearJacobian(const Eigen::Vector3d& _offset);
 
   /// Return the angular Jacobian expressed in world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobian(), getAngularJacobian()
+  DEPRECATED(4.4)
   math::AngularJacobian getWorldAngularJacobian();
 
   /// Return time derivative of generalized Jacobian at the origin of this body
   /// node where the Jacobian is expressed in this body node frame
+  ///
+  /// Deprecated as of 4.4. Replaced by getJacobianSpatialDeriv()
+  /// \sa getJacobianSpatialDeriv(), getJacobianClassicDeriv()
+  DEPRECATED(4.4)
   const math::Jacobian& getBodyJacobianDeriv();
 
   /// Return the time derivative of the linear Jacobian of the origin of the
   /// bodynode expressed in body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::LinearJacobian getBodyLinearJacobianDeriv();
 
   /// Return the time derivative of the linear Jacobian of a point on the
   /// bodynode expressed in body-fixed frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::LinearJacobian getBodyLinearJacobianDeriv(
       const Eigen::Vector3d& _offset);
 
   /// Return the time derivative of the angular Jacobian expressed in body-fixed
   /// frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getAngularJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::AngularJacobian getBodyAngularJacobianDeriv();
 
   /// Return the time derivative of the linear Jacobian of the origin of the
   /// bodynode expressed in world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::LinearJacobian getWorldLinearJacobianDeriv();
 
   /// Return the time derivative of the linear Jacobian of a point on the
   /// bodynode expressed in world frame
   /// \param[in] _offset Offset of the point from the origin of the bodynode
   /// frame. The offset is expressed in the body-fixed frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::LinearJacobian getWorldLinearJacobianDeriv(
       const Eigen::Vector3d& _offset);
 
   /// Return the angular Jacobian expressed in world frame
+  ///
+  /// Deprecated as of 4.4
+  /// \sa getJacobianSpatialDeriv(), getAngularJacobianClassicDeriv()
+  DEPRECATED(4.4)
   math::AngularJacobian getWorldAngularJacobianDeriv();
+
+  // --- End of Deprecated functions -------------------------------------------
 
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
@@ -476,15 +805,19 @@ public:
   // Rendering
   //--------------------------------------------------------------------------
 
-  /// Render the entire subtree rooted at this body node.
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const;
-
   /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  // Documentation inherited
+  void notifyTransformUpdate() override;
+
+  // Documentation inherited
+  void notifyVelocityUpdate() override;
+
+  // Documentation inherited
+  void notifyAccelerationUpdate() override;
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -503,6 +836,13 @@ protected:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
+  /// Separate generic child Entities from child BodyNodes for more efficient
+  /// update notices
+  void processNewEntity(Entity* _newChildEntity);
+
+  /// Remove this Entity from mChildBodyNodes or mNonBodyNodeEntities
+  void processRemovedEntity(Entity* _oldChildEntity);
+
   /// Update transformation
   virtual void updateTransform();
 
@@ -510,11 +850,11 @@ protected:
   virtual void updateVelocity();
 
   /// Update partial spatial body acceleration due to parent joint's velocity.
-  virtual void updatePartialAcceleration();
+  virtual void updatePartialAcceleration() const;
 
   /// Update articulated body inertia for forward dynamics.
   /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
-  virtual void updateArtInertia(double _timeStep);
+  virtual void updateArtInertia(double _timeStep) const;
 
   /// Update bias force associated with the articulated body inertia for forward
   /// dynamics.
@@ -642,15 +982,15 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
                                       double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
                                          double _timeStep);
 
   ///
@@ -683,7 +1023,7 @@ protected:
   int mID;
 
   /// Counts the number of nodes globally.
-  static int msBodyNodeCount;
+  static size_t msBodyNodeCount;
 
   /// Name
   std::string mName;
@@ -711,9 +1051,6 @@ protected:
   /// Coefficient of friction
   double mRestitutionCoeff;
 
-  /// Array of visualization shpaes
-  std::vector<Shape*> mVizShapes;
-
   /// Array of collision shpaes
   std::vector<Shape*> mColShapes;
 
@@ -739,40 +1076,60 @@ protected:
   /// Array of child body nodes
   std::vector<BodyNode*> mChildBodyNodes;
 
+  /// Array of child Entities that are not BodyNodes. Organizing them separately
+  /// allows some performance optimizations.
+  std::set<Entity*> mNonBodyNodeEntities;
+
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
   /// A increasingly sorted list of dependent dof indices.
-  std::vector<int> mDependentGenCoordIndices;
+  std::vector<size_t> mDependentGenCoordIndices;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties
   //--------------------------------------------------------------------------
 
-  /// World transformation
-  Eigen::Isometry3d mW;
-
   /// Body Jacobian
-  math::Jacobian mBodyJacobian;
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
+  mutable math::Jacobian mBodyJacobian;
 
   /// Dirty flag for body Jacobian.
-  bool mIsBodyJacobianDirty;
+  mutable bool mIsBodyJacobianDirty;
 
-  /// Time derivative of body Jacobian.
-  math::Jacobian mBodyJacobianDeriv;
+  /// Cached World Jacobian
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
+  mutable math::Jacobian mWorldJacobian;
 
-  /// Dirty flag for time derivative of body Jacobian.
-  bool mIsBodyJacobianDerivDirty;
+  /// Dirty flag for world Jacobian
+  mutable bool mIsWorldJacobianDirty;
 
-  /// Spatial body velocity w.r.t. body frame
-  Eigen::Vector6d mV;
+  /// Spatial time derivative of body Jacobian.
+  ///
+  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
+  mutable math::Jacobian mBodyJacobianSpatialDeriv;
+
+  /// Dirty flag for spatial time derivative of body Jacobian.
+  mutable bool mIsBodyJacobianSpatialDerivDirty;
+
+  /// Classic time derivative of Body Jacobian
+  ///
+  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
+  mutable math::Jacobian mWorldJacobianClassicDeriv;
+
+  /// Dirty flag for the classic time derivative of the Jacobian
+  mutable bool mIsWorldJacobianClassicDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
-  Eigen::Vector6d mPartialAcceleration;
+  ///
+  /// Do not use directly! Use getPartialAcceleration() to access this quantity
+  mutable Eigen::Vector6d mPartialAcceleration;
   // TODO(JS): Rename with more informative name
 
-  /// Spatial body acceleration w.r.t. body frame
-  Eigen::Vector6d mA;
+  /// Is the partial acceleration vector dirty
+  mutable bool mIsPartialAccelerationDirty;
 
   /// Transmitted wrench from parent to the bodynode expressed in body-fixed
   /// frame
@@ -784,11 +1141,15 @@ protected:
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;
 
-   /// Articulated body inertia
-  math::Inertia mArtInertia;
+  /// Articulated body inertia
+  ///
+  /// Do not use directly! Use getArticulatedInertia() to access this quantity
+  mutable math::Inertia mArtInertia;
 
-  /// Articulated body inertia for implicit joing damping and spring forces
-  math::Inertia mArtInertiaImplicit;
+  /// Articulated body inertia for implicit joint damping and spring forces
+  ///
+  /// DO not use directly! Use getArticulatedInertiaImplicit() to access this
+  mutable math::Inertia mArtInertiaImplicit;
 
   /// Bias force
   Eigen::Vector6d mBiasForce;
@@ -831,12 +1192,22 @@ protected:
   Eigen::Vector6d mImpF;
 
   /// Update body Jacobian. getBodyJacobian() calls this function if
-  ///        mIsBodyJacobianDirty is true.
-  void _updateBodyJacobian();
+  /// mIsBodyJacobianDirty is true.
+  void _updateBodyJacobian() const;
 
-  /// Update time derivative of body Jacobian. getBodyJacobianTimeDeriv()
-  ///        calls this function if mIsBodyJacobianTimeDerivDirty is true.
-  void _updateBodyJacobianDeriv();
+  /// Update the World Jacobian. The commonality of using the World Jacobian
+  /// makes it worth caching.
+  void _updateWorldJacobian() const;
+
+  /// Update spatial time derivative of body Jacobian.
+  /// getJacobianSpatialTimeDeriv() calls this function if
+  /// mIsBodyJacobianSpatialDerivDirty is true.
+  void _updateBodyJacobianSpatialDeriv() const;
+
+  /// Update classic time derivative of body Jacobian.
+  /// getJacobianClassicTimeDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void _updateWorldJacobianClassicDeriv() const;
 
 private:
   ///

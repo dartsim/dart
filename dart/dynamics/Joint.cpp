@@ -62,6 +62,14 @@ Joint::Joint(const std::string& _name)
     mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mSpatialAcceleration(Eigen::Vector6d::Zero()),
+    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
+    mNeedTransformUpdate(true),
+    mNeedSpatialVelocityUpdate(true),
+    mNeedSpatialAccelerationUpdate(true),
+    mNeedPrimaryAccelerationUpdate(true),
+    mIsLocalJacobianDirty(true),
+    mIsLocalJacobianTimeDerivDirty(true),
     mIsPositionLimited(true)
 {
 }
@@ -185,7 +193,49 @@ const Skeleton* Joint::getSkeleton() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
+  if(mNeedTransformUpdate)
+  {
+    updateLocalTransform();
+    mNeedTransformUpdate = false;
+  }
+
   return mT;
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+{
+  if(mNeedSpatialVelocityUpdate)
+  {
+    updateLocalSpatialVelocity();
+    mNeedSpatialVelocityUpdate = false;
+  }
+
+  return mSpatialVelocity;
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+{
+  if(mNeedSpatialAccelerationUpdate)
+  {
+    updateLocalSpatialAcceleration();
+    mNeedSpatialAccelerationUpdate = false;
+  }
+
+  return mSpatialAcceleration;
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+{
+  if(mNeedPrimaryAccelerationUpdate)
+  {
+    updateLocalPrimaryAcceleration();
+    mNeedPrimaryAccelerationUpdate = false;
+  }
+
+  return mPrimaryAcceleration;
 }
 
 //==============================================================================
@@ -220,6 +270,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mT_ParentBodyToJoint = _T;
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -227,6 +278,8 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mT_ChildBodyToJoint = _T;
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -244,7 +297,7 @@ const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 //==============================================================================
 void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 {
-  _ri->transform(mT);
+  _ri->transform(getLocalTransform());
 }
 
 //==============================================================================
@@ -258,6 +311,13 @@ DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
                                          size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _name, _indexInJoint);
+}
+
+//==============================================================================
+void Joint::updateArticulatedInertia() const
+{
+  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
+      mSkeleton->updateArticulatedInertia();
 }
 
 //==============================================================================
@@ -287,6 +347,55 @@ DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
 //  assert(!math::isNan(springForce));
 //  return springForce;
 //}
+
+//==============================================================================
+void Joint::notifyPositionUpdate()
+{
+  if(mChildBodyNode)
+  {
+    mChildBodyNode->notifyTransformUpdate();
+    mChildBodyNode->mIsBodyJacobianDirty = true;
+    mChildBodyNode->mIsWorldJacobianDirty = true;
+    mChildBodyNode->mIsBodyJacobianSpatialDerivDirty = true;
+    mChildBodyNode->mIsWorldJacobianClassicDerivDirty = true;
+  }
+
+  mIsLocalJacobianDirty = true;
+  mIsLocalJacobianTimeDerivDirty = true;
+  mNeedPrimaryAccelerationUpdate = true;
+
+  mNeedTransformUpdate = true;
+  mNeedSpatialVelocityUpdate = true;
+  mNeedSpatialAccelerationUpdate = true;
+
+  if(mSkeleton)
+  {
+    mSkeleton->notifyArticulatedInertiaUpdate();
+    mSkeleton->mIsExternalForcesDirty = true;
+  }
+}
+
+//==============================================================================
+void Joint::notifyVelocityUpdate()
+{
+  if(mChildBodyNode)
+    mChildBodyNode->notifyVelocityUpdate();
+
+  mIsLocalJacobianTimeDerivDirty = true;
+
+  mNeedSpatialVelocityUpdate = true;
+  mNeedSpatialAccelerationUpdate = true;
+}
+
+//==============================================================================
+void Joint::notifyAccelerationUpdate()
+{
+  if(mChildBodyNode)
+    mChildBodyNode->notifyAccelerationUpdate();
+
+  mNeedSpatialAccelerationUpdate = true;
+  mNeedPrimaryAccelerationUpdate = true;
+}
 
 }  // namespace dynamics
 }  // namespace dart

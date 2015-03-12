@@ -52,6 +52,7 @@ EulerJoint::EulerJoint(const std::string& _name)
     mAxisOrder(AO_XYZ)
 {
   updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -65,6 +66,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
   mAxisOrder = _order;
   if (_renameDofs)
     updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -145,20 +147,21 @@ void EulerJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalTransform()
+void EulerJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint * convertToTransform(mPositions)
+  mT = mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
        * mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobian()
+void EulerJoint::updateLocalJacobian(bool) const
 {
   // double q0 = mPositions[0];
-  double q1 = mPositions[1];
-  double q2 = mPositions[2];
+  const Eigen::Vector3d& positions = getPositionsStatic();
+  double q1 = positions[1];
+  double q2 = positions[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);
@@ -189,12 +192,12 @@ void EulerJoint::updateLocalJacobian()
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mPositions[1]) == DART_PI * 0.5)
+      if (fabs(getPositionsStatic()[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mPositions[0] << ", "
-                  << mPositions[1] << ", "
-                  << mPositions[2] << ")"
+                  << positions[0] << ", "
+                  << positions[1] << ", "
+                  << positions[2] << ")"
                   << std::endl;
 #endif
 
@@ -215,12 +218,12 @@ void EulerJoint::updateLocalJacobian()
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(mPositions[1]) == DART_PI * 0.5)
+      if (fabs(positions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mName << "]. ("
-                  << mPositions[0] << ", "
-                  << mPositions[1] << ", "
-                  << mPositions[2] << ")"
+                  << positions[0] << ", "
+                  << positions[1] << ", "
+                  << positions[2] << ")"
                   << std::endl;
 #endif
 
@@ -257,15 +260,17 @@ void EulerJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobianTimeDeriv()
+void EulerJoint::updateLocalJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
-  double q1 = mPositions[1];
-  double q2 = mPositions[2];
+  const Eigen::Vector3d& positions = getPositionsStatic();
+  double q1 = positions[1];
+  double q2 = positions[2];
 
   // double dq0 = mVelocities[0];
-  double dq1 = mVelocities[1];
-  double dq2 = mVelocities[2];
+  const Eigen::Vector3d& velocities = getVelocitiesStatic();
+  double dq1 = velocities[1];
+  double dq2 = velocities[2];
 
   // double c0 = cos(q0);
   double c1 = cos(q1);

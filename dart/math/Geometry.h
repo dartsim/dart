@@ -254,9 +254,61 @@ Eigen::Vector6d AdTLinear(const Eigen::Isometry3d& _T,
 ///// \brief fast version of Ad([I p; 0 1], V)
 // se3 AdP(const Vec3& p, const se3& s);
 
+/// \brief Change coordinate Frame of a Jacobian
+template<typename Derived>
+typename Derived::PlainObject AdRJac(const Eigen::Isometry3d& _T,
+                                     const Eigen::MatrixBase<Derived>& _J)
+{
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
-///// \brief fast version of Ad([R 0; 0 1], J)
-// Jacobian AdRJac(const SE3& T, const Jacobian& J);
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() =
+      _T.linear() * _J.template topRows<3>();
+
+  ret.template bottomRows<3>().noalias() =
+      _T.linear() * _J.template bottomRows<3>();
+
+  return ret;
+}
+
+template<typename Derived>
+typename Derived::PlainObject AdRInvJac(const Eigen::Isometry3d& _T,
+                                        const Eigen::MatrixBase<Derived>& _J)
+{
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() =
+      _T.linear().transpose() * _J.template topRows<3>();
+
+  ret.template bottomRows<3>().noalias() =
+      _T.linear().transpose() * _J.template bottomRows<3>();
+
+  return ret;
+}
+
+template<typename Derived>
+typename Derived::PlainObject adJac(const Eigen::Vector6d& _V,
+                                    const Eigen::MatrixBase<Derived>& _J)
+{
+  EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime == 6,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typename Derived::PlainObject ret(_J.rows(), _J.cols());
+
+  ret.template topRows<3>().noalias() =
+      - _J.template topRows<3>().colwise().cross(_V.head<3>());
+
+  ret.template bottomRows<3>().noalias() =
+      - _J.template bottomRows<3>().colwise().cross(_V.head<3>())
+      - _J.template topRows<3>().colwise().cross(_V.tail<3>());
+
+  return ret;
+}
 
 /// \brief fast version of Ad(Inv(T), V)
 Eigen::Vector6d AdInvT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);

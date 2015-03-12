@@ -223,6 +223,22 @@ inline double random(double _min, double _max) {
                 * (_max - _min));
 }
 
+template<int N>
+Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
+{
+  Eigen::Matrix<double, N, 1> v;
+  for(size_t i=0; i<N; ++i)
+    v[i] = random(_min, _max);
+
+  return v;
+}
+
+template<int N>
+Eigen::Matrix<double, N, 1> randomVector(double _limit)
+{
+  return randomVector<N>(-fabs(_limit), fabs(_limit));
+}
+
 DEPRECATED(4.3)
 inline int castUIntToInt(size_t _x)
 {

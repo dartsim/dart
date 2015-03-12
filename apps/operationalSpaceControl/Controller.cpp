@@ -35,6 +35,7 @@
  */
 
 #include "apps/operationalSpaceControl/Controller.h"
+#include "dart/math/MathTypes.h"
 
 //==============================================================================
 Controller::Controller(dart::dynamics::Skeleton* _robot,
@@ -75,14 +76,16 @@ Controller::~Controller()
 //==============================================================================
 void Controller::update(const Eigen::Vector3d& _targetPosition)
 {
+  using namespace dart;
+
   // Get equation of motions
   Eigen::Vector3d x    = mEndEffector->getTransform().translation();
-  Eigen::Vector3d dx   = mEndEffector->getWorldLinearVelocity();
+  Eigen::Vector3d dx   = mEndEffector->getLinearVelocity();
   Eigen::MatrixXd invM = mRobot->getInvMassMatrix();                   // n x n
   Eigen::VectorXd Cg   = mRobot->getCoriolisAndGravityForces();        // n x 1
-  Eigen::MatrixXd Jv   = mEndEffector->getWorldLinearJacobian();       // 3 x n
-  Eigen::MatrixXd dJv  = mEndEffector->getWorldLinearJacobianDeriv();  // 3 x n
-  Eigen::VectorXd dq   = mRobot->getVelocities();                      // n x 1
+  math::LinearJacobian Jv   = mEndEffector->getLinearJacobian();       // 3 x n
+  math::LinearJacobian dJv  = mEndEffector->getLinearJacobianDeriv();  // 3 x n
+  Eigen::VectorXd dq        = mRobot->getVelocities();                 // n x 1
 
   // Compute operational space values
   Eigen::MatrixXd A = Jv*invM;                 // 3 x n

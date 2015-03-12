@@ -109,13 +109,13 @@ protected:
   virtual void updateDegreeOfFreedomNames();
 
   // Documentation inherited
-  virtual void updateLocalTransform();
+  virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian();
+  virtual void updateLocalJacobian(bool =true) const;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv();
+  virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
   /// Plane type

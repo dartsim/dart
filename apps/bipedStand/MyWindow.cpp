@@ -154,7 +154,7 @@ void MyWindow::plotCOMX() {
     Eigen::VectorXd pose = mWorld->getRecording()->getConfig(i, 1);
     mWorld->getSkeleton(1)->setPositions(pose);
     mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);    
-    data[i] = mWorld->getSkeleton(1)->getWorldCOM()[0];
+    data[i] = mWorld->getSkeleton(1)->getCOM()[0];
   }
   if (nFrame != 0)
   {

@@ -52,6 +52,8 @@ RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
   : SingleDofJoint(_name),
     mAxis(axis.normalized())
 {
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -63,6 +65,8 @@ RevoluteJoint::~RevoluteJoint()
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mAxis = _axis.normalized();
+  updateLocalJacobian();
+  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -72,10 +76,10 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalTransform()
+void RevoluteJoint::updateLocalTransform() const
 {
   mT = mT_ParentBodyToJoint
-       * math::expAngular(mAxis * mPosition)
+       * math::expAngular(mAxis * getPositionStatic())
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -83,17 +87,19 @@ void RevoluteJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobian()
+void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
-  // TODO(JS): This should be updated when mT_ChildBodyToJoint or mAxis.
-  mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+  if(_mandatory)
+  {
+    mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
 
-  // Verification
-  assert(!math::isNan(mJacobian));
+    // Verification
+    assert(!math::isNan(mJacobian));
+  }
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobianTimeDeriv()
+void RevoluteJoint::updateLocalJacobianTimeDeriv() const
 {
   // Time derivative of revolute joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

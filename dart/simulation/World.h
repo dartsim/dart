@@ -45,6 +45,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 #include <Eigen/Dense>
 
@@ -52,6 +53,7 @@
 #include "dart/common/Timer.h"
 #include "dart/common/NameManager.h"
 #include "dart/simulation/Recording.h"
+#include "dart/dynamics/Entity.h"
 
 namespace dart {
 
@@ -100,16 +102,15 @@ public:
   double getTimeStep() const;
 
   //--------------------------------------------------------------------------
-  // Structueral Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
 
   /// Get the indexed skeleton
   dynamics::Skeleton* getSkeleton(size_t _index) const;
 
-  /// Find body node by name
-  /// \param[in] The name of body node looking for.
-  /// \return Searched body node. If the skeleton does not have a body
-  /// node with _name, then return NULL.
+  /// Find a Skeleton by name
+  /// \param[in] The name of the Skeleton you are looking for.
+  /// \return If the skeleton does not exist then return NULL.
   dynamics::Skeleton* getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
@@ -118,14 +119,44 @@ public:
   /// Add a skeleton to this world
   std::string addSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// Remove a skeleton in this world
+  /// Remove a skeleton from this world without deleting it
+  void withdrawSkeleton(dynamics::Skeleton* _skeleton);
+
+  /// Remove a skeleton in this world and delete it
   void removeSkeleton(dynamics::Skeleton* _skeleton);
 
-  /// Remove all the skeletons in this world
+  /// Remove all skeletons from this world, and get pointers to them
+  std::set<dynamics::Skeleton*> withdrawAllSkeletons();
+
+  /// Remove all the skeletons in this world and delete them
   void removeAllSkeletons();
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
+
+  /// Get the indexed Entity
+  dynamics::Entity* getEntity(size_t _index) const;
+
+  /// Find an Entity by name
+  dynamics::Entity* getEntity(const std::string& _name) const;
+
+  /// Get the number of Entities
+  size_t getNumEntities() const;
+
+  /// Add an Entity to this world
+  std::string addEntity(dynamics::Entity* _entity);
+
+  /// Remove an Entity from this world without deleting it
+  void withdrawEntity(dynamics::Entity* _entity);
+
+  /// Remove an Entity from this world and delete it
+  void removeEntity(dynamics::Entity* _entity);
+
+  /// Remove all Entities from this world, and get pointers to them
+  std::set<dynamics::Entity*> withdrawAllEntities();
+
+  /// Remove all Entities in this world. Note: Does not remove any Skeletons
+  void removeAllEntities();
 
   //--------------------------------------------------------------------------
   // Kinematics
@@ -174,6 +205,12 @@ protected:
 
   /// NameManager for keeping track of Skeletons
   dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
+
+  /// Entities in this world
+  std::vector<dynamics::Entity*> mEntities;
+
+  /// NameManager for keeping track of Entities
+  dart::common::NameManager<dynamics::Entity> mNameMgrForEntities;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

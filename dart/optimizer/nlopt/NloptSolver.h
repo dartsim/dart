@@ -56,6 +56,12 @@ public:
   /// \brief Destructor
   virtual ~NloptSolver();
 
+  /// Set number of maximum evaluations
+  virtual void setNumMaxEvaluations(size_t _numVal);
+
+  /// Get number of maximum evaluations
+  virtual size_t getNumEvaluationMax() const;
+
   /// \copydoc Solver::solve
   virtual bool solve();
 

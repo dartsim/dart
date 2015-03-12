@@ -47,6 +47,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/SimpleFrame.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/Paths.h"
@@ -59,7 +60,13 @@ class DynamicsTest : public ::testing::Test
 {
 public:
   // Get Skel file list to test.
-  const std::vector<std::string>& getList();
+  const std::vector<std::string>& getList() const;
+
+  // Get reference frames
+  const std::vector<SimpleFrame*>& getRefFrames() const;
+
+  // Randomize the properties of all the reference frames
+  void randomizeRefFrames();
 
   // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
@@ -71,11 +78,11 @@ public:
 
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
-  void compareVelocities(const std::string& _fileName);
+  void testJacobians(const std::string& _fileName);
 
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
-  void compareAccelerations(const std::string& _fileName);
+  void testFiniteDifference(const std::string& _fileName);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
@@ -83,7 +90,7 @@ public:
   void compareEquationsOfMotion(const std::string& _fileName);
 
   // Test skeleton's COM and its related quantities.
-  void centerOfMass(const std::string& _fileName);
+  void testCenterOfMass(const std::string& _fileName);
 
   //
   void testConstraintImpulse(const std::string& _fileName);
@@ -96,37 +103,74 @@ protected:
   virtual void SetUp();
 
   // Skel file list.
-  std::vector<std::string> list;
+  std::vector<std::string> fileList;
+
+  std::vector<SimpleFrame*> refFrames;
 };
 
 //==============================================================================
 void DynamicsTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  // Create a list of skel files to test with
+  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+
+  // Create a list of reference frames to use during tests
+  refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
+  refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame2"));
+  refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame3"));
+  refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame4"));
+  refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
+  refFrames.push_back(new SimpleFrame(refFrames.back(), "refFrame6"));
 }
 
 //==============================================================================
-const std::vector<std::string>& DynamicsTest::getList()
+const std::vector<std::string>& DynamicsTest::getList() const
 {
-  return list;
+  return fileList;
+}
+
+//==============================================================================
+const std::vector<SimpleFrame*>& DynamicsTest::getRefFrames() const
+{
+  return refFrames;
+}
+
+//==============================================================================
+void DynamicsTest::randomizeRefFrames()
+{
+  for(size_t i=0; i<refFrames.size(); ++i)
+  {
+    SimpleFrame* F = refFrames[i];
+
+    Eigen::Vector3d p = randomVector<3>(100);
+    Eigen::Vector3d theta = randomVector<3>(2*M_PI);
+
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    tf.translate(p);
+    tf.linear() = math::eulerXYZToMatrix(theta);
+
+    F->setRelativeTransform(tf);
+    F->setRelativeSpatialVelocity(randomVector<6>(100));
+    F->setRelativeSpatialAcceleration(randomVector<6>(100));
+  }
 }
 
 //==============================================================================
@@ -145,7 +189,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 
     int dof = body->getNumDependentGenCoords();
     I = body->getSpatialInertia();
-    J = body->getBodyJacobian();
+    J = body->getJacobian();
 
     EXPECT_EQ(I.rows(), 6);
     EXPECT_EQ(I.cols(), 6);
@@ -206,8 +250,179 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
   return AugM;
 }
 
+template <typename T>
+void printComparisonError(const std::string& _comparison,
+                          const std::string& _name,
+                          const std::string& _frame,
+                          const T& fk,
+                          const T& jac)
+{
+  std::cout << "Disagreement between FK and Jacobian results for "
+            << _comparison << " of '" << _name
+            << "' with a reference Frame of '" << _frame << "'\n"
+            << "FK:  " << fk.transpose() << "\n"
+            << "Jac: " << jac.transpose() << "\n";
+}
+
 //==============================================================================
-void DynamicsTest::compareVelocities(const std::string& _fileName)
+void compareBodyNodeFkToJacobian(const BodyNode* bn,
+                                 const Frame* refFrame,
+                                 double tolerance)
+{
+  const Skeleton* skel = bn->getSkeleton();
+
+  const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
+  VectorXd dq = skel->getVelocitySegment(coords);
+  VectorXd ddq = skel->getAccelerationSegment(coords);
+
+  Vector6d SpatialVelFk = bn->getSpatialVelocity(Frame::World(), refFrame);
+  Vector6d SpatialAccFk = bn->getSpatialAcceleration(Frame::World(), refFrame);
+
+  math::Jacobian SpatialJac = bn->getJacobian(refFrame);
+  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(refFrame);
+
+  Vector6d SpatialVelJac = SpatialJac * dq;
+  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+
+  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelEqual)
+    printComparisonError("spatial velocity", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJac);
+
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccEqual)
+    printComparisonError("spatial acceleration", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJac);
+
+  Vector3d LinearVelFk = bn->getLinearVelocity(Frame::World(), refFrame);
+  Vector3d LinearAccFk = bn->getLinearAcceleration(Frame::World(), refFrame);
+
+  math::LinearJacobian LinearJac = bn->getLinearJacobian(refFrame);
+  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(refFrame);
+
+  Vector3d LinearVelJac = LinearJac * dq;
+  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+
+  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelEqual );
+  if(!linearVelEqual)
+    printComparisonError("linear velocity", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJac);
+
+  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccEqual );
+  if(!linearAccEqual)
+    printComparisonError("linear acceleration", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJac);
+
+  Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
+  Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
+
+  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
+  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJac = AngularJac * dq;
+  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+
+  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelEqual );
+  if(!angularVelEqual)
+    printComparisonError("angular velocity", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJac);
+
+  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccEqual );
+  if(!angularAccEqual)
+    printComparisonError("angular acceleration", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJac);
+}
+
+//==============================================================================
+void compareBodyNodeFkToJacobian(const BodyNode* bn,
+                                 const Frame* refFrame,
+                                 const Eigen::Vector3d& offset,
+                                 double tolerance)
+{
+  const Skeleton* skel = bn->getSkeleton();
+
+  const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
+  VectorXd dq = skel->getVelocitySegment(coords);
+  VectorXd ddq = skel->getAccelerationSegment(coords);
+
+  Vector6d SpatialVelFk = bn->getSpatialVelocity(
+        offset, Frame::World(), refFrame);
+  Vector6d SpatialAccFk = bn->getSpatialAcceleration(
+        offset, Frame::World(), refFrame);
+
+  math::Jacobian SpatialJac = bn->getJacobian(offset, refFrame);
+  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(
+        offset, refFrame);
+
+  Vector6d SpatialVelJac = SpatialJac * dq;
+  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+
+  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelEqual)
+    printComparisonError("spatial velocity w/ offset", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJac);
+
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccEqual)
+    printComparisonError("spatial acceleration w/ offset", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJac);
+
+  Vector3d LinearVelFk = bn->getLinearVelocity(
+        offset, Frame::World(), refFrame);
+  Vector3d LinearAccFk = bn->getLinearAcceleration(
+        offset, Frame::World(), refFrame);
+
+  math::LinearJacobian LinearJac = bn->getLinearJacobian(offset, refFrame);
+  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(
+        offset, refFrame);
+
+  Vector3d LinearVelJac = LinearJac * dq;
+  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+
+  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelEqual );
+  if(!linearVelEqual)
+    printComparisonError("linear velocity w/ offset", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJac);
+
+  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccEqual );
+  if(!linearAccEqual)
+    printComparisonError("linear acceleration w/ offset", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJac);
+
+  Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
+  Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
+
+  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
+  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJac = AngularJac * dq;
+  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+
+  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelEqual );
+  if(!angularVelEqual)
+    printComparisonError("angular velocity w/ offset", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJac);
+
+  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccEqual );
+  if(!angularAccEqual)
+    printComparisonError("angular acceleration w/ offset", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJac);
+}
+
+//==============================================================================
+void DynamicsTest::testJacobians(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -220,9 +435,9 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
 #ifndef NDEBUG  // Debug mode
-  int nRandomItr = 10;
+  int nTestItr = 10;
 #else
-  int nRandomItr = 1;
+  int nTestItr = 1;
 #endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
@@ -244,7 +459,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
     assert(skeleton != NULL);
     int dof = skeleton->getNumDofs();
 
-    for (int j = 0; j < nRandomItr; ++j)
+    for (int j = 0; j < nTestItr; ++j)
     {
       // Generate a random state
       VectorXd q   = VectorXd(dof);
@@ -259,110 +474,43 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
       skeleton->setPositions(q);
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
-      skeleton->computeForwardKinematics(true, true, true);
-      skeleton->computeInverseDynamics(false, false);
+
+      randomizeRefFrames();
 
       // For each body node
       for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
       {
-        BodyNode* bn = skeleton->getBodyNode(k);
+        const BodyNode* bn = skeleton->getBodyNode(k);
 
-        // Calculation of velocities using recursive method
-        Vector3d BodyLinVel = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel = bn->getBodyAngularVelocity();
-        Vector3d WorldLinVel = bn->getWorldLinearVelocity();
-        Vector3d WorldAngVel = bn->getWorldAngularVelocity();
-        Vector3d BodyLinAcc = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc = bn->getBodyAngularAcceleration();
-        Vector3d WorldLinAcc = bn->getWorldLinearAcceleration();
-        Vector3d WorldAngAcc = bn->getWorldAngularAcceleration();
+        // Compare results using the World reference Frame
+        compareBodyNodeFkToJacobian(bn, Frame::World(), TOLERANCE);
+        // Compare results using this BodyNode's own reference Frame
+        compareBodyNodeFkToJacobian(bn, bn, TOLERANCE);
 
-        // Calculation of velocities using Jacobian and dq
-        MatrixXd BodyLinJac = bn->getBodyLinearJacobian();
-        MatrixXd BodyAngJac = bn->getBodyAngularJacobian();
-        MatrixXd WorldLinJac = bn->getWorldLinearJacobian();
-        MatrixXd WorldAngJac = bn->getWorldAngularJacobian();
-        MatrixXd BodyLinJacDeriv = bn->getBodyLinearJacobianDeriv();
-        MatrixXd BodyAngJacDeriv = bn->getBodyAngularJacobianDeriv();
-        MatrixXd WorldLinJacDeriv = bn->getWorldLinearJacobianDeriv();
-        MatrixXd WorldAngJacDeriv = bn->getWorldAngularJacobianDeriv();
-        Vector3d BodyLinVel2 = Vector3d::Zero();
-        Vector3d BodyAngVel2 = Vector3d::Zero();
-        Vector3d WorldLinVel2 = Vector3d::Zero();
-        Vector3d WorldAngVel2 = Vector3d::Zero();
-        Vector3d BodyLinAcc2 = Vector3d::Zero();
-        Vector3d BodyAngAcc2 = Vector3d::Zero();
-        Vector3d WorldLinAcc2 = Vector3d::Zero();
-        Vector3d WorldAngAcc2 = Vector3d::Zero();
-
-        for (size_t l = 0; l < bn->getNumDependentGenCoords(); ++l)
+        // Compare results using the randomized reference Frames
+        for(size_t r=0; r<refFrames.size(); ++r)
         {
-          int idx = bn->getDependentGenCoordIndex(l);
-
-          BodyLinVel2 += BodyLinJac.col(l) * dq[idx];
-          BodyAngVel2 += BodyAngJac.col(l) * dq[idx];
-          WorldLinVel2 += WorldLinJac.col(l) * dq[idx];
-          WorldAngVel2 += WorldAngJac.col(l) * dq[idx];
-          BodyLinAcc2 += BodyLinJacDeriv.col(l) * dq[idx]
-                         + BodyLinJac.col(l) * ddq[idx];
-          BodyAngAcc2 += BodyAngJacDeriv.col(l) * dq[idx]
-                         + BodyAngJac.col(l) * ddq[idx];
-          WorldLinAcc2 += WorldLinJacDeriv.col(l) * dq[idx]
-                         + WorldLinJac.col(l) * ddq[idx];
-          WorldAngAcc2 += WorldAngJacDeriv.col(l) * dq[idx]
-                         + WorldAngJac.col(l) * ddq[idx];
+          compareBodyNodeFkToJacobian(bn, refFrames[r], TOLERANCE);
         }
 
-        // Comparing two velocities
-        EXPECT_TRUE(equals(BodyLinVel,  BodyLinVel2,  TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngVel,  BodyAngVel2,  TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinVel, WorldLinVel2, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngVel, WorldAngVel2, TOLERANCE));
-        EXPECT_TRUE(equals(BodyLinAcc, BodyLinAcc2, TOLERANCE));
-        EXPECT_TRUE(equals(BodyAngAcc, BodyAngAcc2, TOLERANCE));
-        EXPECT_TRUE(equals(WorldLinAcc, WorldLinAcc2, TOLERANCE));
-        EXPECT_TRUE(equals(WorldAngAcc, WorldAngAcc2, TOLERANCE));
+        compareBodyNodeFkToJacobian(
+              bn, Frame::World(), bn->getLocalCOM(), TOLERANCE);
+        compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
 
-        // Debugging code
-        if (!equals(BodyLinVel, BodyLinVel2, TOLERANCE))
+        for(size_t r=0; r<refFrames.size(); ++r)
         {
-          cout << "BodyLinVel : " << BodyLinVel.transpose()  << endl;
-          cout << "BodyLinVel2: " << BodyLinVel2.transpose() << endl;
+          compareBodyNodeFkToJacobian(
+                bn, refFrames[r], bn->getLocalCOM(), TOLERANCE);
         }
-        if (!equals(BodyAngVel, BodyAngVel2, TOLERANCE))
+
+        compareBodyNodeFkToJacobian(
+              bn, Frame::World(), randomVector<3>(10), TOLERANCE);
+        compareBodyNodeFkToJacobian(bn, bn, randomVector<3>(10), TOLERANCE);
+
+        for(size_t r=0; r<refFrames.size(); ++r)
         {
-          cout << "vBody : " << BodyAngVel.transpose()  << endl;
-          cout << "BodyAngVel2: " << BodyAngVel2.transpose() << endl;
-        }
-        if (!equals(WorldLinVel, WorldLinVel2, TOLERANCE))
-        {
-          cout << "WorldLinVel : " << WorldLinVel.transpose()  << endl;
-          cout << "WorldLinVel2: " << WorldLinVel2.transpose() << endl;
-        }
-        if (!equals(WorldAngVel, WorldAngVel2, TOLERANCE))
-        {
-          cout << "WorldAngVel : " << WorldAngVel.transpose()  << endl;
-          cout << "WorldAngVel2: " << WorldAngVel2.transpose() << endl;
-        }
-        if (!equals(BodyLinAcc, BodyLinAcc2, TOLERANCE))
-        {
-          cout << "BodyLinAcc : "  << BodyLinAcc.transpose()  << endl;
-          cout << "BodyLinAcc2: "  << BodyLinAcc2.transpose() << endl;
-        }
-        if (!equals(BodyAngAcc, BodyAngAcc, TOLERANCE))
-        {
-          cout << "BodyAngAcc : "  << BodyAngAcc.transpose()  << endl;
-          cout << "BodyAngAcc2: "  << BodyAngAcc2.transpose() << endl;
-        }
-        if (!equals(WorldLinAcc, WorldLinAcc, TOLERANCE))
-        {
-          cout << "WorldLinAcc : " << WorldLinAcc.transpose()  << endl;
-          cout << "WorldLinAcc2: " << WorldLinAcc2.transpose() << endl;
-        }
-        if (!equals(WorldAngAcc, WorldAngAcc2, TOLERANCE))
-        {
-          cout << "WorldAngAcc : " << WorldAngAcc.transpose()  << endl;
-          cout << "WorldAngAcc2: " << WorldAngAcc2.transpose() << endl;
+          compareBodyNodeFkToJacobian(
+                bn, refFrames[r], randomVector<3>(10), TOLERANCE);
         }
       }
     }
@@ -372,7 +520,7 @@ void DynamicsTest::compareVelocities(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::compareAccelerations(const std::string& _fileName)
+void DynamicsTest::testFiniteDifference(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -435,88 +583,46 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
       for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
       {
         BodyNode* bn = skeleton->getBodyNode(k);
-        // int nDepGenCoord = bn->getNumDependentGenCoords();
 
         // Calculation of velocities and Jacobian at k-th time step
         skeleton->setPositions(q);
         skeleton->setVelocities(dq);
         skeleton->setAccelerations(ddq);
-        skeleton->computeForwardKinematics(true, true, true);
 
-        Vector3d BodyLinVel1 = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel1 = bn->getBodyAngularVelocity();
-        Vector3d WorldLinVel1 = bn->getWorldLinearVelocity();
-        Vector3d WorldAngVel1 = bn->getWorldAngularVelocity();
-        MatrixXd BodyLinJac1 = bn->getBodyLinearJacobian();
-        MatrixXd BodyAngJac1 = bn->getBodyAngularJacobian();
-        MatrixXd WorldLinJac1 = bn->getWorldLinearJacobian();
-        MatrixXd WorldAngJac1 = bn->getWorldAngularJacobian();
+        Vector3d BodyLinVel1 = bn->getLinearVelocity(Frame::World(), bn);
+        Vector3d BodyAngVel1 = bn->getAngularVelocity(Frame::World(), bn);
+        Vector3d WorldLinVel1 = bn->getLinearVelocity();
+        Vector3d WorldAngVel1 = bn->getAngularVelocity();
         // Isometry3d T1    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc1 = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc1 = bn->getBodyAngularAcceleration();
-        Vector3d WorldLinAcc1 = bn->getWorldLinearAcceleration();
-        Vector3d WorldAngAcc1 = bn->getWorldAngularAcceleration();
-        MatrixXd BodyLinJacDeriv1 = bn->getBodyLinearJacobianDeriv();
-        MatrixXd BodyAngJacDeriv1 = bn->getBodyAngularJacobianDeriv();
-        MatrixXd WorldLinJacDeriv1 = bn->getWorldLinearJacobianDeriv();
-        MatrixXd WorldAngJacDeriv1 = bn->getWorldAngularJacobianDeriv();
+        Vector3d BodyLinAcc1 = bn->getSpatialAcceleration().tail<3>();
+        Vector3d BodyAngAcc1 = bn->getSpatialAcceleration().head<3>();
+        Vector3d WorldLinAcc1 = bn->getLinearAcceleration();
+        Vector3d WorldAngAcc1 = bn->getAngularAcceleration();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
         skeleton->setPositions(qNext);
         skeleton->setVelocities(dqNext);
         skeleton->setAccelerations(ddq);
-        skeleton->computeForwardKinematics(true, true, true);
 
-        Vector3d BodyLinVel2 = bn->getBodyLinearVelocity();
-        Vector3d BodyAngVel2 = bn->getBodyAngularVelocity();
-        Vector3d WorldLinVel2 = bn->getWorldLinearVelocity();
-        Vector3d WorldAngVel2 = bn->getWorldAngularVelocity();
-        MatrixXd BodyLinJac2 = bn->getBodyLinearJacobian();
-        MatrixXd BodyAngJac2 = bn->getBodyAngularJacobian();
-        MatrixXd WorldLinJac2 = bn->getWorldLinearJacobian();
-        MatrixXd WorldAngJac2 = bn->getWorldAngularJacobian();
+        Vector3d BodyLinVel2 = bn->getLinearVelocity(Frame::World(), bn);
+        Vector3d BodyAngVel2 = bn->getAngularVelocity(Frame::World(), bn);
+        Vector3d WorldLinVel2 = bn->getLinearVelocity();
+        Vector3d WorldAngVel2 = bn->getAngularVelocity();
         // Isometry3d T2    = bn->getTransform();
 
         // Get accelerations and time derivatives of Jacobians at k-th time step
-        Vector3d BodyLinAcc2 = bn->getBodyLinearAcceleration();
-        Vector3d BodyAngAcc2 = bn->getBodyAngularAcceleration();
-        Vector3d WorldLinAcc2 = bn->getWorldLinearAcceleration();
-        Vector3d WorldAngAcc2 = bn->getWorldAngularAcceleration();
-        MatrixXd BodyLinJacDeriv2 = bn->getBodyLinearJacobianDeriv();
-        MatrixXd BodyAngJacDeriv2 = bn->getBodyAngularJacobianDeriv();
-        MatrixXd WorldLinJacDeriv2 = bn->getWorldLinearJacobianDeriv();
-        MatrixXd WorldAngJacDeriv2 = bn->getWorldAngularJacobianDeriv();
+        Vector3d BodyLinAcc2 = bn->getSpatialAcceleration().tail<3>();
+        Vector3d BodyAngAcc2 = bn->getSpatialAcceleration().head<3>();
+        Vector3d WorldLinAcc2 = bn->getLinearAcceleration();
+        Vector3d WorldAngAcc2 = bn->getAngularAcceleration();
 
-        // Calculation of approximated accelerations and time derivatives of
-        // Jacobians
+        // Calculation of approximated accelerations
         Vector3d BodyLinAccApprox   = (BodyLinVel2  - BodyLinVel1)  / timeStep;
         Vector3d BodyAngAccApprox   = (BodyAngVel2  - BodyAngVel1)  / timeStep;
         Vector3d WorldLinAccApprox  = (WorldLinVel2 - WorldLinVel1) / timeStep;
         Vector3d WorldAngAccApprox  = (WorldAngVel2 - WorldAngVel1) / timeStep;
-
-        // TODO(JS): Finite difference of Jacobian test is not implemented yet.
-//        MatrixXd dJBodyApprox  = (JBody2  - JBody1)  / timeStep;
-//        MatrixXd dJWorldApprox = (JWorld2 - JWorld1) / timeStep;
-//        MatrixXd dJBodyApprox  = MatrixXd::Zero(6, nDepGenCoord);
-//        MatrixXd dJWorldApprox = MatrixXd::Zero(6, nDepGenCoord);
-
-//        for (int l = 0; l < nDepGenCoord; ++l)
-//        {
-//          skeleton->setConfig(q);
-//          Jacobian JBody_a = bn->getBodyJacobian();
-
-//          int idx = bn->getDependentGenCoordIndex(l);
-//          VectorXd qGrad = q;
-//          qGrad[idx] = qNext[idx];
-//          skeleton->setConfig(qGrad);
-//          Jacobian JBody_b = bn->getBodyJacobian();
-
-//          Jacobian dJBody_dq = (JBody_b - JBody_a) / (qNext[idx] - q[idx]);
-
-//          dJBodyApprox += dJBody_dq * dq[idx];
-//        }
 
         // Comparing two velocities
         EXPECT_TRUE(equals(BodyLinAcc1,   BodyLinAccApprox,   TOLERANCE));
@@ -527,10 +633,6 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
         EXPECT_TRUE(equals(WorldAngAcc1,  WorldAngAccApprox,  TOLERANCE));
         EXPECT_TRUE(equals(WorldLinAcc2,  WorldLinAccApprox,  TOLERANCE));
         EXPECT_TRUE(equals(WorldAngAcc2,  WorldAngAccApprox,  TOLERANCE));
-//        EXPECT_TRUE(equals(dJBody1,  dJBodyApprox,  TOLERANCE));
-//        EXPECT_TRUE(equals(dJBody2,  dJBodyApprox,  TOLERANCE));
-//        EXPECT_TRUE(equals(dJWorld1, dJWorldApprox, TOLERANCE));
-//        EXPECT_TRUE(equals(dJWorld2, dJWorldApprox, TOLERANCE));
 
         // Debugging code
         if (!equals(BodyLinAcc1, BodyLinAccApprox, TOLERANCE))
@@ -573,27 +675,6 @@ void DynamicsTest::compareAccelerations(const std::string& _fileName)
           cout << "WorldAngAcc2     :" << WorldAngAcc2.transpose()      << endl;
           cout << "WorldAngAccApprox:" << WorldAngAccApprox.transpose() << endl;
         }
-//        if (!equals(dJBody1, dJBodyApprox, TOLERANCE))
-//        {
-//          cout << "Name        :" << bn->getName()        << endl;
-//          cout << "dJBody1     :" << endl << dJBody1      << endl;
-//          cout << "dJBodyApprox:" << endl << dJBodyApprox << endl;
-//        }
-//        if (!equals(dJBody2, dJBodyApprox, TOLERANCE))
-//        {
-//          cout << "dJBody2:"      << endl << dJBody2.transpose()      << endl;
-//          cout << "dJBodyApprox:" << endl << dJBodyApprox.transpose() << endl;
-//        }
-//        if (!equals(dJWorld1, dJWorldApprox, TOLERANCE))
-//        {
-//          cout << "dJWorld1     :" << endl << dJWorld1      << endl;
-//          cout << "dJWorldApprox:" << endl << dJWorldApprox << endl;
-//        }
-//        if (!equals(dJWorld2, dJWorldApprox, TOLERANCE))
-//        {
-//          cout << "dJWorld2     :" << endl << dJWorld2      << endl;
-//          cout << "dJWorldApprox:" << endl << dJWorldApprox << endl;
-//        }
       }
     }
   }
@@ -701,8 +782,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
-      EXPECT_EQ(M.rows(), dof);
-      EXPECT_EQ(M.cols(), dof);
+      EXPECT_EQ(M.rows(), (int)dof);
+      EXPECT_EQ(M.cols(), (int)dof);
 
       // Check mass matrix
       EXPECT_TRUE(equals(M, M2, 1e-6));
@@ -806,7 +887,64 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::centerOfMass(const std::string& _fileName)
+void compareCOMJacobianToFk(const Skeleton* skel,
+                            const Frame* refFrame,
+                            double tolerance)
+{
+  VectorXd dq = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
+  Vector6d comSpatialVelFk =
+      skel->getCOMSpatialVelocity(Frame::World(), refFrame);
+  Vector6d comSpatialAccFk =
+      skel->getCOMSpatialAcceleration(Frame::World(), refFrame);
+
+  math::Jacobian comSpatialJac = skel->getCOMJacobian(refFrame);
+  math::Jacobian comSpatialJacDeriv =
+      skel->getCOMJacobianSpatialDeriv(refFrame);
+
+  Vector6d comSpatialVelJac = comSpatialJac * dq;
+  Vector6d comSpatialAccJac = comSpatialJac*ddq + comSpatialJacDeriv*dq;
+
+  bool spatialVelEqual = equals(comSpatialVelFk, comSpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelEqual)
+    printComparisonError("COM spatial velocity", skel->getName(),
+                         refFrame->getName(), comSpatialVelFk, comSpatialVelJac);
+
+  bool spatialAccEqual = equals(comSpatialAccFk, comSpatialAccJac, tolerance);
+  EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccEqual)
+    printComparisonError("COM spatial acceleration", skel->getName(),
+                         refFrame->getName(), comSpatialAccFk, comSpatialAccJac);
+
+  Vector3d comLinearVelFk =
+      skel->getCOMLinearVelocity(Frame::World(), refFrame);
+  Vector3d comLinearAccFk =
+      skel->getCOMLinearAcceleration(Frame::World(), refFrame);
+
+  math::LinearJacobian comLinearJac = skel->getCOMLinearJacobian(refFrame);
+  math::LinearJacobian comLinearJacDeriv =
+      skel->getCOMLinearJacobianDeriv(refFrame);
+
+  Vector3d comLinearVelJac = comLinearJac * dq;
+  Vector3d comLinearAccJac = comLinearJac*ddq + comLinearJacDeriv*dq;
+
+  bool linearVelEqual = equals(comLinearVelFk, comLinearVelJac);
+  EXPECT_TRUE( linearVelEqual );
+  if(!linearVelEqual)
+    printComparisonError("COM linear velocity", skel->getName(),
+                         refFrame->getName(), comLinearVelFk, comLinearVelJac);
+
+  bool linearAccEqual = equals(comLinearAccFk, comLinearAccJac);
+  EXPECT_TRUE( linearAccEqual );
+  if(!linearAccEqual)
+    printComparisonError("COM linear acceleration", skel->getName(),
+                         refFrame->getName(), comLinearAccFk, comLinearAccJac);
+}
+
+//==============================================================================
+void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -846,9 +984,7 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
   {
     dynamics::Skeleton* skel = myWorld->getSkeleton(i);
 
-    int dof            = skel->getNumDofs();
-//    int nBodyNodes     = skel->getNumBodyNodes();
-
+    size_t dof = skel->getNumDofs();
     if (dof == 0)
     {
       dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
@@ -881,46 +1017,25 @@ void DynamicsTest::centerOfMass(const std::string& _fileName)
       }
 
       // Set random states
-      VectorXd x = skel->getState();
-      for (int k = 0; k < x.size(); ++k)
-        x[k] = random(lb, ub);
-      skel->setState(x);
-      skel->computeForwardKinematics(true, true, true);
-
-      VectorXd tau = skel->getForces();
-      for (int k = 0; k < tau.size(); ++k)
-        tau[k] = random(lb, ub);
-      skel->setForces(tau);
-
-      skel->computeForwardDynamics();
-
-      VectorXd q  = skel->getPositions();
-      VectorXd dq = skel->getVelocities();
-      VectorXd ddq = skel->getAccelerations();
-
-      VectorXd com   = skel->getWorldCOM();
-      VectorXd dcom  = skel->getWorldCOMVelocity();
-      VectorXd ddcom = skel->getWorldCOMAcceleration();
-
-      MatrixXd comJ  = skel->getWorldCOMJacobian();
-      MatrixXd comdJ = skel->getWorldCOMJacobianTimeDeriv();
-
-      VectorXd dcom2  = comJ * dq;
-      VectorXd ddcom2 = comdJ * dq + comJ * ddq;
-
-      EXPECT_TRUE(equals(dcom, dcom2, 1e-6));
-      if (!equals(dcom, dcom2, 1e-6))
+      VectorXd q   = VectorXd(dof);
+      VectorXd dq  = VectorXd(dof);
+      VectorXd ddq = VectorXd(dof);
+      for (size_t k = 0; k < dof; ++k)
       {
-        cout << "dcom :" << dcom.transpose()  << endl;
-        cout << "dcom2:" << dcom2.transpose() << endl;
+        q[k]   = math::random(lb, ub);
+        dq[k]  = math::random(lb, ub);
+        ddq[k] = math::random(lb, ub);
       }
+      skel->setPositions(q);
+      skel->setVelocities(dq);
+      skel->setAccelerations(ddq);
 
-      EXPECT_TRUE(equals(ddcom, ddcom2, 1e-6));
-      if (!equals(ddcom, ddcom2, 1e-6))
-      {
-        cout << "ddcom :" << ddcom.transpose()  << endl;
-        cout << "ddcom2:" << ddcom2.transpose() << endl;
-      }
+      randomizeRefFrames();
+
+      compareCOMJacobianToFk(skel, Frame::World(), 1e-6);
+
+      for(size_t r=0; r<refFrames.size(); ++r)
+        compareCOMJacobianToFk(skel, refFrames[r], 1e-6);
     }
   }
 
@@ -1001,7 +1116,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
         Eigen::VectorXd constraintVector1 = skel->getConstraintForces();
 
         // Get constraint force vector by using Jacobian of skeleon
-        Eigen::MatrixXd bodyJacobian = body->getBodyJacobian();
+        Eigen::MatrixXd bodyJacobian = body->getJacobian();
         Eigen::VectorXd constraintVector2 = bodyJacobian.transpose()
                                             * impulseOnBody
                                             / skel->getTimeStep();
@@ -1088,6 +1203,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
           joint->setPosition(l, random(lbRP, ubRP));
         }
       }
+//      skel->computeForwardKinematics();
 //      skel->setPositions(VectorXd::Zero(dof));
 
       // TODO(JS): Just clear what should be
@@ -1108,11 +1224,12 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-6));
-      if (!equals(deltaVel1, deltaVel2, 1e-6))
+      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-5));
+      if (!equals(deltaVel1, deltaVel2, 1e-5))
       {
         cout << "deltaVel1: " << deltaVel1.transpose()  << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
+        cout << "error: " << (deltaVel1-deltaVel2).norm() << endl;
       }
     }
   }
@@ -1121,26 +1238,26 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 }
 
 //==============================================================================
-TEST_F(DynamicsTest, compareVelocities)
+TEST_F(DynamicsTest, testJacobians)
 {
   for (size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
-    compareVelocities(getList()[i]);
+    testJacobians(getList()[i]);
   }
 }
 
 //==============================================================================
-TEST_F(DynamicsTest, compareAccelerations)
+TEST_F(DynamicsTest, testFiniteDifference)
 {
   for (size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
-    compareAccelerations(getList()[i]);
+    testFiniteDifference(getList()[i]);
   }
 }
 
@@ -1179,7 +1296,7 @@ TEST_F(DynamicsTest, testCenterOfMass)
 #ifndef NDEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
-    centerOfMass(getList()[i]);
+    testCenterOfMass(getList()[i]);
   }
 }
 

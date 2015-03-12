@@ -73,10 +73,11 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 //==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear() * convertToRotation(mJacobian.topRows<3>()
-                                                * mVelocities * _dt);
+  mR.linear() = mR.linear()
+      * convertToRotation(getLocalJacobianStatic().topRows<3>()
+                          * getVelocitiesStatic() * _dt);
 
-  mPositions = convertToPositions(mR.linear());
+  setPositionsStatic(convertToPositions(mR.linear()));
 }
 
 //==============================================================================
@@ -91,9 +92,9 @@ void BallJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void BallJoint::updateLocalTransform()
+void BallJoint::updateLocalTransform() const
 {
-  mR.linear() = convertToRotation(mPositions);
+  mR.linear() = convertToRotation(getPositionsStatic());
 
   mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
 
@@ -101,10 +102,10 @@ void BallJoint::updateLocalTransform()
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobian()
+void BallJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = math::expMapJac(mPositions).transpose();
+  J.topRows<3>()    = math::expMapJac(getPositionsStatic()).transpose();
   J.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
   mJacobian = math::AdTJacFixed(mT_ChildBodyToJoint, J);
@@ -113,10 +114,11 @@ void BallJoint::updateLocalJacobian()
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobianTimeDeriv()
+void BallJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> dJ;
-  dJ.topRows<3>()    = math::expMapJacDot(mPositions, mVelocities).transpose();
+  dJ.topRows<3>()    = math::expMapJacDot(getPositionsStatic(),
+                                          getVelocitiesStatic()).transpose();
   dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
   mJacobianDeriv = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
