@@ -51,12 +51,9 @@ static int callCount2 = 0;
 
 //==============================================================================
 void foo0() { callCount0++; }
-
-//==============================================================================
 void foo1(int /*_val*/) { callCount1++; }
-
-//==============================================================================
 void foo2(int /*_val1*/, float /*_val2*/) { callCount2++; }
+double foo3() { return 10.0; }
 
 //==============================================================================
 class Viewer
@@ -74,21 +71,27 @@ TEST(Signal, Basic)
   Signal<void()> signal0;
   Signal<void(int)> signal1;
   Signal<void(int, float)> signal2;
+  Signal<double()> signal3;
+
   Connection connection0 = signal0.connect(&foo0);
   Connection connection1 = signal1.connect(&foo1);
   Connection connection2 = signal2.connect(&foo2);
+  Connection connection3 = signal3.connect(&foo3);
 
   EXPECT_EQ(signal0.getNumConnections(), 1);
   EXPECT_EQ(signal1.getNumConnections(), 1);
   EXPECT_EQ(signal2.getNumConnections(), 1);
+  EXPECT_EQ(signal3.getNumConnections(), 1);
 
   EXPECT_TRUE(connection0.isConnected());
   EXPECT_TRUE(connection1.isConnected());
   EXPECT_TRUE(connection2.isConnected());
+  EXPECT_TRUE(connection3.isConnected());
 
   connection0.disconnect();
   connection1.disconnect();
   connection2.disconnect();
+  connection3.disconnect();
 
   // The connections are still exist in the signal as disconnected state.
   // The disconnected connections will be removed when the signal raises or
@@ -96,14 +99,17 @@ TEST(Signal, Basic)
   EXPECT_EQ(signal0.getNumConnections(), 1);
   EXPECT_EQ(signal1.getNumConnections(), 1);
   EXPECT_EQ(signal2.getNumConnections(), 1);
+  EXPECT_EQ(signal3.getNumConnections(), 1);
 
   signal0();
   signal1.flushDisconnections();
   signal2.flushDisconnections();
+  signal3.flushDisconnections();
 
   EXPECT_FALSE(connection0.isConnected());
   EXPECT_FALSE(connection1.isConnected());
   EXPECT_FALSE(connection2.isConnected());
+  EXPECT_FALSE(connection3.isConnected());
 }
 
 //==============================================================================
@@ -327,13 +333,13 @@ TEST(Signal, FrameSignals)
   SimpleFrame F2(&F1, "F2", tf2);
   SimpleFrame F3(&F2, "F3", tf3);
 
-  Connection cf1 = F1.connectFrameChanged(frameChangecCallback);
-  Connection cf2 = F2.connectFrameChanged(frameChangecCallback);
-  ScopedConnection cf3(F3.connectFrameChanged(frameChangecCallback));
+  Connection cf1 = F1.onFrameChanged.connect(frameChangecCallback);
+  Connection cf2 = F2.onFrameChanged.connect(frameChangecCallback);
+  ScopedConnection cf3(F3.onFrameChanged.connect(frameChangecCallback));
 
-  Connection cv1 = F1.connectVizShapeAdded(vizShapeAddedCallback);
-  Connection cv2 = F2.connectVizShapeAdded(vizShapeAddedCallback);
-  ScopedConnection cv3(F3.connectVizShapeAdded(vizShapeAddedCallback));
+  Connection cv1 = F1.onVizShapeAdded.connect(vizShapeAddedCallback);
+  Connection cv2 = F2.onVizShapeAdded.connect(vizShapeAddedCallback);
+  ScopedConnection cv3(F3.onVizShapeAdded.connect(vizShapeAddedCallback));
 
   F1.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
   F2.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));

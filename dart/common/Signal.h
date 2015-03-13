@@ -279,6 +279,7 @@ template <typename... _ArgTypes>
 class Signal<void(_ArgTypes...)> : public SignalBase
 {
 public:
+  using FunctionType = void(_ArgTypes...);
   using SlotType = std::function<void(_ArgTypes...)>;
   using ConnectionMap = std::map<size_t, SlotType>;
   using SignalType = Signal<void(_ArgTypes...)>;
@@ -409,6 +410,32 @@ private:
 
   /// Free IDs
   std::queue<size_t> mFreeIds;
+};
+
+/// SlotRegister can be used as a public member for connecting slots to a
+/// private Signal member. In this way you won't have to write forwarding
+/// connect/disconnect boilerplate for your classes.
+template <typename T>
+class SlotRegister
+{
+public:
+  using FunctionType = typename T::FunctionType;
+  using SlotType     = typename T::SlotType;
+  using SignalType   = typename T::SignalType;
+
+  /// Constructor given signal
+  SlotRegister(Signal<typename T::FunctionType>& _signal)
+    : mSignal(_signal) {}
+
+  /// Connect a slot to the signal
+  Connection connect(const SlotType& _slot)
+  {
+    return mSignal.connect(_slot);
+  }
+
+private:
+  /// Signal
+  Signal<typename T::FunctionType>& mSignal;
 };
 
 namespace signal {

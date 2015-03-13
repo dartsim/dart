@@ -52,6 +52,18 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
+    mFrameChangedSignal(),
+    mNameChangedSignal(),
+    mVizShapeAddedSignal(),
+    mTransformUpdatedSignal(),
+    mVelocityChangedSignal(),
+    mAccelerationChangedSignal(),
+    onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
     mAmQuiet(_quiet)
 {
   changeParentFrame(_refFrame);
@@ -203,42 +215,6 @@ void Entity::notifyAccelerationUpdate()
 bool Entity::needsAccelerationUpdate() const
 {
   return mNeedAccelerationUpdate;
-}
-
-//==============================================================================
-common::Connection Entity::connectFrameChanged(const FrameChangedSlot& _slot)
-{
-  return mFrameChangedSignal.connect(_slot);
-}
-
-//==============================================================================
-common::Connection Entity::connectNameChanged(const NameChangedSlot& _slot)
-{
-  return mNameChangedSignal.connect(_slot);
-}
-
-//==============================================================================
-common::Connection Entity::connectVizShapeAdded(const VizShapeAddedSlot& _slot)
-{
-  return mVizShapeAddedSignal.connect(_slot);
-}
-
-//==============================================================================
-common::Connection Entity::connectTransformChanged(const EntitySlot& _slot)
-{
-  return mTransformUpdatedSignal.connect(_slot);
-}
-
-//==============================================================================
-common::Connection Entity::connectVelocityChanged(const EntitySlot& _slot)
-{
-  return mVelocityChangedSignal.connect(_slot);
-}
-
-//==============================================================================
-common::Connection Entity::connectAccelerationChanged(const EntitySlot& _slot)
-{
-  return mAccelerationChangedSignal.connect(_slot);
 }
 
 //==============================================================================
