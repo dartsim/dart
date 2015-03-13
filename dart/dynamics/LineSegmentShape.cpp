@@ -138,6 +138,18 @@ void LineSegmentShape::removeVertex(size_t _idx)
 //==============================================================================
 void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& v)
 {
+  if(_idx >= mVertices.size())
+  {
+    dtwarn << "[LineSegmentShape::setVertex] Attempting to set vertex #" << _idx
+           << ", but ";
+    if(mVertices.size() == 0)
+      dtwarn << "no vertices exist in this LineSegmentShape yet.\n";
+    else
+      dtwarn << "the vertices of this LineSegmentShape only go up to #"
+             << mVertices.size()-1 << ".\n";
+
+    return;
+  }
   mVertices[_idx] = v;
 }
 
