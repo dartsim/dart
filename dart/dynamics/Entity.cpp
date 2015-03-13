@@ -64,9 +64,15 @@ Entity::~Entity()
 }
 
 //==============================================================================
-const std::string& Entity::setName(const std::string &_name)
+const std::string& Entity::setName(const std::string& _name)
 {
+  if (mName == _name)
+    return mName;
+
+  const std::string oldName = mName;
   mName = _name;
+  mNameChangedSignal.raise(this, oldName, mName);
+
   return mName;
 }
 
@@ -80,6 +86,8 @@ const std::string& Entity::getName() const
 void Entity::addVisualizationShape(Shape* _p)
 {
   mVizShapes.push_back(_p);
+
+  mVizShapeAddedSignal.raise(this, _p);
 }
 
 //==============================================================================
@@ -153,6 +161,10 @@ bool Entity::isQuiet() const
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;
+
+  // The actual transform hasn't updated yet. But when its getter is called,
+  // the transformation will be updated automatically.
+  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -165,6 +177,10 @@ bool Entity::needsTransformUpdate() const
 void Entity::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
+
+  // The actual velocity hasn't updated yet. But when its getter is called,
+  // the velocity will be updated automatically.
+  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -177,6 +193,10 @@ bool Entity::needsVelocityUpdate() const
 void Entity::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+
+  // The actual acceleration hasn't updated yet. But when its getter is called,
+  // the acceleration will be updated automatically.
+  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -186,34 +206,69 @@ bool Entity::needsAccelerationUpdate() const
 }
 
 //==============================================================================
+common::Connection Entity::connectFrameChanged(const FrameChangedSlot& _slot)
+{
+  return mFrameChangedSignal.connect(_slot);
+}
+
+//==============================================================================
+common::Connection Entity::connectNameChanged(const NameChangedSlot& _slot)
+{
+  return mNameChangedSignal.connect(_slot);
+}
+
+//==============================================================================
+common::Connection Entity::connectVizShapeAdded(const VizShapeAddedSlot& _slot)
+{
+  return mVizShapeAddedSignal.connect(_slot);
+}
+
+//==============================================================================
+common::Connection Entity::connectTransformChanged(const EntitySlot& _slot)
+{
+  return mTransformUpdatedSignal.connect(_slot);
+}
+
+//==============================================================================
+common::Connection Entity::connectVelocityChanged(const EntitySlot& _slot)
+{
+  return mVelocityChangedSignal.connect(_slot);
+}
+
+//==============================================================================
+common::Connection Entity::connectAccelerationChanged(const EntitySlot& _slot)
+{
+  return mAccelerationChangedSignal.connect(_slot);
+}
+
+//==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if(!mAmQuiet)
+  if (mParentFrame == _newParentFrame)
+    return;
+
+  const Frame* oldParentFrame = mParentFrame;
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
-    if(mParentFrame)
+    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
+    if (it != mParentFrame->mChildEntities.end())
     {
-      EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-      if(it != mParentFrame->mChildEntities.end())
-      {
-        mParentFrame->mChildEntities.erase(it);
-        mParentFrame->processRemovedEntity(this);
-      }
+      mParentFrame->mChildEntities.erase(it);
+      mParentFrame->processRemovedEntity(this);
     }
   }
 
-  if(NULL == _newParentFrame)
-  {
-    mParentFrame = NULL;
-    return;
-  }
-
   mParentFrame =_newParentFrame;
-  if(!mAmQuiet)
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
     mParentFrame->mChildEntities.insert(this);
     mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
+
+  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
 //==============================================================================

@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "dart/common/Signal.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -128,6 +129,48 @@ public:
   /// Returns true iff an acceleration update is needed for this Entity
   bool needsAccelerationUpdate() const;
 
+  //----------------------------------------------------------------------------
+  /// \{ \name Signals
+  //----------------------------------------------------------------------------
+
+  using EntitySignal = common::Signal<void(const Entity*)>;
+  using FrameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const Frame* _oldFrame,
+                            const Frame* _newFrame)>;
+  using NameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const std::string& _oldName,
+                            const std::string& _newFrame)>;
+  using VizShapeAddedSignal
+      = common::Signal<void(const Entity*,
+                            const Shape* _newVisShape)>;
+
+  using EntitySlot = EntitySignal::SlotType;
+  using FrameChangedSlot = FrameChangedSignal::SlotType;
+  using NameChangedSlot = NameChangedSignal::SlotType;
+  using VizShapeAddedSlot = VizShapeAddedSignal::SlotType;
+
+  /// Connect slot to frame changed signal
+  common::Connection connectFrameChanged(const FrameChangedSlot& _slot);
+
+  /// Connect slot to name changed signal
+  common::Connection connectNameChanged(const NameChangedSlot& _slot);
+
+  /// Connect slot to visualization changed signal
+  common::Connection connectVizShapeAdded(const VizShapeAddedSlot& _slot);
+
+  /// Connect slot to transform changed signal
+  common::Connection connectTransformChanged(const EntitySlot& _slot);
+
+  /// Connect slot to velocity changed signal
+  common::Connection connectVelocityChanged(const EntitySlot& _slot);
+
+  /// Connect slot to acceleration changed signal
+  common::Connection connectAccelerationChanged(const EntitySlot& _slot);
+
+  /// \}
+
 protected:
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
@@ -151,6 +194,24 @@ protected:
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
 
+  /// Frame changed signal
+  FrameChangedSignal mFrameChangedSignal;
+
+  /// Name changed signal
+  NameChangedSignal mNameChangedSignal;
+
+  /// Visualization added signal
+  VizShapeAddedSignal mVizShapeAddedSignal;
+
+  /// Transform changed signal
+  EntitySignal mTransformUpdatedSignal;
+
+  /// Velocity changed signal
+  EntitySignal mVelocityChangedSignal;
+
+  /// Acceleration changed signal
+  EntitySignal mAccelerationChangedSignal;
+
 private:
   /// Whether or not this Entity is set to be quiet
   const bool mAmQuiet;
@@ -163,8 +224,7 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(Frame* _refFrame, const std::string& _name,
-                      bool _quiet);
+  explicit Detachable(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);
