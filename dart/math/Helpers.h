@@ -69,6 +69,19 @@ inline int delta(int _i, int _j) {
   return 0;
 }
 
+inline Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
+                                           const Eigen::Vector3d& _comShift,
+                                           double _mass)
+{
+  const Eigen::Vector3d& p = _comShift;
+  Eigen::Matrix3d result(_original);
+  for(size_t i=0; i<3; ++i)
+    for(size_t j=0; j<3; ++j)
+      result(i,j) += _mass * ( delta(i,j)*p.dot(p) - p(i)*p(j) );
+
+  return result;
+}
+
 inline int sgn(double _a) {
   if (_a < 0)
     return -1;

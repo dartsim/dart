@@ -45,6 +45,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/LineSegmentShape.h"
 #include "dart/renderer/LoadOpengl.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
 
@@ -439,6 +440,7 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
             // Do nothing
             break;
         case dynamics::Shape::MESH:
+        {
             //FIXME: Separate these calls once BodyNode is refactored to contain
             // both a col Shape and vis Shape.
             dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
@@ -448,6 +450,10 @@ void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
 
             shapeMesh->setDisplayList(compileList(shapeMesh->getScale(), shapeMesh->getMesh()));
 
+            break;
+        }
+        case dynamics::Shape::LINE_SEGMENT:
+            // Do nothing
             break;
     }
 }
@@ -566,10 +572,31 @@ void OpenGLRenderInterface::draw(dynamics::Shape* _shape) {
             // Do nothing
             break;
         }
+      case dynamics::Shape::LINE_SEGMENT: {
+        dynamics::LineSegmentShape* lineSegments =
+          static_cast<dynamics::LineSegmentShape*>(_shape);
+        drawLineSegments(lineSegments->getVertices(),
+                         lineSegments->getConnections());
+      }
     }
 
     glDisable(GL_COLOR_MATERIAL);
     glPopMatrix();
+}
+
+void OpenGLRenderInterface::drawLineSegments(
+    const std::vector<Eigen::Vector3d>& _vertices,
+    const std::vector<Eigen::Vector2i>& _connections)
+{
+  glBegin(GL_LINES);
+  for(const Eigen::Vector2i& c : _connections)
+  {
+    const Eigen::Vector3d& v1 = _vertices[c[0]];
+    const Eigen::Vector3d& v2 = _vertices[c[1]];
+    glVertex3f(v1[0], v1[1], v1[2]);
+    glVertex3f(v2[0], v2[1], v2[2]);
+  }
+  glEnd();
 }
 
 void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col) {
@@ -578,6 +605,10 @@ void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col) {
 
 void OpenGLRenderInterface::setPenColor(const Eigen::Vector3d& _col) {
     glColor4d(_col[0], _col[1], _col[2], 1.0);
+}
+
+void OpenGLRenderInterface::setLineWidth(float _width) {
+    glLineWidth(_width);
 }
 
 void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) {
