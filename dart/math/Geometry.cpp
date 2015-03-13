@@ -1387,6 +1387,19 @@ Inertia transformInertia(const Eigen::Isometry3d& _T, const Inertia& _I) {
   return ret;
 }
 
+Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
+                                    const Eigen::Vector3d& _comShift,
+                                    double _mass)
+{
+  const Eigen::Vector3d& p = _comShift;
+  Eigen::Matrix3d result(_original);
+  for(size_t i=0; i<3; ++i)
+    for(size_t j=0; j<3; ++j)
+      result(i,j) += _mass * ( delta(i,j)*p.dot(p) - p(i)*p(j) );
+
+  return result;
+}
+
 bool verifyRotation(const Eigen::Matrix3d& _T) {
   return !isNan(_T)
       && fabs(_T.determinant() - 1.0) <= DART_EPSILON;

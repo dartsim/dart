@@ -37,7 +37,7 @@
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/common/Console.h"
 #include "dart/renderer/RenderInterface.h"
-#include "dart/math/Helpers.h"
+#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace dynamics {
