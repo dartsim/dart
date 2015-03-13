@@ -51,6 +51,7 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mAmMoving(false)
 {
   addSubscription(mEntity);
+  addSubscription(mViewer);
 }
 
 //==============================================================================
@@ -180,6 +181,9 @@ void DragAndDrop::handleDestructionNotification(
 {
   if(mEntity == subscription)
     mViewer->disableDragAndDrop(this);
+
+  if(mViewer == subscription)
+    delete this;
 }
 
 //==============================================================================
@@ -309,6 +313,16 @@ void SimpleFrameShapeDnD::update()
       }
     }
   }
+}
+
+//==============================================================================
+void SimpleFrameShapeDnD::handleDestructionNotification(
+    const dart::common::Publisher* subscription)
+{
+  DragAndDrop::handleDestructionNotification(subscription);
+
+  if(mShape == subscription)
+    mViewer->disableDragAndDrop(this);
 }
 
 } // namespace osgDart

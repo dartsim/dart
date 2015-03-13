@@ -160,15 +160,8 @@ int main()
   SimpleFrame draggable(Frame::World(), "draggable");
   draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
   world->addFrame(&draggable);
-  std::cout << "draggable ptr: " << &draggable << std::endl;
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-
-  EllipsoidShape* shape = new EllipsoidShape(Eigen::Vector3d(1,1,1));
-  tf.translation() = Eigen::Vector3d(0.5,0,0);
-  shape->setLocalTransform(tf);
-  draggable.addVisualizationShape(shape);
-
 
   tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
   SimpleFrame x_marker(Frame::World(), "X", tf);
@@ -196,8 +189,7 @@ int main()
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
-//  osgDart::DragAndDrop* dnd = viewer.enableDragAndDrop(&draggable);
-  osgDart::DragAndDrop* dnd = viewer.enableDragAndDrop(&draggable, shape);
+  osgDart::DragAndDrop* dnd = viewer.enableDragAndDrop(&draggable);
   viewer.addEventHandler(new ConstraintEventHandler(dnd));
 
   std::cout << viewer.getInstructions() << std::endl;

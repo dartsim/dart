@@ -43,6 +43,8 @@
 
 #include <Eigen/Core>
 
+#include "dart/common/Publisher.h"
+
 namespace dart {
 
 namespace simulation {
@@ -66,7 +68,7 @@ class DragAndDrop;
 class SimpleFrameDnD;
 class SimpleFrameShapeDnD;
 
-class Viewer : public osgViewer::Viewer
+class Viewer : public osgViewer::Viewer, public dart::common::Publisher
 {
 public:
 

@@ -430,12 +430,6 @@ bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
 
   using namespace sfs_dnd;
 
-  std::cout << "SimpleFrameShape pairs:" << std::endl;
-  for(auto& pair : mSimpleFrameShapeDnDMap)
-  {
-    std::cout << pair.first << " : " << pair.second << std::endl;
-  }
-
   iterator it = getSimpleFrameShapeDnDFromMultimap(
         _dnd->getSimpleFrame(), _dnd->getShape(), mSimpleFrameShapeDnDMap);
 

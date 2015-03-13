@@ -177,6 +177,9 @@ public:
 
 protected:
 
+  virtual void handleDestructionNotification(
+      const dart::common::Publisher* subscription) override;
+
   dart::dynamics::Shape* mShape;
 
 };
