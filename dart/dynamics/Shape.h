@@ -64,7 +64,8 @@ public:
     CYLINDER,
     PLANE,
     MESH,
-    SOFT_MESH
+    SOFT_MESH,
+    LINE_SEGMENT
   };
 
   /// DataVariance can be used by renderers to determine whether it should

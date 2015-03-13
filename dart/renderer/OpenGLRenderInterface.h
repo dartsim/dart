@@ -97,9 +97,13 @@ public:
     virtual void drawCylinder(double _radius, double _height);
     virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
     virtual void drawList(GLuint index);
+    virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
+                                  const std::vector<Eigen::Vector2i>& _connections) override;
 
     virtual void setPenColor(const Eigen::Vector4d& _col);
     virtual void setPenColor(const Eigen::Vector3d& _col);
+
+    virtual void setLineWidth(float _width);
 
     virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back);
     virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);

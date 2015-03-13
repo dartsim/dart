@@ -407,6 +407,12 @@ Eigen::Vector6d dad(const Eigen::Vector6d& _s, const Eigen::Vector6d& _t);
 /// \brief
 Inertia transformInertia(const Eigen::Isometry3d& _T, const Inertia& _AI);
 
+/// Use the Parallel Axis Theorem to compute the moment of inertia of a body
+/// whose center of mass has been shifted from the origin
+Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
+                                    const Eigen::Vector3d& _comShift,
+                                    double _mass);
+
 /// Generate frame given origin and z-axis
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
