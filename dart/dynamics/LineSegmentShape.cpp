@@ -49,6 +49,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
     mDummyVertex(Eigen::Vector3d::Zero())
 {
   computeVolume();
+  mVariance = DYNAMIC_VERTICES;
 }
 
 //==============================================================================
@@ -61,6 +62,7 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& v1,
   addVertex(v1);
   addVertex(v2);
   computeVolume();
+  mVariance = DYNAMIC_VERTICES;
 }
 
 //==============================================================================
