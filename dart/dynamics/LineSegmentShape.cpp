@@ -48,24 +48,48 @@ LineSegmentShape::LineSegmentShape(float _thickness)
     mThickness(_thickness),
     mDummyVertex(Eigen::Vector3d::Zero())
 {
+  if (_thickness <= 0.0f)
+  {
+    dtwarn << "[LineSegmentShape::LineSegmentShape] Attempting to set "
+           << "non-positive thickness. We set the thickness to 1.0f instead."
+           << std::endl;
+    mThickness = 1.0f;
+  }
+
   computeVolume();
 }
 
 //==============================================================================
-LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& v1,
-                                   const Eigen::Vector3d& v2,
+LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
+                                   const Eigen::Vector3d& _v2,
                                    float _thickness)
   : Shape(LINE_SEGMENT),
     mThickness(_thickness)
 {
-  addVertex(v1);
-  addVertex(v2);
+  if (_thickness <= 0.0f)
+  {
+    dtwarn << "[LineSegmentShape::LineSegmentShape] Attempting to set "
+           << "non-positive thickness. We set the thickness to 1.0f instead."
+           << std::endl;
+    mThickness = 1.0f;
+  }
+
+  addVertex(_v1);
+  addVertex(_v2);
   computeVolume();
 }
 
 //==============================================================================
 void LineSegmentShape::setThickness(float _thickness)
 {
+  if (_thickness <= 0.0f)
+  {
+    dtwarn << "[LineSegmentShape::setThickness] Attempting to set non-positive "
+           << "thickness. We set the thickness to 1.0f instead." << std::endl;
+    mThickness = 1.0f;
+    return;
+  }
+
   mThickness = _thickness;
 }
 
@@ -76,21 +100,21 @@ float LineSegmentShape::getThickness() const
 }
 
 //==============================================================================
-size_t LineSegmentShape::addVertex(const Eigen::Vector3d& v)
+size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
 {
   size_t parent = mVertices.size();
   if(parent > 0)
-    return addVertex(v, parent-1);
+    return addVertex(_v, parent-1);
 
-  mVertices.push_back(v);
+  mVertices.push_back(_v);
   return 0;
 }
 
 //==============================================================================
-size_t LineSegmentShape::addVertex(const Eigen::Vector3d& v, size_t _parent)
+size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v, size_t _parent)
 {
   size_t index = mVertices.size();
-  mVertices.push_back(v);
+  mVertices.push_back(_v);
 
   if(_parent > mVertices.size())
   {
@@ -136,7 +160,7 @@ void LineSegmentShape::removeVertex(size_t _idx)
 }
 
 //==============================================================================
-void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& v)
+void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& _v)
 {
   if(_idx >= mVertices.size())
   {
@@ -150,7 +174,7 @@ void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& v)
 
     return;
   }
-  mVertices[_idx] = v;
+  mVertices[_idx] = _v;
 }
 
 //==============================================================================

@@ -50,11 +50,11 @@ class LineSegmentShape : public Shape
 {
 public:
   /// Default constructor
-  LineSegmentShape(float _thickness = 1.0);
+  LineSegmentShape(float _thickness = 1.0f);
 
   /// Constructor for creating a simple line segment that connects two vertices
-  LineSegmentShape(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2,
-                   float _thickness = 1.0);
+  LineSegmentShape(const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2,
+                   float _thickness = 1.0f);
 
   /// Set the line thickness/width for rendering
   void setThickness(float _thickness);
@@ -63,10 +63,10 @@ public:
   float getThickness() const;
 
   /// Add a vertex as a child to the last vertex that was added
-  size_t addVertex(const Eigen::Vector3d& v);
+  size_t addVertex(const Eigen::Vector3d& _v);
 
   /// Add a vertex as a child to the specified vertex
-  size_t addVertex(const Eigen::Vector3d& v, size_t _parent);
+  size_t addVertex(const Eigen::Vector3d& _v, size_t _parent);
 
   /// Remove a vertex from the list of vertices. IMPORTANT: Note that this
   /// alters the indices of all vertices that follow it in the list, which also
@@ -76,7 +76,7 @@ public:
   void removeVertex(size_t _idx);
 
   /// Change the location of the specified vertex
-  void setVertex(size_t _idx, const Eigen::Vector3d& v);
+  void setVertex(size_t _idx, const Eigen::Vector3d& _v);
 
   /// Get the location of the specified vertex. Returns a zero vector if an
   /// out-of-bounds vertex is requested.
@@ -111,7 +111,7 @@ public:
 
 protected:
 
-  /// Line thickness for rendering
+  // Documentation inherited
   void computeVolume() override;
 
   /// Line thickness for rendering
@@ -123,7 +123,8 @@ protected:
   /// Vector of connections
   std::vector<Eigen::Vector2i> mConnections;
 
-  /// A dummy vertex that can be returned when an out-of-bounds vertex is requested
+  /// A dummy vertex that can be returned when an out-of-bounds vertex is
+  /// requested
   const Eigen::Vector3d mDummyVertex;
 };
 
