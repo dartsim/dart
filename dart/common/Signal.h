@@ -271,12 +271,17 @@ public:
     std::vector<ResultType> res(mConnectionBodies.size());
     auto resIt = res.begin();
 
-    for (const auto& conBody : mConnectionBodies)
+    for (auto itr = mConnectionBodies.begin(); itr != mConnectionBodies.end(); )
     {
-      if (conBody->isConnected())
-        *(resIt++) = conBody->getSlot()(std::forward<ArgTypes>(_args)...);
+      if ((*itr)->isConnected())
+      {
+        *(resIt++) = (*itr)->getSlot()(std::forward<ArgTypes>(_args)...);
+        ++itr;
+      }
       else
-        mConnectionBodies.erase(conBody);
+      {
+        mConnectionBodies.erase(itr++);
+      }
     }
 
     return Combiner<ResultType>::process(res.begin(), resIt);
@@ -371,12 +376,17 @@ public:
   template <typename... ArgTypes>
   void raise(ArgTypes&&... _args)
   {
-    for (const auto& conBody : mConnectionBodies)
+    for (auto itr = mConnectionBodies.begin(); itr != mConnectionBodies.end(); )
     {
-      if (conBody->isConnected())
-        conBody->getSlot()(std::forward<ArgTypes>(_args)...);
+      if ((*itr)->isConnected())
+      {
+        (*itr)->getSlot()(std::forward<ArgTypes>(_args)...);
+        ++itr;
+      }
       else
-        mConnectionBodies.erase(conBody);
+      {
+        mConnectionBodies.erase(itr++);
+      }
     }
   }
 

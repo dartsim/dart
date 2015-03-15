@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <numeric>
 #include <gtest/gtest.h>
 
 #include "dart/dart.h"
@@ -251,6 +252,7 @@ TEST(Signal, ReturnValues)
   res[2] = sum(a, b);
   res[3] = difference(a, b);
 
+  // signal_maximum
   Signal<float(float, float), signal_maximum> signal1;
   signal1.connect(&product);
   signal1.connect(&quotient);
@@ -258,6 +260,7 @@ TEST(Signal, ReturnValues)
   signal1.connect(&difference);
   EXPECT_EQ(signal1(5, 3), *std::max_element(res.begin(), res.end()));
 
+  // signal_sum
   Signal<float(float, float), signal_sum> signal2;
   signal2.connect(&product);
   signal2.connect(&quotient);
