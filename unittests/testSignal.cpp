@@ -152,6 +152,32 @@ TEST(Signal, ScopedConnection)
 }
 
 //==============================================================================
+TEST(Signal, ConnectionLifeTime)
+{
+  Signal<void(int)>* signal = new Signal<void(int)>();
+
+  Connection connection1 = signal->connect(foo1);
+  EXPECT_TRUE(connection1.isConnected());
+
+  Connection connection2 = signal->connect(foo1);
+  EXPECT_TRUE(connection2.isConnected());
+
+  {
+    ScopedConnection scopedConnection(connection2);
+    EXPECT_TRUE(scopedConnection.isConnected());
+    EXPECT_TRUE(connection2.isConnected());
+    // scopedConnection disconnected connection2 when it was destroyed.
+  }
+  EXPECT_FALSE(connection2.isConnected());
+
+  delete signal;
+
+  // Although the signal is destroyed, its connection still works. For those
+  // connections, isConnected() returns false.
+  EXPECT_FALSE(connection1.isConnected());
+}
+
+//==============================================================================
 float product(float x, float y) { return x * y; }
 float quotient(float x, float y) { return x / y; }
 float sum(float x, float y) { return x + y; }
