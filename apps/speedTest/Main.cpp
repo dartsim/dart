@@ -36,6 +36,7 @@
  */
 
 #include <chrono>
+#include <numeric>
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
