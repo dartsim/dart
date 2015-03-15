@@ -77,14 +77,12 @@ public:
   using NameChangedSignal
       = common::Signal<void(const Entity*,
                             const std::string& _oldName,
-                            const std::string& _newFrame)>;
+                            const std::string& _newName)>;
   using VizShapeAddedSignal
-      = common::Signal<void(const Entity*,
-                            const Shape* _newVisShape)>;
+      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
 
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name,
-                  bool _quiet);
+  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
