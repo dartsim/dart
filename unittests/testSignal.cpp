@@ -93,9 +93,6 @@ TEST(Signal, Basic)
   connection2.disconnect();
   connection3.disconnect();
 
-  // The connections are still exist in the signal as disconnected state.
-  // The disconnected connections will be removed when the signal raises or
-  // flushDisconnections() is explictly called.
   EXPECT_EQ(signal0.getNumConnections(), 0);
   EXPECT_EQ(signal1.getNumConnections(), 0);
   EXPECT_EQ(signal2.getNumConnections(), 0);
@@ -140,6 +137,21 @@ TEST(Signal, NonStaticMemberFunction)
 }
 
 //==============================================================================
+TEST(Signal, ScopedConnection)
+{
+  Signal<void(int)> signal;
+  Connection c = signal.connect(foo1);
+  EXPECT_EQ(signal.getNumConnections(), 1);
+
+  {
+    ScopedConnection sc(signal.connect(foo1));
+    EXPECT_EQ(signal.getNumConnections(), 2);
+  }
+
+  EXPECT_EQ(signal.getNumConnections(), 1);
+}
+
+//==============================================================================
 float product(float x, float y) { return x * y; }
 float quotient(float x, float y) { return x / y; }
 float sum(float x, float y) { return x + y; }
@@ -147,7 +159,7 @@ float difference(float x, float y) { return x - y; }
 
 // combiner which returns the maximum value returned by all slots
 template <typename T>
-struct maximum
+struct signal_maximum
 {
   typedef T result_type;
 
@@ -172,73 +184,61 @@ struct maximum
   }
 };
 
+// combiner which returns the maximum value returned by all slots
+template <typename T>
+struct signal_sum
+{
+  typedef T result_type;
+
+  template <typename InputIterator>
+  static T process(InputIterator first, InputIterator last)
+  {
+    // If there are no slots to call, just return the
+    // default-constructed value
+    if (first == last)
+      return T();
+
+    T sum = *first;
+    first++;
+
+    while (first != last)
+    {
+      sum += *first;
+      ++first;
+    }
+
+    return sum;
+  }
+};
+
 //==============================================================================
 TEST(Signal, ReturnValues)
 {
-  Signal<float(float, float)> signal1;
+  const float tol = 1e-6;
 
+  const float a = 5.0f;
+  const float b = 3.0f;
+
+  std::vector<float> res(4);
+  res[0] = product(a, b);
+  res[1] = quotient(a, b);
+  res[2] = sum(a, b);
+  res[3] = difference(a, b);
+
+  Signal<float(float, float), signal_maximum> signal1;
   signal1.connect(&product);
   signal1.connect(&quotient);
   signal1.connect(&sum);
   signal1.connect(&difference);
+  EXPECT_EQ(signal1(5, 3), *std::max_element(res.begin(), res.end()));
 
-  EXPECT_EQ(signal1(5, 3), 2);
-
-  Signal<float(float, float), maximum> signal2;
-
+  Signal<float(float, float), signal_sum> signal2;
   signal2.connect(&product);
   signal2.connect(&quotient);
   signal2.connect(&sum);
   signal2.connect(&difference);
-
-  EXPECT_EQ(signal2(5, 3), 15);
+  EXPECT_NEAR(signal2(5, 3), std::accumulate(res.begin(), res.end(), 0.0), tol);
 }
-
-////==============================================================================
-//TEST(Signal, SignalToSignal)
-//{
-//  Signal<void(int)> signal1;
-//  Signal<void(int)> signal2;
-
-//  Connection connection = signal1.connect(signal2);
-//  signal2.connect(foo1);
-//  signal2.connect(foo1);
-//  signal2.connect(foo1);
-//  signal2.connect(foo1);
-
-//  signal1.raise(0);
-
-//  // Check the number of calls
-//  callCount1 = 0;
-//  signal1.raise(0);
-//  EXPECT_EQ(callCount1, 4);
-
-//  // Check the number of calls
-//  callCount1 = 0;
-//  signal1(0);
-//  EXPECT_EQ(callCount1, 4);
-
-//  connection.disconnect();
-
-//  // Check the number of calls
-//  callCount1 = 0;
-//  signal1.raise(0);
-//  EXPECT_EQ(callCount1, 0);
-
-//  // Check the number of calls
-//  callCount1 = 0;
-//  signal1(0);
-//  EXPECT_EQ(callCount1, 0);
-
-//  signal1.disconnectAll();
-//  EXPECT_EQ(signal1.getNumConnections(), 0);
-
-//  auto connection2 = signal1.connect(signal1);
-//  EXPECT_EQ(signal1.getNumConnections(), 0);
-//  EXPECT_FALSE(connection2.isConnected());
-//  signal1(0);
-//  EXPECT_EQ(callCount1, 0);
-//}
 
 //==============================================================================
 void frameChangecCallback(const Entity* _entity,
