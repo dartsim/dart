@@ -8,6 +8,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/constraint/WeldJointConstraint.h"
+#include <iostream>
 
 using namespace Eigen;
 

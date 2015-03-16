@@ -6,6 +6,7 @@ foreach(APPDIR
         galileo
         tinkertoy
         rigidBodies
+        fluid
     )
     Add_subdirectory(${APPDIR})
     if(WIN32)
