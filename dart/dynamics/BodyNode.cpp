@@ -424,6 +424,20 @@ const Shape* BodyNode::getVisualizationShape(size_t _index) const
 //==============================================================================
 void BodyNode::addCollisionShape(Shape* _p)
 {
+  if(nullptr == _p)
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
+           << "collision shape\n";
+    return;
+  }
+
+  if(_p->getShapeType() == Shape::LINE_SEGMENT)
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
+           << "type shape as a collision shape. This is not supported.\n";
+    return;
+  }
+
   mColShapes.push_back(_p);
 }
 

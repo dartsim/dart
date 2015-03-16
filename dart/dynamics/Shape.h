@@ -62,7 +62,8 @@ public:
     CYLINDER,
     PLANE,
     MESH,
-    SOFT_MESH
+    SOFT_MESH,
+    LINE_SEGMENT
   };
 
   /// \brief Constructor
