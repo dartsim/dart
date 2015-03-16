@@ -69,9 +69,20 @@ class Entity
 public:
   friend class Frame;
 
+  using EntitySignal = common::Signal<void(const Entity*)>;
+  using FrameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const Frame* _oldFrame,
+                            const Frame* _newFrame)>;
+  using NameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const std::string& _oldName,
+                            const std::string& _newName)>;
+  using VizShapeAddedSignal
+      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name,
-                  bool _quiet);
+  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
@@ -129,48 +140,6 @@ public:
   /// Returns true iff an acceleration update is needed for this Entity
   bool needsAccelerationUpdate() const;
 
-  //----------------------------------------------------------------------------
-  /// \{ \name Signals
-  //----------------------------------------------------------------------------
-
-  using EntitySignal = common::Signal<void(const Entity*)>;
-  using FrameChangedSignal
-      = common::Signal<void(const Entity*,
-                            const Frame* _oldFrame,
-                            const Frame* _newFrame)>;
-  using NameChangedSignal
-      = common::Signal<void(const Entity*,
-                            const std::string& _oldName,
-                            const std::string& _newFrame)>;
-  using VizShapeAddedSignal
-      = common::Signal<void(const Entity*,
-                            const Shape* _newVisShape)>;
-
-  using EntitySlot = EntitySignal::SlotType;
-  using FrameChangedSlot = FrameChangedSignal::SlotType;
-  using NameChangedSlot = NameChangedSignal::SlotType;
-  using VizShapeAddedSlot = VizShapeAddedSignal::SlotType;
-
-  /// Connect slot to frame changed signal
-  common::Connection connectFrameChanged(const FrameChangedSlot& _slot);
-
-  /// Connect slot to name changed signal
-  common::Connection connectNameChanged(const NameChangedSlot& _slot);
-
-  /// Connect slot to visualization changed signal
-  common::Connection connectVizShapeAdded(const VizShapeAddedSlot& _slot);
-
-  /// Connect slot to transform changed signal
-  common::Connection connectTransformChanged(const EntitySlot& _slot);
-
-  /// Connect slot to velocity changed signal
-  common::Connection connectVelocityChanged(const EntitySlot& _slot);
-
-  /// Connect slot to acceleration changed signal
-  common::Connection connectAccelerationChanged(const EntitySlot& _slot);
-
-  /// \}
-
 protected:
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
@@ -211,6 +180,31 @@ protected:
 
   /// Acceleration changed signal
   EntitySignal mAccelerationChangedSignal;
+
+public:
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for frame changed signal
+  common::SlotRegister<FrameChangedSignal> onFrameChanged;
+
+  /// Slot register for name changed signal
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
+  /// Slot register for visualization changed signal
+  common::SlotRegister<VizShapeAddedSignal> onVizShapeAdded;
+
+  /// Slot register for transform updated signal
+  common::SlotRegister<EntitySignal> onTransformUpdated;
+
+  /// Slot register for velocity updated signal
+  common::SlotRegister<EntitySignal> onVelocityChanged;
+
+  /// Slot register for acceleration updated signal
+  common::SlotRegister<EntitySignal> onAccelerationChanged;
+
+  /// \}
 
 private:
   /// Whether or not this Entity is set to be quiet
