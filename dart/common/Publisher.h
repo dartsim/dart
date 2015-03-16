@@ -55,9 +55,6 @@ public:
 
 protected:
 
-  /// Send a notification to all Subscribers
-  void sendNotification(int _notice) const;
-
   /// Send a destruction notification to all Subscribers. This will cause all
   /// Subscribers to behave as if this Publisher has been permanently
   /// deleted, so it should only be called when that behavior is desired.

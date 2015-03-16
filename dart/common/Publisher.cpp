@@ -47,13 +47,6 @@ Publisher::~Publisher()
 }
 
 //==============================================================================
-void Publisher::sendNotification(int _notice) const
-{
-  for(Subscriber* sub : mSubscribers)
-    sub->receiveNotification(this, _notice);
-}
-
-//==============================================================================
 void Publisher::sendDestructionNotification() const
 {
   std::set<Subscriber*>::iterator sub = mSubscribers.begin(),

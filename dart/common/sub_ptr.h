@@ -53,14 +53,11 @@ class sub_ptr : public Subscriber
 {
 public:
   /// Default constructor
-  sub_ptr() : mSubscription(nullptr), mLatestNotification(0) { }
+  sub_ptr() : mSubscription(nullptr) { }
 
   /// Alternative constructor. _ptr must be a valid pointer when passed to this
   /// constructor.
-  sub_ptr(T* _ptr) : mSubscription(nullptr), mLatestNotification(0)
-  {
-    set(_ptr);
-  }
+  sub_ptr(T* _ptr) : mSubscription(nullptr) { set(_ptr); }
 
   /// Change the subscription of this sub_ptr
   sub_ptr& operator = (const sub_ptr& _sp)
@@ -95,24 +92,13 @@ public:
 
     removeSubscription(mSubscription);
     mSubscription = _ptr;
-    mLatestNotification = 0;
     addSubscription(mSubscription);
   }
-
-  /// Get the latest notification produced by the subscription of this sub_ptr
-  int getLatestNotification() const { return mLatestNotification; }
 
   /// True if and only if this sub_ptr still points to a valid subscription
   bool valid() { return mSubscription != nullptr; }
 
 protected:
-  /// Saves the latest notification received from its Subscription
-  virtual void receiveNotification(const Publisher* _subscription,
-                                   int _notice) override
-  {
-    if(_subscription == mSubscription)
-      mLatestNotification = _notice;
-  }
 
   virtual void handleDestructionNotification(
       const Publisher* _subscription) override
@@ -123,10 +109,6 @@ protected:
 
   /// Store the subscription pointer
   T* mSubscription;
-
-  /// Store the latest notification
-  int mLatestNotification;
-
 };
 
 } // namespace common
