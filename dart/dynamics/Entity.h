@@ -68,18 +68,6 @@ class Entity : public common::Publisher
 public:
   friend class Frame;
 
-  enum Notification {
-
-    FRAME_CHANGED_NOTICE = 1,
-    NAME_CHANGED_NOTICE,
-    VISUALIZATION_CHANGE_NOTICE,
-    TRANSFORM_NOTICE,
-    VELOCITY_NOTICE,
-    ACCELERATION_NOTICE,
-
-    NUM_ENTITY_NOTIFICATIONS
-  };
-
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name,
                   bool _quiet);

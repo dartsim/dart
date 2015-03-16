@@ -474,8 +474,6 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
-
-  sendNotification(TRANSFORM_NOTICE);
 }
 
 //==============================================================================
@@ -491,8 +489,6 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
-
-  sendNotification(VELOCITY_NOTICE);
 }
 
 //==============================================================================
@@ -506,8 +502,6 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
-
-  sendNotification(ACCELERATION_NOTICE);
 }
 
 //==============================================================================

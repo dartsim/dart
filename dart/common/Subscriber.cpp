@@ -52,12 +52,6 @@ Subscriber::~Subscriber()
 }
 
 //==============================================================================
-void Subscriber::receiveNotification(const Publisher*, int)
-{
-  // Do nothing
-}
-
-//==============================================================================
 void Subscriber::receiveDestructionNotification(
     const Publisher* _subscription)
 {

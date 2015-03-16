@@ -55,11 +55,6 @@ public:
 
 protected:
 
-  /// Called whenever a subscription sends out a notice. Override this in order
-  /// to respond to notifications
-  virtual void receiveNotification(const Publisher* _subscription,
-                                   int _notice);
-
   /// Called whenever a subscription is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
