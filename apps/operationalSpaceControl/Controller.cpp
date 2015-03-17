@@ -50,10 +50,10 @@ Controller::Controller(dart::dynamics::Skeleton* _robot,
 
   mForces.setZero(dof);
 
-  mKp.setZero(dof, dof);
-  mKv.setZero(dof, dof);
+  mKp.setZero();
+  mKv.setZero();
 
-  for (int i = 0; i < dof; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     mKp(i, i) = 750.0;
     mKv(i, i) = 250.0;
