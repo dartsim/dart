@@ -149,6 +149,14 @@ public:
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true) const = 0;
 
+  /// Pass in true to prevent this shape from being rendered. Pass in false to
+  /// allow it to render again.
+  void setHidden(bool _hide=true);
+
+  /// True iff this Shape is set to be hidden. Use hide(bool) to change this
+  /// setting
+  bool isHidden() const;
+
 protected:
   /// \brief
   virtual void computeVolume() = 0;
@@ -173,6 +181,9 @@ protected:
 
   /// The DataVariance of this Shape
   unsigned int mVariance;
+
+  /// True if this shape should be kept from rendering
+  bool mHidden;
 
   /// \brief
   static int mCounter;

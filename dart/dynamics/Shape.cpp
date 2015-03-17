@@ -49,7 +49,8 @@ Shape::Shape(ShapeType _type)
     mColor(0.5, 0.5, 1.0),
     mTransform(Eigen::Isometry3d::Identity()),
     mType(_type),
-    mVariance(STATIC)
+    mVariance(STATIC),
+    mHidden(false)
 {
 }
 
@@ -144,6 +145,18 @@ bool Shape::checkDataVariance(DataVariance type) const
 void Shape::refreshData()
 {
   // Do nothing
+}
+
+//==============================================================================
+void Shape::setHidden(bool _hide)
+{
+  mHidden = _hide;
+}
+
+//==============================================================================
+bool Shape::isHidden() const
+{
+  return mHidden;
 }
 
 //==============================================================================

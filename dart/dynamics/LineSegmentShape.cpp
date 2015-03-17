@@ -254,6 +254,9 @@ void LineSegmentShape::draw(renderer::RenderInterface* _ri,
   if(!_ri)
     return;
 
+  if(mHidden)
+    return;
+
   if(!_useDefaultColor)
     _ri->setPenColor(_color);
   else

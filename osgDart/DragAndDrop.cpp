@@ -180,6 +180,12 @@ void DragAndDrop::constrainToPlane(const Eigen::Vector3d& normal)
 }
 
 //==============================================================================
+bool DragAndDrop::isMoving() const
+{
+  return mAmMoving;
+}
+
+//==============================================================================
 void DragAndDrop::handleDestructionNotification(
     const dart::common::Publisher* subscription)
 {
@@ -380,11 +386,33 @@ void InteractiveFrameDnD::update()
     dnd->constrainToLine(R.col(i));
   }
 
-  for(size_t i=0; i<3; ++i)
-  {
-    SimpleFrameShapeDnD* dnd = mDnDs[i];
-    dnd->update();
-  }
+  mDnDs[0]->update();
+
+//  bool something_moving = false;
+//  for(size_t i=0; i<3; ++i)
+//  {
+//    SimpleFrameShapeDnD* dnd = mDnDs[i];
+//    dnd->update();
+//    something_moving |= dnd->isMoving();
+//  }
+
+//  if(something_moving)
+//  {
+//    for(size_t i=0; i<3; ++i)
+//    {
+//      SimpleFrameShapeDnD* dnd = mDnDs[i];
+//      if(!dnd->isMoving())
+//        dnd->getShape()->setHidden(true);
+//    }
+//  }
+//  else
+//  {
+//    for(size_t i=0; i<3; ++i)
+//    {
+//      SimpleFrameShapeDnD* dnd = mDnDs[i];
+//      dnd->getShape()->setHidden(false);
+//    }
+//  }
 }
 
 //==============================================================================

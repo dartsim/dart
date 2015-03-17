@@ -87,12 +87,15 @@ BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent)
     mGeode(nullptr)
 {
   extractData(true);
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
 void BoxShapeNode::refresh()
 {
   mUtilized = true;
+
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;

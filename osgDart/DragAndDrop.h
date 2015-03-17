@@ -110,6 +110,9 @@ public:
   /// rotation, this function is equivalent to constrainToLine
   void constrainToPlane(const Eigen::Vector3d& normal);
 
+  /// Returns the mAmMoving flag
+  bool isMoving() const;
+
 protected:
 
   virtual void handleDestructionNotification(

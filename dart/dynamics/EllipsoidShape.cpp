@@ -73,6 +73,8 @@ void EllipsoidShape::draw(renderer::RenderInterface* _ri,
                           bool _useDefaultColor) const {
   if (!_ri)
     return;
+  if (mHidden)
+    return;
   if (!_useDefaultColor)
     _ri->setPenColor(_color);
   else

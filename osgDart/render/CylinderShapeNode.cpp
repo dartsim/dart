@@ -90,12 +90,15 @@ CylinderShapeNode::CylinderShapeNode(dart::dynamics::CylinderShape* shape,
     mGeode(nullptr)
 {
   extractData(true);
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
 void CylinderShapeNode::refresh()
 {
   mUtilized = true;
+
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;

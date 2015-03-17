@@ -95,12 +95,15 @@ EllipsoidShapeNode::EllipsoidShapeNode(dart::dynamics::EllipsoidShape* shape,
     mGeode(nullptr)
 {
   extractData(true);
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
 void EllipsoidShapeNode::refresh()
 {
   mUtilized = true;
+
+  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
