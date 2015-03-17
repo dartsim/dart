@@ -101,20 +101,6 @@ else()
   message(SEND_ERROR "Looking for OpenGL - NOT found, please install OpenGL")
 endif()
 
-# GLUT
-if(WIN32 AND NOT CYGWIN)
-  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
-  set(GLUT_LIBRARIES glut32)
-else()
-  find_package(GLUT QUIET)
-  if(GLUT_FOUND)
-    message(STATUS "Looking for GLUT - found")
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-  else()
-    message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
-  endif()
-endif()
-
 # Boost
 set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
 if(MSVC OR MSVC90 OR MSVC10)
@@ -132,6 +118,19 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
 
+  # GLUT
+  if(WIN32 AND NOT CYGWIN)
+    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+    set(GLUT_LIBRARIES glut32)
+  else()
+    find_package(GLUT QUIET)
+    if(GLUT_FOUND)
+      message(STATUS "Looking for GLUT - found")
+      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+    else()
+      message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
+    endif()
+  endif()
 
   # FLANN
   find_package(FLANN QUIET)
