@@ -41,7 +41,7 @@
   #include <windows.h>
   #include <GL/gl.h>
   #include <GL/glu.h>
-#elif defined(__linux)
+#elif defined(__linux__)
   #include <GL/gl.h>
   #include <GL/glu.h>
 #elif defined(__APPLE__)

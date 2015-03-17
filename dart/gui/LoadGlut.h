@@ -40,7 +40,7 @@
 #if WIN32
   #include <cstdlib> // To disable glut::exit() function
   #include <GL/glut.h>
-#elif defined(__linux)
+#elif defined(__linux__)
   #include <GL/glut.h>
 #elif defined(__APPLE__)
   #include <Glut/glut.h>
