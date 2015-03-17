@@ -157,8 +157,12 @@ int main()
 {
   dart::simulation::World* world = new dart::simulation::World;
 
-  SimpleFrame draggable(Frame::World(), "draggable");
-  draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
+//  SimpleFrame draggable(Frame::World(), "draggable");
+//  draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
+//  world->addFrame(&draggable);
+
+  osgDart::InteractiveFrame draggable(Frame::World(), "draggable",
+                                      Eigen::Isometry3d::Identity(), 4.0);
   world->addFrame(&draggable);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

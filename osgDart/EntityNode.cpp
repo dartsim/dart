@@ -61,6 +61,7 @@ EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
     mUtilized(false)
 {
   refresh();
+  setName(mEntity->getName()+" [entity]");
 }
 
 //==============================================================================

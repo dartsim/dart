@@ -37,8 +37,12 @@
 #include "osgDart/DragAndDrop.h"
 #include "osgDart/DefaultEventHandler.h"
 #include "osgDart/Viewer.h"
+#include "osgDart/InteractiveFrame.h"
 
 #include "dart/dynamics/SimpleFrame.h"
+
+
+#include <iostream>
 
 namespace osgDart {
 
@@ -190,6 +194,7 @@ void DragAndDrop::handleDestructionNotification(
 SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
                                dart::dynamics::SimpleFrame* frame)
   : DragAndDrop(viewer, frame),
+    mOption(RotationOption::HOLD_CTRL),
     mFrame(frame)
 {
 
@@ -212,16 +217,17 @@ void SimpleFrameDnD::move()
 {
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-  if( (mViewer->getDefaultEventHandler()->getModKeyMask()
-       & osgGA::GUIEventAdapter::MODKEY_CTRL) )
+  bool ctrl_down = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                    & osgGA::GUIEventAdapter::MODKEY_CTRL);
+
+  if(  ((RotationOption::HOLD_CTRL==mOption) && ctrl_down)
+      || RotationOption::ALWAYS_ON==mOption )
   {
     // Rotate
 
     Eigen::AngleAxisd R = getConstrainedRotation();
 
     tf.translation() = mPivot;
-//    tf.rotate(mSavedRotation * R);
-//    tf.rotate(R * mSavedRotation);
     tf.linear() = (R * mSavedRotation).matrix();
   }
   else
@@ -246,6 +252,12 @@ void SimpleFrameDnD::saveState()
 {
   mPivot = mFrame->getWorldTransform().translation();
   mSavedRotation = mFrame->getWorldTransform().rotation();
+}
+
+//==============================================================================
+void SimpleFrameDnD::setRotationOption(RotationOption option)
+{
+  mOption = option;
 }
 
 //==============================================================================
@@ -323,6 +335,68 @@ void SimpleFrameShapeDnD::handleDestructionNotification(
 
   if(mShape == subscription)
     mViewer->disableDragAndDrop(this);
+}
+
+//==============================================================================
+InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
+                                         InteractiveFrame* frame)
+  : DragAndDrop(viewer, frame),
+    mInteractiveFrame(frame)
+{
+  const std::vector<dart::dynamics::Shape*> shapes =
+      frame->getVisualizationShapes();
+  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[0]));
+  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[1]));
+  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[2]));
+
+  for(size_t i=0; i<3; ++i)
+  {
+    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_ON);
+  }
+}
+
+//==============================================================================
+InteractiveFrameDnD::~InteractiveFrameDnD()
+{
+  for(size_t i=0; i<mDnDs.size(); ++i)
+    delete mDnDs[i];
+  mDnDs.clear();
+}
+
+//==============================================================================
+InteractiveFrame* InteractiveFrameDnD::getFrame() const
+{
+  return mInteractiveFrame;
+}
+
+//==============================================================================
+void InteractiveFrameDnD::update()
+{
+  for(size_t i=0; i<3; ++i)
+  {
+    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
+    dnd->constrainToLine(R.col(i));
+  }
+
+  for(size_t i=0; i<3; ++i)
+  {
+    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    dnd->update();
+  }
+}
+
+//==============================================================================
+void InteractiveFrameDnD::move()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void InteractiveFrameDnD::saveState()
+{
+  // Do nothing
 }
 
 } // namespace osgDart

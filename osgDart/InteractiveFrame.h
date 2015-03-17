@@ -34,69 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/render/ShapeNode.h"
-#include "osgDart/EntityNode.h"
+#ifndef OSGDART_INTERACTIVEFRAME_H
+#define OSGDART_INTERACTIVEFRAME_H
 
-namespace osgDart {
-namespace render {
+#include "dart/dynamics/SimpleFrame.h"
 
-ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
-                     osg::Node* _node)
-  : mShape(_shape),
-    mNode(_node),
-    mParentEntity(_parent),
-    mUtilized(true)
+namespace osgDart
 {
 
-}
-
-//==============================================================================
-ShapeNode::~ShapeNode()
+class InteractiveFrame : public dart::dynamics::SimpleFrame
 {
-  // Do nothing
-}
+public:
+  /// Constructor
+  InteractiveFrame(
+    dart::dynamics::Frame* referenceFrame,
+    const std::string& name = "interactive_frame",
+    const Eigen::Isometry3d& relativeTransform = Eigen::Isometry3d::Identity(),
+    double size_scale=0.2, double thickness_scale=2.0);
 
-//==============================================================================
-dart::dynamics::Shape* ShapeNode::getShape() const
-{
-  return mShape;
-}
+  /// Destructor
+  virtual ~InteractiveFrame();
 
-//==============================================================================
-osg::Node* ShapeNode::getNode()
-{
-  return mNode;
-}
+  /// Recreate the visuals for this InteractiveFrame according to the specified
+  /// scales.
+  void resizeStandardVisuals(double size_scale=0.2, double thickness_scale=2.0);
 
-//==============================================================================
-const osg::Node* ShapeNode::getNode() const
-{
-  return mNode;
-}
+protected:
+  /// Creates the standard visualization shapes for InteractiveFrames. Overload
+  /// this to create an InteractiveFrame with custom visualization shapes.
+  void createStandardVisualizationShapes(double size, double thickness);
 
-//==============================================================================
-EntityNode* ShapeNode::getParentEntityNode()
-{
-  return mParentEntity;
-}
+  /// Deletes all the visualization shapes held by the InteractiveFrame.
+  void deleteAllVisualizationShapes();
 
-//==============================================================================
-const EntityNode* ShapeNode::getParentEntityNode() const
-{
-  return mParentEntity;
-}
+};
 
-//==============================================================================
-bool ShapeNode::wasUtilized() const
-{
-  return mUtilized;
-}
-
-//==============================================================================
-void ShapeNode::clearUtilization()
-{
-  mUtilized = false;
-}
-
-} // namespace render
 } // namespace osgDart
+
+#endif // OSGDART_INTERACTIVEFRAME_H

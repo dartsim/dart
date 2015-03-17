@@ -67,6 +67,8 @@ class DefaultEventHandler;
 class DragAndDrop;
 class SimpleFrameDnD;
 class SimpleFrameShapeDnD;
+class InteractiveFrame;
+class InteractiveFrameDnD;
 
 class Viewer : public osgViewer::Viewer, public dart::common::Publisher
 {
@@ -145,11 +147,14 @@ public:
   /// A version of enableDragAndDrop specifically for SimpleFrame objects.
   SimpleFrameDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
 
-  /// A version of disableDragAndDrop specifically for a single shape within a
+  /// A version of enableDragAndDrop specifically for a single shape within a
   /// SimpleFrame object. Dragging and Dropping the shape will also drag and
   /// drop the entire Frame
   SimpleFrameShapeDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
                                          dart::dynamics::Shape* _shape);
+
+  /// A version of enableDragAndDrop specifically for InteractiveFrames
+  InteractiveFrameDnD* enableDragAndDrop(InteractiveFrame* _frame);
 
   /// Delete a DragAndDrop object. Returns true if the DnD was active and has
   /// now been deleted
@@ -162,6 +167,10 @@ public:
   /// Delete a SimpleFrameShapeDnD object. Returns true if a DnD existed and
   /// could be deleted
   bool disableDragAndDrop(SimpleFrameShapeDnD* _dnd);
+
+  /// Delete an InteractiveFrameDnD object. Returns true if a DnD existed and
+  /// could be deleted
+  bool disableDragAndDrop(InteractiveFrameDnD* _dnd);
 
   /// Get a string containing the user interface constructions for this Viewer
   const std::string& getInstructions() const;
@@ -226,6 +235,9 @@ protected:
   /// in order to support the possibility of a single Shape being used by
   /// multiple objects
   std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*> mSimpleFrameShapeDnDMap;
+
+  /// Map from InteractiveFrame ptrs to InteractiveFrameDnD ptrs
+  std::map<InteractiveFrame*,InteractiveFrameDnD*> mInteractiveFrameDnDMap;
 
 };
 

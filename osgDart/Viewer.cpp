@@ -392,14 +392,31 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 }
 
 //==============================================================================
+InteractiveFrameDnD* Viewer::enableDragAndDrop(InteractiveFrame* _frame)
+{
+  if(nullptr == _frame)
+    return nullptr;
+
+  std::map<InteractiveFrame*,InteractiveFrameDnD*>::iterator it =
+      mInteractiveFrameDnDMap.find(_frame);
+  if(it != mInteractiveFrameDnDMap.end())
+    return it->second;
+
+  InteractiveFrameDnD* dnd = new InteractiveFrameDnD(this, _frame);
+  mInteractiveFrameDnDMap[_frame] = dnd;
+  return dnd;
+}
+
+//==============================================================================
 bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
 {
-  SimpleFrameShapeDnD* ssf = dynamic_cast<SimpleFrameShapeDnD*>(_dnd);
-  if(disableDragAndDrop(ssf))
+  if(disableDragAndDrop(dynamic_cast<SimpleFrameShapeDnD*>(_dnd)))
     return true;
 
-  SimpleFrameDnD* sf = dynamic_cast<SimpleFrameDnD*>(_dnd);
-  if(disableDragAndDrop(sf))
+  if(disableDragAndDrop(dynamic_cast<SimpleFrameDnD*>(_dnd)))
+    return true;
+
+  if(disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd)))
     return true;
 
   return false;
@@ -443,6 +460,23 @@ bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
 }
 
 //==============================================================================
+bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
+{
+  if(nullptr == _dnd)
+    return false;
+
+  std::map<InteractiveFrame*, InteractiveFrameDnD*>::iterator it =
+      mInteractiveFrameDnDMap.find(_dnd->getFrame());
+  if(it == mInteractiveFrameDnDMap.end())
+    return false;
+
+  delete it->second;
+  mInteractiveFrameDnDMap.erase(it);
+
+  return true;
+}
+
+//==============================================================================
 const std::string& Viewer::getInstructions() const
 {
   return mInstructions;
@@ -472,6 +506,12 @@ void Viewer::updateDragAndDrops()
   for(auto& dnd_pair : mSimpleFrameShapeDnDMap)
   {
     SimpleFrameShapeDnD* dnd = dnd_pair.second;
+    dnd->update();
+  }
+
+  for(auto& dnd_pair : mInteractiveFrameDnDMap)
+  {
+    InteractiveFrameDnD* dnd = dnd_pair.second;
     dnd->update();
   }
 }

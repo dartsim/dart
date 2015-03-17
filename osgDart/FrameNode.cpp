@@ -50,6 +50,7 @@ FrameNode::FrameNode(dart::dynamics::Frame* _frame, WorldNode* _worldNode,
     mUtilized(false)
 {
   refresh(_relative, _recursive);
+  setName(_frame->getName()+" [frame]");
 }
 
 //==============================================================================

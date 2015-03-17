@@ -189,6 +189,11 @@ public:
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);
 
+protected:
+  /// Constructor for inheriting classes, so they do not need to fill in the
+  /// arguments
+  Detachable();
+
 };
 
 } // namespace dynamics

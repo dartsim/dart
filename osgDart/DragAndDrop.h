@@ -56,6 +56,7 @@ namespace osgDart
 {
 
 class Viewer;
+class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an osgDart environment
@@ -141,6 +142,14 @@ class SimpleFrameDnD : public DragAndDrop
 {
 public:
 
+  enum class RotationOption : int {
+
+    HOLD_CTRL = 0, // Default setting
+    ALWAYS_ON,
+    ALWAYS_OFF
+
+  };
+
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
   ~SimpleFrameDnD();
@@ -151,7 +160,11 @@ public:
 
   virtual void saveState() override;
 
+  void setRotationOption(RotationOption option);
+
 protected:
+
+  RotationOption mOption;
 
   dart::dynamics::SimpleFrame* mFrame;
 
@@ -181,6 +194,30 @@ protected:
       const dart::common::Publisher* subscription) override;
 
   dart::dynamics::Shape* mShape;
+};
+
+//==============================================================================
+class InteractiveFrameDnD : public DragAndDrop
+{
+public:
+
+  InteractiveFrameDnD(Viewer* viewer, osgDart::InteractiveFrame* frame);
+
+  virtual ~InteractiveFrameDnD();
+
+  InteractiveFrame* getFrame() const;
+
+  virtual void update() override;
+
+  virtual void move() override;
+
+  virtual void saveState() override;
+
+protected:
+
+  std::vector<SimpleFrameShapeDnD*> mDnDs;
+
+  InteractiveFrame* mInteractiveFrame;
 
 };
 

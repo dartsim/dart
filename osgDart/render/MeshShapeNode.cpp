@@ -39,6 +39,7 @@
 
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osg/CullFace>
 
 #include "osgDart/render/MeshShapeNode.h"
 #include "osgDart/utils.h"
@@ -281,6 +282,7 @@ MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
     mMeshShape(shape),
     mAiNode(node)
 {
+  getOrCreateStateSet()->setAttributeAndModes(new osg::CullFace(osg::CullFace::BACK));
   extractData(true);
 }
 
@@ -456,6 +458,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
     // assimp allows?
     if(mAiMesh->mColors[0])
     {
+      if(mColors->size() != mVertices->size())
+        mColors->resize(mVertices->size());
+
       for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
       {
         const aiColor4D& c = mAiMesh->mColors[0][i];

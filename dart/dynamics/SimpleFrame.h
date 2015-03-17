@@ -56,9 +56,9 @@ class SimpleFrame : public Detachable, public Frame
 {
 public:
   /// Constructor
-  explicit SimpleFrame(Frame* _refFrame, const std::string& _name,
-                       const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
+  explicit SimpleFrame(Frame* _refFrame,
+    const std::string& _name = "simple_frame",
+    const Eigen::Isometry3d& _relativeTransform = Eigen::Isometry3d::Identity());
 
   /// Destructor
   virtual ~SimpleFrame();

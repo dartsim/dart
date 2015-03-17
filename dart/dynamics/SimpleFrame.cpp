@@ -40,7 +40,9 @@
 namespace dart {
 namespace dynamics {
 
-SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
+//==============================================================================
+SimpleFrame::SimpleFrame(Frame* _refFrame,
+                         const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(nullptr, _name, false),
     Detachable(nullptr, _name, false),
