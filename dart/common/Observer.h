@@ -44,31 +44,39 @@ namespace common {
 
 class Subject;
 
+/// The Observer class should be inherited by any class that wants to respond
+/// in a customized way to the destruction of a Subject. Simply override the
+/// Observer::handleDestructionNotification() function to customize how your
+/// class responds to the destruction of a Subject.
+///
+/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// nullptr when its Subject is destroyed. It offers one of the easiest ways to
+/// take advantage of the Subject/Observer pattern.
 class Observer
 {
 public:
 
   friend class Subject;
 
-  /// Destructor will notify all subscriptions that it is destructing
+  /// Destructor will notify all Subjects that it is destructing
   virtual ~Observer();
 
 protected:
 
-  /// Called whenever a subscription is destroyed (or sends out a destruction
+  /// Called whenever a Subject is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
-  void receiveDestructionNotification(const Subject* _subscription);
+  void receiveDestructionNotification(const Subject* _subject);
 
   /// Called by receiveDestructionNotification(). Override this function to
   /// customize your class's response to destruction notifications.
-  virtual void handleDestructionNotification(const Subject* _subscription);
+  virtual void handleDestructionNotification(const Subject* _subject);
 
   /// Add a Subject for this Observer
-  void addSubject(const Subject* _subscription);
+  void addSubject(const Subject* _subject);
 
   /// Remove a Subject from this Observer
-  void removeSubject(const Subject* _subscription);
+  void removeSubject(const Subject* _subject);
 
   /// Remove all Subjects from this Observer
   void removeAllSubjects();

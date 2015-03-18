@@ -42,31 +42,30 @@
 namespace dart {
 namespace common {
 
-/// sub_ptr is a subscribed pointer. It can be used as a pointer to any class
-/// that publicly inherits Subscription. If the instance that it is pointing to
+/// sub_ptr is a pointer to a Subject. It can be used as a pointer to any class
+/// that publicly inherits Observer. If the instance that it is pointing to
 /// is ever destroyed, the sub_ptr class will start pointing to a nullptr.
 /// You can check the return of sub_ptr::valid() to see if the pointer is still
-/// valid. You can also check the latest notification sent out by the
-/// subscription using sub_ptr::getLatestNotification()
+/// valid.
 template <class T>
 class sub_ptr : public Observer
 {
 public:
   /// Default constructor
-  sub_ptr() : mSubscription(nullptr) { }
+  sub_ptr() : mSubject(nullptr) { }
 
   /// Alternative constructor. _ptr must be a valid pointer when passed to this
   /// constructor.
-  sub_ptr(T* _ptr) : mSubscription(nullptr) { set(_ptr); }
+  sub_ptr(T* _ptr) : mSubject(nullptr) { set(_ptr); }
 
-  /// Change the subscription of this sub_ptr
+  /// Change the Subject of this sub_ptr
   sub_ptr& operator = (const sub_ptr& _sp)
   {
     set(_sp.get());
     return *this;
   }
 
-  /// Change the subscription of this sub_ptr
+  /// Change the Subject of this sub_ptr
   sub_ptr& operator = (T* _ptr)
   {
     set(_ptr);
@@ -74,41 +73,41 @@ public:
   }
 
   /// Implicit conversion to pointer type
-  operator T*() const { return mSubscription; }
+  operator T*() const { return mSubject; }
 
   /// Dereferencing operator
-  T& operator*() const { return *mSubscription; }
+  T& operator*() const { return *mSubject; }
 
   /// Dereferencing operation
-  T* operator->() const { return mSubscription; }
+  T* operator->() const { return mSubject; }
 
-  /// Get the subscription of this sub_ptr
-  T* get() const { return mSubscription; }
+  /// Get the Subject of this sub_ptr
+  T* get() const { return mSubject; }
 
   void set(T* _ptr)
   {
-    if(mSubscription == _ptr)
+    if(mSubject == _ptr)
       return;
 
-    removeSubject(mSubscription);
-    mSubscription = _ptr;
-    addSubject(mSubscription);
+    removeSubject(mSubject);
+    mSubject = _ptr;
+    addSubject(mSubject);
   }
 
-  /// True if and only if this sub_ptr still points to a valid subscription
-  bool valid() { return mSubscription != nullptr; }
+  /// True if and only if this sub_ptr still points to a valid Subject
+  bool valid() { return mSubject != nullptr; }
 
 protected:
 
   virtual void handleDestructionNotification(
-      const Subject* _subscription) override
+      const Subject* _subject) override
   {
-    if(_subscription == mSubscription)
-      mSubscription = nullptr;
+    if(_subject == mSubject)
+      mSubject = nullptr;
   }
 
-  /// Store the subscription pointer
-  T* mSubscription;
+  /// Store the Subject pointer
+  T* mSubject;
 };
 
 } // namespace common

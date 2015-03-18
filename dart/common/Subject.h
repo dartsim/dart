@@ -44,6 +44,20 @@ namespace common {
 
 class Observer;
 
+/// The Subject class is a base class for any object that wants to report when
+/// it gets destroyed. This is useful for complex frameworks in which it is
+/// difficult or impossible to know when an object or resource might destroyed
+/// by some other part of the code, or when special cleanup might be needed
+/// upon the destruction of an object. Simply by inheriting the Subject class,
+/// any class can have the destruction notification feature.
+///
+/// Note that the Subject class should ALWAYS be virtually inherited. No other
+/// special considerations are needed when virtually inheriting the Subject
+/// class.
+///
+/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// nullptr when its Subject is destroyed. It offers one of the easiest ways to
+/// take advantage of the Subject/Observer pattern.
 class Subject
 {
 public:

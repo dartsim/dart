@@ -52,11 +52,10 @@ Observer::~Observer()
 }
 
 //==============================================================================
-void Observer::receiveDestructionNotification(
-    const Subject* _subscription)
+void Observer::receiveDestructionNotification(const Subject* _subject)
 {
-  removeSubject(_subscription);
-  handleDestructionNotification(_subscription);
+  removeSubject(_subject);
+  handleDestructionNotification(_subject);
 }
 
 //==============================================================================
@@ -66,29 +65,29 @@ void Observer::handleDestructionNotification(const Subject*)
 }
 
 //==============================================================================
-void Observer::addSubject(const Subject* _subscription)
+void Observer::addSubject(const Subject* _subject)
 {
-  if(nullptr == _subscription)
+  if(nullptr == _subject)
     return;
 
-  if(mSubjects.find(_subscription) != mSubjects.end())
+  if(mSubjects.find(_subject) != mSubjects.end())
     return;
 
-  mSubjects.insert(_subscription);
-  _subscription->addObserver(this);
+  mSubjects.insert(_subject);
+  _subject->addObserver(this);
 }
 
 //==============================================================================
-void Observer::removeSubject(const Subject* _subscription)
+void Observer::removeSubject(const Subject* _subject)
 {
-  if(nullptr == _subscription)
+  if(nullptr == _subject)
     return;
 
-  if(mSubjects.find(_subscription) == mSubjects.end())
+  if(mSubjects.find(_subject) == mSubjects.end())
     return;
 
-  mSubjects.erase(_subscription);
-  _subscription->removeObserver(this);
+  mSubjects.erase(_subject);
+  _subject->removeObserver(this);
 }
 
 //==============================================================================
