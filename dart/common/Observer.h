@@ -34,51 +34,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBSCRIBER_H_
-#define DART_COMMON_SUBSCRIBER_H_
+#ifndef DART_COMMON_OBSERVER_H_
+#define DART_COMMON_OBSERVER_H_
 
 #include <set>
 
 namespace dart {
 namespace common {
 
-class Publisher;
+class Subject;
 
-class Subscriber
+class Observer
 {
 public:
 
-  friend class Publisher;
+  friend class Subject;
 
   /// Destructor will notify all subscriptions that it is destructing
-  virtual ~Subscriber();
+  virtual ~Observer();
 
 protected:
 
   /// Called whenever a subscription is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
-  void receiveDestructionNotification(const Publisher* _subscription);
+  void receiveDestructionNotification(const Subject* _subscription);
 
   /// Called by receiveDestructionNotification(). Override this function to
   /// customize your class's response to destruction notifications.
-  virtual void handleDestructionNotification(const Publisher* _subscription);
+  virtual void handleDestructionNotification(const Subject* _subscription);
 
-  /// Add a subscription for this Subscriber
-  void addSubscription(const Publisher* _subscription);
+  /// Add a Subject for this Observer
+  void addSubject(const Subject* _subscription);
 
-  /// Remove a subscription from this Subscriber
-  void removeSubscription(const Publisher* _subscription);
+  /// Remove a Subject from this Observer
+  void removeSubject(const Subject* _subscription);
 
-  /// Remove all subscriptions from this Subscriber
-  void removeAllSubscriptions();
+  /// Remove all Subjects from this Observer
+  void removeAllSubjects();
 
-  /// List of current subscriptions for this Subscriber
-  std::set<const Publisher*> mSubscriptions;
+  /// List of current Subjects for this Observer
+  std::set<const Subject*> mSubjects;
 
 };
 
 } // namespace dart
 } // namespace common
 
-#endif // DART_COMMON_SUBSCRIBER_H_
+#endif // DART_COMMON_OBSERVER_H_

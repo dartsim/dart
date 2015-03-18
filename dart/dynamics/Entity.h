@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-#include "dart/common/Publisher.h"
+#include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
 #include "dart/dynamics/Shape.h"
 
@@ -65,7 +65,7 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity : public common::Publisher
+class Entity : public virtual common::Subject
 {
 public:
   friend class Frame;

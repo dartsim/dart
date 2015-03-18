@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_SUB_PTR_H_
 #define DART_COMMON_SUB_PTR_H_
 
-#include "dart/common/Subscriber.h"
+#include "dart/common/Observer.h"
 
 namespace dart {
 namespace common {
@@ -49,7 +49,7 @@ namespace common {
 /// valid. You can also check the latest notification sent out by the
 /// subscription using sub_ptr::getLatestNotification()
 template <class T>
-class sub_ptr : public Subscriber
+class sub_ptr : public Observer
 {
 public:
   /// Default constructor
@@ -90,9 +90,9 @@ public:
     if(mSubscription == _ptr)
       return;
 
-    removeSubscription(mSubscription);
+    removeSubject(mSubscription);
     mSubscription = _ptr;
-    addSubscription(mSubscription);
+    addSubject(mSubscription);
   }
 
   /// True if and only if this sub_ptr still points to a valid subscription
@@ -101,7 +101,7 @@ public:
 protected:
 
   virtual void handleDestructionNotification(
-      const Publisher* _subscription) override
+      const Subject* _subscription) override
   {
     if(_subscription == mSubscription)
       mSubscription = nullptr;
