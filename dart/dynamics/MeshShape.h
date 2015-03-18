@@ -98,6 +98,7 @@ private:
   /// \brief
   void _updateBoundingBoxDim();
 
+protected:
   /// \brief
   const aiScene* mMesh;
 

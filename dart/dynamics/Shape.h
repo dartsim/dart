@@ -87,7 +87,7 @@ public:
   virtual ~Shape();
 
   /// \brief Set color.
-  void setColor(const Eigen::Vector3d& _color);
+  virtual void setColor(const Eigen::Vector3d& _color);
 
   /// TODO(MXG): Add support for alpha channel
   /// \brief Get color.

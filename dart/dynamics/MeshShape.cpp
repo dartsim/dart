@@ -77,17 +77,22 @@ aiScene::~aiScene()
   if(mNumMeshes && mMeshes)
     for(size_t a=0; a<mNumMeshes; ++a)
       delete mMeshes[a];
-  delete [] mMeshes;
+  delete[] mMeshes;
+
+  if(mNumMaterials && mMaterials)
+    for(size_t a=0; a<mNumMaterials; ++a)
+      delete mMaterials[a];
+  delete[] mMaterials;
 
   if(mNumAnimations && mAnimations)
     for(size_t a=0; a<mNumAnimations; ++a)
       delete mAnimations[a];
-  delete [] mAnimations;
+  delete[] mAnimations;
 
   if(mNumTextures && mTextures)
     for(size_t a=0; a<mNumTextures; ++a)
       delete mTextures[a];
-  delete [] mTextures;
+  delete[] mTextures;
 
   if(mNumLights && mLights)
     for(size_t a=0; a<mNumLights; ++a)
@@ -97,7 +102,28 @@ aiScene::~aiScene()
   if(mNumCameras && mCameras)
     for(size_t a=0; a<mNumCameras; ++a)
       delete mCameras[a];
-  delete [] mCameras;
+  delete[] mCameras;
+}
+
+// We define our own constructor for aiMaterial, because it seems to be missing
+// from the standard assimp library
+aiMaterial::aiMaterial()
+{
+  mNumProperties = 0;
+  mNumAllocated = 5;
+  mProperties = new aiMaterialProperty*[5];
+  for(size_t i=0; i<5; ++i)
+    mProperties[i] = nullptr;
+}
+
+// We define our own destructor for aiMaterial, because it seems to be missing
+// from the standard assimp library
+aiMaterial::~aiMaterial()
+{
+  for(size_t i=0; i<mNumProperties; ++i)
+    delete mProperties[i];
+
+  delete[] mProperties;
 }
 
 namespace dart {
@@ -112,12 +138,17 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
+
+  if(nullptr == mMesh)
+    return;
+
   _updateBoundingBoxDim();
   computeVolume();
   initMeshes();
 }
 
 MeshShape::~MeshShape() {
+  delete mMesh;
 }
 
 const aiScene* MeshShape::getMesh() const {
@@ -132,6 +163,10 @@ void MeshShape::update()
 void MeshShape::setMesh(const aiScene* _mesh) {
   assert(_mesh);
   mMesh = _mesh;
+
+  if(nullptr == _mesh)
+    return;
+
   _updateBoundingBoxDim();
   computeVolume();
 }
