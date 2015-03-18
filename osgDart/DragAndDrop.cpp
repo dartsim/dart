@@ -355,13 +355,16 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
 {
   const std::vector<dart::dynamics::Shape*> shapes =
       frame->getVisualizationShapes();
-  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[0]));
-  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[1]));
-  mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[2]));
+
+  for(size_t i=0; i<shapes.size(); ++i)
+    mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[i]));
 
   for(size_t i=0; i<3; ++i)
   {
     SimpleFrameShapeDnD* dnd = mDnDs[i];
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
+
+    dnd = mDnDs[i+3];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_ON);
   }
 }
@@ -388,10 +391,13 @@ void InteractiveFrameDnD::update()
     SimpleFrameShapeDnD* dnd = mDnDs[i];
     Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
     dnd->constrainToLine(R.col(i));
+
+    dnd = mDnDs[i+3];
+    dnd->constrainToLine(R.col(i));
   }
 
   bool something_moving = false;
-  for(size_t i=0; i<3; ++i)
+  for(size_t i=0; i<mDnDs.size(); ++i)
   {
     SimpleFrameShapeDnD* dnd = mDnDs[i];
     dnd->update();

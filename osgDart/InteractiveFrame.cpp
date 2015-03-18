@@ -36,6 +36,7 @@
 
 #include "osgDart/InteractiveFrame.h"
 #include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/ArrowShape.h"
 #include "dart/common/Console.h"
 
 namespace osgDart {
@@ -109,8 +110,28 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 {
   thickness = std::min(10.0, std::max(0.0, thickness));
   size_t resolution = 100;
-  double ring_outer_scale = 0.8*size;
+  double ring_outer_scale = 0.6*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
+
+  // Create translation arrows
+  for(size_t a=0; a<3; ++a)
+  {
+    Eigen::Vector3d tail(Eigen::Vector3d::Zero());
+    tail[a] = -size;
+    Eigen::Vector3d head(Eigen::Vector3d::Zero());
+    head[a] =  size;
+    Eigen::Vector3d color(Eigen::Vector3d::Ones());
+    color *= 0.2;
+    color[a] = 0.9;
+
+    dart::dynamics::ArrowShape::Properties p;
+    p.mRadius = thickness*size*0.025;
+    p.mHeadLengthScale = 0.1;
+    p.mDoubleArrow = true;
+
+    addVisualizationShape(
+          new dart::dynamics::ArrowShape(tail, head, p, color, 100));
+  }
 
   // Create rotation rings
   for(size_t r=0; r<3; ++r)
@@ -233,10 +254,6 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 {
   for(size_t i=0; i<mVizShapes.size(); ++i)
   {
-    dart::dynamics::MeshShape* mesh =
-        dynamic_cast<dart::dynamics::MeshShape*>(mVizShapes[i]);
-    if(mesh)
-      delete mesh->getMesh();
     delete mVizShapes[i];
   }
   mVizShapes.clear();
