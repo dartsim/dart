@@ -34,51 +34,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBSCRIBER_H_
-#define DART_COMMON_SUBSCRIBER_H_
+#ifndef DART_COMMON_OBSERVER_H_
+#define DART_COMMON_OBSERVER_H_
 
 #include <set>
 
 namespace dart {
 namespace common {
 
-class Publisher;
+class Subject;
 
-class Subscriber
+/// The Observer class should be inherited by any class that wants to respond
+/// in a customized way to the destruction of a Subject. Simply override the
+/// Observer::handleDestructionNotification() function to customize how your
+/// class responds to the destruction of a Subject.
+///
+/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// nullptr when its Subject is destroyed. It offers one of the easiest ways to
+/// take advantage of the Subject/Observer pattern.
+class Observer
 {
 public:
 
-  friend class Publisher;
+  friend class Subject;
 
-  /// Destructor will notify all subscriptions that it is destructing
-  virtual ~Subscriber();
+  /// Destructor will notify all Subjects that it is destructing
+  virtual ~Observer();
 
 protected:
 
-  /// Called whenever a subscription is destroyed (or sends out a destruction
+  /// Called whenever a Subject is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
-  void receiveDestructionNotification(const Publisher* _subscription);
+  void receiveDestructionNotification(const Subject* _subject);
 
   /// Called by receiveDestructionNotification(). Override this function to
   /// customize your class's response to destruction notifications.
-  virtual void handleDestructionNotification(const Publisher* _subscription);
+  virtual void handleDestructionNotification(const Subject* _subject);
 
-  /// Add a subscription for this Subscriber
-  void addSubscription(const Publisher* _subscription);
+  /// Add a Subject for this Observer
+  void addSubject(const Subject* _subject);
 
-  /// Remove a subscription from this Subscriber
-  void removeSubscription(const Publisher* _subscription);
+  /// Remove a Subject from this Observer
+  void removeSubject(const Subject* _subject);
 
-  /// Remove all subscriptions from this Subscriber
-  void removeAllSubscriptions();
+  /// Remove all Subjects from this Observer
+  void removeAllSubjects();
 
-  /// List of current subscriptions for this Subscriber
-  std::set<const Publisher*> mSubscriptions;
+  /// List of current Subjects for this Observer
+  std::set<const Subject*> mSubjects;
 
 };
 
 } // namespace dart
 } // namespace common
 
-#endif // DART_COMMON_SUBSCRIBER_H_
+#endif // DART_COMMON_OBSERVER_H_

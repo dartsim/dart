@@ -34,54 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Publisher.h"
-#include "dart/common/Subscriber.h"
+#ifndef DART_COMMON_SUBJECT_H_
+#define DART_COMMON_SUBJECT_H_
+
+#include <set>
 
 namespace dart {
 namespace common {
 
-//==============================================================================
-Publisher::~Publisher()
+class Observer;
+
+/// The Subject class is a base class for any object that wants to report when
+/// it gets destroyed. This is useful for complex frameworks in which it is
+/// difficult or impossible to know when an object or resource might destroyed
+/// by some other part of the code, or when special cleanup might be needed
+/// upon the destruction of an object. Simply by inheriting the Subject class,
+/// any class can have the destruction notification feature.
+///
+/// Note that the Subject class should ALWAYS be virtually inherited. No other
+/// special considerations are needed when virtually inheriting the Subject
+/// class.
+///
+/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// nullptr when its Subject is destroyed. It offers one of the easiest ways to
+/// take advantage of the Subject/Observer pattern.
+class Subject
 {
-  sendDestructionNotification();
-}
+public:
 
-//==============================================================================
-void Publisher::sendDestructionNotification() const
-{
-  std::set<Subscriber*>::iterator sub = mSubscribers.begin(),
-                                  end = mSubscribers.end();
-  while( sub != end )
-    (*(sub++))->receiveDestructionNotification(this);
-  // We do this tricky iterator method to deal with the fact that mSubscribers
-  // will be changing as we go through the loop
-}
+  friend class Observer;
 
-//==============================================================================
-void Publisher::addSubscriber(Subscriber* _subscriber) const
-{
-  if(nullptr == _subscriber)
-    return;
+  /// Destructor will notify all Observers that it is destructing
+  virtual ~Subject();
 
-  if(mSubscribers.find(_subscriber) != mSubscribers.end())
-    return;
+protected:
 
-  mSubscribers.insert(_subscriber);
-  _subscriber->addSubscription(this);
-}
+  /// Send a destruction notification to all Observers. This will cause all
+  /// Observers to behave as if this Subject has been permanently deleted, so it
+  /// should only be called when that behavior is desired.
+  void sendDestructionNotification() const;
 
-//==============================================================================
-void Publisher::removeSubscriber(Subscriber* _subscriber) const
-{
-  if(nullptr == _subscriber)
-    return;
+  /// Add an Observer to the list of Observers
+  void addObserver(Observer* _observer) const;
 
-  if(mSubscribers.find(_subscriber) == mSubscribers.end())
-    return;
+  /// Remove an Observer from the list of Observers
+  void removeObserver(Observer* _observer) const;
 
-  mSubscribers.erase(_subscriber);
-  _subscriber->removeSubscription(this);
-}
+  /// List of current Observers
+  mutable std::set<Observer*> mObservers;
+
+};
 
 } // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_SUBJECT_H_

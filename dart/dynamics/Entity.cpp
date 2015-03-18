@@ -53,6 +53,18 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
+    mFrameChangedSignal(),
+    mNameChangedSignal(),
+    mVizShapeAddedSignal(),
+    mTransformUpdatedSignal(),
+    mVelocityChangedSignal(),
+    mAccelerationChangedSignal(),
+    onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
     mAmQuiet(_quiet),
     mAmFrame(false)
 {
@@ -66,9 +78,15 @@ Entity::~Entity()
 }
 
 //==============================================================================
-const std::string& Entity::setName(const std::string &_name)
+const std::string& Entity::setName(const std::string& _name)
 {
+  if (mName == _name)
+    return mName;
+
+  const std::string oldName = mName;
   mName = _name;
+  mNameChangedSignal.raise(this, oldName, mName);
+
   return mName;
 }
 
@@ -82,6 +100,8 @@ const std::string& Entity::getName() const
 void Entity::addVisualizationShape(Shape* _p)
 {
   mVizShapes.push_back(_p);
+
+  mVizShapeAddedSignal.raise(this, _p);
 }
 
 //==============================================================================
@@ -209,6 +229,10 @@ bool Entity::isFrame() const
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;
+
+  // The actual transform hasn't updated yet. But when its getter is called,
+  // the transformation will be updated automatically.
+  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -221,6 +245,10 @@ bool Entity::needsTransformUpdate() const
 void Entity::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
+
+  // The actual velocity hasn't updated yet. But when its getter is called,
+  // the velocity will be updated automatically.
+  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -233,6 +261,10 @@ bool Entity::needsVelocityUpdate() const
 void Entity::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+
+  // The actual acceleration hasn't updated yet. But when its getter is called,
+  // the acceleration will be updated automatically.
+  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -244,34 +276,33 @@ bool Entity::needsAccelerationUpdate() const
 //==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if(!mAmQuiet)
+  if (mParentFrame == _newParentFrame)
+    return;
+
+  const Frame* oldParentFrame = mParentFrame;
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
-    if(mParentFrame)
+    // If this entity has a parent Frame, tell that parent that it is losing
+    // this child
+    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
+    if (it != mParentFrame->mChildEntities.end())
     {
-      // If this entity has a parent Frame, tell that parent that it is losing
-      // this child
-      EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-      if(it != mParentFrame->mChildEntities.end())
-      {
-        mParentFrame->mChildEntities.erase(it);
-        mParentFrame->processRemovedEntity(this);
-      }
+      mParentFrame->mChildEntities.erase(it);
+      mParentFrame->processRemovedEntity(this);
     }
   }
 
-  if(nullptr == _newParentFrame)
-  {
-    mParentFrame = nullptr;
-    return;
-  }
-
   mParentFrame =_newParentFrame;
-  if(!mAmQuiet)
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
     mParentFrame->mChildEntities.insert(this);
     mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
+
+  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
 //==============================================================================

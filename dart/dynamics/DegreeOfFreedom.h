@@ -40,7 +40,7 @@
 #include <string>
 #include <Eigen/Core>
 
-#include "dart/common/Publisher.h"
+#include "dart/common/Subject.h"
 
 namespace dart {
 namespace dynamics {
@@ -53,7 +53,7 @@ template<size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
-class DegreeOfFreedom : public common::Publisher
+class DegreeOfFreedom : public virtual common::Subject
 {
 public:
 

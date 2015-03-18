@@ -34,71 +34,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Publisher.h"
-#include "dart/common/Subscriber.h"
+#include "dart/common/Subject.h"
+#include "dart/common/Observer.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-Subscriber::~Subscriber()
+Observer::~Observer()
 {
-  std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
-                                          end = mSubscriptions.end();
+  std::set<const Subject*>::iterator it = mSubjects.begin(),
+                                          end = mSubjects.end();
   while( it != end )
-    (*(it++))->removeSubscriber(this);
-  // We do this tricky iterator method to deal with the fact that mSubscribers
+    (*(it++))->removeObserver(this);
+  // We do this tricky iterator method to deal with the fact that mObservers
   // will be changing as we go through the loop
 }
 
 //==============================================================================
-void Subscriber::receiveDestructionNotification(
-    const Publisher* _subscription)
+void Observer::receiveDestructionNotification(const Subject* _subject)
 {
-  removeSubscription(_subscription);
-  handleDestructionNotification(_subscription);
+  removeSubject(_subject);
+  handleDestructionNotification(_subject);
 }
 
 //==============================================================================
-void Subscriber::handleDestructionNotification(const Publisher*)
+void Observer::handleDestructionNotification(const Subject*)
 {
   // Do nothing
 }
 
 //==============================================================================
-void Subscriber::addSubscription(const Publisher* _subscription)
+void Observer::addSubject(const Subject* _subject)
 {
-  if(nullptr == _subscription)
+  if(nullptr == _subject)
     return;
 
-  if(mSubscriptions.find(_subscription) != mSubscriptions.end())
+  if(mSubjects.find(_subject) != mSubjects.end())
     return;
 
-  mSubscriptions.insert(_subscription);
-  _subscription->addSubscriber(this);
+  mSubjects.insert(_subject);
+  _subject->addObserver(this);
 }
 
 //==============================================================================
-void Subscriber::removeSubscription(const Publisher* _subscription)
+void Observer::removeSubject(const Subject* _subject)
 {
-  if(nullptr == _subscription)
+  if(nullptr == _subject)
     return;
 
-  if(mSubscriptions.find(_subscription) == mSubscriptions.end())
+  if(mSubjects.find(_subject) == mSubjects.end())
     return;
 
-  mSubscriptions.erase(_subscription);
-  _subscription->removeSubscriber(this);
+  mSubjects.erase(_subject);
+  _subject->removeObserver(this);
 }
 
 //==============================================================================
-void Subscriber::removeAllSubscriptions()
+void Observer::removeAllSubjects()
 {
-  std::set<const Publisher*>::iterator it = mSubscriptions.begin(),
-                                          end = mSubscriptions.end();
+  std::set<const Subject*>::iterator it = mSubjects.begin(),
+                                          end = mSubjects.end();
 
   while(it != end)
-    removeSubscription(*(it++));
+    removeSubject(*(it++));
 }
 
 } // namespace common

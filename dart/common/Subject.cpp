@@ -34,44 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_PUBLISHER_H_
-#define DART_COMMON_PUBLISHER_H_
-
-#include <set>
+#include "dart/common/Subject.h"
+#include "dart/common/Observer.h"
 
 namespace dart {
 namespace common {
 
-class Subscriber;
-
-class Publisher
+//==============================================================================
+Subject::~Subject()
 {
-public:
+  sendDestructionNotification();
+}
 
-  friend class Subscriber;
+//==============================================================================
+void Subject::sendDestructionNotification() const
+{
+  std::set<Observer*>::iterator sub = mObservers.begin(),
+                                  end = mObservers.end();
+  while( sub != end )
+    (*(sub++))->receiveDestructionNotification(this);
+  // We do this tricky iterator method to deal with the fact that mObservers
+  // will be changing as we go through the loop
+}
 
-  /// Destructor will notify all Subscribers that it is destructing
-  virtual ~Publisher();
+//==============================================================================
+void Subject::addObserver(Observer* _observer) const
+{
+  if(nullptr == _observer)
+    return;
 
-protected:
+  if(mObservers.find(_observer) != mObservers.end())
+    return;
 
-  /// Send a destruction notification to all Subscribers. This will cause all
-  /// Subscribers to behave as if this Publisher has been permanently
-  /// deleted, so it should only be called when that behavior is desired.
-  void sendDestructionNotification() const;
+  mObservers.insert(_observer);
+  _observer->addSubject(this);
+}
 
-  /// Add a Subscriber to the list of Subscribers
-  void addSubscriber(Subscriber* _subscriber) const;
+//==============================================================================
+void Subject::removeObserver(Observer* _observer) const
+{
+  if(nullptr == _observer)
+    return;
 
-  /// Remove a Subscriber from the list of Subscribers
-  void removeSubscriber(Subscriber* _subscriber) const;
+  if(mObservers.find(_observer) == mObservers.end())
+    return;
 
-  /// List of current Subscribers
-  mutable std::set<Subscriber*> mSubscribers;
-
-};
+  mObservers.erase(_observer);
+  _observer->removeSubject(this);
+}
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_PUBLISHER_H_

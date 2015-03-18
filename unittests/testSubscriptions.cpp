@@ -43,7 +43,7 @@
 using namespace dart;
 using namespace dynamics;
 
-TEST(Subscriptions, Notifications)
+TEST(Subjects, Notifications)
 {
   sub_ptr<Detachable> entity_ptr = new Detachable(Frame::World(), "entity", false);
   sub_ptr<SimpleFrame> frame_ptr = new SimpleFrame(Frame::World(), "frame");
@@ -66,7 +66,7 @@ Entity* getPointer(Entity* _ptr)
   return _ptr;
 }
 
-TEST(Subscriptions, ImplicitConversion)
+TEST(Subjects, ImplicitConversion)
 {
   sub_ptr<Entity> entity_ptr = new Entity(Frame::World(), "entity", false);
 
