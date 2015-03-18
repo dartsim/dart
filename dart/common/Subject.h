@@ -70,8 +70,8 @@ public:
 protected:
 
   /// Send a destruction notification to all Observers. This will cause all
-  /// Observers to behave as if this Publisher has been permanently
-  /// deleted, so it should only be called when that behavior is desired.
+  /// Observers to behave as if this Subject has been permanently deleted, so it
+  /// should only be called when that behavior is desired.
   void sendDestructionNotification() const;
 
   /// Add an Observer to the list of Observers

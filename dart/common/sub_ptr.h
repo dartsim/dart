@@ -43,10 +43,9 @@ namespace dart {
 namespace common {
 
 /// sub_ptr is a pointer to a Subject. It can be used as a pointer to any class
-/// that publicly inherits Observer. If the instance that it is pointing to
-/// is ever destroyed, the sub_ptr class will start pointing to a nullptr.
-/// You can check the return of sub_ptr::valid() to see if the pointer is still
-/// valid.
+/// that publicly inherits Subject. If the instance that it is pointing to is
+/// ever destroyed, the sub_ptr class will start pointing to a nullptr. You can
+/// check the return of sub_ptr::valid() to see if the pointer is still valid.
 template <class T>
 class sub_ptr : public Observer
 {
