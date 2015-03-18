@@ -42,6 +42,8 @@
 #include <vector>
 
 #include "dart/common/Publisher.h"
+#include "dart/common/Signal.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace renderer {
@@ -68,9 +70,20 @@ class Entity : public common::Publisher
 public:
   friend class Frame;
 
+  using EntitySignal = common::Signal<void(const Entity*)>;
+  using FrameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const Frame* _oldFrame,
+                            const Frame* _newFrame)>;
+  using NameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const std::string& _oldName,
+                            const std::string& _newName)>;
+  using VizShapeAddedSignal
+      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name,
-                  bool _quiet);
+  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
@@ -151,6 +164,49 @@ protected:
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
 
+  /// Frame changed signal
+  FrameChangedSignal mFrameChangedSignal;
+
+  /// Name changed signal
+  NameChangedSignal mNameChangedSignal;
+
+  /// Visualization added signal
+  VizShapeAddedSignal mVizShapeAddedSignal;
+
+  /// Transform changed signal
+  EntitySignal mTransformUpdatedSignal;
+
+  /// Velocity changed signal
+  EntitySignal mVelocityChangedSignal;
+
+  /// Acceleration changed signal
+  EntitySignal mAccelerationChangedSignal;
+
+public:
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for frame changed signal
+  common::SlotRegister<FrameChangedSignal> onFrameChanged;
+
+  /// Slot register for name changed signal
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
+  /// Slot register for visualization changed signal
+  common::SlotRegister<VizShapeAddedSignal> onVizShapeAdded;
+
+  /// Slot register for transform updated signal
+  common::SlotRegister<EntitySignal> onTransformUpdated;
+
+  /// Slot register for velocity updated signal
+  common::SlotRegister<EntitySignal> onVelocityChanged;
+
+  /// Slot register for acceleration updated signal
+  common::SlotRegister<EntitySignal> onAccelerationChanged;
+
+  /// \}
+
 private:
   /// Whether or not this Entity is set to be quiet
   const bool mAmQuiet;
@@ -163,8 +219,7 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(Frame* _refFrame, const std::string& _name,
-                      bool _quiet);
+  explicit Detachable(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);

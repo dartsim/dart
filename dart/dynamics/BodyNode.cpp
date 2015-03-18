@@ -424,6 +424,20 @@ const Shape* BodyNode::getVisualizationShape(size_t _index) const
 //==============================================================================
 void BodyNode::addCollisionShape(Shape* _p)
 {
+  if(nullptr == _p)
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
+           << "collision shape\n";
+    return;
+  }
+
+  if(_p->getShapeType() == Shape::LINE_SEGMENT)
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
+           << "type shape as a collision shape. This is not supported.\n";
+    return;
+  }
+
   mColShapes.push_back(_p);
 }
 
@@ -753,7 +767,7 @@ math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
 {
   if(this == _inCoordinatesOf)
     return getJacobian(_offset);
-  if(_inCoordinatesOf->isWorld())
+  else if(_inCoordinatesOf->isWorld())
     return getWorldJacobian(_offset);
 
   Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
@@ -787,6 +801,8 @@ math::LinearJacobian BodyNode::getLinearJacobian(
 {
   if(this == _inCoordinatesOf)
     return getJacobian().bottomRows<3>();
+  else if(_inCoordinatesOf->isWorld())
+    return getWorldJacobian().bottomRows<3>();
 
   return getTransform(_inCoordinatesOf).linear() * getJacobian().bottomRows<3>();
 }
@@ -811,6 +827,8 @@ math::AngularJacobian BodyNode::getAngularJacobian(
 {
   if(this == _inCoordinatesOf)
     return getJacobian().topRows<3>();
+  else if(_inCoordinatesOf->isWorld())
+    return getWorldJacobian().topRows<3>();
 
   return getTransform(_inCoordinatesOf).linear() * getJacobian().topRows<3>();
 }

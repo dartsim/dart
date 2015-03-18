@@ -474,6 +474,8 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
+
+  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -489,6 +491,8 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
+
+  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -502,11 +506,16 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
+
+  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
+  if (mParentFrame == _newParentFrame)
+    return;
+
   if(_newParentFrame)
   {
     if(_newParentFrame->descendsFrom(this))

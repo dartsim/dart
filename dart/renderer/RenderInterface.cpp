@@ -140,6 +140,10 @@ void RenderInterface::drawList(unsigned int indeX)
 {
 }
 
+void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&, const std::vector<Eigen::Vector2i>&)
+{
+}
+
 unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh)
 {
     return 0;
@@ -158,6 +162,10 @@ void RenderInterface::setPenColor(const Eigen::Vector4d& _col)
 }
 
 void RenderInterface::setPenColor(const Eigen::Vector3d& _col)
+{
+}
+
+void RenderInterface::setLineWidth(float)
 {
 }
 

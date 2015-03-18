@@ -83,18 +83,34 @@ std::string toString(char _v)
     return boost::lexical_cast<std::string>(_v);
 }
 
+//==============================================================================
 std::string toString(const Eigen::Vector2d& _v)
 {
-    Eigen::RowVector2d rowVector2d = _v.transpose();
-
-    return boost::lexical_cast<std::string>(rowVector2d);
+  return boost::lexical_cast<std::string>(_v.transpose());
 }
 
+//==============================================================================
 std::string toString(const Eigen::Vector3d& _v)
 {
-    Eigen::RowVector3d rowVector3d = _v.transpose();
+  return boost::lexical_cast<std::string>(_v.transpose());
+}
 
-    return boost::lexical_cast<std::string>(rowVector3d);
+//==============================================================================
+std::string toString(const Eigen::Vector3i& _v)
+{
+  return boost::lexical_cast<std::string>(_v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::Vector6d& _v)
+{
+  return boost::lexical_cast<std::string>(_v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::VectorXd& _v)
+{
+  return boost::lexical_cast<std::string>(_v.transpose());
 }
 
 std::string toString(const Eigen::Isometry3d& _v)
@@ -280,6 +296,40 @@ Eigen::Vector6d toVector6d(const std::string& _str)
     }
 
     return ret;
+}
+
+//==============================================================================
+Eigen::VectorXd toVectorXd(const std::string& _str)
+{
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(_str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
+  assert(pieces.size() > 0);
+
+  Eigen::VectorXd ret(pieces.size());
+
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for Eigen::VectorXd["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
+    }
+  }
+
+  return ret;
 }
 
 Eigen::Isometry3d toIsometry3d(const std::string& _str)
@@ -476,6 +526,18 @@ Eigen::Vector6d getValueVector6d(tinyxml2::XMLElement* _parentElement, const std
     std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
 
     return toVector6d(str);
+}
+
+//==============================================================================
+Eigen::VectorXd getValueVectorXd(tinyxml2::XMLElement* _parentElement,
+                                 const std::string& _name)
+{
+  assert(_parentElement != NULL);
+  assert(!_name.empty());
+
+  std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+
+  return toVectorXd(str);
 }
 
 Eigen::Vector3d getValueVec3(tinyxml2::XMLElement* _parentElement, const std::string& _name)
