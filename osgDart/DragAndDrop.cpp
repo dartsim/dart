@@ -137,14 +137,18 @@ Eigen::Vector3d DragAndDrop::getConstrainedDx() const
 Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
 {
   Eigen::Vector3d v1 = mPickedPosition - mPivot;
-  Eigen::Vector3d v2 =
-      mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition)
-      + mPickedPosition - mPivot;
+  Eigen::Vector3d v2;
 
   if(LINE_CONSTRAINT == mConstraintType || PLANE_CONSTRAINT == mConstraintType)
   {
-    v1 = v1 - mVector.dot(v1)*mVector;
-    v2 = v2 - mVector.dot(v2)*mVector;
+    v2 = mViewer->getDefaultEventHandler()->getDeltaCursor(
+          mPickedPosition, PLANE_CONSTRAINT, mVector)
+         + mPickedPosition - mPivot;
+  }
+  else
+  {
+    v2 = mViewer->getDefaultEventHandler()->getDeltaCursor(mPickedPosition)
+         + mPickedPosition - mPivot;
   }
 
   if(v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0)
