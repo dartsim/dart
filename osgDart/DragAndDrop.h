@@ -60,8 +60,8 @@ class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an osgDart environment
-class DragAndDrop : public dart::common::Publisher,
-                    public dart::common::Subscriber
+class DragAndDrop : public dart::common::Subject,
+                    public dart::common::Observer
 {
 public:
 
@@ -116,7 +116,7 @@ public:
 protected:
 
   virtual void handleDestructionNotification(
-      const dart::common::Publisher* subscription) override;
+      const dart::common::Subject* subscription) override;
 
   Viewer* mViewer;
 
@@ -194,7 +194,7 @@ public:
 protected:
 
   virtual void handleDestructionNotification(
-      const dart::common::Publisher* subscription) override;
+      const dart::common::Subject* subscription) override;
 
   dart::dynamics::Shape* mShape;
 };

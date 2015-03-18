@@ -48,6 +48,58 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 
+// We define our own constructor for aiScene, because it seems to be missing
+// from the standard assimp library
+aiScene::aiScene()
+  : mFlags(0),
+    mRootNode(nullptr),
+    mNumMeshes(0),
+    mMeshes(nullptr),
+    mNumMaterials(0),
+    mMaterials(nullptr),
+    mAnimations(nullptr),
+    mNumTextures(0),
+    mTextures(nullptr),
+    mNumLights(0),
+    mLights(nullptr),
+    mNumCameras(0),
+    mCameras(nullptr)
+{
+
+}
+
+// We define our own destructor for aiScene, because it seems to be missing
+// from the standard assimp library
+aiScene::~aiScene()
+{
+  delete mRootNode;
+
+  if(mNumMeshes && mMeshes)
+    for(size_t a=0; a<mNumMeshes; ++a)
+      delete mMeshes[a];
+  delete [] mMeshes;
+
+  if(mNumAnimations && mAnimations)
+    for(size_t a=0; a<mNumAnimations; ++a)
+      delete mAnimations[a];
+  delete [] mAnimations;
+
+  if(mNumTextures && mTextures)
+    for(size_t a=0; a<mNumTextures; ++a)
+      delete mTextures[a];
+  delete [] mTextures;
+
+  if(mNumLights && mLights)
+    for(size_t a=0; a<mNumLights; ++a)
+      delete mLights[a];
+  delete[] mLights;
+
+  if(mNumCameras && mCameras)
+    for(size_t a=0; a<mNumCameras; ++a)
+      delete mCameras[a];
+  delete [] mCameras;
+}
+
 namespace dart {
 namespace dynamics {
 

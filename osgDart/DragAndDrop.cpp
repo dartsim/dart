@@ -54,8 +54,8 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mAmObstructable(true),
     mAmMoving(false)
 {
-  addSubscription(mEntity);
-  addSubscription(mViewer);
+  addSubject(mEntity);
+  addSubject(mViewer);
 }
 
 //==============================================================================
@@ -191,7 +191,7 @@ bool DragAndDrop::isMoving() const
 
 //==============================================================================
 void DragAndDrop::handleDestructionNotification(
-    const dart::common::Publisher* subscription)
+    const dart::common::Subject* subscription)
 {
   if(mEntity == subscription)
     mViewer->disableDragAndDrop(this);
@@ -339,7 +339,7 @@ void SimpleFrameShapeDnD::update()
 
 //==============================================================================
 void SimpleFrameShapeDnD::handleDestructionNotification(
-    const dart::common::Publisher* subscription)
+    const dart::common::Subject* subscription)
 {
   DragAndDrop::handleDestructionNotification(subscription);
 

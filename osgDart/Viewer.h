@@ -43,7 +43,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/common/Publisher.h"
+#include "dart/common/Subject.h"
 
 namespace dart {
 
@@ -70,7 +70,7 @@ class SimpleFrameShapeDnD;
 class InteractiveFrame;
 class InteractiveFrameDnD;
 
-class Viewer : public osgViewer::Viewer, public dart::common::Publisher
+class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
 
