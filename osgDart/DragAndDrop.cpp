@@ -390,15 +390,13 @@ void InteractiveFrameDnD::update()
     dnd->constrainToLine(R.col(i));
   }
 
-  mDnDs[0]->update();
-
-//  bool something_moving = false;
-//  for(size_t i=0; i<3; ++i)
-//  {
-//    SimpleFrameShapeDnD* dnd = mDnDs[i];
-//    dnd->update();
-//    something_moving |= dnd->isMoving();
-//  }
+  bool something_moving = false;
+  for(size_t i=0; i<3; ++i)
+  {
+    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    dnd->update();
+    something_moving |= dnd->isMoving();
+  }
 
 //  if(something_moving)
 //  {
