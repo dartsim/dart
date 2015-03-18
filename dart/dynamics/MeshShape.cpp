@@ -48,6 +48,84 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 
+// We define our own constructor for aiScene, because it seems to be missing
+// from the standard assimp library
+aiScene::aiScene()
+  : mFlags(0),
+    mRootNode(nullptr),
+    mNumMeshes(0),
+    mMeshes(nullptr),
+    mNumMaterials(0),
+    mMaterials(nullptr),
+    mAnimations(nullptr),
+    mNumTextures(0),
+    mTextures(nullptr),
+    mNumLights(0),
+    mLights(nullptr),
+    mNumCameras(0),
+    mCameras(nullptr)
+{
+
+}
+
+// We define our own destructor for aiScene, because it seems to be missing
+// from the standard assimp library
+aiScene::~aiScene()
+{
+  delete mRootNode;
+
+  if(mNumMeshes && mMeshes)
+    for(size_t a=0; a<mNumMeshes; ++a)
+      delete mMeshes[a];
+  delete[] mMeshes;
+
+  if(mNumMaterials && mMaterials)
+    for(size_t a=0; a<mNumMaterials; ++a)
+      delete mMaterials[a];
+  delete[] mMaterials;
+
+  if(mNumAnimations && mAnimations)
+    for(size_t a=0; a<mNumAnimations; ++a)
+      delete mAnimations[a];
+  delete[] mAnimations;
+
+  if(mNumTextures && mTextures)
+    for(size_t a=0; a<mNumTextures; ++a)
+      delete mTextures[a];
+  delete[] mTextures;
+
+  if(mNumLights && mLights)
+    for(size_t a=0; a<mNumLights; ++a)
+      delete mLights[a];
+  delete[] mLights;
+
+  if(mNumCameras && mCameras)
+    for(size_t a=0; a<mNumCameras; ++a)
+      delete mCameras[a];
+  delete[] mCameras;
+}
+
+// We define our own constructor for aiMaterial, because it seems to be missing
+// from the standard assimp library
+aiMaterial::aiMaterial()
+{
+  mNumProperties = 0;
+  mNumAllocated = 5;
+  mProperties = new aiMaterialProperty*[5];
+  for(size_t i=0; i<5; ++i)
+    mProperties[i] = nullptr;
+}
+
+// We define our own destructor for aiMaterial, because it seems to be missing
+// from the standard assimp library
+aiMaterial::~aiMaterial()
+{
+  for(size_t i=0; i<mNumProperties; ++i)
+    delete mProperties[i];
+
+  delete[] mProperties;
+}
+
 namespace dart {
 namespace dynamics {
 
@@ -60,12 +138,17 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
+
+  if(nullptr == mMesh)
+    return;
+
   _updateBoundingBoxDim();
   computeVolume();
   initMeshes();
 }
 
 MeshShape::~MeshShape() {
+  delete mMesh;
 }
 
 const aiScene* MeshShape::getMesh() const {
@@ -73,8 +156,11 @@ const aiScene* MeshShape::getMesh() const {
 }
 
 void MeshShape::setMesh(const aiScene* _mesh) {
-  assert(_mesh);
   mMesh = _mesh;
+
+  if(nullptr == _mesh)
+    return;
+
   _updateBoundingBoxDim();
   computeVolume();
 }
@@ -104,6 +190,7 @@ void MeshShape::draw(renderer::RenderInterface* _ri,
                      bool _useDefaultColor) const {
   if (!_ri)
     return;
+
   if (!_useDefaultColor)
     _ri->setPenColor(_color);
   else
