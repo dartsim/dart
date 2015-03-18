@@ -45,6 +45,16 @@ namespace osgDart
 class InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
+
+  enum class Shape : int {
+
+    ARROW = 0,
+    RING,
+    PLANE,
+
+    NUM_TYPES
+  };
+
   /// Constructor
   InteractiveFrame(
     dart::dynamics::Frame* referenceFrame,
@@ -59,6 +69,17 @@ public:
   /// scales.
   void resizeStandardVisuals(double size_scale=0.2, double thickness_scale=2.0);
 
+  /// Set a shape type to be enabled or disabled. Specify the shape's coordinate
+  /// (x=0, y=1, z=2)
+  void setShapeEnabled(Shape shape, size_t coordinate, bool enabled);
+
+  /// Set a shape type to be enabled or disabled. This applies to all shapes of
+  /// that type
+  void setShapeEnabled(Shape shape, bool enabled);
+
+  /// Returns true if the specified shape of the specified coordinate is enabled
+  bool isShapeEnabled(Shape shape, size_t coordinate) const;
+
 protected:
   /// Creates the standard visualization shapes for InteractiveFrames. Overload
   /// this to create an InteractiveFrame with custom visualization shapes.
@@ -66,6 +87,9 @@ protected:
 
   /// Deletes all the visualization shapes held by the InteractiveFrame.
   void deleteAllVisualizationShapes();
+
+  /// Keeps track of which shapes are enabled
+  bool mEnabledShapes[(int)Shape::NUM_TYPES][3];
 
 };
 

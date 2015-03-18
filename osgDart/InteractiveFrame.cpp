@@ -36,6 +36,7 @@
 
 #include "osgDart/InteractiveFrame.h"
 #include "dart/dynamics/MeshShape.h"
+#include "dart/common/Console.h"
 
 aiScene::aiScene()
   : mFlags(0),
@@ -111,6 +112,43 @@ void InteractiveFrame::resizeStandardVisuals(double size_scale,
 {
   deleteAllVisualizationShapes();
   createStandardVisualizationShapes(size_scale, thickness_scale);
+}
+
+//==============================================================================
+void InteractiveFrame::setShapeEnabled(Shape shape, size_t coordinate,
+                                       bool enabled)
+{
+  if(coordinate >= 3 || shape >= Shape::NUM_TYPES)
+  {
+    dtwarn << "[InteractiveFrame::setShapeEnabled] Attempting to ";
+
+    if(enabled) dtwarn << "enable ";
+    else dtwarn << "disable ";
+
+    dtwarn << "shape type (" << (int)shape
+           << ") of coordinate (" << coordinate << "), but the max values for "
+           << "those are " << (int)Shape::NUM_TYPES-1 << " and 3.\n";
+    return;
+  }
+
+  mEnabledShapes[(int)shape][coordinate] = enabled;
+  mVizShapes[3*(int)shape + coordinate]->setHidden(!enabled);
+}
+
+//==============================================================================
+void InteractiveFrame::setShapeEnabled(Shape shape, bool enabled)
+{
+  for(size_t i=0; i<3; ++i)
+    setShapeEnabled(shape, i, enabled);
+}
+
+//==============================================================================
+bool InteractiveFrame::isShapeEnabled(Shape shape, size_t coordinate) const
+{
+  if(coordinate >= 3 || shape >= Shape::NUM_TYPES)
+    return false;
+
+  return mEnabledShapes[(int)shape][coordinate];
 }
 
 //==============================================================================
