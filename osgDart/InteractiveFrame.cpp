@@ -139,88 +139,130 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   {
     aiMesh* mesh = new aiMesh;
 
-    size_t numVertices = 4*resolution;
-    size_t R = 2*resolution;
+    size_t numVertices = 8*resolution;
+    size_t R = 4*resolution;
     mesh->mNumVertices = numVertices;
     mesh->mVertices = new aiVector3D[numVertices];
     mesh->mNormals = new aiVector3D[numVertices];
     mesh->mColors[0] = new aiColor4D[numVertices];
     aiVector3D vertex;
     aiVector3D normal;
-    aiColor4D color;
-    for(size_t i=0; i<resolution; ++i)
+    aiColor4D color1;
+    aiColor4D color2;
+    for(size_t j=0; j<2; ++j)
     {
-      double theta = (double)(i)/(double)(resolution)*2*M_PI;
+      for(size_t i=0; i<resolution; ++i)
+      {
+        double theta = (double)(i)/(double)(resolution)*2*M_PI;
 
-      double x = 0;
-      double y = ring_inner_scale*cos(theta);
-      double z = ring_inner_scale*sin(theta);
-      vertex.Set(x, y, z);
-      mesh->mVertices[2*i] = vertex;
+        double x = 0;
+        double y = ring_inner_scale*cos(theta);
+        double z = ring_inner_scale*sin(theta);
+        vertex.Set(x, y, z);
+        mesh->mVertices[4*i+j] = vertex; // Front
 
-      mesh->mVertices[2*i+R] = vertex;
+        mesh->mVertices[4*i+j+R] = vertex; // Back
 
-      y = ring_outer_scale*cos(theta);
-      z = ring_outer_scale*sin(theta);
-      vertex.Set(x, y, z);
-      mesh->mVertices[2*i+1] = vertex;
+        y = ring_outer_scale*cos(theta);
+        z = ring_outer_scale*sin(theta);
+        vertex.Set(x, y, z);
+        mesh->mVertices[4*i+2+j] = vertex; // Front
 
-      mesh->mVertices[2*i+1+R] = vertex;
+        mesh->mVertices[4*i+2+j+R] = vertex; // Back
 
-      normal.Set(1.0f, 0.0f, 0.0f);
-      mesh->mNormals[2*i] = normal;
-      mesh->mNormals[2*i+1] = normal;
+        normal.Set(1.0f, 0.0f, 0.0f);
+        mesh->mNormals[4*i+j] = normal;
+        mesh->mNormals[4*i+2+j] = normal;
 
-      normal.Set(-1.0f, 0.0f, 0.0f);
-      mesh->mNormals[2*i+R] = normal;
-      mesh->mNormals[2*i+1+R] = normal;
+        normal.Set(-1.0f, 0.0f, 0.0f);
+        mesh->mNormals[4*i+j+R] = normal;
+        mesh->mNormals[4*i+2+j+R] = normal;
 
-      for(size_t c=0; c<3; ++c)
-        color[c] = 0.0;
-      color[r] = 1.0;
-      color[3] = 1.0;
-      mesh->mColors[0][2*i] = color;
-      mesh->mColors[0][2*i+1] = color;
-      mesh->mColors[0][2*i+R] = color;
-      mesh->mColors[0][2*i+1+R] = color;
+        for(size_t c=0; c<3; ++c)
+        {
+          color1[c] = 0.0;
+          color2[c] = 0.0;
+        }
+        color1[r] = 1.0;
+        color2[r] = 0.6;
+        color1[3] = 0.8;
+        color2[3] = 0.8;
+        mesh->mColors[0][4*i+j] = ((4*i+j)%2 == 0)? color1 : color2;
+        mesh->mColors[0][4*i+j+R] = ((4*i+j+R)%2 == 0)? color1 : color2;
+        mesh->mColors[0][4*i+2+j] = ((4*i+2+j)%2 == 0)? color1 : color2;
+        mesh->mColors[0][4*i+2+j+R] = ((4*i+2+j+R)%2 == 0)? color1 : color2;
+      }
     }
 
-    size_t numFaces = 2*numVertices;
+    size_t numFaces = 4*resolution;
+    size_t F = 2*resolution;
+    size_t H = resolution/2;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for(size_t i=0; i<resolution; ++i)
+    for(size_t i=0; i<H; ++i)
     {
       // Front
       aiFace* face = &mesh->mFaces[2*i];
       face->mNumIndices = 3;
       face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 2*i;
-      face->mIndices[1] = 2*i+1;
-      face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
+      face->mIndices[0] = 8*i;
+      face->mIndices[1] = 8*i+2;
+      face->mIndices[2] = (i+1 < H)? 8*i+6 : 2;
 
-      // Back
-      face = &mesh->mFaces[2*i+R];
+      face = &mesh->mFaces[2*i+2*H];
       face->mNumIndices = 3;
       face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 2*i+R;
-      face->mIndices[1] = (i+1 < resolution)? 2*i+3+R : 1+R;
-      face->mIndices[2] = 2*i+1+R;
+      face->mIndices[0] = 8*i;
+      face->mIndices[1] = (i+1 < H)? 8*i+6 : 2;
+      face->mIndices[2] = (i+1 < H)? 8*i+4 : 0;
+
+
+      // Back
+      face = &mesh->mFaces[2*i+F];
+      face->mNumIndices = 3;
+      face->mIndices = new unsigned int[3];
+      face->mIndices[0] = 8*i+R;
+      face->mIndices[1] = (i+1 < H)? 8*i+6+R : 2+R;
+      face->mIndices[2] = 8*i+2+R;
+
+      face = &mesh->mFaces[2*i+2*H+F];
+      face->mNumIndices = 3;
+      face->mIndices = new unsigned int[3];
+      face->mIndices[0] = 8*i+R;
+      face->mIndices[1] = (i+1 < H)? 8*i+4+R : 0;
+      face->mIndices[2] = (i+1 < H)? 8*i+6+R : 2;
+
 
       // Front
       face = &mesh->mFaces[2*i+1];
       face->mNumIndices = 3;
       face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 2*i;
-      face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
-      face->mIndices[2] = (i+1 < resolution)? 2*i+2 : 0;
+      face->mIndices[0] = 8*i+5;
+      face->mIndices[1] = 8*i+7;
+      face->mIndices[2] = (i+1 < H)? 8*i+11 : 3;
 
-      // Back
-      face = &mesh->mFaces[2*i+1+R];
+      face = &mesh->mFaces[2*i+1+2*H];
       face->mNumIndices = 3;
       face->mIndices = new unsigned int[3];
-      face->mIndices[0] = 2*i+R;
-      face->mIndices[1] = (i+1 < resolution)? 2*i+2+R : 0+R;
-      face->mIndices[2] = (i+1 < resolution)? 2*i+3+R : 1+R;
+      face->mIndices[0] = 8*i+5;
+      face->mIndices[1] = (i+1 < H)? 8*i+11 : 3;
+      face->mIndices[2] = (i+1 < H)? 8*i+9  : 1;
+
+
+      // Back
+      face = &mesh->mFaces[2*i+1+F];
+      face->mNumIndices = 3;
+      face->mIndices = new unsigned int[3];
+      face->mIndices[0] = 8*i+5+R;
+      face->mIndices[1] = (i+1 < H)? 8*i+11+R : 3+R;
+      face->mIndices[2] = 8*i+7+R;
+
+      face = &mesh->mFaces[2*i+1+2*H+F];
+      face->mNumIndices = 3;
+      face->mIndices = new unsigned int[3];
+      face->mIndices[0] = 8*i+5+R;
+      face->mIndices[1] = (i+1 < H)? 8*i+9+R  : 1+R;
+      face->mIndices[2] = (i+1 < H)? 8*i+11+R : 3+R;
     }
 
     aiNode* node = new aiNode;
