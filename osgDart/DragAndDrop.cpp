@@ -374,6 +374,9 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
 
     dnd = mDnDs[i+3];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_ON);
+
+    dnd = mDnDs[i+6];
+    dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
   }
 }
 
@@ -404,6 +407,9 @@ void InteractiveFrameDnD::update()
 
       dnd = mDnDs[i+3];
       dnd->constrainToLine(R.col(i));
+
+      dnd = mDnDs[i+6];
+      dnd->constrainToPlane(R.col(i));
     }
   }
 

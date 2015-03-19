@@ -112,6 +112,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   size_t resolution = 100;
   double ring_outer_scale = 0.6*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
+  double plane_corner = 0.9*ring_inner_scale;
 
   // Create translation arrows
   for(size_t a=0; a<3; ++a)
@@ -270,7 +271,6 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     node->mMeshes = new unsigned int[1];
     node->mMeshes[0] = 0;
 
-
     aiScene* scene = new aiScene;
     scene->mNumMeshes = 1;
     scene->mMeshes = new aiMesh*[1];
@@ -284,6 +284,92 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     if( r == 1 )
       tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,0,1)));
     else if( r == 2 )
+      tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,1,0)));
+
+    shape->setLocalTransform(tf);
+
+    addVisualizationShape(shape);
+  }
+
+  // Create translation planes
+  for(size_t p=0; p<3; ++p)
+  {
+    aiMesh* mesh = new aiMesh;
+
+    size_t numVertices = 8;
+    mesh->mNumVertices = numVertices;
+    mesh->mVertices = new aiVector3D[numVertices];
+    mesh->mNormals = new aiVector3D[numVertices];
+    mesh->mColors[0] = new aiColor4D[numVertices];
+
+    double L = plane_corner/sqrt(2);
+    for(size_t i=0; i<2; ++i)
+    {
+      mesh->mVertices[4*i+0] = aiVector3D(0, -L, -L);
+      mesh->mVertices[4*i+1] = aiVector3D(0,  L, -L);
+      mesh->mVertices[4*i+2] = aiVector3D(0, -L,  L);
+      mesh->mVertices[4*i+3] = aiVector3D(0,  L,  L);
+    }
+
+    for(size_t i=0; i<4; ++i)
+    {
+      mesh->mNormals[i] = aiVector3D(1, 0, 0);
+      mesh->mNormals[i+4] = aiVector3D(-1, 0, 0);
+    }
+
+    aiColor4D color(0.1, 0.1, 0.1, 0.7);
+    color[p] = 0.9;
+    for(size_t i=0; i<numVertices; ++i)
+      mesh->mColors[0][i] = color;
+
+    size_t numFaces = 4;
+    mesh->mNumFaces = numFaces;
+    mesh->mFaces = new aiFace[numFaces];
+    for(size_t i=0; i<numFaces; ++i)
+    {
+      aiFace* face = &mesh->mFaces[i];
+      face->mNumIndices = 3;
+      face->mIndices = new unsigned int[3];
+    }
+
+    aiFace* face = &mesh->mFaces[0];
+    face->mIndices[0] = 0;
+    face->mIndices[1] = 1;
+    face->mIndices[2] = 3;
+
+    face = &mesh->mFaces[1];
+    face->mIndices[0] = 0;
+    face->mIndices[1] = 3;
+    face->mIndices[2] = 2;
+
+    face = &mesh->mFaces[2];
+    face->mIndices[0] = 4;
+    face->mIndices[1] = 7;
+    face->mIndices[2] = 5;
+
+    face = &mesh->mFaces[3];
+    face->mIndices[0] = 4;
+    face->mIndices[1] = 6;
+    face->mIndices[2] = 7;
+
+    aiNode* node = new aiNode;
+    node->mNumMeshes = 1;
+    node->mMeshes = new unsigned int[1];
+    node->mMeshes[0] = 0;
+
+    aiScene* scene = new aiScene;
+    scene->mNumMeshes = 1;
+    scene->mMeshes = new aiMesh*[1];
+    scene->mMeshes[0] = mesh;
+    scene->mRootNode = node;
+
+    dart::dynamics::MeshShape* shape =
+        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene);
+
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    if( p == 1 )
+      tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,0,1)));
+    else if( p == 2 )
       tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,1,0)));
 
     shape->setLocalTransform(tf);
