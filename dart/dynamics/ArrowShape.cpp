@@ -307,6 +307,7 @@ void ArrowShape::instantiate(size_t resolution)
   aiFace* face;
   for(size_t i=0; i<resolution; ++i)
   {
+    // Back of head
     face = &mesh->mFaces[3*i];
     face->mIndices[0] = 2*i;
     face->mIndices[1] = 2*i+1;
@@ -317,10 +318,11 @@ void ArrowShape::instantiate(size_t resolution)
     face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
     face->mIndices[2] = (i+1 < resolution)? 2*i+2 : 0;
 
+    // Tip
     face = &mesh->mFaces[3*i+2];
     face->mIndices[0] = 2*i+1;
-    face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
-    face->mIndices[2] = 2*resolution;
+    face->mIndices[1] = 2*resolution;
+    face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
   }
 
   mesh = scene->mMeshes[1];
@@ -328,18 +330,19 @@ void ArrowShape::instantiate(size_t resolution)
   {
     face = &mesh->mFaces[2*i];
     face->mIndices[0] = 2*i;
-    face->mIndices[1] = 2*i+1;
-    face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
+    face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
+    face->mIndices[2] = 2*i+1;
 
     face = &mesh->mFaces[2*i+1];
     face->mIndices[0] = 2*i;
-    face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
-    face->mIndices[2] = (i+1 < resolution)? 2*i+2 : 0;
+    face->mIndices[1] = (i+1 < resolution)? 2*i+2 : 0;
+    face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
   }
 
   mesh = scene->mMeshes[2];
   for(size_t i=0; i<resolution; ++i)
   {
+    // Back of head
     face = &mesh->mFaces[3*i];
     face->mIndices[0] = 2*i;
     face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
@@ -350,10 +353,11 @@ void ArrowShape::instantiate(size_t resolution)
     face->mIndices[1] = (i+1 < resolution)? 2*i+2 : 0;
     face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
 
+    // Tip
     face = &mesh->mFaces[3*i+2];
     face->mIndices[0] = 2*i+1;
-    face->mIndices[1] = 2*resolution;
-    face->mIndices[2] = (i+1 < resolution)? 2*i+3 : 1;
+    face->mIndices[1] = (i+1 < resolution)? 2*i+3 : 1;
+    face->mIndices[2] = 2*resolution;
   }
 
   mMesh = scene;
