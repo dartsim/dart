@@ -39,6 +39,12 @@
 
 #include "dart/dynamics/SimpleFrame.h"
 
+namespace dart {
+namespace dynamics {
+class MeshShape;
+} // namespace dynamics
+} // namespace dart
+
 namespace osgDart
 {
 
@@ -80,6 +86,26 @@ public:
   /// Returns true if the specified shape of the specified coordinate is enabled
   bool isShapeEnabled(Shape shape, size_t coordinate) const;
 
+  /// Set the alpha of the specified shape
+  void setShapeAlpha(Shape shape, size_t coordinate, double alpha);
+
+  /// Reset the alpha of the specified shape back to its default value
+  void resetShapeAlpha(Shape shape, size_t coordinate);
+
+  /// Set the default alpha for the specified shape. This alpha value will be
+  /// applied immediately if reset is true.
+  void setDefaultAlpha(Shape shape, size_t coordinate,
+                       double alpha, bool reset=true);
+
+  /// Get the default alpha setting for the specified shape
+  double getDefaultAlpha(Shape shape, size_t coordinate) const;
+
+  /// Get the abstract Shape that corresponds to the specified Shape enumeration
+  dart::dynamics::Shape* getShape(Shape shape, size_t coordinate) const;
+
+  /// Get the MeshShape that corresponds to the specified Shape enumeration
+  dart::dynamics::MeshShape* getMeshShape(Shape shape, size_t coordinate) const;
+
 protected:
   /// Creates the standard visualization shapes for InteractiveFrames. Overload
   /// this to create an InteractiveFrame with custom visualization shapes.
@@ -90,6 +116,8 @@ protected:
 
   /// Keeps track of which shapes are enabled
   bool mEnabledShapes[(int)Shape::NUM_TYPES][3];
+
+  double mDefaultAlphas[(int)Shape::NUM_TYPES][3];
 
 };
 

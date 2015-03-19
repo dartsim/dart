@@ -50,6 +50,16 @@ InteractiveFrame::InteractiveFrame(
   : Entity(referenceFrame, name, false),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
+  for(size_t j=0; j<3; ++j)
+  {
+    for(size_t i=0; i<(size_t)Shape::NUM_TYPES; ++i)
+      mEnabledShapes[i][j] = true;
+
+    mDefaultAlphas[(size_t)Shape::ARROW][j] = 0.8;
+    mDefaultAlphas[(size_t)Shape::RING][j] = 0.8;
+    mDefaultAlphas[(size_t)Shape::PLANE][j] = 0.7;
+  }
+
   resizeStandardVisuals(size_scale, thickness_scale);
 }
 
@@ -105,6 +115,77 @@ bool InteractiveFrame::isShapeEnabled(Shape shape, size_t coordinate) const
 }
 
 //==============================================================================
+void InteractiveFrame::setShapeAlpha(Shape shape, size_t coordinate,
+                                     double alpha)
+{
+  dart::dynamics::MeshShape* ms = getMeshShape(shape, coordinate);
+  if(!ms)
+    return;
+
+  const aiScene* scene = ms->getMesh();
+
+  for(size_t i=0; i<scene->mNumMeshes; ++i)
+  {
+    aiMesh* mesh = scene->mMeshes[i];
+    for(size_t j=0; j<mesh->mNumVertices; ++j)
+    {
+      mesh->mColors[j][3] = alpha;
+    }
+  }
+}
+
+//==============================================================================
+void InteractiveFrame::resetShapeAlpha(Shape shape, size_t coordinate)
+{
+  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
+    return;
+
+  setShapeAlpha(shape, coordinate, mDefaultAlphas[(size_t)shape][coordinate]);
+}
+
+//==============================================================================
+void InteractiveFrame::setDefaultAlpha(Shape shape, size_t coordinate,
+                                       double alpha, bool reset)
+{
+  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
+    return;
+
+  mDefaultAlphas[(size_t)shape][coordinate] = alpha;
+  if(reset)
+    resetShapeAlpha(shape, coordinate);
+}
+
+//==============================================================================
+double InteractiveFrame::getDefaultAlpha(Shape shape, size_t coordinate) const
+{
+  if(shape >= Shape::NUM_TYPES || coordinate >=3)
+    return 0;
+
+  return mDefaultAlphas[(size_t)shape][coordinate];
+}
+
+//==============================================================================
+dart::dynamics::Shape* InteractiveFrame::getShape(
+    Shape shape, size_t coordinate) const
+{
+  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
+    return nullptr;
+
+  return mVizShapes[(size_t)(shape)*3+coordinate];
+}
+
+//==============================================================================
+dart::dynamics::MeshShape* InteractiveFrame::getMeshShape(
+    Shape shape, size_t coordinate) const
+{
+  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
+    return nullptr;
+
+  return dynamic_cast<dart::dynamics::MeshShape*>(
+        mVizShapes[(size_t)(shape)*3+coordinate]);
+}
+
+//==============================================================================
 void InteractiveFrame::createStandardVisualizationShapes(double size,
                                                          double thickness)
 {
@@ -124,7 +205,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     Eigen::Vector4d color(Eigen::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
-    color[3] = 0.8;
+    color[3] = mDefaultAlphas[(size_t)Shape::ARROW][a];
 
     dart::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness*size*0.025;
@@ -186,8 +267,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
         }
         color1[r] = 1.0;
         color2[r] = 0.6;
-        color1[3] = 0.8;
-        color2[3] = 0.8;
+        color1[3] = mDefaultAlphas[(size_t)Shape::RING][r];
+        color2[3] = mDefaultAlphas[(size_t)Shape::RING][r];
         mesh->mColors[0][4*i+j] = ((4*i+j)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+j+R] = ((4*i+j+R)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+2+j] = ((4*i+2+j)%2 == 0)? color1 : color2;
@@ -317,7 +398,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
       mesh->mNormals[i+4] = aiVector3D(-1, 0, 0);
     }
 
-    aiColor4D color(0.1, 0.1, 0.1, 0.7);
+    aiColor4D color(0.1, 0.1, 0.1, mDefaultAlphas[(size_t)Shape::PLANE][p]);
     color[p] = 0.9;
     for(size_t i=0; i<numVertices; ++i)
       mesh->mColors[0][i] = color;
@@ -375,6 +456,12 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     shape->setLocalTransform(tf);
 
     addVisualizationShape(shape);
+  }
+
+  for(size_t i=0; i<mVizShapes.size(); ++i)
+  {
+    dart::dynamics::Shape* shape = mVizShapes[i];
+    shape->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
   }
 }
 

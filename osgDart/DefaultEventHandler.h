@@ -44,6 +44,8 @@
 
 #include <osgGA/GUIEventHandler>
 
+#include "dart/common/Subject.h"
+
 namespace dart {
 namespace dynamics {
 class Entity;
@@ -92,7 +94,8 @@ enum ConstraintType {
   NUM_CONSTRAINT_TYPES
 };
 
-class DefaultEventHandler : public osgGA::GUIEventHandler
+class DefaultEventHandler : public osgGA::GUIEventHandler,
+                            public virtual dart::common::Subject
 {
 public:
 

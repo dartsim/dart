@@ -38,9 +38,10 @@
 #include "osgDart/DefaultEventHandler.h"
 #include "osgDart/Viewer.h"
 #include "osgDart/InteractiveFrame.h"
+#include "osgDart/MouseEventHandler.h"
 
 #include "dart/dynamics/SimpleFrame.h"
-
+#include "dart/dynamics/MeshShape.h"
 
 #include <iostream>
 
@@ -354,6 +355,116 @@ void SimpleFrameShapeDnD::handleDestructionNotification(
   if(mShape == subscription)
     mViewer->disableDragAndDrop(this);
 }
+
+//==============================================================================
+class InteractiveFrameMouseEvent : public MouseEventHandler
+{
+public:
+
+  InteractiveFrameMouseEvent(InteractiveFrame* frame) :
+    mFrame(frame), mHighlighting(false)
+  {
+    addSubject(mFrame);
+  }
+
+  void update() override
+  {
+    if(!mFrame)
+      return;
+
+    if(!mEventHandler)
+      return;
+
+    if(mHighlighting)
+    {
+      MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
+      bool stop_highlighting = false;
+
+      if(BUTTON_NOTHING != event)
+        stop_highlighting = true;
+      else
+      {
+        const std::vector<PickInfo>& picks = mEventHandler->getMovePicks();
+        if(picks.size() > 0)
+        {
+          const PickInfo& pick = picks[0];
+          if(pick.shape != mFrame->getMeshShape(
+               (InteractiveFrame::Shape)mShape, mCoordinate))
+            stop_highlighting = true;
+        }
+
+        if(stop_highlighting)
+        {
+          for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+            for(size_t c=0; c<3; ++c)
+              mFrame->resetShapeAlpha((InteractiveFrame::Shape)s, c);
+        }
+      }
+    }
+    else
+    {
+      MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
+
+      if(BUTTON_NOTHING != event)
+        return;
+
+      const std::vector<PickInfo> picks = mEventHandler->getMovePicks();
+      if(picks.size() == 0)
+        return;
+
+      const PickInfo& pick = picks[0];
+
+      for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+      {
+        for(size_t c=0; c<3; ++c)
+        {
+          if(mFrame->getShape((InteractiveFrame::Shape)s, c) == pick.shape)
+          {
+            mHighlighting = true;
+            mShape = s;
+            mCoordinate = c;
+            break;
+          }
+        }
+        if(mHighlighting)
+          break;
+      }
+
+      if(mHighlighting)
+      {
+        for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+        {
+          for(size_t c=0; c<3; ++c)
+          {
+            if(s != mShape && c != mCoordinate)
+              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 0.3);
+            else
+              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 1.0);
+          }
+        }
+      }
+    }
+  }
+
+protected:
+
+  void handleDestructionNotification(const Subject* _subject) override
+  {
+    if(_subject == mFrame)
+    {
+      delete this;
+      return;
+    }
+
+    MouseEventHandler::handleDestructionNotification(_subject);
+  }
+
+  InteractiveFrame* mFrame;
+
+  bool mHighlighting;
+  size_t mShape;
+  size_t mCoordinate;
+};
 
 //==============================================================================
 InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
