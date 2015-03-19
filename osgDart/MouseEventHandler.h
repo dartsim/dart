@@ -40,6 +40,8 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Observer.h"
 
+#include "osgDart/DefaultEventHandler.h"
+
 namespace osgDart
 {
 

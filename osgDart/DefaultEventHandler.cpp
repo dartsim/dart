@@ -37,6 +37,7 @@
 #include <osgGA/GUIEventAdapter>
 
 #include "osgDart/DefaultEventHandler.h"
+#include "osgDart/MouseEventHandler.h"
 #include "osgDart/Viewer.h"
 #include "osgDart/render/ShapeNode.h"
 #include "osgDart/EntityNode.h"
@@ -241,6 +242,21 @@ void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
 }
 
 //==============================================================================
+void DefaultEventHandler::addMouseEventHandler(MouseEventHandler* handler)
+{
+  mMouseEventHandlers.insert(handler);
+  handler->mEventHandler = this;
+  handler->addSubject(this);
+}
+
+//==============================================================================
+const std::set<MouseEventHandler*>&
+DefaultEventHandler::getMouseEventHandlers() const
+{
+  return mMouseEventHandlers;
+}
+
+//==============================================================================
 static bool wasActive(MouseButtonEvent event)
 {
   return ( (event == BUTTON_PUSH) || (event == BUTTON_DRAG) );
@@ -333,6 +349,8 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
     {
       if(!mSuppressMovePicks)
         pick(mMovePicks, ea);
+
+      triggerMouseEventHandlers();
       break;
     }
 
@@ -344,6 +362,8 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
       eventPick(ea);
 
       mViewer->updateDragAndDrops();
+
+      triggerMouseEventHandlers();
       break;
 
     default:
@@ -351,6 +371,15 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
   }
 
   return false;
+}
+
+//==============================================================================
+void DefaultEventHandler::triggerMouseEventHandlers()
+{
+  for(MouseEventHandler* h : mMouseEventHandlers)
+  {
+    h->update();
+  }
 }
 
 //==============================================================================
@@ -397,6 +426,17 @@ void DefaultEventHandler::clearButtonEvents()
 {
   for(size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
     mLastButtonEvent[i] = BUTTON_NOTHING;
+}
+
+//==============================================================================
+void DefaultEventHandler::handleDestructionNotification(
+    const dart::common::Subject* _subject)
+{
+  MouseEventHandler* meh = const_cast<MouseEventHandler*>(
+        dynamic_cast<const MouseEventHandler*>(_subject));
+  std::set<MouseEventHandler*>::iterator it = mMouseEventHandlers.find(meh);
+  if(it != mMouseEventHandlers.end())
+    mMouseEventHandlers.erase(it);
 }
 
 } // namespace osgDart

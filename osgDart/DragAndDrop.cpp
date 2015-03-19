@@ -380,9 +380,7 @@ public:
       MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
       bool stop_highlighting = false;
 
-      if(BUTTON_NOTHING != event)
-        stop_highlighting = true;
-      else
+      if(BUTTON_RELEASE == event || BUTTON_NOTHING == event)
       {
         const std::vector<PickInfo>& picks = mEventHandler->getMovePicks();
         if(picks.size() > 0)
@@ -392,20 +390,23 @@ public:
                (InteractiveFrame::Shape)mShape, mCoordinate))
             stop_highlighting = true;
         }
+        else
+          stop_highlighting = true;
+      }
 
-        if(stop_highlighting)
-        {
-          for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
-            for(size_t c=0; c<3; ++c)
-              mFrame->resetShapeAlpha((InteractiveFrame::Shape)s, c);
-        }
+      if(stop_highlighting)
+      {
+        for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+          for(size_t c=0; c<3; ++c)
+            mFrame->resetShapeAlpha((InteractiveFrame::Shape)s, c);
+        mHighlighting = false;
       }
     }
     else
     {
       MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
 
-      if(BUTTON_NOTHING != event)
+      if(BUTTON_NOTHING != event && BUTTON_RELEASE != event)
         return;
 
       const std::vector<PickInfo> picks = mEventHandler->getMovePicks();
@@ -436,10 +437,10 @@ public:
         {
           for(size_t c=0; c<3; ++c)
           {
-            if(s != mShape && c != mCoordinate)
-              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 0.3);
-            else
+            if(s == mShape && c == mCoordinate)
               mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 1.0);
+            else
+              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 0.3);
           }
         }
       }
@@ -472,6 +473,9 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
   : DragAndDrop(viewer, frame),
     mInteractiveFrame(frame)
 {
+  mViewer->getDefaultEventHandler()->addMouseEventHandler(
+        new InteractiveFrameMouseEvent(frame));
+
   const std::vector<dart::dynamics::Shape*> shapes =
       frame->getVisualizationShapes();
 

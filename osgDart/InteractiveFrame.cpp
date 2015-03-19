@@ -129,7 +129,7 @@ void InteractiveFrame::setShapeAlpha(Shape shape, size_t coordinate,
     aiMesh* mesh = scene->mMeshes[i];
     for(size_t j=0; j<mesh->mNumVertices; ++j)
     {
-      mesh->mColors[j][3] = alpha;
+      mesh->mColors[0][j][3] = alpha;
     }
   }
 }
@@ -190,7 +190,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
                                                          double thickness)
 {
   thickness = std::min(10.0, std::max(0.0, thickness));
-  size_t resolution = 100;
+  size_t resolution = 72;
   double ring_outer_scale = 0.6*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
   double plane_corner = 0.9*ring_inner_scale;

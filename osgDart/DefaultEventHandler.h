@@ -45,6 +45,7 @@
 #include <osgGA/GUIEventHandler>
 
 #include "dart/common/Subject.h"
+#include "dart/common/Observer.h"
 
 namespace dart {
 namespace dynamics {
@@ -94,8 +95,11 @@ enum ConstraintType {
   NUM_CONSTRAINT_TYPES
 };
 
+class MouseEventHandler;
+
 class DefaultEventHandler : public osgGA::GUIEventHandler,
-                            public virtual dart::common::Subject
+                            public virtual dart::common::Subject,
+                            public virtual dart::common::Observer
 {
 public:
 
@@ -165,11 +169,24 @@ public:
   void pick(std::vector<PickInfo>& infoVector,
             const osgGA::GUIEventAdapter& ea);
 
+  /// Add a MouseEventHandler that will get invoked whenever a mouse event
+  /// occurs. You never need to worry about removing a MouseEventHandler from a
+  /// DefaultEventHandler, because it will get removed automatically upon
+  /// deletion
+  void addMouseEventHandler(MouseEventHandler* handler);
+
+  /// Get the list of MouseEventHandlers that are currently held by this
+  /// DefaultEventHandler
+  const std::set<MouseEventHandler*>& getMouseEventHandlers() const;
+
   /// Handle incoming user input
   virtual bool handle(const osgGA::GUIEventAdapter& ea,
                       osgGA::GUIActionAdapter&) override;
 
 protected:
+
+  /// Calls update on all MouseEventHandlers
+  void triggerMouseEventHandlers();
 
   /// Gather current picks and assign them to the latest event
   void eventPick(const osgGA::GUIEventAdapter& ea);
@@ -177,8 +194,14 @@ protected:
   /// Clear out the current button events
   void clearButtonEvents();
 
+  virtual void handleDestructionNotification(
+      const dart::common::Subject* _subject) override;
+
   /// osgDart::Viewer that this event handler is tied to
   Viewer* mViewer;
+
+  /// Set of MouseEventHandlers that are tied to this DefaultEventHandler
+  std::set<MouseEventHandler*> mMouseEventHandlers;
 
   /// The objects that were under the cursor during the last button event
   std::vector<PickInfo> mButtonPicks[NUM_MOUSE_BUTTONS][BUTTON_NOTHING];
