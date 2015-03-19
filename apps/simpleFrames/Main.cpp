@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
   arrow.addVisualizationShape(new ArrowShape(Eigen::Vector3d(0.1,-0.1, 0.0),
                                              Eigen::Vector3d(0.1, 0.0, 0.0),
                                              ArrowShape::Properties(0.002, 1.8),
-                                             Eigen::Vector3d(1.0, 0.5, 0.5)));
+                                             Eigen::Vector4d(1.0, 0.5, 0.5, 1)));
   myWorld.addEntity(&arrow);
 
   // CAREFUL: For an Entity (or Frame) that gets added to the world to be

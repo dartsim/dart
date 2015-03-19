@@ -158,6 +158,14 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
   v2.normalize();
 
   Eigen::Vector3d axis = v1.cross(v2);
+  if(LINE_CONSTRAINT == mConstraintType || PLANE_CONSTRAINT == mConstraintType)
+  {
+    if(axis.dot(mVector) == 0)
+      return Eigen::AngleAxisd(0, Eigen::Vector3d(1,0,0));
+
+    axis = axis.dot(mVector)*mVector;
+  }
+
   axis.normalize();
 
   return Eigen::AngleAxisd(acos(v1.dot(v2)), axis);
@@ -386,22 +394,25 @@ InteractiveFrame* InteractiveFrameDnD::getFrame() const
 //==============================================================================
 void InteractiveFrameDnD::update()
 {
-  for(size_t i=0; i<3; ++i)
+  if(!mAmMoving)
   {
-    SimpleFrameShapeDnD* dnd = mDnDs[i];
-    Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
-    dnd->constrainToLine(R.col(i));
+    for(size_t i=0; i<3; ++i)
+    {
+      SimpleFrameShapeDnD* dnd = mDnDs[i];
+      Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
+      dnd->constrainToLine(R.col(i));
 
-    dnd = mDnDs[i+3];
-    dnd->constrainToLine(R.col(i));
+      dnd = mDnDs[i+3];
+      dnd->constrainToLine(R.col(i));
+    }
   }
 
-  bool something_moving = false;
+  mAmMoving = false;
   for(size_t i=0; i<mDnDs.size(); ++i)
   {
     SimpleFrameShapeDnD* dnd = mDnDs[i];
     dnd->update();
-    something_moving |= dnd->isMoving();
+    mAmMoving |= dnd->isMoving();
   }
 
 //  if(something_moving)

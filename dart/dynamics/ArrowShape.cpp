@@ -58,7 +58,7 @@ ArrowShape::Properties::Properties(double _radius, double _headRadiusScale,
 ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
                        const Eigen::Vector3d& _head,
                        const Properties& _properties,
-                       const Eigen::Vector3d& _color,
+                       const Eigen::Vector4d& _color,
                        size_t _resolution)
   : MeshShape(Eigen::Vector3d::Ones(), nullptr),
     mTail(_tail),
@@ -96,7 +96,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::setColor(const Eigen::Vector3d& _color)
+void ArrowShape::setRGBA(const Eigen::Vector4d& _color)
 {
   mColor = _color;
   for(size_t i=0; i<mMesh->mNumMeshes; ++i)
@@ -104,7 +104,8 @@ void ArrowShape::setColor(const Eigen::Vector3d& _color)
     aiMesh* mesh = mMesh->mMeshes[i];
     for(size_t j=0; j<mesh->mNumVertices; ++j)
     {
-      mesh->mColors[0][j] = aiColor4D(_color.x(), _color.y(), _color.z(), 1.0f);
+      mesh->mColors[0][j] = aiColor4D(_color.x(), _color.y(),
+                                      _color.z(), _color[3]);
     }
   }
 }

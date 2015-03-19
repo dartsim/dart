@@ -120,9 +120,10 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     tail[a] = -size;
     Eigen::Vector3d head(Eigen::Vector3d::Zero());
     head[a] =  size;
-    Eigen::Vector3d color(Eigen::Vector3d::Ones());
+    Eigen::Vector4d color(Eigen::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
+    color[3] = 0.8;
 
     dart::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness*size*0.025;
