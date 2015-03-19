@@ -86,12 +86,27 @@ public:
   /// \brief Destructor
   virtual ~Shape();
 
-  /// \brief Set color.
-  virtual void setColor(const Eigen::Vector3d& _color);
+  /// \brief Set RGB color components (leave alpha alone). Identical to
+  /// setRGB(const Eigen::Vector3d&)
+  void setColor(const Eigen::Vector3d& _color);
 
-  /// TODO(MXG): Add support for alpha channel
+  /// \brief Set RGBA color components
+  void setColor(const Eigen::Vector4d& _color);
+
+  /// \brief Set RGB color components (leave alpha alone)
+  void setRGB(const Eigen::Vector3d& _rgb);
+
+  /// \brief Set RGBA color components
+  virtual void setRGBA(const Eigen::Vector4d& _rgba);
+
   /// \brief Get color.
-  const Eigen::Vector3d& getColor() const;
+  Eigen::Vector3d getColor() const;
+
+  /// \brief Get RGB color components
+  Eigen::Vector3d getRGB() const;
+
+  /// \brief Get RGBA color components
+  const Eigen::Vector4d& getRGBA() const;
 
   /// \brief Get dimensions of bounding box.
   ///        The dimension will be automatically determined by the sub-classes
@@ -174,7 +189,7 @@ protected:
   int mID;
 
   /// \brief Color for the primitive.
-  Eigen::Vector3d mColor;
+  Eigen::Vector4d mColor;
 
   /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
   Eigen::Isometry3d mTransform;
