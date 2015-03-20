@@ -53,7 +53,8 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mPickedPosition(Eigen::Vector3d::Zero()),
     mConstraintType(UNCONSTRAINED),
     mAmObstructable(true),
-    mAmMoving(false)
+    mAmMoving(false),
+    mOption(RotationOption::HOLD_CTRL)
 {
   addSubject(mEntity);
   addSubject(mViewer);
@@ -199,6 +200,12 @@ bool DragAndDrop::isMoving() const
 }
 
 //==============================================================================
+void DragAndDrop::setRotationOption(RotationOption option)
+{
+  mOption = option;
+}
+
+//==============================================================================
 void DragAndDrop::handleDestructionNotification(
     const dart::common::Subject* subscription)
 {
@@ -213,7 +220,6 @@ void DragAndDrop::handleDestructionNotification(
 SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
                                dart::dynamics::SimpleFrame* frame)
   : DragAndDrop(viewer, frame),
-    mOption(RotationOption::HOLD_CTRL),
     mFrame(frame)
 {
 
@@ -271,12 +277,6 @@ void SimpleFrameDnD::saveState()
 {
   mPivot = mFrame->getWorldTransform().translation();
   mSavedRotation = mFrame->getWorldTransform().rotation();
-}
-
-//==============================================================================
-void SimpleFrameDnD::setRotationOption(RotationOption option)
-{
-  mOption = option;
 }
 
 //==============================================================================
@@ -386,8 +386,8 @@ public:
         if(picks.size() > 0)
         {
           const PickInfo& pick = picks[0];
-          if(pick.shape != mFrame->getMeshShape(
-               (InteractiveFrame::Shape)mShape, mCoordinate))
+          if(pick.entity != mFrame->getTool(
+               (InteractiveTool::Type)mTool, mCoordinate))
             stop_highlighting = true;
         }
         else
@@ -396,9 +396,9 @@ public:
 
       if(stop_highlighting)
       {
-        for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+        for(size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
           for(size_t c=0; c<3; ++c)
-            mFrame->resetShapeAlpha((InteractiveFrame::Shape)s, c);
+            mFrame->getTool((InteractiveTool::Type)s, c)->resetAlpha();
         mHighlighting = false;
       }
     }
@@ -415,14 +415,14 @@ public:
 
       const PickInfo& pick = picks[0];
 
-      for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+      for(size_t s=0; s < (size_t)InteractiveTool::NUM_TYPES; ++s)
       {
         for(size_t c=0; c<3; ++c)
         {
-          if(mFrame->getShape((InteractiveFrame::Shape)s, c) == pick.shape)
+          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.entity)
           {
             mHighlighting = true;
-            mShape = s;
+            mTool = s;
             mCoordinate = c;
             break;
           }
@@ -433,14 +433,14 @@ public:
 
       if(mHighlighting)
       {
-        for(size_t s=0; s < (size_t)InteractiveFrame::Shape::NUM_TYPES; ++s)
+        for(size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
         {
           for(size_t c=0; c<3; ++c)
           {
-            if(s == mShape && c == mCoordinate)
-              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 1.0);
+            if(s == (size_t)mTool && c == mCoordinate)
+              mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(1.0);
             else
-              mFrame->setShapeAlpha((InteractiveFrame::Shape)s, c, 0.3);
+              mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(0.3);
           }
         }
       }
@@ -463,8 +463,26 @@ protected:
   InteractiveFrame* mFrame;
 
   bool mHighlighting;
-  size_t mShape;
+  int mTool;
   size_t mCoordinate;
+};
+
+//==============================================================================
+class InteractiveToolDnD : public SimpleFrameDnD
+{
+public:
+
+  InteractiveToolDnD(Viewer* viewer, InteractiveFrame* frame,
+                     InteractiveTool* tool)
+    : SimpleFrameDnD(viewer, frame)
+  {
+    addSubject(tool);
+    mEntity = tool;
+  }
+
+protected:
+
+  dart::sub_ptr<InteractiveTool> mTool;
 };
 
 //==============================================================================
@@ -476,15 +494,14 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
         new InteractiveFrameMouseEvent(frame));
 
-  const std::vector<dart::dynamics::Shape*> shapes =
-      frame->getVisualizationShapes();
-
-  for(size_t i=0; i<shapes.size(); ++i)
-    mDnDs.push_back(new SimpleFrameShapeDnD(viewer, frame, shapes[i]));
+  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(size_t j=0; j<3; ++j)
+      mDnDs.push_back(new InteractiveToolDnD(viewer, frame,
+                            frame->getTool((InteractiveTool::Type)i, j)));
 
   for(size_t i=0; i<3; ++i)
   {
-    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    DragAndDrop* dnd = mDnDs[i];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
 
     dnd = mDnDs[i+3];
@@ -516,7 +533,7 @@ void InteractiveFrameDnD::update()
   {
     for(size_t i=0; i<3; ++i)
     {
-      SimpleFrameShapeDnD* dnd = mDnDs[i];
+      DragAndDrop* dnd = mDnDs[i];
       Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
       dnd->constrainToLine(R.col(i));
 
@@ -531,7 +548,7 @@ void InteractiveFrameDnD::update()
   mAmMoving = false;
   for(size_t i=0; i<mDnDs.size(); ++i)
   {
-    SimpleFrameShapeDnD* dnd = mDnDs[i];
+    DragAndDrop* dnd = mDnDs[i];
     dnd->update();
     mAmMoving |= dnd->isMoving();
   }

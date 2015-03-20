@@ -42,6 +42,93 @@
 namespace osgDart {
 
 //==============================================================================
+InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
+                                 const std::string& name)
+  : Entity(frame, name, false),
+    mDefaultAlpha(defaultAlpha),
+    mEnabled(true),
+    mInteractiveFrame(frame)
+{
+
+}
+
+//==============================================================================
+void InteractiveTool::setEnabled(bool enabled)
+{
+  mEnabled = enabled;
+  for(size_t i=0; i<mVizShapes.size(); ++i)
+    mVizShapes[i]->setHidden(!enabled);
+}
+
+//==============================================================================
+bool InteractiveTool::getEnabled() const
+{
+  return mEnabled;
+}
+
+//==============================================================================
+void InteractiveTool::setAlpha(double alpha)
+{
+  for(size_t i=0; i<mVizShapes.size(); ++i)
+  {
+    dart::dynamics::MeshShape* ms =
+        dynamic_cast<dart::dynamics::MeshShape*>(mVizShapes[i]);
+    if(ms)
+    {
+      const aiScene* scene = ms->getMesh();
+      if(!scene)
+        continue;
+
+      for(size_t i=0; i<scene->mNumMeshes; ++i)
+      {
+        aiMesh* mesh = scene->mMeshes[i];
+        for(size_t j=0; j<mesh->mNumVertices; ++j)
+          mesh->mColors[0][j][3] = alpha;
+      }
+    }
+    else
+    {
+      dart::dynamics::Shape* shape = mVizShapes[i];
+      Eigen::Vector4d c = shape->getRGBA();
+      c[3] = alpha;
+      shape->setColor(c);
+    }
+  }
+}
+
+//==============================================================================
+void InteractiveTool::resetAlpha()
+{
+  setAlpha(mDefaultAlpha);
+}
+
+//==============================================================================
+void InteractiveTool::setDefaultAlpha(double alpha, bool reset)
+{
+  mDefaultAlpha = alpha;
+  if(reset)
+    resetAlpha();
+}
+
+//==============================================================================
+double InteractiveTool::getDefaultAlpha() const
+{
+  return mDefaultAlpha;
+}
+
+//==============================================================================
+InteractiveFrame* InteractiveTool::getInteractiveFrame()
+{
+  return mInteractiveFrame;
+}
+
+//==============================================================================
+const InteractiveFrame* InteractiveTool::getInteractiveFrame() const
+{
+  return mInteractiveFrame;
+}
+
+//==============================================================================
 InteractiveFrame::InteractiveFrame(
     dart::dynamics::Frame* referenceFrame,
     const std::string& name,
@@ -50,14 +137,16 @@ InteractiveFrame::InteractiveFrame(
   : Entity(referenceFrame, name, false),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
-  for(size_t j=0; j<3; ++j)
+  for(size_t i=0; i<3; ++i)
   {
-    for(size_t i=0; i<(size_t)Shape::NUM_TYPES; ++i)
-      mEnabledShapes[i][j] = true;
+    std::string affix = (i==0)? "x" : (i==1)? "y" : "z";
 
-    mDefaultAlphas[(size_t)Shape::ARROW][j] = 0.8;
-    mDefaultAlphas[(size_t)Shape::RING][j] = 0.8;
-    mDefaultAlphas[(size_t)Shape::PLANE][j] = 0.7;
+    mTools[InteractiveTool::LINEAR][i] =
+        new InteractiveTool(this, 0.8, "LINEAR_"+affix);
+    mTools[InteractiveTool::ANGULAR][i] =
+        new InteractiveTool(this, 0.8, "ANGULAR_"+affix);
+    mTools[InteractiveTool::PLANAR][i] =
+        new InteractiveTool(this, 0.7, "PLANAR_"+affix);
   }
 
   resizeStandardVisuals(size_scale, thickness_scale);
@@ -67,6 +156,7 @@ InteractiveFrame::InteractiveFrame(
 InteractiveFrame::~InteractiveFrame()
 {
   deleteAllVisualizationShapes();
+  deleteAllTools();
 }
 
 //==============================================================================
@@ -78,111 +168,33 @@ void InteractiveFrame::resizeStandardVisuals(double size_scale,
 }
 
 //==============================================================================
-void InteractiveFrame::setShapeEnabled(Shape shape, size_t coordinate,
-                                       bool enabled)
+InteractiveTool* InteractiveFrame::getTool(InteractiveTool::Type tool,
+                                           size_t coordinate)
 {
-  if(coordinate >= 3 || shape >= Shape::NUM_TYPES)
+  if(InteractiveTool::NUM_TYPES <= tool)
   {
-    dtwarn << "[InteractiveFrame::setShapeEnabled] Attempting to ";
-
-    if(enabled) dtwarn << "enable ";
-    else dtwarn << "disable ";
-
-    dtwarn << "shape type (" << (int)shape
-           << ") of coordinate (" << coordinate << "), but the max values for "
-           << "those are " << (int)Shape::NUM_TYPES-1 << " and 3.\n";
-    return;
+    dtwarn << "[InteractiveFrame::getTool] Attempting to access tool #"
+           << tool << ", but tools only go up to "
+           << InteractiveTool::NUM_TYPES << "\n";
+    return nullptr;
   }
 
-  mEnabledShapes[(int)shape][coordinate] = enabled;
-  mVizShapes[3*(int)shape + coordinate]->setHidden(!enabled);
-}
-
-//==============================================================================
-void InteractiveFrame::setShapeEnabled(Shape shape, bool enabled)
-{
-  for(size_t i=0; i<3; ++i)
-    setShapeEnabled(shape, i, enabled);
-}
-
-//==============================================================================
-bool InteractiveFrame::isShapeEnabled(Shape shape, size_t coordinate) const
-{
-  if(coordinate >= 3 || shape >= Shape::NUM_TYPES)
-    return false;
-
-  return mEnabledShapes[(int)shape][coordinate];
-}
-
-//==============================================================================
-void InteractiveFrame::setShapeAlpha(Shape shape, size_t coordinate,
-                                     double alpha)
-{
-  dart::dynamics::MeshShape* ms = getMeshShape(shape, coordinate);
-  if(!ms)
-    return;
-
-  const aiScene* scene = ms->getMesh();
-
-  for(size_t i=0; i<scene->mNumMeshes; ++i)
+  if(3 <= coordinate)
   {
-    aiMesh* mesh = scene->mMeshes[i];
-    for(size_t j=0; j<mesh->mNumVertices; ++j)
-    {
-      mesh->mColors[0][j][3] = alpha;
-    }
+    dtwarn << "[InteractiveFrame::getTool] Attempting to access a tool with "
+           << "coordinate #" << coordinate << ", but tool coordinates only go "
+           << "up to 3\n";
+    return nullptr;
   }
+
+  return mTools[(size_t)tool][coordinate];
 }
 
 //==============================================================================
-void InteractiveFrame::resetShapeAlpha(Shape shape, size_t coordinate)
+const InteractiveTool* InteractiveFrame::getTool(
+    InteractiveTool::Type tool, size_t coordinate) const
 {
-  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
-    return;
-
-  setShapeAlpha(shape, coordinate, mDefaultAlphas[(size_t)shape][coordinate]);
-}
-
-//==============================================================================
-void InteractiveFrame::setDefaultAlpha(Shape shape, size_t coordinate,
-                                       double alpha, bool reset)
-{
-  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
-    return;
-
-  mDefaultAlphas[(size_t)shape][coordinate] = alpha;
-  if(reset)
-    resetShapeAlpha(shape, coordinate);
-}
-
-//==============================================================================
-double InteractiveFrame::getDefaultAlpha(Shape shape, size_t coordinate) const
-{
-  if(shape >= Shape::NUM_TYPES || coordinate >=3)
-    return 0;
-
-  return mDefaultAlphas[(size_t)shape][coordinate];
-}
-
-//==============================================================================
-dart::dynamics::Shape* InteractiveFrame::getShape(
-    Shape shape, size_t coordinate) const
-{
-  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
-    return nullptr;
-
-  return mVizShapes[(size_t)(shape)*3+coordinate];
-}
-
-//==============================================================================
-dart::dynamics::MeshShape* InteractiveFrame::getMeshShape(
-    Shape shape, size_t coordinate) const
-{
-  if(shape >= Shape::NUM_TYPES || coordinate >= 3)
-    return nullptr;
-
-  return dynamic_cast<dart::dynamics::MeshShape*>(
-        mVizShapes[(size_t)(shape)*3+coordinate]);
+  return const_cast<InteractiveFrame*>(this)->getTool(tool, coordinate);
 }
 
 //==============================================================================
@@ -205,14 +217,14 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     Eigen::Vector4d color(Eigen::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
-    color[3] = mDefaultAlphas[(size_t)Shape::ARROW][a];
+    color[3] = getTool(InteractiveTool::LINEAR,a)->getDefaultAlpha();
 
     dart::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness*size*0.025;
     p.mHeadLengthScale = 0.1;
     p.mDoubleArrow = true;
 
-    addVisualizationShape(
+    mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
           new dart::dynamics::ArrowShape(tail, head, p, color, 100));
   }
 
@@ -267,8 +279,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
         }
         color1[r] = 1.0;
         color2[r] = 0.6;
-        color1[3] = mDefaultAlphas[(size_t)Shape::RING][r];
-        color2[3] = mDefaultAlphas[(size_t)Shape::RING][r];
+        color1[3] = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
+        color2[3] = getTool(InteractiveTool::ANGULAR,r)->getDefaultAlpha();
         mesh->mColors[0][4*i+j] = ((4*i+j)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+j+R] = ((4*i+j+R)%2 == 0)? color1 : color2;
         mesh->mColors[0][4*i+2+j] = ((4*i+2+j)%2 == 0)? color1 : color2;
@@ -369,7 +381,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 
     shape->setLocalTransform(tf);
 
-    addVisualizationShape(shape);
+    mTools[InteractiveTool::ANGULAR][r]->addVisualizationShape(shape);
   }
 
   // Create translation planes
@@ -398,7 +410,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
       mesh->mNormals[i+4] = aiVector3D(-1, 0, 0);
     }
 
-    aiColor4D color(0.1, 0.1, 0.1, mDefaultAlphas[(size_t)Shape::PLANE][p]);
+    aiColor4D color(0.1, 0.1, 0.1,
+                    getTool(InteractiveTool::PLANAR,p)->getDefaultAlpha());
     color[p] = 0.9;
     for(size_t i=0; i<numVertices; ++i)
       mesh->mColors[0][i] = color;
@@ -455,13 +468,18 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 
     shape->setLocalTransform(tf);
 
-    addVisualizationShape(shape);
+    mTools[InteractiveTool::PLANAR][p]->addVisualizationShape(shape);
   }
 
-  for(size_t i=0; i<mVizShapes.size(); ++i)
+  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
-    dart::dynamics::Shape* shape = mVizShapes[i];
-    shape->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    for(size_t j=0; j<3; ++j)
+    {
+      const std::vector<dart::dynamics::Shape*> shapes =
+          mTools[i][j]->getVisualizationShapes();
+      for(size_t s=0; s<shapes.size(); ++s)
+        shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+    }
   }
 }
 
@@ -473,6 +491,26 @@ void InteractiveFrame::deleteAllVisualizationShapes()
     delete mVizShapes[i];
   }
   mVizShapes.clear();
+
+  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+  {
+    for(size_t j=0; j<3; ++j)
+    {
+      InteractiveTool* tool = mTools[i][j];
+      const std::vector<dart::dynamics::Shape*> shapes =
+          tool->getVisualizationShapes();
+      for(size_t s=0; s<shapes.size(); ++s)
+        tool->deleteVisualizationShape(shapes[s]);
+    }
+  }
+}
+
+//==============================================================================
+void InteractiveFrame::deleteAllTools()
+{
+  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(size_t j=0; j<3; ++j)
+      delete mTools[i][j];
 }
 
 } // namespace osgDart

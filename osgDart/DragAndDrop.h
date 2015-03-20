@@ -65,6 +65,14 @@ class DragAndDrop : public dart::common::Subject,
 {
 public:
 
+  enum class RotationOption : int {
+
+    HOLD_CTRL = 0, // Default setting
+    ALWAYS_ON,
+    ALWAYS_OFF
+
+  };
+
   DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
 
   virtual ~DragAndDrop();
@@ -113,6 +121,9 @@ public:
   /// Returns the mAmMoving flag
   bool isMoving() const;
 
+  /// Set the option for triggering rotations instead of translations
+  void setRotationOption(RotationOption option);
+
 protected:
 
   virtual void handleDestructionNotification(
@@ -137,6 +148,8 @@ protected:
 
   bool mAmMoving;
 
+  RotationOption mOption;
+
 };
 
 //==============================================================================
@@ -144,14 +157,6 @@ protected:
 class SimpleFrameDnD : public DragAndDrop
 {
 public:
-
-  enum class RotationOption : int {
-
-    HOLD_CTRL = 0, // Default setting
-    ALWAYS_ON,
-    ALWAYS_OFF
-
-  };
 
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
@@ -163,11 +168,7 @@ public:
 
   virtual void saveState() override;
 
-  void setRotationOption(RotationOption option);
-
 protected:
-
-  RotationOption mOption;
 
   dart::dynamics::SimpleFrame* mFrame;
 
@@ -218,7 +219,7 @@ public:
 
 protected:
 
-  std::vector<SimpleFrameShapeDnD*> mDnDs;
+  std::vector<DragAndDrop*> mDnDs;
 
   InteractiveFrame* mInteractiveFrame;
 

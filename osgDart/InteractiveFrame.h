@@ -48,18 +48,62 @@ class MeshShape;
 namespace osgDart
 {
 
-class InteractiveFrame : public dart::dynamics::SimpleFrame
+class InteractiveFrame;
+
+class InteractiveTool : public dart::dynamics::Entity
 {
 public:
 
-  enum class Shape : int {
+  enum Type {
 
-    ARROW = 0,
-    RING,
-    PLANE,
+    LINEAR = 0, /// Tool for linearly constrained translations
+    ANGULAR,    /// Tool for rotations
+    PLANAR,     /// Tool for planar translations
 
     NUM_TYPES
   };
+
+  InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
+                  const std::string& name);
+
+  /// Set this tool to be enabled or disabled
+  void setEnabled(bool enabled);
+
+  /// Returns true if this tool is enabled
+  bool getEnabled() const;
+
+  /// Set the alpha of this tool
+  void setAlpha(double alpha);
+
+  /// Reset the alpha of this tool back to its default value
+  void resetAlpha();
+
+  /// Set the default alpha for this tool. This alpha value will be
+  /// applied immediately if reset is true.
+  void setDefaultAlpha(double alpha, bool reset=true);
+
+  /// Get the default alpha setting for this tool
+  double getDefaultAlpha() const;
+
+  /// Get the InteractiveFrame that this tool belongs to
+  InteractiveFrame* getInteractiveFrame();
+
+  /// Get the InteractiveFrame that this tool belongs to
+  const InteractiveFrame* getInteractiveFrame() const;
+
+protected:
+
+  double mDefaultAlpha;
+
+  bool mEnabled;
+
+  InteractiveFrame* mInteractiveFrame;
+
+};
+
+class InteractiveFrame : public dart::dynamics::SimpleFrame
+{
+public:
 
   /// Constructor
   InteractiveFrame(
@@ -73,38 +117,15 @@ public:
 
   /// Recreate the visuals for this InteractiveFrame according to the specified
   /// scales.
-  void resizeStandardVisuals(double size_scale=0.2, double thickness_scale=2.0);
+  virtual void resizeStandardVisuals(double size_scale=0.2,
+                                     double thickness_scale=2.0);
 
-  /// Set a shape type to be enabled or disabled. Specify the shape's coordinate
-  /// (x=0, y=1, z=2)
-  void setShapeEnabled(Shape shape, size_t coordinate, bool enabled);
+  /// Get the specified tool
+  InteractiveTool* getTool(InteractiveTool::Type tool, size_t coordinate);
 
-  /// Set a shape type to be enabled or disabled. This applies to all shapes of
-  /// that type
-  void setShapeEnabled(Shape shape, bool enabled);
-
-  /// Returns true if the specified shape of the specified coordinate is enabled
-  bool isShapeEnabled(Shape shape, size_t coordinate) const;
-
-  /// Set the alpha of the specified shape
-  void setShapeAlpha(Shape shape, size_t coordinate, double alpha);
-
-  /// Reset the alpha of the specified shape back to its default value
-  void resetShapeAlpha(Shape shape, size_t coordinate);
-
-  /// Set the default alpha for the specified shape. This alpha value will be
-  /// applied immediately if reset is true.
-  void setDefaultAlpha(Shape shape, size_t coordinate,
-                       double alpha, bool reset=true);
-
-  /// Get the default alpha setting for the specified shape
-  double getDefaultAlpha(Shape shape, size_t coordinate) const;
-
-  /// Get the abstract Shape that corresponds to the specified Shape enumeration
-  dart::dynamics::Shape* getShape(Shape shape, size_t coordinate) const;
-
-  /// Get the MeshShape that corresponds to the specified Shape enumeration
-  dart::dynamics::MeshShape* getMeshShape(Shape shape, size_t coordinate) const;
+  /// Get the specified tool
+  const InteractiveTool* getTool(InteractiveTool::Type tool,
+                                 size_t coordinate) const;
 
 protected:
   /// Creates the standard visualization shapes for InteractiveFrames. Overload
@@ -114,10 +135,11 @@ protected:
   /// Deletes all the visualization shapes held by the InteractiveFrame.
   void deleteAllVisualizationShapes();
 
-  /// Keeps track of which shapes are enabled
-  bool mEnabledShapes[(int)Shape::NUM_TYPES][3];
+  /// Delete all the tool entities belonging to this InteractiveFrame
+  void deleteAllTools();
 
-  double mDefaultAlphas[(int)Shape::NUM_TYPES][3];
+  /// Array of tools belonging to this InteractiveFrame
+  InteractiveTool* mTools[InteractiveTool::NUM_TYPES][3];
 
 };
 

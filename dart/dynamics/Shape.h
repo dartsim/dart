@@ -148,6 +148,7 @@ public:
   ShapeType getShapeType() const;
 
   /// Set the data variance of this shape. Use the DataVariance
+  // TODO(MXG): Implement addDataVariance() and removeDataVariance()
   void setDataVariance(unsigned int _variance);
 
   /// Get the data variance of this shape
