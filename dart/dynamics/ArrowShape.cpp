@@ -218,11 +218,14 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
   Eigen::Vector3d v = mHead - mTail;
   Eigen::Vector3d z = Eigen::Vector3d::UnitZ();
 
-  if(v.norm() > 0 && v.cross(z).norm() > 0)
+  if(v.norm() > 0)
   {
     v.normalize();
     Eigen::Vector3d axis = z.cross(v);
-    axis.normalize();
+    if(axis.norm() > 0)
+      axis.normalize();
+    else
+      axis = Eigen::Vector3d::UnitY(); // Any vector in the X/Y plane can be used
     tf.rotate(Eigen::AngleAxisd(acos(z.dot(v)), axis));
   }
 
