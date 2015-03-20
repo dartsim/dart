@@ -241,8 +241,8 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    const Eigen::Vector3d& c = mLineSegmentShape->getColor();
-    (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], 1.0);
+    const Eigen::Vector4d& c = mLineSegmentShape->getRGBA();
+    (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], c[3]);
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

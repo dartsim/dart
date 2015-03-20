@@ -37,6 +37,7 @@
 #include "osgDart/InteractiveFrame.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/ArrowShape.h"
+#include "dart/dynamics/LineSegmentShape.h"
 #include "dart/common/Console.h"
 
 namespace osgDart {
@@ -487,6 +488,21 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
       for(size_t s=0; s<shapes.size(); ++s)
         shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
     }
+  }
+
+  // Create axes
+  for(size_t i=0; i<3; ++i)
+  {
+    dart::dynamics::LineSegmentShape* line =
+        new dart::dynamics::LineSegmentShape(3.0);
+    line->addVertex(Eigen::Vector3d::Zero());
+    Eigen::Vector3d v(Eigen::Vector3d::Zero());
+    v[i] = 0.9*size;
+    line->addVertex(v);
+    Eigen::Vector3d c(Eigen::Vector3d::Zero());
+    c[i] = 1.0;
+    line->setColor(c);
+    addVisualizationShape(line);
   }
 }
 

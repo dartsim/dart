@@ -42,6 +42,7 @@
 #include "osgDart/render/PlaneShapeNode.h"
 #include "osgDart/render/MeshShapeNode.h"
 #include "osgDart/render/SoftMeshShapeNode.h"
+#include "osgDart/render/LineSegmentShapeNode.h"
 #include "osgDart/render/WarningShapeNode.h"
 
 #include "dart/common/Console.h"
@@ -52,6 +53,7 @@
 #include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
+#include "dart/dynamics/LineSegmentShape.h"
 
 namespace osgDart {
 
@@ -226,6 +228,16 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
         node = new render::SoftMeshShapeNode(sms, this);
       else
         warnAboutUnsuccessfulCast("SoftMeshShape", mEntity->getName());
+      break;
+    }
+
+    case Shape::LINE_SEGMENT:
+    {
+      LineSegmentShape* lss = dynamic_cast<LineSegmentShape*>(shape);
+      if(lss)
+        node = new render::LineSegmentShapeNode(lss, this);
+      else
+        warnAboutUnsuccessfulCast("LineSegmentShape", mEntity->getName());
       break;
     }
 

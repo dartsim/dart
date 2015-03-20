@@ -553,23 +553,43 @@ void InteractiveFrameDnD::update()
     mAmMoving |= dnd->isMoving();
   }
 
-//  if(something_moving)
-//  {
-//    for(size_t i=0; i<3; ++i)
-//    {
-//      SimpleFrameShapeDnD* dnd = mDnDs[i];
-//      if(!dnd->isMoving())
-//        dnd->getShape()->setHidden(true);
-//    }
-//  }
-//  else
-//  {
-//    for(size_t i=0; i<3; ++i)
-//    {
-//      SimpleFrameShapeDnD* dnd = mDnDs[i];
-//      dnd->getShape()->setHidden(false);
-//    }
-//  }
+  if(mAmMoving)
+  {
+    for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    {
+      for(size_t j=0; j<3; ++j)
+      {
+        DragAndDrop* dnd = mDnDs[3*i+j];
+        InteractiveTool* tool =
+            mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
+        if(!dnd->isMoving() && tool->getEnabled())
+        {
+          const std::vector<dart::dynamics::Shape*> shapes =
+              tool->getVisualizationShapes();
+          for(size_t s=0; s<shapes.size(); ++s)
+            shapes[s]->setHidden(true);
+        }
+      }
+    }
+  }
+  else
+  {
+    for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    {
+      for(size_t j=0; j<3; ++j)
+      {
+        InteractiveTool* tool =
+            mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
+        if(tool->getEnabled())
+        {
+          const std::vector<dart::dynamics::Shape*> shapes =
+              tool->getVisualizationShapes();
+          for(size_t s=0; s<shapes.size(); ++s)
+            shapes[s]->setHidden(false);
+        }
+      }
+    }
+  }
 }
 
 //==============================================================================
