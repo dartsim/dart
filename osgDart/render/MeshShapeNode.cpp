@@ -45,6 +45,7 @@
 #include "osgDart/utils.h"
 
 #include "dart/dynamics/MeshShape.h"
+#include "dart/common/Console.h"
 
 namespace osgDart {
 namespace render {
@@ -54,7 +55,7 @@ class osgAiNode : public ShapeNode, public osg::MatrixTransform
 public:
 
   osgAiNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-            const aiNode* node);
+            MeshShapeNode* parentNode, const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
@@ -68,6 +69,7 @@ protected:
   void clearChildUtilizationFlags();
   void clearUnusedNodes();
 
+  MeshShapeNode* mMainNode;
   dart::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
   MeshShapeGeode* mGeode;
@@ -81,7 +83,7 @@ class MeshShapeGeode : public ShapeNode, public osg::Geode
 public:
 
   MeshShapeGeode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-                 const aiNode* node);
+                 MeshShapeNode* parentNode, const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
@@ -95,6 +97,7 @@ protected:
 
   dart::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
+  MeshShapeNode* mMainNode;
   std::map<const aiMesh*,MeshShapeGeometry*> mMeshes;
 
 };
@@ -105,7 +108,8 @@ class MeshShapeGeometry : public ShapeNode, public osg::Geometry
 public:
 
   MeshShapeGeometry(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-                    MeshShapeGeode* parentGeode, aiMesh* mesh);
+                    MeshShapeNode* parentNode, MeshShapeGeode* parentGeode,
+                    aiMesh* mesh);
 
   void refresh();
 
@@ -121,6 +125,7 @@ protected:
 
   dart::dynamics::MeshShape* mMeshShape;
   const aiMesh* mAiMesh;
+  MeshShapeNode* mMainNode;
 
 };
 
@@ -151,6 +156,64 @@ void MeshShapeNode::refresh()
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
+  const aiScene* scene = mMeshShape->getMesh();
+  const aiNode* root = scene->mRootNode;
+
+  if(firstTime) // extract material properties
+  {
+    mMaterials.reserve(scene->mNumMaterials);
+
+    for(size_t i=0; i<scene->mNumMaterials; ++i)
+    {
+      aiMaterial* aiMat = scene->mMaterials[i];
+      osg::ref_ptr<osg::Material> material = new osg::Material;
+
+      aiColor4D c;
+      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)==AI_SUCCESS)
+      {
+        material->setAmbient(osg::Material::FRONT_AND_BACK,
+                             osg::Vec4(c.r, c.g, c.b, c.a));
+      }
+
+      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)==AI_SUCCESS)
+      {
+        material->setDiffuse(osg::Material::FRONT_AND_BACK,
+                             osg::Vec4(c.r, c.g, c.b, c.a));
+      }
+
+      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c)==AI_SUCCESS)
+      {
+        material->setSpecular(osg::Material::FRONT_AND_BACK,
+                              osg::Vec4(c.r, c.g, c.b, c.a));
+      }
+
+      if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)==AI_SUCCESS)
+      {
+        material->setEmission(osg::Material::FRONT_AND_BACK,
+                              osg::Vec4(c.r, c.g, c.b, c.a));
+      }
+
+      unsigned int maxValue = 1;
+      float shininess = 0.0f, strength = 1.0f;
+      if(aiGetMaterialFloatArray(aiMat, AI_MATKEY_SHININESS,
+                                 &shininess, &maxValue)==AI_SUCCESS)
+      {
+        maxValue = 1;
+        if(aiGetMaterialFloatArray(aiMat, AI_MATKEY_SHININESS_STRENGTH,
+                                   &strength, &maxValue)==AI_SUCCESS)
+          shininess *= strength;
+        material->setShininess(osg::Material::FRONT_AND_BACK, shininess);
+      }
+      else
+      {
+        material->setShininess(osg::Material::FRONT_AND_BACK, 0.0f);
+//        material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4()); // <- Why this?
+      }
+
+      mMaterials.push_back(material);
+    }
+  }
+
   if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
      || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
@@ -160,9 +223,6 @@ void MeshShapeNode::extractData(bool firstTime)
     S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
     setMatrix(eigToOsgMatrix(mShape->getLocalTransform()*S));
   }
-
-  const aiScene* scene = mMeshShape->getMesh();
-  const aiNode* root = scene->mRootNode;
 
   if(mRootAiNode)
   {
@@ -177,12 +237,28 @@ void MeshShapeNode::extractData(bool firstTime)
 
   if( (nullptr == mRootAiNode) && root)
   {
-    mRootAiNode = new osgAiNode(mMeshShape, mParentEntity, root);
+    mRootAiNode = new osgAiNode(mMeshShape, mParentEntity, this, root);
     addChild(mRootAiNode);
     return;
   }
 
   mRootAiNode->refresh();
+}
+
+//==============================================================================
+osg::Material* MeshShapeNode::getMaterial(size_t index) const
+{
+  if(index < mMaterials.size())
+    return mMaterials[index];
+
+  dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
+         << index;
+  if(mMaterials.size() > 0)
+    dtwarn << ", but materials only go up to " << index-1 << "\n";
+  else
+    dtwarn << ", but there are no materials available\n";
+
+  return nullptr;
 }
 
 //==============================================================================
@@ -193,8 +269,10 @@ MeshShapeNode::~MeshShapeNode()
 
 //==============================================================================
 osgAiNode::osgAiNode(dart::dynamics::MeshShape* shape,
-                     EntityNode* parentEntity, const aiNode* node)
+                     EntityNode* parentEntity, MeshShapeNode* parentNode,
+                     const aiNode* node)
   : ShapeNode(shape, parentEntity, this),
+    mMainNode(parentNode),
     mMeshShape(shape),
     mAiNode(node),
     mGeode(nullptr)
@@ -233,7 +311,8 @@ void osgAiNode::extractData(bool firstTime)
 
     if(it == mChildNodes.end())
     {
-      osgAiNode* newChild = new osgAiNode(mMeshShape, mParentEntity, child);
+      osgAiNode* newChild =
+          new osgAiNode(mMeshShape, mParentEntity, mMainNode, child);
       addChild(newChild);
     }
     else
@@ -242,7 +321,7 @@ void osgAiNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new MeshShapeGeode(mMeshShape, mParentEntity, mAiNode);
+    mGeode = new MeshShapeGeode(mMeshShape, mParentEntity, mMainNode, mAiNode);
     addChild(mGeode);
   }
   else
@@ -280,10 +359,12 @@ void osgAiNode::clearUnusedNodes()
 
 //==============================================================================
 MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
-                               EntityNode* parentEntity, const aiNode* node)
+                               EntityNode* parentEntity,
+                               MeshShapeNode* parentNode, const aiNode* node)
   : ShapeNode(shape, parentEntity, this),
     mMeshShape(shape),
-    mAiNode(node)
+    mAiNode(node),
+    mMainNode(parentNode)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
   getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
@@ -317,8 +398,8 @@ void MeshShapeGeode::extractData(bool)
 
     if(it == mMeshes.end())
     {
-      MeshShapeGeometry* newMesh =
-          new MeshShapeGeometry(mMeshShape, mParentEntity, this, mesh);
+      MeshShapeGeometry* newMesh = new MeshShapeGeometry(mMeshShape,
+                                          mParentEntity, mMainNode, this, mesh);
       addDrawable(newMesh);
       mMeshes[mesh] = newMesh;
     }
@@ -362,6 +443,7 @@ void MeshShapeGeode::clearUnusedMeshes()
 //==============================================================================
 MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
                                      EntityNode* parentEntity,
+                                     MeshShapeNode* parentNode,
                                      MeshShapeGeode* parentGeode,
                                      aiMesh* mesh)
   : ShapeNode(shape, parentEntity, parentGeode),
@@ -369,7 +451,8 @@ MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),
     mMeshShape(shape),
-    mAiMesh(mesh)
+    mAiMesh(mesh),
+    mMainNode(parentNode)
 {
   extractData(true);
 }
@@ -518,8 +601,16 @@ void MeshShapeGeometry::extractData(bool firstTime)
           break;
         }
       } // switch(mAiMesh->mNumUVComponents[unit])
+      aiTexCoords = mAiMesh->mTextureCoords[++unit];
     } // while(nullptr != aiTexCoords)
   }
+
+  if(firstTime) // Set up material
+  {
+    getOrCreateStateSet()->setAttributeAndModes(
+          mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+  }
+  // TODO(MXG): Investigate wireframe mode
 }
 
 //==============================================================================

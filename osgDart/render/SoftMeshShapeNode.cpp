@@ -277,7 +277,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mSoftMeshShape->getColor());
+    (*mColors)[0] = eigToOsgVec4(mSoftMeshShape->getRGBA());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

@@ -3,7 +3,6 @@
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *            Pete Vieira <pete.vieira@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,53 +34,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_MESHSHAPENODE_H
-#define OSGDART_RENDER_MESHSHAPENODE_H
+#include "osgDart/osgDart.h"
 
-#include <map>
+#include "dart/dart.h"
 
-#include <osg/MatrixTransform>
-#include <osg/Material>
+using namespace dart::dynamics;
+using namespace dart::simulation;
+using namespace dart::utils;
 
-#include "osgDart/render/ShapeNode.h"
-
-struct aiNode;
-
-namespace dart {
-namespace dynamics {
-class MeshShape;
-} // namespace dynamics
-} // namespace dart
-
-namespace osgDart {
-namespace render {
-
-class osgAiNode;
-class MeshShapeGeode;
-class MeshShapeGeometry;
-
-class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
+int main()
 {
-public:
+  World* world = new World;
+  DartLoader urdfLoader;
 
-  MeshShapeNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity);
+//  Skeleton* ground = urdfLoader.parseSkeleton(
+//        DART_DATA_PATH"sdf/atlas/ground.urdf");
+//  world->addSkeleton(ground);
 
-  void refresh();
-  void extractData(bool firstTime);
+  Skeleton* atlas = SoftSdfParser::readSkeleton(
+        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  world->addSkeleton(atlas);
 
-  osg::Material* getMaterial(size_t index) const;
+  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
-protected:
+  osgDart::Viewer viewer;
+  viewer.addWorldNode(node);
 
-  virtual ~MeshShapeNode();
+  std::cout << viewer.getInstructions() << std::endl;
 
-  dart::dynamics::MeshShape* mMeshShape;
-  osgAiNode* mRootAiNode;
-  std::vector< osg::ref_ptr<osg::Material> > mMaterials;
+  viewer.setUpViewInWindow(0, 0, 640, 480);
 
-};
-
-} // namespace render
-} // namespace osgDart
-
-#endif // OSGDART_RENDER_MESHSHAPENODE_H
+  viewer.run();
+}
