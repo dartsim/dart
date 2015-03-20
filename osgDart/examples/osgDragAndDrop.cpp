@@ -38,134 +38,22 @@
 
 #include "dart/dart.h"
 
-class ConstraintEventHandler : public osgGA::GUIEventHandler
-{
-public:
-
-  ConstraintEventHandler(osgDart::DragAndDrop* dnd = nullptr)
-    : mDnD(dnd)
-  {
-    clearConstraints();
-    if(mDnD)
-      mDnD->unconstrain();
-  }
-
-  void clearConstraints()
-  {
-    for(size_t i=0; i<3; ++i)
-      mConstrained[i] = false;
-  }
-
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&) override
-  {
-    if(nullptr == mDnD)
-    {
-      clearConstraints();
-      return false;
-    }
-
-    bool handled = false;
-    switch(ea.getEventType())
-    {
-      case osgGA::GUIEventAdapter::KEYDOWN:
-      {
-        switch(ea.getUnmodifiedKey())
-        {
-          case '1':
-            mConstrained[0] = true;
-            handled = true;
-            break;
-          case '2':
-            mConstrained[1] = true;
-            handled = true;
-            break;
-          case '3':
-            mConstrained[2] = true;
-            handled = true;
-            break;
-        }
-        break;
-      }
-
-      case osgGA::GUIEventAdapter::KEYUP:
-      {
-        switch(ea.getUnmodifiedKey())
-        {
-          case '1':
-            mConstrained[0] = false;
-            handled = true;
-            break;
-          case '2':
-            mConstrained[1] = false;
-            handled = true;
-            break;
-          case '3':
-            mConstrained[2] = false;
-            handled = true;
-            break;
-        }
-        break;
-      }
-
-      default:
-        return false;
-    }
-
-    if(!handled)
-      return handled;
-
-    size_t constraintDofs = 0;
-    for(size_t i=0; i<3; ++i)
-      if(mConstrained[i])
-        ++constraintDofs;
-
-    if(constraintDofs==0 || constraintDofs==3)
-    {
-      mDnD->unconstrain();
-    }
-    else if(constraintDofs == 1)
-    {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for(size_t i=0; i<3; ++i)
-        if(mConstrained[i])
-          v[i] = 1.0;
-
-      mDnD->constrainToLine(v);
-    }
-    else if(constraintDofs == 2)
-    {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for(size_t i=0; i<3; ++i)
-        if(!mConstrained[i])
-          v[i] = 1.0;
-
-      mDnD->constrainToPlane(v);
-    }
-
-    return handled;
-  }
-
-  bool mConstrained[3];
-
-  dart::sub_ptr<osgDart::DragAndDrop> mDnD;
-};
-
 using namespace dart::dynamics;
 
 int main()
 {
   dart::simulation::World* world = new dart::simulation::World;
 
-//  SimpleFrame draggable(Frame::World(), "draggable");
-//  draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
-//  world->addFrame(&draggable);
-
-  osgDart::InteractiveFrame draggable(Frame::World(), "draggable",
-                                      Eigen::Isometry3d::Identity(), 4.0);
-  world->addFrame(&draggable);
-
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+
+  tf.translation() = Eigen::Vector3d(4,-4,0);
+  osgDart::InteractiveFrame frame(Frame::World(), "interactive frame", tf, 2.0);
+  world->addFrame(&frame);
+
+  tf.translation() = Eigen::Vector3d(-4,4,0);
+  SimpleFrame draggable(&frame, "draggable", tf);
+  draggable.addVisualizationShape(new BoxShape(Eigen::Vector3d(1,1,1)));
+  world->addFrame(&draggable);
 
   tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
   SimpleFrame x_marker(Frame::World(), "X", tf);
@@ -193,8 +81,8 @@ int main()
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
-  osgDart::DragAndDrop* dnd = viewer.enableDragAndDrop(&draggable);
-  viewer.addEventHandler(new ConstraintEventHandler(dnd));
+  viewer.enableDragAndDrop(&frame);
+  viewer.enableDragAndDrop(&draggable);
 
   std::cout << viewer.getInstructions() << std::endl;
 
