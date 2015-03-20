@@ -206,14 +206,15 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   double ring_outer_scale = 0.6*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
   double plane_corner = 0.9*ring_inner_scale;
+  double plane_length = plane_corner/sqrt(2);
 
   // Create translation arrows
   for(size_t a=0; a<3; ++a)
   {
     Eigen::Vector3d tail(Eigen::Vector3d::Zero());
-    tail[a] = -size;
+    tail[a] = plane_length;
     Eigen::Vector3d head(Eigen::Vector3d::Zero());
-    head[a] =  size;
+    head[a] = size;
     Eigen::Vector4d color(Eigen::Vector4d::Ones());
     color *= 0.2;
     color[a] = 0.9;
@@ -221,8 +222,14 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 
     dart::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness*size*0.025;
-    p.mHeadLengthScale = 0.1;
-    p.mDoubleArrow = true;
+    p.mHeadLengthScale = 0.3;
+    p.mDoubleArrow = false;
+
+    mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
+          new dart::dynamics::ArrowShape(tail, head, p, color, 100));
+
+    tail[a] = -plane_length;
+    head[a] = -size;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
           new dart::dynamics::ArrowShape(tail, head, p, color, 100));
@@ -395,7 +402,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     mesh->mNormals = new aiVector3D[numVertices];
     mesh->mColors[0] = new aiColor4D[numVertices];
 
-    double L = plane_corner/sqrt(2);
+    double L = plane_length;
     for(size_t i=0; i<2; ++i)
     {
       mesh->mVertices[4*i+0] = aiVector3D(0, -L, -L);
