@@ -277,8 +277,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    const Eigen::Vector3d& c = mSoftMeshShape->getColor();
-    (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], 1.0);
+    (*mColors)[0] = eigToOsgVec4(mSoftMeshShape->getColor());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

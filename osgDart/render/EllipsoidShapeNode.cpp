@@ -219,8 +219,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    const Eigen::Vector3d& c = mEllipsoidShape->getColor();
-    setColor(osg::Vec4(c[0], c[1], c[2], 1.0));
+    setColor(eigToOsgVec4(mEllipsoidShape->getRGBA()));
   }
 }
 
