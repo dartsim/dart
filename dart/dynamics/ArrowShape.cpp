@@ -259,6 +259,7 @@ void ArrowShape::instantiate(size_t resolution)
     size_t numVertices = (i==0 || i==2)? 2*resolution+1 : 2*resolution;
 
     aiMesh* mesh = new aiMesh;
+    mesh->mMaterialIndex = (unsigned int)(-1);
 
     mesh->mNumVertices = numVertices;
     mesh->mVertices = new aiVector3D[numVertices];

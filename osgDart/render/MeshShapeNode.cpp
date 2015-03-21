@@ -251,12 +251,12 @@ osg::Material* MeshShapeNode::getMaterial(size_t index) const
   if(index < mMaterials.size())
     return mMaterials[index];
 
-  dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
-         << index;
   if(mMaterials.size() > 0)
-    dtwarn << ", but materials only go up to " << index-1 << "\n";
+    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
+           << index << ", but materials only go up to " << index-1 << "\n";
   else
-    dtwarn << ", but there are no materials available\n";
+    dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
+           << index << ", but there are no materials available\n";
 
   return nullptr;
 }
@@ -607,8 +607,10 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
   if(firstTime) // Set up material
   {
-    getOrCreateStateSet()->setAttributeAndModes(
-          mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+    unsigned int matIndex = mAiMesh->mMaterialIndex;
+    if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
+      getOrCreateStateSet()->setAttributeAndModes(
+            mMainNode->getMaterial(mAiMesh->mMaterialIndex));
   }
   // TODO(MXG): Investigate wireframe mode
 }

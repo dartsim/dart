@@ -204,7 +204,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 {
   thickness = std::min(10.0, std::max(0.0, thickness));
   size_t resolution = 72;
-  double ring_outer_scale = 0.6*size;
+  double ring_outer_scale = 0.7*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
   double plane_corner = 0.9*ring_inner_scale;
   double plane_length = plane_corner/sqrt(2);
@@ -213,7 +213,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   for(size_t a=0; a<3; ++a)
   {
     Eigen::Vector3d tail(Eigen::Vector3d::Zero());
-    tail[a] = plane_length;
+//    tail[a] = 1.2*plane_length;
+    tail[a] = ring_inner_scale;
     Eigen::Vector3d head(Eigen::Vector3d::Zero());
     head[a] = size;
     Eigen::Vector4d color(Eigen::Vector4d::Ones());
@@ -222,14 +223,16 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     color[3] = getTool(InteractiveTool::LINEAR,a)->getDefaultAlpha();
 
     dart::dynamics::ArrowShape::Properties p;
-    p.mRadius = thickness*size*0.025;
-    p.mHeadLengthScale = 0.3;
+    p.mRadius = thickness*size*0.03;
+    p.mHeadRadiusScale = 2;
+    p.mHeadLengthScale = 0.4;
     p.mDoubleArrow = false;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
           new dart::dynamics::ArrowShape(tail, head, p, color, 100));
 
-    tail[a] = -plane_length;
+//    tail[a] = -1.2*plane_length;
+    tail[a] = -ring_inner_scale;
     head[a] = -size;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
@@ -240,6 +243,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   for(size_t r=0; r<3; ++r)
   {
     aiMesh* mesh = new aiMesh;
+    mesh->mMaterialIndex = (unsigned int)(-1);
 
     size_t numVertices = 8*resolution;
     size_t R = 4*resolution;
@@ -396,6 +400,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   for(size_t p=0; p<3; ++p)
   {
     aiMesh* mesh = new aiMesh;
+    mesh->mMaterialIndex = (unsigned int)(-1);
 
     size_t numVertices = 8;
     mesh->mNumVertices = numVertices;
