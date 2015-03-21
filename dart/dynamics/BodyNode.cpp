@@ -2222,14 +2222,12 @@ void BodyNode::_updateBodyJacobianSpatialDeriv() const
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getLocalTransform(), dJ_parent);
-
-    mBodyJacobianSpatialDeriv -= math::adJac(getSpatialVelocity(),
-                                             getJacobian());
   }
 
   // Local Jacobian
   mBodyJacobianSpatialDeriv.rightCols(numLocalDOFs)
-      = mParentJoint->getLocalJacobianTimeDeriv();
+      = mParentJoint->getLocalJacobianTimeDeriv()
+        + math::adJac(getSpatialVelocity(), mParentJoint->getLocalJacobian());
 
   mIsBodyJacobianSpatialDerivDirty = false;
 }

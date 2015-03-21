@@ -290,7 +290,7 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
     printComparisonError("spatial velocity", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE( spatialAccEqual );
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration", bn->getName(),
@@ -369,7 +369,7 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
     printComparisonError("spatial velocity w/ offset", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
   EXPECT_TRUE( spatialAccEqual );
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration w/ offset", bn->getName(),
