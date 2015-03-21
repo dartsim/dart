@@ -47,13 +47,13 @@ typedef std::set<Frame*> FramePtrSet;
 
 //==============================================================================
 Frame::Frame(Frame* _refFrame, const std::string& _name)
-  : Entity(_refFrame, _name, false),
+  : Entity(nullptr, _name, false),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
     mAmWorld(false)
 {
-
+  changeParentFrame(_refFrame);
 }
 
 //==============================================================================
@@ -539,15 +539,15 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       mParentFrame->mChildFrames.erase(it);
   }
 
-  if(NULL==_newParentFrame)
+  if(nullptr==_newParentFrame)
   {
     Entity::changeParentFrame(_newParentFrame);
     return;
   }
 
-  Entity::changeParentFrame(_newParentFrame);
   if(!mAmQuiet)
-    mParentFrame->mChildFrames.insert(this);
+    _newParentFrame->mChildFrames.insert(this);
+  Entity::changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================

@@ -41,6 +41,7 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
+#include "dart/common/Subject.h"
 
 namespace dart {
 namespace renderer {
@@ -52,7 +53,8 @@ namespace dart {
 namespace dynamics {
 
 /// \brief
-class Shape {
+class Shape : public virtual common::Subject
+{
 public:
   // TODO(JS): We should not use ShapeType because this is not extendable.
   /// \brief
