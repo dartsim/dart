@@ -73,7 +73,7 @@ public:
   virtual ~Shape();
 
   /// \brief Set color.
-  void setColor(const Eigen::Vector3d& _color);
+  virtual void setColor(const Eigen::Vector3d& _color);
 
   /// \brief Get color.
   const Eigen::Vector3d& getColor() const;

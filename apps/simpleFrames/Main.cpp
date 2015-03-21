@@ -34,12 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/simulation/World.h"
-#include "dart/gui/SimWindow.h"
-
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dart.h"
 
 using namespace dart::dynamics;
 
@@ -81,6 +76,13 @@ int main(int argc, char* argv[])
   A3.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01)));
 
   myWorld.addEntity(&A);
+
+  SimpleFrame arrow(Frame::World(), "arrow");
+  arrow.addVisualizationShape(new ArrowShape(Eigen::Vector3d(0.1,-0.1, 0.0),
+                                             Eigen::Vector3d(0.1, 0.0, 0.0),
+                                             ArrowShape::Properties(0.002, 1.8),
+                                             Eigen::Vector3d(1.0, 0.5, 0.5)));
+  myWorld.addEntity(&arrow);
 
   // CAREFUL: For an Entity (or Frame) that gets added to the world to be
   // rendered correctly, it must be a child of the World Frame
