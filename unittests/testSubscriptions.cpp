@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s):
- * Date:
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,80 +34,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHSHAPE_H_
-#define DART_DYNAMICS_MESHSHAPE_H_
+#include <gtest/gtest.h>
 
-#include <string>
+#include "dart/common/sub_ptr.h"
+#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/BoxShape.h"
 
-#include <assimp/scene.h>
+using namespace dart;
+using namespace dynamics;
 
-#include "dart/dynamics/Shape.h"
+TEST(Subjects, Notifications)
+{
+  sub_ptr<Detachable> entity_ptr = new Detachable(Frame::World(), "entity", false);
+  sub_ptr<SimpleFrame> frame_ptr = new SimpleFrame(Frame::World(), "frame");
 
-namespace dart {
-namespace dynamics {
+  EXPECT_TRUE(entity_ptr.valid());
+  EXPECT_TRUE(frame_ptr.valid());
 
-/// \brief
-class MeshShape : public Shape {
-public:
-  /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  delete entity_ptr;
+  delete frame_ptr;
 
-  /// \brief Destructor.
-  virtual ~MeshShape();
+  EXPECT_FALSE(entity_ptr.valid());
+  EXPECT_FALSE(frame_ptr.valid());
 
-  /// \brief
-  const aiScene* getMesh() const;
+  EXPECT_TRUE(entity_ptr.get() == nullptr);
+  EXPECT_TRUE(frame_ptr.get() == nullptr);
+}
 
-  /// \brief
-  void setMesh(const aiScene* _mesh);
+Entity* getPointer(Entity* _ptr)
+{
+  return _ptr;
+}
 
-  /// \brief
-  void setScale(const Eigen::Vector3d& _scale);
+TEST(Subjects, ImplicitConversion)
+{
+  sub_ptr<Entity> entity_ptr = new Entity(Frame::World(), "entity", false);
 
-  /// \brief
-  const Eigen::Vector3d& getScale() const;
+  // This checks whether the sub_ptr class can successfully be implicitly
+  // converted to the type of class it's supposed to be pointing to
+  EXPECT_TRUE( getPointer(entity_ptr) == entity_ptr.get() );
 
-  /// \brief
-  int getDisplayList() const;
+  delete entity_ptr;
+}
 
-  /// \brief
-  void setDisplayList(int _index);
-
-  // Documentation inherited.
-  void draw(renderer::RenderInterface* _ri = NULL,
-            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-            bool _default = true) const;
-
-  /// \brief
-  static const aiScene* loadMesh(const std::string& _fileName);
-
-  // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
-
-protected:
-  // Documentation inherited.
-  virtual void computeVolume();
-
-private:
-  /// \brief
-  void _updateBoundingBoxDim();
-
-protected:
-  /// \brief
-  const aiScene* mMesh;
-
-  /// \brief OpenGL DisplayList id for rendering
-  int mDisplayList;
-
-  /// \brief Scale
-  Eigen::Vector3d mScale;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_MESHSHAPE_H_
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

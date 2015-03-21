@@ -517,6 +517,133 @@ public:
 //  void computeImpulseInverseDynamics() {}
 
   //----------------------------------------------------------------------------
+  /// \{ \name Jacobians
+  //----------------------------------------------------------------------------
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
+  /// is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobian(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. You can
+  /// specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
+  /// in the Frame of the BodyNode.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
+  /// is expressed in the World Frame.
+  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
+  /// in the World Frame.
+  math::Jacobian getWorldJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the linear Jacobian targeting the origin of a BodyNode. You can
+  /// specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the angular Jacobian of a BodyNode. You can specify a coordinate Frame
+  /// to express the Jabocian in.
+  math::AngularJacobian getAngularJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. The Jacobian is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// The Jacobian is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. The Jacobian is expressed in the World Frame.
+  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian (classical) time derivative targeting the origin
+  /// of a BodyNode. The _offset is expected in coordinates of the BodyNode
+  /// Frame. You can specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian (classical) time derivative targeting an offset in
+  /// a BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the angular Jacobian time derivative of a BodyNode. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::AngularJacobian getAngularJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   // Equations of Motion
   //----------------------------------------------------------------------------
 

@@ -41,10 +41,10 @@ namespace dart {
 namespace dynamics {
 
 SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
-                     const Eigen::Isometry3d& _relativeTransform)
-  : Entity(_refFrame, _name, false),
+                         const Eigen::Isometry3d& _relativeTransform)
+  : Entity(nullptr, _name, false),
+    Detachable(nullptr, _name, false),
     Frame(_refFrame, _name),
-    Detachable(_refFrame, _name, false),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
     mRelativeAcceleration(Eigen::Vector6d::Zero())

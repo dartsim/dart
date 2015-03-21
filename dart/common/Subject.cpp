@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s):
- * Date:
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,80 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHSHAPE_H_
-#define DART_DYNAMICS_MESHSHAPE_H_
-
-#include <string>
-
-#include <assimp/scene.h>
-
-#include "dart/dynamics/Shape.h"
+#include "dart/common/Subject.h"
+#include "dart/common/Observer.h"
 
 namespace dart {
-namespace dynamics {
+namespace common {
 
-/// \brief
-class MeshShape : public Shape {
-public:
-  /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+//==============================================================================
+Subject::~Subject()
+{
+  sendDestructionNotification();
+}
 
-  /// \brief Destructor.
-  virtual ~MeshShape();
+//==============================================================================
+void Subject::sendDestructionNotification() const
+{
+  std::set<Observer*>::iterator sub = mObservers.begin(),
+                                  end = mObservers.end();
+  while( sub != end )
+    (*(sub++))->receiveDestructionNotification(this);
+  // We do this tricky iterator method to deal with the fact that mObservers
+  // will be changing as we go through the loop
+}
 
-  /// \brief
-  const aiScene* getMesh() const;
+//==============================================================================
+void Subject::addObserver(Observer* _observer) const
+{
+  if(nullptr == _observer)
+    return;
 
-  /// \brief
-  void setMesh(const aiScene* _mesh);
+  if(mObservers.find(_observer) != mObservers.end())
+    return;
 
-  /// \brief
-  void setScale(const Eigen::Vector3d& _scale);
+  mObservers.insert(_observer);
+  _observer->addSubject(this);
+}
 
-  /// \brief
-  const Eigen::Vector3d& getScale() const;
+//==============================================================================
+void Subject::removeObserver(Observer* _observer) const
+{
+  if(nullptr == _observer)
+    return;
 
-  /// \brief
-  int getDisplayList() const;
+  if(mObservers.find(_observer) == mObservers.end())
+    return;
 
-  /// \brief
-  void setDisplayList(int _index);
+  mObservers.erase(_observer);
+  _observer->removeSubject(this);
+}
 
-  // Documentation inherited.
-  void draw(renderer::RenderInterface* _ri = NULL,
-            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-            bool _default = true) const;
-
-  /// \brief
-  static const aiScene* loadMesh(const std::string& _fileName);
-
-  // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
-
-protected:
-  // Documentation inherited.
-  virtual void computeVolume();
-
-private:
-  /// \brief
-  void _updateBoundingBoxDim();
-
-protected:
-  /// \brief
-  const aiScene* mMesh;
-
-  /// \brief OpenGL DisplayList id for rendering
-  int mDisplayList;
-
-  /// \brief Scale
-  Eigen::Vector3d mScale;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_MESHSHAPE_H_
+} // namespace common
+} // namespace dart
