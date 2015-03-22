@@ -46,7 +46,7 @@ Shape::Shape(ShapeType _type)
   : mBoundingBoxDim(0, 0, 0),
     mVolume(0.0),
     mID(mCounter++),
-    mColor(0.5, 0.5, 1.0),
+    mColor(0.5, 0.5, 1.0, 1.0),
     mTransform(Eigen::Isometry3d::Identity()),
     mType(_type)
 {
@@ -56,10 +56,31 @@ Shape::~Shape() {
 }
 
 void Shape::setColor(const Eigen::Vector3d& _color) {
-  mColor = _color;
+  setRGB(_color);
 }
 
-const Eigen::Vector3d& Shape::getColor() const {
+void Shape::setColor(const Eigen::Vector4d &_color) {
+  setRGBA(_color);
+}
+
+void Shape::setRGB(const Eigen::Vector3d& _rgb) {
+  mColor << _rgb, mColor[3];
+  setRGBA(mColor);
+}
+
+void Shape::setRGBA(const Eigen::Vector4d& _rgba) {
+  mColor = _rgba;
+}
+
+Eigen::Vector3d Shape::getColor() const {
+  return getRGB();
+}
+
+Eigen::Vector3d Shape::getRGB() const {
+  return Eigen::Vector3d(mColor[0], mColor[1], mColor[2]);
+}
+
+const Eigen::Vector4d& Shape::getRGBA() const {
   return mColor;
 }
 

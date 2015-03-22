@@ -55,6 +55,20 @@ int main(int argc, char* argv[])
           DART_DATA_PATH"skel/softBodies.skel");
   assert(myWorld != NULL);
 
+  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
+  {
+    dart::dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
+    {
+      dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
+      for(size_t k=0; k<bn->getNumVisualizationShapes(); ++k)
+      {
+        dart::dynamics::Shape* vs = bn->getVisualizationShape(k);
+        vs->setColor(dart::Color::Random());
+      }
+    }
+  }
+
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
