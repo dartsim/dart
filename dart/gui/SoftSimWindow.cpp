@@ -42,6 +42,8 @@
 
 #include "dart/gui/SoftSimWindow.h"
 
+#include "dart/gui/LoadGlut.h"
+
 namespace dart {
 namespace gui {
 

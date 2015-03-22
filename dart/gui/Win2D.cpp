@@ -38,6 +38,8 @@
 
 #include <iostream>
 
+#include "dart/gui/LoadGlut.h"
+
 namespace dart {
 namespace gui {
 
