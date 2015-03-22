@@ -2196,40 +2196,41 @@ void BodyNode::_updateBodyJacobianSpatialDeriv() const
   //--------------------------------------------------------------------------
   // Body Jacobian first spatial derivative update
   //
-  // dJ = | dJ1 dJ2 ... dJn |
-  //   = | Ad(T(i,i-1), dJ_parent) dJ_local |
+  // dJ = | Ad(T(i, parent(i)), dJ_parent(i))    ad(V(i), S(i)) + dS(i) |
   //
-  //   dJ_parent: (6 x parentDOF)
-  //    dJ_local: (6 x localDOF)
-  //         dJi: (6 x 1) se3
-  //          n: number of dependent coordinates
+  // T(i, parent(i)): Transformation from this BodyNode to the parent BodyNode
+  // dJ             : Spatial Jacobian derivative (6 x dependentDOF)
+  // dJ_parent      : Parent Jacobian derivative (6 x (dependentDOF - localDOF))
+  // V(i)           : Spatial velocity (6 x 1)
+  // S(i)           : Local spatial Jacobian (6 x localDOF)
+  // dS(i)          : Local spatial Jacobian deriavative (6 x localDOF)
+  // Ad(T(1,2), V)  : Transformation a spatial motion from frame 2 to frame 1
+  // ad(V, W)       : Spatial cross product for spatial motions
   //--------------------------------------------------------------------------
 
-  if(NULL == mParentJoint)
+  if (nullptr == mParentJoint)
     return;
 
-  const size_t numLocalDOFs = mParentJoint->getNumDofs();
+  const auto numLocalDOFs = mParentJoint->getNumDofs();
   assert(getNumDependentGenCoords() >= numLocalDOFs);
-  const size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
+  const auto numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
-  // Parent Jacobian
+  // Parent Jacobian: Ad(T(i, parent(i)), dJ_parent(i))
   if (mParentBodyNode)
   {
-    const math::Jacobian& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
+    const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
     assert(static_cast<size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
            == static_cast<size_t>(mBodyJacobianSpatialDeriv.cols()));
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getLocalTransform(), dJ_parent);
-
-    mBodyJacobianSpatialDeriv -= math::adJac(getSpatialVelocity(),
-                                             getJacobian());
   }
 
-  // Local Jacobian
+  // Local Jacobian: ad(V(i), S(i)) + dS(i)
   mBodyJacobianSpatialDeriv.rightCols(numLocalDOFs)
-      = mParentJoint->getLocalJacobianTimeDeriv();
+      = math::adJac(getSpatialVelocity(), mParentJoint->getLocalJacobian())
+        + mParentJoint->getLocalJacobianTimeDeriv();
 
   mIsBodyJacobianSpatialDerivDirty = false;
 }

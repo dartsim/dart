@@ -92,6 +92,9 @@ public:
   // Test skeleton's COM and its related quantities.
   void testCenterOfMass(const std::string& _fileName);
 
+  // Test if the com acceleration is equal to the gravity
+  void testCenterOfMassFreeFall(const std::string& _fileName);
+
   //
   void testConstraintImpulse(const std::string& _fileName);
 
@@ -310,7 +313,6 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   if(!spatialVelEqual)
     printComparisonError("spatial velocity", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
-
 
   bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
   bool spatialAccEqual    = equals(SpatialAccFk, SpatialAccJac, tolerance);
@@ -1174,6 +1176,162 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 }
 
 //==============================================================================
+void compareCOMAccelerationToGravity(Skeleton* skel,
+                                     const Eigen::Vector3d& gravity,
+                                     double tolerance)
+{
+  const size_t numFrames = 1e+2;
+  skel->setGravity(gravity);
+
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    skel->computeForwardDynamics();
+
+    Vector3d comLinearAccFk = skel->getCOMLinearAcceleration();
+
+    bool comLinearAccFkEqual = equals(gravity, comLinearAccFk, tolerance);
+    EXPECT_TRUE(comLinearAccFkEqual);
+    if (!comLinearAccFkEqual)
+    {
+      printComparisonError("COM linear acceleration", skel->getName(),
+                           Frame::World()->getName(), gravity, comLinearAccFk);
+    }
+
+    VectorXd dq  = skel->getVelocities();
+    VectorXd ddq = skel->getAccelerations();
+    math::LinearJacobian comLinearJac      = skel->getCOMLinearJacobian();
+    math::LinearJacobian comLinearJacDeriv = skel->getCOMLinearJacobianDeriv();
+    Vector3d comLinearAccJac = comLinearJac * ddq + comLinearJacDeriv * dq;
+
+    bool comLinearAccJacEqual = equals(gravity, comLinearAccJac,tolerance);
+    EXPECT_TRUE(comLinearAccJacEqual);
+    if (!comLinearAccJacEqual)
+    {
+      printComparisonError("COM linear acceleration", skel->getName(),
+                           Frame::World()->getName(), gravity, comLinearAccJac);
+    }
+  }
+
+}
+
+//==============================================================================
+void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeletons
+#ifndef BUILD_TYPE_DEBUG
+  size_t nRandomItr = 2;
+#else
+  size_t nRandomItr = 10;
+#endif
+
+  // Lower and upper bound of configuration for system
+  double lb = -1.5 * DART_PI;
+  double ub =  1.5 * DART_PI;
+
+  // Lower and upper bound of joint damping and stiffness
+  double lbD =  0.0;
+  double ubD = 10.0;
+  double lbK =  0.0;
+  double ubK = 10.0;
+
+  simulation::World* myWorld = nullptr;
+  std::vector<Vector3d> gravities(4);
+  gravities[0] = Vector3d::Zero();
+  gravities[1] = Vector3d(-9.81, 0, 0);
+  gravities[2] = Vector3d(0, -9.81, 0);
+  gravities[3] = Vector3d(0, 0, -9.81);
+
+  //----------------------------- Tests ----------------------------------------
+  // Check whether multiplication of mass matrix and its inverse is identity
+  // matrix.
+  myWorld = utils::SkelParser::readWorld(_fileName);
+  EXPECT_TRUE(myWorld != NULL);
+
+  for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
+  {
+    auto skel          = myWorld->getSkeleton(i);
+    auto rootJoint     = skel->getJoint(0);
+    auto rootFreeJoint = dynamic_cast<dynamics::FreeJoint*>(rootJoint);
+
+    auto dof = skel->getNumDofs();
+
+    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
+    {
+#ifdef BUILD_TYPE_DEBUG
+      dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
+            << "] since the Skeleton doesn't have FreeJoint at the root body "
+            << " or immobile." << endl;
+#endif
+      continue;
+    }
+    else
+    {
+      rootFreeJoint->setActuatorType(dynamics::Joint::PASSIVE);
+    }
+
+    // Make sure the damping and spring forces are zero for the root FreeJoint.
+    for (size_t l = 0; l < rootJoint->getNumDofs(); ++l)
+    {
+      rootJoint->setDampingCoefficient(l, 0.0);
+      rootJoint->setSpringStiffness(l, 0.0);
+      rootJoint->setRestPosition(l, 0.0);
+    }
+
+    for (size_t j = 0; j < nRandomItr; ++j)
+    {
+      // Random joint stiffness and damping coefficient
+      for (size_t k = 1; k < skel->getNumBodyNodes(); ++k)
+      {
+        auto body     = skel->getBodyNode(k);
+        auto joint    = body->getParentJoint();
+        auto localDof = joint->getNumDofs();
+
+        for (size_t l = 0; l < localDof; ++l)
+        {
+          joint->setDampingCoefficient(l, random(lbD,  ubD));
+          joint->setSpringStiffness(l, random(lbK,  ubK));
+
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
+          if (lbRP < -DART_PI)
+            lbRP = -DART_PI;
+          if (ubRP > DART_PI)
+            ubRP = DART_PI;
+          joint->setRestPosition(l, random(lbRP, ubRP));
+        }
+      }
+
+      // Set random states
+      VectorXd q  = VectorXd(dof);
+      VectorXd dq = VectorXd(dof);
+      for (size_t k = 0; k < dof; ++k)
+      {
+        q[k]   = math::random(lb, ub);
+        dq[k]  = math::random(lb, ub);
+      }
+      VectorXd ddq = VectorXd::Zero(dof);
+      skel->setPositions(q);
+      skel->setVelocities(dq);
+      skel->setAccelerations(ddq);
+
+      for (const auto& gravity : gravities)
+        compareCOMAccelerationToGravity(skel, gravity, 1e-6);
+    }
+  }
+
+  delete myWorld;
+}
+
+//==============================================================================
 void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 {
   using namespace std;
@@ -1428,6 +1586,18 @@ TEST_F(DynamicsTest, testCenterOfMass)
     dtdbg << getList()[i] << std::endl;
 #endif
     testCenterOfMass(getList()[i]);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, testCenterOfMassFreeFall)
+{
+  for (size_t i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    testCenterOfMassFreeFall(getList()[i]);
   }
 }
 
