@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s):
- * Date:
+ * Author(s): Jeongsoek Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,80 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHSHAPE_H_
-#define DART_DYNAMICS_MESHSHAPE_H_
+#ifndef DART_GUI_LOADGLUT_H_
+#define DART_GUI_LOADGLUT_H_
 
-#include <string>
+#if WIN32
+  #include <cstdlib> // To disable glut::exit() function
+  #include <GL/glut.h>
+#elif defined(__linux__)
+  #include <GL/glut.h>
+#elif defined(__APPLE__)
+  #include <Glut/glut.h>
+#else
+  #error "Load OpenGL Error: What's your operating system?"
+#endif
 
-#include <assimp/scene.h>
+#endif  // DART_GUI_LOADGLUT_H_
 
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-
-/// \brief
-class MeshShape : public Shape {
-public:
-  /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh);
-
-  /// \brief Destructor.
-  virtual ~MeshShape();
-
-  /// \brief
-  const aiScene* getMesh() const;
-
-  /// \brief
-  void setMesh(const aiScene* _mesh);
-
-  /// \brief
-  void setScale(const Eigen::Vector3d& _scale);
-
-  /// \brief
-  const Eigen::Vector3d& getScale() const;
-
-  /// \brief
-  int getDisplayList() const;
-
-  /// \brief
-  void setDisplayList(int _index);
-
-  // Documentation inherited.
-  void draw(renderer::RenderInterface* _ri = NULL,
-            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-            bool _default = true) const;
-
-  /// \brief
-  static const aiScene* loadMesh(const std::string& _fileName);
-
-  // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
-
-protected:
-  // Documentation inherited.
-  virtual void computeVolume();
-
-private:
-  /// \brief
-  void _updateBoundingBoxDim();
-
-protected:
-  /// \brief
-  const aiScene* mMesh;
-
-  /// \brief OpenGL DisplayList id for rendering
-  int mDisplayList;
-
-  /// \brief Scale
-  Eigen::Vector3d mScale;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_MESHSHAPE_H_

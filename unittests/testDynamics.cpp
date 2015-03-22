@@ -272,71 +272,134 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
                                  const Frame* refFrame,
                                  double tolerance)
 {
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
   const Skeleton* skel = bn->getSkeleton();
 
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dq = skel->getVelocitySegment(coords);
-  VectorXd ddq = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocitySegment(coords);
+  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+
+  //-- Spatial Jacobian tests --------------------------------------------------
 
   Vector6d SpatialVelFk = bn->getSpatialVelocity(Frame::World(), refFrame);
   Vector6d SpatialAccFk = bn->getSpatialAcceleration(Frame::World(), refFrame);
 
-  math::Jacobian SpatialJac = bn->getJacobian(refFrame);
-  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(refFrame);
+  Jacobian SpatialJacSeg      = bn->getJacobian(refFrame);
+  Jacobian SpatialJacDerivSeg = bn->getJacobianSpatialDeriv(refFrame);
+
+  Vector6d SpatialVelJacSeg = SpatialJacSeg * dqSeg;
+  Vector6d SpatialAccJacSeg = SpatialJacSeg * ddqSeg
+                              + SpatialJacDerivSeg * dqSeg;
+
+  Jacobian SpatialJac      = skel->getJacobian(bn, refFrame);
+  Jacobian SpatialJacDeriv = skel->getJacobianSpatialDeriv(bn, refFrame);
 
   Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual    = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelSegEqual );
   EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelSegEqual)
+    printComparisonError("spatial velocity (seg)", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJacSeg);
   if(!spatialVelEqual)
     printComparisonError("spatial velocity", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual    = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE( spatialAccSegEqual );
   EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccSegEqual)
+    printComparisonError("spatial acceleration (seg)", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJacSeg);
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration", bn->getName(),
                          refFrame->getName(), SpatialAccFk, SpatialAccJac);
 
+  //-- Linear Jacobian tests ---------------------------------------------------
+
   Vector3d LinearVelFk = bn->getLinearVelocity(Frame::World(), refFrame);
   Vector3d LinearAccFk = bn->getLinearAcceleration(Frame::World(), refFrame);
 
-  math::LinearJacobian LinearJac = bn->getLinearJacobian(refFrame);
-  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(refFrame);
+  LinearJacobian LinearJacSeg      = bn->getLinearJacobian(refFrame);
+  LinearJacobian LinearJacDerivSeg = bn->getLinearJacobianDeriv(refFrame);
+
+  Vector3d LinearVelJacSeg = LinearJacSeg * dqSeg;
+  Vector3d LinearAccJacSeg = LinearJacSeg * ddqSeg + LinearJacDerivSeg * dqSeg;
+
+  LinearJacobian LinearJac      = skel->getLinearJacobian(bn, refFrame);
+  LinearJacobian LinearJacDeriv = skel->getLinearJacobianDeriv(bn, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual    = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelSegEqual );
   EXPECT_TRUE( linearVelEqual );
+  if(!linearVelSegEqual)
+    printComparisonError("linear velocity (seg)", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJacSeg);
   if(!linearVelEqual)
     printComparisonError("linear velocity", bn->getName(),
                          refFrame->getName(), LinearVelFk, LinearVelJac);
 
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual    = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccSegEqual );
   EXPECT_TRUE( linearAccEqual );
+  if(!linearAccSegEqual)
+    printComparisonError("linear acceleration (seg)", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJacSeg);
   if(!linearAccEqual)
     printComparisonError("linear acceleration", bn->getName(),
                          refFrame->getName(), LinearAccFk, LinearAccJac);
 
+  //-- Angular Jacobian tests
+
   Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
   Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
 
-  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
-  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+  AngularJacobian AngularJacSeg      = bn->getAngularJacobian(refFrame);
+  AngularJacobian AngularJacDerivSeg = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJacSeg = AngularJacSeg * dqSeg;
+  Vector3d AngularAccJacSeg = AngularJacSeg * ddqSeg
+                              + AngularJacDerivSeg * dqSeg;
+
+  AngularJacobian AngularJac      = skel->getAngularJacobian(bn, refFrame);
+  AngularJacobian AngularJacDeriv = skel->getAngularJacobianDeriv(bn, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual    = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelSegEqual );
   EXPECT_TRUE( angularVelEqual );
+  if(!angularVelSegEqual)
+    printComparisonError("angular velocity (seg)", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJacSeg);
   if(!angularVelEqual)
     printComparisonError("angular velocity", bn->getName(),
                          refFrame->getName(), AngularVelFk, AngularVelJac);
 
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual    = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccSegEqual );
   EXPECT_TRUE( angularAccEqual );
+  if(!angularAccSegEqual)
+    printComparisonError("angular acceleration (seg)", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJacSeg);
   if(!angularAccEqual)
     printComparisonError("angular acceleration", bn->getName(),
                          refFrame->getName(), AngularAccFk, AngularAccJac);
@@ -348,76 +411,143 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
                                  const Eigen::Vector3d& offset,
                                  double tolerance)
 {
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
   const Skeleton* skel = bn->getSkeleton();
 
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dq = skel->getVelocitySegment(coords);
-  VectorXd ddq = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocitySegment(coords);
+  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+
+  //-- Spatial Jacobian tests --------------------------------------------------
 
   Vector6d SpatialVelFk = bn->getSpatialVelocity(
         offset, Frame::World(), refFrame);
   Vector6d SpatialAccFk = bn->getSpatialAcceleration(
         offset, Frame::World(), refFrame);
 
-  math::Jacobian SpatialJac = bn->getJacobian(offset, refFrame);
-  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(
-        offset, refFrame);
+  Jacobian SpatialJacSeg      = bn->getJacobian(offset, refFrame);
+  Jacobian SpatialJacDerivSeg = bn->getJacobianSpatialDeriv(offset, refFrame);
+
+  Vector6d SpatialVelJacSeg = SpatialJacSeg * dqSeg;
+  Vector6d SpatialAccJacSeg = SpatialJacSeg * ddqSeg
+                              + SpatialJacDerivSeg * dqSeg;
+
+  Jacobian SpatialJac
+      = skel->getJacobian(bn, offset, refFrame);
+  Jacobian SpatialJacDeriv
+      = skel->getJacobianSpatialDeriv(bn, offset, refFrame);
 
   Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual    = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelSegEqual );
   EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelSegEqual)
+    printComparisonError("spatial velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJacSeg);
   if(!spatialVelEqual)
     printComparisonError("spatial velocity w/ offset", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual    = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE( spatialAccSegEqual );
   EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccSegEqual)
+    printComparisonError("spatial acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJacSeg);
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration w/ offset", bn->getName(),
                          refFrame->getName(), SpatialAccFk, SpatialAccJac);
 
-  Vector3d LinearVelFk = bn->getLinearVelocity(
-        offset, Frame::World(), refFrame);
-  Vector3d LinearAccFk = bn->getLinearAcceleration(
-        offset, Frame::World(), refFrame);
+  //-- Linear Jacobian tests ---------------------------------------------------
 
-  math::LinearJacobian LinearJac = bn->getLinearJacobian(offset, refFrame);
-  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(
-        offset, refFrame);
+  Vector3d LinearVelFk
+      = bn->getLinearVelocity(offset, Frame::World(), refFrame);
+  Vector3d LinearAccFk
+      = bn->getLinearAcceleration(offset, Frame::World(), refFrame);
+
+  LinearJacobian LinearJacSeg
+      = bn->getLinearJacobian(offset, refFrame);
+  LinearJacobian LinearJacDerivSeg
+      = bn->getLinearJacobianDeriv(offset, refFrame);
+
+  Vector3d LinearVelJacSeg = LinearJacSeg * dqSeg;
+  Vector3d LinearAccJacSeg = LinearJacSeg * ddqSeg + LinearJacDerivSeg * dqSeg;
+
+  LinearJacobian LinearJac
+      = skel->getLinearJacobian(bn, offset, refFrame);
+  LinearJacobian LinearJacDeriv
+      = skel->getLinearJacobianDeriv(bn, offset, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual    = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelSegEqual );
   EXPECT_TRUE( linearVelEqual );
+  if(!linearVelSegEqual)
+    printComparisonError("linear velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJacSeg);
   if(!linearVelEqual)
     printComparisonError("linear velocity w/ offset", bn->getName(),
                          refFrame->getName(), LinearVelFk, LinearVelJac);
 
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual    = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccSegEqual );
   EXPECT_TRUE( linearAccEqual );
+  if(!linearAccSegEqual)
+    printComparisonError("linear acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJacSeg);
   if(!linearAccEqual)
     printComparisonError("linear acceleration w/ offset", bn->getName(),
                          refFrame->getName(), LinearAccFk, LinearAccJac);
 
+  //-- Angular Jacobian tests --------------------------------------------------
+
   Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
   Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
 
-  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
-  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+  AngularJacobian AngularJacSeg      = bn->getAngularJacobian(refFrame);
+  AngularJacobian AngularJacDerivSeg = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJacSeg = AngularJacSeg * dqSeg;
+  Vector3d AngularAccJacSeg = AngularJacSeg * ddqSeg
+                              + AngularJacDerivSeg * dqSeg;
+
+  AngularJacobian AngularJac      = skel->getAngularJacobian(bn, refFrame);
+  AngularJacobian AngularJacDeriv = skel->getAngularJacobianDeriv(bn, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual    = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelSegEqual );
   EXPECT_TRUE( angularVelEqual );
+  if(!angularVelSegEqual)
+    printComparisonError("angular velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJacSeg);
   if(!angularVelEqual)
     printComparisonError("angular velocity w/ offset", bn->getName(),
                          refFrame->getName(), AngularVelFk, AngularVelJac);
 
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual    = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccSegEqual );
+  if(!angularAccSegEqual)
+    printComparisonError("angular acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJacSeg);
   EXPECT_TRUE( angularAccEqual );
   if(!angularAccEqual)
     printComparisonError("angular acceleration w/ offset", bn->getName(),

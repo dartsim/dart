@@ -52,7 +52,7 @@ namespace dynamics {
 /// (such as position, velocity, and acceleration) can be modified. Conversely,
 /// the SimpleFrame class is nothing but a simple abstract Frame whose
 /// properties can be arbitrarily set and modified by the user.
-class SimpleFrame : public Frame, public Detachable
+class SimpleFrame : public Detachable, public Frame
 {
 public:
   /// Constructor

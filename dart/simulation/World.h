@@ -52,6 +52,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/Timer.h"
 #include "dart/common/NameManager.h"
+#include "dart/common/Subject.h"
 #include "dart/simulation/Recording.h"
 #include "dart/dynamics/Entity.h"
 
@@ -72,7 +73,7 @@ class ConstraintSolver;
 namespace simulation {
 
 /// class World
-class World
+class World : public virtual common::Subject
 {
 public:
   //--------------------------------------------------------------------------

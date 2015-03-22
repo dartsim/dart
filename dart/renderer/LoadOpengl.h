@@ -34,19 +34,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOAD_OPENGL_H
-#define DART_RENDERER_LOAD_OPENGL_H
+#ifndef DART_RENDERER_LOADOPENGL_H_
+#define DART_RENDERER_LOADOPENGL_H_
 
 #if WIN32
-#include <cstdlib> // To disable glut::exit() function
-#include <GL/glut.h>
-#elif defined(__linux)
-#include <GL/glut.h>
+  #include <windows.h>
+  #include <GL/gl.h>
+  #include <GL/glu.h>
+#elif defined(__linux__)
+  #include <GL/gl.h>
+  #include <GL/glu.h>
 #elif defined(__APPLE__)
-#include <Glut/glut.h>
+  #include <OpenGL/gl.h>
+  #include <OpenGL/glu.h>
 #else
-#error "Load OpenGL Error: What's your operating system?"
+  #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif // #ifndef DART_RENDERER_LOAD_OPENGL_H
-
+#endif  // DART_RENDERER_LOADOPENGL_H_

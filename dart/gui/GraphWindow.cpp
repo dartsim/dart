@@ -47,6 +47,7 @@
 #include <string>
 
 #include "dart/gui/GLFuncs.h"
+#include "dart/gui/LoadGlut.h"
 
 namespace dart {
 namespace gui {
