@@ -271,7 +271,8 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
                                    NULL, propertyStore);
   if(!scene)
     dtwarn << "[MeshShape] Assimp could not load file: '" << _fileName << "'. "
-           << "This will likely result in a segmentation fault." << std::endl;
+           << "This will likely result in a segmentation fault "
+           << "if you attempt to use the nullptr we return." << std::endl;
   aiReleasePropertyStore(propertyStore);
 
   // Assimp rotates collada files such that the up-axis (specified in the
