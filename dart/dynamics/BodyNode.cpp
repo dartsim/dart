@@ -398,30 +398,6 @@ double BodyNode::getRestitutionCoeff() const
 }
 
 //==============================================================================
-void BodyNode::addVisualizationShape(Shape* _p)
-{
-  mVizShapes.push_back(_p);
-}
-
-//==============================================================================
-size_t BodyNode::getNumVisualizationShapes() const
-{
-  return mVizShapes.size();
-}
-
-//==============================================================================
-Shape* BodyNode::getVisualizationShape(size_t _index)
-{
-  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
-}
-
-//==============================================================================
-const Shape* BodyNode::getVisualizationShape(size_t _index) const
-{
-  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
-}
-
-//==============================================================================
 void BodyNode::addCollisionShape(Shape* _p)
 {
   if(nullptr == _p)
