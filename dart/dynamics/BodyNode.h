@@ -207,18 +207,6 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Add a visualization shape into the bodynode
-  void addVisualizationShape(Shape* _p);
-
-  /// Return the number of visualization shapes
-  size_t getNumVisualizationShapes() const;
-
-  /// Return _index-th visualization shape
-  Shape* getVisualizationShape(size_t _index);
-
-  /// Return (const) _index-th visualization shape
-  const Shape* getVisualizationShape(size_t _index) const;
-
   /// Add a collision shape into the bodynode
   void addCollisionShape(Shape* _p);
 
