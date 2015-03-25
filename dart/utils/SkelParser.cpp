@@ -794,10 +794,21 @@ dynamics::Shape* SkelParser::readShape(tinyxml2::XMLElement* vizEle) {
     double                height       = getValueDouble(cylinderEle, "height");
     newShape = new dynamics::CylinderShape(radius, height);
   } else if (hasElement(geometryEle, "plane")) {
-    tinyxml2::XMLElement* planeEle     = getElement(geometryEle, "plane");
-    Eigen::Vector3d       normal       = getValueVector3d(planeEle, "normal");
-    Eigen::Vector3d       point        = getValueVector3d(planeEle, "point");
-    newShape = new dynamics::PlaneShape(normal, point);
+    tinyxml2::XMLElement* planeEle = getElement(geometryEle, "plane");
+    Eigen::Vector3d       normal   = getValueVector3d(planeEle, "normal");
+    if (hasElement(planeEle, "offset")) {
+      double offset = getValueDouble(planeEle, "offset");
+      newShape = new dynamics::PlaneShape(normal, offset); }
+    else if (hasElement(planeEle, "point")) {
+      dtwarn << "[SkelParser::readShape] <point> element of <plane> is "
+             << "deprecated as of DART 4.3. Please use <offset> element "
+             << "instead." << std::endl;
+      Eigen::Vector3d point = getValueVector3d(planeEle, "point");
+      newShape = new dynamics::PlaneShape(normal, point); }
+    else {
+      dtwarn << "[SkelParser::readShape] <offset> element is not specified for "
+             << "plane shape. DART will use 0.0." << std::endl;
+      newShape = new dynamics::PlaneShape(normal, 0.0); }
   } else if (hasElement(geometryEle, "mesh")) {
     tinyxml2::XMLElement* meshEle      = getElement(geometryEle, "mesh");
     std::string           filename     = getValueString(meshEle, "file_name");
