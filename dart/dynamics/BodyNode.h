@@ -76,6 +76,12 @@ class Marker;
 class BodyNode : public Frame
 {
 public:
+
+  struct Properties
+  {
+
+  };
+
   /// Constructor
   explicit BodyNode(const std::string& _name = "BodyNode");
 
