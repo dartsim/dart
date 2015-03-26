@@ -416,7 +416,7 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* _node) {
         return;
 
     for (size_t i = 0; i < _node->getNumVisualizationShapes(); i++)
-        compileList(_node->getVisualizationShape(i));
+        compileList(_node->getVisualizationShape(i).get());
     for (size_t i = 0; i < _node->getNumCollisionShapes(); i++)
         compileList(_node->getCollisionShape(i));
 }
@@ -505,7 +505,7 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode* _node, bool _vizCol, bool _
     }
     else {
         for (size_t i = 0; i < _node->getNumVisualizationShapes(); i++)
-            draw(_node->getVisualizationShape(i));
+            draw(_node->getVisualizationShape(i).get());
     }
 
     glColor3f(1.0f,1.0f,1.0f);

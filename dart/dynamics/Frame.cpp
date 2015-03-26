@@ -79,11 +79,6 @@ Frame::~Frame()
   // then apply changeParentFrame(~) to the pointer that 'it' held just before
   // it incremented.
 
-  // Free the memory of the visualization shapes
-  for(size_t i=0; i<mVizShapes.size(); ++i)
-    delete mVizShapes[i];
-  mVizShapes.clear();
-
   // The entity destructor takes care of informing the parent Frame that this
   // one is disappearing
 }
@@ -447,10 +442,10 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
   _ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri.popName();

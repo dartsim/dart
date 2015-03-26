@@ -357,8 +357,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   ElementEnumerator vizShapes(_softBodyNodeElement, "visual");
   while (vizShapes.next())
   {
-    dynamics::Shape* newShape
-        = readShape(vizShapes.get(), _skelPath);
+    std::shared_ptr<dynamics::Shape> newShape(
+          readShape(vizShapes.get(), _skelPath));
     if (newShape)
       newSoftBodyNode->addVisualizationShape(newShape);
   }
@@ -449,7 +449,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
@@ -469,7 +470,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
@@ -493,7 +495,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(

@@ -81,7 +81,8 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
   using VizShapeAddedSignal
-      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+      = common::Signal<void(const Entity*,
+                       std::shared_ptr<const Shape> _newVisShape)>;
 
   struct Properties
   {
@@ -98,6 +99,8 @@ public:
     Properties(const std::string& _name = "");
   };
 
+  using VizShapeRemovedSignal = VizShapeAddedSignal;
+
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
@@ -112,8 +115,23 @@ public:
   /// Return the name of this Entity
   virtual const std::string& getName() const;
 
-  /// Add a visualization shape for this Entity
-  virtual void addVisualizationShape(Shape* _p);
+  /// Add a visualization Shape for this Entity
+  virtual void addVisualizationShape(std::shared_ptr<Shape> _shape);
+
+  /// Remove a visualization Shape from this Entity
+  virtual void removeVisualizationShape(std::shared_ptr<Shape> _shape);
+
+  /// Remove all visualization Shapes from this Entity
+  virtual void removeAllVisualizationShapes();
+
+  /// Return the number of visualization shapes
+  size_t getNumVisualizationShapes() const;
+
+  /// Return _index-th visualization shape
+  std::shared_ptr<Shape> getVisualizationShape(size_t _index);
+
+  /// Return (const) _index-th visualization shape
+  std::shared_ptr<const Shape> getVisualizationShape(size_t _index) const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -175,7 +193,7 @@ protected:
 //  std::string mName;
 
   /// Vector of visualization shapes
-  std::vector<Shape*> mVizShapes;
+//  std::vector<Shape*> mVizShapes;
 
 
 
@@ -197,6 +215,9 @@ protected:
 
   /// Visualization added signal
   VizShapeAddedSignal mVizShapeAddedSignal;
+
+  /// Visualization removed signal
+  VizShapeRemovedSignal mVizShapeRemovedSignal;
 
   /// Transform changed signal
   EntitySignal mTransformUpdatedSignal;

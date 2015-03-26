@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
@@ -43,6 +44,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
@@ -50,6 +52,17 @@ Entity::Properties::Properties(const std::string& _name)
   : mName(_name)
 {
 
+}
+
+//==============================================================================
+template <typename T>
+static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
+{
+  assert(_index < _vec.size());
+  if (_index < _vec.size())
+    return _vec[_index];
+
+  return NULL;
 }
 
 //==============================================================================
@@ -101,11 +114,64 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(Shape* _p)
+void Entity::addVisualizationShape(std::shared_ptr<Shape> _shape)
 {
-  mVizShapes.push_back(_p);
+  if (nullptr == _shape)
+    return;
 
-  mVizShapeAddedSignal.raise(this, _p);
+  if (std::find(mEntityP.mVizShapes.begin(), mEntityP.mVizShapes.end(), _shape)
+      != mEntityP.mVizShapes.end())
+  {
+    dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
+           << "duplicate visualization shape." << std::endl;
+    return;
+  }
+
+  mEntityP.mVizShapes.push_back(_shape);
+
+  mVizShapeAddedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeVisualizationShape(std::shared_ptr<Shape> _shape)
+{
+  if (nullptr == _shape)
+    return;
+
+  mEntityP.mVizShapes.erase(std::remove(mEntityP.mVizShapes.begin(),
+                                        mEntityP.mVizShapes.end(), _shape),
+                            mEntityP.mVizShapes.end());
+
+  mVizShapeRemovedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeAllVisualizationShapes()
+{
+  auto it = mEntityP.mVizShapes.begin();
+
+  while (it != mEntityP.mVizShapes.end())
+    removeVisualizationShape(*(it++));
+}
+
+//==============================================================================
+size_t Entity::getNumVisualizationShapes() const
+{
+  return mEntityP.mVizShapes.size();
+}
+
+//==============================================================================
+std::shared_ptr<Shape> Entity::getVisualizationShape(size_t _index)
+{
+  return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
+        _index, mEntityP.mVizShapes);
+}
+
+//==============================================================================
+std::shared_ptr<const Shape> Entity::getVisualizationShape(size_t _index) const
+{
+  return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
+        _index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
@@ -122,10 +188,10 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
   // This all seems questionable to me.
 
   // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri->popName();

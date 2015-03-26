@@ -413,7 +413,7 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk) {
   // Set visual information
   for(unsigned int i = 0; i < _lk->visual_array.size(); i++) {
     if(dynamics::Shape* shape = createShape(_lk->visual_array[i].get())) {
-      node->addVisualizationShape(shape);
+      node->addVisualizationShape(std::shared_ptr<dynamics::Shape>(shape));
     }
   }
 

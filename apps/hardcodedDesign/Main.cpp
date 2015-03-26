@@ -98,10 +98,10 @@ int main(int argc, char* argv[]) {
   dart::dynamics::BodyNode* node = new dart::dynamics::BodyNode("LHY");
   dart::dynamics::Joint* joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_YAW);
   joint->setName("LHY");
-  dart::dynamics::Shape* shape =
-      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  std::shared_ptr<dart::dynamics::Shape> shape(
+      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
+  node->addCollisionShape(shape.get());
   node->setMass(mass);
   node->setParentJoint(joint);
   LeftLegSkel.addBodyNode(node);
@@ -114,12 +114,13 @@ int main(int argc, char* argv[]) {
   joint->setName("LHR");
   Eigen::Isometry3d T(Eigen::Translation3d(0.0, 0.0, 0.5));
   joint->setTransformFromParentBodyNode(T);
-  shape = new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  shape = std::shared_ptr<dart::dynamics::Shape>(
+        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   node->setLocalCOM(shape->getOffset());
   node->setMass(mass);
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
+  node->addCollisionShape(shape.get());
   node->setParentJoint(joint);
   parent_node->addChildBodyNode(node);
   LeftLegSkel.addBodyNode(node);
@@ -131,15 +132,16 @@ int main(int argc, char* argv[]) {
   joint->setName("LHP");
   T = Eigen::Translation3d(0.0, 0.0, 1.0);
   joint->setTransformFromParentBodyNode(T);
-  shape = new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  shape = std::shared_ptr<dart::dynamics::Shape>(
+        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   node->setLocalCOM(shape->getOffset());
   node->setMass(mass);
-  dart::dynamics::Shape* shape1 =
-      new dart::dynamics::EllipsoidShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  std::shared_ptr<dart::dynamics::Shape> shape1(
+      new dart::dynamics::EllipsoidShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape1->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   node->addVisualizationShape(shape1);
-  node->addCollisionShape(shape);
+  node->addCollisionShape(shape.get());
   node->setParentJoint(joint);
   parent_node->addChildBodyNode(node);
   LeftLegSkel.addBodyNode(node);

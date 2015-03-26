@@ -978,10 +978,10 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 
   _ri->pushName((unsigned)mID);
   // rigid body
-  for (size_t i = 0; i < mVizShapes.size(); i++)
+  for (size_t i = 0; i < mEntityP.mVizShapes.size(); i++)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
 

@@ -74,7 +74,7 @@ public:
             const std::string& _skelPath);
 
     /// \brief
-    static dynamics::Shape* readShape(
+    static dart::dynamics::Shape* readShape(
             tinyxml2::XMLElement* _shapelement,
             const std::string& _skelPath);
 

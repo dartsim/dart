@@ -54,11 +54,14 @@ int main(int argc, char* argv[])
   tf3.rotate(Eigen::AngleAxisd(60*M_PI/180.0, Eigen::Vector3d(0,1,0)));
 
   SimpleFrame F1(Frame::World(), "F1", tf1);
-  F1.addVisualizationShape(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02)));
+  F1.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F2(&F1, "F2", tf2);
-  F2.addVisualizationShape(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02)));
+  F2.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F3(&F2, "F3", tf3);
-  F3.addVisualizationShape(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02)));
+  F3.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
 
   // Note: Adding a Frame to the world will also cause all Entities that descend
   // from that Frame to be rendered, but they will not be counted in the list of
@@ -67,22 +70,27 @@ int main(int argc, char* argv[])
   myWorld.addEntity(&F1);
 
   SimpleFrame A(Frame::World(), "A");
-  A.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.02,0.02,0.02)));
+  A.addVisualizationShape(std::shared_ptr<Shape>(
+                          new EllipsoidShape(Eigen::Vector3d(0.02,0.02,0.02))));
   SimpleFrame A1(&A, "A1", F1.getTransform(&A));
-  A1.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01)));
+  A1.addVisualizationShape(std::shared_ptr<Shape>(
+                          new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
   SimpleFrame A2(&A, "A2", F2.getTransform(&A));
-  A2.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01)));
+  A2.addVisualizationShape(std::shared_ptr<Shape>(
+                          new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
   SimpleFrame A3(&A, "A3", F3.getTransform(&A));
-  A3.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01)));
+  A3.addVisualizationShape(std::shared_ptr<Shape>(
+                          new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
 
   myWorld.addEntity(&A);
 
   SimpleFrame arrow(Frame::World(), "arrow");
   arrow.addVisualizationShape(
-        new ArrowShape(Eigen::Vector3d(0.1,-0.1, 0.0),
-                       Eigen::Vector3d(0.1, 0.0, 0.0),
-                       ArrowShape::Properties(0.002, 1.8),
-                       Eigen::Vector4d(1.0, 0.5, 0.5, 1.0)));
+        std::shared_ptr<Shape>(
+          new ArrowShape(Eigen::Vector3d(0.1,-0.1, 0.0),
+                         Eigen::Vector3d(0.1, 0.0, 0.0),
+                         ArrowShape::Properties(0.002, 1.8),
+                         Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
   myWorld.addEntity(&arrow);
 
   // CAREFUL: For an Entity (or Frame) that gets added to the world to be

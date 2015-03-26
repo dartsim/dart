@@ -376,8 +376,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   // visualization_shape
   ElementEnumerator vizShapes(_bodyNodeElement, "visualization_shape");
   while (vizShapes.next()) {
-    dynamics::Shape* newShape
-        = readShape(vizShapes.get());
+    std::shared_ptr<dynamics::Shape> newShape(readShape(vizShapes.get()));
 
     newBodyNode->addVisualizationShape(newShape);
   }
@@ -505,7 +504,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* vizElement
         = getElement(_softBodyNodeElement, "visualization_shape");
 
-    dynamics::Shape* shape = NULL;
+    std::shared_ptr<dynamics::Shape> shape;
+
 
     // type
     assert(hasElement(vizElement, "geometry"));
@@ -518,7 +518,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       Eigen::Vector3d size = getValueVector3d(boxElement, "size");
 
-      shape = new dynamics::BoxShape(size);
+      shape = std::shared_ptr<dynamics::Shape>(new dynamics::BoxShape(size));
     }
     else if (hasElement(geometryElement, "ellipsoid"))
     {
@@ -527,7 +527,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
 
-      shape = new dynamics::EllipsoidShape(size);
+      shape = std::shared_ptr<dynamics::Shape>(
+            new dynamics::EllipsoidShape(size));
     }
     else if (hasElement(geometryElement, "cylinder"))
     {
@@ -537,7 +538,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
       double radius = getValueDouble(cylinderElement, "radius");
       double height = getValueDouble(cylinderElement, "height");
 
-      shape = new dynamics::CylinderShape(radius, height);
+      shape = std::shared_ptr<dynamics::Shape>(
+            new dynamics::CylinderShape(radius, height));
     }
     else
     {
@@ -680,7 +682,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
@@ -700,7 +703,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
@@ -724,7 +728,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            std::shared_ptr<dynamics::Shape>(
+              new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(

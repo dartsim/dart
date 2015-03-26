@@ -322,8 +322,8 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     ElementEnumerator vizShapes(_bodyNodeElement, "visual");
     while (vizShapes.next())
     {
-        dynamics::Shape* newShape
-                = readShape(vizShapes.get(), _skelPath);
+        std::shared_ptr<dynamics::Shape> newShape(
+              readShape(vizShapes.get(), _skelPath));
         if (newShape)
             newBodyNode->addVisualizationShape(newShape);
     }
@@ -397,7 +397,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
 dynamics::Shape* SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
                                       const std::string& _skelPath)
 {
-    dynamics::Shape* newShape = NULL;
+    dynamics::Shape* newShape = nullptr;
 
     // type
     assert(hasElement(_shapelement, "geometry"));
