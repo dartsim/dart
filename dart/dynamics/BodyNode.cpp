@@ -205,13 +205,13 @@ bool BodyNode::getGravityMode() const
 //==============================================================================
 bool BodyNode::isCollidable() const
 {
-  return mIsCollidable;
+  return mBNP.mIsCollidable;
 }
 
 //==============================================================================
 void BodyNode::setCollidable(bool _isCollidable)
 {
-  mIsCollidable = _isCollidable;
+  mBNP.mIsCollidable = _isCollidable;
 }
 
 //==============================================================================

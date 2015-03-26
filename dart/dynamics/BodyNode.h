@@ -1072,9 +1072,6 @@ protected:
   /// BodyNode-specific properties
   PartialProperties mBNP;
 
-  /// Indicating whether this node is collidable.
-  bool mIsCollidable;
-
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
 
