@@ -85,9 +85,6 @@ public:
 
   struct Properties
   {
-    /// Parent Frame of the Entity
-    sub_ptr<Frame> mParentFrame;
-
     /// Name of the Entity
     std::string mName;
 
@@ -182,6 +179,9 @@ protected:
 
   /// Properties of this Entity
   Properties mEntityP;
+
+  /// Parent frame of this Entity
+  Frame* mParentFrame;
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;

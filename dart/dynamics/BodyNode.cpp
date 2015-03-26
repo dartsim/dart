@@ -2272,8 +2272,7 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 
     const Eigen::Vector3d& v_local = getLinearVelocity(mParentBodyNode,
                                                        Frame::World());
-    const Eigen::Vector3d& w_parent =
-        mEntityP.mParentFrame->getAngularVelocity();
+    const Eigen::Vector3d& w_parent = mParentFrame->getAngularVelocity();
     const Eigen::Vector3d& p = (getWorldTransform().translation()
                   - mParentBodyNode->getWorldTransform().translation()).eval();
 

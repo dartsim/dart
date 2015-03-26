@@ -68,6 +68,7 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 //==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
   : mEntityP(_name),
+    mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
@@ -200,13 +201,13 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
 //==============================================================================
 Frame* Entity::getParentFrame()
 {
-  return mEntityP.mParentFrame;
+  return mParentFrame;
 }
 
 //==============================================================================
 const Frame* Entity::getParentFrame() const
 {
-  return mEntityP.mParentFrame;
+  return mParentFrame;
 }
 
 //==============================================================================
@@ -292,32 +293,31 @@ bool Entity::needsAccelerationUpdate() const
 //==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if (mEntityP.mParentFrame == _newParentFrame)
+  if (mParentFrame == _newParentFrame)
     return;
 
-  const Frame* oldParentFrame = mEntityP.mParentFrame;
+  const Frame* oldParentFrame = mParentFrame;
 
-  if (!mAmQuiet && nullptr != mEntityP.mParentFrame)
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
-    EntityPtrSet::iterator it =
-        mEntityP.mParentFrame->mChildEntities.find(this);
-    if (it != mEntityP.mParentFrame->mChildEntities.end())
+    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
+    if (it != mParentFrame->mChildEntities.end())
     {
-      mEntityP.mParentFrame->mChildEntities.erase(it);
-      mEntityP.mParentFrame->processRemovedEntity(this);
+      mParentFrame->mChildEntities.erase(it);
+      mParentFrame->processRemovedEntity(this);
     }
   }
 
-  mEntityP.mParentFrame =_newParentFrame;
+  mParentFrame =_newParentFrame;
 
-  if (!mAmQuiet && nullptr != mEntityP.mParentFrame)
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
-    mEntityP.mParentFrame->mChildEntities.insert(this);
-    mEntityP.mParentFrame->processNewEntity(this);
+    mParentFrame->mChildEntities.insert(this);
+    mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
 
-  mFrameChangedSignal.raise(this, oldParentFrame, mEntityP.mParentFrame);
+  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
 //==============================================================================

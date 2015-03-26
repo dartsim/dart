@@ -81,15 +81,6 @@ public:
 
   struct PartialProperties
   {
-    /// Skeleton that this BodyNode belongs to
-    sub_ptr<Skeleton> mSkeleton;
-
-    /// Parent BodyNode
-    sub_ptr<BodyNode> mParentBodyNode;
-
-    /// Parent Joint
-    sub_ptr<Joint> mParentJoint;
-
     /// Inertia information for the BodyNode
     Inertia mInertia;
 
