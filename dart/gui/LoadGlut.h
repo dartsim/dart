@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongsoek Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,21 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#ifndef DART_GUI_LOADGLUT_H_
+#define DART_GUI_LOADGLUT_H_
 
 #if WIN32
-  #include <windows.h>
-  #include <GL/gl.h>
-  #include <GL/glu.h>
+  #include <cstdlib> // To disable glut::exit() function
+  #include <GL/glut.h>
 #elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
+  #include <GL/glut.h>
 #elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
+  #include <Glut/glut.h>
 #else
   #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+#endif  // DART_GUI_LOADGLUT_H_
+

@@ -44,6 +44,7 @@
 #include <iostream>
 #include <vector>
 
+#include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
 

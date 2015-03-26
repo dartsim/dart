@@ -37,6 +37,7 @@
 
 #include "dart/gui/Win3D.h"
 
+#include "dart/gui/LoadGlut.h"
 #include "dart/gui/Jitter.h"
 
 namespace dart {

@@ -41,15 +41,15 @@ sudo apt-get -qq update
 
 APT_CORE='
 cmake
-freeglut3-dev
 libassimp-dev
 libccd-dev
 libfcl-dev
-libxi-dev
-libxmu-dev
 '
 
 APT=$APT_CORE' 
+freeglut3-dev
+libxi-dev
+libxmu-dev
 libflann-dev
 libtinyxml-dev
 libtinyxml2-dev

@@ -30,101 +30,154 @@
 namespace dart {
 namespace utils {
 
-/**
- * @function parseSkeleton
- */
-dynamics::Skeleton* DartLoader::parseSkeleton(std::string _urdfFileName) {
-
-    boost::shared_ptr<urdf::ModelInterface> skeletonModelPtr = urdf::parseURDF(readFileToString(_urdfFileName));
-    if(!skeletonModelPtr)
-        return NULL;
-
-    // Change path to a Unix-style path if given a Windows one
-    // Windows can handle Unix-style paths (apparently)
-    std::replace(_urdfFileName.begin(), _urdfFileName.end(), '\\' , '/' );
-    std::string skelDirectory = _urdfFileName.substr(0, _urdfFileName.rfind("/") + 1);
-
-    return modelInterfaceToSkeleton(skeletonModelPtr.get(), skelDirectory);
-}
-
-/**
- * @function parseWorld
- */
-simulation::World* DartLoader::parseWorld(std::string _urdfFileName) {
-
-    std::string xmlString = readFileToString(_urdfFileName);
-
-    // Change path to a Unix-style path if given a Windows one
-    // Windows can handle Unix-style paths (apparently)
-    std::replace(_urdfFileName.begin(), _urdfFileName.end(), '\\' , '/');
-    std::string worldDirectory = _urdfFileName.substr(0, _urdfFileName.rfind("/") + 1);
-    
-    urdf::World* worldInterface = urdf::parseWorldURDF(xmlString, worldDirectory);
-    if(!worldInterface)
-        return NULL;
-
-    // Store paths from world to entities
-    parseWorldToEntityPaths(xmlString);
-
-    simulation::World* world = new simulation::World();
-
-    for(unsigned int i = 0; i < worldInterface->models.size(); ++i) {
-      std::string skeletonDirectory = worldDirectory + mWorld_To_Entity_Paths.find(worldInterface->models[i].model->getName())->second;
-      dynamics::Skeleton* skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model.get(), skeletonDirectory);
-
-      if(!skeleton) {
-        std::cout << "[ERROR] Robot " << worldInterface->models[i].model->getName() << " was not correctly parsed. World is not loaded. Exiting!" << std::endl;
-        return NULL; 
-      }
-
-      // Initialize position and RPY
-      dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
-      Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
-
-      if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
-          Eigen::Vector6d coordinates;
-          coordinates << math::logMap(transform.linear()), transform.translation();
-          rootJoint->setPositions(coordinates);
-      }
-      else {
-          rootJoint->setTransformFromParentBodyNode(transform);
-      }
-
-      world->addSkeleton(skeleton);
-    }
-    return world;
-}
-
-/**
- * @function setPackageDirectory
- */
-void DartLoader::setPackageDirectory(const std::string& _urdfPackageDirectory)
+void DartLoader::addPackageDirectory(const std::string& _packageName,
+                                     const std::string& _packageDirectory)
 {
-  mPackageDirectory = _urdfPackageDirectory;
+  mPackageDirectories[_packageName] = _packageDirectory;
+}
+
+dynamics::Skeleton* DartLoader::parseSkeleton(const std::string& _urdfFileName) {
+  std::string urdfString = readFileToString(_urdfFileName);
+
+  if(urdfString.empty())
+  {
+    dtwarn << "[DartLoder::parseSkeleton] A blank or nonexistent file cannot "
+           << "be parsed into a Skeleton. Returning a nullptr\n";
+    return nullptr;
+  }
+
+  // Change path to a Unix-style path if given a Windows one
+  // Windows can handle Unix-style paths (apparently)
+  mRootToSkelPath = _urdfFileName;
+  std::replace(mRootToSkelPath.begin(), mRootToSkelPath.end(), '\\' , '/' );
+  mRootToSkelPath = mRootToSkelPath.substr(0, mRootToSkelPath.rfind("/") + 1);
+
+  return parseSkeletonString(urdfString, mRootToSkelPath);;
+}
+
+dynamics::Skeleton* DartLoader::parseSkeletonString(
+    const std::string& _urdfString, const std::string& _urdfFileDirectory)
+{
+  if(_urdfString.empty())
+  {
+    dtwarn << "[DartLoader::parseSkeletonString] A blank string cannot be "
+           << "parsed into a Skeleton. Returning a nullptr\n";
+    return nullptr;
+  }
+
+  mRootToSkelPath = _urdfFileDirectory;
+
+  boost::shared_ptr<urdf::ModelInterface> skeletonModelPtr = urdf::parseURDF(_urdfString);
+  if(!skeletonModelPtr)
+      return nullptr;
+
+  return modelInterfaceToSkeleton(skeletonModelPtr.get());
+}
+
+simulation::World* DartLoader::parseWorld(const std::string& _urdfFileName)
+{
+  std::string urdfString = readFileToString(_urdfFileName);
+
+  if(urdfString.empty())
+  {
+    dtwarn << "[DartLoader::parseWorld] A blank or nonexistent file cannot "
+           << "be parsed into a World. Returning a nullptr\n";
+    return nullptr;
+  }
+
+  // Change path to a Unix-style path if given a Windows one
+  // Windows can handle Unix-style paths (apparently)
+  mRootToWorldPath = _urdfFileName;
+  std::replace(mRootToWorldPath.begin(), mRootToWorldPath.end(), '\\' , '/');
+  mRootToWorldPath = mRootToWorldPath.substr(0, mRootToWorldPath.rfind("/") + 1);
+
+  return parseWorldString(urdfString, mRootToWorldPath);
+}
+
+simulation::World* DartLoader::parseWorldString(
+    const std::string& _urdfString, const std::string& _urdfFileDirectory)
+{
+  if(_urdfString.empty())
+  {
+    dtwarn << "[DartLoader::parseWorldString] A blank string cannot be "
+           << "parsed into a World. Returning a nullptr\n";
+    return nullptr;
+  }
+
+  mRootToWorldPath = _urdfFileDirectory;
+
+  urdf::World* worldInterface = urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
+  if(!worldInterface)
+      return nullptr;
+
+  // Store paths from world to entities
+  parseWorldToEntityPaths(_urdfString);
+
+  simulation::World* world = new simulation::World();
+
+  for(unsigned int i = 0; i < worldInterface->models.size(); ++i) {
+    mRootToSkelPath = mRootToWorldPath + mWorld_To_Entity_Paths.find(worldInterface->models[i].model->getName())->second;
+    dynamics::Skeleton* skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model.get());
+
+    if(!skeleton) {
+      std::cout << "[ERROR] Robot " << worldInterface->models[i].model->getName() << " was not correctly parsed. World is not loaded. Exiting!" << std::endl;
+      return nullptr;
+    }
+
+    // Initialize position and RPY
+    dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
+    Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
+
+    if(dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
+        Eigen::Vector6d coordinates;
+        coordinates << math::logMap(transform.linear()), transform.translation();
+        rootJoint->setPositions(coordinates);
+    }
+    else {
+        rootJoint->setTransformFromParentBodyNode(transform);
+    }
+
+    world->addSkeleton(skeleton);
+  }
+
+  return world;
 }
 
 /**
  * @function getFullFilePath
  */
-std::string DartLoader::getFullFilePath(const std::string& _filename,
-                                        const std::string& _rootToSkelPath) const
+std::string DartLoader::getFullFilePath(const std::string& _filename) const
 {
   std::string fullpath = _filename;
-  size_t p = fullpath.find("package:/");
-  if(p < std::string::npos)
+  size_t scheme = fullpath.find("package://");
+  if(scheme < std::string::npos)
   {
-    if(mPackageDirectory.empty())
-      dtwarn << "[DartLoader] Trying to load a URDF that uses the 'package://' keyword, "
-                "but you did not set a package directory using "
-                "dart::utils::DartLoader::setPackageDirectory(~). "
-                "This will likely result in a segmentation fault." << std::endl;
+    size_t authority_start = scheme+10;
+    size_t authority_end = fullpath.find("/", scheme+10);
+    size_t authority_length = authority_end - authority_start;
 
-    fullpath.erase(p, p+9);
-    fullpath.insert(p, mPackageDirectory);
+    std::map<std::string, std::string>::const_iterator packageDirectory =
+        mPackageDirectories.find(
+          fullpath.substr(authority_start, authority_length));
+
+    if(packageDirectory == mPackageDirectories.end())
+    {
+      dtwarn << "[DartLoader] Trying to load a URDF that uses package '"
+             << fullpath.substr(scheme, authority_end-scheme)
+             << "' (the full line is '" << fullpath
+             << "'), but we do not know the path to that package directory. "
+             << "Please use addPackageDirectory(~) to allow us to find the "
+             << "package directory.\n";
+    }
+    else
+    {
+      fullpath.erase(scheme, authority_end);
+      fullpath.insert(scheme, packageDirectory->second);
+    }
   }
   else
   {
-    fullpath = _rootToSkelPath + fullpath;
+    fullpath = mRootToSkelPath + fullpath;
   }
 
   return fullpath;
@@ -149,16 +202,16 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string) {
 
     for( TiXmlElement* include_xml = world_xml->FirstChildElement("include");
       include_xml; include_xml = include_xml->NextSiblingElement("include") ) {
-      
-      const char *filename = include_xml->Attribute("filename");
-      const char *model_name = include_xml->Attribute("model_name");
+
+      const char* filename = include_xml->Attribute("filename");
+      const char* model_name = include_xml->Attribute("model_name");
       std::string string_filename( filename );
       std::string string_filepath = string_filename.substr( 0, string_filename.rfind("/") + 1 );
       std::string string_model_name( model_name );
 
       includedFiles[string_model_name] = string_filepath;
     }
-    
+
     // Get all entities
     for( TiXmlElement* entity_xml = world_xml->FirstChildElement("entity");
       entity_xml; entity_xml = entity_xml->NextSiblingElement("entity") ) {
@@ -194,11 +247,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string) {
  * @function modelInterfaceToSkeleton
  * @brief Read the ModelInterface and spits out a Skeleton object
  */
-dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model, std::string _rootToSkelPath) {
-  
-    if( _rootToSkelPath.empty() ) {
-        std::cout<< "[DartLoader] Absolute path to skeleton "<<_model->getName()<<" is not set. Probably I will crash!"<<std::endl;
-    }
+dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model) {
 
     dynamics::Skeleton* skeleton = new dynamics::Skeleton(_model->getName());
     dynamics::BodyNode* rootNode = NULL;
@@ -211,14 +260,14 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterf
         }
         else {
             root = root->child_links[0].get();
-            rootNode = createDartNode(root, _rootToSkelPath);
+            rootNode = createDartNode(root);
             rootJoint = createDartJoint(root->parent_joint.get());
             if(!rootJoint)
                 return NULL;
         }
     }
     else {
-        rootNode = createDartNode(root, _rootToSkelPath);
+        rootNode = createDartNode(root);
         rootJoint = new dynamics::FreeJoint();
         rootJoint->setName("rootJoint");
         rootJoint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
@@ -229,21 +278,21 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterf
     skeleton->addBodyNode(rootNode);
 
     for(size_t i = 0; i < root->child_links.size(); i++) {
-        createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode, _rootToSkelPath);
+        createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode);
     }
 
     return skeleton;
 }
 
-void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parentNode, std::string _rootToSkelPath) {
-  dynamics::BodyNode* node = createDartNode(_lk, _rootToSkelPath);
+void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parentNode) {
+  dynamics::BodyNode* node = createDartNode(_lk);
   dynamics::Joint* joint = createDartJoint(_lk->parent_joint.get());
   node->setParentJoint(joint);
   _parentNode->addChildBodyNode(node);
   _skel->addBodyNode(node);
   
   for(unsigned int i = 0; i < _lk->child_links.size(); i++) {
-      createSkeletonRecursive(_skel, _lk->child_links[i].get(), node, _rootToSkelPath);
+      createSkeletonRecursive(_skel, _lk->child_links[i].get(), node);
   }
 }
 
@@ -255,6 +304,13 @@ std::string  DartLoader::readFileToString(std::string _xmlFile) {
   
   std::string xml_string;
   std::ifstream xml_file(_xmlFile.c_str());
+
+  if(!xml_file.is_open())
+  {
+    dtwarn << "[DartLoader] Failed to open file '" << _xmlFile << "'! "
+           << "Check whether the file exists and has appropriate permissions.\n";
+    return xml_string;
+  }
   
   // Read xml
   while(xml_file.good()) {
@@ -263,6 +319,12 @@ std::string  DartLoader::readFileToString(std::string _xmlFile) {
     xml_string += (line + "\n");
   }
   xml_file.close();
+
+  if(xml_string.empty())
+  {
+    dtwarn << "[DartLoader] Opened file '" << _xmlFile << "', but found it to "
+           << "be empty. Please make sure you provided the correct filename\n";
+  }
   
   return xml_string;
 }
@@ -326,7 +388,7 @@ dynamics::Joint* DartLoader::createDartJoint(const urdf::Joint* _jt)
 /**
  * @function createDartNode
  */
-dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::string _rootToSkelPath) {
+dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk) {
 
   dynamics::BodyNode* node = new dynamics::BodyNode(_lk->name);
   
@@ -350,14 +412,14 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk, std::strin
 
   // Set visual information
   for(unsigned int i = 0; i < _lk->visual_array.size(); i++) {
-    if(dynamics::Shape* shape = createShape(_lk->visual_array[i].get(), _rootToSkelPath)) {
+    if(dynamics::Shape* shape = createShape(_lk->visual_array[i].get())) {
       node->addVisualizationShape(shape);
     }
   }
 
   // Set collision information
   for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
-    if(dynamics::Shape* shape = createShape(_lk->collision_array[i].get(), _rootToSkelPath)) {
+    if(dynamics::Shape* shape = createShape(_lk->collision_array[i].get())) {
       node->addCollisionShape(shape);
     }
   }
@@ -379,42 +441,49 @@ void setMaterial(dynamics::Shape* _shape, const urdf::Collision* _col) {
  * @function createShape
  */
 template <class VisualOrCollision>
-dynamics::Shape* DartLoader::createShape(const VisualOrCollision* _vizOrCol, std::string _rootToSkelPath) {
+dynamics::Shape* DartLoader::createShape(const VisualOrCollision* _vizOrCol)
+{
   dynamics::Shape* shape;
 
   // Sphere
-  if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get())) {
+  if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get()))
+  {
     shape = new dynamics::EllipsoidShape(2.0 * sphere->radius * Eigen::Vector3d::Ones());
   }
-
   // Box
-  else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get())) {
+  else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get()))
+  {
     shape = new dynamics::BoxShape(Eigen::Vector3d(box->dim.x, box->dim.y, box->dim.z));
   }
-
   // Cylinder
-  else if(urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get())) {
+  else if(urdf::Cylinder* cylinder = dynamic_cast<urdf::Cylinder*>(_vizOrCol->geometry.get()))
+  {
     shape = new dynamics::CylinderShape(cylinder->radius, cylinder->length);
   }
-
   // Mesh
-  else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get())) {
-    std::string fullPath = getFullFilePath(mesh->filename, _rootToSkelPath);
+  else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
+  {
+    std::string fullPath = getFullFilePath(mesh->filename);
     const aiScene* model = dynamics::MeshShape::loadMesh( fullPath );
     
-    if(!model) {
-      std::cout<< "[add_Shape] [ERROR] Not loading model " << fullPath << " (NULL) \n";
-      shape = NULL;
+    if(!model)
+    {
+      dtwarn << "[DartLoader::createShape] Assimp could not load a model from "
+             << "the file '" << fullPath << "'\n";
+      shape = nullptr;
     } 
-    else {
+    else
+    {
       shape = new dynamics::MeshShape(Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model);
     }
   }
-
   // Unknown geometry type
-  else {
-    std::cout << "[add_Shape] No MESH, BOX, CYLINDER OR SPHERE! Not loading this shape." << std::endl;
-    return NULL;
+  else
+  {
+    dtwarn << "[DartLoader::createShape] Unknown urdf Shape type "
+           << "(we only know of Sphere, Box, Cylinder, and Mesh). "
+           << "We are returning a nullptr." << std::endl;
+    return nullptr;
   }
 
   shape->setLocalTransform(toEigen(_vizOrCol->origin));
@@ -422,8 +491,8 @@ dynamics::Shape* DartLoader::createShape(const VisualOrCollision* _vizOrCol, std
   return shape;
 }
 
-template dynamics::Shape* DartLoader::createShape<urdf::Visual>(const urdf::Visual* _vizOrCol, std::string _rootToSkelPath);
-template dynamics::Shape* DartLoader::createShape<urdf::Collision>(const urdf::Collision* _vizOrCol, std::string _rootToSkelPath);
+template dynamics::Shape* DartLoader::createShape<urdf::Visual>(const urdf::Visual* _vizOrCol);
+template dynamics::Shape* DartLoader::createShape<urdf::Collision>(const urdf::Collision* _vizOrCol);
 
 /**
  * @function pose2Affine3d
