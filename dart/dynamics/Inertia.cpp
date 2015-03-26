@@ -62,7 +62,7 @@ Inertia::Inertia(double _mass, double _comX, double _comY, double _comZ,
                  double _Ixy, double _Ixz, double _Iyz)
   : mMass(_mass),
     mCenterOfMass(_comX, _comY, _comZ),
-    mMoment{_Ixx, _Iyy, _Izz, _Ixy, _Ixz, _Iyz}
+    mMoment({_Ixx, _Iyy, _Izz, _Ixy, _Ixz, _Iyz})
 {
   computeSpatialTensor();
 }

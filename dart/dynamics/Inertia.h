@@ -37,6 +37,8 @@
 #ifndef DART_DYNAMICS_INERTIA_H_
 #define DART_DYNAMICS_INERTIA_H_
 
+#include <array>
+
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -136,7 +138,7 @@ protected:
   Eigen::Vector3d mCenterOfMass;
 
   /// The six parameters of the moment of inertia located at the center of mass
-  double mMoment[6];
+  std::array<double,6> mMoment;
 
   /// Cache for generalized spatial inertia of the Body
   Eigen::Matrix6d mSpatialTensor;
