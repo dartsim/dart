@@ -1072,9 +1072,6 @@ protected:
   /// BodyNode-specific properties
   PartialProperties mBNP;
 
-  /// Array of collision shpaes
-  std::vector<Shape*> mColShapes;
-
   /// Indicating whether this node is collidable.
   bool mIsCollidable;
 
