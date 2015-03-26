@@ -83,6 +83,8 @@ public:
   using VizShapeAddedSignal
       = common::Signal<void(const Entity*, ConstShapePtr _newVisShape)>;
 
+  using VizShapeRemovedSignal = VizShapeAddedSignal;
+
   struct Properties
   {
     /// Name of the Entity
@@ -95,13 +97,23 @@ public:
     Properties(const std::string& _name = "");
   };
 
-  using VizShapeRemovedSignal = VizShapeAddedSignal;
-
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
+
+  /// Set the Properties of this Entity
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Entity
+  const Properties& getEntityProperties() const;
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity& _otherEntity);
+
+  /// Same as copy(const Entity&)
+  Entity& operator=(const Entity& _otherEntity);
 
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
@@ -235,8 +247,6 @@ public:
 
   /// Slot register for acceleration updated signal
   common::SlotRegister<EntitySignal> onAccelerationChanged;
-
-  /// \}
 
 private:
   /// Whether or not this Entity is set to be quiet

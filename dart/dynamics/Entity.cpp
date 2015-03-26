@@ -96,6 +96,40 @@ Entity::~Entity()
 }
 
 //==============================================================================
+void Entity::setProperties(const Properties& _properties)
+{
+  // Set name
+  setName(_properties.mName);
+
+  // Set visualization shapes
+  removeAllVisualizationShapes();
+  for(size_t i=0; i<_properties.mVizShapes.size(); ++i)
+    addVisualizationShape(_properties.mVizShapes[i]);
+}
+
+//==============================================================================
+const Entity::Properties& Entity::getEntityProperties() const
+{
+  return mEntityP;
+}
+
+//==============================================================================
+void Entity::copy(const Entity& _otherEntity)
+{
+  if(this == &_otherEntity)
+    return;
+
+  setProperties(_otherEntity.getEntityProperties());
+}
+
+//==============================================================================
+Entity& Entity::operator=(const Entity& _otherEntity)
+{
+  copy(_otherEntity);
+  return *this;
+}
+
+//==============================================================================
 const std::string& Entity::setName(const std::string& _name)
 {
   if (mEntityP.mName == _name)
@@ -164,15 +198,13 @@ size_t Entity::getNumVisualizationShapes() const
 //==============================================================================
 ShapePtr Entity::getVisualizationShape(size_t _index)
 {
-  return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
-        _index, mEntityP.mVizShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
 ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 {
-  return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
-        _index, mEntityP.mVizShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
 }
 
 //==============================================================================

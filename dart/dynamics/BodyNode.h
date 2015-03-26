@@ -79,6 +79,11 @@ class BodyNode : public Frame
 {
 public:
 
+  using ColShapeAddedSignal
+      = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
+
+  using ColShapeRemovedSignal = ColShapeAddedSignal;
+
   struct PartialProperties
   {
     /// Inertia information for the BodyNode
@@ -93,14 +98,11 @@ public:
     /// Coefficient of restitution
     double mRestitutionCoeff;
 
-    /// Array of collision shapes
-    std::vector<ShapePtr> mColShapes;
-
     /// Indicates whether this node is collidable;
     bool mIsCollidable;
 
-    /// A list of dependent dof indices sorted in ascending order
-    std::vector<size_t> mDependentGenCoordIndices;
+    /// Array of collision shapes
+    std::vector<ShapePtr> mColShapes;
 
     /// Constructor
     PartialProperties();
@@ -122,6 +124,18 @@ public:
 
   /// Destructor
   virtual ~BodyNode();
+
+  /// Set the Properties of this BodyNode
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this BodyNode
+  Properties getBodyNodeProperties() const;
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode& _otherBodyNode);
+
+  /// Same as copy(const BodyNode&)
+  BodyNode& operator=(const BodyNode& _otherBodyNode);
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
@@ -254,8 +268,14 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Add a collision shape into the bodynode
+  /// Add a collision Shape into the BodyNode
   void addCollisionShape(ShapePtr _shape);
+
+  /// Remove a collision Shape from this BodyNode
+  void removeCollisionShape(ShapePtr _shape);
+
+  /// Remove all collision Shapes from this BodyNode
+  void removeAllCollisionShapes();
 
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
@@ -1061,7 +1081,7 @@ protected:
   static size_t msBodyNodeCount;
 
   /// BodyNode-specific properties
-  PartialProperties mBNP;
+  PartialProperties mBodyP;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
@@ -1215,9 +1235,27 @@ protected:
   /// mIsWorldJacobianClassicDerivDirty is true.
   void _updateWorldJacobianClassicDeriv() const;
 
+  /// Collision shape added signal
+  ColShapeAddedSignal mColShapeAddedSignal;
+
+  /// Collision shape removed signal
+  ColShapeRemovedSignal mColShapeRemovedSignal;
+
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for collision shape added signal
+  common::SlotRegister<ColShapeAddedSignal> onColShapeAdded;
+
+  /// Slot register for collision shape removed signal
+  common::SlotRegister<ColShapeRemovedSignal> onColShapeRemoved;
+
+  /// \}
 };
 
 }  // namespace dynamics
