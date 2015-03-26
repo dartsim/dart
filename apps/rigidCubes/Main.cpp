@@ -54,6 +54,15 @@ int main(int argc, char* argv[]) {
   MyWindow window;
   window.setWorld(myWorld);
 
+  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
+  {
+    dart::dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
+    {
+      std::cout << skel->getBodyNode(j)->getSpatialInertia() << "\n" << std::endl;
+    }
+  }
+
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
   std::cout << "'[' and ']': play one frame backward and forward" << std::endl;

@@ -158,12 +158,12 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 void Inertia::setMoment(double _Ixx, double _Iyy, double _Izz,
                         double _Ixy, double _Ixz, double _Iyz)
 {
-  mMoment[I_XX] = _Ixx;
-  mMoment[I_YY] = _Iyy;
-  mMoment[I_ZZ] = _Izz;
-  mMoment[I_XY] = _Ixy;
-  mMoment[I_XZ] = _Ixz;
-  mMoment[I_YZ] = _Iyz;
+  mMoment[I_XX-4] = _Ixx;
+  mMoment[I_YY-4] = _Iyy;
+  mMoment[I_ZZ-4] = _Izz;
+  mMoment[I_XY-4] = _Ixy;
+  mMoment[I_XZ-4] = _Ixz;
+  mMoment[I_YZ-4] = _Iyz;
 
   computeSpatialTensor();
 }
