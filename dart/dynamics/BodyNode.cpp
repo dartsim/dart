@@ -136,28 +136,12 @@ BodyNode::BodyNode(const std::string& _name)
 //==============================================================================
 BodyNode::~BodyNode()
 {
-  // Release shapes for collisions
-  for (std::vector<Shape*>::const_iterator itColShape = mColShapes.begin();
-       itColShape != mColShapes.end(); ++itColShape)
-  {
-    // If the collision shapes are not in the list of visualization shapes
-    if (mVizShapes.end() == std::find(mVizShapes.begin(), mVizShapes.end(),
-                                      *itColShape))
-    {
-      // Delete it
-      delete (*itColShape);
-    }
-  }
-
   // Release markers
   for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
        it != mMarkers.end(); ++it)
   {
     delete (*it);
   }
-
-  // Release parent joint
-  delete mParentJoint;
 }
 
 //==============================================================================

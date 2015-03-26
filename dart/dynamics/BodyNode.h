@@ -253,7 +253,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Add a visualization shape into the bodynode
-  void addVisualizationShape(Shape* _p);
+  void addVisualizationShape(std::shared_ptr<Shape> _p);
 
   /// Return the number of visualization shapes
   size_t getNumVisualizationShapes() const;
