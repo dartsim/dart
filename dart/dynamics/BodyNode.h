@@ -111,12 +111,10 @@ public:
   /// Composition of Entity and BodyNode properties
   struct Properties : Entity::Properties, PartialProperties
   {
-    /// Default constructor
-    Properties();
-
     /// Composed constructor
-    Properties(const Entity::Properties& _entityProperties,
-               const PartialProperties& _bodyNodeProperties);
+    Properties(
+        const Entity::Properties& _entityProperties = Entity::Properties(),
+        const PartialProperties& _bodyNodeProperties = PartialProperties());
   };
 
   /// Constructor
@@ -133,6 +131,9 @@ public:
 
   /// Copy the Properties of another BodyNode
   void copy(const BodyNode& _otherBodyNode);
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode* _otherBodyNode);
 
   /// Same as copy(const BodyNode&)
   BodyNode& operator=(const BodyNode& _otherBodyNode);

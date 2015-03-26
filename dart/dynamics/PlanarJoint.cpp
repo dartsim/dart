@@ -174,7 +174,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_2");
       break;
     default:
-      dterr << "Unsupported plane type in PlanarJoint named '" << mName
+      dterr << "Unsupported plane type in PlanarJoint named '" << mJointP.mName
             << "' (" << mPlaneType << ")\n";
   }
 
@@ -183,7 +183,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
     for (size_t i = 0; i < 2; ++i)
     {
       if (!mDofs[i]->isNamePreserved())
-        mDofs[i]->setName(mName + affixes[i], false);
+        mDofs[i]->setName(mJointP.mName + affixes[i], false);
     }
   }
 }
@@ -192,11 +192,11 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 void PlanarJoint::updateLocalTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
-  mT = mT_ParentBodyToJoint
+  mT = mJointP.mT_ParentBodyToJoint
        * Eigen::Translation3d(mTransAxis1 * positions[0])
        * Eigen::Translation3d(mTransAxis2 * positions[1])
        * math::expAngular    (mRotAxis    * positions[2])
-       * mT_ChildBodyToJoint.inverse();
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -211,10 +211,10 @@ void PlanarJoint::updateLocalJacobian(bool) const
   J.block<3, 1>(0, 2) = mRotAxis;
 
   mJacobian.leftCols<2>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
+      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
                         * math::expAngular(mRotAxis * -getPositionsStatic()[2]),
                         J.leftCols<2>());
-  mJacobian.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
+  mJacobian.col(2) = math::AdTJac(mJointP.mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(mJacobian));
@@ -232,14 +232,14 @@ void PlanarJoint::updateLocalJacobianTimeDeriv() const
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mT_ChildBodyToJoint
+                  math::AdT(mJointP.mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
                                                * -getPositionsStatic()[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mT_ChildBodyToJoint
+                  math::AdT(mJointP.mT_ChildBodyToJoint
                             * math::expAngular(mRotAxis
                                                * -getPositionsStatic()[2]),
                             J.col(1)));

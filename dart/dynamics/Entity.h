@@ -112,6 +112,9 @@ public:
   /// Copy the Properties of another Entity
   void copy(const Entity& _otherEntity);
 
+  /// Copy the Properties of another Entity
+  void copy(const Entity* _otherEntity);
+
   /// Same as copy(const Entity&)
   Entity& operator=(const Entity& _otherEntity);
 

@@ -76,9 +76,9 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 //==============================================================================
 void PrismaticJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint
+  mT = mJointP.mT_ParentBodyToJoint
        * Eigen::Translation3d(mAxis * getPositionStatic())
-       * mT_ChildBodyToJoint.inverse();
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -89,7 +89,7 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTLinear(mT_ChildBodyToJoint, mAxis);
+    mJacobian = math::AdTLinear(mJointP.mT_ChildBodyToJoint, mAxis);
 
     // Verification
     assert(!math::isNan(mJacobian));

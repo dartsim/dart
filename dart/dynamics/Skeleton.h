@@ -139,6 +139,16 @@ public:
   // Structueral Properties
   //----------------------------------------------------------------------------
 
+//  template <class JointType, class NodeType = BodyNode>
+//  std::pair<JointType*, NodeType*> createJointAndNode(
+//    BodyNode* _parent,
+//    const JointType::Properties& _jointProperties = JointType::Properties(),
+//    const NodeType::Properties& _bodyProperties = NodeType::Properties())
+//  {
+//    JointType* newJoint = new JointType(this, )
+//    NodeType* newBN = new NodeType(this, _parent, )
+//  }
+
   /// Add a body node
   void addBodyNode(BodyNode* _body);
 

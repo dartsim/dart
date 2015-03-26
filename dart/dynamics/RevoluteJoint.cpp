@@ -78,9 +78,9 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 //==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint
+  mT = mJointP.mT_ParentBodyToJoint
        * math::expAngular(mAxis * getPositionStatic())
-       * mT_ChildBodyToJoint.inverse();
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -91,7 +91,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, mAxis);
 
     // Verification
     assert(!math::isNan(mJacobian));

@@ -132,7 +132,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_z");
       break;
     default:
-      dterr << "Unsupported axis order in EulerJoint named '" << mName
+      dterr << "Unsupported axis order in EulerJoint named '" << mJointP.mName
             << "' (" << mAxisOrder << ")\n";
   }
 
@@ -141,7 +141,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
     for (size_t i = 0; i < 3; ++i)
     {
       if(!mDofs[i]->isNamePreserved())
-        mDofs[i]->setName(mName + affixes[i], false);
+        mDofs[i]->setName(mJointP.mName + affixes[i], false);
     }
   }
 }
@@ -149,8 +149,8 @@ void EulerJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void EulerJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
-       * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -194,7 +194,7 @@ void EulerJoint::updateLocalJacobian(bool) const
 #ifndef NDEBUG
       if (fabs(getPositionsStatic()[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
-                  << mName << "]. ("
+                  << mJointP.mName << "]. ("
                   << positions[0] << ", "
                   << positions[1] << ", "
                   << positions[2] << ")"
@@ -220,7 +220,7 @@ void EulerJoint::updateLocalJacobian(bool) const
 #ifndef NDEBUG
       if (fabs(positions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
-                  << mName << "]. ("
+                  << mJointP.mName << "]. ("
                   << positions[0] << ", "
                   << positions[1] << ", "
                   << positions[2] << ")"
@@ -236,9 +236,9 @@ void EulerJoint::updateLocalJacobian(bool) const
     }
   }
 
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mJacobian.col(0) = math::AdT(mJointP.mT_ChildBodyToJoint, J0);
+  mJacobian.col(1) = math::AdT(mJointP.mT_ChildBodyToJoint, J1);
+  mJacobian.col(2) = math::AdT(mJointP.mT_ChildBodyToJoint, J2);
 
   assert(!math::isNan(mJacobian));
 
@@ -249,7 +249,7 @@ void EulerJoint::updateLocalJacobian(bool) const
   double det = luJTJ.determinant();
   if (det < 1e-5)
   {
-    std::cout << "ill-conditioned Jacobian in joint [" << mName << "]."
+    std::cout << "ill-conditioned Jacobian in joint [" << mJointP.mName << "]."
               << " The determinant of the Jacobian is (" << det << ")."
               << std::endl;
     std::cout << "rank is (" << luJTJ.rank() << ")." << std::endl;
@@ -327,9 +327,9 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
     }
   }
 
-  mJacobianDeriv.col(0) = math::AdT(mT_ChildBodyToJoint, dJ0);
-  mJacobianDeriv.col(1) = math::AdT(mT_ChildBodyToJoint, dJ1);
-  mJacobianDeriv.col(2) = math::AdT(mT_ChildBodyToJoint, dJ2);
+  mJacobianDeriv.col(0) = math::AdT(mJointP.mT_ChildBodyToJoint, dJ0);
+  mJacobianDeriv.col(1) = math::AdT(mJointP.mT_ChildBodyToJoint, dJ1);
+  mJacobianDeriv.col(2) = math::AdT(mJointP.mT_ChildBodyToJoint, dJ2);
 
   assert(!math::isNan(mJacobianDeriv));
 }

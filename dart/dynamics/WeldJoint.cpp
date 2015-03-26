@@ -60,7 +60,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -68,7 +68,7 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================

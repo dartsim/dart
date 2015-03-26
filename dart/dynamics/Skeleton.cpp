@@ -117,10 +117,10 @@ const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 //==============================================================================
 const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 {
-  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
-                                                          _newJoint);
+  _newJoint->mJointP.mName = mNameMgrForJoints.issueNewNameAndAdd(
+        _newJoint->getName(), _newJoint);
   _newJoint->updateDegreeOfFreedomNames();
-  return _newJoint->mName;
+  return _newJoint->mJointP.mName;
 }
 
 //==============================================================================

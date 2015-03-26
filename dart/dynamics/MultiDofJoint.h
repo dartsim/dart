@@ -766,7 +766,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
   for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(mName, i);
+    mDofs[i] = createDofPointer(mJointP.mName, i);
 }
 
 //==============================================================================
@@ -1135,7 +1135,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   notifyAccelerationUpdate();
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == ACCELERATION)
+  if (mJointP.mActuatorType == ACCELERATION)
     mCommands[_index] = getAccelerationsStatic()[_index];
 #endif
   // TODO: Remove at DART 5.0.
@@ -1169,7 +1169,7 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
   setAccelerationsStatic(_accelerations);
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == ACCELERATION)
+  if (mJointP.mActuatorType == ACCELERATION)
     mCommands = getAccelerationsStatic();
 #endif
   // TODO: Remove at DART 5.0.
@@ -1311,7 +1311,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
   mForces[_index] = _force;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == FORCE)
+  if (mJointP.mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
 #endif
   // TODO: Remove at DART 5.0.
@@ -1344,7 +1344,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
   mForces = _forces;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == FORCE)
+  if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
 #endif
   // TODO: Remove at DART 5.0.
@@ -1796,7 +1796,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1851,7 +1851,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1905,7 +1905,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1956,7 +1956,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2018,7 +2018,7 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2105,7 +2105,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2168,7 +2168,7 @@ void MultiDofJoint<DOF>::updateTotalForce(
 {
   assert(_timeStep > 0.0);
 
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
       mForces = mCommands;
@@ -2233,7 +2233,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateTotalImpulse(
     const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2282,7 +2282,7 @@ void MultiDofJoint<DOF>::updateAcceleration(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _spatialAcc)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2330,7 +2330,7 @@ void MultiDofJoint<DOF>::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2408,7 +2408,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                        bool _withDampingForces,
                                        bool _withSpringForces)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2437,7 +2437,7 @@ void MultiDofJoint<DOF>::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2458,7 +2458,7 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:

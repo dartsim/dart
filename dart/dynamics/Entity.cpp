@@ -123,6 +123,15 @@ void Entity::copy(const Entity& _otherEntity)
 }
 
 //==============================================================================
+void Entity::copy(const Entity *_otherEntity)
+{
+  if(nullptr == _otherEntity)
+    return;
+
+  copy(*_otherEntity);
+}
+
+//==============================================================================
 Entity& Entity::operator=(const Entity& _otherEntity)
 {
   copy(_otherEntity);

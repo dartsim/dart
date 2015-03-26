@@ -84,12 +84,6 @@ BodyNode::PartialProperties::PartialProperties()
 }
 
 //==============================================================================
-BodyNode::Properties::Properties()
-{
-  // Do nothing
-}
-
-//==============================================================================
 BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
                                  const PartialProperties& _bodyNodeProperties)
   : Entity::Properties(_entityProperties),
@@ -177,6 +171,15 @@ void BodyNode::copy(const BodyNode& _otherBodyNode)
     return;
 
   setProperties(_otherBodyNode.getBodyNodeProperties());
+}
+
+//==============================================================================
+void BodyNode::copy(const BodyNode* _otherBodyNode)
+{
+  if(nullptr == _otherBodyNode)
+    return;
+
+  copy(*_otherBodyNode);
 }
 
 //==============================================================================
