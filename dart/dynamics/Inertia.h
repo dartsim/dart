@@ -89,10 +89,14 @@ public:
   /// Get the center of mass with respect to the Body-fixed frame
   const Eigen::Vector3d& getLocalCOM() const;
 
-  /// Set the moment of inertia. Note that only the top-right corner of the
-  /// matrix will be used, because a well-formed inertia matrix is always
-  /// symmetric.
+  /// Set the moment of inertia (about the center of mass). Note that only the
+  /// top-right corner of the matrix will be used, because a well-formed inertia
+  /// matrix is always symmetric.
   void setMoment(const Eigen::Matrix3d& _moment);
+
+  /// Set the moment of inertia (about the center of mass)
+  void setMoment(double _Ixx, double _Iyy, double _Izz,
+                 double _Ixy, double _Ixz, double _Iyz);
 
   /// Get the moment of inertia
   Eigen::Matrix3d getMoment() const;

@@ -59,7 +59,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
   node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape.get());
+  node->addCollisionShape(shape);
   node->setMass(mass);
   node->setParentJoint(joint);
   robot->addBodyNode(node);
@@ -75,7 +75,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
   node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape.get());
+  node->addCollisionShape(shape);
   node->setMass(mass);
   node->setParentJoint(joint);
   parent_node->addChildBodyNode(node);

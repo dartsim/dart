@@ -103,7 +103,7 @@ public:
     double mRestitutionCoeff;
 
     /// Array of collision shapes
-    std::vector< std::shared_ptr<Shape> > mColShapes;
+    std::vector<ShapePtr> mColShapes;
 
     /// Indicates whether this node is collidable;
     bool mIsCollidable;
@@ -118,7 +118,12 @@ public:
   /// Composition of Entity and BodyNode properties
   struct Properties : Entity::Properties, PartialProperties
   {
+    /// Default constructor
+    Properties();
 
+    /// Composed constructor
+    Properties(const Entity::Properties& _entityProperties,
+               const PartialProperties& _bodyNodeProperties);
   };
 
   /// Constructor
@@ -169,6 +174,12 @@ public:
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
+
+  /// Set the inertia data for this BodyNode
+  void setInertia(const Inertia& _inertia);
+
+  /// Get the inertia data for this BodyNode
+  const Inertia& getInertia() const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;
@@ -253,16 +264,16 @@ public:
   //--------------------------------------------------------------------------
 
   /// Add a collision shape into the bodynode
-  void addCollisionShape(Shape* _p);
+  void addCollisionShape(ShapePtr _shape);
 
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
 
   /// Return _index-th collision shape
-  Shape* getCollisionShape(size_t _index);
+  ShapePtr getCollisionShape(size_t _index);
 
   /// Return (const) _index-th collision shape
-  const Shape* getCollisionShape(size_t _index) const;
+  ConstShapePtr getCollisionShape(size_t _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
   Skeleton* getSkeleton();
@@ -1061,29 +1072,6 @@ protected:
   /// BodyNode-specific properties
   PartialProperties mBNP;
 
-  /// If the gravity mode is false, this body node does not being affected by
-  /// gravity.
-//  bool mGravityMode;
-
-  /// Generalized inertia.
-  math::Inertia mI;
-
-  /// Generalized inertia at center of mass.
-  Eigen::Vector3d mCenterOfMass;
-  double mIxx;
-  double mIyy;
-  double mIzz;
-  double mIxy;
-  double mIxz;
-  double mIyz;
-  double mMass;
-
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of friction
-  double mRestitutionCoeff;
-
   /// Array of collision shpaes
   std::vector<Shape*> mColShapes;
 
@@ -1241,10 +1229,6 @@ protected:
   /// getJacobianClassicTimeDeriv() calls this function if
   /// mIsWorldJacobianClassicDerivDirty is true.
   void _updateWorldJacobianClassicDeriv() const;
-
-private:
-  ///
-  void _updateSpatialInertia();
 
 public:
   // To get byte-aligned Eigen vectors

@@ -44,12 +44,13 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionNode.h"
+#include "dart/common/sub_ptr.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
-class BodyNode;
 class Skeleton;
-class Shape;
 }  // namespace dynamics
 }  // namespace dart
 
@@ -74,16 +75,16 @@ struct Contact {
   Eigen::Vector3d force;
 
   /// First colliding body node
-  dynamics::BodyNode* bodyNode1;
+  sub_ptr<dynamics::BodyNode> bodyNode1;
 
   /// Second colliding body node
-  dynamics::BodyNode* bodyNode2;
+  sub_ptr<dynamics::BodyNode> bodyNode2;
 
   /// First colliding shape of the first body node
-  dynamics::Shape* shape1;
+  dynamics::ShapePtr shape1;
 
   /// Second colliding shape of the first body node
-  dynamics::Shape* shape2;
+  dynamics::ShapePtr shape2;
 
   /// Penetration depth
   double penetrationDepth;

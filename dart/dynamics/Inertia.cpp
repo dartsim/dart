@@ -155,6 +155,20 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
 }
 
 //==============================================================================
+void Inertia::setMoment(double _Ixx, double _Iyy, double _Izz,
+                        double _Ixy, double _Ixz, double _Iyz)
+{
+  mMoment[I_XX] = _Ixx;
+  mMoment[I_YY] = _Iyy;
+  mMoment[I_ZZ] = _Izz;
+  mMoment[I_XY] = _Ixy;
+  mMoment[I_XZ] = _Ixz;
+  mMoment[I_YZ] = _Iyz;
+
+  computeSpatialTensor();
+}
+
+//==============================================================================
 Eigen::Matrix3d Inertia::getMoment() const
 {
   Eigen::Matrix3d I;
@@ -207,7 +221,7 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
   {
     for(int j=i+1; j<3; ++j)
     {
-      if(fabs(_moment(i,j) - _moment(j,i)) < _tolerance)
+      if(fabs(_moment(i,j) - _moment(j,i)) > _tolerance)
       {
         valid = false;
         if(_printWarnings)

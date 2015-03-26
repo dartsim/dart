@@ -80,7 +80,22 @@ BodyNode::PartialProperties::PartialProperties()
     mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
     mIsCollidable(true)
 {
+  // Do nothing
+}
 
+//==============================================================================
+BodyNode::Properties::Properties()
+{
+  // Do nothing
+}
+
+//==============================================================================
+BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
+                                 const PartialProperties& _bodyNodeProperties)
+  : Entity::Properties(_entityProperties),
+    PartialProperties(_bodyNodeProperties)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -88,18 +103,6 @@ BodyNode::BodyNode(const std::string& _name)
   : Entity(Frame::World(), _name, false),
     Frame(Frame::World(), _name),
     mID(BodyNode::msBodyNodeCount++),
-    mI(Eigen::Matrix6d::Identity()),
-    mCenterOfMass(Eigen::Vector3d::Zero()),
-    mIxx(1.0),
-    mIyy(1.0),
-    mIzz(1.0),
-    mIxy(0.0),
-    mIxz(0.0),
-    mIyz(0.0),
-    mMass(1.0),
-    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
-    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
-    mIsCollidable(true),
     mIsColliding(false),
     mSkeleton(NULL),
     mParentJoint(NULL),
@@ -216,53 +219,61 @@ void BodyNode::setMass(double _mass)
 {
   assert(_mass >= 0.0 && "Negative mass is not allowable.");
 
-  mMass = _mass;
+  mBNP.mInertia.setMass(_mass);
 
-  _updateSpatialInertia();
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 double BodyNode::getMass() const
 {
-  return mMass;
+  return mBNP.mInertia.getMass();
 }
 
 //==============================================================================
 void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
                                   double _Ixy, double _Ixz, double _Iyz)
 {
-  assert(_Ixx >= 0.0);
-  assert(_Iyy >= 0.0);
-  assert(_Izz >= 0.0);
+  mBNP.mInertia.setMoment(_Ixx, _Iyy, _Izz,
+                          _Ixy, _Ixz, _Iyz);
 
-  mIxx = _Ixx;
-  mIyy = _Iyy;
-  mIzz = _Izz;
-
-  mIxy = _Ixy;
-  mIxz = _Ixz;
-  mIyz = _Iyz;
-
-  _updateSpatialInertia();
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 void BodyNode::getMomentOfInertia(double& _Ixx, double& _Iyy, double& _Izz,
                                   double& _Ixy, double& _Ixz, double& _Iyz)
 {
-  _Ixx = mIxx;
-  _Iyy = mIyy;
-  _Izz = mIzz;
+  _Ixx = mBNP.mInertia.getParameter(Inertia::I_XX);
+  _Iyy = mBNP.mInertia.getParameter(Inertia::I_YY);
+  _Izz = mBNP.mInertia.getParameter(Inertia::I_ZZ);
 
-  _Ixy = mIxy;
-  _Ixz = mIxz;
-  _Iyz = mIyz;
+  _Ixy = mBNP.mInertia.getParameter(Inertia::I_XY);
+  _Ixz = mBNP.mInertia.getParameter(Inertia::I_XZ);
+  _Iyz = mBNP.mInertia.getParameter(Inertia::I_YZ);
 }
 
 //==============================================================================
 const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
 {
-  return mI;
+  return mBNP.mInertia.getSpatialTensor();
+}
+
+//==============================================================================
+void BodyNode::setInertia(const Inertia& _inertia)
+{
+  mBNP.mInertia = _inertia;
+
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
+}
+
+//==============================================================================
+const Inertia& BodyNode::getInertia() const
+{
+  return mBNP.mInertia;
 }
 
 //==============================================================================
@@ -286,79 +297,82 @@ const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 //==============================================================================
 void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
-  mCenterOfMass = _com;
+  mBNP.mInertia.setLocalCOM(_com);
 
-  _updateSpatialInertia();
+  if(mSkeleton)
+    mSkeleton->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 const Eigen::Vector3d& BodyNode::getLocalCOM() const
 {
-  return mCenterOfMass;
+  return mBNP.mInertia.getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOM() const
 {
-  return getWorldTransform() * mCenterOfMass;
+  return getWorldTransform() * getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
 {
-  return getSpatialVelocity(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
+  return getSpatialVelocity(getLocalCOM(),
+                            Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
 {
-  return getSpatialAcceleration(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
+  return getSpatialAcceleration(getLocalCOM(),
+                                Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOM(const Frame* _withRespectTo) const
 {
-  return getTransform(_withRespectTo) * mCenterOfMass;
+  return getTransform(_withRespectTo) * getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOMLinearVelocity(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getLinearVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getLinearVelocity(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialVelocity() const
 {
-  return getSpatialVelocity(mCenterOfMass);
+  return getSpatialVelocity(getLocalCOM());
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialVelocity(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getSpatialVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getSpatialVelocity(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOMLinearAcceleration(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getLinearAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getLinearAcceleration(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialAcceleration() const
 {
-  return getSpatialAcceleration(mCenterOfMass);
+  return getSpatialAcceleration(getLocalCOM());
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getSpatialAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getSpatialAcceleration(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -366,13 +380,13 @@ void BodyNode::setFrictionCoeff(double _coeff)
 {
   assert(0.0 <= _coeff
          && "Coefficient of friction should be non-negative value.");
-  mFrictionCoeff = _coeff;
+  mBNP.mFrictionCoeff = _coeff;
 }
 
 //==============================================================================
 double BodyNode::getFrictionCoeff() const
 {
-  return mFrictionCoeff;
+  return mBNP.mFrictionCoeff;
 }
 
 //==============================================================================
@@ -380,51 +394,59 @@ void BodyNode::setRestitutionCoeff(double _coeff)
 {
   assert(0.0 <= _coeff && _coeff <= 1.0
          && "Coefficient of restitution should be in range of [0, 1].");
-  mRestitutionCoeff = _coeff;
+  mBNP.mRestitutionCoeff = _coeff;
 }
 
 //==============================================================================
 double BodyNode::getRestitutionCoeff() const
 {
-  return mRestitutionCoeff;
+  return mBNP.mRestitutionCoeff;
 }
 
 //==============================================================================
-void BodyNode::addCollisionShape(Shape* _p)
+void BodyNode::addCollisionShape(ShapePtr _shape)
 {
-  if(nullptr == _p)
+  if(nullptr == _shape)
   {
     dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
            << "collision shape\n";
     return;
   }
 
-  if(_p->getShapeType() == Shape::LINE_SEGMENT)
+  if(_shape->getShapeType() == Shape::LINE_SEGMENT)
   {
     dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
            << "type shape as a collision shape. This is not supported.\n";
     return;
   }
 
-  mColShapes.push_back(_p);
+  if(std::find(mBNP.mColShapes.begin(), mBNP.mColShapes.end(), _shape)
+     != mBNP.mColShapes.end())
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a duplicate "
+           << "collision shape.\n";
+    return;
+  }
+
+  mBNP.mColShapes.push_back(_shape);
 }
 
 //==============================================================================
 size_t BodyNode::getNumCollisionShapes() const
 {
-  return mColShapes.size();
+  return mBNP.mColShapes.size();
 }
 
 //==============================================================================
-Shape* BodyNode::getCollisionShape(size_t _index)
+ShapePtr BodyNode::getCollisionShape(size_t _index)
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mBNP.mColShapes);
 }
 
 //==============================================================================
-const Shape* BodyNode::getCollisionShape(size_t _index) const
+ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mBNP.mColShapes);
 }
 
 //==============================================================================
@@ -1378,6 +1400,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                                         bool _withExternalForces)
 {
   // Gravity force
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
@@ -1424,6 +1447,7 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   mArtInertia = mI;
   mArtInertiaImplicit = mI;
 
@@ -1455,6 +1479,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep)
 {
   // Gravity force
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
@@ -1722,18 +1747,20 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 double BodyNode::getKineticEnergy() const
 {
   const Eigen::Vector6d& V = getSpatialVelocity();
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   return 0.5 * V.dot(mI * V);
 }
 
 //==============================================================================
 double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 {
-  return -mMass * getWorldTransform().translation().dot(_gravity);
+  return -getMass() * getWorldTransform().translation().dot(_gravity);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getLinearMomentum() const
 {
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   return (mI * getSpatialVelocity()).tail<3>();
 }
 
@@ -1741,6 +1768,7 @@ Eigen::Vector3d BodyNode::getLinearMomentum() const
 Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   T.translation() = _pivot;
   return math::dAdT(T, mI * getSpatialVelocity()).head<3>();
 }
@@ -1810,6 +1838,7 @@ void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
 void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                                            const Eigen::Vector3d& _gravity)
 {
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   if (mBNP.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -1851,6 +1880,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 {
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   if (mBNP.mGravityMode == true)
     mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -1939,6 +1969,7 @@ void BodyNode::updateMassMatrix()
 //==============================================================================
 void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
 {
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
   //
   mM_F.noalias() = mI * mM_dV;
 
@@ -1971,6 +2002,7 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
                                       double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
+  const Eigen::Matrix6d& mI = mBNP.mInertia.getSpatialTensor();
 
   //
   mM_F.noalias() = mI * mM_dV;
@@ -2271,58 +2303,6 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
         - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
-}
-
-//==============================================================================
-void BodyNode::_updateSpatialInertia()
-{
-  // G = | I - m*[r]*[r]   m*[r] |
-  //     |        -m*[r]     m*I |
-
-  // m*r
-  double mr0 = mMass * mCenterOfMass[0];
-  double mr1 = mMass * mCenterOfMass[1];
-  double mr2 = mMass * mCenterOfMass[2];
-
-  // m*[r]*[r]
-  double mr0r0 = mr0 * mCenterOfMass[0];
-  double mr1r1 = mr1 * mCenterOfMass[1];
-  double mr2r2 = mr2 * mCenterOfMass[2];
-  double mr0r1 = mr0 * mCenterOfMass[1];
-  double mr1r2 = mr1 * mCenterOfMass[2];
-  double mr2r0 = mr2 * mCenterOfMass[0];
-
-  // Top left corner (3x3)
-  mI(0, 0) =  mIxx + mr1r1 + mr2r2;
-  mI(1, 1) =  mIyy + mr2r2 + mr0r0;
-  mI(2, 2) =  mIzz + mr0r0 + mr1r1;
-  mI(0, 1) =  mIxy - mr0r1;
-  mI(0, 2) =  mIxz - mr2r0;
-  mI(1, 2) =  mIyz - mr1r2;
-
-  // Top right corner (3x3)
-  mI(1, 5) = -mr0;
-  mI(0, 5) =  mr1;
-  mI(0, 4) = -mr2;
-  mI(2, 4) =  mr0;
-  mI(2, 3) = -mr1;
-  mI(1, 3) =  mr2;
-  assert(mI(0, 3) == 0.0);
-  assert(mI(1, 4) == 0.0);
-  assert(mI(2, 5) == 0.0);
-
-  // Bottom right corner (3x3)
-  mI(3, 3) =  mMass;
-  mI(4, 4) =  mMass;
-  mI(5, 5) =  mMass;
-  assert(mI(3, 4) == 0.0);
-  assert(mI(3, 5) == 0.0);
-  assert(mI(4, 5) == 0.0);
-
-  mI.triangularView<Eigen::StrictlyLower>() = mI.transpose();
-
-  if(mSkeleton)
-    mSkeleton->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================

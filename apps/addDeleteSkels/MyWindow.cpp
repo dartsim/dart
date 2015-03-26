@@ -97,7 +97,7 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
       new dart::dynamics::BoxShape(_size));
 
   newBodyNode->addVisualizationShape(newBoxShape);
-  newBodyNode->addCollisionShape(newBoxShape.get());
+  newBodyNode->addCollisionShape(newBoxShape);
   newBodyNode->setMass(_mass);
   newBodyNode->setParentJoint(newFreeJoint);
   newFreeJoint->setTransformFromParentBodyNode(

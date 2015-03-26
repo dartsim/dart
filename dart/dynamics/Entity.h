@@ -81,8 +81,7 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
   using VizShapeAddedSignal
-      = common::Signal<void(const Entity*,
-                       std::shared_ptr<const Shape> _newVisShape)>;
+      = common::Signal<void(const Entity*, ConstShapePtr _newVisShape)>;
 
   struct Properties
   {
@@ -93,7 +92,7 @@ public:
     std::string mName;
 
     /// Visualization shapes for the Entity
-    std::vector< std::shared_ptr<Shape> > mVizShapes;
+    std::vector<ShapePtr> mVizShapes;
 
     /// Constructor
     Properties(const std::string& _name = "");
@@ -116,10 +115,10 @@ public:
   virtual const std::string& getName() const;
 
   /// Add a visualization Shape for this Entity
-  virtual void addVisualizationShape(std::shared_ptr<Shape> _shape);
+  virtual void addVisualizationShape(ShapePtr _shape);
 
   /// Remove a visualization Shape from this Entity
-  virtual void removeVisualizationShape(std::shared_ptr<Shape> _shape);
+  virtual void removeVisualizationShape(ShapePtr _shape);
 
   /// Remove all visualization Shapes from this Entity
   virtual void removeAllVisualizationShapes();
@@ -128,10 +127,10 @@ public:
   size_t getNumVisualizationShapes() const;
 
   /// Return _index-th visualization shape
-  std::shared_ptr<Shape> getVisualizationShape(size_t _index);
+  ShapePtr getVisualizationShape(size_t _index);
 
   /// Return (const) _index-th visualization shape
-  std::shared_ptr<const Shape> getVisualizationShape(size_t _index) const;
+  ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -183,20 +182,6 @@ protected:
 
   /// Properties of this Entity
   Properties mEntityP;
-
-
-
-//  /// Parent frame of this Entity
-//  Frame* mParentFrame;
-
-  /// Name of this Entity
-//  std::string mName;
-
-  /// Vector of visualization shapes
-//  std::vector<Shape*> mVizShapes;
-
-
-
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;

@@ -385,8 +385,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   // visualization_shape
   ElementEnumerator collShapes(_bodyNodeElement, "collision_shape");
   while (collShapes.next()) {
-    dynamics::Shape* newShape
-        = readShape(collShapes.get());
+    dynamics::ShapePtr newShape(readShape(collShapes.get()));
 
     newBodyNode->addCollisionShape(newShape);
   }
@@ -562,7 +561,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* colElement
         = getElement(_softBodyNodeElement, "collision_shape");
 
-    dynamics::Shape* shape = NULL;
+    dynamics::ShapePtr shape;
 
     // type
     assert(hasElement(colElement, "geometry"));
@@ -575,7 +574,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       Eigen::Vector3d size = getValueVector3d(boxElement, "size");
 
-      shape = new dynamics::BoxShape(size);
+      shape = dynamics::ShapePtr(new dynamics::BoxShape(size));
     }
     else if (hasElement(geometryElement, "ellipsoid"))
     {
@@ -584,7 +583,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       Eigen::Vector3d size = getValueVector3d(ellipsoidElement, "size");
 
-      shape = new dynamics::EllipsoidShape(size);
+      shape = dynamics::ShapePtr(new dynamics::EllipsoidShape(size));
     }
     else if (hasElement(geometryElement, "cylinder"))
     {
@@ -594,7 +593,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
       double radius = getValueDouble(cylinderElement, "radius");
       double height = getValueDouble(cylinderElement, "height");
 
-      shape = new dynamics::CylinderShape(radius, height);
+      shape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
     }
     else
     {
@@ -687,7 +686,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else if (hasElement(geometryEle, "ellipsoid"))
     {
@@ -708,7 +707,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else if (hasElement(geometryEle, "cylinder"))
     {
@@ -733,7 +732,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else
     {

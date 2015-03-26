@@ -127,7 +127,7 @@ void addEndEffector(Skeleton* robot, BodyNode* parent_node, Vector3d dim)
     node->setLocalCOM(Vector3d(0.0, 0.0, 0.0));
     node->setMass(1.0);
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);
     robot->addBodyNode(node);
@@ -177,7 +177,7 @@ Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
     std::shared_ptr<Shape> shape(new BoxShape(dim1));
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     robot->addBodyNode(node);
@@ -193,7 +193,7 @@ Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
     shape = std::shared_ptr<Shape>(new BoxShape(dim2));
     node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);
@@ -229,7 +229,7 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
     node->addVisualizationShape(shape);
     if (collisionShape)
-        node->addCollisionShape(shape.get());
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     robot->addBodyNode(node);
@@ -246,7 +246,7 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     node->addVisualizationShape(shape);
     if (collisionShape)
-        node->addCollisionShape(shape.get());
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);
@@ -264,7 +264,7 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
     node->addVisualizationShape(shape);
     if (collisionShape)
-        node->addCollisionShape(shape.get());
+        node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     parent_node->addChildBodyNode(node);
@@ -300,7 +300,7 @@ Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     std::shared_ptr<Shape> shape(new BoxShape(dim));
     node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
     robot->addBodyNode(node);
@@ -323,7 +323,7 @@ Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
         shape = std::shared_ptr<Shape>(new BoxShape(dim));
         node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
         node->addVisualizationShape(shape);
-        node->addCollisionShape(shape.get());
+        node->addCollisionShape(shape);
         node->setMass(mass);
         node->setParentJoint(joint);
         parent_node->addChildBodyNode(node);
@@ -358,7 +358,7 @@ Skeleton* createGround(
 
     BodyNode* node = new BodyNode("link1");
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
 
@@ -388,7 +388,7 @@ Skeleton* createSphere(
 
     BodyNode* node = new BodyNode("link1");
     node->addVisualizationShape(ellipShape);
-    node->addCollisionShape(ellipShape.get());
+    node->addCollisionShape(ellipShape);
     node->setMass(mass);
     node->setParentJoint(joint);
 
@@ -418,7 +418,7 @@ Skeleton* createBox(
 
     BodyNode* node = new BodyNode("link1");
     node->addVisualizationShape(shape);
-    node->addCollisionShape(shape.get());
+    node->addCollisionShape(shape);
     node->setMass(mass);
     node->setParentJoint(joint);
 

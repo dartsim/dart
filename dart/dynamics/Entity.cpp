@@ -51,7 +51,7 @@ typedef std::set<Entity*> EntityPtrSet;
 Entity::Properties::Properties(const std::string& _name)
   : mName(_name)
 {
-
+ // Do nothing
 }
 
 //==============================================================================
@@ -62,7 +62,7 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
   if (_index < _vec.size())
     return _vec[_index];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -114,7 +114,7 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(std::shared_ptr<Shape> _shape)
+void Entity::addVisualizationShape(ShapePtr _shape)
 {
   if (nullptr == _shape)
     return;
@@ -123,7 +123,7 @@ void Entity::addVisualizationShape(std::shared_ptr<Shape> _shape)
       != mEntityP.mVizShapes.end())
   {
     dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
-           << "duplicate visualization shape." << std::endl;
+           << "duplicate visualization shape.\n";
     return;
   }
 
@@ -133,7 +133,7 @@ void Entity::addVisualizationShape(std::shared_ptr<Shape> _shape)
 }
 
 //==============================================================================
-void Entity::removeVisualizationShape(std::shared_ptr<Shape> _shape)
+void Entity::removeVisualizationShape(ShapePtr _shape)
 {
   if (nullptr == _shape)
     return;
@@ -161,14 +161,14 @@ size_t Entity::getNumVisualizationShapes() const
 }
 
 //==============================================================================
-std::shared_ptr<Shape> Entity::getVisualizationShape(size_t _index)
+ShapePtr Entity::getVisualizationShape(size_t _index)
 {
   return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
         _index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
-std::shared_ptr<const Shape> Entity::getVisualizationShape(size_t _index) const
+ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 {
   return getVectorObjectIfAvailable< std::shared_ptr<Shape> >(
         _index, mEntityP.mVizShapes);

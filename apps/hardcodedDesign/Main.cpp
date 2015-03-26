@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<dart::dynamics::Shape> shape(
       new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape.get());
+  node->addCollisionShape(shape);
   node->setMass(mass);
   node->setParentJoint(joint);
   LeftLegSkel.addBodyNode(node);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
   node->setLocalCOM(shape->getOffset());
   node->setMass(mass);
   node->addVisualizationShape(shape);
-  node->addCollisionShape(shape.get());
+  node->addCollisionShape(shape);
   node->setParentJoint(joint);
   parent_node->addChildBodyNode(node);
   LeftLegSkel.addBodyNode(node);
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
       new dart::dynamics::EllipsoidShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape1->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   node->addVisualizationShape(shape1);
-  node->addCollisionShape(shape.get());
+  node->addCollisionShape(shape);
   node->setParentJoint(joint);
   parent_node->addChildBodyNode(node);
   LeftLegSkel.addBodyNode(node);

@@ -357,8 +357,7 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   ElementEnumerator vizShapes(_softBodyNodeElement, "visual");
   while (vizShapes.next())
   {
-    std::shared_ptr<dynamics::Shape> newShape(
-          readShape(vizShapes.get(), _skelPath));
+    dynamics::ShapePtr newShape(readShape(vizShapes.get(), _skelPath));
     if (newShape)
       newSoftBodyNode->addVisualizationShape(newShape);
   }
@@ -368,8 +367,7 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   ElementEnumerator collShapes(_softBodyNodeElement, "collision");
   while (collShapes.next())
   {
-    dynamics::Shape* newShape
-        = readShape(collShapes.get(), _skelPath);
+    dynamics::ShapePtr newShape(readShape(collShapes.get(), _skelPath));
 
     if (newShape)
       newSoftBodyNode->addCollisionShape(newShape);
@@ -449,12 +447,11 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Visualization shape
       newSoftBodyNode->addVisualizationShape(
-            std::shared_ptr<dynamics::Shape>(
-              new dynamics::SoftMeshShape(newSoftBodyNode)));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else if (hasElement(geometryEle, "ellipsoid"))
     {
@@ -475,7 +472,7 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else if (hasElement(geometryEle, "cylinder"))
     {
@@ -500,7 +497,7 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
       // Collision shape
       newSoftBodyNode->addCollisionShape(
-            new dynamics::SoftMeshShape(newSoftBodyNode));
+            dynamics::ShapePtr(new dynamics::SoftMeshShape(newSoftBodyNode)));
     }
     else
     {

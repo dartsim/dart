@@ -322,8 +322,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     ElementEnumerator vizShapes(_bodyNodeElement, "visual");
     while (vizShapes.next())
     {
-        std::shared_ptr<dynamics::Shape> newShape(
-              readShape(vizShapes.get(), _skelPath));
+        dynamics::ShapePtr newShape(readShape(vizShapes.get(), _skelPath));
         if (newShape)
             newBodyNode->addVisualizationShape(newShape);
     }
@@ -333,8 +332,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
     ElementEnumerator collShapes(_bodyNodeElement, "collision");
     while (collShapes.next())
     {
-        dynamics::Shape* newShape
-                = readShape(collShapes.get(), _skelPath);
+        dynamics::ShapePtr newShape(readShape(collShapes.get(), _skelPath));
 
         if (newShape)
             newBodyNode->addCollisionShape(newShape);

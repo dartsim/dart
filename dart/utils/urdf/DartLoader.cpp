@@ -420,7 +420,7 @@ dynamics::BodyNode* DartLoader::createDartNode(const urdf::Link* _lk) {
   // Set collision information
   for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
     if(dynamics::Shape* shape = createShape(_lk->collision_array[i].get())) {
-      node->addCollisionShape(shape);
+      node->addCollisionShape(dynamics::ShapePtr(shape));
     }
   }
 
