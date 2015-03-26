@@ -43,6 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -81,6 +82,21 @@ public:
                             const std::string& _newName)>;
   using VizShapeAddedSignal
       = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+
+  struct Properties
+  {
+    /// Parent Frame of the Entity
+    sub_ptr<Frame> mParentFrame;
+
+    /// Name of the Entity
+    std::string mName;
+
+    /// Visualization shapes for the Entity
+    std::vector< std::shared_ptr<Shape> > mVizShapes;
+
+    /// Constructor
+    Properties(const std::string& _name = "");
+  };
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
@@ -146,14 +162,23 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
-  /// Parent frame of this Entity
-  Frame* mParentFrame;
+
+  /// Properties of this Entity
+  Properties mEntityP;
+
+
+
+//  /// Parent frame of this Entity
+//  Frame* mParentFrame;
 
   /// Name of this Entity
-  std::string mName;
+//  std::string mName;
 
   /// Vector of visualization shapes
   std::vector<Shape*> mVizShapes;
+
+
+
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;

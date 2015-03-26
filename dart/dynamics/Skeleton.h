@@ -46,6 +46,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
+#include "dart/common/Subject.h"
 #include "dart/dynamics/Frame.h"
 
 namespace dart {
@@ -72,7 +73,7 @@ struct GenCoordInfo
 } DEPRECATED(4.3);
 
 /// class Skeleton
-class Skeleton
+class Skeleton : public common::Subject
 {
 public:
   //----------------------------------------------------------------------------

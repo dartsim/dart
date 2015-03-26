@@ -74,12 +74,20 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
+BodyNode::PartialProperties::PartialProperties()
+  : mGravityMode(true),
+    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
+    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
+    mIsCollidable(true)
+{
+
+}
+
+//==============================================================================
 BodyNode::BodyNode(const std::string& _name)
   : Entity(Frame::World(), _name, false),
     Frame(Frame::World(), _name),
     mID(BodyNode::msBodyNodeCount++),
-    mName(_name),
-    mGravityMode(true),
     mI(Eigen::Matrix6d::Identity()),
     mCenterOfMass(Eigen::Vector3d::Zero()),
     mIxx(1.0),
@@ -156,18 +164,18 @@ BodyNode::~BodyNode()
 const std::string& BodyNode::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
-  if(mName == _name)
-    return mName;
+  if(mEntityP.mName == _name)
+    return mEntityP.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
   if(mSkeleton)
   {
-    mSkeleton->mNameMgrForBodyNodes.removeName(mName);
+    mSkeleton->mNameMgrForBodyNodes.removeName(mEntityP.mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mName);
+      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mEntityP.mName);
 
-    mName = _name;
+    mEntityP.mName = _name;
     mSkeleton->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
@@ -175,27 +183,27 @@ const std::string& BodyNode::setName(const std::string& _name)
   }
   else
   {
-    mName = _name;
+    mEntityP.mName = _name;
   }
 
   // Return the final name (which might have been altered by the Skeleton's
   // NameManager)
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& BodyNode::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 void BodyNode::setGravityMode(bool _gravityMode)
 {
-  if (mGravityMode == _gravityMode)
+  if (mBNP.mGravityMode == _gravityMode)
     return;
 
-  mGravityMode = _gravityMode;
+  mBNP.mGravityMode = _gravityMode;
 
   if (mSkeleton)
     mSkeleton->mIsGravityForcesDirty = true;
@@ -204,7 +212,7 @@ void BodyNode::setGravityMode(bool _gravityMode)
 //==============================================================================
 bool BodyNode::getGravityMode() const
 {
-  return mGravityMode;
+  return mBNP.mGravityMode;
 }
 
 //==============================================================================
@@ -1410,7 +1418,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                                         bool _withExternalForces)
 {
   // Gravity force
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -1487,7 +1495,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep)
 {
   // Gravity force
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -1842,7 +1850,7 @@ void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
 void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
                                            const Eigen::Vector3d& _gravity)
 {
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mG_F.setZero();
@@ -1883,7 +1891,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 {
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mFgravity.setZero();
@@ -2265,12 +2273,14 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 
   if(mParentBodyNode)
   {
-    const math::Jacobian& dJ_parent = mParentBodyNode->getJacobianClassicDeriv();
+    const math::Jacobian& dJ_parent =
+        mParentBodyNode->getJacobianClassicDeriv();
     const math::Jacobian& J_parent = mParentBodyNode->getWorldJacobian();
 
     const Eigen::Vector3d& v_local = getLinearVelocity(mParentBodyNode,
                                                        Frame::World());
-    const Eigen::Vector3d& w_parent = mParentFrame->getAngularVelocity();
+    const Eigen::Vector3d& w_parent =
+        mEntityP.mParentFrame->getAngularVelocity();
     const Eigen::Vector3d& p = (getWorldTransform().translation()
                   - mParentBodyNode->getWorldTransform().translation()).eval();
 

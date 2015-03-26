@@ -103,7 +103,8 @@ const Eigen::Isometry3d& Frame::getWorldTransform() const
 
   if(mNeedTransformUpdate)
   {
-    mWorldTransform = mParentFrame->getWorldTransform()*getRelativeTransform();
+    mWorldTransform =
+        mEntityP.mParentFrame->getWorldTransform()*getRelativeTransform();
     mNeedTransformUpdate = false;
   }
 
@@ -115,7 +116,7 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 {
   if(_withRespectTo->isWorld())
     return getWorldTransform();
-  else if(_withRespectTo == mParentFrame)
+  else if(_withRespectTo == mEntityP.mParentFrame)
     return getRelativeTransform();
   else if(_withRespectTo == this)
     return Eigen::Isometry3d::Identity();
@@ -513,7 +514,7 @@ void Frame::notifyAccelerationUpdate()
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
-  if (mParentFrame == _newParentFrame)
+  if (mEntityP.mParentFrame == _newParentFrame)
     return;
 
   if(_newParentFrame)
@@ -532,11 +533,11 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  if(mParentFrame)
+  if(mEntityP.mParentFrame)
   {
-    FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
-    if(it != mParentFrame->mChildFrames.end())
-      mParentFrame->mChildFrames.erase(it);
+    FramePtrSet::iterator it = mEntityP.mParentFrame->mChildFrames.find(this);
+    if(it != mEntityP.mParentFrame->mChildFrames.end())
+      mEntityP.mParentFrame->mChildFrames.erase(it);
   }
 
   if(nullptr==_newParentFrame)

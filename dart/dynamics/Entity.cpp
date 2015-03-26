@@ -46,9 +46,15 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
+Entity::Properties::Properties(const std::string& _name)
+  : mName(_name)
+{
+
+}
+
+//==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : mParentFrame(NULL),
-    mName(_name),
+  : mEntityP(_name),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
@@ -78,20 +84,20 @@ Entity::~Entity()
 //==============================================================================
 const std::string& Entity::setName(const std::string& _name)
 {
-  if (mName == _name)
-    return mName;
+  if (mEntityP.mName == _name)
+    return mEntityP.mName;
 
-  const std::string oldName = mName;
-  mName = _name;
-  mNameChangedSignal.raise(this, oldName, mName);
+  const std::string oldName = mEntityP.mName;
+  mEntityP.mName = _name;
+  mNameChangedSignal.raise(this, oldName, mEntityP.mName);
 
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& Entity::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
@@ -128,13 +134,13 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
 //==============================================================================
 Frame* Entity::getParentFrame()
 {
-  return mParentFrame;
+  return mEntityP.mParentFrame;
 }
 
 //==============================================================================
 const Frame* Entity::getParentFrame() const
 {
-  return mParentFrame;
+  return mEntityP.mParentFrame;
 }
 
 //==============================================================================
@@ -220,31 +226,32 @@ bool Entity::needsAccelerationUpdate() const
 //==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if (mParentFrame == _newParentFrame)
+  if (mEntityP.mParentFrame == _newParentFrame)
     return;
 
-  const Frame* oldParentFrame = mParentFrame;
+  const Frame* oldParentFrame = mEntityP.mParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame)
+  if (!mAmQuiet && nullptr != mEntityP.mParentFrame)
   {
-    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-    if (it != mParentFrame->mChildEntities.end())
+    EntityPtrSet::iterator it =
+        mEntityP.mParentFrame->mChildEntities.find(this);
+    if (it != mEntityP.mParentFrame->mChildEntities.end())
     {
-      mParentFrame->mChildEntities.erase(it);
-      mParentFrame->processRemovedEntity(this);
+      mEntityP.mParentFrame->mChildEntities.erase(it);
+      mEntityP.mParentFrame->processRemovedEntity(this);
     }
   }
 
-  mParentFrame =_newParentFrame;
+  mEntityP.mParentFrame =_newParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame)
+  if (!mAmQuiet && nullptr != mEntityP.mParentFrame)
   {
-    mParentFrame->mChildEntities.insert(this);
-    mParentFrame->processNewEntity(this);
+    mEntityP.mParentFrame->mChildEntities.insert(this);
+    mEntityP.mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
 
-  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
+  mFrameChangedSignal.raise(this, oldParentFrame, mEntityP.mParentFrame);
 }
 
 //==============================================================================

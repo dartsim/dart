@@ -46,9 +46,11 @@
 
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/math/Geometry.h"
 
 #include "dart/dynamics/Frame.h"
+#include "dart/dynamics/Inertia.h"
 
 namespace dart {
 namespace renderer {
@@ -77,7 +79,44 @@ class BodyNode : public Frame
 {
 public:
 
-  struct Properties
+  struct PartialProperties
+  {
+    /// Skeleton that this BodyNode belongs to
+    sub_ptr<Skeleton> mSkeleton;
+
+    /// Parent BodyNode
+    sub_ptr<BodyNode> mParentBodyNode;
+
+    /// Parent Joint
+    sub_ptr<Joint> mParentJoint;
+
+    /// Inertia information for the BodyNode
+    Inertia mInertia;
+
+    /// Gravity will be applied if true
+    bool mGravityMode;
+
+    /// Coefficient of friction
+    double mFrictionCoeff;
+
+    /// Coefficient of restitution
+    double mRestitutionCoeff;
+
+    /// Array of collision shapes
+    std::vector< std::shared_ptr<Shape> > mColShapes;
+
+    /// Indicates whether this node is collidable;
+    bool mIsCollidable;
+
+    /// A list of dependent dof indices sorted in ascending order
+    std::vector<size_t> mDependentGenCoordIndices;
+
+    /// Constructor
+    PartialProperties();
+  };
+
+  /// Composition of Entity and BodyNode properties
+  struct Properties : Entity::Properties, PartialProperties
   {
 
   };
@@ -1031,12 +1070,12 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
-  /// Name
-  std::string mName;
+  /// BodyNode-specific properties
+  PartialProperties mBNP;
 
   /// If the gravity mode is false, this body node does not being affected by
   /// gravity.
-  bool mGravityMode;
+//  bool mGravityMode;
 
   /// Generalized inertia.
   math::Inertia mI;

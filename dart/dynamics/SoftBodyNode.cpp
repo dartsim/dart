@@ -344,7 +344,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
 
   // Gravity force
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -467,7 +467,7 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
     pointMass->updateBiasForceFD(_timeStep, _gravity);
 
   // Gravity force
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -837,7 +837,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
     mPointMasses.at(i)->aggregateGravityForceVector(_g, _gravity);
 
   //----------------------- SoftBodyNode Part ----------------------------------
-  if (mGravityMode == true)
+  if (mBNP.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mG_F.setZero();
