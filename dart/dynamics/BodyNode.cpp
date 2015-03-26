@@ -1232,6 +1232,47 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 }
 
 //==============================================================================
+BodyNode::BodyNode(Skeleton* _skeleton, BodyNode* _parentBodyNode,
+                   Joint* _parentJoint, const Properties& _properties)
+  : Entity(_parentBodyNode, "", false), // Name gets set later by setProperties
+    Frame(_parentBodyNode, ""),
+    mID(BodyNode::msBodyNodeCount++),
+    mIsColliding(false),
+    mSkeleton(_skeleton),
+    mParentJoint(_parentJoint),
+    mParentBodyNode(_parentBodyNode),
+    mIsBodyJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true),
+    mPartialAcceleration(Eigen::Vector6d::Zero()),
+    mIsPartialAccelerationDirty(true),
+    mF(Eigen::Vector6d::Zero()),
+    mFext(Eigen::Vector6d::Zero()),
+    mFgravity(Eigen::Vector6d::Zero()),
+    mArtInertia(Eigen::Matrix6d::Identity()),
+    mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
+    mBiasForce(Eigen::Vector6d::Zero()),
+    mCg_dV(Eigen::Vector6d::Zero()),
+    mCg_F(Eigen::Vector6d::Zero()),
+    mG_F(Eigen::Vector6d::Zero()),
+    mFext_F(Eigen::Vector6d::Zero()),
+    mM_dV(Eigen::Vector6d::Zero()),
+    mM_F(Eigen::Vector6d::Zero()),
+    mInvM_c(Eigen::Vector6d::Zero()),
+    mInvM_U(Eigen::Vector6d::Zero()),
+    mArbitrarySpatial(Eigen::Vector6d::Zero()),
+    mDelV(Eigen::Vector6d::Zero()),
+    mBiasImpulse(Eigen::Vector6d::Zero()),
+    mConstraintImpulse(Eigen::Vector6d::Zero()),
+    mImpF(Eigen::Vector6d::Zero()),
+    onColShapeAdded(mColShapeAddedSignal),
+    onColShapeRemoved(mColShapeRemovedSignal)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void BodyNode::init(Skeleton* _skeleton)
 {
   assert(_skeleton);

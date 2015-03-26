@@ -884,6 +884,11 @@ public:
   friend class PointMass;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  BodyNode(Skeleton* _skeleton, BodyNode* _parentBodyNode,
+           Joint* _parentJoint, const Properties& _properties);
+
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 
