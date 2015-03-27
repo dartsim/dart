@@ -94,7 +94,8 @@ public:
     std::vector<ShapePtr> mVizShapes;
 
     /// Constructor
-    Properties(const std::string& _name = "");
+    Properties(const std::string& _name = "",
+               const std::vector<ShapePtr>& _vizShapes=std::vector<ShapePtr>());
   };
 
   /// Constructor for typical usage

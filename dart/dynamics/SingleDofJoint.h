@@ -52,11 +52,90 @@ class DegreeOfFreedom;
 class SingleDofJoint : public Joint
 {
 public:
+
+  struct UniqueProperties
+  {
+    /// Lower limit of position
+    double mPositionLowerLimit;
+
+    /// Upper limit of position
+    double mPositionUpperLimit;
+
+    /// Lower limit of velocity
+    double mVelocityLowerLimit;
+
+    /// Upper limit of velocity
+    double mVelocityUpperLimit;
+
+    /// Lower limit of acceleration
+    double mAccelerationLowerLimit;
+
+    /// Upper limit of acceleration
+    double mAccelerationUpperLimit;
+
+    /// Lower limit of force
+    double mForceLowerLimit;
+
+    /// Upper limit of force
+    double mForceUpperLimit;
+
+    /// Joint spring stiffness
+    double mSpringStiffness;
+
+    /// Rest position for joint spring
+    double mRestPosition;
+
+    /// Joint damping coefficient
+    double mDampingCoefficient;
+
+    /// Coulomb friction force
+    double mFriction;
+
+    /// Constructor
+    UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
+                     double _positionUpperLimit =  DART_DBL_INF,
+                     double _velocityLowerLimit = -DART_DBL_INF,
+                     double _velocityUpperLimit =  DART_DBL_INF,
+                     double _accelerationLowerLimit = -DART_DBL_INF,
+                     double _accelerationUpperLimit =  DART_DBL_INF,
+                     double _forceLowerLimit = -DART_DBL_INF,
+                     double _forceUpperLimit =  DART_DBL_INF,
+                     double _springStiffness = 0.0,
+                     double _restPosition = 0.0,
+                     double _dampingCoefficient = 0.0,
+                     double _coulombFriction = 0.0);
+  };
+
+  struct Properties : Joint::Properties, UniqueProperties
+  {
+    Properties(
+        const Joint::Properties& _jointProperties = Joint::Properties(),
+        const UniqueProperties& _singleDofProperties = UniqueProperties());
+  };
+
   /// Constructor
   SingleDofJoint(const std::string& _name);
 
   /// Destructor
   virtual ~SingleDofJoint();
+
+  /// Set the Properties of this SingleDofJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this SingleDofJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this SingleDofJoint
+  Properties getSingleDofJointProperties() const;
+
+  /// Copy the Properties of another SingleDofJoint
+  void copy(const SingleDofJoint& _otherSingleDofJoint);
+
+  /// Copy the Properties of another SingleDofJoint
+  void copy(const SingleDofJoint* _otherSingleDofJoint);
+
+  /// Same as copy(const SingleDofJoint&)
+  SingleDofJoint& operator=(const SingleDofJoint& _otherJoint);
 
   // Documentation inherited
   DEPRECATED(4.1)
@@ -495,6 +574,9 @@ protected:
   /// \}
 
 protected:
+
+  UniqueProperties mSingleDofP;
+
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
 
@@ -508,12 +590,6 @@ protected:
   /// Position
   double mPosition;
 
-  /// Lower limit of position
-  double mPositionLowerLimit;
-
-  /// Upper limit of position
-  double mPositionUpperLimit;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mPositionDeriv;
 
@@ -523,12 +599,6 @@ protected:
 
   /// Generalized velocity
   double mVelocity;
-
-  /// Min value allowed.
-  double mVelocityLowerLimit;
-
-  /// Max value allowed.
-  double mVelocityUpperLimit;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mVelocityDeriv;
@@ -540,12 +610,6 @@ protected:
   /// Generalized acceleration
   double mAcceleration;
 
-  /// Min value allowed.
-  double mAccelerationLowerLimit;
-
-  /// upper limit of generalized acceleration
-  double mAccelerationUpperLimit;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mAccelerationDeriv;
 
@@ -555,12 +619,6 @@ protected:
 
   /// Generalized force
   double mForce;
-
-  /// Min value allowed.
-  double mForceLowerLimit;
-
-  /// Max value allowed.
-  double mForceUpperLimit;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mForceDeriv;
@@ -577,22 +635,6 @@ protected:
 
   /// Generalized constraint impulse
   double mConstraintImpulse;
-
-  //----------------------------------------------------------------------------
-  // Spring and damper
-  //----------------------------------------------------------------------------
-
-  /// Joint spring stiffness
-  double mSpringStiffness;
-
-  /// Rest joint position for joint spring
-  double mRestPosition;
-
-  /// Joint damping coefficient
-  double mDampingCoefficient;
-
-  /// Coulomb friction force
-  double mFriction;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms

@@ -52,6 +52,9 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 
+const double DART_DEFAULT_FRICTION_COEFF = 1.0;
+const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+
 namespace dart {
 namespace renderer {
 class RenderInterface;
@@ -84,13 +87,16 @@ public:
 
   using ColShapeRemovedSignal = ColShapeAddedSignal;
 
-  struct PartialProperties
+  struct UniqueProperties
   {
     /// Inertia information for the BodyNode
     Inertia mInertia;
 
-    /// Gravity will be applied if true
-    bool mGravityMode;
+    /// Array of collision shapes
+    std::vector<ShapePtr> mColShapes;
+
+    /// Indicates whether this node is collidable;
+    bool mIsCollidable;
 
     /// Coefficient of friction
     double mFrictionCoeff;
@@ -98,23 +104,26 @@ public:
     /// Coefficient of restitution
     double mRestitutionCoeff;
 
-    /// Indicates whether this node is collidable;
-    bool mIsCollidable;
-
-    /// Array of collision shapes
-    std::vector<ShapePtr> mColShapes;
+    /// Gravity will be applied if true
+    bool mGravityMode;
 
     /// Constructor
-    PartialProperties();
+    UniqueProperties(
+        const Inertia& _inertia = Inertia(),
+        const std::vector<ShapePtr>& _collisionShapes = std::vector<ShapePtr>(),
+        bool _isCollidable = true,
+        double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
+        double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
+        bool _gravityMode = true);
   };
 
   /// Composition of Entity and BodyNode properties
-  struct Properties : Entity::Properties, PartialProperties
+  struct Properties : Entity::Properties, UniqueProperties
   {
     /// Composed constructor
     Properties(
-        const Entity::Properties& _entityProperties = Entity::Properties(),
-        const PartialProperties& _bodyNodeProperties = PartialProperties());
+        const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
+        const UniqueProperties& _bodyNodeProperties = UniqueProperties());
   };
 
   /// Constructor
@@ -125,6 +134,9 @@ public:
 
   /// Set the Properties of this BodyNode
   void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this BodyNode
+  void setProperties(const UniqueProperties& _properties);
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
@@ -1087,7 +1099,7 @@ protected:
   static size_t msBodyNodeCount;
 
   /// BodyNode-specific properties
-  PartialProperties mBodyP;
+  UniqueProperties mBodyP;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;

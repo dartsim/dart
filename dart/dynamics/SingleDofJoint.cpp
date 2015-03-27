@@ -46,33 +46,61 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+SingleDofJoint::UniqueProperties::UniqueProperties(
+    double _positionLowerLimit,
+    double _positionUpperLimit,
+    double _velocityLowerLimit,
+    double _velocityUpperLimit,
+    double _accelerationLowerLimit,
+    double _accelerationUpperLimit,
+    double _forceLowerLimit,
+    double _forceUpperLimit,
+    double _springStiffness,
+    double _restPosition,
+    double _dampingCoefficient,
+    double _coulombFriction)
+  : mPositionLowerLimit(_positionLowerLimit),
+    mPositionUpperLimit(_positionUpperLimit),
+    mVelocityLowerLimit(_velocityLowerLimit),
+    mVelocityUpperLimit(_velocityUpperLimit),
+    mAccelerationLowerLimit(_accelerationLowerLimit),
+    mAccelerationUpperLimit(_accelerationUpperLimit),
+    mForceLowerLimit(_forceLowerLimit),
+    mForceUpperLimit(_forceUpperLimit),
+    mSpringStiffness(_springStiffness),
+    mRestPosition(_restPosition),
+    mDampingCoefficient(_dampingCoefficient),
+    mFriction(_coulombFriction)
+{
+  // Do nothing
+}
+
+//==============================================================================
+SingleDofJoint::Properties::Properties(
+    const Joint::Properties& _jointProperties,
+    const UniqueProperties& _singleDofProperties)
+  : Joint::Properties(_jointProperties),
+    UniqueProperties(_singleDofProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
     mDof(createDofPointer(_name, 0)),
     mCommand(0.0),
     mPosition(0.0),
-    mPositionLowerLimit(-DART_DBL_INF),
-    mPositionUpperLimit(DART_DBL_INF),
     mPositionDeriv(0.0),
     mVelocity(0.0),
-    mVelocityLowerLimit(-DART_DBL_INF),
-    mVelocityUpperLimit(DART_DBL_INF),
     mVelocityDeriv(0.0),
     mAcceleration(0.0),
-    mAccelerationLowerLimit(-DART_DBL_INF),
-    mAccelerationUpperLimit(DART_DBL_INF),
     mAccelerationDeriv(0.0),
     mForce(0.0),
-    mForceLowerLimit(-DART_DBL_INF),
-    mForceUpperLimit(DART_DBL_INF),
     mForceDeriv(0.0),
     mVelocityChange(0.0),
     mImpulse(0.0),
     mConstraintImpulse(0.0),
-    mSpringStiffness(0.0),
-    mRestPosition(0.0),
-    mDampingCoefficient(0.0),
-    mFriction(0.0),
     mJacobian(Eigen::Vector6d::Zero()),
     mJacobianDeriv(Eigen::Vector6d::Zero()),
     mInvProjArtInertia(0.0),
@@ -88,6 +116,61 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
 SingleDofJoint::~SingleDofJoint()
 {
   delete mDof;
+}
+
+//==============================================================================
+void SingleDofJoint::setProperties(const Properties& _properties)
+{
+  Joint::setProperties(static_cast<const Joint::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void SingleDofJoint::setProperties(const UniqueProperties& _properties)
+{
+  setPositionLowerLimit(0, _properties.mPositionLowerLimit);
+  setPositionUpperLimit(0, _properties.mPositionUpperLimit);
+  setVelocityLowerLimit(0, _properties.mVelocityLowerLimit);
+  setVelocityUpperLimit(0, _properties.mVelocityUpperLimit);
+  setAccelerationLowerLimit(0, _properties.mAccelerationLowerLimit);
+  setAccelerationUpperLimit(0, _properties.mAccelerationUpperLimit);
+  setForceLowerLimit(0, _properties.mForceLowerLimit);
+  setForceUpperLimit(0, _properties.mForceUpperLimit);
+  setSpringStiffness(0, _properties.mSpringStiffness);
+  setRestPosition(0, _properties.mRestPosition);
+  setDampingCoefficient(0, _properties.mDampingCoefficient);
+  setCoulombFriction(0, _properties.mFriction);
+}
+
+//==============================================================================
+SingleDofJoint::Properties SingleDofJoint::getSingleDofJointProperties() const
+{
+  return Properties(mJointP, mSingleDofP);
+}
+
+//==============================================================================
+void SingleDofJoint::copy(const SingleDofJoint& _otherSingleDofJoint)
+{
+  if(this == &_otherSingleDofJoint)
+    return;
+
+  setProperties(_otherSingleDofJoint.getSingleDofJointProperties());
+}
+
+//==============================================================================
+void SingleDofJoint::copy(const SingleDofJoint* _otherSingleDofJoint)
+{
+  if(nullptr == _otherSingleDofJoint)
+    return;
+
+  copy(*_otherSingleDofJoint);
+}
+
+//==============================================================================
+SingleDofJoint& SingleDofJoint::operator=(const SingleDofJoint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
 }
 
 //==============================================================================
@@ -255,7 +338,7 @@ void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
     return;
   }
 
-  mPositionLowerLimit = _position;
+  mSingleDofP.mPositionLowerLimit = _position;
 }
 
 //==============================================================================
@@ -268,7 +351,7 @@ double SingleDofJoint::getPositionLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mPositionLowerLimit;
+  return mSingleDofP.mPositionLowerLimit;
 }
 
 //==============================================================================
@@ -281,7 +364,7 @@ void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
     return;
   }
 
-  mPositionUpperLimit = _position;
+  mSingleDofP.mPositionUpperLimit = _position;
 }
 
 //==============================================================================
@@ -294,7 +377,7 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mPositionUpperLimit;
+  return mSingleDofP.mPositionUpperLimit;
 }
 
 //==============================================================================
@@ -356,7 +439,7 @@ void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
     return;
   }
 
-  mVelocityLowerLimit = _velocity;
+  mSingleDofP.mVelocityLowerLimit = _velocity;
 }
 
 //==============================================================================
@@ -369,7 +452,7 @@ double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mVelocityLowerLimit;
+  return mSingleDofP.mVelocityLowerLimit;
 }
 
 //==============================================================================
@@ -382,7 +465,7 @@ void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
     return;
   }
 
-  mVelocityUpperLimit = _velocity;
+  mSingleDofP.mVelocityUpperLimit = _velocity;
 }
 
 //==============================================================================
@@ -395,7 +478,7 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mVelocityUpperLimit;
+  return mSingleDofP.mVelocityUpperLimit;
 }
 
 //==============================================================================
@@ -470,7 +553,7 @@ void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
     return;
   }
 
-  mAccelerationLowerLimit = _acceleration;
+  mSingleDofP.mAccelerationLowerLimit = _acceleration;
 }
 
 //==============================================================================
@@ -483,7 +566,7 @@ double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mAccelerationLowerLimit;
+  return mSingleDofP.mAccelerationLowerLimit;
 }
 
 //==============================================================================
@@ -497,7 +580,7 @@ void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
     return;
   }
 
-  mAccelerationUpperLimit = _acceleration;
+  mSingleDofP.mAccelerationUpperLimit = _acceleration;
 }
 
 //==============================================================================
@@ -510,7 +593,7 @@ double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mAccelerationUpperLimit;
+  return mSingleDofP.mAccelerationUpperLimit;
 }
 
 //==============================================================================
@@ -628,7 +711,7 @@ void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
     return;
   }
 
-  mForceLowerLimit = _force;
+  mSingleDofP.mForceLowerLimit = _force;
 }
 
 //==============================================================================
@@ -640,7 +723,7 @@ double SingleDofJoint::getForceLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mForceLowerLimit;
+  return mSingleDofP.mForceLowerLimit;
 }
 
 //==============================================================================
@@ -653,7 +736,7 @@ void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
     return;
   }
 
-  mForceUpperLimit = _force;
+  mSingleDofP.mForceUpperLimit = _force;
 }
 
 //==============================================================================
@@ -666,7 +749,7 @@ double SingleDofJoint::getForceUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mForceUpperLimit;
+  return mSingleDofP.mForceUpperLimit;
 }
 
 //==============================================================================
@@ -757,7 +840,7 @@ void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 
   assert(_k >= 0.0);
 
-  mSpringStiffness = _k;
+  mSingleDofP.mSpringStiffness = _k;
 }
 
 //==============================================================================
@@ -770,7 +853,7 @@ double SingleDofJoint::getSpringStiffness(size_t _index) const
     return 0.0;
   }
 
-  return mSpringStiffness;
+  return mSingleDofP.mSpringStiffness;
 }
 
 //==============================================================================
@@ -783,17 +866,18 @@ void SingleDofJoint::setRestPosition(size_t _index, double _q0)
     return;
   }
 
-  if (mPositionLowerLimit > _q0 || mPositionUpperLimit < _q0)
+  if (mSingleDofP.mPositionLowerLimit > _q0
+      || mSingleDofP.mPositionUpperLimit < _q0)
   {
     dterr << "Rest position of joint[" << getName() << "], " << _q0
           << ", is out of the limit range["
-          << mPositionLowerLimit << ", "
-          << mPositionUpperLimit << "] in index[" << _index
+          << mSingleDofP.mPositionLowerLimit << ", "
+          << mSingleDofP.mPositionUpperLimit << "] in index[" << _index
           << "].\n";
     return;
   }
 
-  mRestPosition = _q0;
+  mSingleDofP.mRestPosition = _q0;
 }
 
 //==============================================================================
@@ -806,7 +890,7 @@ double SingleDofJoint::getRestPosition(size_t _index) const
     return 0.0;
   }
 
-  return mRestPosition;
+  return mSingleDofP.mRestPosition;
 }
 
 //==============================================================================
@@ -821,7 +905,7 @@ void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
 
   assert(_d >= 0.0);
 
-  mDampingCoefficient = _d;
+  mSingleDofP.mDampingCoefficient = _d;
 }
 
 //==============================================================================
@@ -834,7 +918,7 @@ double SingleDofJoint::getDampingCoefficient(size_t _index) const
     return 0.0;
   }
 
-  return mDampingCoefficient;
+  return mSingleDofP.mDampingCoefficient;
 }
 
 //==============================================================================
@@ -849,7 +933,7 @@ void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
 
   assert(_friction >= 0.0);
 
-  mFriction = _friction;
+  mSingleDofP.mFriction = _friction;
 }
 
 //==============================================================================
@@ -862,16 +946,16 @@ double SingleDofJoint::getCoulombFriction(size_t _index) const
     return 0.0;
   }
 
-  return mFriction;
+  return mSingleDofP.mFriction;
 }
 
 //==============================================================================
 double SingleDofJoint::getPotentialEnergy() const
 {
   // Spring energy
-  double pe = 0.5 * mSpringStiffness
-       * (getPositionStatic() - mRestPosition)
-       * (getPositionStatic() - mRestPosition);
+  double pe = 0.5 * mSingleDofP.mSpringStiffness
+       * (getPositionStatic() - mSingleDofP.mRestPosition)
+       * (getPositionStatic() - mSingleDofP.mRestPosition);
 
   return pe;
 }
@@ -1180,8 +1264,8 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitDynamic(
   double projAI = Jacobian.dot(_artInertia * Jacobian);
 
   // Add additional inertia for implicit damping and spring force
-  projAI += _timeStep * mDampingCoefficient
-            + _timeStep * _timeStep * mSpringStiffness;
+  projAI += _timeStep * mSingleDofP.mDampingCoefficient
+            + _timeStep * _timeStep * mSingleDofP.mSpringStiffness;
 
   // Inversion of the projected articulated inertia for implicit damping and
   // spring force
@@ -1370,11 +1454,14 @@ void SingleDofJoint::updateTotalForceDynamic(
     const Eigen::Vector6d& _bodyForce, double _timeStep)
 {
   // Spring force
-  const double nextPosition = getPositionStatic() + _timeStep*getVelocityStatic();
-  const double springForce = -mSpringStiffness * (nextPosition - mRestPosition);
+  const double nextPosition =
+      getPositionStatic() + _timeStep*getVelocityStatic();
+  const double springForce =
+     -mSingleDofP.mSpringStiffness * (nextPosition - mSingleDofP.mRestPosition);
 
   // Damping force
-  const double dampingForce = -mDampingCoefficient * getVelocityStatic();
+  const double dampingForce =
+      -mSingleDofP.mDampingCoefficient * getVelocityStatic();
 
   // Compute alpha
   mTotalForce = mForce + springForce + dampingForce
@@ -1529,7 +1616,8 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
   // Damping force
   if (_withDampingForces)
   {
-    const double dampingForce = -mDampingCoefficient * getVelocityStatic();
+    const double dampingForce =
+        -mSingleDofP.mDampingCoefficient * getVelocityStatic();
     mForce -= dampingForce;
   }
 
@@ -1538,7 +1626,8 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
   {
     const double nextPosition = getPositionStatic()
                               + _timeStep*getVelocityStatic();
-    const double springForce = -mSpringStiffness*(nextPosition - mRestPosition);
+    const double springForce =
+       -mSingleDofP.mSpringStiffness*(nextPosition - mSingleDofP.mRestPosition);
     mForce -= springForce;
   }
 }

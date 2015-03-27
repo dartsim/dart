@@ -50,9 +50,6 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 1.0
-#define DART_DEFAULT_RESTITUTION_COEFF 0.0
-
 namespace dart {
 namespace dynamics {
 
@@ -74,20 +71,26 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
-BodyNode::PartialProperties::PartialProperties()
-  : mGravityMode(true),
-    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
-    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
-    mIsCollidable(true)
+BodyNode::UniqueProperties::UniqueProperties(
+    const Inertia& _inertia,
+    const std::vector<ShapePtr>& _collisionShapes,
+    bool _isCollidable, double _frictionCoeff,
+    double _restitutionCoeff, bool _gravityMode)
+  : mInertia(_inertia),
+    mColShapes(_collisionShapes),
+    mIsCollidable(_isCollidable),
+    mFrictionCoeff(_frictionCoeff),
+    mRestitutionCoeff(_restitutionCoeff),
+    mGravityMode(_gravityMode)
 {
-  // Do nothing
+
 }
 
 //==============================================================================
 BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
-                                 const PartialProperties& _bodyNodeProperties)
+                                 const UniqueProperties& _bodyNodeProperties)
   : Entity::Properties(_entityProperties),
-    PartialProperties(_bodyNodeProperties)
+    UniqueProperties(_bodyNodeProperties)
 {
   // Do nothing
 }
@@ -147,7 +150,12 @@ BodyNode::~BodyNode()
 void BodyNode::setProperties(const Properties& _properties)
 {
   Entity::setProperties(static_cast<const Entity::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
 
+//==============================================================================
+void BodyNode::setProperties(const UniqueProperties& _properties)
+{
   setInertia(_properties.mInertia);
   setGravityMode(_properties.mGravityMode);
   setFrictionCoeff(_properties.mFrictionCoeff);

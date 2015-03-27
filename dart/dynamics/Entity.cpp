@@ -48,8 +48,10 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-Entity::Properties::Properties(const std::string& _name)
-  : mName(_name)
+Entity::Properties::Properties(const std::string& _name,
+                               const std::vector<ShapePtr>& _vizShapes)
+  : mName(_name),
+    mVizShapes(_vizShapes)
 {
  // Do nothing
 }
