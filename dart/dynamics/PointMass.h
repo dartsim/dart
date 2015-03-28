@@ -62,6 +62,62 @@ class PointMass
 public:
   friend class SoftBodyNode;
 
+  struct Properties
+  {
+    /// Resting position viewed in the parent SoftBodyNode frame
+    Eigen::Vector3d mX0;
+
+    /// Indices of connected Point Masses
+    std::vector<size_t> mConnectedPointMassIndices;
+
+    /// Mass.
+    double mMass;
+
+    /// Lower limit of position
+    Eigen::Vector3d mPositionLowerLimits; // Currently unused
+
+    /// Upper limit of position
+    Eigen::Vector3d mPositionUpperLimits; // Currently unused
+
+    /// Min value allowed.
+    Eigen::Vector3d mVelocityLowerLimits; // Currently unused
+
+    /// Max value allowed.
+    Eigen::Vector3d mVelocityUpperLimits; // Currently unused
+
+    /// Min value allowed.
+    Eigen::Vector3d mAccelerationLowerLimits; // Currently unused
+
+    /// upper limit of generalized acceleration
+    Eigen::Vector3d mAccelerationUpperLimits; // Currently unused
+
+    /// Min value allowed.
+    Eigen::Vector3d mForceLowerLimits; // Currently unused
+
+    /// Max value allowed.
+    Eigen::Vector3d mForceUpperLimits; // Currently unused
+
+    Properties(const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
+               const std::vector<size_t>& _connections = std::vector<size_t>(),
+               double _mass = 0.0005,
+               const Eigen::Vector3d& _positionLowerLimits =
+                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+               const Eigen::Vector3d& _positionUpperLimits =
+                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+               const Eigen::Vector3d& _velocityLowerLimits =
+                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+               const Eigen::Vector3d& _velocityUpperLimits =
+                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+               const Eigen::Vector3d& _accelerationLowerLimits =
+                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+               const Eigen::Vector3d& _accelerationUpperLimits =
+                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+               const Eigen::Vector3d& _forceLowerLimits =
+                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+               const Eigen::Vector3d& _forceUpperLimits =
+                                      Eigen::Vector3d::Constant( DART_DBL_INF));
+  };
+
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
@@ -515,18 +571,18 @@ protected:
   ///
 //  Eigen::Matrix<size_t, 3, 1> mIndexInSkeleton;
 
+  /// SoftBodyNode that this PointMass belongs to
+  SoftBodyNode* mParentSoftBodyNode;
+
+  /// Index of this PointMass within the SoftBodyNode
+  size_t mIndex;
+
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
 
   /// Position
   Eigen::Vector3d mPositions;
-
-  /// Lower limit of position
-  Eigen::Vector3d mPositionLowerLimits;
-
-  /// Upper limit of position
-  Eigen::Vector3d mPositionUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mPositionDeriv;
@@ -538,12 +594,6 @@ protected:
   /// Generalized velocity
   Eigen::Vector3d mVelocities;
 
-  /// Min value allowed.
-  Eigen::Vector3d mVelocityLowerLimits;
-
-  /// Max value allowed.
-  Eigen::Vector3d mVelocityUpperLimits;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mVelocitiesDeriv;
 
@@ -554,12 +604,6 @@ protected:
   /// Generalized acceleration
   Eigen::Vector3d mAccelerations;
 
-  /// Min value allowed.
-  Eigen::Vector3d mAccelerationLowerLimits;
-
-  /// upper limit of generalized acceleration
-  Eigen::Vector3d mAccelerationUpperLimits;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mAccelerationsDeriv;
 
@@ -569,12 +613,6 @@ protected:
 
   /// Generalized force
   Eigen::Vector3d mForces;
-
-  /// Min value allowed.
-  Eigen::Vector3d mForceLowerLimits;
-
-  /// Max value allowed.
-  Eigen::Vector3d mForceUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mForcesDeriv;
@@ -594,17 +632,11 @@ protected:
 
   //----------------------------------------------------------------------------
 
-  /// Mass.
-  double mMass;
-
   /// Current position viewed in world frame.
   mutable Eigen::Vector3d mW;
 
   /// Current position viewed in parent soft body node frame.
   mutable Eigen::Vector3d mX;
-
-  /// Resting postion viewed in parent soft body node frame.
-  Eigen::Vector3d mX0;
 
   /// Current velocity viewed in parent soft body node frame.
   mutable Eigen::Vector3d mV;
@@ -638,9 +670,6 @@ protected:
 
   /// Bias force
   Eigen::Vector3d mB;
-
-  ///
-  SoftBodyNode* mParentSoftBodyNode;
 
   ///
   std::vector<PointMass*> mConnectedPointMasses;

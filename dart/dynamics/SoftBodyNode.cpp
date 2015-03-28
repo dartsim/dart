@@ -54,13 +54,56 @@
 namespace dart {
 namespace dynamics {
 
+
+//==============================================================================
+SoftBodyNode::UniqueProperties::UniqueProperties(
+    const std::vector<PointMass::Properties>& _points,
+    double _Kv, double _Ke, double _DampCoeff)
+  : mPointProps(_points),
+    mKv(_Kv),
+    mKe(_Ke),
+    mDampCoeff(_DampCoeff)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool SoftBodyNode::UniqueProperties::addConnection(size_t i1, size_t i2)
+{
+  if(i1 >= mPointProps.size() || i2 >= mPointProps.size())
+  {
+    if(mPointProps.size() == 0)
+      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
+             << "add a connection between indices " << i1 << " and " << i2
+             << ", but there are currently no entries in mPointProps!";
+    else
+      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
+             << "add a connection between indices " << i1 << " and " << i2
+             << ", but the entries in mPointProps only go up to "
+             << mPointProps.size()-1 << "!";
+    return false;
+  }
+
+  mPointProps[i1].mConnectedPointMassIndices.push_back(i2);
+  mPointProps[i2].mConnectedPointMassIndices.push_back(i1);
+
+  return true;
+}
+
+//==============================================================================
+SoftBodyNode::Properties::Properties(
+    const BodyNode::Properties& _bodyProperties,
+    const SoftBodyNode::UniqueProperties& _softProperties)
+  : BodyNode::Properties(_bodyProperties),
+    SoftBodyNode::UniqueProperties(_softProperties)
+{
+  // Do nothing
+}
+
 //==============================================================================
 SoftBodyNode::SoftBodyNode(const std::string& _name)
   : Entity(Frame::World(), _name, false),
     BodyNode(_name),
-    mKv(DART_DEFAULT_VERTEX_STIFFNESS),
-    mKe(DART_DEFAULT_EDGE_STIFNESS),
-    mDampCoeff(DART_DEFAULT_DAMPING_COEFF),
     mSoftVisualShape(NULL),
     mSoftCollShape(NULL)
 {
@@ -72,6 +115,86 @@ SoftBodyNode::~SoftBodyNode()
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     delete mPointMasses[i];
+}
+
+//==============================================================================
+void SoftBodyNode::setProperties(const Properties& _properties)
+{
+  BodyNode::setProperties(
+        static_cast<const BodyNode::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void SoftBodyNode::setProperties(const UniqueProperties& _properties)
+{
+  size_t newCount = _properties.mPointProps.size();
+  size_t oldCount = mPointMasses.size();
+  if(newCount < oldCount)
+  {
+    for(size_t i = newCount; i < oldCount; ++i)
+      delete mPointMasses[i];
+    mPointMasses.resize(newCount);
+    mSoftP.mPointProps.resize(newCount);
+  }
+  else if(oldCount < newCount)
+  {
+    mPointMasses.resize(newCount);
+    mSoftP.mPointProps.resize(newCount);
+    for(size_t i = oldCount; i < newCount; ++i)
+      mPointMasses[i] = new PointMass(this);
+  }
+
+  const std::vector<PointMass::Properties>& allProps = _properties.mPointProps;
+  for(size_t i=0; i<newCount; ++i)
+  {
+    PointMass* p = mPointMasses[i];
+    const PointMass::Properties& props = allProps[i];
+    p->setRestingPosition(props.mX0);
+    p->setMass(props.mMass);
+
+    p->mConnectedPointMasses.clear();
+    for(size_t c=0; c<props.mConnectedPointMassIndices.size(); ++c)
+    {
+      size_t connectionIndex = props.mConnectedPointMassIndices[c];
+      p->mConnectedPointMasses.push_back(mPointMasses[connectionIndex]);
+    }
+  }
+
+  setVertexSpringStiffness(_properties.mKv);
+  setEdgeSpringStiffness(_properties.mKe);
+  mSoftP.mFaces = _properties.mFaces;
+}
+
+//==============================================================================
+SoftBodyNode::Properties SoftBodyNode::getSoftBodyNodeProperties() const
+{
+  return Properties(getBodyNodeProperties(), mSoftP);
+}
+
+//==============================================================================
+void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
+{
+  if(this == &_otherSoftBodyNode)
+    return;
+
+  setProperties(_otherSoftBodyNode.getSoftBodyNodeProperties());
+}
+
+//==============================================================================
+void SoftBodyNode::copy(const SoftBodyNode* _otherSoftBodyNode)
+{
+  if(nullptr == _otherSoftBodyNode)
+    return;
+
+  copy(*_otherSoftBodyNode);
+}
+
+//==============================================================================
+SoftBodyNode& SoftBodyNode::operator=(const SoftBodyNode& _otherSoftBodyNode)
+{
+  copy(_otherSoftBodyNode);
+  return *this;
 }
 
 //==============================================================================
@@ -87,7 +210,7 @@ PointMass* SoftBodyNode::getPointMass(size_t _idx)
   if(_idx < mPointMasses.size())
     return mPointMasses[_idx];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -169,39 +292,39 @@ double SoftBodyNode::getMass() const
 void SoftBodyNode::setVertexSpringStiffness(double _kv)
 {
   assert(0.0 <= _kv);
-  mKv = _kv;
+  mSoftP.mKv = _kv;
 }
 
 //==============================================================================
 double SoftBodyNode::getVertexSpringStiffness() const
 {
-  return mKv;
+  return mSoftP.mKv;
 }
 
 //==============================================================================
 void SoftBodyNode::setEdgeSpringStiffness(double _ke)
 {
   assert(0.0 <= _ke);
-  mKe = _ke;
+  mSoftP.mKe = _ke;
 }
 
 //==============================================================================
 double SoftBodyNode::getEdgeSpringStiffness() const
 {
-  return mKe;
+  return mSoftP.mKe;
 }
 
 //==============================================================================
 void SoftBodyNode::setDampingCoefficient(double _damp)
 {
   assert(_damp >= 0.0);
-  mDampCoeff = _damp;
+  mSoftP.mDampCoeff = _damp;
 }
 
 //==============================================================================
 double SoftBodyNode::getDampingCoefficient() const
 {
-  return mDampCoeff;
+  return mSoftP.mDampCoeff;
 }
 
 //==============================================================================
@@ -236,20 +359,20 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
   assert(0 <= _face[0] && static_cast<size_t>(_face[0]) < mPointMasses.size());
   assert(0 <= _face[1] && static_cast<size_t>(_face[1]) < mPointMasses.size());
   assert(0 <= _face[2] && static_cast<size_t>(_face[2]) < mPointMasses.size());
-  mFaces.push_back(_face);
+  mSoftP.mFaces.push_back(_face);
 }
 
 //==============================================================================
 const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 {
-  assert(0 <= _idx && _idx < mFaces.size());
-  return mFaces[_idx];
+  assert(0 <= _idx && _idx < mSoftP.mFaces.size());
+  return mSoftP.mFaces[_idx];
 }
 
 //==============================================================================
 size_t SoftBodyNode::getNumFaces()
 {
-  return mFaces.size();
+  return mSoftP.mFaces.size();
 }
 
 //==============================================================================
@@ -1009,20 +1132,20 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
   {
     Eigen::Vector3d pos;
     Eigen::Vector3d pos_normalized;
-    for (size_t i = 0; i < mFaces.size(); ++i)
+    for (size_t i = 0; i < mSoftP.mFaces.size(); ++i)
     {
       glEnable(GL_AUTO_NORMAL);
       glBegin(GL_TRIANGLES);
 
-      pos = mPointMasses[mFaces[i](0)]->getLocalPosition();
+      pos = mPointMasses[mSoftP.mFaces[i](0)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mFaces[i](1)]->getLocalPosition();
+      pos = mPointMasses[mSoftP.mFaces[i](1)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mFaces[i](2)]->getLocalPosition();
+      pos = mPointMasses[mSoftP.mFaces[i](2)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
