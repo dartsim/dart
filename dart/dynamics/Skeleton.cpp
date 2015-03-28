@@ -109,25 +109,28 @@ const std::string& Skeleton::getName() const
 //==============================================================================
 const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
-  _newNode->mEntityP.mName = mNameMgrForBodyNodes.issueNewNameAndAdd(
-        _newNode->getName(),_newNode);
+  _newNode->mEntityP.mName =
+      mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
+
   return _newNode->mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 {
-  _newJoint->mJointP.mName = mNameMgrForJoints.issueNewNameAndAdd(
-        _newJoint->getName(), _newJoint);
+  _newJoint->mJointP.mName =
+      mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
   _newJoint->updateDegreeOfFreedomNames();
+
   return _newJoint->mJointP.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom* _newDof)
 {
-  _newDof->mName = mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(),
-                                                      _newDof);
+  _newDof->mName =
+      mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(), _newDof);
+
   return _newDof->mName;
 }
 
@@ -458,6 +461,8 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     }
   }
 
+  ///////////////////////////////////////////////////////////////////////////
+
   // Initialize body nodes and generalized coordinates
   mDofs.clear();
   mNumDofs = 0;
@@ -478,9 +483,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     mNumDofs += joint->getNumDofs();
   }
 
-  // Compute transformations, velocities, and partial accelerations
-//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
-
   // Set dimension of dynamics quantities
   size_t dof = getNumDofs();
   mM    = Eigen::MatrixXd::Zero(dof, dof);
@@ -499,9 +501,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   resetForces();
 
   // Calculate mass
-  mTotalMass = 0.0;
-  for (size_t i = 0; i < getNumBodyNodes(); i++)
-    mTotalMass += getBodyNode(i)->getMass();
+  updateTotalMass();
 }
 
 //==============================================================================
@@ -1780,12 +1780,36 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
+void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
+{
+  mBodyNodes.push_back(_newBodyNode);
+  addEntryToBodyNodeNameMgr(_newBodyNode);
+  registerJoint(_newBodyNode->getParentJoint());
+
+  SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_newBodyNode);
+  if (softBodyNode)
+  {
+    mSoftBodyNodes.push_back(softBodyNode);
+    addEntryToSoftBodyNodeNameMgr(softBodyNode);
+  }
+
+  Joint* newJoint = _newBodyNode->getParentJoint();
+  for(size_t i = 0; i < newJoint->getNumDofs(); ++i)
+    newJoint->setIndexInSkeleton(i, mNumDofs + i);
+  mNumDofs += newJoint->getNumDofs();
+
+  _newBodyNode->init(this);
+
+  updateTotalMass();
+}
+
+//==============================================================================
 void Skeleton::registerJoint(Joint* _newJoint)
 {
-  if (NULL == _newJoint)
+  if (nullptr == _newJoint)
   {
-    dterr << "[Skeleton::registerJoint] Error: Attempting to add a NULL joint "
-             "to the Skeleton named '" << mName << "'!\n";
+    dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
+             "Joint to the Skeleton named '" << mName << "'!\n";
     return;
   }
 
@@ -1828,6 +1852,14 @@ void Skeleton::notifyArticulatedInertiaUpdate()
   mIsCoriolisForcesDirty = true;
   mIsGravityForcesDirty = true;
   mIsCoriolisAndGravityForcesDirty = true;
+}
+
+//==============================================================================
+void Skeleton::updateTotalMass()
+{
+  mTotalMass = 0.0;
+  for(size_t i=0; i<getNumBodyNodes(); ++i)
+    mTotalMass += getBodyNode(i)->getMass();
 }
 
 //==============================================================================
@@ -2373,7 +2405,7 @@ void Skeleton::clearConstraintImpulses()
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   // Assertions
-  assert(_bodyNode != NULL);
+  assert(_bodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contains _bodyNode
@@ -2388,7 +2420,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 
   // Prepare cache data
   BodyNode* it = _bodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
@@ -2400,7 +2432,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                  const Eigen::Vector6d& _imp)
 {
   // Assertions
-  assert(_bodyNode != NULL);
+  assert(_bodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -2418,7 +2450,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 
   // Prepare cache data
   BodyNode* it = _bodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
@@ -2434,8 +2466,8 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
                                  const Eigen::Vector6d& _imp2)
 {
   // Assertions
-  assert(_bodyNode1 != NULL);
-  assert(_bodyNode2 != NULL);
+  assert(_bodyNode1 != nullptr);
+  assert(_bodyNode2 != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -2476,7 +2508,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
                                  const Eigen::Vector3d& _imp)
 {
   // Assertions
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -2495,7 +2527,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 
   // Prepare cache data
   BodyNode* it = _softBodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();

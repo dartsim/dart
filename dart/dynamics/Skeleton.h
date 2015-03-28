@@ -139,17 +139,23 @@ public:
   // Structueral Properties
   //----------------------------------------------------------------------------
 
-//  template <class JointType, class NodeType = BodyNode>
-//  std::pair<JointType*, NodeType*> createJointAndNode(
-//    BodyNode* _parent,
-//    const JointType::Properties& _jointProperties = JointType::Properties(),
-//    const NodeType::Properties& _bodyProperties = NodeType::Properties())
-//  {
-//    JointType* newJoint = new JointType(this, )
-//    NodeType* newBN = new NodeType(this, _parent, )
-//  }
+  /// Create a Joint and child BodyNode pair of the given types. When creating
+  /// a root (parentless) BodyNode, pass in nullptr for the _parent argument.
+  template <class JointType, class NodeType = BodyNode>
+  std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
+    BodyNode* _parent = nullptr,
+    const typename JointType::Properties& _jointProperties = JointType::Properties(),
+    const typename NodeType::Properties& _bodyProperties = NodeType::Properties())
+  {
+    JointType* joint = new JointType(_jointProperties);
+    NodeType* node = new NodeType(_parent, joint, _bodyProperties);
+    registerBodyNode(node);
+
+    return std::pair<JointType*, NodeType*>(joint, node);
+  }
 
   /// Add a body node
+  // TODO(MXG): Deprecate this
   void addBodyNode(BodyNode* _body);
 
   /// Get number of body nodes
@@ -228,6 +234,7 @@ public:
   // Initialization
   //----------------------------------------------------------------------------
   /// Initialize this skeleton for kinematics and dynamics
+  // TODO(MXG): Deprecate this
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
@@ -859,15 +866,21 @@ public:
   friend class DegreeOfFreedom;
 
 protected:
-  /// Register a joint with the Skeleton. Internal use only.
+  /// Register a BodyNode with the Skeleton. Internal use only.
+  void registerBodyNode(BodyNode* _newBodyNode);
+
+  /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
-  /// Remove a joint from the Skeleton. Internal use only.
+  /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
   void notifyArticulatedInertiaUpdate();
+
+  /// Update the computation for total mass
+  void updateTotalMass();
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;

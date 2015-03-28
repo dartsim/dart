@@ -306,6 +306,7 @@ public:
   const Skeleton* getSkeleton() const;
 
   /// Set _joint as the parent joint of the bodynode
+  // TODO(MXG): Deprecate this
   void setParentJoint(Joint* _joint);
 
   /// Return the parent Joint of this BodyNode
@@ -899,8 +900,8 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  BodyNode(Skeleton* _skeleton, BodyNode* _parentBodyNode,
-           Joint* _parentJoint, const Properties& _properties);
+  BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+           const Properties& _properties);
 
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);

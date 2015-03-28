@@ -272,7 +272,10 @@ void BodyNode::setMass(double _mass)
   mBodyP.mInertia.setMass(_mass);
 
   if(mSkeleton)
+  {
     mSkeleton->notifyArticulatedInertiaUpdate();
+    mSkeleton->updateTotalMass();
+  }
 }
 
 //==============================================================================
@@ -317,7 +320,10 @@ void BodyNode::setInertia(const Inertia& _inertia)
   mBodyP.mInertia = _inertia;
 
   if(mSkeleton)
+  {
     mSkeleton->notifyArticulatedInertiaUpdate();
+    mSkeleton->updateTotalMass();
+  }
 }
 
 //==============================================================================
@@ -541,8 +547,6 @@ void BodyNode::setParentJoint(Joint* _joint)
   if (_joint->getChildBodyNode())
   {
     assert(_joint->getChildBodyNode() != this);
-    // TODO: How should we handle this scenario? (The Joint that was passed in
-    // already has some other child BodyNode!)
   }
 
   if (mSkeleton)
@@ -556,8 +560,6 @@ void BodyNode::setParentJoint(Joint* _joint)
 
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;
-  // TODO: Should we delete the original mParentJoint? Seems like the BodyNode
-  // should be responsible for its parent joint
 }
 
 //==============================================================================
@@ -1243,15 +1245,15 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 }
 
 //==============================================================================
-BodyNode::BodyNode(Skeleton* _skeleton, BodyNode* _parentBodyNode,
-                   Joint* _parentJoint, const Properties& _properties)
+BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                   const Properties& _properties)
   : Entity(_parentBodyNode, "", false), // Name gets set later by setProperties
     Frame(_parentBodyNode, ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
-    mSkeleton(_skeleton),
+    mSkeleton(nullptr),
     mParentJoint(_parentJoint),
-    mParentBodyNode(_parentBodyNode),
+    mParentBodyNode(nullptr),
     mIsBodyJacobianDirty(true),
     mIsWorldJacobianDirty(true),
     mIsBodyJacobianSpatialDerivDirty(true),
@@ -1280,6 +1282,7 @@ BodyNode::BodyNode(Skeleton* _skeleton, BodyNode* _parentBodyNode,
     onColShapeAdded(mColShapeAddedSignal),
     onColShapeRemoved(mColShapeRemovedSignal)
 {
+  mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
 }
 

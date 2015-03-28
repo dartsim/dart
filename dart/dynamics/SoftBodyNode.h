@@ -66,6 +66,13 @@ public:
   friend class PointMass;
   friend class PointMassNotifier;
 
+  struct UniqueProperties
+  {
+    // TODO: Move mKv, mKe, and mDampCoeff (and any other relevant members) into
+    // here. Also, create a PointMass::Properties struct and have a vector of it
+    // in here.
+  };
+
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
@@ -133,6 +140,11 @@ public:
   virtual void clearConstraintImpulse();
 
 protected:
+
+  /// Constructor called by Skeleton class
+  SoftBodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+               const Properties& _properties);
+
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
