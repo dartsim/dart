@@ -1808,21 +1808,21 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Corners[4] faces
   faces[fIdx][0] = corners[4].second;
   faces[fIdx][1] = edgeY[1][0].second;
-  faces[fIdx][2] = edgeZ[1].back().second;
+  faces[fIdx][2] = edgeZ[0].back().second;
   fIdx++;
 
   faces[fIdx][0] = sideXNeg[0].back().second;
   faces[fIdx][1] = edgeY[1][0].second;
-  faces[fIdx][2] = edgeZ[1].back().second;
+  faces[fIdx][2] = edgeZ[0].back().second;
   fIdx++;
 
   faces[fIdx][0] = corners[4].second;
-  faces[fIdx][1] = edgeZ[1].back().second;
+  faces[fIdx][1] = edgeZ[0].back().second;
   faces[fIdx][2] = edgeX[3][0].second;
   fIdx++;
 
   faces[fIdx][0] = sideYNeg.back()[0].second;
-  faces[fIdx][1] = edgeZ[1].back().second;
+  faces[fIdx][1] = edgeZ[0].back().second;
   faces[fIdx][2] = edgeX[3][0].second;
   fIdx++;
 
