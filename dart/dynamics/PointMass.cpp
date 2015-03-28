@@ -78,6 +78,18 @@ PointMass::Properties::Properties(
 }
 
 //==============================================================================
+void PointMass::Properties::setRestingPosition(const Vector3d &_x)
+{
+  mX0 = _x;
+}
+
+//==============================================================================
+void PointMass::Properties::setMass(double _mass)
+{
+  mMass = _mass;
+}
+
+//==============================================================================
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
   : // mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
     mParentSoftBodyNode(_softBodyNode),

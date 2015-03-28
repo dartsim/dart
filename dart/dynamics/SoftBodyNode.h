@@ -94,7 +94,14 @@ public:
         double _Ke = DART_DEFAULT_EDGE_STIFNESS,
         double _DampCoeff = DART_DEFAULT_DAMPING_COEFF);
 
-    bool addConnection(size_t i1, size_t i2);
+    /// Add a PointMass to this Properties struct
+    void addPointMass(const PointMass::Properties& _properties);
+
+    /// Connect two PointMasses together in this Properties struct
+    bool connectPointMasses(size_t i1, size_t i2);
+
+    /// Add a face to this Properties struct
+    void addFace(const Eigen::Vector3i& _newFace);
   };
 
   struct Properties : BodyNode::Properties, UniqueProperties
@@ -163,7 +170,7 @@ public:
   void removeAllPointMasses();
 
   /// \brief
-  void addPointMass(PointMass* _pointMass);
+  PointMass* addPointMass(const PointMass::Properties& _properties);
 
   /// \brief
   size_t getNumPointMasses() const;
@@ -391,17 +398,18 @@ public:
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
-  static void setBox(
-      SoftBodyNode*            _softBodyNode,
+  static void setBox(SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
-      const Eigen::Isometry3d& _localTransfom,
+      const Eigen::Isometry3d& _localTransform,
       double                   _totalMass,
       double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// Create a Properties struct for a box-shaped SoftBodyNode. Specify the
-  /// number of vertices along each axis with _frags.
+  /// number of vertices along each axis with _frags. Each component should be
+  /// equal to or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
+  /// not.
   static SoftBodyNode::UniqueProperties makeBoxProperties(
       const Eigen::Vector3d&   _size,
       const Eigen::Isometry3d& _localTransform,
@@ -417,10 +425,9 @@ public:
   ///   equal or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
   ///   not.
   // TODO: The component of _frags should allow 2.
-  static void setBox(
-      SoftBodyNode*            _softBodyNode,
+  static void setBox(SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
-      const Eigen::Isometry3d& _localTransfom,
+      const Eigen::Isometry3d& _localTransform,
       const Eigen::Vector3i&   _frags,
       double                   _totalMass,
       double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,

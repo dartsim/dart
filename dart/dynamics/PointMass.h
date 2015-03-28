@@ -57,7 +57,7 @@ class SoftBodyNode;
 class PointMassNotifier;
 
 ///
-class PointMass
+class PointMass : public common::Subject
 {
 public:
   friend class SoftBodyNode;
@@ -116,13 +116,15 @@ public:
                                       Eigen::Vector3d::Constant(-DART_DBL_INF),
                const Eigen::Vector3d& _forceUpperLimits =
                                       Eigen::Vector3d::Constant( DART_DBL_INF));
+
+    void setRestingPosition(const Eigen::Vector3d& _x);
+
+    void setMass(double _mass);
   };
 
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
   //--------------------------------------------------------------------------
-  /// Default constructor
-  explicit PointMass(SoftBodyNode* _softBodyNode);
 
   /// Default destructor
   virtual ~PointMass();
@@ -374,6 +376,9 @@ public:
   Eigen::Vector3d getWorldAcceleration() const;
 
 protected:
+  /// Constructor used by SoftBodyNode
+  explicit PointMass(SoftBodyNode* _softBodyNode);
+
   ///
   void init();
 
