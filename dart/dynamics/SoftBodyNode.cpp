@@ -1617,7 +1617,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 
       sideZNeg[i][j].first.setRestingPosition(_localTransform * restPos);
       sideZNeg[i][j].first.setMass(mass);
-      properties.addPointMass(sideZNeg[i][j]);
+      properties.addPointMass(sideZNeg[i][j].first);
 
       sideZNeg[i][j].second = id++;
     }
@@ -1637,7 +1637,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 
       sideZPos[i][j].first.setRestingPosition(_localTransform * restPos);
       sideZPos[i][j].first.setMass(mass);
-      properties.addPointMass(sideZPos[i][j]);
+      properties.addPointMass(sideZPos[i][j].first);
 
       sideZPos[i][j].second = id++;
     }
@@ -1785,7 +1785,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   faces[fIdx][2] = edgeX[1][0].second;
   fIdx++;
 
-  faces[fIdx][0] = map[sideYPos[0][0]];
+  faces[fIdx][0] = sideYPos[0][0].second;
   faces[fIdx][1] = edgeX[1][0].second;
   faces[fIdx][2] = edgeZ[3][0].second;
   fIdx++;
@@ -1980,7 +1980,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZNeg[i + 1][0]];
+    faces[fIdx][0] = sideZNeg[i + 1][0].second;
     faces[fIdx][1] = edgeX[0][i + 1].second;
     faces[fIdx][2] = sideZNeg[i][0].second;
     properties.addFace(faces[fIdx]);
@@ -1991,26 +1991,26 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   for (size_t i = 0; i < edgeX[1].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeX[1][i].second;
-    faces[fIdx][1] = map[sideYPos[0][i]];
-    faces[fIdx][2] = map[edgeX[1][i + 1]];
+    faces[fIdx][1] = sideYPos[0][i].second;
+    faces[fIdx][2] = edgeX[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYPos[0][i + 1]];
-    faces[fIdx][1] = map[edgeX[1][i + 1]];
-    faces[fIdx][2] = map[sideYPos[0][i]];
+    faces[fIdx][0] = sideYPos[0][i + 1].second;
+    faces[fIdx][1] = edgeX[1][i + 1].second;
+    faces[fIdx][2] = sideYPos[0][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
     faces[fIdx][0] = edgeX[1][i].second;
-    faces[fIdx][1] = map[edgeX[1][i + 1]];
-    faces[fIdx][2] = map[sideZNeg[i].back()];
+    faces[fIdx][1] = edgeX[1][i + 1].second;
+    faces[fIdx][2] = sideZNeg[i].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZNeg[i + 1].back()];
-    faces[fIdx][1] = map[sideZNeg[i].back()];
-    faces[fIdx][2] = map[edgeX[1][i + 1]];
+    faces[fIdx][0] = sideZNeg[i + 1].back().second;
+    faces[fIdx][1] = sideZNeg[i].back().second;
+    faces[fIdx][2] = edgeX[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2018,27 +2018,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // EdgeX[2]
   for (size_t i = 0; i < edgeX[2].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeX[2][i + 1]];
-    faces[fIdx][1] = map[sideYPos.back()[i + 1]];
-    faces[fIdx][2] = map[edgeX[2][i]];
+    faces[fIdx][0] = edgeX[2][i + 1].second;
+    faces[fIdx][1] = sideYPos.back()[i + 1].second;
+    faces[fIdx][2] = edgeX[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYPos.back()[i]];
-    faces[fIdx][1] = map[edgeX[2][i]];
-    faces[fIdx][2] = map[sideYPos.back()[i + 1]];
+    faces[fIdx][0] = sideYPos.back()[i].second;
+    faces[fIdx][1] = edgeX[2][i].second;
+    faces[fIdx][2] = sideYPos.back()[i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeX[2][i + 1]];
-    faces[fIdx][1] = map[edgeX[2][i]];
-    faces[fIdx][2] = map[sideZPos[i + 1].back()];
+    faces[fIdx][0] = edgeX[2][i + 1].second;
+    faces[fIdx][1] = edgeX[2][i].second;
+    faces[fIdx][2] = sideZPos[i + 1].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZPos[i].back()];
-    faces[fIdx][1] = map[sideZPos[i + 1].back()];
-    faces[fIdx][2] = map[edgeX[2][i]];
+    faces[fIdx][0] = sideZPos[i].back().second;
+    faces[fIdx][1] = sideZPos[i + 1].back().second;
+    faces[fIdx][2] = edgeX[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2046,27 +2046,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // EdgeX[3]
   for (size_t i = 0; i < edgeX[3].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeX[3][i]];
-    faces[fIdx][1] = map[sideYNeg.back()[i]];
-    faces[fIdx][2] = map[edgeX[3][i + 1]];
+    faces[fIdx][0] = edgeX[3][i].second;
+    faces[fIdx][1] = sideYNeg.back()[i].second;
+    faces[fIdx][2] = edgeX[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYNeg.back()[i + 1]];
-    faces[fIdx][1] = map[edgeX[3][i + 1]];
-    faces[fIdx][2] = map[sideYNeg.back()[i]];
+    faces[fIdx][0] = sideYNeg.back()[i + 1].second;
+    faces[fIdx][1] = edgeX[3][i + 1].second;
+    faces[fIdx][2] = sideYNeg.back()[i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeX[3][i]];
-    faces[fIdx][1] = map[edgeX[3][i + 1]];
-    faces[fIdx][2] = map[sideZPos[i][0]];
+    faces[fIdx][0] = edgeX[3][i].second;
+    faces[fIdx][1] = edgeX[3][i + 1].second;
+    faces[fIdx][2] = sideZPos[i][0].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZPos[i + 1][0]];
-    faces[fIdx][1] = map[sideZPos[i][0]];
-    faces[fIdx][2] = map[edgeX[3][i + 1]];
+    faces[fIdx][0] = sideZPos[i + 1][0].second;
+    faces[fIdx][1] = sideZPos[i][0].second;
+    faces[fIdx][2] = edgeX[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2074,27 +2074,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeY[0]
   for (size_t i = 0; i < edgeY[0].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeY[0][i + 1]];
-    faces[fIdx][1] = map[sideZNeg[0][i + 1]];
-    faces[fIdx][2] = map[edgeY[0][i]];
+    faces[fIdx][0] = edgeY[0][i + 1].second;
+    faces[fIdx][1] = sideZNeg[0][i + 1].second;
+    faces[fIdx][2] = edgeY[0][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZNeg[0][i]];
-    faces[fIdx][1] = map[edgeY[0][i]];
-    faces[fIdx][2] = map[sideZNeg[0][i + 1]];
+    faces[fIdx][0] = sideZNeg[0][i].second;
+    faces[fIdx][1] = edgeY[0][i].second;
+    faces[fIdx][2] = sideZNeg[0][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeY[0][i]];
-    faces[fIdx][1] = map[sideXNeg[i][0]];
-    faces[fIdx][2] = map[edgeY[0][i + 1]];
+    faces[fIdx][0] = edgeY[0][i].second;
+    faces[fIdx][1] = sideXNeg[i][0].second;
+    faces[fIdx][2] = edgeY[0][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXNeg[i + 1][0]];
-    faces[fIdx][1] = map[edgeY[0][i + 1]];
-    faces[fIdx][2] = map[sideXNeg[i][0]];
+    faces[fIdx][0] = sideXNeg[i + 1][0].second;
+    faces[fIdx][1] = edgeY[0][i + 1].second;
+    faces[fIdx][2] = sideXNeg[i][0].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2102,27 +2102,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeY[1]
   for (size_t i = 0; i < edgeY[1].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeY[1][i]];
-    faces[fIdx][1] = map[sideZPos[0][i]];
-    faces[fIdx][2] = map[edgeY[1][i + 1]];
+    faces[fIdx][0] = edgeY[1][i].second;
+    faces[fIdx][1] = sideZPos[0][i].second;
+    faces[fIdx][2] = edgeY[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZPos[0][i + 1]];
-    faces[fIdx][1] = map[edgeY[1][i + 1]];
-    faces[fIdx][2] = map[sideZPos[0][i]];
+    faces[fIdx][0] = sideZPos[0][i + 1].second;
+    faces[fIdx][1] = edgeY[1][i + 1].second;
+    faces[fIdx][2] = sideZPos[0][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeY[1][i]];
-    faces[fIdx][1] = map[edgeY[1][i + 1]];
-    faces[fIdx][2] = map[sideXNeg[i].back()];
+    faces[fIdx][0] = edgeY[1][i].second;
+    faces[fIdx][1] = edgeY[1][i + 1].second;
+    faces[fIdx][2] = sideXNeg[i].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXNeg[i + 1].back()];
-    faces[fIdx][1] = map[sideXNeg[i].back()];
-    faces[fIdx][2] = map[edgeY[1][i + 1]];
+    faces[fIdx][0] = sideXNeg[i + 1].back().second;
+    faces[fIdx][1] = sideXNeg[i].back().second;
+    faces[fIdx][2] = edgeY[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2130,27 +2130,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeY[2]
   for (size_t i = 0; i < edgeY[2].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeY[2][i + 1]];
-    faces[fIdx][1] = map[sideZPos.back()[i + 1]];
-    faces[fIdx][2] = map[edgeY[2][i]];
+    faces[fIdx][0] = edgeY[2][i + 1].second;
+    faces[fIdx][1] = sideZPos.back()[i + 1].second;
+    faces[fIdx][2] = edgeY[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZPos.back()[i]];
-    faces[fIdx][1] = map[edgeY[2][i]];
-    faces[fIdx][2] = map[sideZPos.back()[i + 1]];
+    faces[fIdx][0] = sideZPos.back()[i].second;
+    faces[fIdx][1] = edgeY[2][i].second;
+    faces[fIdx][2] = sideZPos.back()[i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeY[2][i + 1]];
-    faces[fIdx][1] = map[edgeY[2][i]];
-    faces[fIdx][2] = map[sideXPos[i + 1].back()];
+    faces[fIdx][0] = edgeY[2][i + 1].second;
+    faces[fIdx][1] = edgeY[2][i].second;
+    faces[fIdx][2] = sideXPos[i + 1].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXPos[i].back()];
-    faces[fIdx][1] = map[sideXPos[i + 1].back()];
-    faces[fIdx][2] = map[edgeY[2][i]];
+    faces[fIdx][0] = sideXPos[i].back().second;
+    faces[fIdx][1] = sideXPos[i + 1].back().second;
+    faces[fIdx][2] = edgeY[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2158,27 +2158,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeY[3]
   for (size_t i = 0; i < edgeY[3].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeY[3][i]];
-    faces[fIdx][1] = map[sideZNeg.back()[i]];
-    faces[fIdx][2] = map[edgeY[3][i + 1]];
+    faces[fIdx][0] = edgeY[3][i].second;
+    faces[fIdx][1] = sideZNeg.back()[i].second;
+    faces[fIdx][2] = edgeY[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideZNeg.back()[i + 1]];
-    faces[fIdx][1] = map[edgeY[3][i + 1]];
-    faces[fIdx][2] = map[sideZNeg.back()[i]];
+    faces[fIdx][0] = sideZNeg.back()[i + 1].second;
+    faces[fIdx][1] = edgeY[3][i + 1].second;
+    faces[fIdx][2] = sideZNeg.back()[i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeY[3][i]];
-    faces[fIdx][1] = map[edgeY[3][i + 1]];
-    faces[fIdx][2] = map[sideXPos[i][0]];
+    faces[fIdx][0] = edgeY[3][i].second;
+    faces[fIdx][1] = edgeY[3][i + 1].second;
+    faces[fIdx][2] = sideXPos[i][0].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXPos[i + 1][0]];
-    faces[fIdx][1] = map[sideXPos[i][0]];
-    faces[fIdx][2] = map[edgeY[3][i + 1]];
+    faces[fIdx][0] = sideXPos[i + 1][0].second;
+    faces[fIdx][1] = sideXPos[i][0].second;
+    faces[fIdx][2] = edgeY[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2186,27 +2186,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeZ[0]
   for (size_t i = 0; i < edgeZ[0].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeZ[0][i + 1]];
-    faces[fIdx][1] = map[sideXNeg[0][i + 1]];
-    faces[fIdx][2] = map[edgeZ[0][i]];
+    faces[fIdx][0] = edgeZ[0][i + 1].second;
+    faces[fIdx][1] = sideXNeg[0][i + 1].second;
+    faces[fIdx][2] = edgeZ[0][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXNeg[0][i]];
-    faces[fIdx][1] = map[edgeZ[0][i]];
-    faces[fIdx][2] = map[sideXNeg[0][i + 1]];
+    faces[fIdx][0] = sideXNeg[0][i].second;
+    faces[fIdx][1] = edgeZ[0][i].second;
+    faces[fIdx][2] = sideXNeg[0][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeZ[0][i]];
-    faces[fIdx][1] = map[sideYNeg[i][0]];
-    faces[fIdx][2] = map[edgeZ[0][i + 1]];
+    faces[fIdx][0] = edgeZ[0][i].second;
+    faces[fIdx][1] = sideYNeg[i][0].second;
+    faces[fIdx][2] = edgeZ[0][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYNeg[i + 1][0]];
-    faces[fIdx][1] = map[edgeZ[0][i + 1]];
-    faces[fIdx][2] = map[sideYNeg[i][0]];
+    faces[fIdx][0] = sideYNeg[i + 1][0].second;
+    faces[fIdx][1] = edgeZ[0][i + 1].second;
+    faces[fIdx][2] = sideYNeg[i][0].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2214,27 +2214,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeZ[1]
   for (size_t i = 0; i < edgeZ[1].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeZ[1][i]];
-    faces[fIdx][1] = map[sideXPos[0][i]];
-    faces[fIdx][2] = map[edgeZ[1][i + 1]];
+    faces[fIdx][0] = edgeZ[1][i].second;
+    faces[fIdx][1] = sideXPos[0][i].second;
+    faces[fIdx][2] = edgeZ[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXPos[0][i + 1]];
-    faces[fIdx][1] = map[edgeZ[1][i + 1]];
-    faces[fIdx][2] = map[sideXPos[0][i]];
+    faces[fIdx][0] = sideXPos[0][i + 1].second;
+    faces[fIdx][1] = edgeZ[1][i + 1].second;
+    faces[fIdx][2] = sideXPos[0][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeZ[1][i]];
-    faces[fIdx][1] = map[edgeZ[1][i + 1]];
-    faces[fIdx][2] = map[sideYNeg[i].back()];
+    faces[fIdx][0] = edgeZ[1][i].second;
+    faces[fIdx][1] = edgeZ[1][i + 1].second;
+    faces[fIdx][2] = sideYNeg[i].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYNeg[i + 1].back()];
-    faces[fIdx][1] = map[sideYNeg[i].back()];
-    faces[fIdx][2] = map[edgeZ[1][i + 1]];
+    faces[fIdx][0] = sideYNeg[i + 1].back().second;
+    faces[fIdx][1] = sideYNeg[i].back().second;
+    faces[fIdx][2] = edgeZ[1][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2242,27 +2242,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeZ[2]
   for (size_t i = 0; i < edgeZ[2].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeZ[2][i + 1]];
-    faces[fIdx][1] = map[sideXPos.back()[i + 1]];
-    faces[fIdx][2] = map[edgeZ[2][i]];
+    faces[fIdx][0] = edgeZ[2][i + 1].second;
+    faces[fIdx][1] = sideXPos.back()[i + 1].second;
+    faces[fIdx][2] = edgeZ[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXPos.back()[i]];
-    faces[fIdx][1] = map[edgeZ[2][i]];
-    faces[fIdx][2] = map[sideXPos.back()[i + 1]];
+    faces[fIdx][0] = sideXPos.back()[i].second;
+    faces[fIdx][1] = edgeZ[2][i].second;
+    faces[fIdx][2] = sideXPos.back()[i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeZ[2][i + 1]];
-    faces[fIdx][1] = map[edgeZ[2][i]];
-    faces[fIdx][2] = map[sideYPos[i + 1].back()];
+    faces[fIdx][0] = edgeZ[2][i + 1].second;
+    faces[fIdx][1] = edgeZ[2][i].second;
+    faces[fIdx][2] = sideYPos[i + 1].back().second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYPos[i].back()];
-    faces[fIdx][1] = map[sideYPos[i + 1].back()];
-    faces[fIdx][2] = map[edgeZ[2][i]];
+    faces[fIdx][0] = sideYPos[i].back().second;
+    faces[fIdx][1] = sideYPos[i + 1].back().second;
+    faces[fIdx][2] = edgeZ[2][i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2270,27 +2270,27 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // edgeZ[3]
   for (size_t i = 0; i < edgeZ[3].size() - 1; ++i)
   {
-    faces[fIdx][0] = map[edgeZ[3][i]];
-    faces[fIdx][1] = map[sideXNeg.back()[i]];
-    faces[fIdx][2] = map[edgeZ[3][i + 1]];
+    faces[fIdx][0] = edgeZ[3][i].second;
+    faces[fIdx][1] = sideXNeg.back()[i].second;
+    faces[fIdx][2] = edgeZ[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideXNeg.back()[i + 1]];
-    faces[fIdx][1] = map[edgeZ[3][i + 1]];
-    faces[fIdx][2] = map[sideXNeg.back()[i]];
+    faces[fIdx][0] = sideXNeg.back()[i + 1].second;
+    faces[fIdx][1] = edgeZ[3][i + 1].second;
+    faces[fIdx][2] = sideXNeg.back()[i].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[edgeZ[3][i]];
-    faces[fIdx][1] = map[edgeZ[3][i + 1]];
-    faces[fIdx][2] = map[sideYPos[i][0]];
+    faces[fIdx][0] = edgeZ[3][i].second;
+    faces[fIdx][1] = edgeZ[3][i + 1].second;
+    faces[fIdx][2] = sideYPos[i][0].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
 
-    faces[fIdx][0] = map[sideYPos[i + 1][0]];
-    faces[fIdx][1] = map[sideYPos[i][0]];
-    faces[fIdx][2] = map[edgeZ[3][i + 1]];
+    faces[fIdx][0] = sideYPos[i + 1][0].second;
+    faces[fIdx][1] = sideYPos[i][0].second;
+    faces[fIdx][2] = edgeZ[3][i + 1].second;
     properties.addFace(faces[fIdx]);
     fIdx++;
   }
@@ -2300,15 +2300,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideXNeg[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideXNeg[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideXNeg[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideXNeg[i + 1][j + 0]];
+      faces[fIdx][0] = sideXNeg[i + 0][j + 0].second;
+      faces[fIdx][1] = sideXNeg[i + 0][j + 1].second;
+      faces[fIdx][2] = sideXNeg[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideXNeg[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideXNeg[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideXNeg[i + 0][j + 1]];
+      faces[fIdx][0] = sideXNeg[i + 1][j + 1].second;
+      faces[fIdx][1] = sideXNeg[i + 1][j + 0].second;
+      faces[fIdx][2] = sideXNeg[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
@@ -2319,15 +2319,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideXPos[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideXPos[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideXPos[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideXPos[i + 0][j + 1]];
+      faces[fIdx][0] = sideXPos[i + 0][j + 0].second;
+      faces[fIdx][1] = sideXPos[i + 1][j + 0].second;
+      faces[fIdx][2] = sideXPos[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideXPos[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideXPos[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideXPos[i + 1][j + 0]];
+      faces[fIdx][0] = sideXPos[i + 1][j + 1].second;
+      faces[fIdx][1] = sideXPos[i + 0][j + 1].second;
+      faces[fIdx][2] = sideXPos[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
@@ -2338,15 +2338,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideYNeg[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideYNeg[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideYNeg[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideYNeg[i + 1][j + 0]];
+      faces[fIdx][0] = sideYNeg[i + 0][j + 0].second;
+      faces[fIdx][1] = sideYNeg[i + 0][j + 1].second;
+      faces[fIdx][2] = sideYNeg[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideYNeg[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideYNeg[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideYNeg[i + 0][j + 1]];
+      faces[fIdx][0] = sideYNeg[i + 1][j + 1].second;
+      faces[fIdx][1] = sideYNeg[i + 1][j + 0].second;
+      faces[fIdx][2] = sideYNeg[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
@@ -2357,15 +2357,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideYPos[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideYPos[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideYPos[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideYPos[i + 0][j + 1]];
+      faces[fIdx][0] = sideYPos[i + 0][j + 0].second;
+      faces[fIdx][1] = sideYPos[i + 1][j + 0].second;
+      faces[fIdx][2] = sideYPos[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideYPos[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideYPos[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideYPos[i + 1][j + 0]];
+      faces[fIdx][0] = sideYPos[i + 1][j + 1].second;
+      faces[fIdx][1] = sideYPos[i + 0][j + 1].second;
+      faces[fIdx][2] = sideYPos[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
@@ -2376,15 +2376,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideZNeg[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideZNeg[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideZNeg[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideZNeg[i + 1][j + 0]];
+      faces[fIdx][0] = sideZNeg[i + 0][j + 0].second;
+      faces[fIdx][1] = sideZNeg[i + 0][j + 1].second;
+      faces[fIdx][2] = sideZNeg[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideZNeg[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideZNeg[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideZNeg[i + 0][j + 1]];
+      faces[fIdx][0] = sideZNeg[i + 1][j + 1].second;
+      faces[fIdx][1] = sideZNeg[i + 1][j + 0].second;
+      faces[fIdx][2] = sideZNeg[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
@@ -2395,15 +2395,15 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   {
     for (size_t j = 0; j < sideZPos[i].size() - 1; ++j)
     {
-      faces[fIdx][0] = map[sideZPos[i + 0][j + 0]];
-      faces[fIdx][1] = map[sideZPos[i + 1][j + 0]];
-      faces[fIdx][2] = map[sideZPos[i + 0][j + 1]];
+      faces[fIdx][0] = sideZPos[i + 0][j + 0].second;
+      faces[fIdx][1] = sideZPos[i + 1][j + 0].second;
+      faces[fIdx][2] = sideZPos[i + 0][j + 1].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
 
-      faces[fIdx][0] = map[sideZPos[i + 1][j + 1]];
-      faces[fIdx][1] = map[sideZPos[i + 0][j + 1]];
-      faces[fIdx][2] = map[sideZPos[i + 1][j + 0]];
+      faces[fIdx][0] = sideZPos[i + 1][j + 1].second;
+      faces[fIdx][1] = sideZPos[i + 0][j + 1].second;
+      faces[fIdx][2] = sideZPos[i + 1][j + 0].second;
       properties.addFace(faces[fIdx]);
       fIdx++;
     }
