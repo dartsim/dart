@@ -69,9 +69,6 @@ public:
 
   struct UniqueProperties
   {
-    /// Array of Properties for PointMasses
-    std::vector<PointMass::Properties> mPointProps;
-
     /// Spring stiffness for vertex deformation restoring spring force of the
     /// point masses
     double mKv;
@@ -83,16 +80,21 @@ public:
     /// Damping coefficient
     double mDampCoeff;
 
+    /// Array of Properties for PointMasses
+    std::vector<PointMass::Properties> mPointProps;
+
     // TODO(JS): Let's remove this because this is rendering part
     /// \brief Tri-mesh indexes for rendering.
     std::vector<Eigen::Vector3i> mFaces;
 
     UniqueProperties(
-        const std::vector<PointMass::Properties>& _points =
-                                          std::vector<PointMass::Properties>(),
         double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
         double _Ke = DART_DEFAULT_EDGE_STIFNESS,
-        double _DampCoeff = DART_DEFAULT_DAMPING_COEFF);
+        double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
+        const std::vector<PointMass::Properties>& _points =
+                                          std::vector<PointMass::Properties>(),
+        const std::vector<Eigen::Vector3i>& _faces =
+                                          std::vector<Eigen::Vector3i>());
 
     /// Add a PointMass to this Properties struct
     void addPointMass(const PointMass::Properties& _properties);

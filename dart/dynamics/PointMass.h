@@ -67,11 +67,11 @@ public:
     /// Resting position viewed in the parent SoftBodyNode frame
     Eigen::Vector3d mX0;
 
-    /// Indices of connected Point Masses
-    std::vector<size_t> mConnectedPointMassIndices;
-
     /// Mass.
     double mMass;
+
+    /// Indices of connected Point Masses
+    std::vector<size_t> mConnectedPointMassIndices;
 
     /// Lower limit of position
     Eigen::Vector3d mPositionLowerLimits; // Currently unused
@@ -98,8 +98,8 @@ public:
     Eigen::Vector3d mForceUpperLimits; // Currently unused
 
     Properties(const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
-               const std::vector<size_t>& _connections = std::vector<size_t>(),
                double _mass = 0.0005,
+               const std::vector<size_t>& _connections = std::vector<size_t>(),
                const Eigen::Vector3d& _positionLowerLimits =
                                       Eigen::Vector3d::Constant(-DART_DBL_INF),
                const Eigen::Vector3d& _positionUpperLimits =

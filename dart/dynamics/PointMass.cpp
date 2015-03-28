@@ -52,8 +52,8 @@ namespace dynamics {
 //==============================================================================
 PointMass::Properties::Properties(
     const Vector3d& _X0,
-    const std::vector<size_t>& _connections,
     double _mass,
+    const std::vector<size_t>& _connections,
     const Vector3d& _positionLowerLimits,
     const Vector3d& _positionUpperLimits,
     const Vector3d& _velocityLowerLimits,
@@ -63,8 +63,8 @@ PointMass::Properties::Properties(
     const Vector3d& _forceLowerLimits,
     const Vector3d& _forceUpperLimits)
   : mX0(_X0),
-    mConnectedPointMassIndices(_connections),
     mMass(_mass),
+    mConnectedPointMassIndices(_connections),
     mPositionLowerLimits(_positionLowerLimits),
     mPositionUpperLimits(_positionUpperLimits),
     mVelocityLowerLimits(_velocityLowerLimits),

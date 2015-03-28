@@ -70,6 +70,8 @@ int main(int argc, char* argv[])
     }
   }
 
+  myWorld->removeSkeleton(myWorld->getSkeleton(0));
+
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
