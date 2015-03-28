@@ -47,9 +47,25 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+EulerJoint::UniqueProperties::UniqueProperties(AxisOrder _axisOrder)
+  : mAxisOrder(_axisOrder)
+{
+  // Do nothing
+}
+
+//==============================================================================
+EulerJoint::Properties::Properties(
+    const MultiDofJoint<3>::Properties& _multiDofProperties,
+    const EulerJoint::UniqueProperties& _eulerJointProperties)
+  : MultiDofJoint<3>::Properties(_multiDofProperties),
+    EulerJoint::UniqueProperties(_eulerJointProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 EulerJoint::EulerJoint(const std::string& _name)
-  : MultiDofJoint(_name),
-    mAxisOrder(AO_XYZ)
+  : MultiDofJoint(_name)
 {
   updateDegreeOfFreedomNames();
   notifyPositionUpdate();
@@ -61,9 +77,54 @@ EulerJoint::~EulerJoint()
 }
 
 //==============================================================================
+void EulerJoint::setProperties(const Properties& _properties)
+{
+  MultiDofJoint<3>::setProperties(
+        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void EulerJoint::setProperties(const UniqueProperties& _properties)
+{
+  setAxisOrder(_properties.mAxisOrder);
+}
+
+//==============================================================================
+EulerJoint::Properties EulerJoint::getEulerJointProperties() const
+{
+  return EulerJoint::Properties(getMultiDofJointProperties(), mEulerP);
+}
+
+//==============================================================================
+void EulerJoint::copy(const EulerJoint& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getEulerJointProperties());
+}
+
+//==============================================================================
+void EulerJoint::copy(const EulerJoint* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+EulerJoint& EulerJoint::operator=(const EulerJoint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
+}
+
+//==============================================================================
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
-  mAxisOrder = _order;
+  mEulerP.mAxisOrder = _order;
   if (_renameDofs)
     updateDegreeOfFreedomNames();
   notifyPositionUpdate();
@@ -72,7 +133,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 //==============================================================================
 EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 {
-  return mAxisOrder;
+  return mEulerP.mAxisOrder;
 }
 
 //==============================================================================
@@ -86,7 +147,7 @@ Eigen::Isometry3d EulerJoint::convertToTransform(
 Eigen::Isometry3d EulerJoint::convertToTransform(
     const Eigen::Vector3d &_positions) const
 {
-  return convertToTransform(_positions, mAxisOrder);
+  return convertToTransform(_positions, mEulerP.mAxisOrder);
 }
 
 //==============================================================================
@@ -112,14 +173,14 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
 Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
                                                                            const
 {
-  return convertToRotation(_positions, mAxisOrder);
+  return convertToRotation(_positions, mEulerP.mAxisOrder);
 }
 
 //==============================================================================
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (mAxisOrder)
+  switch (mEulerP.mAxisOrder)
   {
     case AO_ZYX:
       affixes.push_back("_z");
@@ -133,7 +194,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
       break;
     default:
       dterr << "Unsupported axis order in EulerJoint named '" << mJointP.mName
-            << "' (" << mAxisOrder << ")\n";
+            << "' (" << mEulerP.mAxisOrder << ")\n";
   }
 
   if (affixes.size() == 3)
@@ -175,7 +236,7 @@ void EulerJoint::updateLocalJacobian(bool) const
   Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
-  switch (mAxisOrder)
+  switch (mEulerP.mAxisOrder)
   {
     case AO_XYZ:
     {
@@ -284,7 +345,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
   Eigen::Vector6d dJ1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
 
-  switch (mAxisOrder)
+  switch (mEulerP.mAxisOrder)
   {
     case AO_XYZ:
     {

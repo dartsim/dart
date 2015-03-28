@@ -46,12 +46,30 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+ScrewJoint::UniqueProperties::UniqueProperties(
+    const Eigen::Vector3d& _axis, double _pitch)
+  : mAxis(_axis.normalized()),
+    mPitch(_pitch)
+{
+  // Do nothing
+}
+
+//==============================================================================
+ScrewJoint::Properties::Properties(
+    const SingleDofJoint::Properties& _singleDofProperties,
+    const ScrewJoint::UniqueProperties& _screwProperties)
+  : SingleDofJoint::Properties(_singleDofProperties),
+    ScrewJoint::UniqueProperties(_screwProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
                        double _pitch,
                        const std::string& _name)
   : SingleDofJoint(_name),
-    mAxis(axis.normalized()),
-    mPitch(_pitch)
+    mScrewP(axis, _pitch)
 {
   updateLocalJacobian();
   notifyPositionUpdate();
@@ -60,40 +78,87 @@ ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
 //==============================================================================
 ScrewJoint::~ScrewJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+void ScrewJoint::setProperties(const Properties& _properties)
+{
+  SingleDofJoint::setProperties(
+        static_cast<const SingleDofJoint::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void ScrewJoint::setProperties(const UniqueProperties& _properties)
+{
+  setAxis(_properties.mAxis);
+  setPitch(_properties.mPitch);
+}
+
+//==============================================================================
+ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
+{
+  return Properties(getSingleDofJointProperties(), mScrewP);
+}
+
+//==============================================================================
+void ScrewJoint::copy(const ScrewJoint& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getScrewJointProperties());
+}
+
+//==============================================================================
+void ScrewJoint::copy(const ScrewJoint* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
 }
 
 //==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  mAxis = _axis.normalized();
+  mScrewP.mAxis = _axis.normalized();
   notifyPositionUpdate();
 }
 
 //==============================================================================
 const Eigen::Vector3d& ScrewJoint::getAxis() const
 {
-  return mAxis;
+  return mScrewP.mAxis;
 }
 
 //==============================================================================
 void ScrewJoint::setPitch(double _pitch)
 {
-  mPitch = _pitch;
+  mScrewP.mPitch = _pitch;
   updateLocalJacobian();
 }
 
 //==============================================================================
 double ScrewJoint::getPitch() const
 {
-  return mPitch;
+  return mScrewP.mPitch;
 }
 
 //==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
-  S.head<3>() = mAxis;
-  S.tail<3>() = mAxis*mPitch/DART_2PI;
+  S.head<3>() = mScrewP.mAxis;
+  S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/DART_2PI;
   mT = mJointP.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
@@ -106,8 +171,8 @@ void ScrewJoint::updateLocalJacobian(bool _mandatory) const
   if(_mandatory)
   {
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/DART_2PI;
+    S.head<3>() = mScrewP.mAxis;
+    S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/DART_2PI;
     mJacobian = math::AdT(mJointP.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }

@@ -48,11 +48,19 @@ namespace dynamics {
 WeldJoint::WeldJoint(const std::string& _name)
   : ZeroDofJoint(_name)
 {
+  // Do nothing
 }
 
 //==============================================================================
 WeldJoint::~WeldJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+WeldJoint::Properties WeldJoint::getWeldJointProperties() const
+{
+  return getZeroDofJointProperties();
 }
 
 //==============================================================================

@@ -51,11 +51,22 @@ class Skeleton;
 class ZeroDofJoint : public Joint
 {
 public:
+
+  struct Properties : Joint::Properties
+  {
+    using Joint::Properties::Properties;
+
+    Properties(const Joint::Properties& _properties);
+  };
+
   /// Constructor
   ZeroDofJoint(const std::string& _name);
 
   /// Destructor
   virtual ~ZeroDofJoint();
+
+  /// Get the Properties of this ZeroDofJoint
+  Properties getZeroDofJointProperties() const;
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates

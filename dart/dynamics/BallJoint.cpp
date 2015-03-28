@@ -58,6 +58,12 @@ BallJoint::~BallJoint()
 }
 
 //==============================================================================
+BallJoint::Properties BallJoint::getBallJointProperties() const
+{
+  return getMultiDofJointProperties();
+}
+
+//==============================================================================
 Eigen::Isometry3d BallJoint::convertToTransform(
     const Eigen::Vector3d& _positions)
 {

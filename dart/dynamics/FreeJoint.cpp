@@ -55,6 +55,13 @@ FreeJoint::FreeJoint(const std::string& _name)
 //==============================================================================
 FreeJoint::~FreeJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+FreeJoint::Properties FreeJoint::getFreeJointProperties() const
+{
+  return getMultiDofJointProperties();
 }
 
 //==============================================================================

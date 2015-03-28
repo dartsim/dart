@@ -48,11 +48,20 @@ namespace dynamics {
 class TranslationalJoint : public MultiDofJoint<3>
 {
 public:
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    using MultiDofJoint<3>::Properties::Properties;
+  };
+
   /// Constructor
   explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
 
   /// Destructor
   virtual ~TranslationalJoint();
+
+  /// Get the Properties of this TranslationalJoint
+  Properties getTranslationalJointProperties() const;
 
 protected:
   // Documentation inherited

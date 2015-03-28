@@ -45,14 +45,29 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
+  : Joint::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 ZeroDofJoint::ZeroDofJoint(const std::string& _name)
   : Joint(_name)
 {
+  // Do nothing
 }
 
 //==============================================================================
 ZeroDofJoint::~ZeroDofJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
+{
+  return getJointProperties();
 }
 
 //==============================================================================

@@ -50,12 +50,47 @@ namespace dynamics {
 class RevoluteJoint : public SingleDofJoint
 {
 public:
+
+  struct UniqueProperties
+  {
+    Eigen::Vector3d mAxis;
+
+    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+  };
+
+  struct Properties : SingleDofJoint::Properties, UniqueProperties
+  {
+    Properties(
+        const SingleDofJoint::Properties& _singleDofJointProperties=
+                                            SingleDofJoint::Properties(),
+        const RevoluteJoint::UniqueProperties& _revoluteProperties =
+                                            RevoluteJoint::UniqueProperties());
+  };
+
   /// Constructor
   RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                 const std::string& _name = "Noname RevoluteJoint");
 
   /// Destructor
   virtual ~RevoluteJoint();
+
+  /// Set the Properties of this RevoluteJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this RevoluteJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this RevoluteJoint
+  Properties getRevoluteJointProperties() const;
+
+  /// Copy the Properties of another RevoluteJoint
+  void copy(const RevoluteJoint& _otherJoint);
+
+  /// Copy the Properties of another RevoluteJoint
+  void copy(const RevoluteJoint* _otherJoint);
+
+  /// Copy the Properties of another RevoluteJoint
+  RevoluteJoint& operator=(const RevoluteJoint& _otherJoint);
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);
@@ -74,8 +109,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis
-  Eigen::Vector3d mAxis;
+
+  /// RevoluteJoint Properties
+  UniqueProperties mRevoluteP;
 
 public:
   // To get byte-aligned Eigen vectors

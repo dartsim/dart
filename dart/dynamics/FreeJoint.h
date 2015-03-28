@@ -50,11 +50,20 @@ namespace dynamics {
 class FreeJoint : public MultiDofJoint<6>
 {
 public:
+
+  struct Properties : MultiDofJoint<6>::Properties
+  {
+    using MultiDofJoint<6>::Properties::Properties;
+  };
+
   /// Constructor
   explicit FreeJoint(const std::string& _name = "FreeJoint");
 
   /// Destructor
   virtual ~FreeJoint();
+
+  /// Get the Properties of this FreeJoint
+  Properties getFreeJointProperties() const;
 
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a

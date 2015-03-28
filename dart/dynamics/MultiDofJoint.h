@@ -61,69 +61,59 @@ class MultiDofJoint : public Joint
 {
 public:
 
+  typedef Eigen::Matrix<double, DOF, 1> Vector;
+
   struct UniqueProperties
   {
     /// Lower limit of position
-    Eigen::Matrix<double, DOF, 1> mPositionLowerLimits;
+    Vector mPositionLowerLimits;
 
     /// Upper limit of position
-    Eigen::Matrix<double, DOF, 1> mPositionUpperLimits;
+    Vector mPositionUpperLimits;
 
     /// Min value allowed.
-    Eigen::Matrix<double, DOF, 1> mVelocityLowerLimits;
+    Vector mVelocityLowerLimits;
 
     /// Max value allowed.
-    Eigen::Matrix<double, DOF, 1> mVelocityUpperLimits;
+    Vector mVelocityUpperLimits;
 
     /// Min value allowed.
-    Eigen::Matrix<double, DOF, 1> mAccelerationLowerLimits;
+    Vector mAccelerationLowerLimits;
 
     /// upper limit of generalized acceleration
-    Eigen::Matrix<double, DOF, 1> mAccelerationUpperLimits;
+    Vector mAccelerationUpperLimits;
 
     /// Min value allowed.
-    Eigen::Matrix<double, DOF, 1> mForceLowerLimits;
+    Vector mForceLowerLimits;
 
     /// Max value allowed.
-    Eigen::Matrix<double, DOF, 1> mForceUpperLimits;
+    Vector mForceUpperLimits;
 
     /// Joint spring stiffness
-    Eigen::Matrix<double, DOF, 1> mSpringStiffness;
+    Vector mSpringStiffness;
 
     /// Rest joint position for joint spring
-    Eigen::Matrix<double, DOF, 1> mRestPosition;
+    Vector mRestPosition;
 
     /// Joint damping coefficient
-    Eigen::Matrix<double, DOF, 1> mDampingCoefficient;
+    Vector mDampingCoefficient;
 
     /// Joint Coulomb friction
-    Eigen::Matrix<double, DOF, 1> mFrictions;
+    Vector mFrictions;
 
     UniqueProperties(
-        const Eigen::Matrix<double, DOF, 1>& _positionLowerLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _positionUpperLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant( DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _velocityLowerLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _velocityUpperLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant( DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _accelerationLowerLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _accelerationUpperLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant( DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _forceLowerLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _forceUpperLimits =
-                Eigen::Matrix<double, DOF, 1>::Constant( DART_DBL_INF),
-        const Eigen::Matrix<double, DOF, 1>& _springStiffness =
-                Eigen::Matrix<double, DOF, 1>::Constant(0.0),
-        const Eigen::Matrix<double, DOF, 1>& _restPosition =
-                Eigen::Matrix<double, DOF, 1>::Constant(0.0),
-        const Eigen::Matrix<double, DOF, 1>& _dampingCoefficient =
-                Eigen::Matrix<double, DOF, 1>::Constant(0.0),
-        const Eigen::Matrix<double, DOF, 1>& _coulombFrictions =
-                Eigen::Matrix<double, DOF, 1>::Constant(0.0));
+      const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _velocityUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _forceLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _forceUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _springStiffness = Vector::Constant(0.0),
+      const Vector& _restPosition = Vector::Constant(0.0),
+      const Vector& _dampingCoefficient = Vector::Constant(0.0),
+      const Vector& _coulombFrictions = Vector::Constant(0.0));
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -154,7 +144,7 @@ public:
   /// Copy the Properties of another MultiDofJoint
   void copy(const MultiDofJoint<DOF>* _otherJoint);
 
-  /// Same as copy(const MutlDofJoint&)
+  /// Same as copy(const MutliDofJoint&)
   MultiDofJoint<DOF>& operator=(const MultiDofJoint<DOF>& _otherJoint);
 
   //----------------------------------------------------------------------------
@@ -303,22 +293,22 @@ public:
   // code.
 
   /// Fixed-size version of setPositions()
-  void setPositionsStatic(const Eigen::Matrix<double, DOF, 1>& _positions);
+  void setPositionsStatic(const Vector& _positions);
 
   /// Fixed-size version of getPositions()
-  const Eigen::Matrix<double, DOF, 1>& getPositionsStatic() const;
+  const Vector& getPositionsStatic() const;
 
   /// Fixed-size version of setVelocities()
-  void setVelocitiesStatic(const Eigen::Matrix<double, DOF, 1>& _velocities);
+  void setVelocitiesStatic(const Vector& _velocities);
 
   /// Fixed-size version of getVelocities()
-  const Eigen::Matrix<double, DOF, 1>& getVelocitiesStatic() const;
+  const Vector& getVelocitiesStatic() const;
 
   /// Fixed-size version of setAccelerations()
-  void setAccelerationsStatic(const Eigen::Matrix<double, DOF, 1>& _accels);
+  void setAccelerationsStatic(const Vector& _accels);
 
   /// Fixed-size version of getAccelerations()
-  const Eigen::Matrix<double, DOF, 1>& getAccelerationsStatic() const;
+  const Vector& getAccelerationsStatic() const;
 
   //----------------------------------------------------------------------------
   // Force
@@ -597,63 +587,63 @@ protected:
   std::array<DegreeOfFreedom*, DOF> mDofs;
 
   /// Command
-  Eigen::Matrix<double, DOF, 1> mCommands;
+  Vector mCommands;
 
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
 
   /// Position
-  Eigen::Matrix<double, DOF, 1> mPositions;
+  Vector mPositions;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mPositionDeriv;
+  Vector mPositionDeriv;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   /// Generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocities;
+  Vector mVelocities;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mVelocitiesDeriv;
+  Vector mVelocitiesDeriv;
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   /// Generalized acceleration
-  Eigen::Matrix<double, DOF, 1> mAccelerations;
+  Vector mAccelerations;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mAccelerationsDeriv;
+  Vector mAccelerationsDeriv;
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   /// Generalized force
-  Eigen::Matrix<double, DOF, 1> mForces;
+  Vector mForces;
 
   /// Max value allowed.
-  Eigen::Matrix<double, DOF, 1> mForceUpperLimits;
+  Vector mForceUpperLimits;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mForcesDeriv;
+  Vector mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse
   //----------------------------------------------------------------------------
 
   /// Change of generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocityChanges;
+  Vector mVelocityChanges;
 
   /// Generalized impulse
-  Eigen::Matrix<double, DOF, 1> mImpulses;
+  Vector mImpulses;
 
   /// Generalized constraint impulse
-  Eigen::Matrix<double, DOF, 1> mConstraintImpulses;
+  Vector mConstraintImpulses;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms
@@ -683,20 +673,20 @@ protected:
   mutable Eigen::Matrix<double, DOF, DOF> mInvProjArtInertiaImplicit;
 
   /// Total force projected on joint space
-  Eigen::Matrix<double, DOF, 1> mTotalForce;
+  Vector mTotalForce;
 
   /// Total impluse projected on joint space
-  Eigen::Matrix<double, DOF, 1> mTotalImpulse;
+  Vector mTotalImpulse;
 
   //----------------------------------------------------------------------------
   // For equations of motion
   //----------------------------------------------------------------------------
 
   ///
-  Eigen::Matrix<double, DOF, 1> mInvM_a;
+  Vector mInvM_a;
 
   ///
-  Eigen::Matrix<double, DOF, 1> mInvMassMatrixSegment;
+  Vector mInvMassMatrixSegment;
 
 private:
   //----------------------------------------------------------------------------
@@ -791,18 +781,18 @@ private:
 //==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
-    const Eigen::Matrix<double, DOF, 1>& _positionLowerLimits,
-    const Eigen::Matrix<double, DOF, 1>& _positionUpperLimits,
-    const Eigen::Matrix<double, DOF, 1>& _velocityLowerLimits,
-    const Eigen::Matrix<double, DOF, 1>& _velocityUpperLimits,
-    const Eigen::Matrix<double, DOF, 1>& _accelerationLowerLimits,
-    const Eigen::Matrix<double, DOF, 1>& _accelerationUpperLimits,
-    const Eigen::Matrix<double, DOF, 1>& _forceLowerLimits,
-    const Eigen::Matrix<double, DOF, 1>& _forceUpperLimits,
-    const Eigen::Matrix<double, DOF, 1>& _springStiffness,
-    const Eigen::Matrix<double, DOF, 1>& _restPosition,
-    const Eigen::Matrix<double, DOF, 1>& _dampingCoefficient,
-    const Eigen::Matrix<double, DOF, 1>& _coulombFrictions)
+    const Vector& _positionLowerLimits,
+    const Vector& _positionUpperLimits,
+    const Vector& _velocityLowerLimits,
+    const Vector& _velocityUpperLimits,
+    const Vector& _accelerationLowerLimits,
+    const Vector& _accelerationUpperLimits,
+    const Vector& _forceLowerLimits,
+    const Vector& _forceUpperLimits,
+    const Vector& _springStiffness,
+    const Vector& _restPosition,
+    const Vector& _dampingCoefficient,
+    const Vector& _coulombFrictions)
   : mPositionLowerLimits(_positionLowerLimits),
     mPositionUpperLimits(_positionUpperLimits),
     mVelocityLowerLimits(_velocityLowerLimits),
@@ -1404,8 +1394,7 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _positions)
+void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
 {
   mPositions = _positions;
   notifyPositionUpdate();
@@ -1413,7 +1402,7 @@ void MultiDofJoint<DOF>::setPositionsStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getPositionsStatic() const
 {
   return mPositions;
@@ -1421,8 +1410,7 @@ MultiDofJoint<DOF>::getPositionsStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocitiesStatic(
-    const Eigen::Matrix<double, DOF, 1>& _velocities)
+void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
 {
   mVelocities = _velocities;
   notifyVelocityUpdate();
@@ -1430,7 +1418,7 @@ void MultiDofJoint<DOF>::setVelocitiesStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getVelocitiesStatic() const
 {
   return mVelocities;
@@ -1438,8 +1426,7 @@ MultiDofJoint<DOF>::getVelocitiesStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerationsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _accels)
+void MultiDofJoint<DOF>::setAccelerationsStatic(const Vector& _accels)
 {
   mAccelerations = _accels;
   notifyAccelerationUpdate();
@@ -1447,7 +1434,7 @@ void MultiDofJoint<DOF>::setAccelerationsStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getAccelerationsStatic() const
 {
   return mAccelerations;

@@ -55,6 +55,13 @@ TranslationalJoint::TranslationalJoint(const std::string& _name)
 //==============================================================================
 TranslationalJoint::~TranslationalJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+{
+  return getMultiDofJointProperties();
 }
 
 //==============================================================================

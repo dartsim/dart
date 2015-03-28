@@ -50,11 +50,20 @@ namespace dynamics {
 class WeldJoint : public ZeroDofJoint
 {
 public:
+
+  struct Properties : ZeroDofJoint::Properties
+  {
+    using ZeroDofJoint::Properties::Properties;
+  };
+
   /// Constructor
   explicit WeldJoint(const std::string& _name = "WeldJoint");
 
   /// Destructor
   virtual ~WeldJoint();
+
+  /// Get the Properties of this WeldJoint
+  Properties getWeldJointProperties() const;
 
   // Documentation inherited
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;

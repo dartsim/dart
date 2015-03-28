@@ -50,6 +50,28 @@ namespace dynamics {
 class ScrewJoint : public SingleDofJoint
 {
 public:
+
+  struct UniqueProperties
+  {
+    /// Rotational axis
+    Eigen::Vector3d mAxis;
+
+    /// Translational pitch
+    double mPitch;
+
+    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
+                     double _pitch = 0.1);
+  };
+
+  struct Properties : SingleDofJoint::Properties, UniqueProperties
+  {
+    Properties(
+        const SingleDofJoint::Properties& _singleDofProperties =
+                                              SingleDofJoint::Properties(),
+        const ScrewJoint::UniqueProperties& _screwProperties =
+                                              ScrewJoint::UniqueProperties());
+  };
+
   /// Constructor
   ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
              double _pitch = 0.1,
@@ -57,6 +79,24 @@ public:
 
   /// Destructor
   virtual ~ScrewJoint();
+
+  /// Set the Properties of this ScrewJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this ScrewJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this ScrewJoint
+  Properties getScrewJointProperties() const;
+
+  /// Copy the Properties of another ScrewJoint
+  void copy(const ScrewJoint& _otherJoint);
+
+  /// Copy the Properties of another ScrewJoint
+  void copy(const ScrewJoint* _otherJoint);
+
+  /// Copy the Properties of another ScrewJoint
+  ScrewJoint& operator=(const ScrewJoint& _otherJoint);
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);
@@ -81,11 +121,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis
-  Eigen::Vector3d mAxis;
 
-  ///
-  double mPitch;
+  /// ScrewJoint Properties
+  UniqueProperties mScrewP;
 
 public:
   // To get byte-aligned Eigen vectors

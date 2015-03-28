@@ -48,11 +48,20 @@ namespace dynamics {
 class BallJoint : public MultiDofJoint<3>
 {
 public:
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    using MultiDofJoint<3>::Properties::Properties;
+  };
+
   /// Constructor
   explicit BallJoint(const std::string& _name = "BallJoint");
 
   /// Destructor
   virtual ~BallJoint();
+
+  /// Get the Properties of this BallJoint
+  Properties getBallJointProperties() const;
 
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of a BallJoint. The positions returned by this function will result in a
