@@ -468,6 +468,13 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
+ZeroDofJoint::ZeroDofJoint(const Properties& _properties)
+  : Joint(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 void ZeroDofJoint::updateDegreeOfFreedomNames()
 {
   // Do nothing

@@ -72,6 +72,10 @@ public:
   virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  WeldJoint(const Properties& _properties);
+
   //----------------------------------------------------------------------------
   // Recursive algorithms
   //----------------------------------------------------------------------------

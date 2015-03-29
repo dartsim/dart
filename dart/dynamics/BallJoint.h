@@ -82,6 +82,10 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
 protected:
+
+  /// Constructor called by Skeleton class
+  BallJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

@@ -155,6 +155,10 @@ public:
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  EulerJoint(const Properties& _properties);
+
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.
   virtual void updateDegreeOfFreedomNames();

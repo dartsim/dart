@@ -65,6 +65,13 @@ TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperti
 }
 
 //==============================================================================
+TranslationalJoint::TranslationalJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())

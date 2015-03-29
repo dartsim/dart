@@ -77,6 +77,13 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
+BallJoint::BallJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear()

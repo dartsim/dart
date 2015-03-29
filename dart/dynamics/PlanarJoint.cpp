@@ -275,6 +275,13 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
+PlanarJoint::PlanarJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;

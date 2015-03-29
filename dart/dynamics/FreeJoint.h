@@ -77,6 +77,10 @@ public:
   static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
 
 protected:
+
+  /// Constructor called by Skeleton class
+  FreeJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

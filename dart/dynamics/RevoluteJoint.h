@@ -99,6 +99,10 @@ public:
   const Eigen::Vector3d& getAxis() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  RevoluteJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateLocalTransform() const;
 

@@ -174,6 +174,10 @@ public:
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  PlanarJoint(const Properties& _properties);
+
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.
   virtual void updateDegreeOfFreedomNames();

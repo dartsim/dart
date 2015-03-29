@@ -80,6 +80,13 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
+WeldJoint::WeldJoint(const Properties& _properties)
+  : ZeroDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void WeldJoint::updateLocalTransform() const
 {
   // Do nothing

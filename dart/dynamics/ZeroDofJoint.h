@@ -310,6 +310,9 @@ public:
 
 protected:
 
+  /// Constructor called by inheriting classes
+  ZeroDofJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 

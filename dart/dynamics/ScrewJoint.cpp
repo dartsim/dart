@@ -154,6 +154,13 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
+ScrewJoint::ScrewJoint(const Properties& _properties)
+  : SingleDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();

@@ -590,6 +590,9 @@ public:
 
 protected:
 
+  /// Constructor called by inheriting class
+  Joint(const Properties& _properties);
+
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
 

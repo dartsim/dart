@@ -111,6 +111,10 @@ public:
   double getPitch() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  ScrewJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateLocalTransform() const;
 

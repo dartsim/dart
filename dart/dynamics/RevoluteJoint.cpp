@@ -139,6 +139,13 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
+RevoluteJoint::RevoluteJoint(const Properties& _properties)
+  : SingleDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint

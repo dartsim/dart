@@ -84,6 +84,13 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
+FreeJoint::FreeJoint(const Properties& _properties)
+  : MultiDofJoint<6>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Vector6d& velocities = getVelocitiesStatic();

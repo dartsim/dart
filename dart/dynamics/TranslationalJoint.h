@@ -64,6 +64,10 @@ public:
   Properties getTranslationalJointProperties() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  TranslationalJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 

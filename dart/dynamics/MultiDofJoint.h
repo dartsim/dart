@@ -416,6 +416,10 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  /// Constructor called by inheriting classes
+  MultiDofJoint(const Properties& _properties);
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
@@ -626,9 +630,6 @@ protected:
   /// Generalized force
   Vector mForces;
 
-  /// Max value allowed.
-  Vector mForceUpperLimits;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Vector mForcesDeriv;
 
@@ -832,7 +833,6 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForceUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
     mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mVelocityChanges(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
@@ -1544,7 +1544,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
     return;
   }
 
-  mForceUpperLimits[_index] = _force;
+  mMultiDofP.mForceUpperLimits[_index] = _force;
 }
 
 //==============================================================================
@@ -1558,7 +1558,7 @@ double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mForceUpperLimits[_index];
+  return mMultiDofP.mForceUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1794,6 +1794,34 @@ Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
   return mChildBodyNode->getBodyForce() - getLocalJacobianStatic() * mForces;
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
+  : Joint(_properties),
+    mMultiDofP(_properties),
+    mCommands(Vector::Zero()),
+    mPositions(Vector::Zero()),
+    mPositionDeriv(Vector::Zero()),
+    mVelocities(Vector::Zero()),
+    mVelocitiesDeriv(Vector::Zero()),
+    mAccelerations(Vector::Zero()),
+    mAccelerationsDeriv(Vector::Zero()),
+    mForces(Vector::Zero()),
+    mForcesDeriv(Vector::Zero()),
+    mVelocityChanges(Vector::Zero()),
+    mImpulses(Vector::Zero()),
+    mConstraintImpulses(Vector::Zero()),
+    mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
+    mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
+    mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
+    mInvProjArtInertiaImplicit(Eigen::Matrix<double, DOF, DOF>::Zero()),
+    mTotalForce(Vector::Zero()),
+    mTotalImpulse(Vector::Zero())
+{
+  for (size_t i = 0; i < DOF; ++i)
+    mDofs[i] = createDofPointer(mJointP.mName, i);
 }
 
 //==============================================================================

@@ -152,6 +152,13 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
+UniversalJoint::UniversalJoint(const Properties& _properties)
+  : MultiDofJoint<2>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())

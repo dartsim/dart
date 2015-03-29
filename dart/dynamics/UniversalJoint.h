@@ -106,6 +106,10 @@ public:
   const Eigen::Vector3d& getAxis2() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  UniversalJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 

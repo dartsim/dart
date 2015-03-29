@@ -110,6 +110,7 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mInvM_a(0.0),
     mInvMassMatrixSegment(0.0)
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -958,6 +959,34 @@ double SingleDofJoint::getPotentialEnergy() const
        * (getPositionStatic() - mSingleDofP.mRestPosition);
 
   return pe;
+}
+
+//==============================================================================
+SingleDofJoint::SingleDofJoint(const Properties& _properties)
+  : Joint(_properties),
+    mDof(createDofPointer(_properties.mName, 0)),
+    mCommand(0.0),
+    mPosition(0.0),
+    mPositionDeriv(0.0),
+    mVelocity(0.0),
+    mVelocityDeriv(0.0),
+    mAcceleration(0.0),
+    mAccelerationDeriv(0.0),
+    mForce(0.0),
+    mForceDeriv(0.0),
+    mVelocityChange(0.0),
+    mImpulse(0.0),
+    mConstraintImpulse(0.0),
+    mJacobian(Eigen::Vector6d::Zero()),
+    mJacobianDeriv(Eigen::Vector6d::Zero()),
+    mInvProjArtInertia(0.0),
+    mInvProjArtInertiaImplicit(0.0),
+    mTotalForce(0.0),
+    mTotalImpulse(0.0),
+    mInvM_a(0.0),
+    mInvMassMatrixSegment(0.0)
+{
+  // Do nothing
 }
 
 //==============================================================================

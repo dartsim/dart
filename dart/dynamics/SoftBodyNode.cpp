@@ -245,6 +245,18 @@ const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 }
 
 //==============================================================================
+SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
+                           Joint* _parentJoint,
+                           const Properties& _properties)
+  : Entity(_parentBodyNode, "", false),
+    BodyNode(_parentBodyNode, _parentJoint, _properties),
+    mSoftVisualShape(nullptr),
+    mSoftCollShape(nullptr)
+{
+  mNotifier = new PointMassNotifier(this, "PointMassNotifier");
+}
+
+//==============================================================================
 void SoftBodyNode::init(Skeleton* _skeleton)
 {
   BodyNode::init(_skeleton);

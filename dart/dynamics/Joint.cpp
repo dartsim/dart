@@ -69,9 +69,9 @@ Joint::Properties::Properties(const std::string& _name,
 
 //==============================================================================
 Joint::Joint(const std::string& _name)
-  : mJointP(_name),
-    mChildBodyNode(NULL),
-    mSkeleton(NULL),
+  : mJointP(Properties(_name)),
+    mChildBodyNode(nullptr),
+    mSkeleton(nullptr),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
     mSpatialAcceleration(Eigen::Vector6d::Zero()),
@@ -83,11 +83,13 @@ Joint::Joint(const std::string& _name)
     mIsLocalJacobianDirty(true),
     mIsLocalJacobianTimeDerivDirty(true)
 {
+  // Do nothing
 }
 
 //==============================================================================
 Joint::~Joint()
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -350,6 +352,25 @@ const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 {
   _ri->transform(getLocalTransform());
+}
+
+//==============================================================================
+Joint::Joint(const Properties& _properties)
+  : mJointP(_properties),
+    mChildBodyNode(nullptr),
+    mSkeleton(nullptr),
+    mT(Eigen::Isometry3d::Identity()),
+    mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mSpatialAcceleration(Eigen::Vector6d::Zero()),
+    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
+    mNeedTransformUpdate(true),
+    mNeedSpatialVelocityUpdate(true),
+    mNeedSpatialAccelerationUpdate(true),
+    mNeedPrimaryAccelerationUpdate(true),
+    mIsLocalJacobianDirty(true),
+    mIsLocalJacobianTimeDerivDirty(true)
+{
+  // Do nothing
 }
 
 //==============================================================================

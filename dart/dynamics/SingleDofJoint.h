@@ -405,6 +405,9 @@ public:
 
 protected:
 
+  /// Constructor called inheriting classes
+  SingleDofJoint(const Properties& _properties);
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 

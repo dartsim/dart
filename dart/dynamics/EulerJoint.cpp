@@ -177,6 +177,13 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
+EulerJoint::EulerJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;

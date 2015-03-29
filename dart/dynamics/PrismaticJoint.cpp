@@ -137,6 +137,13 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
+PrismaticJoint::PrismaticJoint(const Properties& _properties)
+  : SingleDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
 void PrismaticJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint
