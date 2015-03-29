@@ -48,6 +48,9 @@ namespace dynamics {
 class EulerJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
   /// Axis order
   enum AxisOrder
   {
@@ -75,6 +78,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit EulerJoint(const std::string& _name = "EulerJoint");
 
   /// Destructor

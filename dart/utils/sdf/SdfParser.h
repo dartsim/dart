@@ -10,6 +10,15 @@
 #include <tinyxml2.h>
 
 #include "dart/utils/Parser.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/BallJoint.h"
+#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/FreeJoint.h"
 
 namespace dart {
 
@@ -42,15 +51,28 @@ public:
     static simulation::World* readSdfFile(const std::string& _filename);
 
     /// \brief
-    static dynamics::Skeleton* readSkeleton(const std::string& _fileName);
+    static dynamics::SkeletonPtr readSkeleton(const std::string& _fileName);
 
 public:
     struct SDFBodyNode
     {
-        dynamics::BodyNode* bodyNode;
+        dynamics::BodyNode::Properties properties;
         Eigen::Isometry3d initTransform;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
+
+    typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
+
+    struct SDFJoint
+    {
+      JointPropPtr properties;
+      std::string parentName;
+      std::string childName;
+      std::string type;
+    };
+
+    typedef std::map<std::string, SDFBodyNode> BodyMap;
+    typedef std::map<std::string, SDFJoint> JointMap;
 
     /// \brief
     static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement,
@@ -62,14 +84,13 @@ public:
             simulation::World* _world);
 
     /// \brief
-    static dynamics::Skeleton* readSkeleton(
+    static dynamics::SkeletonPtr readSkeleton(
         tinyxml2::XMLElement* _skeletonElement,
         const std::string& _skelPath);
 
     /// \brief
-    static SDFBodyNode readBodyNode(
-            tinyxml2::XMLElement* _bodyNodeElement,
-            dynamics::Skeleton* _skeleton,
+    static SDFBodyNode readBodyNode(tinyxml2::XMLElement* _bodyNodeElement,
+            dart::dynamics::SkeletonPtr _skeleton,
             const Eigen::Isometry3d& _skeletonFrame,
             const std::string& _skelPath);
 
@@ -79,56 +100,63 @@ public:
             const std::string& _skelPath);
 
     /// \brief
-    static dynamics::Joint* readJoint(
-            tinyxml2::XMLElement* _jointElement,
-            const std::vector<SDFBodyNode, Eigen::aligned_allocator<SDFBodyNode> >& _bodies,
-            const Eigen::Isometry3d& _skeletonFrame);
+    static SDFJoint readJoint(tinyxml2::XMLElement* _jointElement,
+        const BodyMap& _bodies,
+        const Eigen::Isometry3d& _skeletonFrame);
 
-    /// \brief
-    static dynamics::PrismaticJoint* readPrismaticJoint(
+    static dart::dynamics::WeldJoint::Properties readWeldJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::RevoluteJoint* readRevoluteJoint(
+    static dynamics::RevoluteJoint::Properties readRevoluteJoint(
             tinyxml2::XMLElement* _revoluteJointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::ScrewJoint* readScrewJoint(
+    static dynamics::PrismaticJoint::Properties readPrismaticJoint(
+        tinyxml2::XMLElement* _jointElement,
+        const Eigen::Isometry3d& _skeletonFrame,
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
+
+    static dynamics::ScrewJoint::Properties readScrewJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::UniversalJoint* readUniversalJoint(
+    static dynamics::UniversalJoint::Properties readUniversalJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::BallJoint* readBallJoint(
+    static dynamics::BallJoint::Properties readBallJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dart::dynamics::EulerJoint *readEulerJoint(
+    static dart::dynamics::EulerJoint* readEulerJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::TranslationalJoint* readTranslationalJoint(
+    static dart::dynamics::TranslationalJoint::Properties readTranslationalJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
-    static dynamics::FreeJoint* readFreeJoint(
+    static dynamics::FreeJoint::Properties readFreeJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
-
-    static dart::dynamics::WeldJoint* readWeldJoint(
-            tinyxml2::XMLElement* _jointElement,
-        const Eigen::Isometry3d& _skeletonFrame,
-        const Eigen::Isometry3d& _jointFrame);
+        const Eigen::Isometry3d& _jointFrame,
+        const std::string& _name);
 
 
 };

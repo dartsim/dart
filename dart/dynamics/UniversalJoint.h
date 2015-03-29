@@ -51,6 +51,8 @@ class UniversalJoint : public MultiDofJoint<2>
 {
 public:
 
+  friend class Skeleton;
+
   struct UniqueProperties
   {
     std::array<Eigen::Vector3d,2> mAxis;
@@ -59,7 +61,8 @@ public:
                      const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
   };
 
-  struct Properties : MultiDofJoint<2>::Properties, UniqueProperties
+  struct Properties : MultiDofJoint<2>::Properties,
+                      UniversalJoint::UniqueProperties
   {
     Properties(const MultiDofJoint<2>::Properties& _multiDofProperties =
                                             MultiDofJoint<2>::Properties(),
@@ -68,6 +71,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
                  const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
                  const std::string& _name = "Universal joint");

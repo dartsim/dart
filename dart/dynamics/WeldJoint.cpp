@@ -45,6 +45,13 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+WeldJoint::Properties::Properties(const Joint::Properties& _properties)
+  : ZeroDofJoint::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 WeldJoint::WeldJoint(const std::string& _name)
   : ZeroDofJoint(_name)
 {

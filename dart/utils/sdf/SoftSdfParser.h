@@ -68,7 +68,7 @@ public:
   static simulation::World* readSoftSdfFile(const std::string& _filename);
 
   /// \brief
-  static dynamics::Skeleton* readSkeleton(
+  static dynamics::SkeletonPtr readSkeleton(
       const std::string& _fileName);
 
 protected:
@@ -78,7 +78,7 @@ protected:
       const std::string& _skelPath);
 
   /// \brief
-  static dynamics::Skeleton* readSkeleton(
+  static dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const std::string& _skelPath);
 

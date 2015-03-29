@@ -51,6 +51,8 @@ class ScrewJoint : public SingleDofJoint
 {
 public:
 
+  friend class Skeleton;
+
   struct UniqueProperties
   {
     /// Rotational axis
@@ -63,7 +65,8 @@ public:
                      double _pitch = 0.1);
   };
 
-  struct Properties : SingleDofJoint::Properties, UniqueProperties
+  struct Properties : SingleDofJoint::Properties,
+                      ScrewJoint::UniqueProperties
   {
     Properties(
         const SingleDofJoint::Properties& _singleDofProperties =
@@ -73,6 +76,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
              double _pitch = 0.1,
              const std::string& _name = "ScrewJoint");

@@ -70,7 +70,7 @@ struct GenCoordInfo
 {
   Joint* joint;
   size_t localIndex;
-} DEPRECATED(4.3);
+} /*DEPRECATED(4.3)*/;
 
 /// class Skeleton
 class Skeleton : public common::Subject
@@ -136,7 +136,7 @@ public:
   double getMass() const;
 
   //----------------------------------------------------------------------------
-  // Structueral Properties
+  // Structural Properties
   //----------------------------------------------------------------------------
 
   /// Create a Joint and child BodyNode pair of the given types. When creating
@@ -155,7 +155,7 @@ public:
   }
 
   /// Add a body node
-  // TODO(MXG): Deprecate this
+  DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
 
   /// Get number of body nodes
@@ -983,19 +983,19 @@ protected:
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
   /// NameManager for tracking BodyNodes
-  dart::common::NameManager<BodyNode> mNameMgrForBodyNodes;
+  dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
 
   /// NameManager for tracking Joints
-  dart::common::NameManager<Joint> mNameMgrForJoints;
+  dart::common::NameManager<Joint*> mNameMgrForJoints;
 
   /// NameManager for tracking DegreesOfFreedom
-  dart::common::NameManager<DegreeOfFreedom> mNameMgrForDofs;
+  dart::common::NameManager<DegreeOfFreedom*> mNameMgrForDofs;
 
   /// NameManager for tracking SoftBodyNodes
-  dart::common::NameManager<SoftBodyNode> mNameMgrForSoftBodyNodes;
+  dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
 
   /// NameManager for tracking Markers
-  dart::common::NameManager<Marker> mNameMgrForMarkers;
+  dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// If the skeleton is not mobile, its dynamic effect is equivalent
   /// to having infinite mass. If the configuration of an immobile skeleton are
@@ -1101,6 +1101,8 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef std::shared_ptr<Skeleton> SkeletonPtr;
 
 }  // namespace dynamics
 }  // namespace dart

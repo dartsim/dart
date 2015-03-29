@@ -51,12 +51,15 @@ class WeldJoint : public ZeroDofJoint
 {
 public:
 
+  friend class Skeleton;
+
   struct Properties : ZeroDofJoint::Properties
   {
-    using ZeroDofJoint::Properties::Properties;
+    Properties(const Joint::Properties& _properties = Joint::Properties());
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit WeldJoint(const std::string& _name = "WeldJoint");
 
   /// Destructor

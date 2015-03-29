@@ -51,6 +51,8 @@ class RevoluteJoint : public SingleDofJoint
 {
 public:
 
+  friend class Skeleton;
+
   struct UniqueProperties
   {
     Eigen::Vector3d mAxis;
@@ -58,7 +60,8 @@ public:
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
   };
 
-  struct Properties : SingleDofJoint::Properties, UniqueProperties
+  struct Properties : SingleDofJoint::Properties,
+                      RevoluteJoint::UniqueProperties
   {
     Properties(
         const SingleDofJoint::Properties& _singleDofJointProperties=
@@ -68,6 +71,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
                 const std::string& _name = "Noname RevoluteJoint");
 

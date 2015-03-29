@@ -50,7 +50,7 @@ namespace dart {
 namespace simulation {
 
 //==============================================================================
-Recording::Recording(const std::vector<dynamics::Skeleton*>& _skeletons)
+Recording::Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons)
 {
   for (size_t i = 0; i < _skeletons.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
@@ -144,7 +144,7 @@ void Recording::addState(const Eigen::VectorXd& _state)
 
 //==============================================================================
 void Recording::updateNumGenCoords(
-    const std::vector<dynamics::Skeleton*>& _skeletons)
+    const std::vector<dynamics::SkeletonPtr>& _skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
   for (size_t i = 0; i < _skeletons.size(); ++i)

@@ -152,6 +152,7 @@ public:
   static const ActuatorType DefaultActuatorType;
 
   /// Constructor
+//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit Joint(const std::string& _name = "Joint");
 
   /// Destructor

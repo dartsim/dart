@@ -54,12 +54,11 @@ public:
 
   struct Properties : Joint::Properties
   {
-    using Joint::Properties::Properties;
-
-    Properties(const Joint::Properties& _properties);
+    Properties(const Joint::Properties& _properties = Joint::Properties());
   };
 
   /// Constructor
+//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   ZeroDofJoint(const std::string& _name);
 
   /// Destructor

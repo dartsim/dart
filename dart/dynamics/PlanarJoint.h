@@ -53,6 +53,9 @@ namespace dynamics {
 class PlanarJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
   /// Plane type
   enum PlaneType
   {
@@ -115,6 +118,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit PlanarJoint(const std::string& _name = "PlanarJoint");
 
   /// Destructor

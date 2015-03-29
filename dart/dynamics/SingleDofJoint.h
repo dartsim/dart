@@ -114,6 +114,7 @@ public:
   };
 
   /// Constructor
+//  DEPRECATED(4.5) // Use SingleDofJoint(const Properties&)
   SingleDofJoint(const std::string& _name);
 
   /// Destructor

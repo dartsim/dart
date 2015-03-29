@@ -113,10 +113,10 @@ public:
   virtual ~CollisionDetector();
 
   /// \brief Add skeleton
-  virtual void addSkeleton(dynamics::Skeleton* _skeleton);
+  virtual void addSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// \brief Remove skeleton
-  virtual void removeSkeleton(dynamics::Skeleton* _skeleton);
+  virtual void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// \brief Remove all skeletons
   virtual void removeAllSkeletons();
@@ -184,11 +184,11 @@ protected:
   int mNumMaxContacts;
 
   /// \brief Skeleton array
-  std::vector<dynamics::Skeleton*> mSkeletons;
+  std::vector<dynamics::SkeletonPtr> mSkeletons;
 
 private:
   /// \brief Return true if _skeleton is contained
-  bool containSkeleton(const dynamics::Skeleton* _skeleton);
+  bool containSkeleton(const dynamics::SkeletonPtr _skeleton);
 
   /// \brief
   bool getPairCollidable(const CollisionNode* _node1,

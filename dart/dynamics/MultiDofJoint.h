@@ -124,6 +124,7 @@ public:
   };
 
   /// Constructor
+//  DEPRECATED(4.5) // Use MultiDofJoint(const Properties&)
   MultiDofJoint(const std::string& _name);
 
   /// Destructor

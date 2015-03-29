@@ -49,12 +49,15 @@ class TranslationalJoint : public MultiDofJoint<3>
 {
 public:
 
+  friend class Skeleton;
+
   struct Properties : MultiDofJoint<3>::Properties
   {
     using MultiDofJoint<3>::Properties::Properties;
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
 
   /// Destructor

@@ -55,6 +55,7 @@
 #include "dart/common/Subject.h"
 #include "dart/simulation/Recording.h"
 #include "dart/dynamics/Entity.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 
@@ -107,27 +108,31 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the indexed skeleton
-  dynamics::Skeleton* getSkeleton(size_t _index) const;
+  dynamics::SkeletonPtr getSkeleton(size_t _index) const;
 
   /// Find a Skeleton by name
   /// \param[in] The name of the Skeleton you are looking for.
   /// \return If the skeleton does not exist then return NULL.
-  dynamics::Skeleton* getSkeleton(const std::string& _name) const;
+  dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
   size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
-  std::string addSkeleton(dynamics::Skeleton* _skeleton);
+  std::string addSkeleton(dynamics::SkeletonPtr _skeleton);
+
+  // TODO: There is no longer a need to distinguish between withdrawing and
+  // removing. We should choose one term. removeSkeleton might be a better pick,
+  // because it has legacy.
 
   /// Remove a skeleton from this world without deleting it
-  void withdrawSkeleton(dynamics::Skeleton* _skeleton);
+  void withdrawSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// Remove a skeleton in this world and delete it
-  void removeSkeleton(dynamics::Skeleton* _skeleton);
+  void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// Remove all skeletons from this world, and get pointers to them
-  std::set<dynamics::Skeleton*> withdrawAllSkeletons();
+  std::set<dynamics::SkeletonPtr> withdrawAllSkeletons();
 
   /// Remove all the skeletons in this world and delete them
   void removeAllSkeletons();
@@ -202,16 +207,16 @@ public:
 
 protected:
   /// Skeletones in this world
-  std::vector<dynamics::Skeleton*> mSkeletons;
+  std::vector<dynamics::SkeletonPtr> mSkeletons;
 
   /// NameManager for keeping track of Skeletons
-  dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
+  dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
   std::vector<dynamics::Entity*> mEntities;
 
   /// NameManager for keeping track of Entities
-  dart::common::NameManager<dynamics::Entity> mNameMgrForEntities;
+  dart::common::NameManager<dynamics::Entity*> mNameMgrForEntities;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///

@@ -122,7 +122,7 @@ simulation::World* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
   return newWorld;
 }
 
-dynamics::Skeleton* SoftSdfParser::readSkeleton(
+dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
     const std::string& _filename)
 {
   //--------------------------------------------------------------------------
@@ -205,7 +205,7 @@ simulation::World* SoftSdfParser::readWorld(
   ElementEnumerator skeletonElements(_worldElement, "model");
   while (skeletonElements.next())
   {
-    dynamics::Skeleton* newSkeleton
+    dynamics::SkeletonPtr newSkeleton
         = readSkeleton(skeletonElements.get(), _skelPath);
 
     newWorld->addSkeleton(newSkeleton);
@@ -214,7 +214,7 @@ simulation::World* SoftSdfParser::readWorld(
   return newWorld;
 }
 
-dynamics::Skeleton* SoftSdfParser::readSkeleton(
+dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement, const std::string& _skelPath)
 {
   assert(_skeletonElement != NULL);
@@ -252,7 +252,6 @@ dynamics::Skeleton* SoftSdfParser::readSkeleton(
     SDFBodyNode newSDFBodyNode
         = readSoftBodyNode(bodies.get(), newSkeleton, skeletonFrame,
                            _skelPath);
-    assert(newSDFBodyNode.bodyNode);
     sdfBodyNodes.push_back(newSDFBodyNode);
   }
 
@@ -527,7 +526,7 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   }
 
   SDFBodyNode sdfBodyNode;
-  sdfBodyNode.bodyNode = newSoftBodyNode;
+  sdfBodyNode.properties = newSoftBodyNode;
   sdfBodyNode.initTransform = initTransform;
 
   return sdfBodyNode;
@@ -553,7 +552,7 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
   //--------------------------------------------------------------------------
   // parent
   SDFBodyNode sdfParentBodyNode;
-  sdfParentBodyNode.bodyNode = NULL;
+  sdfParentBodyNode.properties = NULL;
   sdfParentBodyNode.initTransform = Eigen::Isometry3d::Identity();
 
   if (hasElement(_jointElement, "parent"))
@@ -570,7 +569,7 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
           break;
         }
 
-      if (sdfParentBodyNode.bodyNode == NULL)
+      if (sdfParentBodyNode.properties == NULL)
       {
         dterr << "Can't find the parent body ["
               << strParent
@@ -591,7 +590,7 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
   //--------------------------------------------------------------------------
   // child
   SDFBodyNode sdfChildBodyNode;
-  sdfChildBodyNode.bodyNode = NULL;
+  sdfChildBodyNode.properties = NULL;
   sdfChildBodyNode.initTransform = Eigen::Isometry3d::Identity();
 
   if (hasElement(_jointElement, "child"))
@@ -608,7 +607,7 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
       }
     }
 
-    if (sdfChildBodyNode.bodyNode == NULL)
+    if (sdfChildBodyNode.properties == NULL)
     {
       dterr << "Can't find the child body ["
             << strChild
@@ -625,15 +624,15 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
     assert(0);
   }
 
-  if (sdfParentBodyNode.bodyNode)
-    sdfParentBodyNode.bodyNode->addChildBodyNode(sdfChildBodyNode.bodyNode);
+  if (sdfParentBodyNode.properties)
+    sdfParentBodyNode.properties->addChildBodyNode(sdfChildBodyNode.properties);
 
   //--------------------------------------------------------------------------
   // transformation
   Eigen::Isometry3d parentWorld = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d childToJoint = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d childWorld = sdfChildBodyNode.initTransform;
-  if (sdfParentBodyNode.bodyNode)
+  if (sdfParentBodyNode.properties)
     parentWorld = sdfParentBodyNode.initTransform;
   if (hasElement(_jointElement, "pose"))
     childToJoint = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
@@ -655,7 +654,7 @@ dynamics::Joint* SoftSdfParser::readSoftJoint(tinyxml2::XMLElement* _jointElemen
   assert(newJoint != NULL);
 
   newJoint->setName(name);
-  sdfChildBodyNode.bodyNode->setParentJoint(newJoint);
+  sdfChildBodyNode.properties->setParentJoint(newJoint);
   newJoint->setTransformFromChildBodyNode(childToJoint);
   newJoint->setTransformFromParentBodyNode(parentToJoint);
 

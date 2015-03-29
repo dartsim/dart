@@ -51,12 +51,15 @@ class FreeJoint : public MultiDofJoint<6>
 {
 public:
 
+  friend class Skeleton;
+
   struct Properties : MultiDofJoint<6>::Properties
   {
     using MultiDofJoint<6>::Properties::Properties;
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit FreeJoint(const std::string& _name = "FreeJoint");
 
   /// Destructor

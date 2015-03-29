@@ -51,6 +51,7 @@
 
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
+#include "dart/dynamics/Skeleton.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -127,6 +128,7 @@ public:
   };
 
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit BodyNode(const std::string& _name = "BodyNode");
 
   /// Destructor
@@ -323,6 +325,15 @@ public:
 
   /// Add a child bodynode into the bodynode
   void addChildBodyNode(BodyNode* _body);
+
+  template <class JointType, class NodeType = BodyNode>
+  std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
+      const typename JointType::Properties& _jointProperties = JointType::Properties(),
+      const typename NodeType::Properties& _bodyProperties = NodeType::Properties())
+  {
+    return mSkeleton->createJointAndBodyNodePair<JointType, NodeType>(
+          this, _jointProperties, _bodyProperties);
+  }
 
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);

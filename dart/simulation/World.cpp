@@ -73,12 +73,6 @@ World::~World()
 {
   delete mConstraintSolver;
   delete mRecording;
-
-  for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    delete (*it);
-  }
 }
 
 //==============================================================================
@@ -89,7 +83,7 @@ void World::setTimeStep(double _timeStep)
   mTimeStep = _timeStep;
 //  mConstraintHandler->setTimeStep(_timeStep);
   mConstraintSolver->setTimeStep(_timeStep);
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     (*it)->setTimeStep(_timeStep);
@@ -175,7 +169,7 @@ int World::getSimFrames() const
 void World::setGravity(const Eigen::Vector3d& _gravity)
 {
   mGravity = _gravity;
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     (*it)->setGravity(_gravity);
@@ -189,16 +183,16 @@ const Eigen::Vector3d& World::getGravity() const
 }
 
 //==============================================================================
-dynamics::Skeleton* World::getSkeleton(size_t _index) const
+dynamics::SkeletonPtr World::getSkeleton(size_t _index) const
 {
   if(_index < mSkeletons.size())
     return mSkeletons[_index];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
-dynamics::Skeleton* World::getSkeleton(const std::string& _name) const
+dynamics::SkeletonPtr World::getSkeleton(const std::string& _name) const
 {
   return mNameMgrForSkeletons.getObject(_name);
 }
@@ -210,7 +204,7 @@ size_t World::getNumSkeletons() const
 }
 
 //==============================================================================
-std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
+std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL && "Attempted to add NULL skeleton to world.");
 
@@ -242,7 +236,7 @@ std::string World::addSkeleton(dynamics::Skeleton* _skeleton)
 }
 
 //==============================================================================
-void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
+void World::withdrawSkeleton(dynamics::SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL && "Attempted to remove NULL Skeleton from world");
 
@@ -290,17 +284,16 @@ void World::withdrawSkeleton(dynamics::Skeleton *_skeleton)
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::Skeleton* _skeleton)
+void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
 {
   withdrawSkeleton(_skeleton);
-  delete _skeleton;
 }
 
 //==============================================================================
-std::set<dynamics::Skeleton*> World::withdrawAllSkeletons()
+std::set<dynamics::SkeletonPtr> World::withdrawAllSkeletons()
 {
-  std::set<dynamics::Skeleton*> ptrs;
-  for(std::vector<dynamics::Skeleton*>::iterator it=mSkeletons.begin(),
+  std::set<dynamics::SkeletonPtr> ptrs;
+  for(std::vector<dynamics::SkeletonPtr>::iterator it=mSkeletons.begin(),
       end=mSkeletons.end(); it != end; ++it)
     ptrs.insert(*it);
 
