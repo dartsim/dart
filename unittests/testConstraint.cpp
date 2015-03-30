@@ -129,7 +129,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   world->getConstraintSolver()->setCollisionDetector(
         new DARTCollisionDetector());
 
-  Skeleton* sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
+  SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
   Joint* sphereJoint = sphere->getParentJoint();
   sphereJoint->setVelocity(3, random(-2.0, 2.0));  // x-axis
@@ -138,8 +138,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   EXPECT_EQ(sphereSkel->getGravity(), world->getGravity());
   assert(sphere);
 
-  Skeleton* boxSkel = createBox(Vector3d(1.0, 1.0, 1.0),
-                                Vector3d(0.0, 1.0, 0.0));
+  SkeletonPtr boxSkel = createBox(Vector3d(1.0, 1.0, 1.0),
+                                  Vector3d(0.0, 1.0, 0.0));
   BodyNode* box = boxSkel->getBodyNode(0);
   Joint* boxJoint = box->getParentJoint();
   boxJoint->setVelocity(3, random(-2.0, 2.0));  // x-axis
@@ -148,7 +148,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
 //  EXPECT_EQ(boxSkel->getGravity(), world->getGravity());
 //  assert(box);
 
-  Skeleton* groundSkel = createGround(Vector3d(10000.0, 0.1, 10000.0),
+  SkeletonPtr groundSkel = createGround(Vector3d(10000.0, 0.1, 10000.0),
                                       Vector3d(0.0, -0.05, 0.0));
   groundSkel->setMobile(false);
   // BodyNode* ground = groundSkel->getBodyNode(0);

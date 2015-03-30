@@ -49,7 +49,7 @@ using namespace constraint;
 using namespace dynamics;
 
 //==============================================================================
-Controller::Controller(Skeleton* _atlasRobot,
+Controller::Controller(SkeletonPtr _atlasRobot,
                        ConstraintSolver* _collisionSolver)
   : mAtlasRobot(_atlasRobot),
     mConstratinSolver(_collisionSolver),
@@ -89,7 +89,7 @@ void Controller::update(double _currentTime)
 }
 
 //==============================================================================
-Skeleton* Controller::getAtlasRobot()
+SkeletonPtr Controller::getAtlasRobot()
 {
   return mAtlasRobot;
 }

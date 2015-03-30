@@ -523,12 +523,12 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   EXPECT_TRUE(world != NULL);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  Skeleton* skel2 = world->getSkeleton("skeleton 2");
-  Skeleton* skel3 = world->getSkeleton("skeleton 3");
-  Skeleton* skel4 = world->getSkeleton("skeleton 4");
-  Skeleton* skel5 = world->getSkeleton("skeleton 5");
-  Skeleton* skel6 = world->getSkeleton("skeleton 6");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel2 = world->getSkeleton("skeleton 2");
+  SkeletonPtr skel3 = world->getSkeleton("skeleton 3");
+  SkeletonPtr skel4 = world->getSkeleton("skeleton 4");
+  SkeletonPtr skel5 = world->getSkeleton("skeleton 5");
+  SkeletonPtr skel6 = world->getSkeleton("skeleton 6");
   EXPECT_TRUE(skel1 != NULL);
   EXPECT_TRUE(skel2 != NULL);
   EXPECT_TRUE(skel3 != NULL);

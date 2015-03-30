@@ -129,7 +129,7 @@ TEST(Parser, SinglePendulum)
   EXPECT_EQ(world->getGravity()(2), 0);
   EXPECT_EQ(world->getNumSkeletons(), 1);
 
-  Skeleton* skel1 = world->getSkeleton("single_pendulum");
+  SkeletonPtr skel1 = world->getSkeleton("single_pendulum");
 
   EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
@@ -151,7 +151,7 @@ TEST(Parser, SerialChain)
   EXPECT_EQ(world->getGravity()(2), 0);
   EXPECT_EQ(world->getNumSkeletons(), 1);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   EXPECT_EQ(skel1->getNumBodyNodes(), 10);
 
@@ -173,7 +173,7 @@ TEST(Parser, RigidAndSoftBodies)
                    DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel1 != NULL);
   EXPECT_EQ(skel1->getNumBodyNodes(), 2);
   EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
@@ -200,7 +200,7 @@ TEST(Parser, PlanarJoint)
                    DART_DATA_PATH"skel/test/planar_joint.skel");
   EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton1");
   EXPECT_TRUE(skel1 != NULL);
 
   BodyNode* body1 = skel1->getBodyNode("link1");
@@ -312,7 +312,7 @@ TEST(SKEL_PARSER, JointActuatorType)
                    DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
   EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel1 != NULL);
 
   // Test for no actuator type attribute being specified
@@ -345,7 +345,7 @@ TEST(Parser, DofAttributes)
                    DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
   EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
@@ -423,7 +423,7 @@ TEST(Parser, JointDynamicsElements)
           DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
   EXPECT_TRUE(world != NULL);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getDampingCoefficient(0), 1.0);

@@ -46,9 +46,9 @@ int main(int argc, char* argv[])
 
   // load skeletons
   dart::utils::DartLoader dl;
-  dart::dynamics::Skeleton* ground
+  dart::dynamics::SkeletonPtr ground
           = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
-  dart::dynamics::Skeleton* robot
+  dart::dynamics::SkeletonPtr robot
           = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(ground);
   world->addSkeleton(robot);

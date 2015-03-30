@@ -254,6 +254,9 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
     mSoftCollShape(nullptr)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
+  dynamics::ShapePtr softShape(new dynamics::SoftMeshShape(this));
+  addVisualizationShape(softShape);
+  addCollisionShape(softShape);
 }
 
 //==============================================================================

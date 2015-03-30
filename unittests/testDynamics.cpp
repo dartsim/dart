@@ -70,11 +70,11 @@ public:
 
   // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
-  MatrixXd getMassMatrix(dynamics::Skeleton* _skel);
+  MatrixXd getMassMatrix(dynamics::SkeletonPtr _skel);
 
   // Get augmented mass matrix of _skel using Jacobians and inertias of
   // each body in _skel.
-  MatrixXd getAugMassMatrix(dynamics::Skeleton* _skel);
+  MatrixXd getAugMassMatrix(dynamics::SkeletonPtr _skel);
 
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
@@ -177,7 +177,7 @@ void DynamicsTest::randomizeRefFrames()
 }
 
 //==============================================================================
-MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
+MatrixXd DynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
 {
   int skelDof = _skel->getNumDofs();
 
@@ -218,7 +218,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 }
 
 //==============================================================================
-MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
+MatrixXd DynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 {
   int    dof = _skel->getNumDofs();
   double dt  = _skel->getTimeStep();
@@ -588,7 +588,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
-    Skeleton* skeleton = world->getSkeleton(i);
+    SkeletonPtr skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
     int dof = skeleton->getNumDofs();
 
@@ -688,7 +688,7 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
-    Skeleton* skeleton = world->getSkeleton(i);
+    SkeletonPtr skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
     int dof = skeleton->getNumDofs();
 
@@ -854,7 +854,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof = skel->getNumDofs();
 //    int nBodyNodes = skel->getNumBodyNodes();
@@ -1020,7 +1020,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 }
 
 //==============================================================================
-void compareCOMJacobianToFk(const Skeleton* skel,
+void compareCOMJacobianToFk(const SkeletonPtr skel,
                             const Frame* refFrame,
                             double tolerance)
 {
@@ -1115,7 +1115,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof = skel->getNumDofs();
     if (dof == 0)
@@ -1176,7 +1176,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 }
 
 //==============================================================================
-void compareCOMAccelerationToGravity(Skeleton* skel,
+void compareCOMAccelerationToGravity(SkeletonPtr skel,
                                      const Eigen::Vector3d& gravity,
                                      double tolerance)
 {
@@ -1364,7 +1364,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
@@ -1460,7 +1460,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     int dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
@@ -1639,7 +1639,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   EXPECT_TRUE(world != NULL);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
-  Skeleton* skel = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel != NULL);
   EXPECT_NEAR(skel->getTimeStep(), timeStep, tol);
 

@@ -72,11 +72,11 @@ Frame::~Frame()
   // Note: When we instruct an Entity to change its parent Frame, it will erase
   // itself from this Frame's mChildEntities list. This would invalidate the
   // 'it' and clobber our attempt to iterate through the std::set if we applied
-  // changeParentFrame(~) directly to the 'it' iterator. So instead we use the
+  // changeParentFrame() directly to the 'it' iterator. So instead we use the
   // post-increment operator to iterate 'it' forward and we apply
-  // changeParentFrame(~) to the temporary iterator created by the
+  // changeParentFrame() to the temporary iterator created by the
   // post-increment operator. Put simply: we increment 'it' forward once and
-  // then apply changeParentFrame(~) to the pointer that 'it' held just before
+  // then apply changeParentFrame() to the pointer that 'it' held just before
   // it incremented.
 
   // The entity destructor takes care of informing the parent Frame that this
@@ -518,7 +518,7 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       if(!(this->isWorld() && _newParentFrame->isWorld()))
       // We make an exception here for the World Frame, because it's special/unique
       {
-        dtwarn << "[Frame::changeParentFrame(~)] Attempting to create a circular "
+        dtwarn << "[Frame::changeParentFrame] Attempting to create a circular "
                << "kinematic dependency by making Frame '" << getName()
                << "' a child of Frame '" << _newParentFrame->getName() << "'. "
                << "This will not be allowed.\n";

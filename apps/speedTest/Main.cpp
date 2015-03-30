@@ -47,13 +47,13 @@
 #include "dart/math/Helpers.h"
 #include "dart/config.h"
 
-double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
+double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
                                  bool position=true,
                                  bool velocity=true,
                                  bool acceleration=true,
                                  size_t numTests=100000)
 {
-  if(NULL==skel)
+  if(nullptr==skel)
     return 0;
 
   dart::dynamics::BodyNode* bn = skel->getBodyNode(0);
@@ -126,7 +126,7 @@ double testDynamicsSpeed(dart::simulation::World* world,
 
   for(size_t i=0; i<world->getNumSkeletons(); ++i)
   {
-    dart::dynamics::Skeleton* skel = world->getSkeleton(i);
+    dart::dynamics::SkeletonPtr skel = world->getSkeleton(i);
     skel->resetPositions();
     skel->resetVelocities();
     skel->resetAccelerations();

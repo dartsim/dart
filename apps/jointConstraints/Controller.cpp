@@ -40,7 +40,7 @@ using namespace dart;
 using namespace dynamics;
 using namespace math;
 
-Controller::Controller(dynamics::Skeleton* _skel,
+Controller::Controller(dynamics::SkeletonPtr _skel,
                        constraint::ConstraintSolver* _collisionSolver,
                        double _t)
 {

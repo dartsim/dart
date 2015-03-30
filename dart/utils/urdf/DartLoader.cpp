@@ -36,7 +36,7 @@ void DartLoader::addPackageDirectory(const std::string& _packageName,
   mPackageDirectories[_packageName] = _packageDirectory;
 }
 
-dynamics::Skeleton* DartLoader::parseSkeleton(const std::string& _urdfFileName) {
+dynamics::SkeletonPtr DartLoader::parseSkeleton(const std::string& _urdfFileName) {
   std::string urdfString = readFileToString(_urdfFileName);
 
   if(urdfString.empty())
@@ -55,7 +55,7 @@ dynamics::Skeleton* DartLoader::parseSkeleton(const std::string& _urdfFileName) 
   return parseSkeletonString(urdfString, mRootToSkelPath);;
 }
 
-dynamics::Skeleton* DartLoader::parseSkeletonString(
+dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     const std::string& _urdfString, const std::string& _urdfFileDirectory)
 {
   if(_urdfString.empty())
@@ -117,7 +117,7 @@ simulation::World* DartLoader::parseWorldString(
 
   for(unsigned int i = 0; i < worldInterface->models.size(); ++i) {
     mRootToSkelPath = mRootToWorldPath + mWorld_To_Entity_Paths.find(worldInterface->models[i].model->getName())->second;
-    dynamics::Skeleton* skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model.get());
+    dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(worldInterface->models[i].model.get());
 
     if(!skeleton) {
       std::cout << "[ERROR] Robot " << worldInterface->models[i].model->getName() << " was not correctly parsed. World is not loaded. Exiting!" << std::endl;
@@ -247,24 +247,27 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string) {
  * @function modelInterfaceToSkeleton
  * @brief Read the ModelInterface and spits out a Skeleton object
  */
-dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model) {
+dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model) {
 
-    dynamics::Skeleton* skeleton = new dynamics::Skeleton(_model->getName());
-    dynamics::BodyNode* rootNode = NULL;
-    dynamics::Joint* rootJoint = NULL;
+    dynamics::SkeletonPtr skeleton(new dynamics::Skeleton(_model->getName()));
+    dynamics::BodyNode* rootNode = nullptr;
+    dynamics::Joint* rootJoint = nullptr;
 
     const urdf::Link* root = _model->getRoot().get();
-    if(root->name == "world") {
-        if(_model->getRoot()->child_links.size() != 1) { 
-            std::cout<< "[ERROR] Not unique link attached to world." << std::endl; 
-        }
-        else {
-            root = root->child_links[0].get();
-            rootNode = createDartNode(root);
-            rootJoint = createDartJoint(root->parent_joint.get());
-            if(!rootJoint)
-                return NULL;
-        }
+    if(root->name == "world")
+    {
+      if(_model->getRoot()->child_links.size() != 1)
+      {
+        dterr << "[DartLoader::modelInterfaceToSkeleton] No unique link attached to world.\n";
+      }
+      else
+      {
+        root = root->child_links[0].get();
+        rootNode = createDartNode(root);
+        rootJoint = createDartJoint(root->parent_joint.get());
+        if(!rootJoint)
+          return nullptr;
+      }
     }
     else {
         rootNode = createDartNode(root);
@@ -278,13 +281,13 @@ dynamics::Skeleton* DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterf
     skeleton->addBodyNode(rootNode);
 
     for(size_t i = 0; i < root->child_links.size(); i++) {
-        createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode);
+      createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode);
     }
 
     return skeleton;
 }
 
-void DartLoader::createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parentNode) {
+void DartLoader::createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parentNode) {
   dynamics::BodyNode* node = createDartNode(_lk);
   dynamics::Joint* joint = createDartJoint(_lk->parent_joint.get());
   node->setParentJoint(joint);

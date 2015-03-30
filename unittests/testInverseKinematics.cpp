@@ -45,11 +45,11 @@ using namespace Eigen;
 using namespace dart;
 using namespace dart::dynamics;
 
-Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
-                                         Vector3d dim2, TypeOfDOF type2,
-                                         bool finished = true)
+SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
+                                          Vector3d dim2, TypeOfDOF type2,
+                                          bool finished = true)
 {
-  Skeleton* robot = new Skeleton();
+  SkeletonPtr robot(new Skeleton);
 
   // Create the first link, the joint with the ground and its shape
   double mass = 1.0;
@@ -104,7 +104,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  // Create two link robot
 //  const double l1 = 1.5;
 //  const double l2 = 1.0;
-//  Skeleton* robot = createFreeFloatingTwoLinkRobot(
+//  SkeletonPtr robot = createFreeFloatingTwoLinkRobot(
 //                      Vector3d(0.3, 0.3, l1),
 //                      Vector3d(0.3, 0.3, l2), DOF_ROLL);
 //  robot->init();
@@ -219,7 +219,7 @@ Skeleton* createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  // Create two link robot
 //  const double l1 = 1.5;
 //  const double l2 = 1.0;
-//  Skeleton* robot = createFreeFloatingTwoLinkRobot(
+//  SkeletonPtr robot = createFreeFloatingTwoLinkRobot(
 //                      Vector3d(0.3, 0.3, l1),
 //                      Vector3d(0.3, 0.3, l2), DOF_ROLL);
 //  robot->init();

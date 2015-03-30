@@ -37,7 +37,7 @@
 
 #include "apps/bipedStand/Controller.h"
 
-Controller::Controller(dart::dynamics::Skeleton* _skel,
+Controller::Controller(dart::dynamics::SkeletonPtr _skel,
                        double _t) {
   mSkel = _skel;
   mTimestep = _t;
@@ -128,7 +128,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   mFrame++;
 }
 
-dart::dynamics::Skeleton*Controller::getSkel() {
+dart::dynamics::SkeletonPtr Controller::getSkel() {
   return mSkel;
 }
 

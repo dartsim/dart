@@ -71,7 +71,11 @@ public:
   static dynamics::SkeletonPtr readSkeleton(
       const std::string& _fileName);
 
-protected:
+  static bool createSoftPair(dynamics::SkeletonPtr skeleton,
+                             dynamics::BodyNode* parent,
+                             const SDFJoint& newJoint,
+                             const SDFBodyNode& newBody);
+
   /// \brief
   static simulation::World* readWorld(
       tinyxml2::XMLElement* _worldElement,
@@ -85,17 +89,8 @@ protected:
   /// \brief
   static SDFBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::Skeleton* _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _skelPath);
-
-  /// \brief
-  static dynamics::Joint* readSoftJoint(
-      tinyxml2::XMLElement* _jointElement,
-      const std::vector<SDFBodyNode,
-      Eigen::aligned_allocator<SDFBodyNode> >& _bodies,
-      const Eigen::Isometry3d& _skeletonFrame);
-
 };
 
 } // namespace utils

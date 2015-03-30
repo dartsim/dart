@@ -120,7 +120,7 @@ simulation::World* SkelParser::readWorld(const std::string& _filename)
   return newWorld;
 }
 
-dynamics::Skeleton* SkelParser::readSkeleton(const std::string& _filename)
+dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -133,7 +133,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(const std::string& _filename)
   {
     std::cout << "LoadFile [" << _filename << "] Fails: "
               << e.what() << std::endl;
-    return NULL;
+    return nullptr;
   }
 
   //--------------------------------------------------------------------------
@@ -159,7 +159,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(const std::string& _filename)
     return NULL;
   }
 
-  dynamics::Skeleton* newSkeleton = readSkeleton(skeletonElement);
+  dynamics::SkeletonPtr newSkeleton = readSkeleton(skeletonElement);
 
   // Initialize skeleto to be ready for use
   newSkeleton->init();
@@ -244,7 +244,7 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
   ElementEnumerator SkeletonElements(_worldElement, "skeleton");
   while (SkeletonElements.next())
   {
-    dynamics::Skeleton* newSkeleton
+    dynamics::SkeletonPtr newSkeleton
         = readSkeleton(SkeletonElements.get());
 
     newWorld->addSkeleton(newSkeleton);
@@ -253,11 +253,11 @@ simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement) {
   return newWorld;
 }
 
-dynamics::Skeleton* SkelParser::readSkeleton(
+dynamics::SkeletonPtr SkelParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement) {
   assert(_skeletonElement != NULL);
 
-  dynamics::Skeleton* newSkeleton = new dynamics::Skeleton;
+  dynamics::SkeletonPtr newSkeleton(new dynamics::Skeleton);
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------
@@ -336,7 +336,7 @@ dynamics::Skeleton* SkelParser::readSkeleton(
 
 SkelParser::SkelBodyNode SkelParser::readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
-    dynamics::Skeleton* _skeleton,
+    dynamics::SkeletonPtr _skeleton,
     const Eigen::Isometry3d& _skeletonFrame) {
   assert(_bodyNodeElement != NULL);
   assert(_skeleton != NULL);
@@ -447,7 +447,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
 
 SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    dynamics::Skeleton* _Skeleton,
+    dynamics::SkeletonPtr _Skeleton,
     const Eigen::Isometry3d& _skeletonFrame)
 {
   //---------------------------------- Note ------------------------------------

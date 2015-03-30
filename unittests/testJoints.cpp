@@ -324,7 +324,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
 
-  dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != NULL);
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
@@ -396,7 +396,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
   myWorld->setTimeStep(_timeStep);
 
-  dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != NULL);
   pendulum->disableSelfCollision();
 
@@ -580,7 +580,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   balljoint->setTransformFromChildBodyNode(random_transform());
 
   // -- set up Skeleton and compute forward kinematics
-  Skeleton* skel = new Skeleton;
+  SkeletonPtr skel(new Skeleton);
   skel->addBodyNode(root);
   skel->addBodyNode(freejoint_bn);
   skel->addBodyNode(eulerjoint_bn);

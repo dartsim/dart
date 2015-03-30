@@ -87,8 +87,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 void MyWindow::spawnCube(const Eigen::Vector3d& _position,
                          const Eigen::Vector3d& _size,
                          double _mass) {
-  dart::dynamics::Skeleton* newCubeSkeleton =
-      new dart::dynamics::Skeleton();
+  dart::dynamics::SkeletonPtr newCubeSkeleton(new dart::dynamics::Skeleton());
   dart::dynamics::BodyNode* newBodyNode =
       new dart::dynamics::BodyNode("cube_link");
   dart::dynamics::FreeJoint* newFreeJoint =

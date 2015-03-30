@@ -10,6 +10,8 @@
 #include <map>
 #include <string>
 
+#include "dart/dynamics/Skeleton.h"
+
 namespace urdf {
     class ModelInterface;
     class Link;
@@ -60,11 +62,11 @@ public:
                              const std::string& _packageDirectory);
 
     /// Parse a file to produce a Skeleton
-    dynamics::Skeleton* parseSkeleton(const std::string& _urdfFileName);
+    dynamics::SkeletonPtr parseSkeleton(const std::string& _urdfFileName);
 
     /// Parse a text string to produce a Skeleton
-    dynamics::Skeleton* parseSkeletonString(const std::string& _urdfString,
-                                            const std::string& _urdfFileDirectory);
+    dynamics::SkeletonPtr parseSkeletonString(const std::string& _urdfString,
+                                              const std::string& _urdfFileDirectory);
 
     /// Parse a file to produce a World
     simulation::World* parseWorld(const std::string& _urdfFileName);
@@ -77,8 +79,8 @@ private:
     std::string getFullFilePath(const std::string& _filename) const;
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
-    dynamics::Skeleton* modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
-    void createSkeletonRecursive(dynamics::Skeleton* _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
+    dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
+    void createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
 
     template <class VisualOrCollision>
     dynamics::Shape* createShape(const VisualOrCollision* _vizOrCol);

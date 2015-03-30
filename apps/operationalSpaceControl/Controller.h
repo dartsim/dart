@@ -46,7 +46,7 @@ class Controller
 {
 public:
   /// \brief Constructor
-  Controller(dart::dynamics::Skeleton* _robot,
+  Controller(dart::dynamics::SkeletonPtr _robot,
              dart::dynamics::BodyNode* _endEffector);
 
   /// \brief Destructor
@@ -56,7 +56,7 @@ public:
   void update(const Eigen::Vector3d& _targetPosition);
 
   /// \brief Get robot
-  dart::dynamics::Skeleton* getRobot() const;
+  dart::dynamics::SkeletonPtr getRobot() const;
 
   /// \brief Get end effector of the robot
   dart::dynamics::BodyNode* getEndEffector() const;
@@ -66,7 +66,7 @@ public:
 
 private:
   /// \brief Robot
-  dart::dynamics::Skeleton* mRobot;
+  dart::dynamics::SkeletonPtr mRobot;
 
   /// \brief End-effector of the robot
   dart::dynamics::BodyNode* mEndEffector;

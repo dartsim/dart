@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
   for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
   {
-    dart::dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
     for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
     {
       std::cout << skel->getBodyNode(j)->getSpatialInertia() << "\n" << std::endl;

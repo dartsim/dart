@@ -115,7 +115,7 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 
 /******************************************************************************/
 /// Add an end-effector to the last link of the given robot
-void addEndEffector(Skeleton* robot, BodyNode* parent_node, Vector3d dim)
+void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 {
     // Create the end-effector node with a random dimension
     BodyNode* node = new BodyNode("ee");
@@ -163,11 +163,11 @@ Joint* create1DOFJoint(double val, double min, double max, int type)
 /// Creates a two link manipulator with the given dimensions where the first
 /// link rotates around z-axis and second rotates around x in the zero
 /// configuration.
-Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
+SkeletonPtr createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
                              Vector3d dim2, TypeOfDOF type2,
                              bool finished = true)
 {
-    Skeleton* robot = new Skeleton();
+    SkeletonPtr robot(new Skeleton);
 
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
@@ -212,13 +212,13 @@ Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
 /// Creates a two link manipulator with the given dimensions where the first
 /// link rotates around z-axis and second rotates around x in the zero
 /// configuration.
-Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
+SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
                                Vector3d dim2, TypeOfDOF type2,
                                Vector3d dim3, TypeOfDOF type3,
                                bool finished = false,
                                bool collisionShape = true)
 {
-    Skeleton* robot = new Skeleton();
+    SkeletonPtr robot(new Skeleton);
 
     // Create the first link, the joint with the ground and its shape
     double mass = 1.0;
@@ -282,12 +282,12 @@ Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
 /******************************************************************************/
 /// Creates a N link manipulator with the given dimensions where the first link
 /// rotates around z-axis and second rotates around x in the zero configuration.
-Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
+SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
                            bool finished = false)
 {
     assert(_n > 0);
 
-    Skeleton* robot = new Skeleton();
+    SkeletonPtr robot(new Skeleton);
     robot->disableSelfCollision();
     double mass = 1.0;
 
@@ -340,7 +340,7 @@ Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     return robot;
 }
 
-Skeleton* createGround(
+SkeletonPtr createGround(
         const Eigen::Vector3d& _size,
         const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
         const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
@@ -362,7 +362,7 @@ Skeleton* createGround(
     node->setMass(mass);
     node->setParentJoint(joint);
 
-    Skeleton* skeleton = new Skeleton();
+    SkeletonPtr skeleton(new Skeleton);
     skeleton->addBodyNode(node);
 
     skeleton->init();
@@ -370,7 +370,7 @@ Skeleton* createGround(
     return skeleton;
 }
 
-Skeleton* createSphere(
+SkeletonPtr createSphere(
         const double _radius,
         const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
 {
@@ -392,7 +392,7 @@ Skeleton* createSphere(
     node->setMass(mass);
     node->setParentJoint(joint);
 
-    Skeleton* skeleton = new Skeleton();
+    SkeletonPtr skeleton(new Skeleton);
     skeleton->addBodyNode(node);
 
     skeleton->init();
@@ -400,7 +400,7 @@ Skeleton* createSphere(
     return skeleton;
 }
 
-Skeleton* createBox(
+SkeletonPtr createBox(
         const Eigen::Vector3d& _size,
         const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
         const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
@@ -422,7 +422,7 @@ Skeleton* createBox(
     node->setMass(mass);
     node->setParentJoint(joint);
 
-    Skeleton* skeleton = new Skeleton();
+    SkeletonPtr skeleton(new Skeleton());
     skeleton->addBodyNode(node);
 
     skeleton->init();

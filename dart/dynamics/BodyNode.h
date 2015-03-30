@@ -324,6 +324,7 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Add a child bodynode into the bodynode
+  // TODO(MXG): This should be made protected!
   void addChildBodyNode(BodyNode* _body);
 
   template <class JointType, class NodeType = BodyNode>

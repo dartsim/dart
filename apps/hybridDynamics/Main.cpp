@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(1);
+  dart::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
 
   std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);

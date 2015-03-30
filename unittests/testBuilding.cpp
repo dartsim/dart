@@ -66,7 +66,7 @@ TEST(BUILDING, BASIC)
     RevoluteJoint* joint3 = new RevoluteJoint;
 
 	// Skeletons
-    Skeleton* skel1 = new Skeleton;
+    SkeletonPtr skel1(new Skeleton);
 
 	// World
     World* world = new World;

@@ -47,6 +47,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 
@@ -86,7 +87,7 @@ public:
   static simulation::World* readWorld(const std::string& _filename);
 
   /// Read Skeleton from skel file
-  static dynamics::Skeleton* readSkeleton(const std::string& _filename);
+  static dynamics::SkeletonPtr readSkeleton(const std::string& _filename);
 
 protected:
   ///
@@ -101,19 +102,17 @@ protected:
   static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
 
   ///
-  static dynamics::Skeleton* readSkeleton(
+  static dart::dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement);
 
   ///
-  static SkelBodyNode readBodyNode(
-      tinyxml2::XMLElement* _bodyElement,
-      dynamics::Skeleton* _skeleton,
+  static SkelBodyNode readBodyNode(tinyxml2::XMLElement* _bodyElement,
+      dynamics::SkeletonPtr _skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///
-  static SkelBodyNode readSoftBodyNode(
-      tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::Skeleton* _Skeleton,
+  static SkelBodyNode readSoftBodyNode(tinyxml2::XMLElement* _softBodyNodeElement,
+      dynamics::SkeletonPtr _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///

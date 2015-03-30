@@ -594,7 +594,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
      mChildBodyNodes.end())
   {
-    dtwarn << "[BodyNode::addChildBodyNode(~)] Attempting to add a BodyNode '"
+    dtwarn << "[BodyNode::addChildBodyNode] Attempting to add a BodyNode '"
            << _body->getName() << "' as a child BodyNode of '" << getName()
            << "', which is already its parent." << std::endl;
     return;
@@ -1247,8 +1247,8 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 //==============================================================================
 BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
-  : Entity(_parentBodyNode, "", false), // Name gets set later by setProperties
-    Frame(_parentBodyNode, ""),
+  : Entity(Frame::World(), "", false), // Name gets set later by setProperties
+    Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
     mSkeleton(nullptr),
@@ -1284,6 +1284,9 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 {
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
+
+  if(_parentBodyNode)
+    _parentBodyNode->addChildBodyNode(this);
 }
 
 //==============================================================================
@@ -1344,12 +1347,11 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
      mChildBodyNodes.end())
     return;
-  // TODO: Looks redundant
 
   // Check if it's already accounted for in our Non-BodyNode Entities
   if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
   {
-    dtwarn << "[BodyNode::processNewEntity(~)] Attempting to add an Entity '"
+    dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity '"
            << _newChildEntity->getName() << "' as a child Entity of '"
            << getName() << "', which is already its parent." << std::endl;
     return;

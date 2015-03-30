@@ -38,7 +38,7 @@
 #include "dart/math/MathTypes.h"
 
 //==============================================================================
-Controller::Controller(dart::dynamics::Skeleton* _robot,
+Controller::Controller(dart::dynamics::SkeletonPtr _robot,
                        dart::dynamics::BodyNode* _endEffector)
   : mRobot(_robot),
     mEndEffector(_endEffector)
@@ -110,7 +110,7 @@ void Controller::update(const Eigen::Vector3d& _targetPosition)
 }
 
 //==============================================================================
-dart::dynamics::Skeleton* Controller::getRobot() const
+dart::dynamics::SkeletonPtr Controller::getRobot() const
 {
   return mRobot;
 }

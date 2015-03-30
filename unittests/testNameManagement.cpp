@@ -222,7 +222,7 @@ TEST(NameManagement, Basic)
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager<BodyNode> test_mgr;
+  dart::common::NameManager<BodyNode*> test_mgr;
 
   BodyNode* bn0 = new BodyNode("name");
   BodyNode* bn1 = new BodyNode("name");
