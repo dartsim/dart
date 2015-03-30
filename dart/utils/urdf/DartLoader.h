@@ -11,25 +11,30 @@
 #include <string>
 
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
 
-namespace urdf {
-    class ModelInterface;
-    class Link;
-    class Joint;
-    class Pose;
-    class Vector3;
+namespace urdf
+{
+  class ModelInterface;
+  class Link;
+  class Joint;
+  class Pose;
+  class Vector3;
 }
 
 namespace dart {
 
-namespace dynamics {
-    class Skeleton;
-    class BodyNode;
-    class Joint;
-    class Shape;
+namespace dynamics
+{
+  class Skeleton;
+  class BodyNode;
+  class Joint;
+  class Shape;
 }
-namespace simulation {
-    class World;
+namespace simulation
+{
+  class World;
 }
 
 namespace utils {
@@ -44,11 +49,13 @@ public:
     /// Specify the directory of a ROS package. In your URDF files, you may see
     /// strings with a package URI pattern such as:
     ///
+    /// @code
     /// "package://my_robot/meshes/mesh_for_my_robot.stl"
     ///  \______/  \______/\___________________________/
     ///      |        |                 |
     ///   package  package   file path with respect to
     ///   keyword   name       the package directory
+    /// @endcode
     ///
     /// For us to successfully parse a URDF, we need to be told what the path
     /// to the package directory is, using addPackageDirectory(). In this case,
@@ -76,6 +83,10 @@ public:
                                         const std::string& _urdfFileDirectory);
 
 private:
+
+    typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
+    typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
+
     std::string getFullFilePath(const std::string& _filename) const;
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
@@ -83,10 +94,16 @@ private:
     void createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
 
     template <class VisualOrCollision>
-    dynamics::Shape* createShape(const VisualOrCollision* _vizOrCol);
+    dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol);
 
-    dynamics::Joint* createDartJoint(const urdf::Joint* _jt);
-    dynamics::BodyNode* createDartNode(const urdf::Link* _lk);
+    dynamics::BodyNode* createDartJointAndNode(
+        const urdf::Joint* _jt,
+        const dynamics::BodyNode::Properties& _body,
+        dynamics::BodyNode* _parent,
+        dynamics::SkeletonPtr _skeleton);
+
+    dynamics::BodyNode::Properties createDartNodeProperties(
+        const urdf::Link* _lk);
 
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
