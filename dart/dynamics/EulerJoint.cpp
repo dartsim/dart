@@ -181,6 +181,7 @@ EulerJoint::EulerJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties)
 {
   setProperties(_properties);
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

@@ -156,6 +156,7 @@ UniversalJoint::UniversalJoint(const Properties& _properties)
   : MultiDofJoint<2>(_properties)
 {
   setProperties(_properties);
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

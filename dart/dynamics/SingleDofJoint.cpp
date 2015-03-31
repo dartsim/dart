@@ -58,7 +58,9 @@ SingleDofJoint::UniqueProperties::UniqueProperties(
     double _springStiffness,
     double _restPosition,
     double _dampingCoefficient,
-    double _coulombFriction)
+    double _coulombFriction,
+    bool _preserveDofName,
+    std::string _dofName)
   : mPositionLowerLimit(_positionLowerLimit),
     mPositionUpperLimit(_positionUpperLimit),
     mVelocityLowerLimit(_velocityLowerLimit),
@@ -70,7 +72,9 @@ SingleDofJoint::UniqueProperties::UniqueProperties(
     mSpringStiffness(_springStiffness),
     mRestPosition(_restPosition),
     mDampingCoefficient(_dampingCoefficient),
-    mFriction(_coulombFriction)
+    mFriction(_coulombFriction),
+    mPreserveDofName(_preserveDofName),
+    mDofName(_dofName)
 {
   // Do nothing
 }
@@ -88,7 +92,7 @@ SingleDofJoint::Properties::Properties(
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const std::string& _name)
   : Joint(_name),
-    mDof(createDofPointer(_name, 0)),
+    mDof(createDofPointer(0)),
     mCommand(0.0),
     mPosition(0.0),
     mPositionDeriv(0.0),
@@ -110,7 +114,7 @@ SingleDofJoint::SingleDofJoint(const std::string& _name)
     mInvM_a(0.0),
     mInvMassMatrixSegment(0.0)
 {
-  // Do nothing
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
@@ -129,6 +133,7 @@ void SingleDofJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void SingleDofJoint::setProperties(const UniqueProperties& _properties)
 {
+  setDofName(0, _properties.mDofName, _properties.mPreserveDofName);
   setPositionLowerLimit(0, _properties.mPositionLowerLimit);
   setPositionUpperLimit(0, _properties.mPositionUpperLimit);
   setVelocityLowerLimit(0, _properties.mVelocityLowerLimit);
@@ -226,6 +231,68 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
   if (0 == _index)
     return mDof;
   return NULL;
+}
+
+//==============================================================================
+const std::string& SingleDofJoint::setDofName(size_t _index,
+                                              const std::string& _name,
+                                              bool _preserveName)
+{
+  if (0 < _index)
+  {
+    dtwarn << "[SingleDofJoint::getDofName] Attempting to set the name of DOF "
+           << "index " << _index << ", which is out of bounds. We will set "
+           << "the name of DOF index 0 instead\n";
+    _index = 0;
+  }
+
+  preserveDofName(_index, _preserveName);
+
+  if (_name == mSingleDofP.mDofName)
+    return mSingleDofP.mDofName;
+
+  if(mSkeleton)
+  {
+    mSkeleton->mNameMgrForDofs.removeName(mSingleDofP.mDofName);
+    mSingleDofP.mDofName =
+        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDof);
+  }
+  else
+    mSingleDofP.mDofName = _name;
+
+  return mSingleDofP.mDofName;
+}
+
+//==============================================================================
+void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
+{
+  if (0 < _index)
+    dtwarn << "[SingleDofJoint::preserveDofName] Attempting to preserve the "
+           << "name of DOF index " << _index << ", which is out of bounds. We "
+           << "will preserve the name of DOF index 0 instead\n";
+
+  mSingleDofP.mPreserveDofName = _preserve;
+}
+
+//==============================================================================
+bool SingleDofJoint::isDofNamePreserved(size_t _index) const
+{
+  if (0 < _index)
+    dtwarn << "[SingleDofJoint::isDofNamePreserved] Requesting whether DOF "
+           << "index " << _index << " is preserved, but this is out of bounds. "
+           << "We will return the result of DOF index 0 instead\n";
+
+  return mSingleDofP.mPreserveDofName;
+}
+
+//==============================================================================
+const std::string& SingleDofJoint::getDofName(size_t _index) const
+{
+  if (0 < _index)
+    dtwarn << "[SingleDofJoint::getDofName] Requested name of DOF index "
+           << _index << ", which is out of bounds. Returning name of index 0\n";
+
+  return mSingleDofP.mDofName;
 }
 
 //==============================================================================
@@ -964,7 +1031,7 @@ double SingleDofJoint::getPotentialEnergy() const
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const Properties& _properties)
   : Joint(_properties),
-    mDof(createDofPointer(_properties.mName, 0)),
+    mDof(createDofPointer(0)),
     mCommand(0.0),
     mPosition(0.0),
     mPositionDeriv(0.0),
@@ -987,6 +1054,13 @@ SingleDofJoint::SingleDofJoint(const Properties& _properties)
     mInvMassMatrixSegment(0.0)
 {
   // Do nothing
+}
+
+//==============================================================================
+void SingleDofJoint::registerDofs()
+{
+  mSingleDofP.mDofName =
+      mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
 }
 
 //==============================================================================

@@ -266,6 +266,20 @@ public:
   /// coordinate) of this Joint
   virtual const DegreeOfFreedom* getDof(size_t _index) const = 0;
 
+  /// Alternative to DegreeOfFreedom::setName()
+  virtual const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) = 0;
+
+  /// Alternative to DegreeOfFreedom::preserveName()
+  virtual void preserveDofName(size_t _index, bool _preserve) = 0;
+
+  /// Alternative to DegreeOfFreedom::isNamePreserved()
+  virtual bool isDofNamePreserved(size_t _index) const = 0;
+
+  /// Alternative to DegreeOfFreedom::getName()
+  virtual const std::string& getDofName(size_t _index) const = 0;
+
   /// Get number of generalized coordinates
   virtual size_t getNumDofs() const = 0;
 
@@ -594,6 +608,9 @@ protected:
   /// Constructor called by inheriting class
   Joint(const Properties& _properties);
 
+  /// Called by the Skeleton class
+  virtual void registerDofs() = 0;
+
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
 
@@ -605,8 +622,7 @@ protected:
   /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
   /// class has a protected constructor, and the Joint is responsible for memory
   /// management of the pointer which is returned.
-  DegreeOfFreedom* createDofPointer(const std::string& _name,
-                                    size_t _indexInJoint);
+  DegreeOfFreedom* createDofPointer(size_t _indexInJoint);
 
   /// Update the names of the joint's degrees of freedom. Used when setName() is
   /// called with _renameDofs set to true.

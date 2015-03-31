@@ -126,15 +126,6 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom* _newDof)
-{
-  _newDof->mName =
-      mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(), _newDof);
-
-  return _newDof->mName;
-}
-
-//==============================================================================
 void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 {
   // Note: This doesn't need the same checks as BodyNode and Joint, because
@@ -1815,12 +1806,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
 
   addEntryToJointNameMgr(_newJoint);
   _newJoint->mSkeleton = this;
-
-  for (size_t i = 0; i < _newJoint->getNumDofs(); ++i)
-  {
-    DegreeOfFreedom* dof = _newJoint->getDof(i);
-    dof->mName = mNameMgrForDofs.issueNewNameAndAdd(dof->getName(), dof);
-  }
+  _newJoint->registerDofs();
 }
 
 //==============================================================================

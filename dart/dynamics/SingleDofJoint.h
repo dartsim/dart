@@ -91,6 +91,12 @@ public:
     /// Coulomb friction force
     double mFriction;
 
+    /// True if the name of this Joint's DOF is not allowed to be overwritten
+    bool mPreserveDofName;
+
+    /// The name of the DegreeOfFreedom for this Joint
+    std::string mDofName;
+
     /// Constructor
     UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
                      double _positionUpperLimit =  DART_DBL_INF,
@@ -103,7 +109,9 @@ public:
                      double _springStiffness = 0.0,
                      double _restPosition = 0.0,
                      double _dampingCoefficient = 0.0,
-                     double _coulombFriction = 0.0);
+                     double _coulombFriction = 0.0,
+                     bool _preserveDofName = false,
+                     std::string _dofName = "");
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -143,6 +151,26 @@ public:
   virtual size_t getDof() const;
 
   // Documentation inherited
+  DegreeOfFreedom* getDof(size_t _index) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDof(size_t _index) const override;
+
+  // Documentation inherted
+  const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) override;
+
+  // Documentation inherited
+  void preserveDofName(size_t _index, bool _preserve) override;
+
+  // Documentation inherited
+  bool isDofNamePreserved(size_t _index) const override;
+
+  // Documentation inherited
+  const std::string& getDofName(size_t _index) const override;
+
+  // Documentation inherited
   size_t getNumDofs() const override;
 
   // Documentation inherited
@@ -175,12 +203,6 @@ public:
   //----------------------------------------------------------------------------
 
   // TODO(JS): Not to use Eigen::VectorXd
-
-  // Documentation inherited
-  DegreeOfFreedom* getDof(size_t _index) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _index) const override;
 
   // Documentation inherited
   void setPosition(size_t _index, double _position) override;
@@ -408,6 +430,9 @@ protected:
 
   /// Constructor called inheriting classes
   SingleDofJoint(const Properties& _properties);
+
+  // Documentation inherited
+  void registerDofs() override;
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();

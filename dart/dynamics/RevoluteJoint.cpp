@@ -143,6 +143,7 @@ RevoluteJoint::RevoluteJoint(const Properties& _properties)
   : SingleDofJoint(_properties)
 {
   setProperties(_properties);
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

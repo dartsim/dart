@@ -79,13 +79,37 @@ size_t ZeroDofJoint::getDof() const
 //==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 {
-  return NULL;
+  return nullptr;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::setDofName(size_t, const std::string &, bool)
+{
+  return emptyString;
+}
+
+//==============================================================================
+void ZeroDofJoint::preserveDofName(size_t, bool)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool ZeroDofJoint::isDofNamePreserved(size_t) const
+{
+  return false;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::getDofName(size_t) const
+{
+  return emptyString;
 }
 
 //==============================================================================
@@ -470,6 +494,12 @@ double ZeroDofJoint::getPotentialEnergy() const
 //==============================================================================
 ZeroDofJoint::ZeroDofJoint(const Properties& _properties)
   : Joint(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::registerDofs()
 {
   // Do nothing
 }

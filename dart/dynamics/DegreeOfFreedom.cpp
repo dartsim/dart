@@ -45,40 +45,25 @@ namespace dynamics {
 const std::string& DegreeOfFreedom::setName(const std::string& _name,
                                             bool _preserveName)
 {
-  preserveName(_preserveName);
-
-  if (mName == _name)
-    return mName;
-
-  Skeleton* skel = mJoint->getSkeleton();
-  if (skel)
-  {
-    skel->mNameMgrForDofs.removeName(mName);
-    mName = _name;
-    skel->addEntryToDofNameMgr(this);
-  }
-  else
-    mName = _name;
-
-  return mName;
+  return mJoint->setDofName(mIndexInJoint, _name, _preserveName);
 }
 
 //==============================================================================
 const std::string& DegreeOfFreedom::getName() const
 {
-  return mName;
+  return mJoint->getDofName(mIndexInJoint);
 }
 
 //==============================================================================
 void DegreeOfFreedom::preserveName(bool _preserve)
 {
-  mNamePreserved = _preserve;
+  mJoint->preserveDofName(mIndexInJoint, _preserve);
 }
 
 //==============================================================================
 bool DegreeOfFreedom::isNamePreserved() const
 {
-  return mNamePreserved;
+  return mJoint->isDofNamePreserved(mIndexInJoint);
 }
 
 //==============================================================================
@@ -369,15 +354,12 @@ const BodyNode* DegreeOfFreedom::getParentBodyNode() const
 
 //==============================================================================
 DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
-                                 const std::string& _name,
                                  size_t _indexInJoint)
-  : mName(_name),
-    mNamePreserved(false),
-    mIndexInJoint(_indexInJoint),
+  : mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
     mJoint(_joint)
 {
-
+  // Do nothing
 }
 
 } // namespace dynamics

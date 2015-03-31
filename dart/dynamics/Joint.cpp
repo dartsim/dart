@@ -223,7 +223,7 @@ BodyNode* Joint::getParentBodyNode()
   if (mChildBodyNode)
     return mChildBodyNode->getParentBodyNode();
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -380,10 +380,9 @@ void Joint::init(Skeleton* _skel)
 }
 
 //==============================================================================
-DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
-                                         size_t _indexInJoint)
+DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
 {
-  return new DegreeOfFreedom(this, _name, _indexInJoint);
+  return new DegreeOfFreedom(this, _indexInJoint);
 }
 
 //==============================================================================

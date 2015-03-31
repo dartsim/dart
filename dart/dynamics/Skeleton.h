@@ -863,6 +863,8 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
+  friend class SingleDofJoint;
+  template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
 
 protected:
@@ -938,9 +940,6 @@ protected:
 
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint);
-
-  /// Add a DegreeOfFreedom to the Dof NameManager
-  const std::string& addEntryToDofNameMgr(DegreeOfFreedom* _newDof);
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);

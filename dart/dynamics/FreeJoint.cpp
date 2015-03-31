@@ -88,6 +88,7 @@ FreeJoint::FreeJoint(const Properties& _properties)
   : MultiDofJoint<6>(_properties)
 {
   setProperties(_properties);
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

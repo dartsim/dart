@@ -101,6 +101,13 @@ public:
     /// Joint Coulomb friction
     Vector mFrictions;
 
+    /// True if the name of the corresponding DOF is not allowed to be
+    /// overwritten
+    std::array<bool, DOF> mPreserveDofNames;
+
+    /// The name of the DegreesOfFreedom for this Joint
+    std::array<std::string, DOF> mDofNames;
+
     UniqueProperties(
       const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
       const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
@@ -164,6 +171,20 @@ public:
 
   // Documentation inherited
   size_t getNumDofs() const override;
+
+  // Documentation inherited
+  const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) override;
+
+  // Docuemntation inherited
+  void preserveDofName(size_t _index, bool _preserve) override;
+
+  // Documentation inherited
+  bool isDofNamePreserved(size_t _index) const override;
+
+  // Documentation inherited
+  const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
   void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
@@ -421,6 +442,9 @@ protected:
   /// Constructor called by inheriting classes
   MultiDofJoint(const Properties& _properties);
 
+  // Docuemntation inherited
+  void registerDofs() override;
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
@@ -586,7 +610,7 @@ protected:
 protected:
 
   /// Properties of this MultiDofJoint
-  UniqueProperties mMultiDofP;
+  MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
 
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
@@ -808,7 +832,8 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     mDampingCoefficient(_dampingCoefficient),
     mFrictions(_coulombFrictions)
 {
-  // Do nothing
+  for (size_t i = 0; i < DOF; ++i)
+    mPreserveDofNames[i] = false;
 }
 
 //==============================================================================
@@ -846,7 +871,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
   for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(mJointP.mName, i);
+    mDofs[i] = createDofPointer(i);
 }
 
 //==============================================================================
@@ -871,6 +896,7 @@ void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
 {
   for(size_t i=0; i<DOF; ++i)
   {
+    setDofName(i, _properties.mDofNames[i], _properties.mPreserveDofNames[i]);
     setPositionLowerLimit(i, _properties.mPositionLowerLimits[i]);
     setPositionUpperLimit(i, _properties.mPositionUpperLimits[i]);
     setVelocityLowerLimit(i, _properties.mVelocityLowerLimits[i]);
@@ -936,7 +962,7 @@ DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
   if (_index < DOF)
     return mDofs[_index];
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -945,7 +971,84 @@ const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
 {
   if (_index < DOF)
     return mDofs[_index];
-  return NULL;
+  return nullptr;
+}
+
+//==============================================================================
+template <size_t DOF>
+const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
+                                                  const std::string& _name,
+                                                  bool _preserveName)
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
+           << "index " << _index << ", which is out of bounds. We will set "
+           << "the name of DOF index 0 instead\n";
+    _index = 0;
+  }
+
+  preserveDofName(_index, _preserveName);
+  std::string& dofName = mMultiDofP.mDofNames[_index];
+  if(_name == dofName)
+    return dofName;
+
+  if(mSkeleton)
+  {
+    mSkeleton->mNameMgrForDofs.removeName(dofName);
+    dofName =
+        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDofs[_index]);
+  }
+  else
+    dofName = _name;
+
+  return dofName;
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::preserveDofName(size_t _index, bool _preserve)
+{
+  if (DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::preserveDofName] Attempting to preserve the "
+           << "name of DOF index " << _index << ", which is out of bounds. We "
+           << "will preserve the name of DOF index 0 instead\n";
+    _index = 0;
+  }
+
+  mMultiDofP.mPreserveDofNames[_index] = _preserve;
+}
+
+//==============================================================================
+template <size_t DOF>
+bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::isDofNamePreserved] Requesting whether DOF "
+           << "index " << _index << " is preserved, but this is out of bounds "
+           << "(max " << DOF-1 << "). We will return the result of DOF index 0 "
+           << "instead\n";
+    _index = 0;
+  }
+
+  return mMultiDofP.mPreserveDofNames[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::getDofName] Requested name of DOF index "
+           << _index << ", but that is out of bounds (max " << DOF-1 << "). "
+           << "Returning name of DOF 0\n";
+    return mMultiDofP.mDofNames[0];
+  }
+
+  return mMultiDofP.mDofNames[_index];
 }
 
 //==============================================================================
@@ -1822,7 +1925,17 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
     mTotalImpulse(Vector::Zero())
 {
   for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(mJointP.mName, i);
+    mDofs[i] = createDofPointer(i);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::registerDofs()
+{
+  for (size_t i = 0; i < DOF; ++i)
+    mMultiDofP.mDofNames[i] =
+        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
+                                                      mDofs[i]);
 }
 
 //==============================================================================
