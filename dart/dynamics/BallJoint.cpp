@@ -45,6 +45,13 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _properties)
+  : MultiDofJoint<3>::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 BallJoint::BallJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mR(Eigen::Isometry3d::Identity())
@@ -78,7 +85,8 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& _properties)
-  : MultiDofJoint<3>(_properties)
+  : MultiDofJoint<3>(_properties),
+    mR(Eigen::Isometry3d::Identity())
 {
   setProperties(_properties);
   updateDegreeOfFreedomNames();

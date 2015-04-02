@@ -85,7 +85,8 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 
 //==============================================================================
 FreeJoint::FreeJoint(const Properties& _properties)
-  : MultiDofJoint<6>(_properties)
+  : MultiDofJoint<6>(_properties),
+    mQ(Eigen::Isometry3d::Identity())
 {
   setProperties(_properties);
   updateDegreeOfFreedomNames();
