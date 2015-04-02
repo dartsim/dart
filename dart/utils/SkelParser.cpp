@@ -163,8 +163,8 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
 
   dynamics::SkeletonPtr newSkeleton = readSkeleton(skeletonElement);
 
-  // Initialize skeleto to be ready for use
-  newSkeleton->init();
+  // Initialize skeleton to be ready for use
+//  newSkeleton->init(); // No longer needed
 
   return newSkeleton;
 }
@@ -987,7 +987,16 @@ void SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
       parentWorld.inverse()*childWorld*childToJoint;
 
   joint.properties->mT_ParentBodyToJoint = parentToJoint;
+  if(!math::verifyTransform(joint.properties->mT_ParentBodyToJoint))
+    dterr << "[SkelParser::readJoint] Invalid parent to Joint transform for "
+          << "Joint named [" << name << "]:\n"
+          << joint.properties->mT_ParentBodyToJoint.matrix() << "\n";
+
   joint.properties->mT_ChildBodyToJoint = childToJoint;
+  if(!math::verifyTransform(joint.properties->mT_ChildBodyToJoint))
+    dterr << "[SkelParser::readJoint] Invalid child to Joint transform for "
+          << "Joint named [" << name << "]:\n"
+          << joint.properties->mT_ChildBodyToJoint.matrix() << "\n";
 
   JointMap::iterator it = _joints.find(joint.childName);
   if(it != _joints.end())
@@ -1411,7 +1420,7 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   dynamics::RevoluteJoint::Properties properties;
 
@@ -1432,9 +1441,8 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                            _joint, _name, 1);
+  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
   // init_pos
@@ -1456,9 +1464,8 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
     _joint.velocity = ivel;
   }
 
-  readAllDegreesOfFreedom(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                          _joint, _name, 1);
+  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   return std::make_shared<dynamics::RevoluteJoint::Properties>(properties);
 }
@@ -1490,9 +1497,8 @@ SkelParser::JointPropPtr SkelParser::readPrismaticJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                            _joint, _name, 1);
+  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
   // init_pos
@@ -1514,9 +1520,8 @@ SkelParser::JointPropPtr SkelParser::readPrismaticJoint(
     _joint.velocity = ivel;
   }
 
-  readAllDegreesOfFreedom(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                          _joint, _name, 1);
+  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   return std::make_shared<dynamics::PrismaticJoint::Properties>(properties);
 }
@@ -1554,9 +1559,8 @@ SkelParser::JointPropPtr SkelParser::readScrewJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                            _joint, _name, 1);
+  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
   // init_pos
@@ -1578,9 +1582,8 @@ SkelParser::JointPropPtr SkelParser::readScrewJoint(
     _joint.velocity = ivel;
   }
 
-  readAllDegreesOfFreedom(_jointElement,
-    static_cast<dynamics::SingleDofJoint::Properties&>(properties),
-                          _joint, _name, 1);
+  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+        _jointElement, properties, _joint, _name, 1);
 
   return std::make_shared<dynamics::ScrewJoint::Properties>(properties);
 }
@@ -1658,7 +1661,7 @@ SkelParser::JointPropPtr SkelParser::readBallJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   dynamics::BallJoint::Properties properties;
 
@@ -1742,7 +1745,7 @@ SkelParser::JointPropPtr SkelParser::readTranslationalJoint(
     SkelJoint& _joint,
     const std::string& _name)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   dynamics::TranslationalJoint::Properties properties;
 

@@ -52,20 +52,19 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(1);
   std::vector<size_t> genCoordIds;
-  genCoordIds.push_back(skel->getDof("j_pelvis_rot_y")->getIndexInSkeleton());
-  genCoordIds.push_back(skel->getDof("j_thigh_left_z")->getIndexInSkeleton());  // left hip
-  genCoordIds.push_back(skel->getDof("j_shin_left")->getIndexInSkeleton());     // left knee
-  genCoordIds.push_back(skel->getDof("j_heel_left_1")->getIndexInSkeleton());   // left ankle
-  genCoordIds.push_back(skel->getDof("j_thigh_right_z")->getIndexInSkeleton()); // right hip
-  genCoordIds.push_back(skel->getDof("j_shin_right")->getIndexInSkeleton());    // right knee
-  genCoordIds.push_back(skel->getDof("j_heel_right_1")->getIndexInSkeleton());  // right ankle
-  genCoordIds.push_back(skel->getDof("j_abdomen_2")->getIndexInSkeleton());     // lower back
+  genCoordIds.push_back(1);
+  genCoordIds.push_back(6);   // left hip
+  genCoordIds.push_back(14);   // left knee
+  genCoordIds.push_back(17);  // left ankle
+  genCoordIds.push_back(9);  // right hip
+  genCoordIds.push_back(15);  // right knee
+  genCoordIds.push_back(19);  // right ankle
+  genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  skel->setPositionSegment(genCoordIds, initConfig);
-  skel->computeForwardKinematics(true, true, false);
+  myWorld->getSkeleton(1)->setPositionSegment(genCoordIds, initConfig);
+  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
   // create controller
   Controller* myController = new Controller(myWorld->getSkeleton(1),
