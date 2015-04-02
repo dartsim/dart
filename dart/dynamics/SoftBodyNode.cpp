@@ -124,9 +124,7 @@ SoftBodyNode::Properties::Properties(
 //==============================================================================
 SoftBodyNode::SoftBodyNode(const std::string& _name)
   : Entity(Frame::World(), _name, false),
-    BodyNode(_name),
-    mSoftVisualShape(NULL),
-    mSoftCollShape(NULL)
+    BodyNode(_name)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
 }
@@ -139,16 +137,37 @@ SoftBodyNode::~SoftBodyNode()
 }
 
 //==============================================================================
+static void removeSoftBodyShapes(std::vector<dynamics::ShapePtr>& shapes)
+{
+  for(size_t i=0; i<shapes.size(); )
+  {
+    if(dynamic_cast<dynamics::SoftMeshShape*>(shapes[i].get()))
+      shapes.erase(shapes.begin()+i);
+    else
+      ++i;
+  }
+}
+
+//==============================================================================
 void SoftBodyNode::setProperties(const Properties& _properties)
 {
+  // SoftMeshShape pointers should not be copied between bodies
+  removeSoftBodyShapes(mEntityP.mVizShapes);
+  removeSoftBodyShapes(mBodyP.mColShapes);
+
   BodyNode::setProperties(
         static_cast<const BodyNode::Properties&>(_properties));
+
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
 //==============================================================================
 void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 {
+  // Remove the old shape
+  removeVisualizationShape(mSoftShape);
+  removeCollisionShape(mSoftShape);
+
   size_t newCount = _properties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
   if(newCount < oldCount)
@@ -188,7 +207,13 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 
   setVertexSpringStiffness(_properties.mKv);
   setEdgeSpringStiffness(_properties.mKe);
+  setDampingCoefficient(_properties.mDampCoeff);
   mSoftP.mFaces = _properties.mFaces;
+
+  // Create a new SoftMeshShape for this SoftBodyNode
+  mSoftShape = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
+  addVisualizationShape(mSoftShape);
+  addCollisionShape(mSoftShape);
 }
 
 //==============================================================================
@@ -249,14 +274,10 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            Joint* _parentJoint,
                            const Properties& _properties)
   : Entity(_parentBodyNode, "", false),
-    BodyNode(_parentBodyNode, _parentJoint, _properties),
-    mSoftVisualShape(nullptr),
-    mSoftCollShape(nullptr)
+    BodyNode(_parentBodyNode, _parentJoint, _properties)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
-  dynamics::ShapePtr softShape(new dynamics::SoftMeshShape(this));
-  addVisualizationShape(softShape);
-  addCollisionShape(softShape);
+  setProperties(_properties);
 }
 
 //==============================================================================

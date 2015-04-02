@@ -357,11 +357,8 @@ protected:
   /// SoftBodyNode Properties
   UniqueProperties mSoftP;
 
-  /// \brief Soft mesh shape for visualization.
-  SoftMeshShape* mSoftVisualShape;
-
-  /// \brief Soft mesh shape for collision.
-  SoftMeshShape* mSoftCollShape;
+  /// \brief Soft mesh shape belonging to this node.
+  std::shared_ptr<SoftMeshShape> mSoftShape;
 
   /// Generalized inertia with point masses
   math::Inertia mI2;

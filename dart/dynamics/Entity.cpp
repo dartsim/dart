@@ -194,10 +194,12 @@ void Entity::removeVisualizationShape(ShapePtr _shape)
 //==============================================================================
 void Entity::removeAllVisualizationShapes()
 {
-  auto it = mEntityP.mVizShapes.begin();
-
+  std::vector<ShapePtr>::iterator it = mEntityP.mVizShapes.begin();
   while (it != mEntityP.mVizShapes.end())
-    removeVisualizationShape(*(it++));
+  {
+    removeVisualizationShape(*it);
+    it = mEntityP.mVizShapes.begin();
+  }
 }
 
 //==============================================================================

@@ -515,10 +515,12 @@ void BodyNode::removeCollisionShape(ShapePtr _shape)
 //==============================================================================
 void BodyNode::removeAllCollisionShapes()
 {
-  auto it = mBodyP.mColShapes.begin();
-
+  std::vector<ShapePtr>::iterator it = mBodyP.mColShapes.begin();
   while (it != mBodyP.mColShapes.end())
-    removeCollisionShape(*(it++));
+  {
+    removeCollisionShape(*it);
+    it = mBodyP.mColShapes.begin();
+  }
 }
 
 //==============================================================================
