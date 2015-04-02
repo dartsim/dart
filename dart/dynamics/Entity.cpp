@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
@@ -43,7 +44,19 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
+
+//==============================================================================
+template <typename T>
+static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
+{
+  assert(_index < _vec.size());
+  if (_index < _vec.size())
+    return _vec[_index];
+
+  return NULL;
+}
 
 //==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
@@ -95,11 +108,61 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(Shape* _p)
+void Entity::addVisualizationShape(Shape* _shape)
 {
-  mVizShapes.push_back(_p);
+  if (nullptr == _shape)
+    return;
 
-  mVizShapeAddedSignal.raise(this, _p);
+  if (std::find(mVizShapes.begin(), mVizShapes.end(), _shape)
+      != mVizShapes.end())
+  {
+    dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
+           << "duplicate visualization shape." << std::endl;
+    return;
+  }
+
+  mVizShapes.push_back(_shape);
+
+  mVizShapeAddedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeVisualizationShape(Shape* _shape)
+{
+  if (nullptr == _shape)
+    return;
+
+  mVizShapes.erase(std::remove(mVizShapes.begin(), mVizShapes.end(), _shape),
+                   mVizShapes.end());
+
+  mVizShapeRemovedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeAllVisualizationShapes()
+{
+  auto it = mVizShapes.begin();
+
+  while (it != mVizShapes.end())
+    removeVisualizationShape(*(it++));
+}
+
+//==============================================================================
+size_t Entity::getNumVisualizationShapes() const
+{
+  return mVizShapes.size();
+}
+
+//==============================================================================
+Shape* Entity::getVisualizationShape(size_t _index)
+{
+  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
+}
+
+//==============================================================================
+const Shape* Entity::getVisualizationShape(size_t _index) const
+{
+  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
 }
 
 //==============================================================================
