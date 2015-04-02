@@ -118,8 +118,15 @@ public:
     std::string childName;
     std::string type;
   };
+
   // first: Child BodyNode name | second: Joint information
   typedef std::map<std::string, SkelJoint> JointMap;
+
+  // first: Order that Joint appears in file | second: Child BodyNode name
+  typedef std::map<size_t, std::string> IndexToJoint;
+
+  // first: Child BodyNode name | second: Order that Joint appears in file
+  typedef std::map<std::string, size_t> JointToIndex;
 
 protected:
 
@@ -152,7 +159,9 @@ protected:
   static void readJoint(
       tinyxml2::XMLElement* _jointElement,
       const BodyMap& _bodyNodes,
-      JointMap& _joints);
+      JointMap& _joints,
+      IndexToJoint& _order,
+      JointToIndex& _lookup);
 
   ///
   static JointPropPtr readRevoluteJoint(

@@ -465,13 +465,15 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   //--------------------------------------------------------------------------
   // Joints
   JointMap joints;
+  IndexToJoint order;
+  JointToIndex lookup;
   ElementEnumerator xmlJoints(_skeletonElement, "joint");
   while (xmlJoints.next())
-    readJoint(xmlJoints.get(), bodyNodes, joints);
+    readJoint(xmlJoints.get(), bodyNodes, joints, order, lookup);
 
   //--------------------------------------------------------------------------
   // Assemble skeleton
-  JointMap::iterator it = joints.begin();
+  JointMap::iterator it = joints.find(order.begin()->second);
   BodyMap::const_iterator child;
   dynamics::BodyNode* parent;
   while(it != joints.end())
@@ -503,8 +505,11 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
     if(!createJointAndNodePair(newSkeleton, parent, it->second, child->second))
       break;
 
+    JointToIndex::iterator index = lookup.find(it->first);
+    order.erase(index->second);
+    lookup.erase(index);
     joints.erase(it);
-    it = joints.begin();
+    it = joints.find(order.begin()->second);
   }
 
   return newSkeleton;
@@ -840,10 +845,11 @@ dynamics::Marker::Properties SkelParser::readMarker(
   return newMarker;
 }
 
-void SkelParser::readJoint(
-    tinyxml2::XMLElement* _jointElement,
+void SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
     const BodyMap& _bodyNodes,
-    JointMap& _joints)
+    JointMap& _joints,
+    IndexToJoint& _order,
+    JointToIndex& _lookup)
 {
   assert(_jointElement != nullptr);
 
@@ -995,6 +1001,17 @@ void SkelParser::readJoint(
   }
 
   _joints[joint.childName] = joint;
+
+  // Keep track of when each joint appeared in the file
+  size_t nextIndex;
+  IndexToJoint::reverse_iterator lastIndex = _order.rbegin();
+  if(lastIndex == _order.rend())
+    nextIndex = 0;
+  else
+    nextIndex = lastIndex->first + 1;
+
+  _order[nextIndex] = joint.childName;
+  _lookup[joint.childName] = nextIndex;
 }
 
 //==============================================================================
