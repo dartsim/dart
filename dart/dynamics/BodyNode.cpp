@@ -164,6 +164,16 @@ void BodyNode::setProperties(const UniqueProperties& _properties)
   removeAllCollisionShapes();
   for(size_t i=0; i<_properties.mColShapes.size(); ++i)
     addCollisionShape(_properties.mColShapes[i]);
+
+  mBodyP.mMarkerProperties = _properties.mMarkerProperties;
+  // Remove current markers
+  for(Marker* marker : mMarkers)
+    delete marker;
+
+  // Create new markers
+  mMarkers.clear();
+  for(const Marker::Properties& marker : mBodyP.mMarkerProperties)
+    addMarker(new Marker(marker, this));
 }
 
 //==============================================================================

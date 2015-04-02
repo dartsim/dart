@@ -151,9 +151,9 @@ void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
 //==============================================================================
 const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 {
-  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
+  _newMarker->mProperties.mName = mNameMgrForMarkers.issueNewNameAndAdd(
       _newMarker->getName(), _newMarker);
-  return _newMarker->mName;
+  return _newMarker->mProperties.mName;
 }
 
 //==============================================================================

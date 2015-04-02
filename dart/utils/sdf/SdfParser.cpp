@@ -278,7 +278,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
       continue;
     else if(CREATE_FREEJOINT_ROOT == result)
     {
-      // If a root FreeJoint is needed as the parent of the current joint, then
+      // If a root FreeJoint is needed for the parent of the current joint, then
       // create it
       BodyMap::const_iterator rootNode = sdfBodyNodes.find(it->second.parentName);
       SDFJoint rootJoint;
@@ -330,9 +330,8 @@ SdfParser::NextResult SdfParser::getNextJointAndNodePair(
   if(nullptr == parent
      && joint.parentName != "world" && !joint.parentName.empty())
   {
-    // Find the parent Joint of the current Joint, because it does not seem to
-    // be created yet. If the current Joint does not have a parent, then we need
-    // to create a FreeJoint for it.
+    // Find the properties of the parent Joint of the current Joint, because it
+    // does not seem to be created yet.
     JointMap::iterator check_parent_joint = sdfJoints.find(joint.parentName);
     if(check_parent_joint == sdfJoints.end())
     {
@@ -345,12 +344,15 @@ SdfParser::NextResult SdfParser::getNextJointAndNodePair(
               << "parsing.\n";
         return BREAK;
       }
+
+      // If the current Joint has a parent BodyNode but does not have a parent
+      // Joint, then we need to create a FreeJoint for the parent BodyNode.
       result = CREATE_FREEJOINT_ROOT;
     }
     else
     {
       it = check_parent_joint;
-      return CONTINUE; // Create the parent first
+      return CONTINUE; // Create the parent before creating the current Joint
     }
   }
 
@@ -977,7 +979,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[0],
                     newUniversalJoint.mPositionLowerLimits[0],
                     newUniversalJoint.mPositionUpperLimits[0],
-                    newUniversalJoint.mDampingCoefficient[0]);
+                    newUniversalJoint.mDampingCoefficients[0]);
   }
   else
   {
@@ -995,7 +997,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[1],
                     newUniversalJoint.mPositionLowerLimits[1],
                     newUniversalJoint.mPositionUpperLimits[1],
-                    newUniversalJoint.mDampingCoefficient[1]);
+                    newUniversalJoint.mDampingCoefficients[1]);
   }
   else
   {

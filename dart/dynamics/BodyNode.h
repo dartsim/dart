@@ -52,6 +52,7 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Marker.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -107,6 +108,9 @@ public:
 
     /// Gravity will be applied if true
     bool mGravityMode;
+
+    /// Properties of the Markers belonging to this BodyNode
+    std::vector<Marker::Properties> mMarkerProperties;
 
     /// Constructor
     UniqueProperties(

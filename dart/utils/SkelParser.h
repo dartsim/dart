@@ -48,6 +48,10 @@
 #include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/MultiDofJoint.h"
 
 namespace dart {
 
@@ -89,14 +93,35 @@ public:
   /// Read Skeleton from skel file
   static dynamics::SkeletonPtr readSkeleton(const std::string& _filename);
 
-protected:
+  typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
+
   ///
   struct SkelBodyNode
   {
-    dynamics::BodyNode* bodyNode;
+    BodyPropPtr properties;
     Eigen::Isometry3d initTransform;
+    std::string type;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
+  // first: BodyNode name | second: BodyNode information
+  typedef std::map<std::string, SkelBodyNode> BodyMap;
+
+  typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
+  struct SkelJoint
+  {
+    JointPropPtr properties;
+    Eigen::VectorXd position;
+    Eigen::VectorXd velocity;
+    Eigen::VectorXd acceleration;
+    Eigen::VectorXd force;
+    std::string parentName;
+    std::string childName;
+    std::string type;
+  };
+  // first: Child BodyNode name | second: Joint information
+  typedef std::map<std::string, SkelJoint> JointMap;
+
+protected:
 
   ///
   static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
@@ -116,69 +141,78 @@ protected:
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///
-  static dynamics::Shape* readShape(tinyxml2::XMLElement* _shapeElement);
+  static dynamics::ShapePtr readShape(tinyxml2::XMLElement* _shapeElement,
+                                      const std::string& bodyName);
 
   /// Read marker
-  static dart::dynamics::Marker* readMarker(
-      tinyxml2::XMLElement* _markerElement,
-      dynamics::BodyNode* _bodyNode);
+  static dynamics::Marker::Properties readMarker(
+      tinyxml2::XMLElement* _markerElement);
 
   ///
-  static dynamics::Joint* readJoint(
+  static void readJoint(
       tinyxml2::XMLElement* _jointElement,
-      const std::vector<SkelBodyNode,
-      Eigen::aligned_allocator<SkelBodyNode> >& _softBodyNodes);
+      const BodyMap& _bodyNodes,
+      JointMap& _joints);
 
   ///
-  static void readDegreeOfFreedom(
-      tinyxml2::XMLElement* _dofElement,
-      dart::dynamics::Joint* _dartJoint);
-
-  ///
-  static dynamics::PrismaticJoint* readPrismaticJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dynamics::RevoluteJoint* readRevoluteJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dynamics::ScrewJoint* readScrewJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dynamics::UniversalJoint* readUniversalJoint(
-      tinyxml2::XMLElement* _universalJointElement);
-
-  ///
-  static dynamics::BallJoint* readBallJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dart::dynamics::EulerJoint* readEulerJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dynamics::TranslationalJoint* readTranslationalJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dart::dynamics::PlanarJoint* readPlanarJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dynamics::FreeJoint* readFreeJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  ///
-  static dart::dynamics::WeldJoint* readWeldJoint(
-      tinyxml2::XMLElement* _jointElement);
-
-  /// Read axis
-  static void readJointDynamicsAndLimit(
+  static JointPropPtr readRevoluteJoint(
       tinyxml2::XMLElement* _jointElement,
-      dart::dynamics::Joint* _joint,
-      size_t _numAxis);
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readPrismaticJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readScrewJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readUniversalJoint(
+      tinyxml2::XMLElement* _universalJointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readBallJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readEulerJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readTranslationalJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readPlanarJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readFreeJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
+
+  ///
+  static JointPropPtr readWeldJoint(
+      tinyxml2::XMLElement* _jointElement,
+      SkelJoint& _joint,
+      const std::string& _name);
 };
 
 } // namespace utils

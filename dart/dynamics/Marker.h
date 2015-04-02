@@ -60,6 +60,17 @@ public:
     SOFT
   };
 
+  struct Properties
+  {
+    std::string mName;
+    Eigen::Vector3d mOffset;
+    ConstraintType mType;
+
+    Properties(const std::string& _name = "",
+               const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero(),
+               ConstraintType _type = NO);
+  };
+
   /// \brief
   Marker(const std::string& _name, const Eigen::Vector3d& _offset,
          BodyNode* _bodyNode, ConstraintType _type = NO);
@@ -110,22 +121,21 @@ public:
   void setConstraintType(ConstraintType _type);
 
   friend class Skeleton;
+  friend class BodyNode;
 
 protected:
+
+  /// Constructor used by BodyNode
+  Marker(const Properties& _properties, BodyNode* _parent);
+
+  /// \brief Properties of this Marker
+  Properties mProperties;
+
   /// \brief BodyNode this marker belongs to
   BodyNode* mBodyNode;
 
-  /// \brief local coordinates in the links.
-  Eigen::Vector3d mOffset;
-
-  /// \brief name of this marker.
-  std::string mName;
-
   /// \brief position in the model class marker vector.
   int mSkelIndex;
-
-  /// \brief type of constraint.
-  ConstraintType mType;
 
 private:
   /// \brief a unique ID of this marker globally.

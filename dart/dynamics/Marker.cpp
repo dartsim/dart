@@ -46,18 +46,28 @@ namespace dynamics {
 
 int Marker::msMarkerCount = 0;
 
+Marker::Properties::Properties(const std::string& _name,
+                               const Eigen::Vector3d& _offset,
+                               ConstraintType _type)
+  : mName(_name),
+    mOffset(_offset),
+    mType(_type)
+{
+  // Do nothing
+}
+
 Marker::Marker(const std::string& _name, const Eigen::Vector3d& _offset,
                BodyNode* _bodyNode, ConstraintType _type)
-  : mBodyNode(_bodyNode),
-    mOffset(_offset),
-    mName(_name),
-    mSkelIndex(0),
-    mType(_type)
+  : mProperties(_name, _offset, _type),
+    mBodyNode(_bodyNode),
+    mSkelIndex(0)
 {
   mID = Marker::msMarkerCount++;
 }
 
-Marker::~Marker() {
+Marker::~Marker()
+{
+  // Do nothing
 }
 
 void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
@@ -67,9 +77,9 @@ void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
 
   _ri->pushName(getID());
 
-  if (mType == HARD) {
+  if (mProperties.mType == HARD) {
     _ri->setPenColor(Eigen::Vector3d(1, 0, 0));
-  } else if (mType == SOFT) {
+  } else if (mProperties.mType == SOFT) {
     _ri->setPenColor(Eigen::Vector3d(0, 1, 0));
   } else {
     if (_useDefaultColor)
@@ -81,7 +91,7 @@ void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
 
   if (_offset) {
     _ri->pushMatrix();
-    _ri->translate(mOffset);
+    _ri->translate(mProperties.mOffset);
     _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
     _ri->popMatrix();
   } else {
@@ -101,15 +111,15 @@ const BodyNode* Marker::getBodyNode() const {
 }
 
 const Eigen::Vector3d& Marker::getLocalPosition() const {
-  return mOffset;
+  return mProperties.mOffset;
 }
 
 void Marker::setLocalPosition(const Eigen::Vector3d& _offset) {
-    mOffset = _offset;
+    mProperties.mOffset = _offset;
 }
 
 Eigen::Vector3d Marker::getWorldPosition() const {
-  return mBodyNode->getTransform() * mOffset;
+  return mBodyNode->getTransform() * mProperties.mOffset;
 }
 
 int Marker::getIndexInSkeleton() const {
@@ -124,20 +134,30 @@ int Marker::getID() const {
   return mID;
 }
 
-void Marker::setName(const std::string& _name) {
-  mName = _name;
+void Marker::setName(const std::string& _name)
+{
+  mProperties.mName = _name;
 }
 
-const std::string& Marker::getName() const {
-  return mName;
+const std::string& Marker::getName() const
+{
+  return mProperties.mName;
 }
 
 Marker::ConstraintType Marker::getConstraintType() const {
-  return mType;
+  return mProperties.mType;
 }
 
 void Marker::setConstraintType(Marker::ConstraintType _type) {
-  mType = _type;
+  mProperties.mType = _type;
+}
+
+Marker::Marker(const Properties& _properties, BodyNode* _parent)
+  : mProperties(_properties),
+    mBodyNode(_parent),
+    mSkelIndex(0)
+{
+  mID = Marker::msMarkerCount++;
 }
 
 }  // namespace dynamics

@@ -90,13 +90,13 @@ public:
     Vector mForceUpperLimits;
 
     /// Joint spring stiffness
-    Vector mSpringStiffness;
+    Vector mSpringStiffnesses;
 
     /// Rest joint position for joint spring
-    Vector mRestPosition;
+    Vector mRestPositions;
 
     /// Joint damping coefficient
-    Vector mDampingCoefficient;
+    Vector mDampingCoefficients;
 
     /// Joint Coulomb friction
     Vector mFrictions;
@@ -827,9 +827,9 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     mAccelerationUpperLimits(_accelerationUpperLimits),
     mForceLowerLimits(_forceLowerLimits),
     mForceUpperLimits(_forceUpperLimits),
-    mSpringStiffness(_springStiffness),
-    mRestPosition(_restPosition),
-    mDampingCoefficient(_dampingCoefficient),
+    mSpringStiffnesses(_springStiffness),
+    mRestPositions(_restPosition),
+    mDampingCoefficients(_dampingCoefficient),
     mFrictions(_coulombFrictions)
 {
   for (size_t i = 0; i < DOF; ++i)
@@ -905,9 +905,9 @@ void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
     setAccelerationUpperLimit(i, _properties.mAccelerationUpperLimits[i]);
     setForceLowerLimit(i, _properties.mForceLowerLimits[i]);
     setForceUpperLimit(i, _properties.mForceUpperLimits[i]);
-    setSpringStiffness(i, _properties.mSpringStiffness[i]);
-    setRestPosition(i, _properties.mRestPosition[i]);
-    setDampingCoefficient(i, _properties.mDampingCoefficient[i]);
+    setSpringStiffness(i, _properties.mSpringStiffnesses[i]);
+    setRestPosition(i, _properties.mRestPositions[i]);
+    setDampingCoefficient(i, _properties.mDampingCoefficients[i]);
     setCoulombFriction(i, _properties.mFrictions[i]);
   }
 }
@@ -1763,7 +1763,7 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 
   assert(_k >= 0.0);
 
-  mMultiDofP.mSpringStiffness[_index] = _k;
+  mMultiDofP.mSpringStiffnesses[_index] = _k;
 }
 
 //==============================================================================
@@ -1777,7 +1777,7 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
     return 0.0;
   }
 
-  return mMultiDofP.mSpringStiffness[_index];
+  return mMultiDofP.mSpringStiffnesses[_index];
 }
 
 //==============================================================================
@@ -1802,7 +1802,7 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
     return;
   }
 
-  mMultiDofP.mRestPosition[_index] = _q0;
+  mMultiDofP.mRestPositions[_index] = _q0;
 }
 
 //==============================================================================
@@ -1816,7 +1816,7 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
     return 0.0;
   }
 
-  return mMultiDofP.mRestPosition[_index];
+  return mMultiDofP.mRestPositions[_index];
 }
 
 //==============================================================================
@@ -1832,7 +1832,7 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 
   assert(_d >= 0.0);
 
-  mMultiDofP.mDampingCoefficient[_index] = _d;
+  mMultiDofP.mDampingCoefficients[_index] = _d;
 
 }
 
@@ -1847,7 +1847,7 @@ double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
     return 0.0;
   }
 
-  return mMultiDofP.mDampingCoefficient[_index];
+  return mMultiDofP.mDampingCoefficients[_index];
 }
 
 //==============================================================================
@@ -1885,8 +1885,8 @@ template <size_t DOF>
 double MultiDofJoint<DOF>::getPotentialEnergy() const
 {
   // Spring energy
-  Eigen::VectorXd displacement = getPositionsStatic() - mMultiDofP.mRestPosition;
-  double pe = 0.5 * displacement.dot(mMultiDofP.mSpringStiffness.asDiagonal()
+  Eigen::VectorXd displacement = getPositionsStatic() - mMultiDofP.mRestPositions;
+  double pe = 0.5 * displacement.dot(mMultiDofP.mSpringStiffnesses.asDiagonal()
                                      * displacement);
 
   return pe;
@@ -2273,8 +2273,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitDynamic(
   // Add additional inertia for implicit damping and spring force
   for (size_t i = 0; i < DOF; ++i)
   {
-    projAI(i, i) += _timeStep * mMultiDofP.mDampingCoefficient[i]
-        + _timeStep * _timeStep * mMultiDofP.mSpringStiffness[i];
+    projAI(i, i) += _timeStep * mMultiDofP.mDampingCoefficients[i]
+        + _timeStep * _timeStep * mMultiDofP.mSpringStiffnesses[i];
   }
 
   // Inversion of projected articulated inertia
@@ -2309,17 +2309,17 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
     case PASSIVE:
     case SERVO:
       addChildBiasForceToDynamic(_parentBiasForce,
-                                       _childArtInertia,
-                                       _childBiasForce,
-                                       _childPartialAcc);
+                                 _childArtInertia,
+                                 _childBiasForce,
+                                 _childPartialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
     case LOCKED:
       addChildBiasForceToKinematic(_parentBiasForce,
-                                             _childArtInertia,
-                                             _childBiasForce,
-                                             _childPartialAcc);
+                                   _childArtInertia,
+                                   _childBiasForce,
+                                   _childPartialAcc);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -2396,15 +2396,15 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
     case PASSIVE:
     case SERVO:
       addChildBiasImpulseToDynamic(_parentBiasImpulse,
-                                        _childArtInertia,
-                                        _childBiasImpulse);
+                                   _childArtInertia,
+                                   _childBiasImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
     case LOCKED:
       addChildBiasImpulseToKinematic(_parentBiasImpulse,
-                                              _childArtInertia,
-                                              _childBiasImpulse);
+                                     _childArtInertia,
+                                     _childBiasImpulse);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -2491,13 +2491,13 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
 {
   // Spring force
   const Eigen::Matrix<double, DOF, 1> springForce
-      = (-mMultiDofP.mSpringStiffness).asDiagonal()
-        *(getPositionsStatic() - mMultiDofP.mRestPosition
+      = (-mMultiDofP.mSpringStiffnesses).asDiagonal()
+        *(getPositionsStatic() - mMultiDofP.mRestPositions
           + getVelocitiesStatic()*_timeStep);
 
   // Damping force
   const Eigen::Matrix<double, DOF, 1> dampingForce
-      = (-mMultiDofP.mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+      = (-mMultiDofP.mDampingCoefficients).asDiagonal()*getVelocitiesStatic();
 
   //
   mTotalForce = mForces + springForce + dampingForce;
@@ -2671,7 +2671,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withDampingForces)
   {
     const Eigen::Matrix<double, DOF, 1> dampingForces
-        = (-mMultiDofP.mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+        = (-mMultiDofP.mDampingCoefficients).asDiagonal()*getVelocitiesStatic();
     mForces -= dampingForces;
   }
 
@@ -2679,8 +2679,8 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withSpringForces)
   {
     const Eigen::Matrix<double, DOF, 1> springForces
-        = (-mMultiDofP.mSpringStiffness).asDiagonal()
-          *(getPositionsStatic() - mMultiDofP.mRestPosition
+        = (-mMultiDofP.mSpringStiffnesses).asDiagonal()
+          *(getPositionsStatic() - mMultiDofP.mRestPositions
             + getVelocitiesStatic()*_timeStep);
     mForces -= springForces;
   }

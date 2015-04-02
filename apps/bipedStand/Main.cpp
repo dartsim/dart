@@ -70,6 +70,8 @@ int main(int argc, char* argv[]) {
   Controller* myController = new Controller(myWorld->getSkeleton(1),
                                             myWorld->getTimeStep());
 
+  std::cout << "config: \n" << myWorld->getSkeleton(1)->getPositions().transpose() << "\n" << std::endl;
+
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
