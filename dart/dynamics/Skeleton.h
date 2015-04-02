@@ -884,6 +884,10 @@ protected:
   /// Update the computation for total mass
   void updateTotalMass();
 
+  /// Update the dimensions for various data structures, such as mass matrix
+  /// and force vector
+  void updateDataDimensions();
+
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
 

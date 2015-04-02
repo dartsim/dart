@@ -1792,6 +1792,9 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   _newBodyNode->init(this);
 
   updateTotalMass();
+  updateDataDimensions();
+  clearExternalForces();
+  resetForces();
 }
 
 //==============================================================================
@@ -1846,6 +1849,24 @@ void Skeleton::updateTotalMass()
   mTotalMass = 0.0;
   for(size_t i=0; i<getNumBodyNodes(); ++i)
     mTotalMass += getBodyNode(i)->getMass();
+}
+
+//==============================================================================
+void Skeleton::updateDataDimensions()
+{
+  size_t dof = getNumDofs();
+  mM    = Eigen::MatrixXd::Zero(dof, dof);
+  mAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mCvec = Eigen::VectorXd::Zero(dof);
+  mG    = Eigen::VectorXd::Zero(dof);
+  mCg   = Eigen::VectorXd::Zero(dof);
+  mFext = Eigen::VectorXd::Zero(dof);
+  mFc   = Eigen::VectorXd::Zero(dof);
+  mFd   = Eigen::VectorXd::Zero(dof);
+
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
