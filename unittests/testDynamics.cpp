@@ -844,13 +844,13 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = NULL;
+  simulation::World* myWorld = nullptr;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -895,7 +895,6 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
       skel->setState(x);
-      skel->computeForwardKinematics(true, true, true);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
@@ -913,6 +912,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       MatrixXd I        = MatrixXd::Identity(dof, dof);
 
+      bool failure = false;
+
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
       EXPECT_EQ(M.rows(), (int)dof);
@@ -924,6 +925,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "M :" << endl << M  << endl << endl;
         cout << "M2:" << endl << M2 << endl << endl;
+        failure = true;
       }
 
       // Check augmented mass matrix
@@ -932,6 +934,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "AugM :" << endl << AugM  << endl << endl;
         cout << "AugM2:" << endl << AugM2 << endl << endl;
+        failure = true;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
@@ -939,11 +942,13 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       if (!equals(M_InvM, I, 1e-6))
       {
         cout << "InvM  :" << endl << InvM << endl << endl;
+        failure = true;
       }
       EXPECT_TRUE(equals(InvM_M, I, 1e-6));
       if (!equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
+        failure = true;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
@@ -951,6 +956,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       if (!equals(AugM_InvAugM, I, 1e-6))
       {
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
+        failure = true;
       }
       EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
       if (!equals(InvAugM_AugM, I, 1e-6))
@@ -992,6 +998,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "C :" << C.transpose()  << endl;
         cout << "C2:" << C2.transpose() << endl;
+        failure = true;
       }
 
       EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
@@ -999,6 +1006,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "Cg :" << Cg.transpose()  << endl;
         cout << "Cg2:" << Cg2.transpose() << endl;
+        failure = true;
       }
 
       skel->setForces(oldTau);
@@ -1013,6 +1021,12 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       //--------------------- External Force Test ----------------------------
       // TODO(JS): Not implemented yet.
+
+      if(failure)
+      {
+        std::cout << "Failure occurred in the World of file: " << _fileName
+                  << "\nWith Skeleton named: " << skel->getName() << "\n\n";
+      }
     }
   }
 
