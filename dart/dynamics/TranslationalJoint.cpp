@@ -45,6 +45,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+TranslationalJoint::Properties::Properties(
+    const MultiDofJoint<3>::Properties& _properties)
+  : MultiDofJoint<3>::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 TranslationalJoint::TranslationalJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
