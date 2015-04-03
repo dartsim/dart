@@ -55,7 +55,8 @@ public:
 
   struct Properties : MultiDofJoint<6>::Properties
   {
-    using MultiDofJoint<6>::Properties::Properties;
+    Properties(const MultiDofJoint<6>::Properties& _properties =
+                                                MultiDofJoint<6>::Properties());
   };
 
   /// Constructor

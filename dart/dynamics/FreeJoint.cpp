@@ -45,6 +45,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+FreeJoint::Properties::Properties(
+    const MultiDofJoint<6>::Properties& _properties)
+  : MultiDofJoint<6>::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 FreeJoint::FreeJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mQ(Eigen::Isometry3d::Identity())

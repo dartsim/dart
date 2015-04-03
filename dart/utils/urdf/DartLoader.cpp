@@ -426,8 +426,10 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     case urdf::Joint::FLOATING:
     {
+      dynamics::MultiDofJoint<6>::Properties properties(basicProperties);
+
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-            _parent, basicProperties, _body);
+            _parent, properties, _body);
       break;
     }
     case urdf::Joint::PLANAR:
