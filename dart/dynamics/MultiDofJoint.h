@@ -610,7 +610,7 @@ protected:
 protected:
 
   /// Properties of this MultiDofJoint
-  MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
+  typename MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
 
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
