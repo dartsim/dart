@@ -131,6 +131,18 @@ void Joint::init(Skeleton* _skel)
   mSkeleton = _skel;
 }
 
+  //==============================================================================
+Eigen::Isometry3d Joint::getTransform(size_t _index) const
+{
+  return Eigen::Isometry3d::Identity();
+}
+
+//==============================================================================
+Eigen::Matrix4d Joint::getTransformDerivative(size_t _index) const
+{
+  return Eigen::Matrix4d::Zero();
+}
+
 //==============================================================================
 //Eigen::VectorXd Joint::getDampingForces() const
 //{

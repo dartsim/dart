@@ -367,6 +367,23 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
+ /// @brief Get rotation matrix from Euler angle of axis-x
+Eigen::Matrix3d eulerToMatrixX(double x);
+
+/// @brief Get rotation matrix from Euler angle of axis-y
+Eigen::Matrix3d eulerToMatrixY(double y);
+
+/// @brief Get rotation matrix from Euler angle of axis-z
+Eigen::Matrix3d eulerToMatrixZ(double z);
+
+ /// @brief Get derivative of rotation matrix from Euler angle of axis-x
+Eigen::Matrix3d eulerToMatrixXDeriv(double x);
+
+/// @brief Get derivative of rotation matrix from Euler angle of axis-y
+Eigen::Matrix3d eulerToMatrixYDeriv(double y);
+
+/// @brief Get derivative of rotation matrix from Euler angle of axis-z
+Eigen::Matrix3d eulerToMatrixZDeriv(double z);
 }  // namespace math
 }  // namespace dart
 

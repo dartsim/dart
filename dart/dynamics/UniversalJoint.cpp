@@ -120,5 +120,24 @@ void UniversalJoint::updateLocalJacobianTimeDeriv()
   assert(mJacobianDeriv.col(1) == Eigen::Vector6d::Zero());
 }
 
+  Eigen::Isometry3d UniversalJoint::getTransform(size_t _index) const
+{
+  assert(_index < 2);
+
+  return math::expAngular(mAxis[_index] * mPositions[_index]);
+}
+
+//==============================================================================
+Eigen::Matrix4d UniversalJoint::getTransformDerivative(size_t _index) const
+{
+  assert(_index < 2);
+
+  Eigen::Matrix4d screw = Eigen::Matrix4d::Zero();
+  screw.topLeftCorner<3, 3>() = math::makeSkewSymmetric(mAxis[_index]);
+
+  return screw * math::expAngular(mAxis[_index] * mPositions[_index]).matrix();
+}
+
+
 }  // namespace dynamics
 }  // namespace dart

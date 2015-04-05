@@ -68,6 +68,11 @@ public:
   {
     return mWrench - mJacobian * mForce;
   }
+  // Documentation inherited.
+  virtual Eigen::Isometry3d getTransform(size_t _index) const;
+
+  // Documentation inherited.
+  virtual Eigen::Matrix4d getTransformDerivative(size_t _index) const;
 
 protected:
   // Documentation inherited
@@ -87,7 +92,7 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
+ 
 }  // namespace dynamics
 }  // namespace dart
 

@@ -274,5 +274,87 @@ void EulerJoint::updateLocalJacobianTimeDeriv()
   assert(!math::isNan(mJacobianDeriv));
 }
 
+  //==============================================================================
+Eigen::Isometry3d EulerJoint::getTransform(size_t _index) const
+{
+  assert(_index < 3);
+
+  Eigen::Vector3d q = Eigen::Vector3d::Zero();
+  q[_index] = mPositions[_index];
+
+  switch (mAxisOrder)
+  {
+    case AO_XYZ:
+    {
+      return Eigen::Isometry3d(math::eulerXYZToMatrix(q));
+      break;
+    }
+    case AO_ZYX:
+    {
+      return Eigen::Isometry3d(math::eulerZYXToMatrix(q));
+      break;
+    }
+    default:
+    {
+      dterr << "Undefined Euler axis order\n";
+      return Eigen::Isometry3d::Identity();
+      break;
+    }
+  }
+}
+
+//==============================================================================
+Eigen::Matrix4d EulerJoint::getTransformDerivative(size_t _index) const
+{
+  assert(_index < 3);
+
+  const double q0 = mPositions[0];
+  const double q1 = mPositions[1];
+  const double q2 = mPositions[2];
+
+  Eigen::Matrix4d ret = Eigen::Matrix4d::Zero();
+
+  switch (mAxisOrder)
+  {
+    case AO_XYZ:
+      switch (_index)
+      {
+        case 0:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixXDeriv(q0);
+          break;
+        case 1:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixYDeriv(q1);
+          break;
+        case 2:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixZDeriv(q2);
+          break;
+        default:
+          break;
+      }
+      break;
+    case AO_ZYX:
+      switch (_index)
+      {
+        case 0:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixZDeriv(q0);
+          break;
+        case 1:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixYDeriv(q1);
+          break;
+        case 2:
+          ret.topLeftCorner<3, 3>() = math::eulerToMatrixXDeriv(q2);
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      dterr << "Undefined Euler axis order\n";
+      break;
+  }
+
+  return ret;
+}
+
 }  // namespace dynamics
 }  // namespace dart

@@ -363,9 +363,17 @@ public:
   ///
   void applyGLTransform(renderer::RenderInterface* _ri);
 
+
+      /// @brief Get transformation of _index-th coordinate
+  virtual Eigen::Isometry3d getTransform(size_t _index) const;
+
+  /// @brief Get derivative of transformation of _index-th coordinate
+  virtual Eigen::Matrix4d getTransformDerivative(size_t _index) const;
+
   //----------------------------------------------------------------------------
   // Friendship
   //----------------------------------------------------------------------------
+
 
   friend class BodyNode;
   friend class SoftBodyNode;
@@ -499,6 +507,7 @@ protected:
   ///
   virtual Eigen::VectorXd getSpatialToGeneralized(
       const Eigen::Vector6d& _spatial) = 0;
+
 
 protected:
   /// Joint name

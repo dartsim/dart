@@ -74,7 +74,13 @@ public:
   {
     return mWrench - mJacobian * mForces;
   }
+  // Documentation inherited.
+  virtual Eigen::Isometry3d getTransform(size_t _index) const;
 
+  // Documentation inherited.
+  virtual Eigen::Matrix4d getTransformDerivative(size_t _index) const;
+
+  
 protected:
   // Documentation inherited
   virtual void updateLocalTransform();

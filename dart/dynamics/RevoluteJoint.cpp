@@ -99,5 +99,24 @@ void RevoluteJoint::updateLocalJacobianTimeDeriv()
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
+  //==============================================================================
+Eigen::Isometry3d RevoluteJoint::getTransform(size_t _index) const
+{
+  assert(_index < 1);
+
+  return math::expAngular(mAxis * mPosition);
+}
+
+//==============================================================================
+Eigen::Matrix4d RevoluteJoint::getTransformDerivative(size_t _index) const
+{
+  assert(_index < 1);
+
+  Eigen::Matrix4d screw = Eigen::Matrix4d::Zero();
+  screw.topLeftCorner<3, 3>() = math::makeSkewSymmetric(mAxis);
+
+  return screw * math::expAngular(mAxis * mPosition).matrix();
+}
+
 }  // namespace dynamics
 }  // namespace dart

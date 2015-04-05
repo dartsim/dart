@@ -290,6 +290,21 @@ Marker* Skeleton::getMarker(const std::string& _name) const
   return NULL;
 }
 
+Marker* Skeleton::getMarker(const int _id) const
+{
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    for (size_t i = 0; i < (*it)->getNumMarkers(); ++i)
+    {
+      if ((*it)->getMarker(i)->getID() == _id)
+        return (*it)->getMarker(i);
+    }
+  }
+
+  return NULL;
+}
+
 //==============================================================================
 void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 {
