@@ -37,15 +37,15 @@ void MyWorld::solve() {
   }
 }
 
-// Current code only works for the left ankle with only one constraint
+// Current code only works for the left leg with only one constraint
 VectorXd MyWorld::updateGradients() {
   // compute c(q)
   mC = mSkel->getMarker(mConstrainedMarker)->getWorldPosition() - mTarget;
 
-  // // compute J(q)
+  // compute J(q)
   Vector4d offset;
   offset << mSkel->getMarker(mConstrainedMarker)->getLocalPosition(), 1; // Create a vector in homogeneous coordinates
-  // w.r.t ankle
+  // w.r.t ankle dofs
   BodyNode *node = mSkel->getMarker(mConstrainedMarker)->getBodyNode();
   Joint *joint = node->getParentJoint();
   Matrix4d worldToParent = node->getParentBodyNode()->getTransform().matrix();
@@ -61,10 +61,10 @@ VectorXd MyWorld::updateGradients() {
   jCol = worldToParent * parentToJoint * R * dR * jointToChild * offset;
   colIndex = joint->getIndexInSkeleton(1);
   mJ.col(colIndex) = jCol.head(3);
-  offset = parentToJoint * joint->getTransform(0).matrix() * joint->getTransform(1).matrix() * jointToChild * offset;
+  offset = parentToJoint * joint->getTransform(0).matrix() * joint->getTransform(1).matrix() * jointToChild * offset; // Update offset so it stores the chain below the parent joint
 
-  // w.r.t knee
-  node = node->getParentBodyNode();
+  // w.r.t knee dof
+  node = node->getParentBodyNode(); // return NULL if node is the root node
   joint = node->getParentJoint();
   worldToParent = node->getParentBodyNode()->getTransform().matrix();
   parentToJoint = joint->getTransformFromParentBodyNode().matrix();
@@ -75,7 +75,7 @@ VectorXd MyWorld::updateGradients() {
   mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of J
   offset = parentToJoint * joint->getTransform(0).matrix() * jointToChild * offset;
 
-  // w.r.t hip
+  // w.r.t hip dofs
   node = node->getParentBodyNode();
   joint = node->getParentJoint();
   worldToParent = node->getParentBodyNode()->getTransform().matrix();
@@ -125,5 +125,6 @@ void MyWorld::modifyConstraint(Vector3d _deltaP) {
 void MyWorld::removeConstraint(int _index) {
   mConstrainedMarker = -1;
 }
+
 
 

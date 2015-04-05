@@ -22,16 +22,11 @@ void MyWindow::draw()
     Vector4d color;
     color << 0.95, 0.25, 0.25, 1.0;
     mWorld->getSkel()->drawMarkers(mRI, color, false);
- 
 }
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
     switch(_key){
-    case 'v':
-        // TODO: Show or hide visualization.
-        std::cout << "Visualization on/off" << std::endl;
-        break;
     default:
         Win3D::keyboard(_key, _x, _y);
     }
