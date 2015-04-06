@@ -56,30 +56,6 @@ class SimpleFrame : public Detachable, public Frame
 {
 public:
 
-  struct UniqueProperties
-  {
-    /// Relative transform of the SimpleFrame
-    Eigen::Isometry3d mRelativeTf;
-
-    /// Relative spatial velocity of the SimpleFrame
-    Eigen::Vector6d mRelativeVelocity;
-
-    /// Relative spatial acceleration of the SimpleFrame
-    Eigen::Vector6d mRelativeAcceleration;
-
-    UniqueProperties(
-        const Eigen::Isometry3d& _relativeTf = Eigen::Isometry3d::Identity(),
-        const Eigen::Vector6d& _relativeVelocity = Eigen::Vector6d::Zero(),
-        const Eigen::Vector6d& _relativeAcceleration = Eigen::Vector6d::Zero());
-  };
-
-  struct Properties : Entity::Properties, UniqueProperties
-  {
-    Properties(
-        const Entity::Properties& _entityProperties = Entity::Properties(),
-        const UniqueProperties& _frameProperties = UniqueProperties());
-  };
-
   /// Constructor
   explicit SimpleFrame(Frame* _refFrame, const std::string& _name,
                        const Eigen::Isometry3d& _relativeTransform =
@@ -92,22 +68,24 @@ public:
   /// Destructor
   virtual ~SimpleFrame();
 
-  /// Set the Properties of this SimpleFrame
-  void setProperties(const Properties& _properties);
+  /// Create a new SimpleFrame with the same world transform, velocity, and
+  /// acceleration as this one. _refFrame will be used as the reference Frame
+  /// of the new SimpleFrame.
+  std::shared_ptr<SimpleFrame> clone(Frame* _refFrame = Frame::World()) const;
 
-  /// Set the Properties of this SimpleFrame
-  void setProperties(const UniqueProperties& _properties);
+  /// Make the world transform, world velocity, and world acceleration of this
+  /// SimpleFrame match another Frame. The _refFrame argument will be the new
+  /// parent Frame of this SimpleFrame. Also copies the Entity Properties if
+  /// _copyProperties is left as true.
+  void copy(const Frame& _otherFrame, Frame* _refFrame = Frame::World(),
+            bool _copyProperties=true);
 
-  /// Get the Properties of this SimpleFrame
-  Properties getSimpleFrameProperties() const;
+  /// Same as copy(const Frame&)
+  void copy(const Frame* _otherFrame, Frame* _refFrame = Frame::World(),
+            bool _copyProperties=true);
 
-  /// Copy the Properties of another SimpleFrame
-  void copy(const SimpleFrame& _otherFrame);
-
-  /// Copy the Properties of another SimpleFrame
-  void copy(const SimpleFrame* _otherFrame);
-
-  /// Copy the Properties of another SimpleFrame
+  /// Same as copy(const Frame&) except the parent frame of this SimpleFrame is
+  /// left the same, and _copyProperties is set to false.
   SimpleFrame& operator=(const SimpleFrame& _otherFrame);
 
   //--------------------------------------------------------------------------
@@ -197,8 +175,14 @@ public:
 
 protected:
 
-  /// Properties of this SimpleFrame
-  UniqueProperties mFrameP;
+  /// Relative transform of the SimpleFrame
+  Eigen::Isometry3d mRelativeTf;
+
+  /// Relative spatial velocity of the SimpleFrame
+  Eigen::Vector6d mRelativeVelocity;
+
+  /// Relative spatial acceleration of the SimpleFrame
+  Eigen::Vector6d mRelativeAcceleration;
 
   /// Partial Acceleration of this Frame
   mutable Eigen::Vector6d mPartialAcceleration;
