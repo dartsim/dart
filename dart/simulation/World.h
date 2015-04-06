@@ -247,6 +247,8 @@ protected:
   Recording* mRecording;
 };
 
+typedef std::shared_ptr<World> WorldPtr;
+
 }  // namespace simulation
 }  // namespace dart
 

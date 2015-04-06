@@ -517,7 +517,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   const size_t numFrames = 5e+0;  // 5 secs
 
   // Load world and skeleton
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
       DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != NULL);

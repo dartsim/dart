@@ -74,7 +74,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
   return modelInterfaceToSkeleton(skeletonModelPtr.get());
 }
 
-simulation::World* DartLoader::parseWorld(const std::string& _urdfFileName)
+simulation::WorldPtr DartLoader::parseWorld(const std::string& _urdfFileName)
 {
   std::string urdfString = readFileToString(_urdfFileName);
 
@@ -94,7 +94,7 @@ simulation::World* DartLoader::parseWorld(const std::string& _urdfFileName)
   return parseWorldString(urdfString, mRootToWorldPath);
 }
 
-simulation::World* DartLoader::parseWorldString(
+simulation::WorldPtr DartLoader::parseWorldString(
     const std::string& _urdfString, const std::string& _urdfFileDirectory)
 {
   if(_urdfString.empty())
@@ -106,14 +106,16 @@ simulation::World* DartLoader::parseWorldString(
 
   mRootToWorldPath = _urdfFileDirectory;
 
-  urdf::World* worldInterface = urdf::parseWorldURDF(_urdfString, mRootToWorldPath); // TODO(MXG) Fix memory leak
+  std::shared_ptr<urdf::World> worldInterface =
+      urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
+
   if(!worldInterface)
       return nullptr;
 
   // Store paths from world to entities
   parseWorldToEntityPaths(_urdfString);
 
-  simulation::World* world = new simulation::World();
+  simulation::WorldPtr world(new simulation::World());
 
   for(size_t i = 0; i < worldInterface->models.size(); ++i)
   {

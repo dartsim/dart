@@ -51,7 +51,7 @@ using namespace dart::utils;
 int main(int argc, char* argv[])
 {
   // Create empty soft world
-  World* myWorld = new World;
+  WorldPtr myWorld(new World);
 
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;

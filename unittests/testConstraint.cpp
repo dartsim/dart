@@ -122,7 +122,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   // size_t testCount = 1;
 #endif
 
-  World* world = new World;
+  WorldPtr world(new World);
   EXPECT_TRUE(world != NULL);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
@@ -224,8 +224,6 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
 
     break;
   }
-
-  delete world;
 }
 
 //==============================================================================

@@ -69,10 +69,10 @@
 namespace dart {
 namespace utils {
 
-simulation::World* SoftSdfParser::readSoftSdfFile(const std::string& _filename)
+simulation::WorldPtr SoftSdfParser::readSoftSdfFile(const std::string& _filename)
 {
   return SdfParser::readSdfFile(_filename,
-    static_cast<simulation::World* (*)(tinyxml2::XMLElement*, const std::string&)>(&SoftSdfParser::readWorld));
+    static_cast<simulation::WorldPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SoftSdfParser::readWorld));
 }
 
 dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
@@ -108,7 +108,7 @@ bool SoftSdfParser::createSoftPair(
   return true;
 }
 
-simulation::World* SoftSdfParser::readWorld(
+simulation::WorldPtr SoftSdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement, const std::string& _skelPath)
 {
   return SdfParser::readWorld(_worldElement, _skelPath,

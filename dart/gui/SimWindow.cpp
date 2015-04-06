@@ -227,7 +227,7 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void SimWindow::setWorld(simulation::World* _world) {
+void SimWindow::setWorld(simulation::WorldPtr _world) {
   mWorld = _world;
 }
 

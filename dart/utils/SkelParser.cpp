@@ -78,7 +78,35 @@ namespace dart {
 namespace utils {
 
 //==============================================================================
-simulation::World* SkelParser::readWorld(const std::string& _filename)
+static tinyxml2::XMLElement* checkFormatAndGetWorldElement(
+    tinyxml2::XMLDocument& _document)
+{
+  //--------------------------------------------------------------------------
+  // Check xml tag
+  tinyxml2::XMLElement* skelElement = nullptr;
+  skelElement = _document.FirstChildElement("skel");
+  if (skelElement == nullptr)
+  {
+    dterr << "XML Document does not contain <skel> as the root element.\n";
+    return nullptr;
+  }
+
+  //--------------------------------------------------------------------------
+  // Load World
+  tinyxml2::XMLElement* worldElement = nullptr;
+  worldElement = skelElement->FirstChildElement("world");
+  if (worldElement == nullptr)
+  {
+    dterr << "XML Document does not contain a <world> element under the <skel> "
+          << "element.\n";
+    return nullptr;
+  }
+
+  return worldElement;
+}
+
+//==============================================================================
+simulation::WorldPtr SkelParser::readWorld(const std::string& _filename)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -89,36 +117,40 @@ simulation::World* SkelParser::readWorld(const std::string& _filename)
   }
   catch(std::exception const& e)
   {
-    std::cout << "LoadFile [" << _filename << "] Fails: "
-              << e.what() << std::endl;
+    dterr << "[SkelParser::readWorld] LoadFile [" << _filename
+          << "] Failed: " << e.what() << "\n";
     return nullptr;
   }
 
-  //--------------------------------------------------------------------------
-  // Load DART
-  tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _dartFile.FirstChildElement("skel");
-  if (skelElement == nullptr)
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
+  if(!worldElement)
   {
-    dterr << "Skel file[" << _filename << "] does not contain <skel> as the "
-          << "element.\n";
+    dterr << "[SkelParser::readWorld] File named [" << _filename << "] could "
+          << "not be parsed!\n";
     return nullptr;
   }
 
-  //--------------------------------------------------------------------------
-  // Load World
-  tinyxml2::XMLElement* worldElement = nullptr;
-  worldElement = skelElement->FirstChildElement("world");
-  if (worldElement == nullptr)
+  return readWorld(worldElement);
+}
+
+//==============================================================================
+simulation::WorldPtr SkelParser::readWorldXML(const std::string& _xmlString)
+{
+  tinyxml2::XMLDocument _dartXML;
+  if(_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS)
   {
-    dterr << "Skel file[" << _filename << "] does not contain <world> element "
-          <<"under <skel> element.\n";
+    _dartXML.PrintError();
     return nullptr;
   }
 
-  simulation::World* newWorld = readWorld(worldElement);
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
+  if(!worldElement)
+  {
+    dterr << "[SkelParser::readWorldXML] XML String could not be parsed!\n";
+    return nullptr;
+  }
 
-  return newWorld;
+  return readWorld(worldElement);
 }
 
 //==============================================================================
@@ -170,12 +202,12 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
 }
 
 //==============================================================================
-simulation::World* SkelParser::readWorld(tinyxml2::XMLElement* _worldElement)
+simulation::WorldPtr SkelParser::readWorld(tinyxml2::XMLElement* _worldElement)
 {
   assert(_worldElement != nullptr);
 
   // Create a world
-  simulation::World* newWorld = new simulation::World;
+  simulation::WorldPtr newWorld(new simulation::World);
 
   //--------------------------------------------------------------------------
   // Load physics

@@ -13,6 +13,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/simulation/World.h"
 
 namespace urdf
 {
@@ -76,10 +77,10 @@ public:
                                               const std::string& _urdfFileDirectory);
 
     /// Parse a file to produce a World
-    simulation::World* parseWorld(const std::string& _urdfFileName);
+    dart::simulation::WorldPtr parseWorld(const std::string& _urdfFileName);
 
     /// Parse a text string to produce a World
-    simulation::World* parseWorldString(const std::string& _urdfString,
+    dart::simulation::WorldPtr parseWorldString(const std::string& _urdfString,
                                         const std::string& _urdfFileDirectory);
 
 private:

@@ -20,6 +20,7 @@
 #include "dart/dynamics/BallJoint.h"
 #include "dart/dynamics/TranslationalJoint.h"
 #include "dart/dynamics/FreeJoint.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 
@@ -49,11 +50,11 @@ class SdfParser
 {
 public:
     /// \brief
-    static simulation::World* readSdfFile(const std::string& _filename);
+    static dart::simulation::WorldPtr readSdfFile(const std::string& _filename);
 
-    static simulation::World* readSdfFile(
+    static simulation::WorldPtr readSdfFile(
         const std::string& _filename,
-        std::function<simulation::World* (tinyxml2::XMLElement*,
+        std::function<simulation::WorldPtr (tinyxml2::XMLElement*,
                                           const std::string&)> xmlReader);
 
     /// \brief
@@ -86,21 +87,20 @@ public:
     typedef std::map<std::string, SDFBodyNode> BodyMap;
     typedef std::map<std::string, SDFJoint> JointMap;
 
-    static simulation::World* readWorld(
+    static simulation::WorldPtr readWorld(
         tinyxml2::XMLElement* _worldElement,
         const std::string& _skelPath);
 
     /// \brief
-    static simulation::World* readWorld(
+    static simulation::WorldPtr readWorld(
         tinyxml2::XMLElement* _worldElement,
         const std::string& _skelPath,
         std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
                                             const std::string&)> skeletonReader);
 
     /// \brief
-    static void readPhysics(
-            tinyxml2::XMLElement* _physicsElement,
-            simulation::World* _world);
+    static void readPhysics(tinyxml2::XMLElement* _physicsElement,
+            simulation::WorldPtr _world);
 
     /// \brief
     static dynamics::SkeletonPtr readSkeleton(

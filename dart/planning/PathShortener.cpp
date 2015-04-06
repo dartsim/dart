@@ -18,7 +18,7 @@ namespace planning {
 
 PathShortener::PathShortener() {}
 
-PathShortener::PathShortener(World* world, dynamics::Skeleton* robot, const vector<size_t> &dofs, double stepSize) :
+PathShortener::PathShortener(WorldPtr world, dynamics::SkeletonPtr robot, const vector<size_t> &dofs, double stepSize) :
    world(world),
    robot(robot),
    dofs(dofs),

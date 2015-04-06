@@ -266,7 +266,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
@@ -281,7 +281,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
     int dof            = softSkel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
     int nSoftBodyNodes = 0;
-    if (softSkel != NULL)
+    if (softSkel != nullptr)
       nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
 
     if (dof == 0)
@@ -448,8 +448,6 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       // TODO(JS): Restore external forces of body nodes
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================

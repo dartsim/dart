@@ -317,21 +317,21 @@ TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-3;
 
-  simulation::World* myWorld
+  simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_limit_test.skel");
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
-  EXPECT_TRUE(pendulum != NULL);
+  EXPECT_TRUE(pendulum != nullptr);
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
 
-  EXPECT_TRUE(joint0 != NULL);
-  EXPECT_TRUE(joint1 != NULL);
+  EXPECT_TRUE(joint0 != nullptr);
+  EXPECT_TRUE(joint1 != nullptr);
 
   double limit0 = DART_PI / 6.0;
   double limit1 = DART_PI / 6.0;
@@ -388,7 +388,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 {
   double tol = 1e-9;
 
-  simulation::World* myWorld
+  simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != NULL);

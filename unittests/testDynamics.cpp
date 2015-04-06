@@ -581,7 +581,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  World* world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
 
@@ -648,8 +648,6 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
       }
     }
   }
-
-  delete world;
 }
 
 //==============================================================================
@@ -680,7 +678,7 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
   double timeStep = 1.0e-6;
 
   // load skeleton
-  World* world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -811,8 +809,6 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
       }
     }
   }
-
-  delete world;
 }
 
 //==============================================================================
@@ -844,7 +840,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = nullptr;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
@@ -1029,8 +1025,6 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1119,13 +1113,13 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -1185,8 +1179,6 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
         compareCOMJacobianToFk(skel, refFrames[r], 1e-6);
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1257,7 +1249,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = nullptr;
+  simulation::WorldPtr myWorld;
   std::vector<Vector3d> gravities(4);
   gravities[0] = Vector3d::Zero();
   gravities[1] = Vector3d(-9.81, 0, 0);
@@ -1268,7 +1260,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -1341,8 +1333,6 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
         compareCOMAccelerationToGravity(skel, gravity, 1e-6);
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1368,13 +1358,13 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 //  double lb = -1.5 * DART_PI;
 //  double ub =  1.5 * DART_PI;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -1437,8 +1427,6 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
       }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1464,13 +1452,13 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   double lb = -1.5 * DART_PI;
   double ub =  1.5 * DART_PI;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -1536,8 +1524,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1647,7 +1633,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   const size_t numFrames = 5e+3;  // 5 secs
 
   // Load world and skeleton
-  World* world = utils::SkelParser::readWorld(
+  WorldPtr world = utils::SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != NULL);

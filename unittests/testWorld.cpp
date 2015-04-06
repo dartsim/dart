@@ -53,7 +53,7 @@ using namespace simulation;
 TEST(WORLD, ADDING_AND_REMOVING_SKELETONS)
 {
     // World
-    World* world = new World;
+    WorldPtr world(new World);
 
     //-------------------- Test World::removeSkeleton() ------------------------
     SkeletonPtr skeleton1 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),
@@ -150,8 +150,6 @@ TEST(WORLD, ADDING_AND_REMOVING_SKELETONS)
 
     EXPECT_FALSE(skeleton4 == world->getSkeleton(s4name));
     EXPECT_TRUE(world->getSkeleton(s4name) == NULL);
-
-    delete world;
 }
 
 /******************************************************************************/

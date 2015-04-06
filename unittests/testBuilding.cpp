@@ -69,7 +69,7 @@ TEST(BUILDING, BASIC)
     SkeletonPtr skel1(new Skeleton);
 
 	// World
-    World* world = new World;
+    WorldPtr world(new World);
 
 	//--------------------------------------------------------------------------
 	//
@@ -126,8 +126,6 @@ TEST(BUILDING, BASIC)
     int nSteps = 20;
     for (int i = 0; i < nSteps; ++i)
         world->step();
-
-    delete world;
 }
 
 /******************************************************************************/

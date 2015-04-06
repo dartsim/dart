@@ -52,6 +52,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/SingleDofJoint.h"
 #include "dart/dynamics/MultiDofJoint.h"
+#include "dart/simulation/World.h"
 
 namespace dart {
 
@@ -88,7 +89,10 @@ class SkelParser
 {
 public:
   /// Read World from skel file
-  static simulation::World* readWorld(const std::string& _filename);
+  static simulation::WorldPtr readWorld(const std::string& _filename);
+
+  /// Read World from an xml-formatted string
+  static simulation::WorldPtr readWorldXML(const std::string& _xmlString);
 
   /// Read Skeleton from skel file
   static dynamics::SkeletonPtr readSkeleton(const std::string& _filename);
@@ -131,7 +135,7 @@ public:
 protected:
 
   ///
-  static simulation::World* readWorld(tinyxml2::XMLElement* _worldElement);
+  static simulation::WorldPtr readWorld(tinyxml2::XMLElement* _worldElement);
 
   ///
   static dart::dynamics::SkeletonPtr readSkeleton(

@@ -26,16 +26,15 @@
 namespace dart {
 namespace utils {
 
-simulation::World* SdfParser::readSdfFile(const std::string& _filename)
+simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename)
 {
   return readSdfFile(_filename,
-    static_cast<simulation::World* (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readWorld));
+    static_cast<simulation::WorldPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readWorld));
 }
 
-simulation::World* SdfParser::readSdfFile(
-    const std::string& _filename,
-    std::function<simulation::World* (tinyxml2::XMLElement*,
-                                      const std::string&)> xmlReader)
+simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename,
+    std::function<simulation::WorldPtr (tinyxml2::XMLElement*,
+                                        const std::string&)> xmlReader)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
@@ -84,9 +83,7 @@ simulation::World* SdfParser::readSdfFile(
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  simulation::World* newWorld = xmlReader(worldElement, skelPath);
-
-  return newWorld;
+  return xmlReader(worldElement, skelPath);
 }
 
 dynamics::SkeletonPtr SdfParser::readSkeleton(const std::string& _fileName)
@@ -151,7 +148,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   return newSkeleton;
 }
 
-simulation::World* SdfParser::readWorld(
+simulation::WorldPtr SdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement,
     const std::string& _skelPath)
 {
@@ -159,7 +156,7 @@ simulation::World* SdfParser::readWorld(
       static_cast<dynamics::SkeletonPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readSkeleton));
 }
 
-simulation::World* SdfParser::readWorld(
+simulation::WorldPtr SdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement,
     const std::string& _skelPath,
     std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
@@ -168,7 +165,7 @@ simulation::World* SdfParser::readWorld(
   assert(_worldElement != NULL);
 
   // Create a world
-  simulation::World* newWorld = new simulation::World;
+  simulation::WorldPtr newWorld(new simulation::World);
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -199,7 +196,7 @@ simulation::World* SdfParser::readWorld(
 }
 
 void SdfParser::readPhysics(tinyxml2::XMLElement* _physicsElement,
-                 simulation::World* _world)
+                 simulation::WorldPtr _world)
 {
     // Type attribute
 //    std::string physicsEngineName = getAttribute(_physicsElement, "type");

@@ -65,7 +65,7 @@ class SoftSdfParser : public SdfParser
 {
 public:
   /// \brief
-  static simulation::World* readSoftSdfFile(const std::string& _filename);
+  static simulation::WorldPtr readSoftSdfFile(const std::string& _filename);
 
   /// \brief
   static dynamics::SkeletonPtr readSkeleton(
@@ -77,7 +77,7 @@ public:
                              const SDFBodyNode& newBody);
 
   /// \brief
-  static simulation::World* readWorld(
+  static simulation::WorldPtr readWorld(
       tinyxml2::XMLElement* _worldElement,
       const std::string& _skelPath);
 

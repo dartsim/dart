@@ -40,7 +40,7 @@ using namespace dart::dynamics;
 
 int main(int argc, char* argv[])
 {
-  dart::simulation::World myWorld;
+  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 
   Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());
   tf1.translate(Eigen::Vector3d(0.1,-0.1,0));
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
   // from that Frame to be rendered, but they will not be counted in the list of
   // Entities in myWorld. So F2 and F3 will be rendered by simply adding the F1
   // Frame
-  myWorld.addEntity(&F1);
+  myWorld->addEntity(&F1);
 
   SimpleFrame A(Frame::World(), "A");
   A.addVisualizationShape(std::shared_ptr<Shape>(
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
   A3.addVisualizationShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
 
-  myWorld.addEntity(&A);
+  myWorld->addEntity(&A);
 
   SimpleFrame arrow(Frame::World(), "arrow");
   arrow.addVisualizationShape(
@@ -91,14 +91,14 @@ int main(int argc, char* argv[])
                          Eigen::Vector3d(0.1, 0.0, 0.0),
                          ArrowShape::Properties(0.002, 1.8),
                          Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
-  myWorld.addEntity(&arrow);
+  myWorld->addEntity(&arrow);
 
   // CAREFUL: For an Entity (or Frame) that gets added to the world to be
   // rendered correctly, it must be a child of the World Frame
   // TODO(MXG): Fix this issue ^
 
   dart::gui::SimWindow window;
-  window.setWorld(&myWorld);
+  window.setWorld(myWorld);
 
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Simple Frames");

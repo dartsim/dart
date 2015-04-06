@@ -34,7 +34,7 @@ public:
   double stepSize;        ///< Step size from a node in the tree to the random/goal node
   double goalBias;        ///< Choose btw goal and random value (for goal-biased search)
   size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
-  simulation::World* world;  ///< The world that the robot is in (for obstacles and etc.)
+  simulation::WorldPtr world;  ///< The world that the robot is in (for obstacles and etc.)
 
   // NOTE: It is useful to keep the rrts around after planning for reuse, analysis, and etc.
   R* start_rrt;            ///< The rrt for unidirectional search
