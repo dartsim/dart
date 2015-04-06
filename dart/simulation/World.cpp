@@ -206,18 +206,19 @@ size_t World::getNumSkeletons() const
 //==============================================================================
 std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 {
-  assert(_skeleton != NULL && "Attempted to add NULL skeleton to world.");
+  assert(_skeleton != nullptr && "Attempted to add NULL skeleton to world.");
 
-  if(NULL == _skeleton)
+  if(nullptr == _skeleton)
   {
-    dtwarn << "Attempting to add a nullptr Skeleton to the world!\n";
+    dtwarn << "[World::addSkeleton] Attempting to add a nullptr Skeleton to "
+           << "the world!\n";
     return "";
   }
 
   // If mSkeletons already has _skeleton, then we do nothing.
   if (find(mSkeletons.begin(), mSkeletons.end(), _skeleton) != mSkeletons.end())
   {
-    std::cout << "Skeleton [" << _skeleton->getName()
+    dtwarn << "[World::addSkeleton] Skeleton named [" << _skeleton->getName()
               << "] is already in the world." << std::endl;
     return _skeleton->getName();
   }
@@ -236,9 +237,16 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void World::withdrawSkeleton(dynamics::SkeletonPtr _skeleton)
+void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
 {
-  assert(_skeleton != NULL && "Attempted to remove NULL Skeleton from world");
+  assert(_skeleton != nullptr && "Attempted to remove nullptr Skeleton from world");
+
+  if(nullptr == _skeleton)
+  {
+    dtwarn << "[World::removeSkeleton] Attempting to remove a nullptr Skeleton "
+           << "from the world!\n";
+    return;
+  }
 
   // Find index of _skeleton in mSkeleton.
   size_t i = 0;
@@ -252,7 +260,7 @@ void World::withdrawSkeleton(dynamics::SkeletonPtr _skeleton)
   // mSkeleton. We do nothing.
   if (i == mSkeletons.size())
   {
-    dtwarn << "Skeleton [" << _skeleton->getName()
+    dtwarn << "[World::removeSkeleton] Skeleton [" << _skeleton->getName()
            << "] is not in the world.\n";
     return;
   }
@@ -284,13 +292,7 @@ void World::withdrawSkeleton(dynamics::SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
-{
-  withdrawSkeleton(_skeleton);
-}
-
-//==============================================================================
-std::set<dynamics::SkeletonPtr> World::withdrawAllSkeletons()
+std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 {
   std::set<dynamics::SkeletonPtr> ptrs;
   for(std::vector<dynamics::SkeletonPtr>::iterator it=mSkeletons.begin(),
@@ -298,16 +300,9 @@ std::set<dynamics::SkeletonPtr> World::withdrawAllSkeletons()
     ptrs.insert(*it);
 
   while (getNumSkeletons() > 0)
-    withdrawSkeleton(getSkeleton(0));
+    removeSkeleton(getSkeleton(0));
 
   return ptrs;
-}
-
-//==============================================================================
-void World::removeAllSkeletons()
-{
-  while (getNumSkeletons() > 0)
-    removeSkeleton(getSkeleton(0));
 }
 
 //==============================================================================
@@ -317,97 +312,83 @@ int World::getIndex(int _index) const
 }
 
 //==============================================================================
-dynamics::Entity* World::getEntity(size_t _index) const
+dynamics::SimpleFramePtr World::getFrame(size_t _index) const
 {
-  if(_index < mEntities.size())
-    return mEntities[_index];
+  if(_index < mFrames.size())
+    return mFrames[_index];
 
   return NULL;
 }
 
 //==============================================================================
-dynamics::Entity* World::getEntity(const std::string& _name) const
+dynamics::SimpleFramePtr World::getFrame(const std::string& _name) const
 {
-  return mNameMgrForEntities.getObject(_name);
+  return mNameMgrForFrames.getObject(_name);
 }
 
 //==============================================================================
-size_t World::getNumEntities() const
+size_t World::getNumFrames() const
 {
-  return mEntities.size();
+  return mFrames.size();
 }
 
 //==============================================================================
-std::string World::addEntity(dynamics::Entity* _entity)
+std::string World::addFrame(dynamics::SimpleFramePtr _frame)
 {
-  assert(_entity != NULL && "Attempted to add NULL Entity to world");
+  assert(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
-  if(NULL == _entity)
+  if(nullptr == _frame)
   {
-    dtwarn << "Attempting to add a nullptr Entity to the world!\n";
+    dtwarn << "[World::addFrame] Attempting to add a nullptr SimpleFrame to the world!\n";
     return "";
   }
 
-  if( find(mEntities.begin(), mEntities.end(), _entity) != mEntities.end() )
+  if( find(mFrames.begin(), mFrames.end(), _frame) != mFrames.end() )
   {
-    std::cout << "Entity [" << _entity->getName()
-              << "] is already in the world." << std::endl;
-    return _entity->getName();
+    dtwarn << "[World::addFrame] SimpleFrame named [" << _frame->getName()
+           << "] is already in the world.\n";
+    return _frame->getName();
   }
 
-  mEntities.push_back(_entity);
-  _entity->setName(mNameMgrForEntities.issueNewNameAndAdd(
-                     _entity->getName(), _entity));
+  mFrames.push_back(_frame);
+  _frame->setName(mNameMgrForFrames.issueNewNameAndAdd(
+                     _frame->getName(), _frame));
 
-  return _entity->getName();
+  return _frame->getName();
 }
 
 //==============================================================================
-void World::withdrawEntity(dynamics::Entity *_entity)
+void World::removeFrame(dynamics::SimpleFramePtr _entity)
 {
-  assert(_entity != NULL && "Attempted to remove NULL entity from world");
+  assert(_entity != nullptr && "Attempted to remove nullptr SimpleFrame from world");
 
-  std::vector<dynamics::Entity*>::iterator it =
-      find(mEntities.begin(), mEntities.end(), _entity);
+  std::vector<dynamics::SimpleFramePtr>::iterator it =
+      find(mFrames.begin(), mFrames.end(), _entity);
 
-  if(it == mEntities.end())
+  if(it == mFrames.end())
   {
-    dtwarn << "Entity [" << _entity->getName()
+    dtwarn << "[World::removeFrame] Frame named [" << _entity->getName()
            << "] is not in the world.\n";
     return;
   }
 
-  mEntities.erase(remove(mEntities.begin(), mEntities.end(), _entity),
-                  mEntities.end());
-  // TODO(MXG): Same issue as the one above for withdrawSkeleton()
+  mFrames.erase(remove(mFrames.begin(), mFrames.end(), _entity),
+                  mFrames.end());
+  // TODO(MXG): Same issue as the one above for removeSkeleton()
 }
 
 //==============================================================================
-void World::removeEntity(dynamics::Entity* _entity)
+std::set<dynamics::SimpleFramePtr> World::removeAllFrames()
 {
-  withdrawEntity(_entity);
-  delete _entity;
-}
-
-//==============================================================================
-std::set<dynamics::Entity*> World::withdrawAllEntities()
-{
-  std::set<dynamics::Entity*> ptrs;
-  for(std::vector<dynamics::Entity*>::iterator it=mEntities.begin(),
-      end=mEntities.end(); it != end; ++it)
+  std::set<dynamics::SimpleFramePtr> ptrs;
+  for(std::vector<dynamics::SimpleFramePtr>::iterator it=mFrames.begin(),
+      end=mFrames.end(); it != end; ++it)
     ptrs.insert(*it);
 
-  while(getNumEntities() > 0)
-    withdrawEntity(getEntity(0));
+  while(getNumFrames() > 0)
+    removeFrame(getFrame(0));
 
   return ptrs;
-}
-
-//==============================================================================
-void World::removeAllEntities()
-{
-  while(getNumEntities() > 0)
-    removeEntity(getEntity(0));
 }
 
 //==============================================================================

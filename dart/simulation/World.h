@@ -54,7 +54,7 @@
 #include "dart/common/NameManager.h"
 #include "dart/common/Subject.h"
 #include "dart/simulation/Recording.h"
-#include "dart/dynamics/Entity.h"
+#include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
@@ -112,7 +112,7 @@ public:
 
   /// Find a Skeleton by name
   /// \param[in] The name of the Skeleton you are looking for.
-  /// \return If the skeleton does not exist then return NULL.
+  /// \return If the skeleton does not exist then return nullptr.
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
@@ -121,48 +121,34 @@ public:
   /// Add a skeleton to this world
   std::string addSkeleton(dynamics::SkeletonPtr _skeleton);
 
-  // TODO: There is no longer a need to distinguish between withdrawing and
-  // removing. We should choose one term. removeSkeleton might be a better pick,
-  // because it has legacy.
-
-  /// Remove a skeleton from this world without deleting it
-  void withdrawSkeleton(dynamics::SkeletonPtr _skeleton);
-
-  /// Remove a skeleton in this world and delete it
+  /// Remove a skeleton from this world
   void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
-  /// Remove all skeletons from this world, and get pointers to them
-  std::set<dynamics::SkeletonPtr> withdrawAllSkeletons();
-
-  /// Remove all the skeletons in this world and delete them
-  void removeAllSkeletons();
+  /// Remove all the skeletons in this world, and return a set of shared
+  /// pointers to them, in case you want to recycle them
+  std::set<dynamics::SkeletonPtr> removeAllSkeletons();
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
 
   /// Get the indexed Entity
-  dynamics::Entity* getEntity(size_t _index) const;
+  dynamics::SimpleFramePtr getFrame(size_t _index) const;
 
   /// Find an Entity by name
-  dynamics::Entity* getEntity(const std::string& _name) const;
+  dynamics::SimpleFramePtr getFrame(const std::string& _name) const;
 
   /// Get the number of Entities
-  size_t getNumEntities() const;
+  size_t getNumFrames() const;
 
   /// Add an Entity to this world
-  std::string addEntity(dynamics::Entity* _entity);
+  std::string addFrame(dynamics::SimpleFramePtr _frame);
 
-  /// Remove an Entity from this world without deleting it
-  void withdrawEntity(dynamics::Entity* _entity);
+  /// Remove a SimpleFrame from this world
+  void removeFrame(dynamics::SimpleFramePtr _entity);
 
-  /// Remove an Entity from this world and delete it
-  void removeEntity(dynamics::Entity* _entity);
-
-  /// Remove all Entities from this world, and get pointers to them
-  std::set<dynamics::Entity*> withdrawAllEntities();
-
-  /// Remove all Entities in this world. Note: Does not remove any Skeletons
-  void removeAllEntities();
+  /// Remove all SimpleFrames in this world, and return a set of shared
+  /// pointers to them, in case you want to recycle them
+  std::set<dynamics::SimpleFramePtr> removeAllFrames();
 
   //--------------------------------------------------------------------------
   // Kinematics
@@ -213,10 +199,10 @@ protected:
   dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
-  std::vector<dynamics::Entity*> mEntities;
+  std::vector<dynamics::SimpleFramePtr> mFrames;
 
   /// NameManager for keeping track of Entities
-  dart::common::NameManager<dynamics::Entity*> mNameMgrForEntities;
+  dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForFrames;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///
