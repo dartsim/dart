@@ -55,6 +55,31 @@ namespace dynamics {
 class SimpleFrame : public Detachable, public Frame
 {
 public:
+
+  struct UniqueProperties
+  {
+    /// Relative transform of the SimpleFrame
+    Eigen::Isometry3d mRelativeTf;
+
+    /// Relative spatial velocity of the SimpleFrame
+    Eigen::Vector6d mRelativeVelocity;
+
+    /// Relative spatial acceleration of the SimpleFrame
+    Eigen::Vector6d mRelativeAcceleration;
+
+    UniqueProperties(
+        const Eigen::Isometry3d& _relativeTf = Eigen::Isometry3d::Identity(),
+        const Eigen::Vector6d& _relativeVelocity = Eigen::Vector6d::Zero(),
+        const Eigen::Vector6d& _relativeAcceleration = Eigen::Vector6d::Zero());
+  };
+
+  struct Properties : Entity::Properties, UniqueProperties
+  {
+    Properties(
+        const Entity::Properties& _entityProperties = Entity::Properties(),
+        const UniqueProperties& _frameProperties = UniqueProperties());
+  };
+
   /// Constructor
   explicit SimpleFrame(Frame* _refFrame, const std::string& _name,
                        const Eigen::Isometry3d& _relativeTransform =
@@ -62,6 +87,24 @@ public:
 
   /// Destructor
   virtual ~SimpleFrame();
+
+  /// Set the Properties of this SimpleFrame
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this SimpleFrame
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this SimpleFrame
+  Properties getSimpleFrameProperties() const;
+
+  /// Copy the Properties of another SimpleFrame
+  void copy(const SimpleFrame& _otherFrame);
+
+  /// Copy the Properties of another SimpleFrame
+  void copy(const SimpleFrame* _otherFrame);
+
+  /// Copy the Properties of another SimpleFrame
+  SimpleFrame& operator=(const SimpleFrame& _otherFrame);
 
   //--------------------------------------------------------------------------
   // Transform
@@ -149,14 +192,9 @@ public:
       const Eigen::Vector3d& _angularAcceleration = Eigen::Vector3d::Zero());
 
 protected:
-  /// Relative Transform of this Frame
-  Eigen::Isometry3d mRelativeTf;
 
-  /// Relative Velocity of this Frame
-  Eigen::Vector6d mRelativeVelocity;
-
-  /// Relative Acceleration of this Frame
-  Eigen::Vector6d mRelativeAcceleration;
+  /// Properties of this SimpleFrame
+  UniqueProperties mFrameP;
 
   /// Partial Acceleration of this Frame
   mutable Eigen::Vector6d mPartialAcceleration;
