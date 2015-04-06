@@ -85,6 +85,10 @@ public:
                        const Eigen::Isometry3d& _relativeTransform =
                                         Eigen::Isometry3d::Identity());
 
+  /// Copy constructor. Note that the parent frame of _otherFrame will not be
+  /// copied as the reference frame for the newly created SimpleFrame.
+  SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
+
   /// Destructor
   virtual ~SimpleFrame();
 

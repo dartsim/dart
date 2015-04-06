@@ -75,6 +75,15 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 }
 
 //==============================================================================
+SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
+  : Entity(nullptr, "", false),
+    Detachable(nullptr, "", false),
+    Frame(_refFrame, "")
+{
+  copy(_otherFrame);
+}
+
+//==============================================================================
 SimpleFrame::~SimpleFrame()
 {
   // Do nothing
