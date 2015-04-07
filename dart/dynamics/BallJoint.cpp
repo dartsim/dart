@@ -94,6 +94,12 @@ BallJoint::BallJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* BallJoint::clone() const
+{
+  return new BallJoint(getBallJointProperties());
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear()

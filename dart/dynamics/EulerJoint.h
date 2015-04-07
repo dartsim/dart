@@ -163,6 +163,9 @@ protected:
   /// Constructor called by Skeleton class
   EulerJoint(const Properties& _properties);
 
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.
   virtual void updateDegreeOfFreedomNames();

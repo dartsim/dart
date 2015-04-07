@@ -115,6 +115,9 @@ protected:
   UniversalJoint(const Properties& _properties);
 
   // Documentation inherited
+  virtual Joint* clone() const override;
+
+  // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 
   // Documentation inherited

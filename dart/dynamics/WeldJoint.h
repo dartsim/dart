@@ -79,6 +79,9 @@ protected:
   /// Constructor called by Skeleton class
   WeldJoint(const Properties& _properties);
 
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   //----------------------------------------------------------------------------
   // Recursive algorithms
   //----------------------------------------------------------------------------

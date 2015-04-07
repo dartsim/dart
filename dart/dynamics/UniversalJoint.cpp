@@ -160,6 +160,12 @@ UniversalJoint::UniversalJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* UniversalJoint::clone() const
+{
+  return new UniversalJoint(getUniversalJointProperties());
+}
+
+//==============================================================================
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())

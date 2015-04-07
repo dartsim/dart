@@ -281,6 +281,13 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
 }
 
 //==============================================================================
+BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+{
+  return new SoftBodyNode(_parentBodyNode, _parentJoint,
+                          getSoftBodyNodeProperties());
+}
+
+//==============================================================================
 void SoftBodyNode::init(Skeleton* _skeleton)
 {
   BodyNode::init(_skeleton);

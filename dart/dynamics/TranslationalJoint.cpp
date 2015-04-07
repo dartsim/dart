@@ -81,6 +81,12 @@ TranslationalJoint::TranslationalJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* TranslationalJoint::clone() const
+{
+  return new TranslationalJoint(getTranslationalJointProperties());
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())

@@ -94,6 +94,12 @@ WeldJoint::WeldJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* WeldJoint::clone() const
+{
+  return new WeldJoint(getWeldJointProperties());
+}
+
+//==============================================================================
 void WeldJoint::updateLocalTransform() const
 {
   // Do nothing

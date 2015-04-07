@@ -919,6 +919,10 @@ protected:
   BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
            const Properties& _properties);
 
+  /// Create a clone of this BodyNode. This may only be called by the Skeleton
+  /// class.
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 

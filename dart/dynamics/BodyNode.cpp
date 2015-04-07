@@ -1302,6 +1302,12 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 }
 
 //==============================================================================
+BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+{
+  return new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+}
+
+//==============================================================================
 void BodyNode::init(Skeleton* _skeleton)
 {
   assert(_skeleton);

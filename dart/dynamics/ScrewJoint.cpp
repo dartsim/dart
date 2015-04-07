@@ -161,6 +161,12 @@ ScrewJoint::ScrewJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* ScrewJoint::clone() const
+{
+  return new ScrewJoint(getScrewJointProperties());
+}
+
+//==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();

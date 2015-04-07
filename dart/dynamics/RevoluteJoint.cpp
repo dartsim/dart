@@ -147,6 +147,12 @@ RevoluteJoint::RevoluteJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* RevoluteJoint::clone() const
+{
+  return new RevoluteJoint(getRevoluteJointProperties());
+}
+
+//==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint

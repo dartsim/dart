@@ -283,6 +283,12 @@ PlanarJoint::PlanarJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* PlanarJoint::clone() const
+{
+  return new PlanarJoint(getPlanarJointProperties());
+}
+
+//==============================================================================
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;

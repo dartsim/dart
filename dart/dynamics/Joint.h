@@ -608,6 +608,10 @@ protected:
   /// Constructor called by inheriting class
   Joint(const Properties& _properties);
 
+  /// Create a clone of this Joint. This may only be called by the Skeleton
+  /// class.
+  virtual Joint* clone() const = 0;
+
   /// Called by the Skeleton class
   virtual void registerDofs() = 0;
 

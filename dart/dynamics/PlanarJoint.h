@@ -182,6 +182,9 @@ protected:
   /// Constructor called by Skeleton class
   PlanarJoint(const Properties& _properties);
 
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.
   virtual void updateDegreeOfFreedomNames();

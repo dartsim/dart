@@ -101,6 +101,12 @@ FreeJoint::FreeJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* FreeJoint::clone() const
+{
+  return new FreeJoint(getFreeJointProperties());
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Vector6d& velocities = getVelocitiesStatic();

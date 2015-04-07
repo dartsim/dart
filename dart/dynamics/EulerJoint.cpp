@@ -185,6 +185,12 @@ EulerJoint::EulerJoint(const Properties& _properties)
 }
 
 //==============================================================================
+Joint* EulerJoint::clone() const
+{
+  return new EulerJoint(getEulerJointProperties());
+}
+
+//==============================================================================
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;

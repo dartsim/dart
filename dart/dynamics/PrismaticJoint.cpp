@@ -72,6 +72,12 @@ PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
 }
 
 //==============================================================================
+Joint* PrismaticJoint::clone() const
+{
+  return new PrismaticJoint(getPrismaticJointProperties());
+}
+
+//==============================================================================
 PrismaticJoint::~PrismaticJoint()
 {
   // Do nothing
