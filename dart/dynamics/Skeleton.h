@@ -83,6 +83,12 @@ public:
   /// Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
+  /// Create an identical clone of this Skeleton.
+  ///
+  /// Note: the state of the Skeleton will NOT be cloned, only the structure and
+  /// properties will be [TODO: copy the state as well]
+  std::shared_ptr<Skeleton> clone() const;
+
   /// Destructor
   virtual ~Skeleton();
 

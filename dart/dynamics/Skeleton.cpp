@@ -82,15 +82,36 @@ Skeleton::Skeleton(const std::string& _name)
     mUnionRootSkeleton(this),
     mUnionSize(1)
 {
+  // Do nothing
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::clone() const
+{
+  SkeletonPtr skelClone(new Skeleton(getName()));
+
+  for(size_t i=0; i<getNumBodyNodes(); ++i)
+  {
+    Joint* joint = getJoint(i)->clone();
+    const BodyNode* originalParent = getBodyNode(i)->getParentBodyNode();
+    BodyNode* parentClone = originalParent?
+          skelClone->getBodyNode(originalParent->getName()) : nullptr;
+
+    skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
+  }
+
+  return skelClone;
 }
 
 //==============================================================================
 Skeleton::~Skeleton()
 {
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (BodyNode* bn : mBodyNodes)
   {
-    delete (*it);
+    if(bn->getParentJoint())
+      delete bn->getParentJoint();
+
+    delete bn;
   }
 }
 
