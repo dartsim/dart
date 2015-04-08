@@ -129,6 +129,12 @@ public:
   /// Set the Properties of this SoftBodyNode
   void setProperties(const UniqueProperties& _properties);
 
+  /// Remove any unwarranted SoftBodyShapes
+  /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
+  /// are implemented
+  void removeSoftBodyShapes();
+
+
   /// Get the Properties of this SoftBodyNode
   Properties getSoftBodyNodeProperties() const;
 

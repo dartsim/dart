@@ -137,12 +137,20 @@ SoftBodyNode::~SoftBodyNode()
 }
 
 //==============================================================================
-static void removeSoftBodyShapes(std::vector<dynamics::ShapePtr>& shapes)
+void SoftBodyNode::removeSoftBodyShapes()
 {
-  for(size_t i=0; i<shapes.size(); )
+  for(size_t i=0; i<mEntityP.mVizShapes.size(); )
   {
-    if(dynamic_cast<dynamics::SoftMeshShape*>(shapes[i].get()))
-      shapes.erase(shapes.begin()+i);
+    if(dynamic_cast<dynamics::SoftMeshShape*>(mEntityP.mVizShapes[i].get()))
+      removeVisualizationShape(mEntityP.mVizShapes[i]);
+    else
+      ++i;
+  }
+
+  for(size_t i=0; i<mBodyP.mColShapes.size(); )
+  {
+    if(dynamic_cast<dynamics::SoftMeshShape*>(mBodyP.mColShapes[i].get()))
+      removeCollisionShape(mBodyP.mColShapes[i]);
     else
       ++i;
   }
@@ -151,10 +159,6 @@ static void removeSoftBodyShapes(std::vector<dynamics::ShapePtr>& shapes)
 //==============================================================================
 void SoftBodyNode::setProperties(const Properties& _properties)
 {
-  // SoftMeshShape pointers should not be copied between bodies
-  removeSoftBodyShapes(mEntityP.mVizShapes);
-  removeSoftBodyShapes(mBodyP.mColShapes);
-
   BodyNode::setProperties(
         static_cast<const BodyNode::Properties&>(_properties));
 
@@ -164,9 +168,8 @@ void SoftBodyNode::setProperties(const Properties& _properties)
 //==============================================================================
 void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 {
-  // Remove the old shape
-  removeVisualizationShape(mSoftShape);
-  removeCollisionShape(mSoftShape);
+  // SoftMeshShape pointers should not be copied between bodies
+  removeSoftBodyShapes();
 
   size_t newCount = _properties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
@@ -197,12 +200,8 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
     p->setRestingPosition(props.mX0);
     p->setMass(props.mMass);
 
-    p->mConnectedPointMasses.clear();
-    for(size_t c=0; c<props.mConnectedPointMassIndices.size(); ++c)
-    {
-      size_t connectionIndex = props.mConnectedPointMassIndices[c];
-      p->mConnectedPointMasses.push_back(mPointMasses[connectionIndex]);
-    }
+    mSoftP.mPointProps[i].mConnectedPointMassIndices =
+        props.mConnectedPointMassIndices;
   }
 
   setVertexSpringStiffness(_properties.mKv);

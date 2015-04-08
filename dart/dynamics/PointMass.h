@@ -130,6 +130,9 @@ public:
   virtual ~PointMass();
 
   ///
+  size_t getIndexInSoftBodyNode() const;
+
+  ///
   void setMass(double _mass);
 
   ///
@@ -151,7 +154,7 @@ public:
   void addConnectedPointMass(PointMass* _pointMass);
 
   ///
-  int getNumConnectedPointMasses() const;
+  size_t getNumConnectedPointMasses() const;
 
   ///
   PointMass* getConnectedPointMass(size_t _idx);
@@ -675,9 +678,6 @@ protected:
 
   /// Bias force
   Eigen::Vector3d mB;
-
-  ///
-  std::vector<PointMass*> mConnectedPointMasses;
 
   /// External force.
   Eigen::Vector3d mFext;

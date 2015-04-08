@@ -138,6 +138,12 @@ PointMass::~PointMass()
 }
 
 //==============================================================================
+size_t PointMass::getIndexInSoftBodyNode() const
+{
+  return mIndex;
+}
+
+//==============================================================================
 void PointMass::setMass(double _mass)
 {
   assert(0.0 < _mass);
@@ -183,24 +189,25 @@ void PointMass::addConnectedPointMass(PointMass* _pointMass)
 {
   assert(_pointMass != NULL);
 
-  mConnectedPointMasses.push_back(_pointMass);
-
   mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
       mConnectedPointMassIndices.push_back(_pointMass->mIndex);
 }
 
 //==============================================================================
-int PointMass::getNumConnectedPointMasses() const
+size_t PointMass::getNumConnectedPointMasses() const
 {
-  return mConnectedPointMasses.size();
+  return mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
+      mConnectedPointMassIndices.size();
 }
 
 //==============================================================================
 PointMass* PointMass::getConnectedPointMass(size_t _idx)
 {
-  assert(0 <= _idx && _idx < mConnectedPointMasses.size());
+  assert(0 <= _idx && _idx < getNumConnectedPointMasses());
 
-  return mConnectedPointMasses[_idx];
+  return mParentSoftBodyNode->mPointMasses[
+      mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
+      mConnectedPointMassIndices[_idx]];
 }
 
 //==============================================================================
@@ -813,16 +820,16 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   double kv = mParentSoftBodyNode->getVertexSpringStiffness();
   double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
   double kd = mParentSoftBodyNode->getDampingCoefficient();
-  int nN = mConnectedPointMasses.size();
+  int nN = getNumConnectedPointMasses();
   mAlpha = mForces
            - (kv + nN * ke) * getPositions()
            - (_dt * (kv + nN * ke) + kd) * getVelocities()
            - getMass() * getPartialAccelerations()
            - mB;
-  for (size_t i = 0; i < mConnectedPointMasses.size(); ++i)
+  for (size_t i = 0; i < getNumConnectedPointMasses(); ++i)
   {
-    mAlpha += ke * (mConnectedPointMasses[i]->mPositions
-                    + _dt * mConnectedPointMasses[i]->mVelocities);
+    mAlpha += ke * (getConnectedPointMass(i)->mPositions
+                    + _dt * getConnectedPointMass(i)->mVelocities);
   }
   assert(!math::isNan(mAlpha));
 
