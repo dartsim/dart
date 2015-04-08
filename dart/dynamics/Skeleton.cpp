@@ -56,17 +56,30 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Skeleton::Skeleton(const std::string& _name)
+Skeleton::Properties::Properties(
+    const std::string& _name,
+    bool _isMobile,
+    const Eigen::Vector3d& _gravity,
+    double _timeStep,
+    bool _enabledSelfCollisionCheck,
+    bool _enableAdjacentBodyCheck)
   : mName(_name),
+    mIsMobile(_isMobile),
+    mGravity(_gravity),
+    mTimeStep(_timeStep),
+    mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
+    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Skeleton::Skeleton(const std::string& _name)
+  : mSkeletonP(_name),
     mNumDofs(0),
-    mEnabledSelfCollisionCheck(false),
-    mEnabledAdjacentBodyCheck(false),
     mNameMgrForBodyNodes("BodyNode"),
     mNameMgrForJoints("Joint"),
     mNameMgrForSoftBodyNodes("BodyNode"),
-    mIsMobile(true),
-    mTimeStep(0.001),
-    mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
@@ -87,6 +100,18 @@ Skeleton::Skeleton(const std::string& _name)
 }
 
 //==============================================================================
+Skeleton::~Skeleton()
+{
+  for (BodyNode* bn : mBodyNodes)
+  {
+    if(bn->getParentJoint())
+      delete bn->getParentJoint();
+
+    delete bn;
+  }
+}
+
+//==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
   SkeletonPtr skelClone(new Skeleton(getName()));
@@ -101,45 +126,64 @@ SkeletonPtr Skeleton::clone() const
 
     // Grab the parent BodyNode clone (using its name, which is guaranteed to be
     // unique), or use nullptr if this is a root BodyNode
-    BodyNode* parentClone = originalParent?
-          skelClone->getBodyNode(originalParent->getName()) : nullptr;
+    BodyNode* parentClone = originalParent == nullptr? nullptr :
+          skelClone->getBodyNode(originalParent->getName());
+
+    if( (nullptr != originalParent) && (nullptr == parentClone) )
+    {
+      dterr << "[Skeleton::clone] Failed to find a clone of BodyNode named ["
+            << originalParent->getName() << "] which is needed as the parent "
+            << "of the BodyNode named [" << getBodyNode(i)->getName()
+            << "] and should already have been created. Please report this as "
+            << "a bug!\n";
+    }
 
     skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
   }
+
+  skelClone->setProperties(getSkeletonProperties());
 
   return skelClone;
 }
 
 //==============================================================================
-Skeleton::~Skeleton()
+void Skeleton::setProperties(const Properties& _properties)
 {
-  for (BodyNode* bn : mBodyNodes)
-  {
-    if(bn->getParentJoint())
-      delete bn->getParentJoint();
+  setName(_properties.mName);
+  setMobile(_properties.mIsMobile);
+  setGravity(_properties.mGravity);
+  setTimeStep(_properties.mTimeStep);
 
-    delete bn;
-  }
+  if(_properties.mEnabledSelfCollisionCheck)
+    enableSelfCollision(_properties.mEnabledAdjacentBodyCheck);
+  else
+    disableSelfCollision();
+}
+
+//==============================================================================
+const Skeleton::Properties& Skeleton::getSkeletonProperties() const
+{
+  return mSkeletonP;
 }
 
 //==============================================================================
 const std::string& Skeleton::setName(const std::string& _name)
 {
-  if(_name == mName)
-    return mName;
+  if(_name == mSkeletonP.mName)
+    return mSkeletonP.mName;
 
-  const std::string oldName = mName;
-  mName = _name;
+  const std::string oldName = mSkeletonP.mName;
+  mSkeletonP.mName = _name;
 
-  mNameChangedSignal.raise(this, oldName, mName);
+  mNameChangedSignal.raise(this, oldName, mSkeletonP.mName);
 
-  return mName;
+  return mSkeletonP.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::getName() const
 {
-  return mName;
+  return mSkeletonP.mName;
 }
 
 //==============================================================================
@@ -195,59 +239,59 @@ const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 //==============================================================================
 void Skeleton::enableSelfCollision(bool _enableAdjecentBodyCheck)
 {
-  mEnabledSelfCollisionCheck = true;
-  mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
+  mSkeletonP.mEnabledSelfCollisionCheck = true;
+  mSkeletonP.mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mEnabledSelfCollisionCheck = false;
-  mEnabledAdjacentBodyCheck = false;
+  mSkeletonP.mEnabledSelfCollisionCheck = false;
+  mSkeletonP.mEnabledAdjacentBodyCheck = false;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledSelfCollisionCheck() const
 {
-  return mEnabledSelfCollisionCheck;
+  return mSkeletonP.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledAdjacentBodyCheck() const
 {
-  return mEnabledAdjacentBodyCheck;
+  return mSkeletonP.mEnabledAdjacentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::setMobile(bool _isMobile)
 {
-  mIsMobile = _isMobile;
+  mSkeletonP.mIsMobile = _isMobile;
 }
 
 //==============================================================================
 bool Skeleton::isMobile() const
 {
-  return mIsMobile;
+  return mSkeletonP.mIsMobile;
 }
 
 //==============================================================================
 void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
-  mTimeStep = _timeStep;
+  mSkeletonP.mTimeStep = _timeStep;
   notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 double Skeleton::getTimeStep() const
 {
-  return mTimeStep;
+  return mSkeletonP.mTimeStep;
 }
 
 //==============================================================================
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
-  mGravity = _gravity;
+  mSkeletonP.mGravity = _gravity;
   mIsGravityForcesDirty = true;
   mIsCoriolisAndGravityForcesDirty = true;
 }
@@ -255,13 +299,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 //==============================================================================
 const Eigen::Vector3d& Skeleton::getGravity() const
 {
-  return mGravity;
-}
-
-//==============================================================================
-double Skeleton::getMass() const
-{
-  return mTotalMass;
+  return mSkeletonP.mGravity;
 }
 
 //==============================================================================
@@ -281,6 +319,12 @@ void Skeleton::addBodyNode(BodyNode* _body)
     mSoftBodyNodes.push_back(softBodyNode);
     addEntryToSoftBodyNodeNameMgr(softBodyNode);
   }
+}
+
+//==============================================================================
+double Skeleton::getMass() const
+{
+  return mTotalMass;
 }
 
 //==============================================================================
@@ -1749,7 +1793,7 @@ const Eigen::VectorXd& Skeleton::getConstraintForces()
   assert(index == dof);
 
   // Get force by devide impulse by time step
-  mFc = mFc / mTimeStep;
+  mFc = mFc / mSkeletonP.mTimeStep;
 
   return mFc;
 }
@@ -1839,7 +1883,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
   if (nullptr == _newJoint)
   {
     dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
-             "Joint to the Skeleton named '" << mName << "'!\n";
+             "Joint to the Skeleton named [" << mSkeletonP.mName << "]!\n";
     return;
   }
 
@@ -1911,7 +1955,7 @@ void Skeleton::updateArticulatedInertia() const
   for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateArtInertia(mTimeStep);
+    (*it)->updateArtInertia(mSkeletonP.mTimeStep);
   }
 
   mIsArticulatedInertiaDirty = false;
@@ -2003,7 +2047,7 @@ void Skeleton::updateAugMassMatrix()
     //         it != mBodyNodes.end(); ++it)
     for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
     {
-      mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mTimeStep);
+      mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mSkeletonP.mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -2117,7 +2161,7 @@ void Skeleton::updateInvAugMassMatrix()
     //         it != mBodyNodes.end(); ++it)
     for (size_t i = 0; i < mBodyNodes.size(); ++i)
     {
-      mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mTimeStep);
+      mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mSkeletonP.mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -2188,7 +2232,7 @@ void Skeleton::updateGravityForces()
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateGravityForceVector(&mG, mGravity);
+    (*it)->aggregateGravityForceVector(&mG, mSkeletonP.mGravity);
   }
 
   mIsGravityForcesDirty = false;
@@ -2218,7 +2262,7 @@ void Skeleton::updateCoriolisAndGravityForces()
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateCombinedVector(&mCg, mGravity);
+    (*it)->aggregateCombinedVector(&mCg, mSkeletonP.mGravity);
   }
 
   mIsCoriolisAndGravityForcesDirty = false;
@@ -2359,14 +2403,14 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    (*it)->updateBiasForce(mGravity, mTimeStep);
+    (*it)->updateBiasForce(mSkeletonP.mGravity, mSkeletonP.mTimeStep);
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
     bodyNode->updateAccelerationFD();
     bodyNode->updateTransmittedForceFD();
-    bodyNode->updateJointForceFD(mTimeStep, true, true);
+    bodyNode->updateJointForceFD(mSkeletonP.mTimeStep, true, true);
   }
 }
 
@@ -2423,8 +2467,8 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
   // Backward recursion
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateTransmittedForceID(mGravity, _withExternalForces);
-    (*it)->updateJointForceID(mTimeStep,
+    (*it)->updateTransmittedForceID(mSkeletonP.mGravity, _withExternalForces);
+    (*it)->updateJointForceID(mSkeletonP.mTimeStep,
                               _withDampingForces,
                               _withSpringForces);
   }
@@ -2620,7 +2664,7 @@ void Skeleton::computeImpulseForwardDynamics()
     bodyNode->updateVelocityChangeFD();
     bodyNode->updateTransmittedImpulse();
     bodyNode->updateJointImpulseFD();
-    bodyNode->updateConstrainedTerms(mTimeStep);
+    bodyNode->updateConstrainedTerms(mSkeletonP.mTimeStep);
   }
 }
 
@@ -2825,7 +2869,7 @@ double Skeleton::getPotentialEnergy() const
   for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
-    PE += (*it)->getPotentialEnergy(mGravity);
+    PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
     PE += (*it)->getParentJoint()->getPotentialEnergy();
   }
 

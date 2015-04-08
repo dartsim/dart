@@ -82,6 +82,37 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
 
+  struct Properties
+  {
+    /// Name
+    std::string mName;
+
+    /// If the skeleton is not mobile, its dynamic effect is equivalent
+    /// to having infinite mass. If the configuration of an immobile skeleton are
+    /// manually changed, the collision results might not be correct.
+    bool mIsMobile;
+
+    /// Gravity vector.
+    Eigen::Vector3d mGravity;
+
+    /// Time step for implicit joint damping force.
+    double mTimeStep;
+
+    /// True if self collision check is enabled
+    bool mEnabledSelfCollisionCheck;
+
+    /// True if self collision check is enabled including adjacent bodies
+    bool mEnabledAdjacentBodyCheck;
+
+    Properties(
+        const std::string& _name = "Skeleton",
+        bool _isMobile = true,
+        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
+        double _timeStep = 0.001,
+        bool _enabledSelfCollisionCheck = false,
+        bool _enableAdjacentBodyCheck = false);
+  };
+
   //----------------------------------------------------------------------------
   // Constructor and Destructor
   //----------------------------------------------------------------------------
@@ -89,18 +120,24 @@ public:
   /// Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
 
+  /// Destructor
+  virtual ~Skeleton();
+
   /// Create an identical clone of this Skeleton.
   ///
   /// Note: the state of the Skeleton will NOT be cloned, only the structure and
   /// properties will be [TODO: copy the state as well]
   std::shared_ptr<Skeleton> clone() const;
 
-  /// Destructor
-  virtual ~Skeleton();
-
   //----------------------------------------------------------------------------
   // Properties
   //----------------------------------------------------------------------------
+
+  /// Set the Properties of this Skeleton
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Skeleton
+  const Properties& getSkeletonProperties() const;
 
   /// Set name.
   const std::string& setName(const std::string& _name);
@@ -143,10 +180,6 @@ public:
   /// Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
 
-  /// Get total mass of the skeleton. The total mass is calculated at
-  /// init().
-  double getMass() const;
-
   //----------------------------------------------------------------------------
   // Structural Properties
   //----------------------------------------------------------------------------
@@ -169,6 +202,10 @@ public:
   /// Add a body node
   DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
+
+  /// Get total mass of the skeleton. The total mass is calculated at
+  /// init().
+  double getMass() const;
 
   /// Get number of body nodes
   size_t getNumBodyNodes() const;
@@ -970,8 +1007,9 @@ protected:
   const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
 
 protected:
-  /// Name
-  std::string mName;
+
+  /// Properties of this Skeleton
+  Properties mSkeletonP;
 
   /// Number of degrees of freedom (aka generalized coordinates)
   size_t mNumDofs;
@@ -984,12 +1022,6 @@ protected:
 
   /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
   std::vector<DegreeOfFreedom*> mDofs;
-
-  /// True if self collision check is enabled
-  bool mEnabledSelfCollisionCheck;
-
-  /// True if self collision check is enabled including adjacent bodies
-  bool mEnabledAdjacentBodyCheck;
 
   /// List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
@@ -1011,14 +1043,6 @@ protected:
 
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
-
-  /// If the skeleton is not mobile, its dynamic effect is equivalent
-  /// to having infinite mass. If the configuration of an immobile skeleton are
-  /// manually changed, the collision results might not be correct.
-  bool mIsMobile;
-
-  /// Time step for implicit joint damping force.
-  double mTimeStep;
 
   /// Gravity vector.
   Eigen::Vector3d mGravity;
