@@ -16,6 +16,7 @@ public:
         mZoom = 0.3;
 
         mActiveMarker = -1;
+        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
     }
 
     virtual void draw();

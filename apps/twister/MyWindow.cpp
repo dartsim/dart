@@ -44,7 +44,6 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
                 mActiveMarker = coordsToMarker(_x, _y);
                 if (mActiveMarker != -1) {
                     mWorld->createConstraint(mActiveMarker);
-                    glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
                 }
             } else {
                 mRotate = true;
