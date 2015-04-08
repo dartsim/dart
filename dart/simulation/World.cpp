@@ -62,7 +62,7 @@ World::World(const std::string& _name)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
-    mIntegrator(NULL),
+    mIntegrator(nullptr),
     mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
@@ -84,6 +84,9 @@ World::~World()
 WorldPtr World::clone() const
 {
   WorldPtr worldClone(new World(mName));
+
+  worldClone->setGravity(mGravity);
+  worldClone->setTimeStep(mTimeStep);
 
   // Clone and add each Skeleton
   for(size_t i=0; i<mSkeletons.size(); ++i)
