@@ -160,6 +160,7 @@ public:
     }
 
     mMap.insert(std::pair<std::string, T>(_name, _obj));
+    mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
 
     return true;
   }
@@ -172,6 +173,10 @@ public:
     if (it == mMap.end())
       return false;
 
+    typename std::map<T, std::string>::iterator rit =
+        mReverseMap.find(it->second);
+
+    mReverseMap.erase(rit);
     mMap.erase(it);
 
     return true;
@@ -187,6 +192,12 @@ public:
   bool hasName(const std::string& _name) const
   {
     return (mMap.find(_name) != mMap.end());
+  }
+
+  /// Return true if the object is contained
+  bool hasObject(T _obj) const
+  {
+    return (mReverseMap.find(_obj) != mReverseMap.end());
   }
 
   /// Get the number of the objects currently stored by the NameManager
@@ -211,6 +222,26 @@ public:
       return nullptr;
   }
 
+  /// Change the name of a currently held object. This will do nothing if the
+  /// object is already using _newName or if the object is not held by this
+  /// NameManager.
+  ///
+  /// If the object is held, its new name is returned (which might
+  /// be different than _newName if there was a duplicate naming conflict). If
+  /// the object is not held, an empty string will be returned.
+  std::string changeObjectName(T _obj, const std::string& _newName)
+  {
+    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+    if(rit == mReverseMap.end())
+      return "";
+
+    if(rit->second == _newName)
+      return rit->second;
+
+    removeName(rit->second);
+    return issueNewNameAndAdd(_newName, _obj);
+  }
+
   /// Set the name that will be provided to objects passed in with an empty
   /// string for a name
   void setDefaultName(const std::string& _defaultName)
@@ -228,6 +259,9 @@ public:
 protected:
   /// Map of objects that have been added to the NameManager
   std::map<std::string, T> mMap;
+
+  /// Reverse map of objects that have been added to the NameManager
+  std::map<T, std::string> mReverseMap;
 
   /// String which will be used as a name for any object which is passed in with
   /// an empty string name

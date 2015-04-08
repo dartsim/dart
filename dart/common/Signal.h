@@ -130,6 +130,20 @@ public:
   Connection(Connection&& _other)
     : mWeakConnectionBody(std::move(_other.mWeakConnectionBody)) {}
 
+  /// Assignment operator
+  Connection& operator=(const Connection& _other)
+  {
+    mWeakConnectionBody = _other.mWeakConnectionBody;
+    return *this;
+  }
+
+  /// Move assignment operator
+  Connection& operator=(Connection&& _other)
+  {
+    mWeakConnectionBody = std::move(_other.mWeakConnectionBody);
+    return *this;
+  }
+
   /// Constructor given connection body
   Connection(
       const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody)

@@ -77,19 +77,37 @@ namespace simulation {
 class World : public virtual common::Subject
 {
 public:
+
+  using NameChangedSignal
+      = common::Signal<void(const std::string& _oldName,
+                            const std::string& _newName)>;
+
   //--------------------------------------------------------------------------
   // Constructor and Destructor
   //--------------------------------------------------------------------------
 
   /// Constructor
-  World();
+  World(const std::string& _name = "world");
 
   /// Destructor
   virtual ~World();
 
+  /// Create a clone of this World. All Skeletons and SimpleFrames that are held
+  /// by this World will be copied over.
+  ///
+  /// Note that the states of the Skeletons will not be kept in this copy
+  /// [TODO: copy the states as well]
+  std::shared_ptr<World> clone() const;
+
   //--------------------------------------------------------------------------
   // Properties
   //--------------------------------------------------------------------------
+
+  /// Set the name of this World
+  const std::string& setName(const std::string& _newName);
+
+  /// Get the name of this World
+  const std::string& getName() const;
 
   /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
@@ -144,7 +162,7 @@ public:
   std::string addFrame(dynamics::SimpleFramePtr _frame);
 
   /// Remove a SimpleFrame from this world
-  void removeFrame(dynamics::SimpleFramePtr _entity);
+  void removeFrame(dynamics::SimpleFramePtr _frame);
 
   /// Remove all SimpleFrames in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
@@ -192,14 +210,38 @@ public:
   Recording* getRecording();
 
 protected:
-  /// Skeletones in this world
+
+  /// Register when a Skeleton's name is changed
+  void handleSkeletonNameChange(const dynamics::Skeleton* _skeleton);
+
+  /// Register when a SimpleFrame's name is changed
+  void handleFrameNameChange(const dynamics::Entity* _entity);
+
+  /// Name of this World
+  std::string mName;
+
+  /// Skeletons in this world
   std::vector<dynamics::SkeletonPtr> mSkeletons;
+
+  /// Connections for noticing changes in Skeleton names
+  /// TODO(MXG): Consider putting this functionality into NameManager
+  std::vector<common::Connection> mNameConnectionsForSkeletons;
+
+  /// Map from raw Skeleton pointers to their shared_ptrs
+  std::map<const dynamics::Skeleton*, dynamics::SkeletonPtr> mSkeletonToShared;
 
   /// NameManager for keeping track of Skeletons
   dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
   std::vector<dynamics::SimpleFramePtr> mFrames;
+
+  /// Connections for noticing changes in Frame names
+  /// TODO(MXG): Consider putting this functionality into NameManager
+  std::vector<common::Connection> mNameConnectionsForFrames;
+
+  /// Map from raw SimpleFrame pointers to their shared_ptrs
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mFrameToShared;
 
   /// NameManager for keeping track of Entities
   dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForFrames;
@@ -231,6 +273,18 @@ protected:
 
   ///
   Recording* mRecording;
+
+  //--------------------------------------------------------------------------
+  // Signals
+  //--------------------------------------------------------------------------
+  NameChangedSignal mNameChangedSignal;
+
+public:
+  //--------------------------------------------------------------------------
+  // Slot registers
+  //--------------------------------------------------------------------------
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
 };
 
 typedef std::shared_ptr<World> WorldPtr;

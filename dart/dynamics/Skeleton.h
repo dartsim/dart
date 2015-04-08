@@ -76,6 +76,12 @@ struct GenCoordInfo
 class Skeleton : public common::Subject
 {
 public:
+
+  using NameChangedSignal
+      = common::Signal<void(const Skeleton* _skeleton,
+                            const std::string& _oldName,
+                            const std::string& _newName)>;
+
   //----------------------------------------------------------------------------
   // Constructor and Destructor
   //----------------------------------------------------------------------------
@@ -97,7 +103,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set name.
-  void setName(const std::string& _name);
+  const std::string& setName(const std::string& _name);
 
   /// Get name.
   const std::string& getName() const;
@@ -1085,11 +1091,15 @@ protected:
   /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
 
-  //----------------------------------------------------------------------------
-  // Union finding
-  //----------------------------------------------------------------------------
-public:
+  //--------------------------------------------------------------------------
+  // Signals
+  //--------------------------------------------------------------------------
+  NameChangedSignal mNameChangedSignal;
 
+public:
+  //--------------------------------------------------------------------------
+  // Union finding
+  //--------------------------------------------------------------------------
   ///
   void resetUnion()
   {
@@ -1105,6 +1115,11 @@ public:
 
   ///
   size_t mUnionIndex;
+
+  //--------------------------------------------------------------------------
+  // Slot registers
+  //--------------------------------------------------------------------------
+  common::SlotRegister<NameChangedSignal> onNameChanged;
 
 public:
   // To get byte-aligned Eigen vectors

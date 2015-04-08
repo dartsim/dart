@@ -80,7 +80,8 @@ Skeleton::Skeleton(const std::string& _name)
     mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
     mUnionRootSkeleton(this),
-    mUnionSize(1)
+    mUnionSize(1),
+    onNameChanged(mNameChangedSignal)
 {
   // Do nothing
 }
@@ -92,8 +93,14 @@ SkeletonPtr Skeleton::clone() const
 
   for(size_t i=0; i<getNumBodyNodes(); ++i)
   {
+    // Create a clone of the parent Joint
     Joint* joint = getJoint(i)->clone();
+
+    // Identify the original parent BodyNode
     const BodyNode* originalParent = getBodyNode(i)->getParentBodyNode();
+
+    // Grab the parent BodyNode clone (using its name, which is guaranteed to be
+    // unique), or use nullptr if this is a root BodyNode
     BodyNode* parentClone = originalParent?
           skelClone->getBodyNode(originalParent->getName()) : nullptr;
 
@@ -116,9 +123,17 @@ Skeleton::~Skeleton()
 }
 
 //==============================================================================
-void Skeleton::setName(const std::string& _name)
+const std::string& Skeleton::setName(const std::string& _name)
 {
+  if(_name == mName)
+    return mName;
+
+  const std::string oldName = mName;
   mName = _name;
+
+  mNameChangedSignal.raise(this, oldName, mName);
+
+  return mName;
 }
 
 //==============================================================================

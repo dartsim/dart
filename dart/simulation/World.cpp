@@ -55,15 +55,17 @@ namespace dart {
 namespace simulation {
 
 //==============================================================================
-World::World()
-  : mNameMgrForSkeletons("skeleton"),
+World::World(const std::string& _name)
+  : mName(_name),
+    mNameMgrForSkeletons("skeleton"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
     mIntegrator(NULL),
     mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
-    mRecording(new Recording(mSkeletons))
+    mRecording(new Recording(mSkeletons)),
+    onNameChanged(mNameChangedSignal)
 {
   mIndices.push_back(0);
 }
@@ -73,6 +75,44 @@ World::~World()
 {
   delete mConstraintSolver;
   delete mRecording;
+
+  for(common::Connection& connection : mNameConnectionsForSkeletons)
+    connection.disconnect();
+}
+
+//==============================================================================
+WorldPtr World::clone() const
+{
+  WorldPtr worldClone(new World(mName));
+
+  // Clone and add each Skeleton
+  for(size_t i=0; i<mSkeletons.size(); ++i)
+  {
+    worldClone->addSkeleton(mSkeletons[i]->clone());
+  }
+
+  // Clone and add each SimpleFrame
+  for(size_t i=0; i<mFrames.size(); ++i)
+  {
+    worldClone->addFrame(mFrames[i]->clone(mFrames[i]->getParentFrame()));
+  }
+
+  // For each newly cloned SimpleFrame, try to make its parent Frame be one of
+  // the new clones if there is a match. This is meant to minimize any possible
+  // interdependencies between the kinematics of different worlds.
+  for(size_t i=0; i<worldClone->getNumFrames(); ++i)
+  {
+    dynamics::Frame* current_parent =
+        worldClone->getFrame(i)->getParentFrame();
+
+    dynamics::SimpleFramePtr parent_candidate =
+        worldClone->getFrame(current_parent->getName());
+
+    if(parent_candidate)
+      worldClone->getFrame(i)->setParentFrame(parent_candidate.get());
+  }
+
+  return worldClone;
 }
 
 //==============================================================================
@@ -166,6 +206,26 @@ int World::getSimFrames() const
 }
 
 //==============================================================================
+const std::string& World::setName(const std::string& _newName)
+{
+  if(_newName == mName)
+    return mName;
+
+  const std::string oldName = mName;
+  mName = _newName;
+
+  mNameChangedSignal.raise(oldName, mName);
+
+  return mName;
+}
+
+//==============================================================================
+const std::string& World::getName() const
+{
+  return mName;
+}
+
+//==============================================================================
 void World::setGravity(const Eigen::Vector3d& _gravity)
 {
   mGravity = _gravity;
@@ -224,9 +284,21 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
+  mSkeletonToShared[_skeleton.get()] = _skeleton;
+
+  mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
+        [=](const dynamics::Skeleton* skel,
+            const std::string&, const std::string&)
+        { this->handleSkeletonNameChange(skel); } ));
+
   _skeleton->setName(mNameMgrForSkeletons.issueNewNameAndAdd(
                        _skeleton->getName(), _skeleton));
+
+  // TODO(MXG): This init should not be needed once the public BodyNode
+  // constructors are removed from DART, but we should probably keep it for now
+  // just in case some users are still building Skeletons in the deprecated way
   _skeleton->init(mTimeStep, mGravity);
+
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
 
@@ -249,16 +321,16 @@ void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
   }
 
   // Find index of _skeleton in mSkeleton.
-  size_t i = 0;
-  for (; i < mSkeletons.size(); ++i)
+  size_t index = 0;
+  for (; index < mSkeletons.size(); ++index)
   {
-    if (mSkeletons[i] == _skeleton)
+    if (mSkeletons[index] == _skeleton)
       break;
   }
 
   // If i is equal to the number of skeletons, then _skeleton is not in
   // mSkeleton. We do nothing.
-  if (i == mSkeletons.size())
+  if (index == mSkeletons.size())
   {
     dtwarn << "[World::removeSkeleton] Skeleton [" << _skeleton->getName()
            << "] is not in the world.\n";
@@ -266,29 +338,29 @@ void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
   }
 
   // Update mIndices.
-  for (++i; i < mSkeletons.size() - 1; ++i)
+  for (size_t i = index+1; i < mSkeletons.size() - 1; ++i)
     mIndices[i] = mIndices[i+1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
   // Remove _skeleton from constraint handler.
   mConstraintSolver->removeSkeleton(_skeleton);
 
-  // Remove _skeleton in mSkeletons and delete it.
+  // Remove _skeleton from mSkeletons
   mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
                    mSkeletons.end());
-  // TODO(MXG): This approach invalidates the indices of all Skeletons in the
-  // vector that came after the one that was deleted. Now if the user attempts
-  // to access those Skeletons by their previously assigned indices, it will not
-  // work correctly. This isn't really a problem since the user has the freedom
-  // to always access Skeletons by name, but it might be worth mentioning in
-  // documentation that the user cannot expect the index of a Skeleton to remain
-  // valid after a deletion has happened.
+
+  // Disconnect the name change monitor
+  mNameConnectionsForSkeletons[index].disconnect();
+  mNameConnectionsForSkeletons.erase(mNameConnectionsForSkeletons.begin()+index);
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
 
   // Remove from NameManager
   mNameMgrForSkeletons.removeName(_skeleton->getName());
+
+  // Remove from the pointer map
+  mSkeletonToShared.erase(_skeleton.get());
 }
 
 //==============================================================================
@@ -317,7 +389,7 @@ dynamics::SimpleFramePtr World::getFrame(size_t _index) const
   if(_index < mFrames.size())
     return mFrames[_index];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -351,6 +423,13 @@ std::string World::addFrame(dynamics::SimpleFramePtr _frame)
   }
 
   mFrames.push_back(_frame);
+  mFrameToShared[_frame.get()] = _frame;
+
+  mNameConnectionsForFrames.push_back(_frame->onNameChanged.connect(
+        [=](const dynamics::Entity* _entity,
+            const std::string&, const std::string&)
+        { this->handleFrameNameChange(_entity); } ));
+
   _frame->setName(mNameMgrForFrames.issueNewNameAndAdd(
                      _frame->getName(), _frame));
 
@@ -358,23 +437,34 @@ std::string World::addFrame(dynamics::SimpleFramePtr _frame)
 }
 
 //==============================================================================
-void World::removeFrame(dynamics::SimpleFramePtr _entity)
+void World::removeFrame(dynamics::SimpleFramePtr _frame)
 {
-  assert(_entity != nullptr && "Attempted to remove nullptr SimpleFrame from world");
+  assert(_frame != nullptr && "Attempted to remove nullptr SimpleFrame from world");
 
   std::vector<dynamics::SimpleFramePtr>::iterator it =
-      find(mFrames.begin(), mFrames.end(), _entity);
+      find(mFrames.begin(), mFrames.end(), _frame);
 
   if(it == mFrames.end())
   {
-    dtwarn << "[World::removeFrame] Frame named [" << _entity->getName()
+    dtwarn << "[World::removeFrame] Frame named [" << _frame->getName()
            << "] is not in the world.\n";
     return;
   }
 
-  mFrames.erase(remove(mFrames.begin(), mFrames.end(), _entity),
-                  mFrames.end());
-  // TODO(MXG): Same issue as the one above for removeSkeleton()
+  size_t index = it - mFrames.begin();
+
+  // Remove the frame
+  mFrames.erase(mFrames.begin()+index);
+
+  // Disconnect the name change monitor
+  mNameConnectionsForFrames[index].disconnect();
+  mNameConnectionsForFrames.erase(mNameConnectionsForFrames.begin()+index);
+
+  // Remove from NameManager
+  mNameMgrForFrames.removeName(_frame->getName());
+
+  // Remove from the pointer map
+  mFrameToShared.erase(_frame.get());
 }
 
 //==============================================================================
@@ -431,6 +521,74 @@ Recording* World::getRecording()
 {
   return mRecording;
 }
+
+//==============================================================================
+void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
+{
+  if(nullptr == _skeleton)
+    return;
+
+  // Get the new name of the Skeleton
+  const std::string& newName = _skeleton->getName();
+
+  // Find the shared version of the Skeleton
+  std::map<const dynamics::Skeleton*, dynamics::SkeletonPtr>::iterator it =
+      mSkeletonToShared.find(_skeleton);
+  if( it == mSkeletonToShared.end() )
+  {
+    dterr << "[World::handleSkeletonNameChange] Could not find Skeleton named ["
+          << _skeleton->getName() << "] in the shared_ptr map of World ["
+          << getName() <<"]. This is most likely a bug. Please report this!\n";
+    return;
+  }
+  dynamics::SkeletonPtr sharedSkel = it->second;
+
+  // Inform the NameManager of the change
+  std::string issuedName = mNameMgrForSkeletons.changeObjectName(
+        sharedSkel, newName);
+
+  // If the name issued by the NameManger does not match, reset the name of the
+  // Skeleton to match the newly issued name.
+  if( (!issuedName.empty()) && (newName != issuedName) )
+  {
+    sharedSkel->setName(issuedName);
+  }
+}
+
+//==============================================================================
+void World::handleFrameNameChange(const dynamics::Entity* _entity)
+{
+  // Check that this is actually a SimpleFrame
+  const dynamics::SimpleFrame* frame =
+      dynamic_cast<const dynamics::SimpleFrame*>(_entity);
+
+  if(nullptr == frame)
+    return;
+
+  // Get the new name of the Frame
+  const std::string& newName = frame->getName();
+
+  // Find the shared version of the Frame
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>::iterator it
+      = mFrameToShared.find(frame);
+  if( it == mFrameToShared.end() )
+  {
+    dterr << "[World::handleFrameNameChange] Could not find SimpleFrame named ["
+          << frame->getName() << "] in the shared_ptr map of World ["
+          << getName() << "]. This is most likely a bug. Please report this!\n";
+    return;
+  }
+  dynamics::SimpleFramePtr sharedFrame = it->second;
+
+  std::string issuedName = mNameMgrForFrames.changeObjectName(
+        sharedFrame, newName);
+
+  if( (!issuedName.empty()) && (newName != issuedName) )
+  {
+    sharedFrame->setName(issuedName);
+  }
+}
+
 
 }  // namespace simulation
 }  // namespace dart

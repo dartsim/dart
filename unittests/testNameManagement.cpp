@@ -259,6 +259,134 @@ TEST(NameManagement, SetPattern)
 }
 
 //==============================================================================
+TEST(NameManagement, WorldSkeletons)
+{
+  dart::simulation::WorldPtr world1(new dart::simulation::World);
+
+  dart::dynamics::SkeletonPtr skel0(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr skel1(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr skel2(new dart::dynamics::Skeleton);
+
+  world1->addSkeleton(skel0);
+  world1->addSkeleton(skel1);
+  world1->addSkeleton(skel2);
+
+  EXPECT_TRUE(skel0->getName() == "Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+  EXPECT_TRUE(skel2->getName() == "Skeleton(2)");
+
+  skel1->setName("Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+  skel1->setName("OtherName");
+  EXPECT_TRUE(skel1->getName() == "OtherName");
+
+  skel2->setName("Skeleton");
+  EXPECT_TRUE(skel2->getName() == "Skeleton(1)");
+  skel2->setName("OtherName");
+  EXPECT_TRUE(skel2->getName() == "OtherName(1)");
+
+  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
+  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+
+  dart::simulation::WorldPtr world2(new dart::simulation::World);
+
+  dart::dynamics::SkeletonPtr skel3(new dart::dynamics::Skeleton("OtherName"));
+  world2->addSkeleton(skel3);
+  world2->addSkeleton(skel2);
+  world2->addSkeleton(skel1);
+
+  EXPECT_TRUE(skel3->getName() == "OtherName");
+  EXPECT_TRUE(skel1->getName() == "OtherName(2)");
+  EXPECT_TRUE(skel2->getName() == "OtherName(1)");
+
+  skel3->setName("Skeleton(1)");
+  skel1->setName("Skeleton");
+
+  EXPECT_TRUE(skel3->getName() == "Skeleton(1)");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)(1)");
+
+  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
+  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+
+  EXPECT_TRUE( skel3 == world2->getSkeleton(skel3->getName()) );
+  EXPECT_TRUE( skel1 == world2->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world2->getSkeleton(skel2->getName()) );
+
+  world2->removeSkeleton(skel1);
+
+  skel1->setName("Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+}
+
+//==============================================================================
+TEST(NameManagement, WorldSimpleFrames)
+{
+  dart::simulation::WorldPtr world1(new dart::simulation::World);
+
+  dart::dynamics::SimpleFramePtr frame0(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  dart::dynamics::SimpleFramePtr frame1(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  dart::dynamics::SimpleFramePtr frame2(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+
+  world1->addFrame(frame0);
+  world1->addFrame(frame1);
+  world1->addFrame(frame2);
+
+  EXPECT_TRUE(frame0->getName() == "Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
+  EXPECT_TRUE(frame2->getName() == "Frame(2)");
+
+  frame1->setName("Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
+  frame1->setName("OtherName");
+  EXPECT_TRUE(frame1->getName() == "OtherName");
+
+  frame2->setName("Frame");
+  EXPECT_TRUE(frame2->getName() == "Frame(1)");
+  frame2->setName("OtherName");
+  EXPECT_TRUE(frame2->getName() == "OtherName(1)");
+
+  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+
+  dart::simulation::WorldPtr world2(new dart::simulation::World);
+
+  dart::dynamics::SimpleFramePtr frame3(
+        new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
+  world2->addFrame(frame3);
+  world2->addFrame(frame2);
+  world2->addFrame(frame1);
+
+  EXPECT_TRUE(frame3->getName() == "OtherName");
+  EXPECT_TRUE(frame1->getName() == "OtherName(2)");
+  EXPECT_TRUE(frame2->getName() == "OtherName(1)");
+
+  frame3->setName("Frame(1)");
+  frame1->setName("Frame");
+
+  EXPECT_TRUE(frame3->getName() == "Frame(1)");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)(1)");
+
+  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+
+  EXPECT_TRUE( frame3 == world2->getFrame(frame3->getName()) );
+  EXPECT_TRUE( frame1 == world2->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world2->getFrame(frame2->getName()) );
+
+  world2->removeFrame(frame1);
+
+  frame1->setName("Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
