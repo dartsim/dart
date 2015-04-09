@@ -207,7 +207,7 @@ TEST(World, Cloning)
     }
 
 #ifndef NDEBUG // Debug mode
-    size_t numIterations = 5;
+    size_t numIterations = 3;
 #else
     size_t numIterations = 500;
 #endif
