@@ -528,9 +528,10 @@
             </body>
 
             <!-- JOINT: Pelvis -->
-            <joint type="translational" name="j_pelvis">
+            <joint type="euler" name="j_pelvis">
                 <parent>world</parent>
                 <child>h_pelvis</child>
+                <axis_order>xyz</axis_order>
                 <init_pos>0 0 0</init_pos>
                 <init_vel>0 0 0</init_vel>
             </joint>

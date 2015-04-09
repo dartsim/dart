@@ -55,7 +55,7 @@ VectorXd MyWorld::updateGradients() {
   Matrix4d jointToChild = joint->getTransformFromChildBodyNode().inverse().matrix();
   Vector4d jCol = worldToParent * parentToJoint * dR * R * jointToChild * offset;
   int colIndex = joint->getIndexInSkeleton(0);
-  mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of J
+  mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of jCol
   dR = joint->getTransformDerivative(1);
   R = joint->getTransform(0).matrix();
   jCol = worldToParent * parentToJoint * R * dR * jointToChild * offset;
@@ -72,7 +72,7 @@ VectorXd MyWorld::updateGradients() {
   jointToChild = joint->getTransformFromChildBodyNode().inverse().matrix();
   jCol = worldToParent * parentToJoint * dR * jointToChild * offset;
   colIndex = joint->getIndexInSkeleton(0);
-  mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of J
+  mJ.col(colIndex) = jCol.head(3); // Take the first 3 elelemtns of jCol
   offset = parentToJoint * joint->getTransform(0).matrix() * jointToChild * offset;
 
   // w.r.t hip dofs
