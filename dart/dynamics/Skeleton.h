@@ -189,8 +189,10 @@ public:
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
     BodyNode* _parent = nullptr,
-    const typename JointType::Properties& _jointProperties = JointType::Properties(),
-    const typename NodeType::Properties& _bodyProperties = NodeType::Properties())
+    const typename JointType::Properties& _jointProperties =
+                                              typename JointType::Properties(),
+    const typename NodeType::Properties& _bodyProperties =
+                                              typename NodeType::Properties())
   {
     JointType* joint = new JointType(_jointProperties);
     NodeType* node = new NodeType(_parent, joint, _bodyProperties);

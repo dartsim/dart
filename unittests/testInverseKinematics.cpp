@@ -46,47 +46,42 @@ using namespace dart;
 using namespace dart::dynamics;
 
 SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
-                                          Vector3d dim2, TypeOfDOF type2,
-                                          bool finished = true)
+                                           Vector3d dim2, TypeOfDOF type2,
+                                           bool finished = true)
 {
   SkeletonPtr robot(new Skeleton);
 
-  // Create the first link, the joint with the ground and its shape
-  double mass = 1.0;
-  BodyNode* node = new BodyNode("link1");
-  Joint* joint = new FreeJoint();
-  joint->setName("joint1");
+  // Create the first link
+  BodyNode::Properties node(std::string("link1"));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
-  node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
-  node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
-  node->setMass(mass);
-  node->setParentJoint(joint);
-  robot->addBodyNode(node);
+  node.mVizShapes.push_back(shape);
+  node.mColShapes.push_back(shape);
 
-  // Create the second link, the joint with link1 and its shape
-  BodyNode* parent_node = robot->getBodyNode("link1");
-  node = new BodyNode("link2");
-  joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type2);
-  joint->setName("joint2");
+  BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
+    MultiDofJoint<6>::Properties(std::string("joint1")), node).second;
+
+  // Create the second link
+  node = BodyNode::Properties(std::string("link2"));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
+  shape = std::shared_ptr<Shape>(new BoxShape(dim2));
+  node.mVizShapes.push_back(shape);
+  node.mColShapes.push_back(shape);
+
+  std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
+        robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+
+  Joint* joint = pair2.first;
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
   joint->setTransformFromParentBodyNode(T);
-  shape = std::shared_ptr<Shape>(new BoxShape(dim2));
-  node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
-  node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
-  node->setMass(mass);
-  node->setParentJoint(joint);
-  parent_node->addChildBodyNode(node);
-  robot->addBodyNode(node);
+
+  parent_node = pair2.second;
 
   // If finished, initialize the skeleton
   if(finished)
-  {
-    addEndEffector(robot, node, dim2);
-    robot->init();
-  }
+    addEndEffector(robot, parent_node, dim2);
+
   return robot;
 }
 

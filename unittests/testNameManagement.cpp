@@ -44,54 +44,25 @@ using namespace math;
 using namespace dynamics;
 
 //==============================================================================
-TEST(NameManagement, Basic)
+TEST(NameManagement, Skeleton)
 {
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  // Bodies
-  BodyNode* body1 = new BodyNode;
-  BodyNode* body2 = new BodyNode;
-  BodyNode* body3 = new BodyNode;
+  SkeletonPtr skel(new Skeleton);
 
-  // TODO: Add some SoftBodyNodes into this test.
-  // Grey is not familiar with construction of SoftBodyNodes,
-  // so he is leaving that for someone else for the time being.
+  std::pair<Joint*, BodyNode*> pair;
+  pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+        nullptr, SingleDofJoint::Properties(std::string("joint")));
+  Joint* joint1 = pair.first;
+  BodyNode* body1 = pair.second;
 
-  // Joints
-  Joint* joint1 = new RevoluteJoint(Eigen::Vector3d::UnitX(), "joint");
-  Joint* joint2 = new TranslationalJoint("joint");
-  Joint* joint3 = new FreeJoint("joint");
+  pair = skel->createJointAndBodyNodePair<TranslationalJoint>(
+        body1, MultiDofJoint<3>::Properties(std::string("joint")));
+  Joint* joint2 = pair.first;
+  BodyNode* body2 = pair.second;
 
-  // Testing whether DegreesOfFreedom get named correctly
-  EXPECT_TRUE(joint1->getDof(0)->getName() == "joint");
-
-  EXPECT_TRUE(joint2->getDof(0)->getName() == "joint_x");
-  EXPECT_TRUE(joint2->getDof(1)->getName() == "joint_y");
-  EXPECT_TRUE(joint2->getDof(2)->getName() == "joint_z");
-
-  EXPECT_TRUE(joint3->getDof(0)->getName() == "joint_rot_x");
-  EXPECT_TRUE(joint3->getDof(1)->getName() == "joint_rot_y");
-  EXPECT_TRUE(joint3->getDof(2)->getName() == "joint_rot_z");
-  EXPECT_TRUE(joint3->getDof(3)->getName() == "joint_pos_x");
-  EXPECT_TRUE(joint3->getDof(4)->getName() == "joint_pos_y");
-  EXPECT_TRUE(joint3->getDof(5)->getName() == "joint_pos_z");
-
-  // Skeleton
-  Skeleton* skel = new Skeleton;
-
-  body1->setParentJoint(joint1);
-  body2->setParentJoint(joint2);
-  body3->setParentJoint(joint3);
-
-  body1->addChildBodyNode(body2);
-  body2->addChildBodyNode(body3);
-
-  skel->addBodyNode(body1);
-  skel->addBodyNode(body2);
-  skel->addBodyNode(body3);
-
-  skel->init();
+  pair = skel->createJointAndBodyNodePair<FreeJoint>(
+        body2, MultiDofJoint<6>::Properties(std::string("joint")));
+  Joint* joint3 = pair.first;
+  BodyNode* body3 = pair.second;
 
   // Testing whether the repeated names of BodyNodes and Joints get resolved
   // correctly as BodyNodes get added to the Skeleton

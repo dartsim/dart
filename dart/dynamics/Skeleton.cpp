@@ -1866,7 +1866,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   Joint* newJoint = _newBodyNode->getParentJoint();
   for(size_t i = 0; i < newJoint->getNumDofs(); ++i)
+  {
+    mDofs.push_back(newJoint->getDof(i));
     newJoint->setIndexInSkeleton(i, mNumDofs + i);
+  }
   mNumDofs += newJoint->getNumDofs();
 
   _newBodyNode->init(this);
