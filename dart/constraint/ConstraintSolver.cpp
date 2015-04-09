@@ -72,6 +72,7 @@ ConstraintSolver::ConstraintSolver(double _timeStep)
 ConstraintSolver::~ConstraintSolver()
 {
   delete mCollisionDetector;
+  delete mLCPSolver;
 }
 
 //==============================================================================

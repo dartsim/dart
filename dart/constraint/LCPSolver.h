@@ -55,12 +55,12 @@ public:
   /// Return time step
   double getTimeStep() const;
 
+  /// Destructor
+  virtual ~LCPSolver();
+
 protected:
   /// Constructor
   LCPSolver(double _timeStep);
-
-  /// Destructor
-  virtual ~LCPSolver();
 
 protected:
   /// Simulation time step

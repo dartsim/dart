@@ -134,6 +134,8 @@ SoftBodyNode::~SoftBodyNode()
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     delete mPointMasses[i];
+
+  delete mNotifier;
 }
 
 //==============================================================================
