@@ -177,56 +177,41 @@ TEST(NameManagement, Skeleton)
   EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
-
-  Joint* oldJoint = body3->getParentJoint();
-  std::string oldJointName = oldJoint->getName();
-  Joint* newJoint = new RevoluteJoint(Eigen::Vector3d(1,0,0), "a_new_joint");
-  body3->setParentJoint(newJoint);
-  EXPECT_TRUE(skel->getJoint("a_new_joint") == newJoint);
-
-  // Make sure that the Skeleton returns NULL on any Joint names that have been
-  // taken away from it
-  EXPECT_FALSE(skel->getJoint(oldJointName) == oldJoint);
-  EXPECT_TRUE(skel->getJoint(oldJointName) == NULL);
 }
 
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager<BodyNode*> test_mgr;
+  dart::common::NameManager< std::shared_ptr<Entity> > test_mgr;
 
-  BodyNode* bn0 = new BodyNode("name");
-  BodyNode* bn1 = new BodyNode("name");
-  BodyNode* bn2 = new BodyNode("name");
+  std::shared_ptr<Entity> entity0(new Entity(Frame::World(), "name", false));
+  std::shared_ptr<Entity> entity1(new Entity(Frame::World(), "name", false));
+  std::shared_ptr<Entity> entity2(new Entity(Frame::World(), "name", false));
 
   test_mgr.setPattern("%s(%d)");
 
-  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
-  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
-  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+  test_mgr.issueNewNameAndAdd(entity0->getName(), entity0);
+  test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
+  test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("name") == bn0);
-  EXPECT_TRUE( test_mgr.getObject("name(1)") == bn1);
-  EXPECT_TRUE( test_mgr.getObject("name(2)") == bn2);
+  EXPECT_TRUE( test_mgr.getObject("name") == entity0);
+  EXPECT_TRUE( test_mgr.getObject("name(1)") == entity1);
+  EXPECT_TRUE( test_mgr.getObject("name(2)") == entity2);
 
   test_mgr.clear();
 
-  bn0->setName("bodynode");
-  bn1->setName("bodynode");
-  bn2->setName("bodynode");
+  entity0->setName("Entity");
+  entity1->setName("Entity");
+  entity2->setName("Entity");
 
   test_mgr.setPattern("(%d)-%s");
-  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
-  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
-  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+  test_mgr.issueNewNameAndAdd(entity0->getName(), entity0);
+  test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
+  test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("bodynode") == bn0);
-  EXPECT_TRUE( test_mgr.getObject("(1)-bodynode") == bn1 );
-  EXPECT_TRUE( test_mgr.getObject("(2)-bodynode") == bn2 );
-
-  delete bn0;
-  delete bn1;
-  delete bn2;
+  EXPECT_TRUE( test_mgr.getObject("Entity") == entity0);
+  EXPECT_TRUE( test_mgr.getObject("(1)-Entity") == entity1 );
+  EXPECT_TRUE( test_mgr.getObject("(2)-Entity") == entity2 );
 }
 
 //==============================================================================

@@ -334,8 +334,10 @@ public:
 
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
-      const typename JointType::Properties& _jointProperties = JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties = NodeType::Properties())
+      const typename JointType::Properties& _jointProperties =
+                                              typename JointType::Properties(),
+      const typename NodeType::Properties& _bodyProperties =
+                                              typename NodeType::Properties())
   {
     return mSkeleton->createJointAndBodyNodePair<JointType, NodeType>(
           this, _jointProperties, _bodyProperties);

@@ -205,8 +205,8 @@ public:
   DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
 
-  /// Get total mass of the skeleton. The total mass is calculated at
-  /// init().
+  /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
+  /// are added
   double getMass() const;
 
   /// Get number of body nodes
@@ -285,7 +285,8 @@ public:
   // Initialization
   //----------------------------------------------------------------------------
   /// Initialize this skeleton for kinematics and dynamics
-  // TODO(MXG): Deprecate this
+  // TODO(MXG): Deprecate this once the public constructors are removed from the
+  // API
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
