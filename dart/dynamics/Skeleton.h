@@ -919,7 +919,6 @@ public:
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
-  friend class EndEffector;
 
 protected:
   /// Register a BodyNode with the Skeleton. Internal use only.
@@ -999,9 +998,6 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint);
 
-  /// Add an EndEffector to the EndEffector NameManager
-  const std::string& addEntryToEndEffectorNameMgr(EndEffector* _ee);
-
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
@@ -1057,9 +1053,6 @@ protected:
 
   /// NameManager for tracking EndEffectors
   dart::common::NameManager<EndEffector> mNameMgrForEndEffectors;
-
-  /// Gravity vector.
-  Eigen::Vector3d mGravity;
 
   /// Total mass.
   double mTotalMass;
