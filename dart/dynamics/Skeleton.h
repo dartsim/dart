@@ -70,7 +70,7 @@ struct GenCoordInfo
 {
   Joint* joint;
   size_t localIndex;
-} /*DEPRECATED(4.3)*/;
+} DEPRECATED(4.3);
 
 /// class Skeleton
 class Skeleton : public common::Subject
@@ -1046,9 +1046,6 @@ protected:
 
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
-
-  /// Gravity vector.
-  Eigen::Vector3d mGravity;
 
   /// Total mass.
   double mTotalMass;
