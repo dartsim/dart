@@ -48,10 +48,7 @@ using namespace dynamics;
 template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
-  Eigen::Matrix<double,N,1> v;
-  for(size_t i=0; i<N; ++i)
-    v[i] = math::random(-fabs(limit), fabs(limit));
-  return v;
+  return randomVector<N>(limit);
 }
 
 void randomize_transform(Eigen::Isometry3d& tf,
@@ -721,6 +718,14 @@ TEST(RELATIVE_FRAMES, SPATIAL_CLASSIC)
 TEST(RELATIVE_FRAMES, CLASSIC_SPATIAL)
 {
   test_relative_values(false, true);
+}
+
+TEST(FRAMES, CHILDHOOD)
+{
+  SimpleFrame F1(Frame::World(), "F1");
+  SimpleFrame F2(&F1, "F2");
+
+  EXPECT_TRUE(F1.getNumChildFrames() == 1);
 }
 
 int main(int argc, char* argv[])

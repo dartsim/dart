@@ -41,16 +41,28 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
+PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
+  : Shape(PLANE),
+    mNormal(_normal.normalized()),
+    mOffset(_offset)
+{
+}
+
+//==============================================================================
 PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
                        const Eigen::Vector3d& _point)
   : Shape(PLANE),
-    mNormal(_normal),
-    mPoint(_point) {
+    mNormal(_normal.normalized()),
+    mOffset(mNormal.dot(_point))
+{
 }
 
+//==============================================================================
 void PlaneShape::draw(renderer::RenderInterface* _ri,
                       const Eigen::Vector4d& _color,
-                      bool _useDefaultColor) const {
+                      bool _useDefaultColor) const
+{
   // TODO(JS): Not implemented yet
   if (!_ri) return;
   if (!_useDefaultColor)
@@ -63,28 +75,64 @@ void PlaneShape::draw(renderer::RenderInterface* _ri,
   _ri->popMatrix();
 }
 
-Eigen::Matrix3d PlaneShape::computeInertia(double _mass) const {
+//==============================================================================
+Eigen::Matrix3d PlaneShape::computeInertia(double _mass) const
+{
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
   return inertia;
 }
 
-void PlaneShape::setNormal(const Eigen::Vector3d& _normal) {
+//==============================================================================
+void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
+{
   mNormal = _normal.normalized();
 }
 
-const Eigen::Vector3d& PlaneShape::getNormal() const {
+//==============================================================================
+const Eigen::Vector3d& PlaneShape::getNormal() const
+{
   return mNormal;
 }
 
-void PlaneShape::setPoint(const Eigen::Vector3d& _point) {
-  mPoint = _point;
+//==============================================================================
+void PlaneShape::setPoint(const Eigen::Vector3d& _point)
+{
+  mOffset = mNormal.dot(_point);
 }
 
-const Eigen::Vector3d& PlaneShape::getPoint() const {
-  return mPoint;
+//==============================================================================
+Eigen::Vector3d PlaneShape::getPoint() const
+{
+  return mNormal * mOffset;
 }
 
-void PlaneShape::computeVolume() {
+//==============================================================================
+void PlaneShape::setOffset(double _offset)
+{
+  mOffset = _offset;
+}
+
+//==============================================================================
+double PlaneShape::getOffset() const
+{
+  return mOffset;
+}
+
+//==============================================================================
+double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
+{
+  return std::fabs(computeSignedDistance(_point));
+}
+
+//==============================================================================
+double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
+{
+  return mNormal.dot(_point) - mOffset;
+}
+
+//==============================================================================
+void PlaneShape::computeVolume()
+{
   mVolume = 0.0;
 }
 

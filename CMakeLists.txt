@@ -55,9 +55,20 @@ option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo Profile." FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Release Debug." FORCE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
+
+set(BUILD_TYPE_RELEASE FALSE)
+set(BUILD_TYPE_DEBUG FALSE)
+
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
+  set(BUILD_TYPE_RELEASE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
+  set(BUILD_TYPE_DEBUG TRUE)
+else()
+  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Release Debug")
+endif()
 
 #===============================================================================
 # Find dependencies
@@ -125,20 +136,6 @@ else()
   message(SEND_ERROR "Looking for OpenGL - NOT found, please install OpenGL")
 endif()
 
-# GLUT
-if(WIN32 AND NOT CYGWIN)
-  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
-  set(GLUT_LIBRARIES glut32)
-else()
-  find_package(GLUT QUIET)
-  if(GLUT_FOUND)
-    message(STATUS "Looking for GLUT - found")
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-  else()
-    message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
-  endif()
-endif()
-
 # Boost
 set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
 if(MSVC OR MSVC90 OR MSVC10)
@@ -155,6 +152,20 @@ else()
 endif()
 
 if(NOT BUILD_CORE_ONLY)
+
+  # GLUT
+  if(WIN32 AND NOT CYGWIN)
+    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+    set(GLUT_LIBRARIES glut32)
+  else()
+    find_package(GLUT QUIET)
+    if(GLUT_FOUND)
+      message(STATUS "Looking for GLUT - found")
+      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+    else()
+      message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
+    endif()
+  endif()
 
   # FLANN
   find_package(FLANN 1.8.4 QUIET)

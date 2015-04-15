@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <string>
+#include <array>
 
 #include "dart/config.h"
 #include "dart/common/Console.h"
@@ -59,11 +60,100 @@ template<size_t DOF>
 class MultiDofJoint : public Joint
 {
 public:
+
+  typedef Eigen::Matrix<double, DOF, 1> Vector;
+
+  struct UniqueProperties
+  {
+    /// Lower limit of position
+    Vector mPositionLowerLimits;
+
+    /// Upper limit of position
+    Vector mPositionUpperLimits;
+
+    /// Min value allowed.
+    Vector mVelocityLowerLimits;
+
+    /// Max value allowed.
+    Vector mVelocityUpperLimits;
+
+    /// Min value allowed.
+    Vector mAccelerationLowerLimits;
+
+    /// upper limit of generalized acceleration
+    Vector mAccelerationUpperLimits;
+
+    /// Min value allowed.
+    Vector mForceLowerLimits;
+
+    /// Max value allowed.
+    Vector mForceUpperLimits;
+
+    /// Joint spring stiffness
+    Vector mSpringStiffnesses;
+
+    /// Rest joint position for joint spring
+    Vector mRestPositions;
+
+    /// Joint damping coefficient
+    Vector mDampingCoefficients;
+
+    /// Joint Coulomb friction
+    Vector mFrictions;
+
+    /// True if the name of the corresponding DOF is not allowed to be
+    /// overwritten
+    std::array<bool, DOF> mPreserveDofNames;
+
+    /// The name of the DegreesOfFreedom for this Joint
+    std::array<std::string, DOF> mDofNames;
+
+    UniqueProperties(
+      const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _velocityUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _forceLowerLimits = Vector::Constant(-DART_DBL_INF),
+      const Vector& _forceUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _springStiffness = Vector::Constant(0.0),
+      const Vector& _restPosition = Vector::Constant(0.0),
+      const Vector& _dampingCoefficient = Vector::Constant(0.0),
+      const Vector& _coulombFrictions = Vector::Constant(0.0));
+  };
+
+  struct Properties : Joint::Properties, UniqueProperties
+  {
+    Properties(
+        const Joint::Properties& _jointProperties = Joint::Properties(),
+        const UniqueProperties& _multiDofProperties = UniqueProperties());
+  };
+
   /// Constructor
+//  DEPRECATED(4.5) // Use MultiDofJoint(const Properties&)
   MultiDofJoint(const std::string& _name);
 
   /// Destructor
   virtual ~MultiDofJoint();
+
+  /// Set the Properties of this MultiDofJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this MultiDofJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this MultiDofJoint
+  Properties getMultiDofJointProperties() const;
+
+  /// Copy the Properties of another MultiDofJoint
+  void copy(const MultiDofJoint<DOF>& _otherJoint);
+
+  /// Copy the Properties of another MultiDofJoint
+  void copy(const MultiDofJoint<DOF>* _otherJoint);
+
+  /// Same as copy(const MutliDofJoint&)
+  MultiDofJoint<DOF>& operator=(const MultiDofJoint<DOF>& _otherJoint);
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
@@ -81,6 +171,20 @@ public:
 
   // Documentation inherited
   size_t getNumDofs() const override;
+
+  // Documentation inherited
+  const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) override;
+
+  // Docuemntation inherited
+  void preserveDofName(size_t _index, bool _preserve) override;
+
+  // Documentation inherited
+  bool isDofNamePreserved(size_t _index) const override;
+
+  // Documentation inherited
+  const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
   void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
@@ -211,22 +315,22 @@ public:
   // code.
 
   /// Fixed-size version of setPositions()
-  void setPositionsStatic(const Eigen::Matrix<double, DOF, 1>& _positions);
+  void setPositionsStatic(const Vector& _positions);
 
   /// Fixed-size version of getPositions()
-  const Eigen::Matrix<double, DOF, 1>& getPositionsStatic() const;
+  const Vector& getPositionsStatic() const;
 
   /// Fixed-size version of setVelocities()
-  void setVelocitiesStatic(const Eigen::Matrix<double, DOF, 1>& _velocities);
+  void setVelocitiesStatic(const Vector& _velocities);
 
   /// Fixed-size version of getVelocities()
-  const Eigen::Matrix<double, DOF, 1>& getVelocitiesStatic() const;
+  const Vector& getVelocitiesStatic() const;
 
   /// Fixed-size version of setAccelerations()
-  void setAccelerationsStatic(const Eigen::Matrix<double, DOF, 1>& _accels);
+  void setAccelerationsStatic(const Vector& _accels);
 
   /// Fixed-size version of getAccelerations()
-  const Eigen::Matrix<double, DOF, 1>& getAccelerationsStatic() const;
+  const Vector& getAccelerationsStatic() const;
 
   //----------------------------------------------------------------------------
   // Force
@@ -334,6 +438,13 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  /// Constructor called by inheriting classes
+  MultiDofJoint(const Properties& _properties);
+
+  // Docuemntation inherited
+  void registerDofs() override;
+
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
@@ -497,105 +608,68 @@ protected:
   /// \}
 
 protected:
-  // TODO: Replace with std::array when we migrate to C++11
+
+  /// Properties of this MultiDofJoint
+  typename MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
+
   /// Array of DegreeOfFreedom objects
-  DegreeOfFreedom* mDofs[DOF];
+  std::array<DegreeOfFreedom*, DOF> mDofs;
 
   /// Command
-  Eigen::Matrix<double, DOF, 1> mCommands;
+  Vector mCommands;
 
   //----------------------------------------------------------------------------
   // Configuration
   //----------------------------------------------------------------------------
 
   /// Position
-  Eigen::Matrix<double, DOF, 1> mPositions;
-
-  /// Lower limit of position
-  Eigen::Matrix<double, DOF, 1> mPositionLowerLimits;
-
-  /// Upper limit of position
-  Eigen::Matrix<double, DOF, 1> mPositionUpperLimits;
+  Vector mPositions;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mPositionDeriv;
+  Vector mPositionDeriv;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   /// Generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocities;
-
-  /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mVelocityLowerLimits;
-
-  /// Max value allowed.
-  Eigen::Matrix<double, DOF, 1> mVelocityUpperLimits;
+  Vector mVelocities;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mVelocitiesDeriv;
+  Vector mVelocitiesDeriv;
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   /// Generalized acceleration
-  Eigen::Matrix<double, DOF, 1> mAccelerations;
-
-  /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mAccelerationLowerLimits;
-
-  /// upper limit of generalized acceleration
-  Eigen::Matrix<double, DOF, 1> mAccelerationUpperLimits;
+  Vector mAccelerations;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mAccelerationsDeriv;
+  Vector mAccelerationsDeriv;
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   /// Generalized force
-  Eigen::Matrix<double, DOF, 1> mForces;
-
-  /// Min value allowed.
-  Eigen::Matrix<double, DOF, 1> mForceLowerLimits;
-
-  /// Max value allowed.
-  Eigen::Matrix<double, DOF, 1> mForceUpperLimits;
+  Vector mForces;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
-  Eigen::Matrix<double, DOF, 1> mForcesDeriv;
+  Vector mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse
   //----------------------------------------------------------------------------
 
   /// Change of generalized velocity
-  Eigen::Matrix<double, DOF, 1> mVelocityChanges;
+  Vector mVelocityChanges;
 
   /// Generalized impulse
-  Eigen::Matrix<double, DOF, 1> mImpulses;
+  Vector mImpulses;
 
   /// Generalized constraint impulse
-  Eigen::Matrix<double, DOF, 1> mConstraintImpulses;
-
-  //----------------------------------------------------------------------------
-  // Spring and damper
-  //----------------------------------------------------------------------------
-
-  /// Joint spring stiffness
-  Eigen::Matrix<double, DOF, 1> mSpringStiffness;
-
-  /// Rest joint position for joint spring
-  Eigen::Matrix<double, DOF, 1> mRestPosition;
-
-  /// Joint damping coefficient
-  Eigen::Matrix<double, DOF, 1> mDampingCoefficient;
-
-  /// Joint Coulomb friction
-  Eigen::Matrix<double, DOF, 1> mFrictions;
+  Vector mConstraintImpulses;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms
@@ -625,20 +699,20 @@ protected:
   mutable Eigen::Matrix<double, DOF, DOF> mInvProjArtInertiaImplicit;
 
   /// Total force projected on joint space
-  Eigen::Matrix<double, DOF, 1> mTotalForce;
+  Vector mTotalForce;
 
   /// Total impluse projected on joint space
-  Eigen::Matrix<double, DOF, 1> mTotalImpulse;
+  Vector mTotalImpulse;
 
   //----------------------------------------------------------------------------
   // For equations of motion
   //----------------------------------------------------------------------------
 
   ///
-  Eigen::Matrix<double, DOF, 1> mInvM_a;
+  Vector mInvM_a;
 
   ///
-  Eigen::Matrix<double, DOF, 1> mInvMassMatrixSegment;
+  Vector mInvMassMatrixSegment;
 
 private:
   //----------------------------------------------------------------------------
@@ -732,32 +806,63 @@ private:
 
 //==============================================================================
 template <size_t DOF>
+MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
+    const Vector& _positionLowerLimits,
+    const Vector& _positionUpperLimits,
+    const Vector& _velocityLowerLimits,
+    const Vector& _velocityUpperLimits,
+    const Vector& _accelerationLowerLimits,
+    const Vector& _accelerationUpperLimits,
+    const Vector& _forceLowerLimits,
+    const Vector& _forceUpperLimits,
+    const Vector& _springStiffness,
+    const Vector& _restPosition,
+    const Vector& _dampingCoefficient,
+    const Vector& _coulombFrictions)
+  : mPositionLowerLimits(_positionLowerLimits),
+    mPositionUpperLimits(_positionUpperLimits),
+    mVelocityLowerLimits(_velocityLowerLimits),
+    mVelocityUpperLimits(_velocityUpperLimits),
+    mAccelerationLowerLimits(_accelerationLowerLimits),
+    mAccelerationUpperLimits(_accelerationUpperLimits),
+    mForceLowerLimits(_forceLowerLimits),
+    mForceUpperLimits(_forceUpperLimits),
+    mSpringStiffnesses(_springStiffness),
+    mRestPositions(_restPosition),
+    mDampingCoefficients(_dampingCoefficient),
+    mFrictions(_coulombFrictions)
+{
+  for (size_t i = 0; i < DOF; ++i)
+    mPreserveDofNames[i] = false;
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::Properties::Properties(
+    const Joint::Properties& _jointProperties,
+    const UniqueProperties& _multiDofProperties)
+  : Joint::Properties(_jointProperties),
+    UniqueProperties(_multiDofProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
   : Joint(_name),
     mCommands(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositionLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mPositionUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
     mPositionDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mVelocities(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocityLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mVelocityUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
     mVelocitiesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerationLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mAccelerationUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
     mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForceLowerLimits(Eigen::Matrix<double, DOF, 1>::Constant(-DART_DBL_INF)),
-    mForceUpperLimits(Eigen::Matrix<double, DOF, 1>::Constant(DART_DBL_INF)),
     mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mVelocityChanges(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mConstraintImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mSpringStiffness(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mRestPosition(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mDampingCoefficient(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mFrictions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
     mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
     mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
     mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
@@ -766,7 +871,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
     mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
 {
   for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(mName, i);
+    mDofs[i] = createDofPointer(i);
 }
 
 //==============================================================================
@@ -775,6 +880,73 @@ MultiDofJoint<DOF>::~MultiDofJoint()
 {
   for (size_t i = 0; i < DOF; ++i)
     delete mDofs[i];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setProperties(const Properties& _properties)
+{
+  Joint::setProperties(static_cast<const Joint::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
+{
+  for(size_t i=0; i<DOF; ++i)
+  {
+    setDofName(i, _properties.mDofNames[i], _properties.mPreserveDofNames[i]);
+    setPositionLowerLimit(i, _properties.mPositionLowerLimits[i]);
+    setPositionUpperLimit(i, _properties.mPositionUpperLimits[i]);
+    setVelocityLowerLimit(i, _properties.mVelocityLowerLimits[i]);
+    setVelocityUpperLimit(i, _properties.mVelocityUpperLimits[i]);
+    setAccelerationLowerLimit(i, _properties.mAccelerationLowerLimits[i]);
+    setAccelerationUpperLimit(i, _properties.mAccelerationUpperLimits[i]);
+    setForceLowerLimit(i, _properties.mForceLowerLimits[i]);
+    setForceUpperLimit(i, _properties.mForceUpperLimits[i]);
+    setSpringStiffness(i, _properties.mSpringStiffnesses[i]);
+    setRestPosition(i, _properties.mRestPositions[i]);
+    setDampingCoefficient(i, _properties.mDampingCoefficients[i]);
+    setCoulombFriction(i, _properties.mFrictions[i]);
+  }
+}
+
+//==============================================================================
+template <size_t DOF>
+typename MultiDofJoint<DOF>::Properties
+MultiDofJoint<DOF>::getMultiDofJointProperties() const
+{
+  return MultiDofJoint<DOF>::Properties(mJointP, mMultiDofP);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::copy(const MultiDofJoint<DOF>& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getMultiDofJointProperties());
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::copy(const MultiDofJoint<DOF>* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>& MultiDofJoint<DOF>::operator=(
+    const MultiDofJoint<DOF>& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
 }
 
 //==============================================================================
@@ -790,7 +962,7 @@ DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
   if (_index < DOF)
     return mDofs[_index];
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -799,7 +971,84 @@ const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
 {
   if (_index < DOF)
     return mDofs[_index];
-  return NULL;
+  return nullptr;
+}
+
+//==============================================================================
+template <size_t DOF>
+const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
+                                                  const std::string& _name,
+                                                  bool _preserveName)
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
+           << "index " << _index << ", which is out of bounds. We will set "
+           << "the name of DOF index 0 instead\n";
+    _index = 0;
+  }
+
+  preserveDofName(_index, _preserveName);
+  std::string& dofName = mMultiDofP.mDofNames[_index];
+  if(_name == dofName)
+    return dofName;
+
+  if(mSkeleton)
+  {
+    mSkeleton->mNameMgrForDofs.removeName(dofName);
+    dofName =
+        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDofs[_index]);
+  }
+  else
+    dofName = _name;
+
+  return dofName;
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::preserveDofName(size_t _index, bool _preserve)
+{
+  if (DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::preserveDofName] Attempting to preserve the "
+           << "name of DOF index " << _index << ", which is out of bounds. We "
+           << "will preserve the name of DOF index 0 instead\n";
+    _index = 0;
+  }
+
+  mMultiDofP.mPreserveDofNames[_index] = _preserve;
+}
+
+//==============================================================================
+template <size_t DOF>
+bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::isDofNamePreserved] Requesting whether DOF "
+           << "index " << _index << " is preserved, but this is out of bounds "
+           << "(max " << DOF-1 << "). We will return the result of DOF index 0 "
+           << "instead\n";
+    _index = 0;
+  }
+
+  return mMultiDofP.mPreserveDofNames[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
+{
+  if(DOF <= _index)
+  {
+    dtwarn << "[MultiDofJoint::getDofName] Requested name of DOF index "
+           << _index << ", but that is out of bounds (max " << DOF-1 << "). "
+           << "Returning name of DOF 0\n";
+    return mMultiDofP.mDofNames[0];
+  }
+
+  return mMultiDofP.mDofNames[_index];
 }
 
 //==============================================================================
@@ -962,7 +1211,7 @@ void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
     return;
   }
 
-  mPositionLowerLimits[_index] = _position;
+  mMultiDofP.mPositionLowerLimits[_index] = _position;
 }
 
 //==============================================================================
@@ -976,7 +1225,7 @@ double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mPositionLowerLimits[_index];
+  return mMultiDofP.mPositionLowerLimits[_index];
 }
 
 //==============================================================================
@@ -990,7 +1239,7 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
     return;
   }
 
-  mPositionUpperLimits[_index] = _position;
+  mMultiDofP.mPositionUpperLimits[_index] = _position;
 }
 
 //==============================================================================
@@ -1004,7 +1253,7 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mPositionUpperLimits[_index];
+  return mMultiDofP.mPositionUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1074,7 +1323,7 @@ void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
     return;
   }
 
-  mVelocityLowerLimits[_index] = _velocity;
+  mMultiDofP.mVelocityLowerLimits[_index] = _velocity;
 }
 
 //==============================================================================
@@ -1088,7 +1337,7 @@ double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mVelocityLowerLimits[_index];
+  return mMultiDofP.mVelocityLowerLimits[_index];
 }
 
 //==============================================================================
@@ -1102,7 +1351,7 @@ void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
     return;
   }
 
-  mVelocityUpperLimits[_index] = _velocity;
+  mMultiDofP.mVelocityUpperLimits[_index] = _velocity;
 }
 
 //==============================================================================
@@ -1116,7 +1365,7 @@ double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mVelocityUpperLimits[_index];
+  return mMultiDofP.mVelocityUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1135,7 +1384,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   notifyAccelerationUpdate();
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == ACCELERATION)
+  if (mJointP.mActuatorType == ACCELERATION)
     mCommands[_index] = getAccelerationsStatic()[_index];
 #endif
   // TODO: Remove at DART 5.0.
@@ -1169,7 +1418,7 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
   setAccelerationsStatic(_accelerations);
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == ACCELERATION)
+  if (mJointP.mActuatorType == ACCELERATION)
     mCommands = getAccelerationsStatic();
 #endif
   // TODO: Remove at DART 5.0.
@@ -1201,7 +1450,7 @@ void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
     return;
   }
 
-  mAccelerationLowerLimits[_index] = _acceleration;
+  mMultiDofP.mAccelerationLowerLimits[_index] = _acceleration;
 }
 
 //==============================================================================
@@ -1215,7 +1464,7 @@ double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mAccelerationLowerLimits[_index];
+  return mMultiDofP.mAccelerationLowerLimits[_index];
 }
 
 //==============================================================================
@@ -1230,7 +1479,7 @@ void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
     return;
   }
 
-  mAccelerationUpperLimits[_index] = _acceleration;
+  mMultiDofP.mAccelerationUpperLimits[_index] = _acceleration;
 }
 
 //==============================================================================
@@ -1244,13 +1493,12 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mAccelerationUpperLimits[_index];
+  return mMultiDofP.mAccelerationUpperLimits[_index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _positions)
+void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
 {
   mPositions = _positions;
   notifyPositionUpdate();
@@ -1258,7 +1506,7 @@ void MultiDofJoint<DOF>::setPositionsStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getPositionsStatic() const
 {
   return mPositions;
@@ -1266,8 +1514,7 @@ MultiDofJoint<DOF>::getPositionsStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocitiesStatic(
-    const Eigen::Matrix<double, DOF, 1>& _velocities)
+void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
 {
   mVelocities = _velocities;
   notifyVelocityUpdate();
@@ -1275,7 +1522,7 @@ void MultiDofJoint<DOF>::setVelocitiesStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getVelocitiesStatic() const
 {
   return mVelocities;
@@ -1283,8 +1530,7 @@ MultiDofJoint<DOF>::getVelocitiesStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerationsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _accels)
+void MultiDofJoint<DOF>::setAccelerationsStatic(const Vector& _accels)
 {
   mAccelerations = _accels;
   notifyAccelerationUpdate();
@@ -1292,7 +1538,7 @@ void MultiDofJoint<DOF>::setAccelerationsStatic(
 
 //==============================================================================
 template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
+const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getAccelerationsStatic() const
 {
   return mAccelerations;
@@ -1311,7 +1557,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
   mForces[_index] = _force;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == FORCE)
+  if (mJointP.mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
 #endif
   // TODO: Remove at DART 5.0.
@@ -1344,7 +1590,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
   mForces = _forces;
 
 #if DART_MAJOR_VERSION == 4
-  if (mActuatorType == FORCE)
+  if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
 #endif
   // TODO: Remove at DART 5.0.
@@ -1375,7 +1621,7 @@ void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
     return;
   }
 
-  mForceLowerLimits[_index] = _force;
+  mMultiDofP.mForceLowerLimits[_index] = _force;
 }
 
 //==============================================================================
@@ -1388,7 +1634,7 @@ double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return mForceLowerLimits[_index];
+  return mMultiDofP.mForceLowerLimits[_index];
 }
 
 //==============================================================================
@@ -1402,7 +1648,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
     return;
   }
 
-  mForceUpperLimits[_index] = _force;
+  mMultiDofP.mForceUpperLimits[_index] = _force;
 }
 
 //==============================================================================
@@ -1416,7 +1662,7 @@ double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return mForceUpperLimits[_index];
+  return mMultiDofP.mForceUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1517,7 +1763,7 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 
   assert(_k >= 0.0);
 
-  mSpringStiffness[_index] = _k;
+  mMultiDofP.mSpringStiffnesses[_index] = _k;
 }
 
 //==============================================================================
@@ -1531,7 +1777,7 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
     return 0.0;
   }
 
-  return mSpringStiffness[_index];
+  return mMultiDofP.mSpringStiffnesses[_index];
 }
 
 //==============================================================================
@@ -1545,17 +1791,18 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
     return;
   }
 
-  if (mPositionLowerLimits[_index] > _q0 || mPositionUpperLimits[_index] < _q0)
+  if (mMultiDofP.mPositionLowerLimits[_index] > _q0
+      || mMultiDofP.mPositionUpperLimits[_index] < _q0)
   {
     dterr << "Rest position of joint[" << getName() << "], " << _q0
           << ", is out of the limit range["
-          << mPositionLowerLimits[_index] << ", "
-          << mPositionUpperLimits[_index] << "] in index[" << _index
+          << mMultiDofP.mPositionLowerLimits[_index] << ", "
+          << mMultiDofP.mPositionUpperLimits[_index] << "] in index[" << _index
           << "].\n";
     return;
   }
 
-  mRestPosition[_index] = _q0;
+  mMultiDofP.mRestPositions[_index] = _q0;
 }
 
 //==============================================================================
@@ -1569,7 +1816,7 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
     return 0.0;
   }
 
-  return mRestPosition[_index];
+  return mMultiDofP.mRestPositions[_index];
 }
 
 //==============================================================================
@@ -1585,7 +1832,7 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 
   assert(_d >= 0.0);
 
-  mDampingCoefficient[_index] = _d;
+  mMultiDofP.mDampingCoefficients[_index] = _d;
 
 }
 
@@ -1600,7 +1847,7 @@ double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
     return 0.0;
   }
 
-  return mDampingCoefficient[_index];
+  return mMultiDofP.mDampingCoefficients[_index];
 }
 
 //==============================================================================
@@ -1616,7 +1863,7 @@ void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
 
   assert(_friction >= 0.0);
 
-  mFrictions[_index] = _friction;
+  mMultiDofP.mFrictions[_index] = _friction;
 }
 
 //==============================================================================
@@ -1630,7 +1877,7 @@ double MultiDofJoint<DOF>::getCoulombFriction(size_t _index) const
     return 0.0;
   }
 
-  return mFrictions[_index];
+  return mMultiDofP.mFrictions[_index];
 }
 
 //==============================================================================
@@ -1638,9 +1885,9 @@ template <size_t DOF>
 double MultiDofJoint<DOF>::getPotentialEnergy() const
 {
   // Spring energy
-  Eigen::VectorXd displacement = getPositionsStatic() - mRestPosition;
-  double pe
-      = 0.5 * displacement.dot(mSpringStiffness.asDiagonal() * displacement);
+  Eigen::VectorXd displacement = getPositionsStatic() - mMultiDofP.mRestPositions;
+  double pe = 0.5 * displacement.dot(mMultiDofP.mSpringStiffnesses.asDiagonal()
+                                     * displacement);
 
   return pe;
 }
@@ -1651,6 +1898,44 @@ Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
   return mChildBodyNode->getBodyForce() - getLocalJacobianStatic() * mForces;
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
+  : Joint(_properties),
+    mMultiDofP(_properties),
+    mCommands(Vector::Zero()),
+    mPositions(Vector::Zero()),
+    mPositionDeriv(Vector::Zero()),
+    mVelocities(Vector::Zero()),
+    mVelocitiesDeriv(Vector::Zero()),
+    mAccelerations(Vector::Zero()),
+    mAccelerationsDeriv(Vector::Zero()),
+    mForces(Vector::Zero()),
+    mForcesDeriv(Vector::Zero()),
+    mVelocityChanges(Vector::Zero()),
+    mImpulses(Vector::Zero()),
+    mConstraintImpulses(Vector::Zero()),
+    mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
+    mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
+    mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
+    mInvProjArtInertiaImplicit(Eigen::Matrix<double, DOF, DOF>::Zero()),
+    mTotalForce(Vector::Zero()),
+    mTotalImpulse(Vector::Zero())
+{
+  for (size_t i = 0; i < DOF; ++i)
+    mDofs[i] = createDofPointer(i);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::registerDofs()
+{
+  for (size_t i = 0; i < DOF; ++i)
+    mMultiDofP.mDofNames[i] =
+        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
+                                                      mDofs[i]);
 }
 
 //==============================================================================
@@ -1796,7 +2081,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1851,7 +2136,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1905,7 +2190,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1956,7 +2241,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1988,8 +2273,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitDynamic(
   // Add additional inertia for implicit damping and spring force
   for (size_t i = 0; i < DOF; ++i)
   {
-    projAI(i, i) += _timeStep * mDampingCoefficient[i]
-        + _timeStep * _timeStep * mSpringStiffness[i];
+    projAI(i, i) += _timeStep * mMultiDofP.mDampingCoefficients[i]
+        + _timeStep * _timeStep * mMultiDofP.mSpringStiffnesses[i];
   }
 
   // Inversion of projected articulated inertia
@@ -2018,23 +2303,23 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
     case SERVO:
       addChildBiasForceToDynamic(_parentBiasForce,
-                                       _childArtInertia,
-                                       _childBiasForce,
-                                       _childPartialAcc);
+                                 _childArtInertia,
+                                 _childBiasForce,
+                                 _childPartialAcc);
       break;
     case ACCELERATION:
     case VELOCITY:
     case LOCKED:
       addChildBiasForceToKinematic(_parentBiasForce,
-                                             _childArtInertia,
-                                             _childBiasForce,
-                                             _childPartialAcc);
+                                   _childArtInertia,
+                                   _childBiasForce,
+                                   _childPartialAcc);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -2105,21 +2390,21 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
     case SERVO:
       addChildBiasImpulseToDynamic(_parentBiasImpulse,
-                                        _childArtInertia,
-                                        _childBiasImpulse);
+                                   _childArtInertia,
+                                   _childBiasImpulse);
       break;
     case ACCELERATION:
     case VELOCITY:
     case LOCKED:
       addChildBiasImpulseToKinematic(_parentBiasImpulse,
-                                              _childArtInertia,
-                                              _childBiasImpulse);
+                                     _childArtInertia,
+                                     _childBiasImpulse);
       break;
     default:
       dterr << "Unsupported actuator type." << std::endl;
@@ -2168,7 +2453,7 @@ void MultiDofJoint<DOF>::updateTotalForce(
 {
   assert(_timeStep > 0.0);
 
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
       mForces = mCommands;
@@ -2206,13 +2491,13 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
 {
   // Spring force
   const Eigen::Matrix<double, DOF, 1> springForce
-      = (-mSpringStiffness).asDiagonal()
-        *(getPositionsStatic() - mRestPosition
+      = (-mMultiDofP.mSpringStiffnesses).asDiagonal()
+        *(getPositionsStatic() - mMultiDofP.mRestPositions
           + getVelocitiesStatic()*_timeStep);
 
   // Damping force
   const Eigen::Matrix<double, DOF, 1> dampingForce
-      = (-mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+      = (-mMultiDofP.mDampingCoefficients).asDiagonal()*getVelocitiesStatic();
 
   //
   mTotalForce = mForces + springForce + dampingForce;
@@ -2233,7 +2518,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateTotalImpulse(
     const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2282,7 +2567,7 @@ void MultiDofJoint<DOF>::updateAcceleration(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _spatialAcc)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2330,7 +2615,7 @@ void MultiDofJoint<DOF>::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2386,7 +2671,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withDampingForces)
   {
     const Eigen::Matrix<double, DOF, 1> dampingForces
-        = (-mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+        = (-mMultiDofP.mDampingCoefficients).asDiagonal()*getVelocitiesStatic();
     mForces -= dampingForces;
   }
 
@@ -2394,8 +2679,8 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withSpringForces)
   {
     const Eigen::Matrix<double, DOF, 1> springForces
-        = (-mSpringStiffness).asDiagonal()
-          *(getPositionsStatic() - mRestPosition
+        = (-mMultiDofP.mSpringStiffnesses).asDiagonal()
+          *(getPositionsStatic() - mMultiDofP.mRestPositions
             + getVelocitiesStatic()*_timeStep);
     mForces -= springForces;
   }
@@ -2408,7 +2693,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                        bool _withDampingForces,
                                        bool _withSpringForces)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2437,7 +2722,7 @@ void MultiDofJoint<DOF>::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -2458,7 +2743,7 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:

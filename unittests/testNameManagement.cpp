@@ -44,54 +44,25 @@ using namespace math;
 using namespace dynamics;
 
 //==============================================================================
-TEST(NameManagement, Basic)
+TEST(NameManagement, Skeleton)
 {
-  //--------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------
-  // Bodies
-  BodyNode* body1 = new BodyNode;
-  BodyNode* body2 = new BodyNode;
-  BodyNode* body3 = new BodyNode;
+  SkeletonPtr skel(new Skeleton);
 
-  // TODO: Add some SoftBodyNodes into this test.
-  // Grey is not familiar with construction of SoftBodyNodes,
-  // so he is leaving that for someone else for the time being.
+  std::pair<Joint*, BodyNode*> pair;
+  pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+        nullptr, SingleDofJoint::Properties(std::string("joint")));
+  Joint* joint1 = pair.first;
+  BodyNode* body1 = pair.second;
 
-  // Joints
-  Joint* joint1 = new RevoluteJoint(Eigen::Vector3d::UnitX(), "joint");
-  Joint* joint2 = new TranslationalJoint("joint");
-  Joint* joint3 = new FreeJoint("joint");
+  pair = skel->createJointAndBodyNodePair<TranslationalJoint>(
+        body1, MultiDofJoint<3>::Properties(std::string("joint")));
+  Joint* joint2 = pair.first;
+  BodyNode* body2 = pair.second;
 
-  // Testing whether DegreesOfFreedom get named correctly
-  EXPECT_TRUE(joint1->getDof(0)->getName() == "joint");
-
-  EXPECT_TRUE(joint2->getDof(0)->getName() == "joint_x");
-  EXPECT_TRUE(joint2->getDof(1)->getName() == "joint_y");
-  EXPECT_TRUE(joint2->getDof(2)->getName() == "joint_z");
-
-  EXPECT_TRUE(joint3->getDof(0)->getName() == "joint_rot_x");
-  EXPECT_TRUE(joint3->getDof(1)->getName() == "joint_rot_y");
-  EXPECT_TRUE(joint3->getDof(2)->getName() == "joint_rot_z");
-  EXPECT_TRUE(joint3->getDof(3)->getName() == "joint_pos_x");
-  EXPECT_TRUE(joint3->getDof(4)->getName() == "joint_pos_y");
-  EXPECT_TRUE(joint3->getDof(5)->getName() == "joint_pos_z");
-
-  // Skeleton
-  Skeleton* skel = new Skeleton;
-
-  body1->setParentJoint(joint1);
-  body2->setParentJoint(joint2);
-  body3->setParentJoint(joint3);
-
-  body1->addChildBodyNode(body2);
-  body2->addChildBodyNode(body3);
-
-  skel->addBodyNode(body1);
-  skel->addBodyNode(body2);
-  skel->addBodyNode(body3);
-
-  skel->init();
+  pair = skel->createJointAndBodyNodePair<FreeJoint>(
+        body2, MultiDofJoint<6>::Properties(std::string("joint")));
+  Joint* joint3 = pair.first;
+  BodyNode* body3 = pair.second;
 
   // Testing whether the repeated names of BodyNodes and Joints get resolved
   // correctly as BodyNodes get added to the Skeleton
@@ -206,56 +177,169 @@ TEST(NameManagement, Basic)
   EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
   EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
-
-  Joint* oldJoint = body3->getParentJoint();
-  std::string oldJointName = oldJoint->getName();
-  Joint* newJoint = new RevoluteJoint(Eigen::Vector3d(1,0,0), "a_new_joint");
-  body3->setParentJoint(newJoint);
-  EXPECT_TRUE(skel->getJoint("a_new_joint") == newJoint);
-
-  // Make sure that the Skeleton returns NULL on any Joint names that have been
-  // taken away from it
-  EXPECT_FALSE(skel->getJoint(oldJointName) == oldJoint);
-  EXPECT_TRUE(skel->getJoint(oldJointName) == NULL);
 }
 
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager<BodyNode> test_mgr;
+  dart::common::NameManager< std::shared_ptr<Entity> > test_mgr;
 
-  BodyNode* bn0 = new BodyNode("name");
-  BodyNode* bn1 = new BodyNode("name");
-  BodyNode* bn2 = new BodyNode("name");
+  std::shared_ptr<Entity> entity0(new Entity(Frame::World(), "name", false));
+  std::shared_ptr<Entity> entity1(new Entity(Frame::World(), "name", false));
+  std::shared_ptr<Entity> entity2(new Entity(Frame::World(), "name", false));
 
   test_mgr.setPattern("%s(%d)");
 
-  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
-  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
-  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+  test_mgr.issueNewNameAndAdd(entity0->getName(), entity0);
+  test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
+  test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("name") == bn0);
-  EXPECT_TRUE( test_mgr.getObject("name(1)") == bn1);
-  EXPECT_TRUE( test_mgr.getObject("name(2)") == bn2);
+  EXPECT_TRUE( test_mgr.getObject("name") == entity0);
+  EXPECT_TRUE( test_mgr.getObject("name(1)") == entity1);
+  EXPECT_TRUE( test_mgr.getObject("name(2)") == entity2);
 
   test_mgr.clear();
 
-  bn0->setName("bodynode");
-  bn1->setName("bodynode");
-  bn2->setName("bodynode");
+  entity0->setName("Entity");
+  entity1->setName("Entity");
+  entity2->setName("Entity");
 
   test_mgr.setPattern("(%d)-%s");
-  test_mgr.issueNewNameAndAdd(bn0->getName(), bn0);
-  test_mgr.issueNewNameAndAdd(bn1->getName(), bn1);
-  test_mgr.issueNewNameAndAdd(bn2->getName(), bn2);
+  test_mgr.issueNewNameAndAdd(entity0->getName(), entity0);
+  test_mgr.issueNewNameAndAdd(entity1->getName(), entity1);
+  test_mgr.issueNewNameAndAdd(entity2->getName(), entity2);
 
-  EXPECT_TRUE( test_mgr.getObject("bodynode") == bn0);
-  EXPECT_TRUE( test_mgr.getObject("(1)-bodynode") == bn1 );
-  EXPECT_TRUE( test_mgr.getObject("(2)-bodynode") == bn2 );
+  EXPECT_TRUE( test_mgr.getObject("Entity") == entity0);
+  EXPECT_TRUE( test_mgr.getObject("(1)-Entity") == entity1 );
+  EXPECT_TRUE( test_mgr.getObject("(2)-Entity") == entity2 );
+}
 
-  delete bn0;
-  delete bn1;
-  delete bn2;
+//==============================================================================
+TEST(NameManagement, WorldSkeletons)
+{
+  dart::simulation::WorldPtr world1(new dart::simulation::World);
+
+  dart::dynamics::SkeletonPtr skel0(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr skel1(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr skel2(new dart::dynamics::Skeleton);
+
+  world1->addSkeleton(skel0);
+  world1->addSkeleton(skel1);
+  world1->addSkeleton(skel2);
+
+  EXPECT_TRUE(skel0->getName() == "Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+  EXPECT_TRUE(skel2->getName() == "Skeleton(2)");
+
+  skel1->setName("Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+  skel1->setName("OtherName");
+  EXPECT_TRUE(skel1->getName() == "OtherName");
+
+  skel2->setName("Skeleton");
+  EXPECT_TRUE(skel2->getName() == "Skeleton(1)");
+  skel2->setName("OtherName");
+  EXPECT_TRUE(skel2->getName() == "OtherName(1)");
+
+  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
+  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+
+  dart::simulation::WorldPtr world2(new dart::simulation::World);
+
+  dart::dynamics::SkeletonPtr skel3(new dart::dynamics::Skeleton("OtherName"));
+  world2->addSkeleton(skel3);
+  world2->addSkeleton(skel2);
+  world2->addSkeleton(skel1);
+
+  EXPECT_TRUE(skel3->getName() == "OtherName");
+  EXPECT_TRUE(skel1->getName() == "OtherName(2)");
+  EXPECT_TRUE(skel2->getName() == "OtherName(1)");
+
+  skel3->setName("Skeleton(1)");
+  skel1->setName("Skeleton");
+
+  EXPECT_TRUE(skel3->getName() == "Skeleton(1)");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)(1)");
+
+  EXPECT_TRUE( skel0 == world1->getSkeleton(skel0->getName()) );
+  EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
+
+  EXPECT_TRUE( skel3 == world2->getSkeleton(skel3->getName()) );
+  EXPECT_TRUE( skel1 == world2->getSkeleton(skel1->getName()) );
+  EXPECT_TRUE( skel2 == world2->getSkeleton(skel2->getName()) );
+
+  world2->removeSkeleton(skel1);
+
+  skel1->setName("Skeleton");
+  EXPECT_TRUE(skel1->getName() == "Skeleton(1)");
+}
+
+//==============================================================================
+TEST(NameManagement, WorldSimpleFrames)
+{
+  dart::simulation::WorldPtr world1(new dart::simulation::World);
+
+  dart::dynamics::SimpleFramePtr frame0(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  dart::dynamics::SimpleFramePtr frame1(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  dart::dynamics::SimpleFramePtr frame2(
+        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+
+  world1->addFrame(frame0);
+  world1->addFrame(frame1);
+  world1->addFrame(frame2);
+
+  EXPECT_TRUE(frame0->getName() == "Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
+  EXPECT_TRUE(frame2->getName() == "Frame(2)");
+
+  frame1->setName("Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
+  frame1->setName("OtherName");
+  EXPECT_TRUE(frame1->getName() == "OtherName");
+
+  frame2->setName("Frame");
+  EXPECT_TRUE(frame2->getName() == "Frame(1)");
+  frame2->setName("OtherName");
+  EXPECT_TRUE(frame2->getName() == "OtherName(1)");
+
+  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+
+  dart::simulation::WorldPtr world2(new dart::simulation::World);
+
+  dart::dynamics::SimpleFramePtr frame3(
+        new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
+  world2->addFrame(frame3);
+  world2->addFrame(frame2);
+  world2->addFrame(frame1);
+
+  EXPECT_TRUE(frame3->getName() == "OtherName");
+  EXPECT_TRUE(frame1->getName() == "OtherName(2)");
+  EXPECT_TRUE(frame2->getName() == "OtherName(1)");
+
+  frame3->setName("Frame(1)");
+  frame1->setName("Frame");
+
+  EXPECT_TRUE(frame3->getName() == "Frame(1)");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)(1)");
+
+  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+
+  EXPECT_TRUE( frame3 == world2->getFrame(frame3->getName()) );
+  EXPECT_TRUE( frame1 == world2->getFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world2->getFrame(frame2->getName()) );
+
+  world2->removeFrame(frame1);
+
+  frame1->setName("Frame");
+  EXPECT_TRUE(frame1->getName() == "Frame(1)");
 }
 
 //==============================================================================

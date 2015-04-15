@@ -41,14 +41,14 @@
 int main(int argc, char* argv[])
 {
   // create and initialize the world
-  dart::simulation::World *myWorld
+  dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/fullbody1.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(1);
+  dart::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
 
   std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);

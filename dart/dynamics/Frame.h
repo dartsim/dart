@@ -97,14 +97,14 @@ public:
   /// Frame.
   const Eigen::Vector6d& getSpatialVelocity() const;
 
-  /// Get the total spatial velocity of this Frame. The velocity can be provided
-  /// in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialVelocity(const Frame* _inCoordinatesOf) const;
-
   /// Get the spatial velocity of this Frame relative to some other Frame. It
   /// can be expressed in the coordinates of any Frame.
   Eigen::Vector6d getSpatialVelocity(const Frame* _relativeTo,
                                      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial velocity of a fixed point in this Frame. The velocity is
+  /// in coordinates of this Frame and is relative to the World Frame.
+  Eigen::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset) const;
 
   /// Get the spatial velocity of a fixed point in this Frame.
   Eigen::Vector6d getSpatialVelocity(const Eigen::Vector3d& _offset,
@@ -160,14 +160,15 @@ public:
   /// this Frame.
   const Eigen::Vector6d& getSpatialAcceleration() const;
 
-  /// Get the total spatial acceleration of this Frame. The acceleration can be
-  /// provided in the coordinates of any Frame.
-  Eigen::Vector6d getSpatialAcceleration(const Frame* _inCoordinatesOf) const;
-
   /// Get the spatial acceleration of this Frame relative to some other Frame.
   /// It can be expressed in the coordinates of any Frame.
   Eigen::Vector6d getSpatialAcceleration(const Frame* _relativeTo,
                                          const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial acceleration of a fixed point in this Frame. The
+  /// acceleration is in coordinates of this Frame and is relative to the World
+  /// Frame.
+  Eigen::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset) const;
 
   /// Get the spatial acceleration of a fixed point in this Frame
   Eigen::Vector6d getSpatialAcceleration(const Eigen::Vector3d& _offset,
@@ -231,22 +232,23 @@ public:
   //--------------------------------------------------------------------------
 
   // Render this Frame as well as any Entities it contains
-  virtual void draw(renderer::RenderInterface *_ri = NULL,
-                    const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const;
+  virtual void draw(
+      renderer::RenderInterface *_ri = NULL,
+      const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
+      bool _useDefaultColor = true, int _depth = 0) const override;
 
   /// Notify this Frame and all its children that its pose has changed
-  virtual void notifyTransformUpdate();
+  virtual void notifyTransformUpdate() override;
 
   /// Notify this Frame and all its children that its velocity has changed
-  virtual void notifyVelocityUpdate();
+  virtual void notifyVelocityUpdate() override;
 
   /// Notify this Frame and all its children that its acceleration has changed
-  virtual void notifyAccelerationUpdate();
+  virtual void notifyAccelerationUpdate() override;
 
 protected:
   // Documentation inherited
-  virtual void changeParentFrame(Frame* _newParentFrame);
+  virtual void changeParentFrame(Frame* _newParentFrame) override;
 
   /// Called during a parent Frame change to allow extensions of the Frame class
   /// to handle new children in customized ways. This function is a no op unless

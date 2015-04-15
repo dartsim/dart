@@ -3,6 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Can Erdogan
+ *            Michael X. Grey
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -36,8 +37,8 @@
 
 /**
  * @file Main.cpp
- * @author Can Erdogan
- * @date Feb 02, 2013
+ * @author Can Erdogan (rewritten by Michael X. Grey)
+ * @date Feb 02, 2013  (rewritten April 09, 2015)
  * @brief This application shows the creation of a kinematic skeleton from scratch without
  * the use of a model file. Run the program without arguments and you can use the buttons
  * {1,2} to move the corresponding joints. The key '-' will make the joints move in the negative
@@ -48,107 +49,77 @@
 
 #include "apps/hardcodedDesign/MyWindow.h"
 
-/// \brief Function headers
-enum TypeOfDOF {
-  DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
-};
-
-/// \brief Add a DOF to a given joint
-dart::dynamics::Joint* create1DOFJoint(double val, double min, double max,
-                                       int type) {
-  // Create the transformation based on the type
-  dart::dynamics::Joint* newJoint = NULL;
-  if (type == DOF_X)
-    newJoint = new dart::dynamics::PrismaticJoint(
-                 Eigen::Vector3d(1.0, 0.0, 0.0));
-  else if (type == DOF_Y)
-    newJoint = new dart::dynamics::PrismaticJoint(
-                 Eigen::Vector3d(0.0, 1.0, 0.0));
-  else if (type == DOF_Z)
-    newJoint = new dart::dynamics::PrismaticJoint(
-                 Eigen::Vector3d(0.0, 0.0, 1.0));
-  else if (type == DOF_YAW)
-    newJoint = new dart::dynamics::RevoluteJoint(
-                 Eigen::Vector3d(0.0, 0.0, 1.0));
-  else if (type == DOF_PITCH)
-    newJoint = new dart::dynamics::RevoluteJoint(
-                 Eigen::Vector3d(0.0, 1.0, 0.0));
-  else if (type == DOF_ROLL)
-    newJoint = new dart::dynamics::RevoluteJoint(
-                 Eigen::Vector3d(1.0, 0.0, 0.0));
-  // Add the transformation to the joint, set the min/max values and set it to
-  // the skeleton
-  newJoint->setPosition(0, val);
-  newJoint->setPositionLowerLimit(0, min);
-  newJoint->setPositionUpperLimit(0, max);
-
-  return newJoint;
-}
-
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton
-  dart::dynamics::Skeleton LeftLegSkel;
+  dart::dynamics::SkeletonPtr LeftLegSkel(new dart::dynamics::Skeleton);
 
-  // Pointers to be used during the Skeleton building
-  Eigen::Matrix3d inertiaMatrix;
-  inertiaMatrix << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   double mass = 1.0;
 
   // BodyNode 1: Left Hip Yaw (LHY)
-  dart::dynamics::BodyNode* node = new dart::dynamics::BodyNode("LHY");
-  dart::dynamics::Joint* joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_YAW);
-  joint->setName("LHY");
-  dart::dynamics::Shape* shape =
-      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
-  node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
-  node->setMass(mass);
-  node->setParentJoint(joint);
-  LeftLegSkel.addBodyNode(node);
+  dart::dynamics::BodyNode::Properties body;
+  body.mName = "LHY";
+  dart::dynamics::ShapePtr shape(
+        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
+  body.mVizShapes.push_back(shape); // Use 'shape' for visualizing
+  body.mColShapes.push_back(shape); // Use 'shape' for collision detection
+  body.mInertia.setMass(mass);
+
+  dart::dynamics::RevoluteJoint::Properties joint;
+  joint.mName = "LHY";
+  joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
+  joint.mPositionLowerLimit = -DART_PI;
+  joint.mPositionUpperLimit =  DART_PI;
+
+  // You can get the newly created Joint and BodyNode pointers like this
+  std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair =
+      LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+        nullptr, joint, body);
+  dart::dynamics::BodyNode* parent = pair.second;
+
 
   // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
-
-  dart::dynamics::BodyNode* parent_node = LeftLegSkel.getBodyNode("LHY");
-  node = new dart::dynamics::BodyNode("LHR");
-  joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_ROLL);
-  joint->setName("LHR");
-  Eigen::Isometry3d T(Eigen::Translation3d(0.0, 0.0, 0.5));
-  joint->setTransformFromParentBodyNode(T);
-  shape = new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
+  body.mName = "LHR";
+  shape = dart::dynamics::ShapePtr(
+        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
-  node->setLocalCOM(shape->getOffset());
-  node->setMass(mass);
-  node->addVisualizationShape(shape);
-  node->addCollisionShape(shape);
-  node->setParentJoint(joint);
-  parent_node->addChildBodyNode(node);
-  LeftLegSkel.addBodyNode(node);
+  body.mVizShapes.push_back(shape);
+  body.mColShapes.push_back(shape);
+  body.mInertia.setLocalCOM(shape->getOffset());
+  body.mInertia.setMass(mass);
+
+  joint.mName = "LHR";
+  joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
+
+  // You can get the specific type of Joint Pointer instead of just a basic Joint pointer
+  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> nextPair =
+  LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+        parent, joint, body);
+  nextPair.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
+
 
   // BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR
-  parent_node = LeftLegSkel.getBodyNode("LHR");
-  node = new dart::dynamics::BodyNode("LHP");
-  joint = create1DOFJoint(0.0, 0.0, DART_PI, DOF_ROLL);
-  joint->setName("LHP");
-  T = Eigen::Translation3d(0.0, 0.0, 1.0);
-  joint->setTransformFromParentBodyNode(T);
-  shape = new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0));
+  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
+  body.mName = "LHP";
+  shape = dart::dynamics::ShapePtr(
+        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
-  node->setLocalCOM(shape->getOffset());
-  node->setMass(mass);
-  dart::dynamics::Shape* shape1 =
-      new dart::dynamics::EllipsoidShape(Eigen::Vector3d(0.3, 0.3, 1.0));
-  shape1->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
-  node->addVisualizationShape(shape1);
-  node->addCollisionShape(shape);
-  node->setParentJoint(joint);
-  parent_node->addChildBodyNode(node);
-  LeftLegSkel.addBodyNode(node);
+  body.mVizShapes.push_back(shape);
+  body.mColShapes.push_back(shape);
+  body.mInertia.setLocalCOM(shape->getOffset());
+  body.mInertia.setMass(mass);
 
-  // Initialize the skeleton
-  LeftLegSkel.init();
+  joint.mName = "LHP";
+  joint.mAxis = Eigen::Vector3d(0.0, 1.0, 0.0);
+  joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
+
+  // Or you can completely ignore the return value of this function
+  LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+        LeftLegSkel->getBodyNode(1), joint, body);
+
 
   // Window stuff
-  MyWindow window(&LeftLegSkel);
+  MyWindow window(LeftLegSkel);
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Skeleton example");
   glutMainLoop();

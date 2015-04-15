@@ -4,7 +4,7 @@
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -76,16 +76,16 @@ public:
   virtual ~ConstraintSolver();
 
   /// Add single skeleton
-  void addSkeleton(dynamics::Skeleton* _skeleton);
+  void addSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// Add mutiple skeletons
-  void addSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
+  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
   /// Remove single skeleton
-  void removeSkeleton(dynamics::Skeleton* _skeleton);
+  void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// Remove multiple skeletons
-  void removeSkeletons(const std::vector<dynamics::Skeleton*>& _skeletons);
+  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
   /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();
@@ -119,10 +119,10 @@ public:
 
 private:
   /// Check if the skeleton is contained in this solver
-  bool containSkeleton(const dynamics::Skeleton* _skeleton) const;
+  bool containSkeleton(const dynamics::SkeletonPtr _skeleton) const;
 
   /// Add skeleton if the constraint is not contained in this solver
-  bool checkAndAddSkeleton(dynamics::Skeleton* _skeleton);
+  bool checkAndAddSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// Check if the constraint is contained in this solver
   bool containConstraint(const ConstraintBase* _constraint) const;
@@ -152,7 +152,7 @@ private:
   LCPSolver* mLCPSolver;
 
   /// Skeleton list
-  std::vector<dynamics::Skeleton*> mSkeletons;
+  std::vector<dynamics::SkeletonPtr> mSkeletons;
 
   /// Contact constraints those are automatically created
   std::vector<ContactConstraint*> mContactConstraints;

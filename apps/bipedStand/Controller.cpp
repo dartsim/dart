@@ -37,7 +37,7 @@
 
 #include "apps/bipedStand/Controller.h"
 
-Controller::Controller(dart::dynamics::Skeleton* _skel,
+Controller::Controller(dart::dynamics::SkeletonPtr _skel,
                        double _t) {
   mSkel = _skel;
   mTimestep = _t;
@@ -96,7 +96,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   mTorques = p + d - mKd * qddot * mTimestep;
 
   // ankle strategy for sagital plane
-  Eigen::Vector3d com = mSkel->getWorldCOM();
+  Eigen::Vector3d com = mSkel->getCOM();
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
@@ -128,7 +128,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   mFrame++;
 }
 
-dart::dynamics::Skeleton*Controller::getSkel() {
+dart::dynamics::SkeletonPtr Controller::getSkel() {
   return mSkel;
 }
 

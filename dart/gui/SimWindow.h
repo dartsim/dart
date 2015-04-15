@@ -47,15 +47,12 @@
 #include <Eigen/Dense>
 
 #include "dart/gui/Win3D.h"
-
-namespace dart {
-namespace simulation {
-class World;
-}  // namespace simulation
-}  // namespace dart
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace gui {
+
+class GraphWindow;
 
 /// \brief
 class SimWindow : public Win3D {
@@ -85,18 +82,20 @@ public:
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  void setWorld(simulation::World* _world);
+  void setWorld(dart::simulation::WorldPtr _world);
 
   /// \brief Save world in 'tempWorld.txt'
   void saveWorld();
 
+  /// \brief Plot _data in a 2D window
+  void plot(Eigen::VectorXd& _data);
 //  bool isSimulating() const { return mSimulating; }
 
 //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
 
 protected:
   /// \brief
-  simulation::World* mWorld;
+  simulation::WorldPtr mWorld;
 
   /// \brief
   int mPlayFrame;
@@ -110,6 +109,8 @@ protected:
   /// \brief
   bool mShowMarkers;
 
+  /// \brief Array of graph windows
+  std::vector<GraphWindow*> mGraphWindows;
 };
 
 }  // namespace gui

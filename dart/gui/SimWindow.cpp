@@ -50,8 +50,10 @@
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
+#include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/utils/FileInfoWorld.h"
+#include "dart/gui/GraphWindow.h"
 
 namespace dart {
 namespace gui {
@@ -72,6 +74,8 @@ SimWindow::SimWindow()
 }
 
 SimWindow::~SimWindow() {
+  for (const auto& graphWindow : mGraphWindows)
+    delete graphWindow;
 }
 
 void SimWindow::timeStepping() {
@@ -85,8 +89,8 @@ void SimWindow::drawSkels() {
 
 void SimWindow::drawEntities()
 {
-  for (size_t i = 0; i < mWorld->getNumEntities(); ++i)
-    mWorld->getEntity(i)->draw(mRI);
+  for (size_t i = 0; i < mWorld->getNumFrames(); ++i)
+    mWorld->getFrame(i)->draw(mRI);
 }
 
 void SimWindow::displayTimer(int _val) {
@@ -223,7 +227,7 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void SimWindow::setWorld(simulation::World* _world) {
+void SimWindow::setWorld(simulation::WorldPtr _world) {
   mWorld = _world;
 }
 
@@ -232,6 +236,13 @@ void SimWindow::saveWorld() {
     return;
   dart::utils::FileInfoWorld worldFile;
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
+}
+
+void SimWindow::plot(Eigen::VectorXd& _data) {
+  GraphWindow* figure = new GraphWindow();
+  figure->setData(_data);
+  figure->initWindow(480, 240, "figure");
+  mGraphWindows.push_back(figure);
 }
 
 }  // namespace gui

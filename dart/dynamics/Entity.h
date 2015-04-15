@@ -41,6 +41,9 @@
 #include <string>
 #include <vector>
 
+#include "dart/common/Subject.h"
+#include "dart/common/Signal.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -63,17 +66,58 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity
+class Entity : public virtual common::Subject
 {
 public:
   friend class Frame;
 
+  using EntitySignal = common::Signal<void(const Entity*)>;
+  using FrameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const Frame* _oldFrame,
+                            const Frame* _newFrame)>;
+  using NameChangedSignal
+      = common::Signal<void(const Entity*,
+                            const std::string& _oldName,
+                            const std::string& _newName)>;
+  using VizShapeAddedSignal
+      = common::Signal<void(const Entity*, ConstShapePtr _newVisShape)>;
+
+  using VizShapeRemovedSignal = VizShapeAddedSignal;
+
+  struct Properties
+  {
+    /// Name of the Entity
+    std::string mName;
+
+    /// Visualization shapes for the Entity
+    std::vector<ShapePtr> mVizShapes;
+
+    /// Constructor
+    Properties(const std::string& _name = "",
+               const std::vector<ShapePtr>& _vizShapes=std::vector<ShapePtr>());
+  };
+
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name,
-                  bool _quiet);
+  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
+
+  /// Set the Properties of this Entity
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Entity
+  const Properties& getEntityProperties() const;
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity& _otherEntity);
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity* _otherEntity);
+
+  /// Same as copy(const Entity&)
+  Entity& operator=(const Entity& _otherEntity);
 
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
@@ -83,8 +127,23 @@ public:
   /// Return the name of this Entity
   virtual const std::string& getName() const;
 
-  /// Add a visualization shape for this Entity
-  virtual void addVisualizationShape(Shape* _p);
+  /// Add a visualization Shape for this Entity
+  virtual void addVisualizationShape(ShapePtr _shape);
+
+  /// Remove a visualization Shape from this Entity
+  virtual void removeVisualizationShape(ShapePtr _shape);
+
+  /// Remove all visualization Shapes from this Entity
+  virtual void removeAllVisualizationShapes();
+
+  /// Return the number of visualization shapes
+  size_t getNumVisualizationShapes() const;
+
+  /// Return _index-th visualization shape
+  ShapePtr getVisualizationShape(size_t _index);
+
+  /// Return (const) _index-th visualization shape
+  ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -99,7 +158,7 @@ public:
 
   /// True iff this Entity depends on (i.e. kinematically descends from)
   /// _someFrame. If _someFrame is NULL, this returns false.
-  bool dependsOn(const Frame* _someFrame) const;
+  bool descendsFrom(const Frame* _someFrame) const;
 
   /// Returns true if this Entity is set to be quiet.
   ///
@@ -133,14 +192,12 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
+
+  /// Properties of this Entity
+  Properties mEntityP;
+
   /// Parent frame of this Entity
   Frame* mParentFrame;
-
-  /// Name of this Entity
-  std::string mName;
-
-  /// Vector of visualization shapes
-  std::vector<Shape*> mVizShapes;
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;
@@ -150,6 +207,50 @@ protected:
 
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
+
+  /// Frame changed signal
+  FrameChangedSignal mFrameChangedSignal;
+
+  /// Name changed signal
+  NameChangedSignal mNameChangedSignal;
+
+  /// Visualization added signal
+  VizShapeAddedSignal mVizShapeAddedSignal;
+
+  /// Visualization removed signal
+  VizShapeRemovedSignal mVizShapeRemovedSignal;
+
+  /// Transform changed signal
+  EntitySignal mTransformUpdatedSignal;
+
+  /// Velocity changed signal
+  EntitySignal mVelocityChangedSignal;
+
+  /// Acceleration changed signal
+  EntitySignal mAccelerationChangedSignal;
+
+public:
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for frame changed signal
+  common::SlotRegister<FrameChangedSignal> onFrameChanged;
+
+  /// Slot register for name changed signal
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
+  /// Slot register for visualization changed signal
+  common::SlotRegister<VizShapeAddedSignal> onVizShapeAdded;
+
+  /// Slot register for transform updated signal
+  common::SlotRegister<EntitySignal> onTransformUpdated;
+
+  /// Slot register for velocity updated signal
+  common::SlotRegister<EntitySignal> onVelocityChanged;
+
+  /// Slot register for acceleration updated signal
+  common::SlotRegister<EntitySignal> onAccelerationChanged;
 
 private:
   /// Whether or not this Entity is set to be quiet
@@ -163,8 +264,7 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(Frame* _refFrame, const std::string& _name,
-                      bool _quiet);
+  explicit Detachable(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);

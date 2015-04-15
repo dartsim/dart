@@ -48,13 +48,51 @@ namespace dynamics {
 class BallJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _properties =
+                                                MultiDofJoint<3>::Properties());
+  };
+
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit BallJoint(const std::string& _name = "BallJoint");
 
   /// Destructor
   virtual ~BallJoint();
 
+  /// Get the Properties of this BallJoint
+  Properties getBallJointProperties() const;
+
+  /// Convert a rotation into a 3D vector that can be used to set the positions
+  /// of a BallJoint. The positions returned by this function will result in a
+  /// relative transform of
+  /// getTransformFromParentBodyNode() * _rotation * getTransformFromChildBodyNode().inverse()
+  /// between the parent BodyNode and the child BodyNode frames when applied to
+  /// a BallJoint.
+  template <typename RotationType>
+  static Eigen::Vector3d convertToPositions(const RotationType& _rotation)
+  {
+    return math::logMap(_rotation);
+  }
+
+  /// Convert a BallJoint-style position vector into a transform
+  static Eigen::Isometry3d convertToTransform(const Eigen::Vector3d& _positions);
+
+  /// Convert a BallJoint-style position vector into a rotation matrix
+  static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
+
 protected:
+
+  /// Constructor called by Skeleton class
+  BallJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

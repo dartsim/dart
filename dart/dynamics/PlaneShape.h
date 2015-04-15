@@ -37,14 +37,21 @@
 #ifndef DART_DYNAMICS_PLANESHAPE_H_
 #define DART_DYNAMICS_PLANESHAPE_H_
 
+#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
 
-class PlaneShape : public Shape {
+/// PlaneShape represents infinite plane has normal and offset as properties.
+class PlaneShape : public Shape
+{
 public:
-  /// @brief Constructor.
+  /// Constructor
+  PlaneShape(const Eigen::Vector3d& _normal, double _offset);
+
+  /// Constructor
+  DEPRECATED(4.3)
   PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
 
   // Documentation inherited.
@@ -56,27 +63,39 @@ public:
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
-  /// @brief
+  /// Set plane normal
   void setNormal(const Eigen::Vector3d& _normal);
 
-  /// @brief
+  /// Get plane normal
   const Eigen::Vector3d& getNormal() const;
 
-  /// @brief
+  /// Set plane offset
+  void setOffset(double _offset);
+
+  /// Get plane offset
+  double getOffset() const;
+
+  /// Compute distance between the plane and the given point
+  double computeDistance(const Eigen::Vector3d& _point) const;
+
+  /// Compute signed distance between the plane and the given point
+  double computeSignedDistance(const Eigen::Vector3d& _point) const;
+
+  DEPRECATED(4.3)
   void setPoint(const Eigen::Vector3d& _point);
 
-  /// @brief
-  const Eigen::Vector3d& getPoint() const;
+  DEPRECATED(4.3)
+  Eigen::Vector3d getPoint() const;
 
 private:
   // Documentation inherited.
   void computeVolume();
 
-  /// @brief
+  /// Plane normal
   Eigen::Vector3d mNormal;
 
-  /// @brief
-  Eigen::Vector3d mPoint;
+  /// Plane offset
+  double mOffset;
 
 public:
   // To get byte-aligned Eigen vectors

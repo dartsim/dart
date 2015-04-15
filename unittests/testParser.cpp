@@ -56,121 +56,102 @@ using namespace utils;
 //==============================================================================
 TEST(Parser, DataStructure)
 {
-  bool v1 = true;
-  int v2 = -3;
-  unsigned int v3 = 1;
-  float v4 = -3.140f;
-  double v5 = 1.4576640;
-  char v6 = 'd';
-  Eigen::Vector2d v7 = Eigen::Vector2d::Ones();
-  Eigen::Vector3d v8 = Eigen::Vector3d::Ones();
-  //Eigen::Vector3d v9 = Eigen::Vector3d::Ones();
-  //math::SO3 v10;
-  Eigen::Isometry3d v11 = Eigen::Isometry3d::Identity();
+  bool              valBool       = true;
+  int               valInt        = -3;
+  unsigned int      valUInt       = 1;
+  float             valFloat      = -3.140f;
+  double            valDouble     = 1.4576640;
+  char              valChar       = 'd';
+  Eigen::Vector2d   valVector2d   = Eigen::Vector2d::Random();
+  Eigen::Vector3d   valVector3d   = Eigen::Vector3d::Random();
+  Eigen::Vector3i   valVector3i   = Eigen::Vector3i::Random();
+  Eigen::Vector6d   valVector6d   = Eigen::Vector6d::Random();
+  Eigen::VectorXd   valVectorXd   = Eigen::VectorXd::Random(10);
+  Eigen::Isometry3d valIsometry3d = Eigen::Isometry3d::Identity();
 
-  std::string str1 = toString(v1);
-  std::string str2 = toString(v2);
-  std::string str3 = toString(v3);
-  std::string str4 = toString(v4);
-  std::string str5 = toString(v5);
-  std::string str6 = toString(v6);
-  std::string str7 = toString(v7);
-  std::string str8 = toString(v8);
-  //std::string str9 = toString(v9);
-  //std::string str10 = toString(v10);
-  std::string str11 = toString(v11);
+  std::string strBool       = toString(valBool);
+  std::string strInt        = toString(valInt);
+  std::string strUInt       = toString(valUInt);
+  std::string strFloat      = toString(valFloat);
+  std::string strDouble     = toString(valDouble);
+  std::string strChar       = toString(valChar);
+  std::string strVector2d   = toString(valVector2d);
+  std::string strVector3d   = toString(valVector3d);
+  std::string strVector3i   = toString(valVector3i);
+  std::string strVector6d   = toString(valVector6d);
+  std::string strVectorXd   = toString(valVectorXd);
+  std::string strIsometry3d = toString(valIsometry3d);
 
-  bool b = toBool(str1);
-  int i = toInt(str2);
-  unsigned int ui = toUInt(str3);
-  float f = toFloat(str4);
-  double d = toDouble(str5);
-  char c = toChar(str6);
-  Eigen::Vector2d vec2 = toVector2d(str7);
-  Eigen::Vector3d vec3 = toVector3d(str8);
-  //Eigen::Vector3d valso3 = toVector3d(str9);
-  //math::SO3 valSO3 = toSO3(str10);
-  Eigen::Isometry3d valSE3 = toIsometry3d(str11);
-
-  EXPECT_EQ(b, v1);
-  EXPECT_EQ(i, v2);
-  EXPECT_EQ(ui, v3);
-  EXPECT_EQ(f, v4);
-  EXPECT_EQ(d, v5);
-  EXPECT_EQ(c, v6);
-  for (int i = 0; i < 2; i++)
-    EXPECT_EQ(vec2[i], v7[i]);
-  EXPECT_EQ(vec3, v8);
-  //EXPECT_EQ(valso3, v9);
-  //EXPECT_EQ(valSO3, v10);
-  for (int i = 0; i < 4; ++i)
-  {
-    for (int j = 0; j < 4; ++j)
-      EXPECT_EQ(valSE3(i,j), v11(i,j));
-  }
+  EXPECT_EQ(valBool,   toBool(strBool));
+  EXPECT_EQ(valInt,    toInt(strInt));
+  EXPECT_EQ(valUInt,   toUInt(strUInt));
+  EXPECT_EQ(valFloat,  toFloat(strFloat));
+  EXPECT_EQ(valDouble, toDouble(strDouble));
+  EXPECT_EQ(valChar,   toChar(strChar));
+  EXPECT_TRUE(equals(valVector2d, toVector2d(strVector2d)));
+  EXPECT_TRUE(equals(valVector3d, toVector3d(strVector3d)));
+  EXPECT_EQ(valVector3i, toVector3i(strVector3i));
+  EXPECT_TRUE(equals(valVector6d, toVector6d(strVector6d)));
+  EXPECT_TRUE(equals(valVectorXd, toVectorXd(strVectorXd)));
+  EXPECT_TRUE(equals(valIsometry3d.matrix(),
+                     toIsometry3d(strIsometry3d).matrix()));
 }
 
 //==============================================================================
 TEST(Parser, EmptyWorld)
 {
-  World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
+  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), 0);
   EXPECT_EQ(world->getGravity()(2), -9.81);
-  EXPECT_EQ(world->getNumSkeletons(), 0);
+  EXPECT_EQ((int)world->getNumSkeletons(), 0);
 
   EXPECT_EQ(world->getTime(), 0);
   world->step();
   EXPECT_EQ(world->getTime(), world->getTimeStep());
-
-  delete world;
 }
 
 //==============================================================================
 TEST(Parser, SinglePendulum)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/single_pendulum.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
   EXPECT_EQ(world->getNumSkeletons(), 1);
 
-  Skeleton* skel1 = world->getSkeleton("single_pendulum");
+  SkeletonPtr skel1 = world->getSkeleton("single_pendulum");
 
   EXPECT_EQ(skel1->getNumBodyNodes(), 1);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
 TEST(Parser, SerialChain)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
   EXPECT_EQ(world->getNumSkeletons(), 1);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   EXPECT_EQ(skel1->getNumBodyNodes(), 10);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
@@ -182,12 +163,12 @@ TEST(Parser, RigidAndSoftBodies)
   using namespace simulation;
   using namespace utils;
 
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel1 != NULL);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel1 != nullptr);
   EXPECT_EQ(skel1->getNumBodyNodes(), 2);
   EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
   EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
@@ -196,8 +177,6 @@ TEST(Parser, RigidAndSoftBodies)
   EXPECT_TRUE(sbn->getNumPointMasses() > 0);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
@@ -209,21 +188,21 @@ TEST(Parser, PlanarJoint)
   using namespace simulation;
   using namespace utils;
 
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/planar_joint.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton1");
-  EXPECT_TRUE(skel1 != NULL);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton1");
+  EXPECT_TRUE(skel1 != nullptr);
 
   BodyNode* body1 = skel1->getBodyNode("link1");
   BodyNode* body2 = skel1->getBodyNode("link2");
   BodyNode* body3 = skel1->getBodyNode("link3");
   BodyNode* body4 = skel1->getBodyNode("link4");
-  EXPECT_TRUE(body1 != NULL);
-  EXPECT_TRUE(body2 != NULL);
-  EXPECT_TRUE(body3 != NULL);
-  EXPECT_TRUE(body4 != NULL);
+  EXPECT_TRUE(body1 != nullptr);
+  EXPECT_TRUE(body2 != nullptr);
+  EXPECT_TRUE(body3 != nullptr);
+  EXPECT_TRUE(body4 != nullptr);
 
   PlanarJoint* planarJoint1
       = dynamic_cast<PlanarJoint*>(body1->getParentJoint());
@@ -233,10 +212,10 @@ TEST(Parser, PlanarJoint)
       = dynamic_cast<PlanarJoint*>(body3->getParentJoint());
   PlanarJoint* planarJoint4
       = dynamic_cast<PlanarJoint*>(body4->getParentJoint());
-  EXPECT_TRUE(planarJoint1 != NULL);
-  EXPECT_TRUE(planarJoint2 != NULL);
-  EXPECT_TRUE(planarJoint3 != NULL);
-  EXPECT_TRUE(planarJoint4 != NULL);
+  EXPECT_TRUE(planarJoint1 != nullptr);
+  EXPECT_TRUE(planarJoint2 != nullptr);
+  EXPECT_TRUE(planarJoint3 != nullptr);
+  EXPECT_TRUE(planarJoint4 != nullptr);
 
   EXPECT_EQ(planarJoint1->getPlaneType(), PlanarJoint::PT_XY);
   EXPECT_EQ(planarJoint2->getPlaneType(), PlanarJoint::PT_YZ);
@@ -314,19 +293,17 @@ TEST(Parser, PlanarJoint)
   EXPECT_EQ(planarJoint4->getPositionUpperLimit(2), +3.0);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
 TEST(SKEL_PARSER, JointActuatorType)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel1 != NULL);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel1 != nullptr);
 
   // Test for no actuator type attribute being specified
   Joint* joint0 = skel1->getJoint("joint0");
@@ -354,11 +331,11 @@ TEST(SKEL_PARSER, JointActuatorType)
 //==============================================================================
 TEST(Parser, DofAttributes)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
@@ -431,12 +408,12 @@ TEST(Parser, DofAttributes)
 //==============================================================================
 TEST(Parser, JointDynamicsElements)
 {
-  World* world
+  WorldPtr world
       = SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getDampingCoefficient(0), 1.0);

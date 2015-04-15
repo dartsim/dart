@@ -134,6 +134,9 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mImpulseDuration = 100.0;
       std::cout << "push left" << std::endl;
       break;
+    case 'g':
+      plotCOMX();
+      break;
     default:
       Win3D::keyboard(_key, _x, _y);
   }
@@ -144,3 +147,21 @@ void MyWindow::setController(Controller* _controller) {
   mController = _controller;
 }
 
+void MyWindow::plotCOMX() {
+  int nFrame = mWorld->getRecording()->getNumFrames();
+  Eigen::VectorXd data(nFrame);
+  for (int i = 0; i < nFrame; i++) {
+    Eigen::VectorXd pose = mWorld->getRecording()->getConfig(i, 1);
+    mWorld->getSkeleton(1)->setPositions(pose);
+    mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);    
+    data[i] = mWorld->getSkeleton(1)->getCOM()[0];
+  }
+  if (nFrame != 0)
+  {
+    Eigen::VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
+    mWorld->getSkeleton(1)->setPositions(pose);
+    mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
+  }
+
+  plot(data);
+}

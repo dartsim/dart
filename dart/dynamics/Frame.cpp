@@ -46,14 +46,14 @@ typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
 //==============================================================================
-Frame::Frame(Frame* _refFrame, const std::string &_name)
-  : Entity(_refFrame, _name, false),
+Frame::Frame(Frame* _refFrame, const std::string& _name)
+  : Entity(nullptr, _name, false),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
     mAmWorld(false)
 {
-
+  changeParentFrame(_refFrame);
 }
 
 //==============================================================================
@@ -72,17 +72,12 @@ Frame::~Frame()
   // Note: When we instruct an Entity to change its parent Frame, it will erase
   // itself from this Frame's mChildEntities list. This would invalidate the
   // 'it' and clobber our attempt to iterate through the std::set if we applied
-  // changeParentFrame(~) directly to the 'it' iterator. So instead we use the
+  // changeParentFrame() directly to the 'it' iterator. So instead we use the
   // post-increment operator to iterate 'it' forward and we apply
-  // changeParentFrame(~) to the temporary iterator created by the
+  // changeParentFrame() to the temporary iterator created by the
   // post-increment operator. Put simply: we increment 'it' forward once and
-  // then apply changeParentFrame(~) to the pointer that 'it' held just before
+  // then apply changeParentFrame() to the pointer that 'it' held just before
   // it incremented.
-
-  // Free the memory of the visualization shapes
-  for(size_t i=0; i<mVizShapes.size(); ++i)
-    delete mVizShapes[i];
-  mVizShapes.clear();
 
   // The entity destructor takes care of informing the parent Frame that this
   // one is disappearing
@@ -142,18 +137,6 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
 }
 
 //==============================================================================
-Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getSpatialVelocity();
-
-  if(_inCoordinatesOf->isWorld())
-    return math::AdR(getWorldTransform(), getSpatialVelocity());
-
-  return math::AdR(getTransform(_inCoordinatesOf), getSpatialVelocity());
-}
-
-//==============================================================================
 Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
                                           const Frame* _inCoordinatesOf) const
 {
@@ -161,11 +144,19 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
     return Eigen::Vector6d::Zero();
 
   if(_relativeTo->isWorld())
-    return getSpatialVelocity(_inCoordinatesOf);
+  {
+    if(this == _inCoordinatesOf)
+      return getSpatialVelocity();
+
+    if(_inCoordinatesOf->isWorld())
+      return math::AdR(getWorldTransform(), getSpatialVelocity());
+
+    return math::AdR(getTransform(_inCoordinatesOf), getSpatialVelocity());
+  }
 
   const Eigen::Vector6d& result =
-      getSpatialVelocity() - math::AdT(_relativeTo->getTransform(this),
-                                       _relativeTo->getSpatialVelocity());
+      (getSpatialVelocity() - math::AdT(_relativeTo->getTransform(this),
+                                    _relativeTo->getSpatialVelocity())).eval();
 
   if(this == _inCoordinatesOf)
     return result;
@@ -174,7 +165,13 @@ Eigen::Vector6d Frame::getSpatialVelocity(const Frame* _relativeTo,
 }
 
 //==============================================================================
-Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d &_offset,
+Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d& _offset) const
+{
+  return getSpatialVelocity(_offset, Frame::World(), this);
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialVelocity(const Eigen::Vector3d& _offset,
                                           const Frame* _relativeTo,
                                           const Frame* _inCoordinatesOf) const
 {
@@ -247,19 +244,6 @@ const Eigen::Vector6d& Frame::getSpatialAcceleration() const
 
 //==============================================================================
 Eigen::Vector6d Frame::getSpatialAcceleration(
-    const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getSpatialAcceleration();
-
-  if(_inCoordinatesOf->isWorld())
-    return math::AdR(getWorldTransform(), getSpatialAcceleration());
-
-  return math::AdR(getTransform(_inCoordinatesOf), getSpatialAcceleration());
-}
-
-//==============================================================================
-Eigen::Vector6d Frame::getSpatialAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
   // Frame 2: this, Frame 1: _relativeTo, Frame O: _inCoordinatesOf
@@ -273,19 +257,33 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
     return Eigen::Vector6d::Zero();
 
   if(_relativeTo->isWorld())
-    return getSpatialAcceleration(_inCoordinatesOf);
+  {
+    if(this == _inCoordinatesOf)
+      return getSpatialAcceleration();
+
+    if(_inCoordinatesOf->isWorld())
+      return math::AdR(getWorldTransform(), getSpatialAcceleration());
+
+    return math::AdR(getTransform(_inCoordinatesOf), getSpatialAcceleration());
+  }
 
   const Eigen::Vector6d& result =
-      getSpatialAcceleration()
-      - math::AdT(_relativeTo->getTransform(this),
-                  _relativeTo->getSpatialAcceleration())
-      - math::ad(getSpatialVelocity(),
-                 getSpatialVelocity(_relativeTo, this));
+      (getSpatialAcceleration()
+       - math::AdT(_relativeTo->getTransform(this),
+                   _relativeTo->getSpatialAcceleration())
+       - math::ad(getSpatialVelocity(),
+                  getSpatialVelocity(_relativeTo, this))).eval();
 
   if(this == _inCoordinatesOf)
     return result;
 
   return math::AdR(getTransform(_inCoordinatesOf), result);
+}
+
+//==============================================================================
+Eigen::Vector6d Frame::getSpatialAcceleration(const Eigen::Vector3d& _offset) const
+{
+  return getSpatialAcceleration(_offset, Frame::World(), this);
 }
 
 //==============================================================================
@@ -338,8 +336,9 @@ Eigen::Vector3d Frame::getLinearAcceleration(
   const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo, this);
 
   // r'' = a + w x v
-  const Eigen::Vector3d& a = getSpatialAcceleration(_relativeTo, this).tail<3>()
-                              + v_rel.head<3>().cross(v_rel.tail<3>());
+  const Eigen::Vector3d& a =
+      (getSpatialAcceleration(_relativeTo, this).tail<3>()
+       + v_rel.head<3>().cross(v_rel.tail<3>())).eval();
 
   if(this == _inCoordinatesOf)
     return a;
@@ -356,9 +355,9 @@ Eigen::Vector3d Frame::getLinearAcceleration(const Eigen::Vector3d& _offset,
     return Eigen::Vector3d::Zero();
 
   const Eigen::Vector6d& v_rel = getSpatialVelocity(_offset, _relativeTo, this);
-  const Eigen::Vector3d& a = getSpatialAcceleration(_offset, _relativeTo,
-                                                    this).tail<3>()
-                              + v_rel.head<3>().cross(v_rel.tail<3>());
+  const Eigen::Vector3d& a = (getSpatialAcceleration(_offset, _relativeTo,
+                                                     this).tail<3>()
+                               + v_rel.head<3>().cross(v_rel.tail<3>())).eval();
 
   if(this == _inCoordinatesOf)
     return a;
@@ -442,10 +441,10 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
   _ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri.popName();
@@ -470,6 +469,8 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
+
+  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -485,6 +486,8 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
+
+  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -498,19 +501,24 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
+
+  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
+  if (mParentFrame == _newParentFrame)
+    return;
+
   if(_newParentFrame)
   {
-    if(_newParentFrame->dependsOn(this))
+    if(_newParentFrame->descendsFrom(this))
     {
       if(!(this->isWorld() && _newParentFrame->isWorld()))
       // We make an exception here for the World Frame, because it's special/unique
       {
-        dtwarn << "[Frame::changeParentFrame(~)] Attempting to create a circular "
+        dtwarn << "[Frame::changeParentFrame] Attempting to create a circular "
                << "kinematic dependency by making Frame '" << getName()
                << "' a child of Frame '" << _newParentFrame->getName() << "'. "
                << "This will not be allowed.\n";
@@ -526,15 +534,15 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
       mParentFrame->mChildFrames.erase(it);
   }
 
-  if(NULL==_newParentFrame)
+  if(nullptr==_newParentFrame)
   {
     Entity::changeParentFrame(_newParentFrame);
     return;
   }
 
-  Entity::changeParentFrame(_newParentFrame);
   if(!mAmQuiet)
-    mParentFrame->mChildFrames.insert(this);
+    _newParentFrame->mChildFrames.insert(this);
+  Entity::changeParentFrame(_newParentFrame);
 }
 
 //==============================================================================

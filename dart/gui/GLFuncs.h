@@ -46,7 +46,8 @@ namespace dart {
 namespace gui {
 
 /// \brief
-void drawStringOnScreen(float _x, float _y, const std::string& _s);
+  void drawStringOnScreen(float _x, float _y, const std::string& _s,
+                          bool _bigFont = true);
 
 /// \brief
 void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,

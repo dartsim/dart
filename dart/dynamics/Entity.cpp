@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
@@ -43,15 +44,48 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
+Entity::Properties::Properties(const std::string& _name,
+                               const std::vector<ShapePtr>& _vizShapes)
+  : mName(_name),
+    mVizShapes(_vizShapes)
+{
+ // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
+{
+  assert(_index < _vec.size());
+  if (_index < _vec.size())
+    return _vec[_index];
+
+  return nullptr;
+}
+
+//==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : mParentFrame(NULL),
-    mName(_name),
+  : mEntityP(_name),
+    mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
+    mFrameChangedSignal(),
+    mNameChangedSignal(),
+    mVizShapeAddedSignal(),
+    mTransformUpdatedSignal(),
+    mVelocityChangedSignal(),
+    mAccelerationChangedSignal(),
+    onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
     mAmQuiet(_quiet)
 {
   changeParentFrame(_refFrame);
@@ -64,22 +98,126 @@ Entity::~Entity()
 }
 
 //==============================================================================
-const std::string& Entity::setName(const std::string &_name)
+void Entity::setProperties(const Properties& _properties)
 {
-  mName = _name;
-  return mName;
+  // Set name
+  setName(_properties.mName);
+
+  // Set visualization shapes
+  removeAllVisualizationShapes();
+  for(size_t i=0; i<_properties.mVizShapes.size(); ++i)
+    addVisualizationShape(_properties.mVizShapes[i]);
+}
+
+//==============================================================================
+const Entity::Properties& Entity::getEntityProperties() const
+{
+  return mEntityP;
+}
+
+//==============================================================================
+void Entity::copy(const Entity& _otherEntity)
+{
+  if(this == &_otherEntity)
+    return;
+
+  setProperties(_otherEntity.getEntityProperties());
+}
+
+//==============================================================================
+void Entity::copy(const Entity *_otherEntity)
+{
+  if(nullptr == _otherEntity)
+    return;
+
+  copy(*_otherEntity);
+}
+
+//==============================================================================
+Entity& Entity::operator=(const Entity& _otherEntity)
+{
+  copy(_otherEntity);
+  return *this;
+}
+
+//==============================================================================
+const std::string& Entity::setName(const std::string& _name)
+{
+  if (mEntityP.mName == _name)
+    return mEntityP.mName;
+
+  const std::string oldName = mEntityP.mName;
+  mEntityP.mName = _name;
+  mNameChangedSignal.raise(this, oldName, mEntityP.mName);
+
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& Entity::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(Shape* _p)
+void Entity::addVisualizationShape(ShapePtr _shape)
 {
-  mVizShapes.push_back(_p);
+  if (nullptr == _shape)
+    return;
+
+  if (std::find(mEntityP.mVizShapes.begin(), mEntityP.mVizShapes.end(), _shape)
+      != mEntityP.mVizShapes.end())
+  {
+    dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
+           << "duplicate visualization shape.\n";
+    return;
+  }
+
+  mEntityP.mVizShapes.push_back(_shape);
+
+  mVizShapeAddedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeVisualizationShape(ShapePtr _shape)
+{
+  if (nullptr == _shape)
+    return;
+
+  mEntityP.mVizShapes.erase(std::remove(mEntityP.mVizShapes.begin(),
+                                        mEntityP.mVizShapes.end(), _shape),
+                            mEntityP.mVizShapes.end());
+
+  mVizShapeRemovedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeAllVisualizationShapes()
+{
+  std::vector<ShapePtr>::iterator it = mEntityP.mVizShapes.begin();
+  while (it != mEntityP.mVizShapes.end())
+  {
+    removeVisualizationShape(*it);
+    it = mEntityP.mVizShapes.begin();
+  }
+}
+
+//==============================================================================
+size_t Entity::getNumVisualizationShapes() const
+{
+  return mEntityP.mVizShapes.size();
+}
+
+//==============================================================================
+ShapePtr Entity::getVisualizationShape(size_t _index)
+{
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
+}
+
+//==============================================================================
+ConstShapePtr Entity::getVisualizationShape(size_t _index) const
+{
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
@@ -96,10 +234,10 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
   // This all seems questionable to me.
 
   // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri->popName();
@@ -118,7 +256,7 @@ const Frame* Entity::getParentFrame() const
 }
 
 //==============================================================================
-bool Entity::dependsOn(const Frame *_someFrame) const
+bool Entity::descendsFrom(const Frame *_someFrame) const
 {
   if(NULL == _someFrame)
     return false;
@@ -153,6 +291,10 @@ bool Entity::isQuiet() const
 void Entity::notifyTransformUpdate()
 {
   mNeedTransformUpdate = true;
+
+  // The actual transform hasn't updated yet. But when its getter is called,
+  // the transformation will be updated automatically.
+  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -165,6 +307,10 @@ bool Entity::needsTransformUpdate() const
 void Entity::notifyVelocityUpdate()
 {
   mNeedVelocityUpdate = true;
+
+  // The actual velocity hasn't updated yet. But when its getter is called,
+  // the velocity will be updated automatically.
+  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -177,6 +323,10 @@ bool Entity::needsVelocityUpdate() const
 void Entity::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+
+  // The actual acceleration hasn't updated yet. But when its getter is called,
+  // the acceleration will be updated automatically.
+  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================
@@ -188,32 +338,31 @@ bool Entity::needsAccelerationUpdate() const
 //==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
-  if(!mAmQuiet)
+  if (mParentFrame == _newParentFrame)
+    return;
+
+  const Frame* oldParentFrame = mParentFrame;
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
-    if(mParentFrame)
+    EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
+    if (it != mParentFrame->mChildEntities.end())
     {
-      EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
-      if(it != mParentFrame->mChildEntities.end())
-      {
-        mParentFrame->mChildEntities.erase(it);
-        mParentFrame->processRemovedEntity(this);
-      }
+      mParentFrame->mChildEntities.erase(it);
+      mParentFrame->processRemovedEntity(this);
     }
   }
 
-  if(NULL == _newParentFrame)
-  {
-    mParentFrame = NULL;
-    return;
-  }
-
   mParentFrame =_newParentFrame;
-  if(!mAmQuiet)
+
+  if (!mAmQuiet && nullptr != mParentFrame)
   {
     mParentFrame->mChildEntities.insert(this);
     mParentFrame->processNewEntity(this);
     notifyTransformUpdate();
   }
+
+  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
 //==============================================================================

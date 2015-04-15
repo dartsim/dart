@@ -50,10 +50,10 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::World* myWorld
+  dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
-  assert(myWorld != NULL);
+  assert(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);

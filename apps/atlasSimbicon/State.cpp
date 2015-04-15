@@ -51,7 +51,7 @@ using namespace dart::dynamics;
 using namespace dart::constraint;
 
 //==============================================================================
-State::State(Skeleton* _skeleton, const std::string& _name)
+State::State(SkeletonPtr _skeleton, const std::string& _name)
   : mName(_name),
     mSkeleton(_skeleton),
     mNextState(this),
@@ -220,13 +220,13 @@ void State::end(double _currentTime)
 //==============================================================================
 Eigen::Vector3d State::getCOM() const
 {
-  return mSkeleton->getWorldCOM();
+  return mSkeleton->getCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d State::getCOMVelocity() const
 {
-  return mSkeleton->getWorldCOMVelocity();
+  return mSkeleton->getCOMLinearVelocity();
 }
 
 //==============================================================================

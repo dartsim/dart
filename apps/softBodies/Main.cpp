@@ -50,10 +50,25 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::World* myWorld
+  dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"skel/softBodies.skel");
   assert(myWorld != NULL);
+
+  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
+  {
+    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
+    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
+    {
+      dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
+      for(size_t k=0; k<bn->getNumVisualizationShapes(); ++k)
+      {
+        std::shared_ptr<dart::dynamics::Shape> vs =
+            bn->getVisualizationShape(k);
+        vs->setColor(dart::Color::Random());
+      }
+    }
+  }
 
   // create a window and link it to the world
   MyWindow window;

@@ -135,7 +135,7 @@ public:
   }
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, T* _obj)
+  std::string issueNewNameAndAdd(const std::string& _name, T _obj)
   {
     const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
     const std::string& newName = issueNewName(checkEmpty);
@@ -145,7 +145,7 @@ public:
   }
 
   /// Add an object to the map
-  bool addName(const std::string& _name, T* _obj)
+  bool addName(const std::string& _name, T _obj)
   {
     if (_name.empty())
     {
@@ -159,7 +159,8 @@ public:
       return false;
     }
 
-    mMap.insert(std::pair<std::string, T*>(_name, _obj));
+    mMap.insert(std::pair<std::string, T>(_name, _obj));
+    mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
 
     return true;
   }
@@ -167,11 +168,15 @@ public:
   /// Remove an object from the map based on its name
   bool removeName(const std::string& _name)
   {
-    typename std::map<std::string, T*>::iterator it = mMap.find(_name);
+    typename std::map<std::string, T>::iterator it = mMap.find(_name);
 
     if (it == mMap.end())
       return false;
 
+    typename std::map<T, std::string>::iterator rit =
+        mReverseMap.find(it->second);
+
+    mReverseMap.erase(rit);
     mMap.erase(it);
 
     return true;
@@ -189,6 +194,12 @@ public:
     return (mMap.find(_name) != mMap.end());
   }
 
+  /// Return true if the object is contained
+  bool hasObject(T _obj) const
+  {
+    return (mReverseMap.find(_obj) != mReverseMap.end());
+  }
+
   /// Get the number of the objects currently stored by the NameManager
   size_t getCount() const
   {
@@ -200,15 +211,35 @@ public:
   ///   Name of the requested object
   /// \return
   ///   The object if it exists, or NULL if it does not exist
-  T* getObject(const std::string& _name) const
+  T getObject(const std::string& _name) const
   {
-    typename std::map<std::string, T*>::const_iterator result =
+    typename std::map<std::string, T>::const_iterator result =
         mMap.find(_name);
 
     if (result != mMap.end())
       return result->second;
     else
-      return NULL;
+      return nullptr;
+  }
+
+  /// Change the name of a currently held object. This will do nothing if the
+  /// object is already using _newName or if the object is not held by this
+  /// NameManager.
+  ///
+  /// If the object is held, its new name is returned (which might
+  /// be different than _newName if there was a duplicate naming conflict). If
+  /// the object is not held, an empty string will be returned.
+  std::string changeObjectName(T _obj, const std::string& _newName)
+  {
+    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+    if(rit == mReverseMap.end())
+      return "";
+
+    if(rit->second == _newName)
+      return rit->second;
+
+    removeName(rit->second);
+    return issueNewNameAndAdd(_newName, _obj);
   }
 
   /// Set the name that will be provided to objects passed in with an empty
@@ -227,7 +258,10 @@ public:
 
 protected:
   /// Map of objects that have been added to the NameManager
-  std::map<std::string, T*> mMap;
+  std::map<std::string, T> mMap;
+
+  /// Reverse map of objects that have been added to the NameManager
+  std::map<T, std::string> mReverseMap;
 
   /// String which will be used as a name for any object which is passed in with
   /// an empty string name

@@ -44,12 +44,13 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionNode.h"
+#include "dart/common/sub_ptr.h"
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
-class BodyNode;
 class Skeleton;
-class Shape;
 }  // namespace dynamics
 }  // namespace dart
 
@@ -74,16 +75,16 @@ struct Contact {
   Eigen::Vector3d force;
 
   /// First colliding body node
-  dynamics::BodyNode* bodyNode1;
+  sub_ptr<dynamics::BodyNode> bodyNode1;
 
   /// Second colliding body node
-  dynamics::BodyNode* bodyNode2;
+  sub_ptr<dynamics::BodyNode> bodyNode2;
 
   /// First colliding shape of the first body node
-  dynamics::Shape* shape1;
+  dynamics::ShapePtr shape1;
 
   /// Second colliding shape of the first body node
-  dynamics::Shape* shape2;
+  dynamics::ShapePtr shape2;
 
   /// Penetration depth
   double penetrationDepth;
@@ -112,10 +113,10 @@ public:
   virtual ~CollisionDetector();
 
   /// \brief Add skeleton
-  virtual void addSkeleton(dynamics::Skeleton* _skeleton);
+  virtual void addSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// \brief Remove skeleton
-  virtual void removeSkeleton(dynamics::Skeleton* _skeleton);
+  virtual void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
   /// \brief Remove all skeletons
   virtual void removeAllSkeletons();
@@ -183,11 +184,11 @@ protected:
   int mNumMaxContacts;
 
   /// \brief Skeleton array
-  std::vector<dynamics::Skeleton*> mSkeletons;
+  std::vector<dynamics::SkeletonPtr> mSkeletons;
 
 private:
   /// \brief Return true if _skeleton is contained
-  bool containSkeleton(const dynamics::Skeleton* _skeleton);
+  bool containSkeleton(const dynamics::SkeletonPtr _skeleton);
 
   /// \brief
   bool getPairCollidable(const CollisionNode* _node1,

@@ -59,7 +59,7 @@ CollisionDetector::~CollisionDetector() {
 }
 
 //==============================================================================
-void CollisionDetector::addSkeleton(dynamics::Skeleton* _skeleton)
+void CollisionDetector::addSkeleton(dynamics::SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");
@@ -78,7 +78,7 @@ void CollisionDetector::addSkeleton(dynamics::Skeleton* _skeleton)
 }
 
 //==============================================================================
-void CollisionDetector::removeSkeleton(dynamics::Skeleton* _skeleton)
+void CollisionDetector::removeSkeleton(dynamics::SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");
@@ -259,9 +259,9 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
 }
 
 //==============================================================================
-bool CollisionDetector::containSkeleton(const dynamics::Skeleton* _skeleton)
+bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr _skeleton)
 {
-  for (std::vector<dynamics::Skeleton*>::const_iterator it = mSkeletons.begin();
+  for (std::vector<dynamics::SkeletonPtr>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     if ((*it) == _skeleton)

@@ -48,13 +48,33 @@ namespace dynamics {
 class TranslationalJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _properties =
+                                                MultiDofJoint<3>::Properties());
+  };
+
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
 
   /// Destructor
   virtual ~TranslationalJoint();
 
+  /// Get the Properties of this TranslationalJoint
+  Properties getTranslationalJointProperties() const;
+
 protected:
+
+  /// Constructor called by Skeleton class
+  TranslationalJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 

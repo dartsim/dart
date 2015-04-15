@@ -223,6 +223,22 @@ inline double random(double _min, double _max) {
                 * (_max - _min));
 }
 
+template<int N>
+Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
+{
+  Eigen::Matrix<double, N, 1> v;
+  for(size_t i=0; i<N; ++i)
+    v[i] = random(_min, _max);
+
+  return v;
+}
+
+template<int N>
+Eigen::Matrix<double, N, 1> randomVector(double _limit)
+{
+  return randomVector<N>(-fabs(_limit), fabs(_limit));
+}
+
 DEPRECATED(4.3)
 inline int castUIntToInt(size_t _x)
 {
@@ -239,6 +255,87 @@ inline int castUIntToInt(size_t _x)
 }
 
 }  // namespace math
+
+namespace Color
+{
+
+inline Eigen::Vector4d Red(double alpha)
+{
+  return Eigen::Vector4d(0.9, 0.1, 0.1, alpha);
+}
+
+inline Eigen::Vector3d Red()
+{
+  return Eigen::Vector3d(0.9, 0.1, 0.1);
+}
+
+inline Eigen::Vector4d Green(double alpha)
+{
+  return Eigen::Vector4d(0.1, 0.9, 0.1, alpha);
+}
+
+inline Eigen::Vector3d Green()
+{
+  return Eigen::Vector3d(0.1, 0.9, 0.1);
+}
+
+inline Eigen::Vector4d Blue(double alpha)
+{
+  return Eigen::Vector4d(0.1, 0.1, 0.9, alpha);
+}
+
+inline Eigen::Vector3d Blue()
+{
+  return Eigen::Vector3d(0.1, 0.1, 0.9);
+}
+
+inline Eigen::Vector4d White(double alpha)
+{
+  return Eigen::Vector4d(1.0, 1.0, 1.0, alpha);
+}
+
+inline Eigen::Vector3d White()
+{
+  return Eigen::Vector3d(1.0, 1.0, 1.0);
+}
+
+inline Eigen::Vector4d Black(double alpha)
+{
+  return Eigen::Vector4d(0.05, 0.05, 0.05, alpha);
+}
+
+inline Eigen::Vector3d Black()
+{
+  return Eigen::Vector3d(0.05, 0.05, 0.05);
+}
+
+inline Eigen::Vector4d Gray(double alpha)
+{
+  return Eigen::Vector4d(0.6, 0.6, 0.6, alpha);
+}
+
+inline Eigen::Vector3d Gray()
+{
+  return Eigen::Vector3d(0.6, 0.6, 0.6);
+}
+
+inline Eigen::Vector4d Random(double alpha)
+{
+  return Eigen::Vector4d(math::random(0.0, 1.0),
+                         math::random(0.0, 1.0),
+                         math::random(0.0, 1.0),
+                         alpha);
+}
+
+inline Eigen::Vector3d Random()
+{
+  return Eigen::Vector3d(math::random(0.0, 1.0),
+                         math::random(0.0, 1.0),
+                         math::random(0.0, 1.0));
+}
+
+} // namespace Color
+
 }  // namespace dart
 
 #endif  // DART_MATH_HELPERS_H_

@@ -53,12 +53,12 @@ namespace collision {
 FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode) {
   for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++) {
-    dynamics::Shape* shape = _bodyNode->getCollisionShape(i);
+    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
     mShapes.push_back(shape);
     switch (shape->getShapeType()) {
       case dynamics::Shape::BOX: {
         dynamics::BoxShape* box
-                    = static_cast<dynamics::BoxShape*>(shape);
+                    = static_cast<dynamics::BoxShape*>(shape.get());
         mCollisionGeometries.push_back(new fcl::Box(box->getSize()[0],
                                                     box->getSize()[1],
                                                     box->getSize()[2]));
@@ -66,7 +66,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::ELLIPSOID: {
         dynamics::EllipsoidShape* ellipsoid
-            = static_cast<dynamics::EllipsoidShape*>(shape);
+            = static_cast<dynamics::EllipsoidShape*>(shape.get());
 
         if (ellipsoid->isSphere())
           mCollisionGeometries.push_back(
@@ -80,14 +80,14 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::CYLINDER: {
         dynamics::CylinderShape* cylinder
-            = static_cast<dynamics::CylinderShape*>(shape);
+            = static_cast<dynamics::CylinderShape*>(shape.get());
         mCollisionGeometries.push_back(
               new fcl::Cylinder(cylinder->getRadius(), cylinder->getHeight()));
         break;
       }
       case dynamics::Shape::MESH: {
         dynamics::MeshShape* shapeMesh
-            = dynamic_cast<dynamics::MeshShape *>(shape);
+            = dynamic_cast<dynamics::MeshShape *>(shape.get());
 
         if (shapeMesh)
           mCollisionGeometries.push_back(

@@ -1215,8 +1215,8 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
   return 0;
 }
 
-int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
-            const dynamics::Shape* _shape1, const Eigen::Isometry3d& _T1,
+int collide(dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
+            dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
             std::vector<Contact>* _result)
 {
   dynamics::Shape::ShapeType LeftType = _shape0->getShapeType();
@@ -1226,19 +1226,19 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
   {
     case dynamics::Shape::BOX:
     {
-      const dynamics::BoxShape* box0 = static_cast<const dynamics::BoxShape*>(_shape0);
+      const dynamics::BoxShape* box0 = static_cast<const dynamics::BoxShape*>(_shape0.get());
 
       switch(RightType)
       {
         case dynamics::Shape::BOX:
         {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
+          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
           return collideBoxBox(box0->getSize(), _T0,
                                box1->getSize(), _T1, _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
           return collideBoxSphere(box0->getSize(), _T0,
                                   ellipsoid1->getSize()[0] * 0.5, _T1,
               _result);
@@ -1248,7 +1248,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
           //----------------------------------------------------------
           // NOT SUPPORT CYLINDER
           //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1);
+          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
 
           Eigen::Vector3d dimTemp(cylinder1->getRadius() * sqrt(2.0),
                                   cylinder1->getRadius() * sqrt(2.0),
@@ -1265,20 +1265,20 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
     }
     case dynamics::Shape::ELLIPSOID:
     {
-      const dynamics::EllipsoidShape* ellipsoid0 = static_cast<const dynamics::EllipsoidShape*>(_shape0);
+      const dynamics::EllipsoidShape* ellipsoid0 = static_cast<const dynamics::EllipsoidShape*>(_shape0.get());
 
       switch(RightType)
       {
         case dynamics::Shape::BOX:
         {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
+          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
           return collideSphereBox(ellipsoid0->getSize()[0] * 0.5, _T0,
                                   box1->getSize(), _T1,
                                   _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape0);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
           return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, _T0,
                                      ellipsoid1->getSize()[0] * 0.5, _T1,
                                      _result);
@@ -1288,7 +1288,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
           //----------------------------------------------------------
           // NOT SUPPORT CYLINDER
           //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1);
+          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
 
           Eigen::Vector3d dimTemp1(cylinder1->getRadius() * sqrt(2.0),
                                    cylinder1->getRadius() * sqrt(2.0),
@@ -1309,7 +1309,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
       //----------------------------------------------------------
       // NOT SUPPORT CYLINDER
       //----------------------------------------------------------
-      const dynamics::CylinderShape* cylinder0 = static_cast<const dynamics::CylinderShape*>(_shape0);
+      const dynamics::CylinderShape* cylinder0 = static_cast<const dynamics::CylinderShape*>(_shape0.get());
 
       Eigen::Vector3d dimTemp0(cylinder0->getRadius() * sqrt(2.0),
                                cylinder0->getRadius() * sqrt(2.0),
@@ -1318,12 +1318,12 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
       {
         case dynamics::Shape::BOX:
         {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1);
+          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
           return collideBoxBox(dimTemp0, _T0, box1->getSize(), _T1, _result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
           return collideBoxSphere(dimTemp0, _T0, ellipsoid1->getSize()[0] * 0.5, _T1, _result);
         }
         case dynamics::Shape::CYLINDER:
@@ -1331,7 +1331,7 @@ int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
           //----------------------------------------------------------
           // NOT SUPPORT CYLINDER
           //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1);
+          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
 
           Eigen::Vector3d dimTemp1(cylinder1->getRadius() * sqrt(2.0),
                                    cylinder1->getRadius() * sqrt(2.0),

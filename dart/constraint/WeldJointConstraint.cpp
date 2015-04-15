@@ -4,7 +4,7 @@
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
- * Geoorgia Tech Graphics Lab and Humanoid Robotics Lab
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
@@ -162,9 +162,9 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[4] = mOldX[4];
   _lcp->x[5] = mOldX[5];
 
-  Eigen::Vector6d negativeVel = -mBodyNode1->getBodyVelocity();
+  Eigen::Vector6d negativeVel = -mBodyNode1->getSpatialVelocity();
   if (mBodyNode2)
-    negativeVel += mJacobian2 * mBodyNode2->getBodyVelocity();
+    negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
