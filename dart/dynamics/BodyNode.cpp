@@ -239,12 +239,6 @@ const std::string& BodyNode::setName(const std::string& _name)
 }
 
 //==============================================================================
-const std::string& BodyNode::getName() const
-{
-  return mEntityP.mName;
-}
-
-//==============================================================================
 void BodyNode::setGravityMode(bool _gravityMode)
 {
   if (mBodyP.mGravityMode == _gravityMode)

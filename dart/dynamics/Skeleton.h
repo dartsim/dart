@@ -202,6 +202,27 @@ public:
     return std::pair<JointType*, NodeType*>(joint, node);
   }
 
+  /// Create an EndEffector of an arbitrary type (but it must inherit the
+  /// default EndEffector class)
+  template <class EndEffectorType>
+  EndEffectorType* createEndEffector(
+      BodyNode* _parent,
+      const typename EndEffectorType::Properties& _properties =
+                                        typename EndEffectorType::Properties())
+  {
+    if(nullptr == _parent)
+      return nullptr;
+
+    EndEffectorType* ee = new EndEffectorType(_parent, _properties);
+    if(!registerEndEffector(_parent, ee))
+    {
+      delete ee;
+      return nullptr;
+    }
+
+    return ee;
+  }
+
   /// Add a body node
   DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
@@ -261,6 +282,9 @@ public:
   /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name);
 
+  /// Get const joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
+
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   DegreeOfFreedom* getDof(size_t _idx);
 
@@ -273,8 +297,20 @@ public:
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
 
-  /// Get const joint whose name is _name
-  const Joint* getJoint(const std::string& _name) const;
+  /// Get the number of EndEffectors on this Skeleton
+  size_t getNumEndEffectors() const;
+
+  /// Get EndEffector whose index is _idx
+  EndEffector* getEndEffector(size_t _idx);
+
+  /// Get EndEffector whose index is _idx
+  const EndEffector* getEndEffector(size_t _idx) const;
+
+  /// Get EndEffector whose name is _name
+  EndEffector* getEndEffector(const std::string& _name);
+
+  /// Get EndEffector whose name is _name
+  const EndEffector* getEndEffector(const std::string &_name) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -919,6 +955,7 @@ public:
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
+  friend class EndEffector;
 
 protected:
   /// Register a BodyNode with the Skeleton. Internal use only.
@@ -929,6 +966,9 @@ protected:
 
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
+
+  /// Register an EndEffector with the Skeleton. Internal use only.
+  bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
@@ -993,10 +1033,13 @@ protected:
 //  virtual void updateDampingForceVector();
 
   /// Add a BodyNode to the BodyNode NameManager
-  const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
+  void addEntryToBodyNodeNameMgr(BodyNode* _newNode);
 
   /// Add a Joint to to the Joint NameManager
-  const std::string& addEntryToJointNameMgr(Joint* _newJoint);
+  void addEntryToJointNameMgr(Joint* _newJoint);
+
+  /// Add an EndEffector to the EndEffector NameManager
+  void addEntryToEndEffectorNameMgr(EndEffector* _ee);
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
@@ -1052,7 +1095,7 @@ protected:
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// NameManager for tracking EndEffectors
-  dart::common::NameManager<EndEffector> mNameMgrForEndEffectors;
+  dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
 
   /// Total mass.
   double mTotalMass;

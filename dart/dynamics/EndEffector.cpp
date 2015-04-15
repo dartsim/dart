@@ -42,23 +42,72 @@
 namespace dart {
 namespace dynamics {
 
-EndEffector::EndEffector(Frame* _refFrame, const std::string& _name,
-                         const Eigen::Isometry3d& _relativeTransform)
-  : Entity(_refFrame, _name, false),
-    FixedFrame(_refFrame, _name, _relativeTransform),
-    mParentBodyNode(nullptr),
-    mDefaultTransform(_relativeTransform),
-    mIndexInSkeleton(0)
-{
-  identifyParentBodyNode(_refFrame);
-  registerWithSkeleton();
-}
-
 //==============================================================================
 EndEffector::~EndEffector()
 {
-  // TODO(MXG): Should we notify the Skeleton that it's losing an EndEffector
-  // or just assume that EndEffectors will only be destructed by the Skeleton?
+  // Do nothing
+}
+
+//==============================================================================
+void EndEffector::setProperties(const Properties& _properties, bool _useNow)
+{
+  Entity::setProperties(_properties);
+  setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
+}
+
+//==============================================================================
+void EndEffector::setProperties(const UniqueProperties& _properties,
+                                bool _useNow)
+{
+  setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
+}
+
+//==============================================================================
+EndEffector::Properties EndEffector::getEndEffectorProperties() const
+{
+  return Properties(getEntityProperties(), mEndEffectorP);
+}
+
+//==============================================================================
+void EndEffector::copy(const EndEffector& _otherEndEffector)
+{
+  if(this == &_otherEndEffector)
+    return;
+
+  setProperties(_otherEndEffector.getEndEffectorProperties());
+  setRelativeTransform(_otherEndEffector.getRelativeTransform());
+}
+
+//==============================================================================
+void EndEffector::copy(const EndEffector* _otherEndEffector)
+{
+  if(nullptr == _otherEndEffector)
+    return;
+
+  copy(*_otherEndEffector);
+}
+
+//==============================================================================
+EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
+{
+  copy(_otherEndEffector);
+  return *this;
+}
+
+//==============================================================================
+const std::string& EndEffector::setName(const std::string& _name)
+{
+  // If it already has the requested name, do nothing
+  if(mEntityP.mName == _name)
+    return mEntityP.mName;
+
+  // Remove the current name entry and add a new name entry
+  getSkeleton()->mNameMgrForEndEffectors.removeName(mEntityP.mName);
+  mEntityP.mName = _name;
+  getSkeleton()->addEntryToEndEffectorNameMgr(this);
+
+  // Return the resulting name, after it has been checked for uniqueness
+  return mEntityP.mName;
 }
 
 //==============================================================================
@@ -72,7 +121,7 @@ void EndEffector::setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf)
 void EndEffector::setDefaultRelativeTransform(
     const Eigen::Isometry3d& _newDefaultTf, bool _useNow)
 {
-  mDefaultTransform = _newDefaultTf;
+  mEndEffectorP.mDefaultTransform = _newDefaultTf;
 
   if(_useNow)
     resetRelativeTransform();
@@ -81,7 +130,7 @@ void EndEffector::setDefaultRelativeTransform(
 //==============================================================================
 void EndEffector::resetRelativeTransform()
 {
-  setRelativeTransform(mDefaultTransform);
+  setRelativeTransform(mEndEffectorP.mDefaultTransform);
 }
 
 //==============================================================================
@@ -121,48 +170,22 @@ size_t EndEffector::getIndex() const
 }
 
 //==============================================================================
-void EndEffector::identifyParentBodyNode(Frame* _refFrame)
+EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
+  : Entity(nullptr, "", false),
+    FixedFrame(_parent, "", _properties.mDefaultTransform),
+    mParentBodyNode(nullptr),
+    mIndexInSkeleton(0)
 {
-  Frame* checkFrame = _refFrame;
-
-  while( !checkFrame->isWorld() )
-  {
-    mParentBodyNode = dynamic_cast<BodyNode*>(checkFrame);
-    if(mParentBodyNode)
-      return;
-
-    checkFrame = checkFrame->getParentFrame();
-  }
-
-  dtwarn << "[EndEffector::identifyParentBodyNode] Could not find a parent "
-         << "BodyNode to attach the EndEffector named '" << getName() << "' to. "
-         << "The Frame named '" << _refFrame->getName() << "' was given as a "
-         << "reference Frame.\n";
+  setProperties(_properties);
 }
 
 //==============================================================================
-void EndEffector::registerWithSkeleton()
+EndEffector* EndEffector::clone(BodyNode* _parent) const
 {
-  if(!mParentBodyNode)
-    return;
+  EndEffector* ee = new EndEffector(_parent, Properties());
+  ee->copy(this);
 
-  Skeleton* skel = mParentBodyNode->getSkeleton();
-  if(!skel)
-    return;
-
-  std::vector<EndEffector*>::iterator it = find(skel->mEndEffectors.begin(),
-                                                skel->mEndEffectors.end(), this);
-  if(it != skel->mEndEffectors.end())
-  {
-    dtwarn << "[EndEffector::registerWithSkeleton] Attempting to add the "
-           << "EndEffector named '" << getName() << "' to the Skeleton named '"
-           << skel->getName() << "' even though it has already been added!\n";
-    return;
-  }
-
-  skel->mEndEffectors.push_back(this);
-  mIndexInSkeleton = skel->mEndEffectors.size() - 1;
-  skel->addEntryToEndEffectorNameMgr(this);
+  return ee;
 }
 
 } // namespace dynamics

@@ -160,9 +160,6 @@ public:
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name);
 
-  /// Return the name of the bodynode
-  const std::string& getName() const;
-
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
   void setGravityMode(bool _gravityMode);

@@ -51,6 +51,24 @@ public:
 
   friend class Skeleton;
 
+  struct UniqueProperties
+  {
+    /// The relative transform will be set to this whenever
+    /// resetRelativeTransform() is called
+    Eigen::Isometry3d mDefaultTransform;
+
+    UniqueProperties(
+        const Eigen::Isometry3d& _defaultTransform =
+                                                Eigen::Isometry3d::Identity());
+  };
+
+  struct Properties : Entity::Properties, UniqueProperties
+  {
+    Properties(
+        const Entity::Properties& _entityProperties = Entity::Properties(),
+        const UniqueProperties& _effectorProperties = UniqueProperties() );
+  };
+
   /// EndEffector Mode
   ///
   /// The EndEffector class exists to provide a convenient interface for
@@ -95,17 +113,35 @@ public:
     CUSTOM
   };
 
-  /// Constructor
-  explicit EndEffector(Frame* _refFrame, const std::string& _name,
-                       const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
-
   /// Destructor
   virtual ~EndEffector();
 
   //----------------------------------------------------------------------------
   // Properties
   //----------------------------------------------------------------------------
+
+  /// Set the Properties of this EndEffector. If _useNow is true, the current
+  /// Transform will be set to the new default transform
+  void setProperties(const Properties& _properties, bool _useNow=true);
+
+  /// Set the Properties of this EndEffector. If _useNow is true, the current
+  /// Transform will be set to the new default transform
+  void setProperties(const UniqueProperties& _properties, bool _useNow=true);
+
+  Properties getEndEffectorProperties() const;
+
+  /// Copy the Properties of another EndEffector
+  void copy(const EndEffector& _otherEndEffector);
+
+  /// Copy the Properties of another EndEffector
+  void copy(const EndEffector* _otherEndEffector);
+
+  /// Copy the Properties of another EndEffector
+  EndEffector& operator=(const EndEffector& _otherEndEffector);
+
+  /// Set name. If the name is already taken, this will return an altered
+  /// version which will be used by the Skeleton
+  const std::string& setName(const std::string& _name);
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
@@ -142,18 +178,19 @@ public:
   size_t getIndex() const;
 
 protected:
-  /// Search for the parent BodyNode that this EndEffector belongs to
-  void identifyParentBodyNode(Frame* _refFrame);
 
-  /// Inform the Skeleton of this EndEffector's existence
-  void registerWithSkeleton();
+  /// Constructor used by the Skeleton class
+  explicit EndEffector(BodyNode* _parent, const Properties& _properties);
+
+  /// Create a clone of this BodyNode. This may only be called by the Skeleton
+  /// class.
+  virtual EndEffector* clone(BodyNode* _parent) const;
+
+  /// Properties of this EndEffector
+  UniqueProperties mEndEffectorP;
 
   /// The BodyNode that this EndEffector is rigidly attached to
   BodyNode* mParentBodyNode;
-
-  /// The relative transform will be set to this whenever
-  /// resetRelativeTransform() is called
-  Eigen::Isometry3d mDefaultTransform;
 
   /// The index of this EndEffector within the Skeleton
   size_t mIndexInSkeleton;

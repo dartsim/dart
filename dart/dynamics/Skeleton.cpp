@@ -110,10 +110,15 @@ Skeleton::~Skeleton()
 
     delete bn;
   }
+
+  for (EndEffector* ee : mEndEffectors)
+  {
+    delete ee;
+  }
 }
 
 //==============================================================================
-SkeletonPtr Skeleton::clone() const
+std::shared_ptr<Skeleton> Skeleton::clone() const
 {
   SkeletonPtr skelClone(new Skeleton(getName()));
 
@@ -140,6 +145,20 @@ SkeletonPtr Skeleton::clone() const
     }
 
     skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
+  }
+
+  for(size_t i=0; i<getNumEndEffectors(); ++i)
+  {
+    // Grab the EndEffector we want to clone
+    const EndEffector* originalEE = getEndEffector(i);
+
+    // Identify the original parent BodyNode
+    const BodyNode* originalParent = originalEE->getParentBodyNode();
+
+    // Grab the clone of the original parent
+    BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
+
+    skelClone->registerEndEffector(parentClone, originalEE->clone(parentClone));
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -188,30 +207,25 @@ const std::string& Skeleton::getName() const
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
+void Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
   _newNode->mEntityP.mName =
       mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
-
-  return _newNode->mEntityP.mName;
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
+void Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 {
   _newJoint->mJointP.mName =
       mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
   _newJoint->updateDegreeOfFreedomNames();
-
-  return _newJoint->mJointP.mName;
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
+void Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
 {
-  _ee->mName = mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
-
-  return _ee->mName;
+  _ee->mEntityP.mName =
+      mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
 }
 
 //==============================================================================
@@ -466,23 +480,13 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 //==============================================================================
 DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return NULL;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return NULL;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom>(_idx, mDofs);
 }
 
 //==============================================================================
@@ -495,6 +499,36 @@ DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 {
   return mNameMgrForDofs.getObject(_name);
+}
+
+//==============================================================================
+size_t Skeleton::getNumEndEffectors() const
+{
+  return mEndEffectors.size();
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(size_t _idx)
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(const std::string& _name)
+{
+  return mNameMgrForEndEffectors.getObject(_name);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
+{
+  return mNameMgrForEndEffectors.getObject(_name);
 }
 
 //==============================================================================
@@ -1917,6 +1951,31 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
   }
+}
+
+//==============================================================================
+bool Skeleton::registerEndEffector(BodyNode* _parent,
+                                   EndEffector* _newEndEffector)
+{
+  if(this != _parent->getSkeleton())
+    return false;
+
+  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
+                                                mEndEffectors.end(),
+                                                _newEndEffector);
+
+  if(it != mEndEffectors.end())
+  {
+    dtwarn << "[Skeleton::registerEndEffector] Attempting to double-register "
+           << "an EndEffector. This is most likely a bug; please report this!\n";
+    return false;
+  }
+
+  mEndEffectors.push_back(_newEndEffector);
+  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+  addEntryToEndEffectorNameMgr(_newEndEffector);
+
+  return true;
 }
 
 //==============================================================================
