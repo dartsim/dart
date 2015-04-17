@@ -45,7 +45,7 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-IpoptSolver::IpoptSolver(Problem* _problem)
+IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   : Solver(_problem)
 {
   assert(_problem);
@@ -89,7 +89,13 @@ bool IpoptSolver::solve()
 }
 
 //==============================================================================
-DartTNLP::DartTNLP(Problem* _problem)
+std::string IpoptSolver::getType() const
+{
+  return "IpoptSolver";
+}
+
+//==============================================================================
+DartTNLP::DartTNLP(std::shared_ptr<Problem> _problem)
   : Ipopt::TNLP(),
     mProblem(_problem)
 {
