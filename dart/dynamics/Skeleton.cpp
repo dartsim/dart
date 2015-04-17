@@ -392,7 +392,7 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
   if (_idx < _vec.size())
     return _vec[_idx];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -486,7 +486,7 @@ DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 //==============================================================================
 const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom>(_idx, mDofs);
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================

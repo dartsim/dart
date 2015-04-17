@@ -43,17 +43,18 @@
 
 #include <Eigen/Dense>
 
+#include <dart/optimizer/Function.h>
+
 namespace dart {
 namespace optimizer {
-
-class Function;
 
 /// \brief class Problem
 class Problem
 {
 public:
+
   /// \brief Constructor
-  explicit Problem(size_t _dim);
+  explicit Problem(size_t _dim = 0);
 
   /// \brief Destructor
   virtual ~Problem();
@@ -71,6 +72,28 @@ public:
   /// \brief Set initial guess for opimization parameters
   const Eigen::VectorXd& getInitialGuess() const;
 
+  /// \brief Add a seed for the Solver to use as a hint for the neighborhood of
+  /// the solution.
+  void addSeed(const Eigen::VectorXd& _seed);
+
+  /// \brief Get a mutable reference of the seed for the specified index. If an
+  /// out-of-bounds index is provided a warning will print, and a reference to
+  /// the initial guess will be returned instead.
+  Eigen::VectorXd& getSeed(size_t _index);
+
+  /// \brief An immutable version of getSeed(size_t)
+  const Eigen::VectorXd& getSeed(size_t _index) const;
+
+  /// \brief Get a mutable reference to the full vector of seeds that this
+  /// Problem currently contains
+  std::vector<Eigen::VectorXd>& getAllSeeds();
+
+  /// \brief An immutable version of getAllSeeds()
+  const std::vector<Eigen::VectorXd>& getAllSeeds() const;
+
+  /// \brief Clear the seeds that this Problem currently contains
+  void clearAllSeeds();
+
   /// \brief Set lower bounds for optimization parameters
   void setLowerBounds(const Eigen::VectorXd& _lb);
 
@@ -84,16 +107,16 @@ public:
   const Eigen::VectorXd& getUpperBounds() const;
 
   /// \brief Set minimum objective function
-  void setObjective(Function* _obj);
+  void setObjective(FunctionPtr _obj);
 
   /// \brief Get objective function
-  Function* getObjective() const;
+  FunctionPtr getObjective() const;
 
   /// \brief Add equality constraint
-  void addEqConstraint(Function* _eqConst);
+  void addEqConstraint(FunctionPtr _eqConst);
 
   /// \brief Add inequality constraint
-  void addIneqConstraint(Function* _ineqConst);
+  void addIneqConstraint(FunctionPtr _ineqConst);
 
   /// \brief Get number of equality constraints
   size_t getNumEqConstraints();
@@ -102,16 +125,16 @@ public:
   size_t getNumIneqConstraints();
 
   /// \brief Get equality constraint
-  Function* getEqConstraint(size_t _idx) const;
+  FunctionPtr getEqConstraint(size_t _idx) const;
 
   /// \brief Get inequality constraint
-  Function* getIneqConstraint(size_t _idx) const;
+  FunctionPtr getIneqConstraint(size_t _idx) const;
 
   /// \brief Remove equality constraint
-  void removeEqConstraint(Function* _eqConst);
+  void removeEqConstraint(FunctionPtr _eqConst);
 
   /// \brief Remove inequality constraint
-  void removeIneqConstraint(Function* _ineqConst);
+  void removeIneqConstraint(FunctionPtr _ineqConst);
 
   /// \brief Remove all equality constraints
   void removeAllEqConstraints();
@@ -140,6 +163,9 @@ protected:
   /// \brief Initial guess for optimization parameters
   Eigen::VectorXd mInitialGuess;
 
+  /// \brief Additional guess hints for the Solver.
+  std::vector<Eigen::VectorXd> mSeeds;
+
   /// \brief Lower bounds for optimization parameters
   Eigen::VectorXd mLowerBounds;
 
@@ -147,13 +173,13 @@ protected:
   Eigen::VectorXd mUpperBounds;
 
   /// \brief Objective function
-  Function* mObjective;
+  FunctionPtr mObjective;
 
   /// \brief Equality constraint functions
-  std::vector<Function*> mEqConstraints;
+  std::vector<FunctionPtr> mEqConstraints;
 
   /// \brief Inequality constraint functions
-  std::vector<Function*> mIneqConstraints;
+  std::vector<FunctionPtr> mIneqConstraints;
 
   /// \brief Optimal objective value
   double mOptimumValue;

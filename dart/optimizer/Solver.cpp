@@ -42,20 +42,123 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-Solver::Solver(Problem* _prob)
-  : mProblem(_prob)
+Solver::Properties::Properties(
+    std::shared_ptr<Problem> _problem,
+    double _tolerance,
+    size_t _numMaxIterations,
+    size_t _iterationsPerPrint,
+    bool _printFinalResult,
+    const std::string &_resultFile)
+  : mProblem(_problem),
+    mTolerance(_tolerance),
+    mNumMaxIterations(_numMaxIterations),
+    mIterationsPerPrint(_iterationsPerPrint),
+    mPrintFinalResult(_printFinalResult),
+    mResultFile(_resultFile)
 {
+  // Do nothing
+}
+
+//==============================================================================
+Solver::Solver(const Properties& _properties)
+  : mProperties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Solver::Solver(std::shared_ptr<Problem> _problem)
+  : mProperties(_problem)
+{
+  // Do nothing
 }
 
 //==============================================================================
 Solver::~Solver()
 {
+  // Do nothing
 }
 
 //==============================================================================
-Problem* Solver::getProblem() const
+void Solver::setProperties(const Properties& _properties)
 {
-  return mProblem;
+  setProblem(_properties.mProblem);
+  setNumMaxIterations(_properties.mNumMaxIterations);
+  setIterationsPerPrint(_properties.mIterationsPerPrint);
+  setPrintFinalResult(_properties.mPrintFinalResult);
+  setResultFileName(_properties.mResultFile);
+}
+
+//==============================================================================
+void Solver::setProblem(std::shared_ptr<Problem> _newProblem)
+{
+  mProperties.mProblem = _newProblem;
+}
+
+//==============================================================================
+std::shared_ptr<Problem> Solver::getProblem() const
+{
+  return mProperties.mProblem;
+}
+
+//==============================================================================
+void Solver::setTolerance(double _newTolerance)
+{
+  mProperties.mTolerance = _newTolerance;
+}
+
+//==============================================================================
+double Solver::getTolerance() const
+{
+  return mProperties.mTolerance;
+}
+
+//==============================================================================
+void Solver::setNumMaxIterations(size_t _newMax)
+{
+  mProperties.mNumMaxIterations = _newMax;
+}
+
+//==============================================================================
+size_t Solver::getNumMaxIterations() const
+{
+  return mProperties.mNumMaxIterations;
+}
+
+//==============================================================================
+void Solver::setIterationsPerPrint(size_t _newRatio)
+{
+  mProperties.mIterationsPerPrint = _newRatio;
+}
+
+//==============================================================================
+size_t Solver::getIterationsPerPrint() const
+{
+  return mProperties.mIterationsPerPrint;
+}
+
+//==============================================================================
+void Solver::setPrintFinalResult(bool _print)
+{
+  mProperties.mPrintFinalResult = _print;
+}
+
+//==============================================================================
+bool Solver::getPrintFinalResult() const
+{
+  return mProperties.mPrintFinalResult;
+}
+
+//==============================================================================
+void Solver::setResultFileName(const std::string& _resultFile)
+{
+  mProperties.mResultFile = _resultFile;
+}
+
+//==============================================================================
+const std::string& Solver::getResultFileName() const
+{
+  return mProperties.mResultFile;
 }
 
 }  // namespace optimizer

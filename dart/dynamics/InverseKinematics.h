@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,60 +34,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_H_
-#define DART_OPTIMIZER_FUNCTION_H_
+#ifndef DART_DYNAMICS_INVERSEKINEMATICS_H_
+#define DART_DYNAMICS_INVERSEKINEMATICS_H_
 
-#include <vector>
 #include <memory>
 
-#include <Eigen/Dense>
+#include "dart/optimizer/Solver.h"
 
 namespace dart {
-namespace optimizer {
+namespace dynamics {
 
-/// \brief class Function
-class Function
+/// The inverse kinematics class is templated to operate on either a BodyNode
+/// or an EndEffector
+template <class JacobianObject>
+class InverseKinematics
 {
 public:
-  /// \brief Constructor
-  explicit Function();
 
-  /// \brief Destructor
-  virtual ~Function();
 
-  /// \brief Evaluate and return the objective function at the point x
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) = 0;
+  void setSolver(std::shared_ptr<optimizer::Solver> _newSolver);
 
-  /// \brief Evaluate and return the objective function at the point x
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
+  std::shared_ptr<optimizer::Solver> getSolver();
 
-  /// \brief Evaluate and return the objective function at the point x
-  virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
+  std::shared_ptr<const optimizer::Solver> getSolver() const;
+
+
+protected:
+
+  /// The solver that this IK module will use for iterative methods
+  std::shared_ptr<optimizer::Solver> mSolver;
+
+
+
 };
 
-typedef std::shared_ptr<Function> FunctionPtr;
+}
+}
 
-/// \brief class MultiFunction
-class MultiFunction
-{
-public:
-  /// \brief Constructor
-  MultiFunction();
 
-  /// \brief Destructor
-  virtual ~MultiFunction();
-
-  /// \brief Operator ()
-  virtual void operator()(Eigen::Map<const Eigen::VectorXd>& _x,
-                          Eigen::Map<Eigen::VectorXd>& _f,
-                          Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
-};
-
-}  // namespace optimizer
-}  // namespace dart
-
-#endif  // DART_OPTIMIZER_FUNCTION_H_
-
+#endif // DART_DYNAMICS_INVERSEKINEMATICS_H_

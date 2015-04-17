@@ -43,6 +43,24 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+EndEffector::UniqueProperties::UniqueProperties(
+    const Eigen::Isometry3d& _defaultTransform)
+  : mDefaultTransform(_defaultTransform)
+{
+  // Do nothing
+}
+
+//==============================================================================
+EndEffector::Properties::Properties(
+    const Entity::Properties& _entityProperties,
+    const UniqueProperties& _effectorProperties)
+  : Entity::Properties(_entityProperties),
+    UniqueProperties(_effectorProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 EndEffector::~EndEffector()
 {
   // Do nothing
