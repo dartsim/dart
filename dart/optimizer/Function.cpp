@@ -43,7 +43,8 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-Function::Function()
+Function::Function(const std::string& _name)
+  : mName(_name)
 {
   // Do nothing
 }
@@ -52,6 +53,18 @@ Function::Function()
 Function::~Function()
 {
   // Do nothing
+}
+
+//==============================================================================
+void Function::setName(const std::string& _newName)
+{
+  mName = _newName;
+}
+
+//==============================================================================
+const std::string& Function::getName() const
+{
+  return mName;
 }
 
 //==============================================================================

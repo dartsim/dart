@@ -39,18 +39,98 @@
 
 #include <memory>
 
+#include "dart/common/sub_ptr.h"
 #include "dart/optimizer/Solver.h"
+#include "dart/optimizer/Function.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace dart {
 namespace dynamics {
 
+/// This enumeration will be used by the IK Method to determine which joints
+/// are allowed to be used when solving the IK problem.
+enum class IKMode : int
+{
+  INACTIVE = 0, ///< Do not actually attempt to solve the IK problem
+  LINKAGE,      ///< Only use the largest unbranching linkage that leads up to the Entity
+  WHOLEBODY     ///< Use all relevant joints in the body
+};
+
 /// The inverse kinematics class is templated to operate on either a BodyNode
 /// or an EndEffector
-template <class JacobianObject>
-class InverseKinematics
+template <class JacobianEntity>
+class InverseKinematics : public common::Subject
 {
 public:
 
+  /// Method is a base class for different InverseKinematics methods
+  class ErrorMethod : public common::Subject
+  {
+  public:
+    /// Constructor which should be called via the templated
+    /// InverseKinematics::setMethod function.
+    ErrorMethod(InverseKinematics<JacobianEntity>* _ik,
+                const std::string& _name);
+
+    virtual Eigen::Vector6d computeError(Eigen::Map<const Eigen::VectorXd>& _x);
+
+  protected:
+
+    common::sub_ptr< InverseKinematics<JacobianEntity> > mIK;
+
+    std::string mMethodName;
+
+  };
+
+  class GradientMethod : public common::Subject
+  {
+  public:
+
+    GradientMethod(InverseKinematics<JacobianEntity>* _ik,
+                   const std::string& _name);
+
+    virtual void computeGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                                 Eigen::Map<Eigen::VectorXd> _grad);
+
+  protected:
+
+    common::sub_ptr< InverseKinematics<JacobianEntity> > mIK;
+
+    std::string mMethodName;
+
+  };
+
+  class JacobianDLS : public GradientMethod
+  {
+
+  };
+
+  class JacobianTranspose : public GradientMethod
+  {
+
+  };
+
+
+
+  /// Set the mode that this InverseKinematics Solver should use
+  void setMode(IKMode _mode);
+
+  /// Check the mode of this InverseKinematics Solver
+  IKMode getMode() const;
+
+  template <class IKErrorMethod>
+  typename IKErrorMethod* setErrorMethod();
+
+  ErrorMethod* getErrorMethod();
+
+  const ErrorMethod* getErrorMethod() const;
+
+  template <class IKGradientMethod>
+  typename IKGradientMethod* setGradientMethod();
+
+  GradientMethod* getGradientMethod();
+
+  const GradientMethod* getGradientMethod() const;
 
   void setSolver(std::shared_ptr<optimizer::Solver> _newSolver);
 
@@ -58,11 +138,35 @@ public:
 
   std::shared_ptr<const optimizer::Solver> getSolver() const;
 
+  void setTarget(std::shared_ptr<SimpleFrame> _newTarget);
+
+  std::shared_ptr<SimpleFrame> getTarget();
+
+  std::shared_ptr<const SimpleFrame> getTarget() const;
+
+  void setEntity(JacobianEntity* _newEntity);
+
+  JacobianEntity* getEntity();
+
+  const JacobianEntity* getEntity() const;
+
 
 protected:
 
   /// The solver that this IK module will use for iterative methods
   std::shared_ptr<optimizer::Solver> mSolver;
+
+  /// The method that this IK module will use to compute errors
+  std::unique_ptr<ErrorMethod> mErrorMethod;
+
+  /// The method that this IK module will use to compute gradients
+  std::unique_ptr<GradientMethod> mGradientMethod;
+
+
+  sub_ptr<JacobianEntity> mEntity;
+
+
+  std::shared_ptr<SimpleFrame> mTarget;
 
 
 

@@ -51,10 +51,16 @@ class Function
 {
 public:
   /// \brief Constructor
-  explicit Function();
+  explicit Function(const std::string& _name = "function");
 
   /// \brief Destructor
   virtual ~Function();
+
+  /// \brief Set the name of this Function
+  virtual void setName(const std::string& _newName);
+
+  /// \brief Get the name of this Function
+  const std::string& getName() const;
 
   /// \brief Evaluate and return the objective function at the point x
   virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) = 0;
@@ -67,6 +73,11 @@ public:
   virtual void evalHessian(
       Eigen::Map<const Eigen::VectorXd>& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
+
+protected:
+  /// \brief Name of this function
+  std::string mName;
+
 };
 
 typedef std::shared_ptr<Function> FunctionPtr;

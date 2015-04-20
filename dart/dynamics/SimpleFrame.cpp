@@ -105,7 +105,7 @@ void SimpleFrame::copy(const Frame& _otherFrame, Frame* _refFrame,
 void SimpleFrame::copy(const Frame* _otherFrame, Frame* _refFrame,
                        bool _copyProperties)
 {
-  if(nullptr == _otherFrame)
+  if(nullptr == _otherFrame || nullptr == _refFrame)
     return;
 
   copy(*_otherFrame, _refFrame, _copyProperties);
