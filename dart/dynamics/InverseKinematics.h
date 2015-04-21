@@ -44,6 +44,7 @@
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -177,6 +178,8 @@ public:
 
     const std::string& getMethodName() const;
 
+    void clampGradient(Eigen::VectorXd& _grad) const;
+
     void setComponentWiseClamp(double _clamp = 0.2);
 
     double getComponentWiseClamp() const;
@@ -199,6 +202,8 @@ public:
 
   class JacobianDLS : public GradientMethod
   {
+  public:
+
     JacobianDLS(InverseKinematics<JacobianEntity>* _ik);
 
     virtual ~JacobianDLS();
@@ -213,12 +218,12 @@ public:
   protected:
 
     double mDamping;
-
-    math::Jacobian mJacobian;
   };
 
   class JacobianTranspose : public GradientMethod
   {
+  public:
+
     JacobianTranspose(InverseKinematics<JacobianEntity>* _ik);
 
     virtual ~JacobianTranspose();
@@ -231,7 +236,11 @@ public:
 
   void setInactive();
 
-  bool checkActive() const;
+  bool isActive() const;
+
+  void setHierarchyLevel(size_t _level);
+
+  size_t getHierarchyLevel() const;
 
   void useLinkage();
 
@@ -273,14 +282,21 @@ public:
 
   const JacobianEntity* getEntity() const;
 
+  const math::Jacobian& computeJacobian() const;
+
   void clearCaches();
 
 protected:
 
   InverseKinematics(JacobianEntity* _entity);
 
-  /// The solver that this IK module will use for iterative methods
-  std::shared_ptr<optimizer::Solver> mSolver;
+  bool mActive;
+
+  size_t mHierarchyLevel;
+
+  std::vector<size_t> mDofs;
+
+  std::vector<int> mDofMap;
 
   /// The method that this IK module will use to compute errors
   std::unique_ptr<ErrorMethod> mErrorMethod;
@@ -288,20 +304,17 @@ protected:
   /// The method that this IK module will use to compute gradients
   std::unique_ptr<GradientMethod> mGradientMethod;
 
-
-  sub_ptr<JacobianEntity> mEntity;
+  /// The solver that this IK module will use for iterative methods
+  std::shared_ptr<optimizer::Solver> mSolver;
 
 
   std::shared_ptr<SimpleFrame> mTarget;
 
 
-  std::vector<size_t> mDofs;
+  sub_ptr<JacobianEntity> mEntity;
 
 
-  std::vector<int> mDofMap;
-
-
-  bool mActive;
+  mutable math::Jacobian mJacobian;
 };
 
 //==============================================================================
@@ -610,6 +623,14 @@ InverseKinematics<JacobianEntity>::EulerAngleXYZMethod::computeError()
   if(error.norm() > this->mErrorLengthClamp)
     error = error.normalized()*this->mErrorLengthClamp;
 
+  if(!this->mIK->getTarget()->getParentFrame()->isWorld())
+  {
+    // Transform the error term into the world frame if it's not already
+    const Eigen::Isometry3d& R =
+        this->mIK->getTarget()->getParentFrame()->getWorldTransform();
+    error = R.linear()*error;
+  }
+
   return error;
 }
 
@@ -669,6 +690,8 @@ void InverseKinematics<JacobianEntity>::GradientMethod::computeGradient(
   }
 
   Eigen::Vector6d error = mIK->getErrorMethod()->computeError(_q);
+  dart::dynamics::Skeleton* skel = mIK->getEntity()->getSkeleton();
+  skel->setPositionSegment(mIK->getDofs(), _q);
   computeGradient(error, _grad);
   mLastGradient = _grad;
 }
@@ -684,9 +707,22 @@ GradientMethod::getMethodName() const
 //==============================================================================
 template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::
+GradientMethod::clampGradient(Eigen::VectorXd &_grad) const
+{
+  for(int i=0; i<_grad.size(); ++i)
+  {
+    if(std::abs(_grad[i]) > this->mComponentWiseClamp)
+      _grad[i] = _grad[i] > 0 ?  this->mComponentWiseClamp :
+                                -this->mComponentWiseClamp;
+  }
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::
 GradientMethod::setComponentWiseClamp(double _clamp)
 {
-  mComponentWiseClamp = _clamp;
+  mComponentWiseClamp = std::abs(_clamp);
 }
 
 //==============================================================================
@@ -728,42 +764,138 @@ void InverseKinematics<JacobianEntity>::
 JacobianDLS::computeGradient(const Eigen::Vector6d& _error,
                              Eigen::VectorXd& _grad)
 {
-  const math::Jacobian& fullJacobian =
-      this->mIK->getEntity()->getWorldJacobian();
-  mJacobian.resize(6, this->mIK->getDofs().size());
+  const math::Jacobian& J = this->mIK->computeJacobian();
 
-  for(int i=0; i<this->mIK->getDofMap().size(); ++i)
-  {
-    int j = this->mIK->getDofMap()[i];
-    if(j >= 0)
-      mJacobian.block<6,1>(0,i) = fullJacobian.block<6,1>(0,j);
-  }
-
-  int rows = mJacobian.rows(), cols = mJacobian.cols();
+  int rows = J.rows(), cols = J.cols();
   if(rows <= cols)
   {
-    _grad = mJacobian.transpose() * ( mJacobian*mJacobian.transpose() +
-            mDamping*mDamping*Eigen::MatrixXd::Identity(rows, rows)).inverse()
-        * _error;
+    _grad = J.transpose()*(pow(mDamping,2)*Eigen::MatrixXd::Identity(rows, rows)
+            + J*J.transpose() ).inverse() * _error;
   }
   else
   {
-    _grad = ( mDamping*mDamping*Eigen::MatrixXd::Identity(cols, cols) +
-            mJacobian.transpose()*mJacobian).inverse() * mJacobian.transpose()
-        * _error;
+    _grad = ( pow(mDamping,2)*Eigen::MatrixXd::Identity(cols, cols) +
+            J.transpose()*J).inverse() * J.transpose() * _error;
   }
 
-  for(int i=0; i<_grad.size(); ++i)
-  {
-    if(std::abs(_grad[i]) > this->mComponentWiseClamp)
-      _grad[i] = _grad[i] > 0 ?  this->mComponentWiseClamp :
-                                -this->mComponentWiseClamp;
-  }
+  this->clampGradient(_grad);
 }
 
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::
+JacobianDLS::setDampingCoefficient(double _damping)
+{
+  mDamping = _damping;
+}
 
+//==============================================================================
+template <class JacobianEntity>
+double InverseKinematics<JacobianEntity>::
+JacobianDLS::getDampingCoefficient() const
+{
+  return mDamping;
+}
 
+//==============================================================================
+template <class JacobianEntity>
+InverseKinematics<JacobianEntity>::
+JacobianTranspose::JacobianTranspose(InverseKinematics<JacobianEntity>* _ik)
+  : GradientMethod(_ik, "JacobianTranspose")
+{
+  // Do nothing
+}
 
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::
+JacobianTranspose::computeGradient(const Eigen::Vector6d& _error,
+                                   Eigen::VectorXd& _grad)
+{
+  const math::Jacobian& J = this->mIK->computeJacobian();
+  _grad = J.transpose() * _error;
+  this->clampGradient(_grad);
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setActive(bool _active)
+{
+  mActive = _active;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setInactive()
+{
+  mActive = false;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+bool InverseKinematics<JacobianEntity>::isActive() const
+{
+  return mActive;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setHierarchyLevel(size_t _level)
+{
+  mHierarchyLevel = _level;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+size_t InverseKinematics<JacobianEntity>::getHierarchyLevel() const
+{
+  return mHierarchyLevel;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::useLinkage()
+{
+  mDofs.clear();
+
+  if(mEntity->getNumDependentGenCoords() == 0)
+  {
+    useDofs(mDofs);
+    return;
+  }
+
+  BodyNode* baseBn = mEntity->getParentBodyNode();
+
+  // Attempt to get at least one degree of freedom
+  while(baseBn &&
+      baseBn->getNumDependentGenCoords() == mEntity->getNumDependentGenCoords())
+  {
+    baseBn = baseBn->getParentBodyNode();
+  }
+
+  // Keep moving upstream, as long as the parent has no other children
+  while(baseBn && baseBn->getNumChildBodyNodes() == 1)
+  {
+    baseBn = baseBn->getParentBodyNode();
+  }
+
+  size_t start = 0;
+  // Ignore any coordinates that the base BodyNode depends on
+  if(baseBn)
+    start = baseBn->getNumDependentGenCoords();
+
+  for(size_t i=start; i<mEntity->getNumDependentGenCoords(); ++i)
+    mDofs.push_back(mEntity->getDependentGenCoordIndex(i));
+
+  useDofs(mDofs);
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::useWholeBody()
+{
+  useDofs(mEntity->getDependentGenCoordIndices());
+}
 
 //==============================================================================
 template <class JacobianEntity>
@@ -786,6 +918,24 @@ void InverseKinematics<JacobianEntity>::useDofs(
       }
     }
   }
+}
+
+//==============================================================================
+template <class JacobianEntity>
+const math::Jacobian& InverseKinematics<JacobianEntity>::computeJacobian() const
+{
+  const math::Jacobian& fullJacobian =
+      this->mIK->getEntity()->getWorldJacobian();
+  mJacobian.resize(6, this->mIK->getDofs().size());
+
+  for(int i=0; i<this->mIK->getDofMap().size(); ++i)
+  {
+    int j = this->mIK->getDofMap()[i];
+    if(j >= 0)
+      mJacobian.block<6,1>(0,i) = fullJacobian.block<6,1>(0,j);
+  }
+
+  return mJacobian;
 }
 
 //==============================================================================
