@@ -40,6 +40,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 
 #include <Eigen/Dense>
 
@@ -81,6 +82,53 @@ protected:
 };
 
 typedef std::shared_ptr<Function> FunctionPtr;
+
+typedef std::function<double(Eigen::Map<const Eigen::VectorXd>&)> CostFunction;
+
+typedef std::function<void(Eigen::Map<const Eigen::VectorXd>&,
+                           Eigen::Map<Eigen::VectorXd>)> GradientFunction;
+
+typedef std::function<void(
+    Eigen::Map<const Eigen::VectorXd>&,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)> HessianFunction;
+
+class ModularFunction : public Function
+{
+public:
+
+  explicit ModularFunction(const std::string& _name = "modular_function");
+
+  virtual ~ModularFunction();
+
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) override;
+
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) override;
+
+  virtual void evalHessian(
+      Eigen::Map<const Eigen::VectorXd>& _x,
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
+
+  void setCostFunction(CostFunction _cost);
+
+  void clearCostFunction();
+
+  void setGradientFunction(GradientFunction _gradient);
+
+  void clearGradientFunction();
+
+  void setHessianFunction(HessianFunction _hessian);
+
+  void clearHessianFunction();
+
+protected:
+
+  CostFunction mCostFunction;
+
+  GradientFunction mGradientFunction;
+
+  HessianFunction mHessianFunction;
+};
 
 /// \brief class MultiFunction
 class MultiFunction

@@ -1154,6 +1154,9 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
     return;
   }
 
+  if(mPositions[_index] == _position)
+    return;
+
   // Note: It would not make much sense to use setPositionsStatic() here
   mPositions[_index] = _position;
   notifyPositionUpdate();
@@ -1265,6 +1268,9 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
     dterr << "setVelocity index[" << _index << "] out of range" << std::endl;
     return;
   }
+
+  if(mVelocities[_index] == _velocity)
+    return;
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
@@ -1378,6 +1384,9 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
           << std::endl;
     return;
   }
+
+  if(mAccelerations[_index] == _acceleration)
+    return;
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
   mAccelerations[_index] = _acceleration;

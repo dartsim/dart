@@ -71,14 +71,101 @@ const std::string& Function::getName() const
 void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
                             Eigen::Map<Eigen::VectorXd> _grad)
 {
-  dterr << "Gradient is not provided. Use gradient-free algorithm.\n";
+  dterr << "Gradient is not provided by function named [" << mName
+        << "]. Use gradient-free algorithm.\n";
 }
 
 //==============================================================================
 void Function::evalHessian(Eigen::Map<const Eigen::VectorXd>& _x,
                            Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
 {
-  dterr << "Hessian is not provided. Use Hessian-free algorithm.\n";
+  dterr << "Hessian is not provided by funciton named [" << mName
+        << "]. Use Hessian-free algorithm.\n";
+}
+
+//==============================================================================
+ModularFunction::ModularFunction(const std::string& _name)
+  : Function(_name)
+{
+  clearCostFunction();
+  clearGradientFunction();
+  clearHessianFunction();
+}
+
+//==============================================================================
+ModularFunction::~ModularFunction()
+{
+  // Do nothing
+}
+
+//==============================================================================
+double ModularFunction::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+{
+  return mCostFunction(_x);
+}
+
+//==============================================================================
+void ModularFunction::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                                   Eigen::Map<Eigen::VectorXd> _grad)
+{
+  mGradientFunction(_x, _grad);
+}
+
+//==============================================================================
+void ModularFunction::evalHessian(
+    Eigen::Map<const Eigen::VectorXd>& _x,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+{
+  mHessianFunction(_x, _Hess);
+}
+
+//==============================================================================
+void ModularFunction::setCostFunction(CostFunction _cost)
+{
+  mCostFunction = _cost;
+}
+
+//==============================================================================
+void ModularFunction::clearCostFunction()
+{
+  mCostFunction = [&](Eigen::Map<const Eigen::VectorXd>&)
+  {
+    dterr << "A cost function has not yet been assigned to the ModularFunction "
+          << "named [" << mName << "]. Returning 0.0\n";
+    return 0;
+  };
+}
+
+//==============================================================================
+void ModularFunction::setGradientFunction(GradientFunction _gradient)
+{
+  mGradientFunction = _gradient;
+}
+
+//==============================================================================
+void ModularFunction::clearGradientFunction()
+{
+  mGradientFunction = [&](Eigen::Map<const Eigen::VectorXd>& _x,
+                          Eigen::Map<Eigen::VectorXd> _grad)
+  {
+    this->Function::evalGradient(_x, _grad);
+  };
+}
+
+//==============================================================================
+void ModularFunction::setHessianFunction(HessianFunction _hessian)
+{
+  mHessianFunction = _hessian;
+}
+
+//==============================================================================
+void ModularFunction::clearHessianFunction()
+{
+  mHessianFunction = [&](Eigen::Map<const Eigen::VectorXd>& _x,
+                         Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+  {
+    this->Function::evalHessian(_x, _Hess);
+  };
 }
 
 //==============================================================================
