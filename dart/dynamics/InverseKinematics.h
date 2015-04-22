@@ -153,7 +153,7 @@ public:
   {
   public:
 
-    EulerAngleXYZMethod(InverseKinematics<JacobianEntity>* _ik);
+    explicit EulerAngleXYZMethod(InverseKinematics<JacobianEntity>* _ik);
 
     virtual ~EulerAngleXYZMethod();
 
@@ -205,7 +205,7 @@ public:
   {
   public:
 
-    JacobianDLS(InverseKinematics<JacobianEntity>* _ik);
+    explicit JacobianDLS(InverseKinematics<JacobianEntity>* _ik);
 
     virtual ~JacobianDLS();
 
@@ -225,7 +225,7 @@ public:
   {
   public:
 
-    JacobianTranspose(InverseKinematics<JacobianEntity>* _ik);
+    explicit JacobianTranspose(InverseKinematics<JacobianEntity>* _ik);
 
     virtual ~JacobianTranspose();
 
@@ -286,6 +286,8 @@ public:
   const math::Jacobian& computeJacobian() const;
 
   void clearCaches();
+
+  virtual ~InverseKinematics();
 
 protected:
 
@@ -545,8 +547,8 @@ template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::ErrorMethod::clearCache()
 {
   // This will force the error to be recomputed the next time computeError is called
-  for(int i=0; i<mLastConfig.size(); ++i)
-    mLastConfig[i] = std::nan(nullptr);
+  if(mLastConfig.size() > 0)
+    mLastConfig[0] = std::nan(nullptr);
 }
 
 //==============================================================================
@@ -748,8 +750,8 @@ template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::GradientMethod::clearCache()
 {
   // This will force the gradient to be recomputed the next time computeGradient is called
-  for(int i=0; i<mLastConfig.size(); ++i)
-    mLastConfig[i] = std::nan(nullptr);
+  if(mLastConfig.size() > 0)
+    mLastConfig[0] = std::nan(nullptr);
 }
 
 //==============================================================================
@@ -1094,6 +1096,14 @@ void InverseKinematics<JacobianEntity>::clearCaches()
 
 //==============================================================================
 template <class JacobianEntity>
+InverseKinematics<JacobianEntity>::~InverseKinematics()
+{
+  mTargetConnection.disconnect();
+  mEntityConnection.disconnect();
+}
+
+//==============================================================================
+template <class JacobianEntity>
 InverseKinematics<JacobianEntity>::InverseKinematics(JacobianEntity* _entity)
   : mActive(false),
     mHierarchyLevel(0),
@@ -1146,6 +1156,5 @@ void InverseKinematics<JacobianEntity>::resetEntityConnection()
 
 } // namespace dynamics
 } // namespace dart
-
 
 #endif // DART_DYNAMICS_INVERSEKINEMATICS_H_

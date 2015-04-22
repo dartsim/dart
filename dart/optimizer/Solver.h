@@ -108,11 +108,14 @@ public:
   /// Get the type (implementation) of this Solver
   virtual std::string getType() const = 0;
 
+  /// Create an identical clone of this Solver
+  virtual std::shared_ptr<Solver> clone() const = 0;
+
   /// Set the generic Properties of this Solver
   void setProperties(const Properties& _properties);
 
   /// Get the generic Properties of this Solver
-  const Properties& getProperties() const;
+  const Properties& getSolverProperties() const;
 
   /// Copy the generic Properties of another Solver
   void copy(const Solver& _otherSolver);
