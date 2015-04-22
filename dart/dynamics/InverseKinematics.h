@@ -40,6 +40,7 @@
 #include <memory>
 
 #include "dart/common/sub_ptr.h"
+#include "dart/common/Signal.h"
 #include "dart/optimizer/Solver.h"
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SimpleFrame.h"
@@ -290,6 +291,14 @@ protected:
 
   InverseKinematics(JacobianEntity* _entity);
 
+  void resetTargetConnection();
+
+  void resetEntityConnection();
+
+  common::Connection mTargetConnection;
+
+  common::Connection mEntityConnection;
+
   bool mActive;
 
   size_t mHierarchyLevel;
@@ -326,7 +335,8 @@ InverseKinematics<JacobianEntity>::ErrorMethod::ErrorMethod(
     mMethodName(_methodName),
     mLastConfig(0),
     mLastError(Eigen::Vector6d::Constant(std::nan(nullptr))),
-    mBounds(Eigen::Vector6d::Constant(DefaultIKTolerance), Eigen::Vector6d::Constant(DefaultIKTolerance)),
+    mBounds(Eigen::Vector6d::Constant(DefaultIKTolerance),
+            Eigen::Vector6d::Constant(DefaultIKTolerance)),
     mErrorLengthClamp(DefaultIKErrorClamp)
 {
   setAngularErrorWeights();
@@ -922,6 +932,142 @@ void InverseKinematics<JacobianEntity>::useDofs(
 
 //==============================================================================
 template <class JacobianEntity>
+const std::vector<size_t>& InverseKinematics<JacobianEntity>::getDofs() const
+{
+  return mDofs;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+const std::vector<int>& InverseKinematics<JacobianEntity>::getDofMap() const
+{
+  return mDofMap;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+template <class IKErrorMethod>
+IKErrorMethod* InverseKinematics<JacobianEntity>::setErrorMethod()
+{
+  IKErrorMethod* newMethod = new IKErrorMethod(this);
+  mErrorMethod = std::move(std::unique_ptr<IKErrorMethod>(newMethod));
+  return newMethod;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+typename InverseKinematics<JacobianEntity>::ErrorMethod*
+InverseKinematics<JacobianEntity>::getErrorMethod()
+{
+  return mErrorMethod.get();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+const typename InverseKinematics<JacobianEntity>::ErrorMethod*
+InverseKinematics<JacobianEntity>::getErrorMethod() const
+{
+  return mErrorMethod.get();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+template <class IKGradientMethod>
+IKGradientMethod* InverseKinematics<JacobianEntity>::setGradientMethod()
+{
+  IKGradientMethod* newMethod = new IKGradientMethod(this);
+  mGradientMethod = std::move(std::unique_ptr<IKGradientMethod>(newMethod));
+  return newMethod;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+typename InverseKinematics<JacobianEntity>::GradientMethod*
+InverseKinematics<JacobianEntity>::getGradientMethod()
+{
+  return mGradientMethod.get();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+const typename InverseKinematics<JacobianEntity>::GradientMethod*
+InverseKinematics<JacobianEntity>::getGradientMethod() const
+{
+  return mGradientMethod.get();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setSolver(
+    std::shared_ptr<optimizer::Solver> _newSolver)
+{
+  mSolver = _newSolver;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<optimizer::Solver>
+InverseKinematics<JacobianEntity>::getSolver()
+{
+  return mSolver;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<const optimizer::Solver>
+InverseKinematics<JacobianEntity>::getSolver() const
+{
+  return mSolver;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setTarget(
+    std::shared_ptr<SimpleFrame> _newTarget)
+{
+  if(nullptr == _newTarget)
+  {
+    _newTarget = SimpleFramePtr(
+          new SimpleFrame(Frame::World(), mEntity->getName()+"_target",
+                          mEntity->getWorldTransform()));
+  }
+
+  mTarget = _newTarget;
+  resetTargetConnection();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<SimpleFrame>
+InverseKinematics<JacobianEntity>::getTarget()
+{
+  return mTarget;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<const SimpleFrame>
+InverseKinematics<JacobianEntity>::getTarget() const
+{
+  return mTarget;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+JacobianEntity* InverseKinematics<JacobianEntity>::getEntity()
+{
+  return mEntity;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+const JacobianEntity* InverseKinematics<JacobianEntity>::getEntity() const
+{
+  return mEntity;
+}
+
+//==============================================================================
+template <class JacobianEntity>
 const math::Jacobian& InverseKinematics<JacobianEntity>::computeJacobian() const
 {
   const math::Jacobian& fullJacobian =
@@ -940,16 +1086,62 @@ const math::Jacobian& InverseKinematics<JacobianEntity>::computeJacobian() const
 
 //==============================================================================
 template <class JacobianEntity>
-JacobianEntity* InverseKinematics<JacobianEntity>::getEntity()
+void InverseKinematics<JacobianEntity>::clearCaches()
 {
-  return mEntity;
+  mErrorMethod->clearCaches();
+  mGradientMethod->clearCaches();
 }
 
 //==============================================================================
 template <class JacobianEntity>
-const JacobianEntity* InverseKinematics<JacobianEntity>::getEntity() const
+InverseKinematics<JacobianEntity>::InverseKinematics(JacobianEntity* _entity)
+  : mActive(false),
+    mHierarchyLevel(0),
+    mEntity(_entity)
 {
-  return mEntity;
+  // Create the default target for this IK module
+  setTarget(nullptr);
+
+  // The default error method is the one based on Task Space Regions
+  setErrorMethod<EulerAngleXYZMethod>();
+
+  // The default gradient method is damped least squares Jacobian
+  setGradientMethod<JacobianDLS>();
+
+  // Set up the cache clearing connections. These connections will ensure that
+  // any time an outsider alters the transform of the object's transform or the
+  // target's transform, our saved caches will be cleared so that the error and
+  // gradient will be recomputed the next time they are polled.
+  resetTargetConnection();
+  resetEntityConnection();
+
+  // By default, we use the linkage when performing IK
+  useLinkage();
+
+  // TODO(MXG): Instantiate mSolver using a default native solver
+  // TODO(MXG): Write a default native solver
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::resetTargetConnection()
+{
+  mTargetConnection.disconnect();
+  mTargetConnection = mTarget->onTransformUpdated.connect(
+        [=](const Entity*)
+        { this->clearCaches(); } );
+  clearCaches();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::resetEntityConnection()
+{
+  mEntityConnection.disconnect();
+  mEntityConnection = mEntity->onTransformUpdated.connect(
+        [=](const Entity*)
+        { this->clearCaches(); } );
+  clearCaches();
 }
 
 } // namespace dynamics
