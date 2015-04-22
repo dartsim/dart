@@ -39,7 +39,175 @@
 namespace dart {
 namespace optimizer {
 
+//==============================================================================
+const std::string GradientDescentSolver::Type = "GradientDescentSolver";
 
+//==============================================================================
+GradientDescentSolver::UniqueProperties::UniqueProperties(
+    double _stepMultiplier,
+    double _maxStepLength,
+    size_t _maxAttempts,
+    double _defaultConstraintWeight,
+    Eigen::VectorXd _constraintWeights)
+  : mStepMultiplier(_stepMultiplier),
+    mMaxStepLength(_maxStepLength),
+    mMaxAttempts(_maxAttempts),
+    mDefaultConstraintWeight(_defaultConstraintWeight),
+    mConstraintWeights(_constraintWeights)
+{
+  // Do nothing
+}
+
+//==============================================================================
+GradientDescentSolver::Properties::Properties(
+    const Solver::Properties& _solverProperties,
+    const UniqueProperties& _descentProperties)
+  : Solver::Properties(_solverProperties),
+    UniqueProperties(_descentProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+GradientDescentSolver::GradientDescentSolver(const Properties& _properties)
+  : Solver(_properties),
+    mGradientP(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+GradientDescentSolver::GradientDescentSolver(std::shared_ptr<Problem> _problem)
+  : Solver(_problem)
+{
+  // Do nothing
+}
+
+//==============================================================================
+GradientDescentSolver::~GradientDescentSolver()
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool GradientDescentSolver::solve()
+{
+  // TODO
+}
+
+//==============================================================================
+std::string GradientDescentSolver::getType() const
+{
+  return Type;
+}
+
+//==============================================================================
+std::shared_ptr<Solver> GradientDescentSolver::clone() const
+{
+  return std::make_shared<GradientDescentSolver>(
+        getGradientDescentProperties());
+}
+
+//==============================================================================
+void GradientDescentSolver::setProperties(const Properties& _properties)
+{
+  Solver::setProperties(_properties);
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void GradientDescentSolver::setProperties(const UniqueProperties& _properties)
+{
+  setStepMultiplier(_properties.mStepMultiplier);
+  setMaxStepLength(_properties.mMaxStepLength);
+  setMaxAttempts(_properties.mMaxAttempts);
+  setDefaultConstraintWeight(_properties.mDefaultConstraintWeight);
+  getConstraintWeights() = _properties.mConstraintWeights;
+}
+
+//==============================================================================
+GradientDescentSolver::Properties
+GradientDescentSolver::getGradientDescentProperties() const
+{
+  return GradientDescentSolver::Properties(getSolverProperties(), mGradientP);
+}
+
+//==============================================================================
+void GradientDescentSolver::copy(const GradientDescentSolver& _other)
+{
+  if(this == &_other)
+    return;
+
+  setProperties(_other.getGradientDescentProperties());
+}
+
+//==============================================================================
+GradientDescentSolver& GradientDescentSolver::operator=(
+    const GradientDescentSolver& _other)
+{
+  copy(_other);
+  return *this;
+}
+
+//==============================================================================
+void GradientDescentSolver::setStepMultiplier(double _newMultiplier)
+{
+  mGradientP.mStepMultiplier = _newMultiplier;
+}
+
+//==============================================================================
+double GradientDescentSolver::getStepMultiplier() const
+{
+  return mGradientP.mStepMultiplier;
+}
+
+//==============================================================================
+void GradientDescentSolver::setMaxStepLength(double _newLength)
+{
+  mGradientP.mMaxStepLength = _newLength;
+}
+
+//==============================================================================
+double GradientDescentSolver::getMaxStepLength() const
+{
+  return mGradientP.mMaxStepLength;
+}
+
+//==============================================================================
+void GradientDescentSolver::setMaxAttempts(size_t _maxAttempts)
+{
+  mGradientP.mMaxAttempts = _maxAttempts;
+}
+
+//==============================================================================
+size_t GradientDescentSolver::getMaxAttempts() const
+{
+  return mGradientP.mMaxAttempts;
+}
+
+//==============================================================================
+void GradientDescentSolver::setDefaultConstraintWeight(double _newDefault)
+{
+  mGradientP.mDefaultConstraintWeight = _newDefault;
+}
+
+//==============================================================================
+double GradientDescentSolver::getDefaultConstraintWeight() const
+{
+  return mGradientP.mDefaultConstraintWeight;
+}
+
+//==============================================================================
+Eigen::VectorXd& GradientDescentSolver::getConstraintWeights()
+{
+  return mGradientP.mConstraintWeights;
+}
+
+//==============================================================================
+const Eigen::VectorXd& GradientDescentSolver::getConstraintWeights() const
+{
+  return mGradientP.mConstraintWeights;
+}
 
 } // namespace optimizer
 } // namespace dart

@@ -39,6 +39,7 @@
 #define DART_MATH_GEOMETRY_H_
 
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
 #include "dart/math/MathTypes.h"
 
@@ -424,6 +425,32 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// \brief Check if determinant of the rotational part of _T is equat to 1 and
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
+
+template <typename MatrixType, typename ReturnType>
+void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
+{
+  int rank = 0;
+  // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
+  if(_SVD.nonzeroSingularValues() > 0)
+  {
+    double thresh = std::max(_SVD.singularValues().coeff(0)*1e-10,
+                             std::numeric_limits<double>::min());
+    int i = _SVD.nonzeroSingularValues()-1;
+    while( i >= 0 && _SVD.singularValues().coeff(i) < thresh )
+      --i;
+    rank = i+1;
+  }
+
+  int cols = _SVD.matrixV().cols(), rows = _SVD.matrixV.rows();
+  _NS = _SVD.matrixV().block(0, rank, rows, cols);
+}
+
+template <typename MatrixType, typename ReturnType>
+void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
+{
+  Eigen::JacobiSVD<MatrixType> svd(_M, Eigen::ComputeFullV);
+  extractNullSpace(svd, _NS);
+}
 
 }  // namespace math
 }  // namespace dart

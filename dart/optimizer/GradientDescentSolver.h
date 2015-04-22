@@ -43,16 +43,22 @@ namespace dart {
 namespace optimizer {
 
 /// DefaultSolver is a Solver extension which is native to DART (rather than
-/// relying on third-party libraries)
+/// relying on third-party libraries). It uses stochastic gradient descent and
+/// softened constraints (i.e. constraint functions are worked into the
+/// objective function and assigned weights) to solve nonlinear problems.
 class GradientDescentSolver : public Solver
 {
 public:
+
+  static const std::string Type;
 
   struct UniqueProperties
   {
     double mStepMultiplier;
 
     double mMaxStepLength;
+
+    size_t mMaxAttempts;
 
     double mDefaultConstraintWeight;
 
@@ -61,8 +67,9 @@ public:
     UniqueProperties(
         double _stepMultiplier = 0.1,
         double _maxStepLength = INFINITY,
+        size_t _maxAttempts = 1,
         double _defaultConstraintWeight = 1.0,
-        Eigen::VectorXd mConstraintWeights = Eigen::VectorXd() );
+        Eigen::VectorXd _constraintWeights = Eigen::VectorXd() );
   };
 
   struct Properties : Solver::Properties, UniqueProperties
@@ -107,6 +114,10 @@ public:
   void setMaxStepLength(double _newLength);
 
   double getMaxStepLength() const;
+
+  void setMaxAttempts(size_t _maxAttempts);
+
+  size_t getMaxAttempts() const;
 
   void setDefaultConstraintWeight(double _newDefault);
 

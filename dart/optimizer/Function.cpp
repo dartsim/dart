@@ -126,12 +126,15 @@ void ModularFunction::setCostFunction(CostFunction _cost)
 }
 
 //==============================================================================
-void ModularFunction::clearCostFunction()
+void ModularFunction::clearCostFunction(bool _printWarning)
 {
-  mCostFunction = [&](Eigen::Map<const Eigen::VectorXd>&)
+  mCostFunction = [=](Eigen::Map<const Eigen::VectorXd>&)
   {
-    dterr << "A cost function has not yet been assigned to the ModularFunction "
-          << "named [" << mName << "]. Returning 0.0\n";
+    if(_printWarning)
+    {
+      dterr << "A cost function has not yet been assigned to the ModularFunction "
+            << "named [" << this->mName << "]. Returning 0.0\n";
+    }
     return 0;
   };
 }
@@ -166,6 +169,42 @@ void ModularFunction::clearHessianFunction()
   {
     this->Function::evalHessian(_x, _Hess);
   };
+}
+
+//==============================================================================
+NullFunction::NullFunction(const std::string& _name)
+  : Function(_name)
+{
+  // Do nothing
+}
+
+//==============================================================================
+NullFunction::~NullFunction()
+{
+  // Do nothing
+}
+
+//==============================================================================
+double NullFunction::eval(Eigen::Map<const Eigen::VectorXd>&)
+{
+  return 0;
+}
+
+//==============================================================================
+void NullFunction::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                                Eigen::Map<Eigen::VectorXd> _grad)
+{
+  _grad.resize(_x.size());
+  _grad.setZero();
+}
+
+//==============================================================================
+void NullFunction::evalHessian(
+    Eigen::Map<const Eigen::VectorXd>& _x,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+{
+  _Hess.resize(pow(_x.size(),2));
+  _Hess.setZero();
 }
 
 //==============================================================================

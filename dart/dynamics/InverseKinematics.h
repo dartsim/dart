@@ -39,9 +39,13 @@
 
 #include <memory>
 
+#include <Eigen/SVD>
+
 #include "dart/common/sub_ptr.h"
 #include "dart/common/Signal.h"
+#include "dart/math/Geometry.h"
 #include "dart/optimizer/Solver.h"
+#include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
@@ -253,6 +257,37 @@ public:
 
   const std::vector<int>& getDofMap() const;
 
+  /// Set an objective function that should be minimized while satisfying the
+  /// inverse kinematics constraint. Pass in a nullptr to remove the objective.
+  void setObjective(std::shared_ptr<optimizer::Function> _objective);
+
+  /// Get the objective function for this IK module
+  std::shared_ptr<optimizer::Function> getObjective();
+
+  /// Get the objective function for this IK module
+  std::shared_ptr<const optimizer::Function> getObjective() const;
+
+  /// Set an objective function that should be minimized within the null space
+  /// of the inverse kinematics constraint. The gradient of this function will
+  /// always be projected through the null space of this IK module's Jacobian.
+  /// Pass in a nullptr to remove the null space objective.
+  ///
+  /// Note: The objectives given to setObjective() and setNullSpaceObjective()
+  /// will always be superimposed (added together) via the evalObjective()
+  /// function.
+  void setNullSpaceObjective(std::shared_ptr<optimizer::Function> _nsObjective);
+
+  /// Get the null space objective for this IK module
+  std::shared_ptr<optimizer::Function> getNullSpaceObjective();
+
+  /// Get the null space objective for this IK module
+  std::shared_ptr<const optimizer::Function> getNullSpaceObjective() const;
+
+  double evalObjective(Eigen::Map<const Eigen::VectorXd>& _q);
+
+  void evalObjectiveGradient(Eigen::Map<const Eigen::VectorXd>& _q,
+                             Eigen::Map<Eigen::VectorXd> _grad);
+
   template <class IKErrorMethod>
   IKErrorMethod* setErrorMethod();
 
@@ -266,6 +301,12 @@ public:
   GradientMethod* getGradientMethod();
 
   const GradientMethod* getGradientMethod() const;
+
+  std::shared_ptr<optimizer::Problem> getProblem();
+
+  std::shared_ptr<const optimizer::Problem> getProblem() const;
+
+  void resetProblem(bool _clearSeeds=false);
 
   void setSolver(std::shared_ptr<optimizer::Solver> _newSolver);
 
@@ -284,6 +325,8 @@ public:
   const JacobianEntity* getEntity() const;
 
   const math::Jacobian& computeJacobian() const;
+
+  void setConfiguration(const Eigen::VectorXd& _q);
 
   void clearCaches();
 
@@ -309,11 +352,29 @@ protected:
 
   std::vector<int> mDofMap;
 
+  std::shared_ptr<optimizer::Function> mObjective;
+
+  std::shared_ptr<optimizer::Function> mNullSpaceObjective;
+
+  bool mUseNullSpace;
+
+  Eigen::VectorXd mGradCache;
+
+  Eigen::MatrixXd mNullspaceCache;
+
+  Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+
+  std::shared_ptr<optimizer::ModularFunction> mOverallObjective;
+
+  std::shared_ptr<optimizer::ModularFunction> mConstraint;
+
   /// The method that this IK module will use to compute errors
   std::unique_ptr<ErrorMethod> mErrorMethod;
 
   /// The method that this IK module will use to compute gradients
   std::unique_ptr<GradientMethod> mGradientMethod;
+
+  std::shared_ptr<optimizer::Problem> mProblem;
 
   /// The solver that this IK module will use for iterative methods
   std::shared_ptr<optimizer::Solver> mSolver;
@@ -385,8 +446,7 @@ ErrorMethod::computeError(Eigen::Map<const Eigen::VectorXd>& _q)
       return mLastError;
   }
 
-  dart::dynamics::Skeleton* skel = mIK->getEntity()->getSkeleton();
-  skel->setPositionSegment(mIK->getDofs(), _q);
+  mIK->setConfiguration(_q);
   mLastConfig = _q;
 
   mLastError = computeError();
@@ -702,8 +762,7 @@ void InverseKinematics<JacobianEntity>::GradientMethod::computeGradient(
   }
 
   Eigen::Vector6d error = mIK->getErrorMethod()->computeError(_q);
-  dart::dynamics::Skeleton* skel = mIK->getEntity()->getSkeleton();
-  skel->setPositionSegment(mIK->getDofs(), _q);
+  mIK->setConfiguration(_q);
   computeGradient(error, _grad);
   mLastGradient = _grad;
 }
@@ -930,6 +989,8 @@ void InverseKinematics<JacobianEntity>::useDofs(
       }
     }
   }
+
+  mProblem->setDimension(mDofs.size());
 }
 
 //==============================================================================
@@ -944,6 +1005,94 @@ template <class JacobianEntity>
 const std::vector<int>& InverseKinematics<JacobianEntity>::getDofMap() const
 {
   return mDofMap;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setObjective(
+    std::shared_ptr<optimizer::Function> _objective)
+{
+  if(nullptr == _objective)
+    _objective = optimizer::FunctionPtr(new optimizer::NullFunction);
+
+  mObjective = _objective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<optimizer::Function>
+InverseKinematics<JacobianEntity>::getObjective()
+{
+  return mObjective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<const optimizer::Function>
+InverseKinematics<JacobianEntity>::getObjective() const
+{
+  return mObjective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setNullSpaceObjective(
+    std::shared_ptr<optimizer::Function> _nsObjective)
+{
+  mUseNullSpace = true;
+  if(nullptr == _nsObjective)
+  {
+    mUseNullSpace = false;
+    _nsObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
+  }
+
+  mNullSpaceObjective = _nsObjective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<optimizer::Function>
+InverseKinematics<JacobianEntity>::getNullSpaceObjective()
+{
+  return mNullSpaceObjective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<const optimizer::Function>
+InverseKinematics<JacobianEntity>::getNullSpaceObjective() const
+{
+  return mNullSpaceObjective;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+double InverseKinematics<JacobianEntity>::evalObjective(
+    Eigen::Map<const Eigen::VectorXd>& _q)
+{
+  return mObjective->eval(_q) + mNullSpaceObjective->eval(_q);
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::evalObjectiveGradient(
+    Eigen::Map<const Eigen::VectorXd>& _q,
+    Eigen::Map<Eigen::VectorXd> _grad)
+{
+  mObjective->evalGradient(_q, _grad);
+
+  if(mUseNullSpace)
+  {
+    mNullSpaceObjective->evalGradient(_q, Eigen::Map<Eigen::VectorXd>(mGradCache));
+
+    setConfiguration(_q);
+
+    // Find a nullspace projection to apply to mGradCache
+    computeJacobian();
+    mSVDCache.compute(mJacobian, Eigen::ComputeFullV);
+    math::extractNullSpace(mSVDCache, mNullspaceCache);
+    _grad += mNullspaceCache*mNullspaceCache.transpose()*mGradCache;
+  }
 }
 
 //==============================================================================
@@ -996,6 +1145,56 @@ const typename InverseKinematics<JacobianEntity>::GradientMethod*
 InverseKinematics<JacobianEntity>::getGradientMethod() const
 {
   return mGradientMethod.get();
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<optimizer::Problem>
+InverseKinematics<JacobianEntity>::getProblem()
+{
+  return mProblem;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+std::shared_ptr<const optimizer::Problem>
+InverseKinematics<JacobianEntity>::getProblem() const
+{
+  return mProblem;
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::resetProblem(bool _clearSeeds)
+{
+  mOverallObjective->setCostFunction(
+        [=](Eigen::Map<const Eigen::VectorXd>& _q)
+        { return this->evalObjective(_q); } );
+  mOverallObjective->setGradientFunction(
+        [=](Eigen::Map<const Eigen::VectorXd>& _q,
+            Eigen::Map<Eigen::VectorXd> _grad)
+        { this->evalObjectiveGradient(_q, _grad); } );
+  mOverallObjective->clearHessianFunction();
+
+  mConstraint->setCostFunction(
+        [=](Eigen::Map<const Eigen::VectorXd>& _q)
+        { return this->mErrorMethod->computeError(_q); } );
+  mConstraint->setGradientFunction(
+        [=](Eigen::Map<const Eigen::VectorXd>& _q,
+            Eigen::Map<Eigen::VectorXd> _grad)
+        { this->mGradientMethod->computeGradient(_q, _grad); } );
+  mConstraint->clearHessianFunction();
+
+  mProblem->removeAllEqConstraints();
+  mProblem->removeAllIneqConstraints();
+
+  if(_clearSeeds)
+    mProblem->clearAllSeeds();
+
+  mProblem->setObjective(mOverallObjective);
+  mProblem->addEqConstraint(mConstraint);
+
+  mProblem->setDimension(mDofs.size());
 }
 
 //==============================================================================
@@ -1088,6 +1287,23 @@ const math::Jacobian& InverseKinematics<JacobianEntity>::computeJacobian() const
 
 //==============================================================================
 template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::setConfiguration(
+    const Eigen::VectorXd& _q)
+{
+  if(_q.size() != mDofs.size())
+  {
+    dterr << "[InverseKinematics::setConfiguration] Mismatch between config "
+          << "size [" << _q.size() << "] and number of available degrees of "
+          << "freedom [" << mDofs.size() << "]\n";
+    return;
+  }
+
+  dart::dynamics::Skeleton* skel = this->getEntity()->getSkeleton();
+  skel->setPositionSegment(mDofs, _q);
+}
+
+//==============================================================================
+template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::clearCaches()
 {
   mErrorMethod->clearCaches();
@@ -1100,6 +1316,14 @@ InverseKinematics<JacobianEntity>::~InverseKinematics()
 {
   mTargetConnection.disconnect();
   mEntityConnection.disconnect();
+
+  mOverallObjective->clearCostFunction(true);
+  mOverallObjective->clearGradientFunction();
+  mOverallObjective->clearHessianFunction();
+
+  mConstraint->clearCostFunction(true);
+  mConstraint->clearGradientFunction();
+  mConstraint->clearHessianFunction();
 }
 
 //==============================================================================
@@ -1109,6 +1333,18 @@ InverseKinematics<JacobianEntity>::InverseKinematics(JacobianEntity* _entity)
     mHierarchyLevel(0),
     mEntity(_entity)
 {
+  // Default to having no objectives
+  setObjective(nullptr);
+  setNullSpaceObjective(nullptr);
+
+  mOverallObjective = std::shared_ptr<optimizer::ModularFunction>(
+        new optimizer::ModularFunction(_entity->getName()+"_objective"));
+
+  mConstraint = std::shared_ptr<optimizer::ModularFunction>(
+        new optimizer::ModularFunction(_entity->getName()+"_constraint"));
+
+  resetProblem();
+
   // Create the default target for this IK module
   setTarget(nullptr);
 

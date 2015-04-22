@@ -90,6 +90,28 @@ void Solver::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
+const Solver::Properties& Solver::getSolverProperties() const
+{
+  return mProperties;
+}
+
+//==============================================================================
+void Solver::copy(const Solver& _otherSolver)
+{
+  if(this == &_otherSolver)
+    return;
+
+  setProperties(_otherSolver.getSolverProperties());
+}
+
+//==============================================================================
+Solver& Solver::operator=(const Solver& _otherSolver)
+{
+  copy(_otherSolver);
+  return *this;
+}
+
+//==============================================================================
 void Solver::setProblem(std::shared_ptr<Problem> _newProblem)
 {
   mProperties.mProblem = _newProblem;
