@@ -57,12 +57,13 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
 {
   for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
   {
-    dynamics::Shape* shape = _bodyNode->getCollisionShape(i);
+    dynamics::ConstShapePtr shape = _bodyNode->getCollisionShape(i);
     switch (shape->getShapeType())
     {
       case dynamics::Shape::BOX:
       {
-        dynamics::BoxShape* box = static_cast<dynamics::BoxShape*>(shape);
+        const dynamics::BoxShape* box =
+            static_cast<const dynamics::BoxShape*>(shape.get());
 
         btBoxShape* btBox = new btBoxShape(btVector3(box->getSize()[0]*0.5,
                                                      box->getSize()[1]*0.5,
@@ -80,8 +81,8 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::ELLIPSOID:
       {
-        dynamics::EllipsoidShape* ellipsoid =
-            static_cast<dynamics::EllipsoidShape*>(shape);
+        const dynamics::EllipsoidShape* ellipsoid =
+            static_cast<const dynamics::EllipsoidShape*>(shape.get());
 
         if (ellipsoid->isSphere())
         {
@@ -105,8 +106,8 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::CYLINDER:
       {
-        dynamics::CylinderShape* cylinder =
-            static_cast<dynamics::CylinderShape*>(shape);
+        const dynamics::CylinderShape* cylinder =
+            static_cast<const dynamics::CylinderShape*>(shape.get());
 
         btCylinderShapeZ* btCylinder =
             new btCylinderShapeZ(btVector3(cylinder->getRadius(),
@@ -125,11 +126,10 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::PLANE:
       {
-        dynamics::PlaneShape* plane =
-            static_cast<dynamics::PlaneShape*>(shape);
+        const dynamics::PlaneShape* plane =
+            static_cast<const dynamics::PlaneShape*>(shape.get());
 
-        btScalar d = plane->getNormal().dot(plane->getPoint())
-                   / plane->getNormal().squaredNorm();
+        btScalar d = plane->getOffset();
 
         btStaticPlaneShape* btStaticPlane =
             new btStaticPlaneShape(convertVector3(plane->getNormal()), d);
@@ -146,8 +146,8 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::MESH:
       {
-        dynamics::MeshShape* shapeMesh
-            = static_cast<dynamics::MeshShape*>(shape);
+        const dynamics::MeshShape* shapeMesh
+            = static_cast<const dynamics::MeshShape*>(shape.get());
         btConvexTriangleMeshShape* btMesh = _createMesh(shapeMesh->getScale(),
                                                         shapeMesh->getMesh());
         btCollisionObject* btCollObj = new btCollisionObject();
@@ -188,7 +188,7 @@ void BulletCollisionNode::updateBulletCollisionObjects()
   {
     BulletUserData* userData =
         static_cast<BulletUserData*>(mbtCollsionObjects[i]->getUserPointer());
-    dynamics::Shape* shape = userData->shape;
+    dynamics::ConstShapePtr shape = userData->shape;
     btTransform T = convertTransform(mBodyNode->getTransform() *
                                      shape->getLocalTransform());
     mbtCollsionObjects[i]->setWorldTransform(T);

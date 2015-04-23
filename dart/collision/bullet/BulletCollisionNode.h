@@ -60,7 +60,7 @@ class BulletCollisionDetector;
 
 struct BulletUserData {
     dynamics::BodyNode* bodyNode;
-    dynamics::Shape* shape;
+    dynamics::ConstShapePtr shape;
     BulletCollisionNode* btCollNode;
     BulletCollisionDetector* btCollDet;
 };
