@@ -35,6 +35,7 @@
  */
 
 #include "dart/optimizer/GradientDescentSolver.h"
+#include "dart/optimizer/Problem.h"
 
 namespace dart {
 namespace optimizer {
@@ -45,15 +46,21 @@ const std::string GradientDescentSolver::Type = "GradientDescentSolver";
 //==============================================================================
 GradientDescentSolver::UniqueProperties::UniqueProperties(
     double _stepMultiplier,
-    double _maxStepLength,
     size_t _maxAttempts,
+    size_t _perturbationStep,
+    double _maxPerturbationFactor,
+    double _maxRandomizationStep,
     double _defaultConstraintWeight,
-    Eigen::VectorXd _constraintWeights)
-  : mStepMultiplier(_stepMultiplier),
-    mMaxStepLength(_maxStepLength),
+    Eigen::VectorXd _eqConstraintWeights,
+    Eigen::VectorXd _ineqConstraintWeights)
+  : mStepSize(_stepMultiplier),
     mMaxAttempts(_maxAttempts),
+    mPerturbationStep(_perturbationStep),
+    mMaxPerturbationFactor(_maxPerturbationFactor),
+    mMaxRandomizationStep(_maxRandomizationStep),
     mDefaultConstraintWeight(_defaultConstraintWeight),
-    mConstraintWeights(_constraintWeights)
+    mEqConstraintWeights(_eqConstraintWeights),
+    mIneqConstraintWeights(_ineqConstraintWeights)
 {
   // Do nothing
 }
@@ -71,14 +78,20 @@ GradientDescentSolver::Properties::Properties(
 //==============================================================================
 GradientDescentSolver::GradientDescentSolver(const Properties& _properties)
   : Solver(_properties),
-    mGradientP(_properties)
+    mGradientP(_properties),
+    mRD(),
+    mMT(mRD()),
+    mDistribution(0.0, std::nextafter(1.0, 2.0)) // This allows mDistrubtion to produce numbers in [0,1] inclusive
 {
   // Do nothing
 }
 
 //==============================================================================
 GradientDescentSolver::GradientDescentSolver(std::shared_ptr<Problem> _problem)
-  : Solver(_problem)
+  : Solver(_problem),
+    mRD(),
+    mMT(mRD()),
+    mDistribution(0.0, std::nextafter(1.0, 2.0))
 {
   // Do nothing
 }
@@ -92,7 +105,128 @@ GradientDescentSolver::~GradientDescentSolver()
 //==============================================================================
 bool GradientDescentSolver::solve()
 {
-  // TODO
+  bool minimized = false;
+  bool satisfied = false;
+
+  std::shared_ptr<Problem> problem = mProperties.mProblem;
+  double tol = std::abs(mProperties.mTolerance);
+  double gamma = mGradientP.mStepSize;
+  size_t dim = problem->getDimension();
+
+  Eigen::VectorXd x = problem->getInitialGuess();
+  Eigen::VectorXd dx(x.size());
+  Eigen::VectorXd grad(x.size());
+  std::vector<bool> ineqViolated(problem->getNumIneqConstraints());
+
+  size_t attemptCount = 0;
+  do
+  {
+    size_t stepCount = 0;
+    do
+    {
+      Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
+
+      // Perturb the configuration if we have reached an iteration where we are
+      // supposed to perturb it.
+      if(mGradientP.mPerturbationStep > 0
+         && (stepCount+1)%mGradientP.mPerturbationStep == 0)
+      {
+        dx = x; // Seed the configuration randomizer with the current configuration
+        randomizeConfiguration(dx);
+
+        // Step the current configuration towards the randomized configuration
+        // proportionally to a randomized scaling factor
+        double scale = mGradientP.mMaxPerturbationFactor*mDistribution(mMT);
+        x += scale*(dx-x);
+      }
+
+      // Check if the constraints are satsified
+      satisfied = true;
+      for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
+      {
+        if(std::abs(problem->getEqConstraint(i)->eval(xMap)) > tol)
+        {
+          satisfied = false;
+          break; // If we already know that at least one constraint is violated,
+                 // then don't bother checking the rest.
+        }
+      }
+
+      for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
+      {
+        double ineqCost = problem->getIneqConstraint(i)->eval(xMap);
+        if(ineqCost > std::abs(tol))
+        {
+          ineqViolated[i] = true;
+          satisfied = false;
+        }
+        else
+          ineqViolated[i] = false;
+      }
+
+      Eigen::Map<Eigen::VectorXd> dxMap(dx.data(), dim);
+      Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), dim);
+      // Compute the gradient of the objective, combined with the weighted
+      // gradients of the softened constraints
+      problem->getObjective()->evalGradient(xMap, dxMap);
+      for(int i=0; i < static_cast<int>(problem->getNumEqConstraints()); ++i)
+      {
+        // TODO: Should we ignore the gradients of equality constraints that are
+        // already satisfied, the way we do for inequality constraints? It might
+        // save some operations.
+        problem->getEqConstraint(i)->evalGradient(xMap, gradMap);
+        double weight = mGradientP.mEqConstraintWeights.size() > i?
+              mGradientP.mEqConstraintWeights[i] :
+              mGradientP.mDefaultConstraintWeight;
+        dx += weight * grad;
+      }
+
+      for(int i=0; i < static_cast<int>(problem->getNumIneqConstraints()); ++i)
+      {
+        if(ineqViolated[i])
+        {
+          problem->getIneqConstraint(i)->evalGradient(xMap, gradMap);
+          double weight = mGradientP.mIneqConstraintWeights.size() > i?
+                mGradientP.mIneqConstraintWeights[i] :
+                mGradientP.mDefaultConstraintWeight;
+          dx += weight * grad;
+        }
+      }
+
+      x -= gamma*dx;
+
+      if(dx.norm() < tol)
+        minimized = true;
+      else
+        minimized = false;
+
+      ++stepCount;
+
+      if(stepCount > mProperties.mNumMaxIterations)
+        break;
+
+    } while(!minimized || !satisfied);
+
+    if(!minimized || !satisfied)
+    {
+      ++attemptCount;
+
+      if(mGradientP.mMaxAttempts > 0 && attemptCount >= mGradientP.mMaxAttempts)
+        break;
+
+      if(attemptCount-1 < problem->getAllSeeds().size())
+      {
+        x = problem->getSeed(attemptCount-1);
+      }
+      else
+      {
+        randomizeConfiguration(x);
+      }
+    }
+
+  } while(!minimized || !satisfied);
+
+  return minimized && satisfied;
 }
 
 //==============================================================================
@@ -118,11 +252,12 @@ void GradientDescentSolver::setProperties(const Properties& _properties)
 //==============================================================================
 void GradientDescentSolver::setProperties(const UniqueProperties& _properties)
 {
-  setStepMultiplier(_properties.mStepMultiplier);
-  setMaxStepLength(_properties.mMaxStepLength);
+  setStepSize(_properties.mStepSize);
   setMaxAttempts(_properties.mMaxAttempts);
+  setPerturbationStep(_properties.mPerturbationStep);
+  setMaxPerturbationFactor(_properties.mMaxPerturbationFactor);
   setDefaultConstraintWeight(_properties.mDefaultConstraintWeight);
-  getConstraintWeights() = _properties.mConstraintWeights;
+  getConstraintWeights() = _properties.mEqConstraintWeights;
 }
 
 //==============================================================================
@@ -150,27 +285,15 @@ GradientDescentSolver& GradientDescentSolver::operator=(
 }
 
 //==============================================================================
-void GradientDescentSolver::setStepMultiplier(double _newMultiplier)
+void GradientDescentSolver::setStepSize(double _newMultiplier)
 {
-  mGradientP.mStepMultiplier = _newMultiplier;
+  mGradientP.mStepSize = _newMultiplier;
 }
 
 //==============================================================================
-double GradientDescentSolver::getStepMultiplier() const
+double GradientDescentSolver::getStepSize() const
 {
-  return mGradientP.mStepMultiplier;
-}
-
-//==============================================================================
-void GradientDescentSolver::setMaxStepLength(double _newLength)
-{
-  mGradientP.mMaxStepLength = _newLength;
-}
-
-//==============================================================================
-double GradientDescentSolver::getMaxStepLength() const
-{
-  return mGradientP.mMaxStepLength;
+  return mGradientP.mStepSize;
 }
 
 //==============================================================================
@@ -183,6 +306,30 @@ void GradientDescentSolver::setMaxAttempts(size_t _maxAttempts)
 size_t GradientDescentSolver::getMaxAttempts() const
 {
   return mGradientP.mMaxAttempts;
+}
+
+//==============================================================================
+void GradientDescentSolver::setPerturbationStep(size_t _step)
+{
+  mGradientP.mPerturbationStep = _step;
+}
+
+//==============================================================================
+size_t GradientDescentSolver::getPerturbationStep() const
+{
+  return mGradientP.mPerturbationStep;
+}
+
+//==============================================================================
+void GradientDescentSolver::setMaxPerturbationFactor(double _factor)
+{
+  mGradientP.mMaxPerturbationFactor = _factor;
+}
+
+//==============================================================================
+double GradientDescentSolver::getMaxPerturbationFactor() const
+{
+  return mGradientP.mMaxPerturbationFactor;
 }
 
 //==============================================================================
@@ -200,13 +347,37 @@ double GradientDescentSolver::getDefaultConstraintWeight() const
 //==============================================================================
 Eigen::VectorXd& GradientDescentSolver::getConstraintWeights()
 {
-  return mGradientP.mConstraintWeights;
+  return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
 const Eigen::VectorXd& GradientDescentSolver::getConstraintWeights() const
 {
-  return mGradientP.mConstraintWeights;
+  return mGradientP.mEqConstraintWeights;
+}
+
+//==============================================================================
+void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
+{
+  if(nullptr == mProperties.mProblem)
+    return;
+
+  if(_x.size() < static_cast<int>(mProperties.mProblem->getDimension()))
+    _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
+
+  for(int i=0; i<_x.size(); ++i)
+  {
+    double lower = mProperties.mProblem->getLowerBounds()[i];
+    double upper = mProperties.mProblem->getUpperBounds()[i];
+    double step = upper - lower;
+    if(step > mGradientP.mMaxRandomizationStep)
+    {
+      step = 2*mGradientP.mMaxRandomizationStep;
+      lower = _x[i] - step/2.0;
+    }
+
+    _x[i] = step*mDistribution(mMT) + lower;
+  }
 }
 
 } // namespace optimizer

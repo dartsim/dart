@@ -60,17 +60,34 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 
 //==============================================================================
 Problem::Problem(size_t _dim)
-  : mDimension(_dim)
+  : mDimension(0)
 {
-  mInitialGuess = Eigen::VectorXd::Zero(mDimension);
-  mLowerBounds = Eigen::VectorXd::Constant(mDimension, -HUGE_VAL);
-  mUpperBounds = Eigen::VectorXd::Constant(mDimension,  HUGE_VAL);
-  mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
+  setDimension(_dim);
 }
 
 //==============================================================================
 Problem::~Problem()
 {
+}
+
+//==============================================================================
+void Problem::setDimension(size_t _dim)
+{
+  if(_dim != mDimension)
+  {
+    mInitialGuess = Eigen::VectorXd::Zero(mDimension);
+
+    mLowerBounds = Eigen::VectorXd::Constant(
+          mDimension, -std::numeric_limits<double>::infinity());
+
+    mUpperBounds = Eigen::VectorXd::Constant(
+          mDimension,  std::numeric_limits<double>::infinity());
+
+    mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
+    clearAllSeeds();
+
+    mDimension = _dim;
+  }
 }
 
 //==============================================================================
@@ -84,6 +101,16 @@ void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
   assert(static_cast<size_t>(_initGuess.size()) == mDimension
          && "Invalid size.");
+
+  if(_initGuess.size() == static_cast<int>(mDimension))
+  {
+    dtwarn << "[Problem::setInitialGuess] Attempting to set the initial guess "
+           << "of a Problem of dimension [" << mDimension << "] to a vector of "
+           << "dimension [" << _initGuess << "]. This initial guess will not "
+           << "be used!\n";
+    return;
+  }
+
   mInitialGuess = _initGuess;
 }
 
@@ -96,7 +123,12 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::addSeed(const Eigen::VectorXd& _seed)
 {
-  mSeeds.push_back(_seed);
+  if(_seed.size() == static_cast<int>(mDimension))
+    mSeeds.push_back(_seed);
+  else
+    dtwarn << "[Problem::addSeed] Attempting to add a seed of dimension ["
+           << _seed.size() << "] a Problem of dimension [" << mDimension
+           << "]. The seed will not be added.\n";
 }
 
 //==============================================================================

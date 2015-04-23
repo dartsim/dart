@@ -60,7 +60,8 @@ public:
   virtual ~Problem();
 
   //--------------------------- Problem Setting --------------------------------
-  /// \brief Set dimension
+  /// \brief Set dimension. Note: Changing the dimension will clear out the
+  /// initial guess and any seeds that have been added.
   void setDimension(size_t _dim);
 
   /// \brief Get dimension
@@ -115,7 +116,8 @@ public:
   /// \brief Add equality constraint
   void addEqConstraint(FunctionPtr _eqConst);
 
-  /// \brief Add inequality constraint
+  /// \brief Add inequality constraint. Inequality constraints must evaluate
+  /// to LESS THAN or equal to zero (within some tolerance) to be satisfied.
   void addIneqConstraint(FunctionPtr _ineqConst);
 
   /// \brief Get number of equality constraints
