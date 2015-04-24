@@ -331,7 +331,7 @@ void SimpleFrameShapeDnD::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.entity == mEntity && pick.shape == mShape)
+        if(pick.entity == mEntity && pick.shape.get() == mShape)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -564,7 +564,7 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(!dnd->isMoving() && tool->getEnabled())
         {
-          const std::vector<dart::dynamics::Shape*> shapes =
+          const std::vector<dart::dynamics::ShapePtr> shapes =
               tool->getVisualizationShapes();
           for(size_t s=0; s<shapes.size(); ++s)
             shapes[s]->setHidden(true);
@@ -582,7 +582,7 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(tool->getEnabled())
         {
-          const std::vector<dart::dynamics::Shape*> shapes =
+          const std::vector<dart::dynamics::ShapePtr> shapes =
               tool->getVisualizationShapes();
           for(size_t s=0; s<shapes.size(); ++s)
             shapes[s]->setHidden(false);

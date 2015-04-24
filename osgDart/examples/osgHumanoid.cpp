@@ -64,14 +64,15 @@ class TeleoperationWorld : public osgDart::WorldNode
 {
 public:
 
-  TeleoperationWorld(World* _world, Skeleton* _robot)
+  TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
     : osgDart::WorldNode(_world),
       mRobot(_robot)
   {
     effectors.push_back(mRobot->getBodyNode("l_hand"));
     initialTfs.push_back(effectors.back()->getWorldTransform());
     dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(new osgDart::InteractiveFrame(Frame::World(), "l_target",
+    targets.push_back(
+        std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "l_target",
                                   effectors.back()->getWorldTransform(), 0.3));
     mWorld->addFrame(targets.back());
 
@@ -79,7 +80,8 @@ public:
     effectors.push_back(mRobot->getBodyNode("r_hand"));
     initialTfs.push_back(effectors.back()->getWorldTransform());
     dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(new osgDart::InteractiveFrame(Frame::World(), "r_target",
+    targets.push_back(
+        std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "r_target",
                                   effectors.back()->getWorldTransform(), 0.3));
     mWorld->addFrame(targets.back());
 
@@ -168,15 +170,15 @@ protected:
     if(mViewer)
     {
       for(size_t i=0; i<effectors.size(); ++i)
-        mViewer->enableDragAndDrop(targets[i]);
+        mViewer->enableDragAndDrop(targets[i].get());
     }
   }
 
-  Skeleton* mRobot;
+  SkeletonPtr mRobot;
 
   std::vector< BodyNode* > effectors;
   std::vector< std::vector<size_t> > dofs;
-  std::vector< osgDart::InteractiveFrame* > targets;
+  std::vector< osgDart::InteractiveFramePtr > targets;
   std::vector< Eigen::Isometry3d > initialTfs;
 
   std::vector< Eigen::VectorXd > qs;
@@ -193,16 +195,17 @@ protected:
 
 int main()
 {
-  World* world = new World;
+  WorldPtr world(new World);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0,0,-0.95);
-  SimpleFrame ground(Frame::World(), "ground", tf);
-  ground.addVisualizationShape(new BoxShape(Eigen::Vector3d(10,10,0.01)));
-  world->addFrame(&ground);
+  SimpleFramePtr ground(new SimpleFrame(Frame::World(), "ground", tf));
+  ground->addVisualizationShape(
+        std::make_shared<BoxShape>(Eigen::Vector3d(10,10,0.01)));
+  world->addFrame(ground);
 
   DartLoader urdf;
-  Skeleton* atlas =
+  SkeletonPtr atlas =
       urdf.parseSkeleton(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf");
   world->addSkeleton(atlas);
 

@@ -73,13 +73,13 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   // Create meshes according to types of the shapes
   for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
   {
-    Shape* shape = _bodyNode->getCollisionShape(i);
+    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
     fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
     switch (shape->getShapeType())
     {
       case Shape::ELLIPSOID:
       {
-        EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape);
+        EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape.get());
         // Sphere
         if (ellipsoid->isSphere())
         {
@@ -99,14 +99,14 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::BOX:
       {
-        BoxShape* box = static_cast<BoxShape*>(shape);
+        BoxShape* box = static_cast<BoxShape*>(shape.get());
         mMeshes.push_back(createCube<fcl::OBBRSS>(
             box->getSize()[0], box->getSize()[1], box->getSize()[2], shapeT));
         break;
       }
       case dynamics::Shape::CYLINDER:
       {
-        CylinderShape* cylinder = static_cast<CylinderShape*>(shape);
+        CylinderShape* cylinder = static_cast<CylinderShape*>(shape.get());
         double radius = cylinder->getRadius();
         double height = cylinder->getHeight();
         mMeshes.push_back(createCylinder<fcl::OBBRSS>(
@@ -115,7 +115,7 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::MESH:
       {
-        MeshShape* shapeMesh = static_cast<MeshShape*>(shape);
+        MeshShape* shapeMesh = static_cast<MeshShape*>(shape.get());
         mMeshes.push_back(createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
                                                   shapeMesh->getScale()[1],
                                                   shapeMesh->getScale()[2],
@@ -125,7 +125,7 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case dynamics::Shape::SOFT_MESH:
       {
-        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
+        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape.get());
         mMeshes.push_back(createSoftMesh<fcl::OBBRSS>(
                             softMeshShape->getAssimpMesh(), shapeT));
         break;
@@ -305,18 +305,17 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
 void FCLMeshCollisionNode::updateShape()
 {
   // using-declaration
-  using dart::dynamics::Shape;
   using dart::dynamics::SoftMeshShape;
 
   for (size_t i = 0; i < mBodyNode->getNumCollisionShapes(); i++)
   {
-    Shape* shape = mBodyNode->getCollisionShape(i);
+    dynamics::ShapePtr shape = mBodyNode->getCollisionShape(i);
     fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
     switch (shape->getShapeType())
     {
       case dynamics::Shape::SOFT_MESH:
       {
-        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
+        SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape.get());
         const aiMesh* mesh = softMeshShape->getAssimpMesh();
         softMeshShape->update();
 

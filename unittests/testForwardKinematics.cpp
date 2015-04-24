@@ -51,8 +51,8 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
   // Create the world
   const double l1 = 1.5, l2 = 1.0;
-  Skeleton* robot = createTwoLinkRobot(Vector3d(0.3, 0.3, l1), DOF_YAW,
-                                       Vector3d(0.3, 0.3, l2), DOF_ROLL);
+  SkeletonPtr robot = createTwoLinkRobot(Vector3d(0.3, 0.3, l1), DOF_YAW,
+                                         Vector3d(0.3, 0.3, l2), DOF_ROLL);
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
@@ -68,8 +68,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setPositionSegment(twoLinkIndices, joints[i]);
-    robot->computeForwardKinematics(true, false, false);
+    robot->setPositions(Eigen::VectorXd(joints[i]));
     Vector3d actual
         = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
@@ -95,8 +94,8 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 
   // Create the world
   const double link1 = 1.5, link2 = 1.0;
-  Skeleton* robot = createTwoLinkRobot(Vector3d(0.3, 0.3, link1), DOF_ROLL,
-                                       Vector3d(0.3, 0.3, link2), DOF_ROLL);
+  SkeletonPtr robot = createTwoLinkRobot(Vector3d(0.3, 0.3, link1), DOF_ROLL,
+                                         Vector3d(0.3, 0.3, link2), DOF_ROLL);
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
@@ -111,8 +110,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
   // position
   for (size_t i = 0; i < numTests; i++)
   {
-    robot->setPositionSegment(twoLinkIndices, joints[i]);
-    robot->computeForwardKinematics(true, false, false);
+    robot->setPositions(joints[i]);
     Vector3d actual
         = robot->getBodyNode("ee")->getTransform().translation();
     bool equality = equals(actual, expectedPos[i], 1e-3);
@@ -129,10 +127,6 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 //==============================================================================
 int main(int argc, char* argv[])
 {
-  // Create the indices to set configuration for the 2D
-  twoLinkIndices.push_back(0);
-  twoLinkIndices.push_back(1);
-
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -97,6 +97,11 @@ const Eigen::Vector4d& Shape::getRGBA() const {
 }
 
 //==============================================================================
+void Shape::setAlpha(double _alpha) {
+  mColor[3] = _alpha;
+}
+
+//==============================================================================
 const Eigen::Vector3d& Shape::getBoundingBoxDim() const
 {
   return mBoundingBoxDim;

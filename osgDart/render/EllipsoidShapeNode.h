@@ -58,7 +58,9 @@ class EllipsoidShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  EllipsoidShapeNode(dart::dynamics::EllipsoidShape* shape, EntityNode* parent);
+  EllipsoidShapeNode(
+      std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
+      EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -67,7 +69,7 @@ protected:
 
   virtual ~EllipsoidShapeNode();
 
-  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  std::shared_ptr<dart::dynamics::EllipsoidShape> mEllipsoidShape;
   EllipsoidShapeGeode* mGeode;
 
 };

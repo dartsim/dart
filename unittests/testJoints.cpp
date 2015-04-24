@@ -68,29 +68,24 @@ using namespace dart::simulation;
 class JOINTS : public testing::Test
 {
 public:
-  void kinematicsTest(Joint* _joint);
+  template <typename JointType>
+  void kinematicsTest(const typename JointType::Properties& _properties =
+                                              typename JointType::Properties());
 };
 
 //==============================================================================
-void JOINTS::kinematicsTest(Joint* _joint)
+template <typename JointType>
+void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 {
-  assert(_joint);
-
   int numTests = 1;
 
-  _joint->setTransformFromChildBodyNode(
-        math::expMap(Eigen::Vector6d::Random()));
-  _joint->setTransformFromParentBodyNode(
-        math::expMap(Eigen::Vector6d::Random()));
-
-  BodyNode* bodyNode = new BodyNode();
-  bodyNode->setParentJoint(_joint);
-
   Skeleton skeleton;
-  skeleton.addBodyNode(bodyNode);
-  skeleton.init();
+  Joint* joint = skeleton.createJointAndBodyNodePair<JointType>(
+        nullptr, _properties).first;
+  joint->setTransformFromChildBodyNode(math::expMap(Eigen::Vector6d::Random()));
+  joint->setTransformFromParentBodyNode(math::expMap(Eigen::Vector6d::Random()));
 
-  int dof = _joint->getNumDofs();
+  int dof = joint->getNumDofs();
 
   //--------------------------------------------------------------------------
   //
@@ -112,12 +107,12 @@ void JOINTS::kinematicsTest(Joint* _joint)
     skeleton.setVelocities(dq);
     skeleton.computeForwardKinematics(true, true, false);
 
-    if (_joint->getNumDofs() == 0)
+    if (dof == 0)
       return;
 
-    Eigen::Isometry3d T = _joint->getLocalTransform();
-    Jacobian J = _joint->getLocalJacobian();
-    Jacobian dJ = _joint->getLocalJacobianTimeDeriv();
+    Eigen::Isometry3d T = joint->getLocalTransform();
+    Jacobian J = joint->getLocalJacobian();
+    Jacobian dJ = joint->getLocalJacobianTimeDeriv();
 
     //--------------------------------------------------------------------------
     // Test T
@@ -133,16 +128,16 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setPositions(q_a);
+      joint->setPositions(q_a);
       skeleton.computeForwardKinematics(true, false, false);
-      Eigen::Isometry3d T_a = _joint->getLocalTransform();
+      Eigen::Isometry3d T_a = joint->getLocalTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setPositions(q_b);
+      joint->setPositions(q_b);
       skeleton.computeForwardKinematics(true, false, false);
-      Eigen::Isometry3d T_b = _joint->getLocalTransform();
+      Eigen::Isometry3d T_b = joint->getLocalTransform();
 
       //
       Eigen::Isometry3d Tinv_a = T_a.inverse();
@@ -181,16 +176,14 @@ void JOINTS::kinematicsTest(Joint* _joint)
     {
       // a
       Eigen::VectorXd q_a = q;
-      _joint->setPositions(q_a);
-//      skeleton.computeForwardKinematics(true, false, false);
-      Jacobian J_a = _joint->getLocalJacobian();
+      joint->setPositions(q_a);
+      Jacobian J_a = joint->getLocalJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
-      _joint->setPositions(q_b);
-//      skeleton.computeForwardKinematics(true, false, false);
-      Jacobian J_b = _joint->getLocalJacobian();
+      joint->setPositions(q_b);
+      Jacobian J_b = joint->getLocalJacobian();
 
       //
       Jacobian dJ_dq = (J_b - J_a) / q_delta;
@@ -218,10 +211,10 @@ void JOINTS::kinematicsTest(Joint* _joint)
     skeleton.setPositions(q);
     skeleton.computeForwardKinematics(true, false, false);
 
-    if (_joint->getNumDofs() == 0)
+    if (joint->getNumDofs() == 0)
       return;
 
-    Eigen::Isometry3d T = _joint->getLocalTransform();
+    Eigen::Isometry3d T = joint->getLocalTransform();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }
@@ -229,87 +222,67 @@ void JOINTS::kinematicsTest(Joint* _joint)
 // 0-dof joint
 TEST_F(JOINTS, WELD_JOINT)
 {
-  WeldJoint* weldJoint = new WeldJoint;
-
-  kinematicsTest(weldJoint);
+  kinematicsTest<WeldJoint>();
 }
 
 // 1-dof joint
 TEST_F(JOINTS, REVOLUTE_JOINT)
 {
-  RevoluteJoint* revJoint = new RevoluteJoint;
-
-  kinematicsTest(revJoint);
+  kinematicsTest<RevoluteJoint>();
 }
 
 // 1-dof joint
 TEST_F(JOINTS, PRISMATIC_JOINT)
 {
-  PrismaticJoint* priJoint = new PrismaticJoint;
-
-  kinematicsTest(priJoint);
+  kinematicsTest<PrismaticJoint>();
 }
 
 // 1-dof joint
 TEST_F(JOINTS, SCREW_JOINT)
 {
-  ScrewJoint* screwJoint = new ScrewJoint;
-
-  kinematicsTest(screwJoint);
+  kinematicsTest<ScrewJoint>();
 }
 
 // 2-dof joint
 TEST_F(JOINTS, UNIVERSAL_JOINT)
 {
-  UniversalJoint* univJoint = new UniversalJoint;
-
-  kinematicsTest(univJoint);
+  kinematicsTest<UniversalJoint>();
 }
 
 // 3-dof joint
 TEST_F(JOINTS, BALL_JOINT)
 {
-  BallJoint* ballJoint = new BallJoint;
-
-  kinematicsTest(ballJoint);
+  kinematicsTest<BallJoint>();
 }
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
 {
-  EulerJoint* eulerJoint1 = new EulerJoint;
+  EulerJoint::Properties properties;
 
-  eulerJoint1->setAxisOrder(EulerJoint::AO_XYZ);
-  kinematicsTest(eulerJoint1);
+  properties.mAxisOrder = EulerJoint::AO_XYZ;
+  kinematicsTest<EulerJoint>(properties);
 
-  EulerJoint* eulerJoint2 = new EulerJoint;
-
-  eulerJoint2->setAxisOrder(EulerJoint::AO_ZYX);
-  kinematicsTest(eulerJoint2);
+  properties.mAxisOrder = EulerJoint::AO_ZYX;
+  kinematicsTest<EulerJoint>(properties);
 }
 
 // 3-dof joint
 TEST_F(JOINTS, TRANSLATIONAL_JOINT)
 {
-  TranslationalJoint* translationalJoint = new TranslationalJoint;
-
-  kinematicsTest(translationalJoint);
+  kinematicsTest<TranslationalJoint>();
 }
 
 // 3-dof joint
 TEST_F(JOINTS, PLANAR_JOINT)
 {
-  PlanarJoint* planarJoint = new PlanarJoint;
-
-  kinematicsTest(planarJoint);
+  kinematicsTest<PlanarJoint>();
 }
 
 // 6-dof joint
 TEST_F(JOINTS, FREE_JOINT)
 {
-  FreeJoint* freeJoint = new FreeJoint;
-
-  kinematicsTest(freeJoint);
+  kinematicsTest<FreeJoint>();
 }
 
 //==============================================================================
@@ -317,21 +290,21 @@ TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-3;
 
-  simulation::World* myWorld
+  simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_limit_test.skel");
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
 
-  dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
-  EXPECT_TRUE(pendulum != NULL);
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != nullptr);
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
 
-  EXPECT_TRUE(joint0 != NULL);
-  EXPECT_TRUE(joint1 != NULL);
+  EXPECT_TRUE(joint0 != nullptr);
+  EXPECT_TRUE(joint1 != nullptr);
 
   double limit0 = DART_PI / 6.0;
   double limit1 = DART_PI / 6.0;
@@ -388,7 +361,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 {
   double tol = 1e-9;
 
-  simulation::World* myWorld
+  simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != NULL);
@@ -396,7 +369,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
   myWorld->setTimeStep(_timeStep);
 
-  dynamics::Skeleton* pendulum = myWorld->getSkeleton("double_pendulum");
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != NULL);
   pendulum->disableSelfCollision();
 
@@ -549,48 +522,39 @@ Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
 //==============================================================================
 TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 {
-  // -- set up the root BodyNode
-  BodyNode* root = new BodyNode("root");
-  WeldJoint* rootjoint = new WeldJoint("base");
-  root->setParentJoint(rootjoint);
+  SkeletonPtr skel(new Skeleton);
+
+  std::pair<Joint*, BodyNode*> pair;
+
+  pair = skel->createJointAndBodyNodePair<WeldJoint>();
+  BodyNode* root = pair.second;
 
   // -- set up the FreeJoint
-  BodyNode* freejoint_bn = new BodyNode("freejoint_bn");
-  FreeJoint* freejoint = new FreeJoint("freejoint");
-
-  freejoint_bn->setParentJoint(freejoint);
-  root->addChildBodyNode(freejoint_bn);
+  std::pair<FreeJoint*, BodyNode*> freepair =
+      root->createChildJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* freejoint = freepair.first;
+  BodyNode* freejoint_bn = freepair.second;
 
   freejoint->setTransformFromParentBodyNode(random_transform());
   freejoint->setTransformFromChildBodyNode(random_transform());
 
   // -- set up the EulerJoint
-  BodyNode* eulerjoint_bn = new BodyNode("eulerjoint_bn");
-  EulerJoint* eulerjoint = new EulerJoint("eulerjoint");
-
-  eulerjoint_bn->setParentJoint(eulerjoint);
-  root->addChildBodyNode(eulerjoint_bn);
+  std::pair<EulerJoint*, BodyNode*> eulerpair =
+      root->createChildJointAndBodyNodePair<EulerJoint>();
+  EulerJoint* eulerjoint = eulerpair.first;
+  BodyNode* eulerjoint_bn = eulerpair.second;
 
   eulerjoint->setTransformFromParentBodyNode(random_transform());
   eulerjoint->setTransformFromChildBodyNode(random_transform());
 
   // -- set up the BallJoint
-  BodyNode* balljoint_bn = new BodyNode("balljoint_bn");
-  BallJoint* balljoint = new BallJoint("balljoint");
-
-  balljoint_bn->setParentJoint(balljoint);
-  root->addChildBodyNode(balljoint_bn);
+  std::pair<BallJoint*, BodyNode*> ballpair =
+      root->createChildJointAndBodyNodePair<BallJoint>();
+  BallJoint* balljoint = ballpair.first;
+  BodyNode* balljoint_bn = ballpair.second;
 
   balljoint->setTransformFromParentBodyNode(random_transform());
   balljoint->setTransformFromChildBodyNode(random_transform());
-
-  // -- set up Skeleton and compute forward kinematics
-  Skeleton* skel = new Skeleton;
-  skel->addBodyNode(root);
-  skel->addBodyNode(freejoint_bn);
-  skel->addBodyNode(eulerjoint_bn);
-  skel->addBodyNode(balljoint_bn);
-  skel->init();
 
   // Test a hundred times
   for(size_t n=0; n<100; ++n)

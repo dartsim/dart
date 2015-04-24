@@ -51,7 +51,8 @@ class NloptSolver : public Solver
 {
 public:
   /// \brief Constructor
-  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
+  NloptSolver(std::shared_ptr<Problem> _problem,
+              nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
   /// \brief Destructor
   virtual ~NloptSolver();
@@ -64,6 +65,9 @@ public:
 
   /// \copydoc Solver::solve
   virtual bool solve();
+
+  // Documentation inherited
+  virtual std::string getType() const override;
 
 private:
   /// \brief Wrapping function for nlopt callback function, nlopt_func

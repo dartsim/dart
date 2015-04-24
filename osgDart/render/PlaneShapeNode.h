@@ -57,7 +57,8 @@ class PlaneShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  PlaneShapeNode(dart::dynamics::PlaneShape* shape, EntityNode* parent);
+  PlaneShapeNode(std::shared_ptr<dart::dynamics::PlaneShape> shape,
+                 EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -66,7 +67,7 @@ protected:
 
   virtual ~PlaneShapeNode();
 
-  dart::dynamics::PlaneShape* mPlaneShape;
+  std::shared_ptr<dart::dynamics::PlaneShape> mPlaneShape;
   PlaneShapeGeode* mGeode;
 
 };

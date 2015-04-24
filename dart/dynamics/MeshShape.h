@@ -61,8 +61,12 @@ public:
 
   /// Update positions of the vertices or the elements. By default, this does
   /// nothing; you must extend the MeshShape class and implement your own
-  /// version of this function if you want
+  /// version of this function if you want the mesh data to get updated before
+  /// rendering
   virtual void update();
+
+  // Documentation inherited
+  virtual void setAlpha(double _alpha) override;
 
   /// \brief
   void setMesh(const aiScene* _mesh);

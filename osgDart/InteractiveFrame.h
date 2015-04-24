@@ -143,6 +143,8 @@ protected:
 
 };
 
+typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
+
 } // namespace osgDart
 
 #endif // OSGDART_INTERACTIVEFRAME_H

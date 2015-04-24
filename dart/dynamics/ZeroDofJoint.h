@@ -51,11 +51,21 @@ class Skeleton;
 class ZeroDofJoint : public Joint
 {
 public:
+
+  struct Properties : Joint::Properties
+  {
+    Properties(const Joint::Properties& _properties = Joint::Properties());
+  };
+
   /// Constructor
+//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   ZeroDofJoint(const std::string& _name);
 
   /// Destructor
   virtual ~ZeroDofJoint();
+
+  /// Get the Properties of this ZeroDofJoint
+  Properties getZeroDofJointProperties() const;
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
@@ -66,19 +76,30 @@ public:
   virtual size_t getDof() const;
 
   // Documentation inherited
-  virtual DegreeOfFreedom* getDof(size_t);
+  virtual DegreeOfFreedom* getDof(size_t) override;
 
   // Documentation inherited
-  virtual const DegreeOfFreedom* getDof(size_t) const;
+  virtual const DegreeOfFreedom* getDof(size_t) const override;
 
   // Documentation inherited
-  virtual size_t getNumDofs() const;
+  const std::string& setDofName(size_t, const std::string&, bool ) override;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t);
+  void preserveDofName(size_t, bool) override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
+  bool isDofNamePreserved(size_t) const override;
+
+  const std::string& getDofName(size_t) const override;
+
+  // Documentation inherited
+  virtual size_t getNumDofs() const override;
+
+  // Documentation inherited
+  virtual void setIndexInSkeleton(size_t _index, size_t) override;
+
+  // Documentation inherited
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -299,6 +320,12 @@ public:
 
 protected:
 
+  /// Constructor called by inheriting classes
+  ZeroDofJoint(const Properties& _properties);
+
+  // Documentation inherited
+  void registerDofs() override;
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 
@@ -444,6 +471,9 @@ protected:
   /// \}
 
 private:
+
+  /// Used by getDofName()
+  const std::string emptyString;
 };
 
 }  // namespace dynamics

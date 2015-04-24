@@ -72,10 +72,11 @@ ConstraintSolver::ConstraintSolver(double _timeStep)
 ConstraintSolver::~ConstraintSolver()
 {
   delete mCollisionDetector;
+  delete mLCPSolver;
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeleton(Skeleton* _skeleton)
+void ConstraintSolver::addSkeleton(SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -94,14 +95,14 @@ void ConstraintSolver::addSkeleton(Skeleton* _skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeletons(const std::vector<Skeleton*>& _skeletons)
+void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& _skeletons)
 {
   size_t numAddedSkeletons = 0;
 
-  for (std::vector<Skeleton*>::const_iterator it = _skeletons.begin();
+  for (std::vector<SkeletonPtr>::const_iterator it = _skeletons.begin();
        it != _skeletons.end(); ++it)
   {
-    assert(*it != NULL
+    assert(*it != nullptr
         && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
     if (containSkeleton(*it) == false)
@@ -122,7 +123,7 @@ void ConstraintSolver::addSkeletons(const std::vector<Skeleton*>& _skeletons)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeleton(Skeleton* _skeleton)
+void ConstraintSolver::removeSkeleton(SkeletonPtr _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -142,15 +143,14 @@ void ConstraintSolver::removeSkeleton(Skeleton* _skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeletons(
-    const std::vector<Skeleton*>& _skeletons)
+void ConstraintSolver::removeSkeletons(const std::vector<SkeletonPtr>& _skeletons)
 {
   size_t numRemovedSkeletons = 0;
 
-  for (std::vector<Skeleton*>::const_iterator it = _skeletons.begin();
+  for (std::vector<SkeletonPtr>::const_iterator it = _skeletons.begin();
        it != _skeletons.end(); ++it)
   {
-    assert(*it != NULL
+    assert(*it != nullptr
         && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
     if (containSkeleton(*it))
@@ -272,11 +272,11 @@ void ConstraintSolver::solve()
 }
 
 //==============================================================================
-bool ConstraintSolver::containSkeleton(const Skeleton* _skeleton) const
+bool ConstraintSolver::containSkeleton(const SkeletonPtr _skeleton) const
 {
   assert(_skeleton != NULL && "Not allowed to insert null pointer skeleton.");
 
-  for (std::vector<Skeleton*>::const_iterator it = mSkeletons.begin();
+  for (std::vector<SkeletonPtr>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     if ((*it) == _skeleton)
@@ -287,7 +287,7 @@ bool ConstraintSolver::containSkeleton(const Skeleton* _skeleton) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddSkeleton(Skeleton* _skeleton)
+bool ConstraintSolver::checkAndAddSkeleton(SkeletonPtr _skeleton)
 {
   if (!containSkeleton(_skeleton))
   {
@@ -523,7 +523,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     (*it)->resetUnion();
@@ -543,8 +543,8 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
-  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1)
-      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2))
+  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.get())
+      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.get()))
     return true;
 
   return false;

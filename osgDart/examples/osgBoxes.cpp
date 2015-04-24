@@ -49,7 +49,7 @@ class CustomWorldNode : public osgDart::WorldNode
 {
 public:
 
-  CustomWorldNode(dart::simulation::World* _world)
+  CustomWorldNode(dart::simulation::WorldPtr _world)
     : WorldNode(_world), F(nullptr), T(nullptr),
       C(nullptr), S(nullptr), SC(nullptr), t(0.0)
   { }
@@ -101,11 +101,11 @@ public:
     }
   }
 
-  SimpleFrame* F; // Change the transform of this Frame over time
-  Shape* T;       // Change the transform of this Shape over time
-  Shape* C;       // Change the color of this Shape over time
-  BoxShape* S;    // Change the scaling of this Shape over time
-  BoxShape* SC;   // Change the scaling and color of this Shape over time
+  SimpleFramePtr F;             // Change the transform of this Frame over time
+  ShapePtr T;                   // Change the transform of this Shape over time
+  ShapePtr C;                   // Change the color of this Shape over time
+  std::shared_ptr<BoxShape> S;  // Change the scaling of this Shape over time
+  std::shared_ptr<BoxShape> SC; // Change the scaling and color of this Shape over time
 
   double t;
 
@@ -113,42 +113,46 @@ public:
 
 int main()
 {
-  dart::simulation::World* myWorld = new dart::simulation::World;
+  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 
-  SimpleFrame box1(Frame::World(), "box1");
-  BoxShape* shape1 = new BoxShape(Eigen::Vector3d(0.1,0.1,0.1));
-  box1.addVisualizationShape(shape1);
+  SimpleFramePtr box1 = std::make_shared<SimpleFrame>(Frame::World(), "box1");
+  std::shared_ptr<BoxShape> shape1(
+        new BoxShape(Eigen::Vector3d(0.1, 0.1, 0.1)));
+  box1->addVisualizationShape(shape1);
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translate(Eigen::Vector3d(0,-0.5,0.5));
-  box1.setRelativeTransform(tf);
+  box1->setRelativeTransform(tf);
 
-  Entity box2(Frame::World(), "box2", false);
-  BoxShape* shape2 = new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2));
+  Entity box2(box1.get(), "box2", false);
+  std::shared_ptr<BoxShape> shape2(
+        new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   tf.translate(Eigen::Vector3d(0.5,0,0));
   shape2->setLocalTransform(tf);
   shape2->setColor(Eigen::Vector3d(1,0,0));
   box2.addVisualizationShape(shape2);
 
-  SimpleFrame F(Frame::World(), "F");
-  F.addVisualizationShape(new BoxShape(Eigen::Vector3d(0.1,0.3,0.1)));
+  SimpleFramePtr F = std::make_shared<SimpleFrame>(Frame::World(), "F");
+  F->addVisualizationShape(
+        std::make_shared<BoxShape>(Eigen::Vector3d(0.1,0.3,0.1)));
 
-  Entity box3(&F, "box3", false);
-  BoxShape* shape3 = new BoxShape(Eigen::Vector3d(0.05,0.05,0.05));
+  Entity box3(F.get(), "box3", false);
+  std::shared_ptr<BoxShape> shape3(
+        new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.05)));
   shape3->setLocalTransform(tf);
   shape3->setColor(Eigen::Vector3d(0,1,0));
   box3.addVisualizationShape(shape3);
 
-  Entity box4(&F, "box4", false);
-  BoxShape* shape4 = new BoxShape(Eigen::Vector3d(0.15,0.15,0.15));
+  Entity box4(F.get(), "box4", false);
+  std::shared_ptr<BoxShape> shape4(
+        new BoxShape(Eigen::Vector3d(0.15,0.15,0.15)));
   shape4->setLocalTransform(tf.inverse());
   box4.addVisualizationShape(shape4);
 
-  myWorld->addEntity(&box1);
-  myWorld->addEntity(&box2);
-  myWorld->addFrame(&F);
+  myWorld->addFrame(box1);
+  myWorld->addFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
-  node->F = &F;
+  node->F = F;
   node->T = shape2;
   shape2->setDataVariance(Shape::DYNAMIC_TRANSFORM);
   node->C = shape3;

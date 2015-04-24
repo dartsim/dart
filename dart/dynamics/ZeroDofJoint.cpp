@@ -45,14 +45,29 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
+  : Joint::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 ZeroDofJoint::ZeroDofJoint(const std::string& _name)
   : Joint(_name)
 {
+  // Do nothing
 }
 
 //==============================================================================
 ZeroDofJoint::~ZeroDofJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
+{
+  return getJointProperties();
 }
 
 //==============================================================================
@@ -64,13 +79,37 @@ size_t ZeroDofJoint::getDof() const
 //==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 {
-  return NULL;
+  return nullptr;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::setDofName(size_t, const std::string &, bool)
+{
+  return emptyString;
+}
+
+//==============================================================================
+void ZeroDofJoint::preserveDofName(size_t, bool)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool ZeroDofJoint::isDofNamePreserved(size_t) const
+{
+  return false;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::getDofName(size_t) const
+{
+  return emptyString;
 }
 
 //==============================================================================
@@ -450,6 +489,19 @@ double ZeroDofJoint::getCoulombFriction(size_t /*_index*/) const
 double ZeroDofJoint::getPotentialEnergy() const
 {
   return 0.0;
+}
+
+//==============================================================================
+ZeroDofJoint::ZeroDofJoint(const Properties& _properties)
+  : Joint(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::registerDofs()
+{
+  // Do nothing
 }
 
 //==============================================================================

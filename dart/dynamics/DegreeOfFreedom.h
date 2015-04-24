@@ -70,7 +70,21 @@ public:
   /// name changes.
   const std::string& setName(const std::string& _name, bool _preserveName=true);
 
-  /// Get the name of this DegreeOfFreedom
+  /// \brief Get the name of this DegreeOfFreedom
+  ///
+  /// DegreeOfFreedom's name will be automatically given by the joint it belongs
+  /// to. Below is the naming policy:
+  ///   - SingleDofJoint \n
+  ///       Same name as the joint it belongs to.
+  ///   - MultiDofJoint \n
+  ///       "[Joint_name]+[affix]" is used. The affix is determined according
+  ///       to the role they play in the joint. For example, suppose there's a
+  ///       TranslationalJoint named "trans_joint". Then the each dof to be
+  ///       named "trans_joint_x", "trans_joint_y", and "trans_joint_z".
+  ///   - ZeroDofJoint \n
+  ///       ZeroDofJoint doesn't have dof.
+  ///
+  /// The default name can be renamed by setName() as well.
   const std::string& getName() const;
 
   /// Prevent Joint::updateDegreeOfFreedomNames() from changing the name of this
@@ -233,29 +247,7 @@ public:
 protected:
   /// The constructor is protected so that only Joints can create
   /// DegreeOfFreedom classes
-  DegreeOfFreedom(Joint* _joint,
-                  const std::string& _name,
-                  size_t _indexInJoint);
-
-  /// \brief Name of this DegreeOfFreedom
-  ///
-  /// DegreeOfFreedom's name will be automatically given by the joint it belongs
-  /// to. Below is the naming policy:
-  ///   - SingleDofJoint \n
-  ///       Same name as the joint it belongs to.
-  ///   - MultiDofJoint \n
-  ///       "[Joint_name]+[affix]" is used. The affix is determined according
-  ///       to the role they play in the joint. For example, suppose there's a
-  ///       TranslationalJoint named "trans_joint". Then the each dof to be
-  ///       named "trans_joint_x", "trans_joint_y", and "trans_joint_z".
-  ///   - ZeroDofJoint \n
-  ///       ZeroDofJoint doesn't have dof.
-  ///
-  /// The default name can be renamed by setName() as well.
-  std::string mName;
-
-  /// True if DegreeOfFreedom::lockName(bool) is active
-  bool mNamePreserved;
+  DegreeOfFreedom(Joint* _joint, size_t _indexInJoint);
 
   /// \brief Index of this DegreeOfFreedom within its Joint
   ///

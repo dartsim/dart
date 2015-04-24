@@ -47,12 +47,7 @@
 #include <Eigen/Dense>
 
 #include "dart/gui/Win3D.h"
-
-namespace dart {
-namespace simulation {
-class World;
-}  // namespace simulation
-}  // namespace dart
+#include "dart/simulation/World.h"
 
 namespace dart {
 namespace gui {
@@ -87,7 +82,7 @@ public:
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  void setWorld(simulation::World* _world);
+  void setWorld(dart::simulation::WorldPtr _world);
 
   /// \brief Save world in 'tempWorld.txt'
   void saveWorld();
@@ -100,7 +95,7 @@ public:
 
 protected:
   /// \brief
-  simulation::World* mWorld;
+  simulation::WorldPtr mWorld;
 
   /// \brief
   int mPlayFrame;

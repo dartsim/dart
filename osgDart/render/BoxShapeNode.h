@@ -57,7 +57,8 @@ class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent);
+  BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
+               EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -66,7 +67,7 @@ protected:
 
   virtual ~BoxShapeNode();
 
-  dart::dynamics::BoxShape* mBoxShape;
+  std::shared_ptr<dart::dynamics::BoxShape> mBoxShape;
   BoxShapeGeode* mGeode;
 
 };

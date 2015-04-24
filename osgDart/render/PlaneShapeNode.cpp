@@ -49,7 +49,9 @@ class PlaneShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  PlaneShapeGeode(dart::dynamics::PlaneShape* shape, EntityNode* parent);
+  PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
+                  EntityNode* parentEntity,
+                  PlaneShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -82,8 +84,9 @@ protected:
 };
 
 //==============================================================================
-PlaneShapeNode::PlaneShapeNode(dart::dynamics::PlaneShape* shape,
-                               EntityNode* parent)
+PlaneShapeNode::PlaneShapeNode(
+    std::shared_ptr<dart::dynamics::PlaneShape> shape,
+    EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mPlaneShape(shape),
     mGeode(nullptr)
@@ -114,7 +117,7 @@ void PlaneShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new PlaneShapeGeode(mPlaneShape, mParentEntity);
+    mGeode = new PlaneShapeGeode(mPlaneShape.get(), mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -130,8 +133,9 @@ PlaneShapeNode::~PlaneShapeNode()
 
 //==============================================================================
 PlaneShapeGeode::PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
-                                 EntityNode* parent)
-  : ShapeNode(shape, parent, this),
+                                 EntityNode* parentEntity,
+                                 PlaneShapeNode* parentNode)
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mPlaneShape(shape),
     mDrawable(nullptr)
 {

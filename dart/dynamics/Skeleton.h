@@ -46,6 +46,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
+#include "dart/common/Subject.h"
 #include "dart/dynamics/Frame.h"
 
 namespace dart {
@@ -63,6 +64,7 @@ class PointMass;
 class Joint;
 class Marker;
 class DegreeOfFreedom;
+class EndEffector;
 
 /// struct GenCoordInfo
 struct GenCoordInfo
@@ -72,9 +74,46 @@ struct GenCoordInfo
 } DEPRECATED(4.3);
 
 /// class Skeleton
-class Skeleton
+class Skeleton : public common::Subject
 {
 public:
+
+  using NameChangedSignal
+      = common::Signal<void(const Skeleton* _skeleton,
+                            const std::string& _oldName,
+                            const std::string& _newName)>;
+
+  struct Properties
+  {
+    /// Name
+    std::string mName;
+
+    /// If the skeleton is not mobile, its dynamic effect is equivalent
+    /// to having infinite mass. If the configuration of an immobile skeleton are
+    /// manually changed, the collision results might not be correct.
+    bool mIsMobile;
+
+    /// Gravity vector.
+    Eigen::Vector3d mGravity;
+
+    /// Time step for implicit joint damping force.
+    double mTimeStep;
+
+    /// True if self collision check is enabled
+    bool mEnabledSelfCollisionCheck;
+
+    /// True if self collision check is enabled including adjacent bodies
+    bool mEnabledAdjacentBodyCheck;
+
+    Properties(
+        const std::string& _name = "Skeleton",
+        bool _isMobile = true,
+        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
+        double _timeStep = 0.001,
+        bool _enabledSelfCollisionCheck = false,
+        bool _enableAdjacentBodyCheck = false);
+  };
+
   //----------------------------------------------------------------------------
   // Constructor and Destructor
   //----------------------------------------------------------------------------
@@ -85,12 +124,24 @@ public:
   /// Destructor
   virtual ~Skeleton();
 
+  /// Create an identical clone of this Skeleton.
+  ///
+  /// Note: the state of the Skeleton will NOT be cloned, only the structure and
+  /// properties will be [TODO: copy the state as well]
+  std::shared_ptr<Skeleton> clone() const;
+
   //----------------------------------------------------------------------------
   // Properties
   //----------------------------------------------------------------------------
 
+  /// Set the Properties of this Skeleton
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Skeleton
+  const Properties& getSkeletonProperties() const;
+
   /// Set name.
-  void setName(const std::string& _name);
+  const std::string& setName(const std::string& _name);
 
   /// Get name.
   const std::string& getName() const;
@@ -130,16 +181,55 @@ public:
   /// Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
 
-  /// Get total mass of the skeleton. The total mass is calculated at
-  /// init().
-  double getMass() const;
+  //----------------------------------------------------------------------------
+  // Structural Properties
+  //----------------------------------------------------------------------------
 
-  //----------------------------------------------------------------------------
-  // Structueral Properties
-  //----------------------------------------------------------------------------
+  /// Create a Joint and child BodyNode pair of the given types. When creating
+  /// a root (parentless) BodyNode, pass in nullptr for the _parent argument.
+  template <class JointType, class NodeType = BodyNode>
+  std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
+    BodyNode* _parent = nullptr,
+    const typename JointType::Properties& _jointProperties =
+                                              typename JointType::Properties(),
+    const typename NodeType::Properties& _bodyProperties =
+                                              typename NodeType::Properties())
+  {
+    JointType* joint = new JointType(_jointProperties);
+    NodeType* node = new NodeType(_parent, joint, _bodyProperties);
+    registerBodyNode(node);
+
+    return std::pair<JointType*, NodeType*>(joint, node);
+  }
+
+  /// Create an EndEffector of an arbitrary type (but it must inherit the
+  /// default EndEffector class)
+  template <class EndEffectorType>
+  EndEffectorType* createEndEffector(
+      BodyNode* _parent,
+      const typename EndEffectorType::Properties& _properties =
+                                        typename EndEffectorType::Properties())
+  {
+    if(nullptr == _parent)
+      return nullptr;
+
+    EndEffectorType* ee = new EndEffectorType(_parent, _properties);
+    if(!registerEndEffector(_parent, ee))
+    {
+      delete ee;
+      return nullptr;
+    }
+
+    return ee;
+  }
 
   /// Add a body node
+  DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
+
+  /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
+  /// are added
+  double getMass() const;
 
   /// Get number of body nodes
   size_t getNumBodyNodes() const;
@@ -192,6 +282,9 @@ public:
   /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name);
 
+  /// Get const joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
+
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   DegreeOfFreedom* getDof(size_t _idx);
 
@@ -204,8 +297,20 @@ public:
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
 
-  /// Get const joint whose name is _name
-  const Joint* getJoint(const std::string& _name) const;
+  /// Get the number of EndEffectors on this Skeleton
+  size_t getNumEndEffectors() const;
+
+  /// Get EndEffector whose index is _idx
+  EndEffector* getEndEffector(size_t _idx);
+
+  /// Get EndEffector whose index is _idx
+  const EndEffector* getEndEffector(size_t _idx) const;
+
+  /// Get EndEffector whose name is _name
+  EndEffector* getEndEffector(const std::string& _name);
+
+  /// Get EndEffector whose name is _name
+  const EndEffector* getEndEffector(const std::string &_name) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -217,6 +322,8 @@ public:
   // Initialization
   //----------------------------------------------------------------------------
   /// Initialize this skeleton for kinematics and dynamics
+  // TODO(MXG): Deprecate this once the public constructors are removed from the
+  // API
   void init(double _timeStep = 0.001,
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
@@ -517,6 +624,133 @@ public:
 //  void computeImpulseInverseDynamics() {}
 
   //----------------------------------------------------------------------------
+  /// \{ \name Jacobians
+  //----------------------------------------------------------------------------
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
+  /// is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobian(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. You can
+  /// specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
+  /// in the Frame of the BodyNode.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
+  /// is expressed in the World Frame.
+  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
+  /// in the World Frame.
+  math::Jacobian getWorldJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the linear Jacobian targeting the origin of a BodyNode. You can
+  /// specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian targeting an offset in a BodyNode. The _offset is
+  /// expected in coordinates of the BodyNode Frame. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the angular Jacobian of a BodyNode. You can specify a coordinate Frame
+  /// to express the Jabocian in.
+  math::AngularJacobian getAngularJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. The Jacobian is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// The Jacobian is expressed in the Frame of the BodyNode.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin of a
+  /// BodyNode. The Jacobian is expressed in the World Frame.
+  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const;
+
+  /// Get the spatial Jacobian time derivative targeting the origin a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  /// Get the spatial Jacobian time derivative targeting an offset in a
+  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian (classical) time derivative targeting the origin
+  /// of a BodyNode. The _offset is expected in coordinates of the BodyNode
+  /// Frame. You can specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the linear Jacobian (classical) time derivative targeting an offset in
+  /// a BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
+  /// You can specify a coordinate Frame to express the Jabocian in.
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// Get the angular Jacobian time derivative of a BodyNode. You can specify a
+  /// coordinate Frame to express the Jabocian in.
+  math::AngularJacobian getAngularJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   // Equations of Motion
   //----------------------------------------------------------------------------
 
@@ -718,18 +952,34 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
+  friend class SingleDofJoint;
+  template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
+  friend class EndEffector;
 
 protected:
-  /// Register a joint with the Skeleton. Internal use only.
+  /// Register a BodyNode with the Skeleton. Internal use only.
+  void registerBodyNode(BodyNode* _newBodyNode);
+
+  /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
-  /// Remove a joint from the Skeleton. Internal use only.
+  /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
+
+  /// Register an EndEffector with the Skeleton. Internal use only.
+  bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
   void notifyArticulatedInertiaUpdate();
+
+  /// Update the computation for total mass
+  void updateTotalMass();
+
+  /// Update the dimensions for various data structures, such as mass matrix
+  /// and force vector
+  void updateDataDimensions();
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
@@ -783,13 +1033,13 @@ protected:
 //  virtual void updateDampingForceVector();
 
   /// Add a BodyNode to the BodyNode NameManager
-  const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
+  void addEntryToBodyNodeNameMgr(BodyNode* _newNode);
 
   /// Add a Joint to to the Joint NameManager
-  const std::string& addEntryToJointNameMgr(Joint* _newJoint);
+  void addEntryToJointNameMgr(Joint* _newJoint);
 
-  /// Add a DegreeOfFreedom to the Dof NameManager
-  const std::string& addEntryToDofNameMgr(DegreeOfFreedom* _newDof);
+  /// Add an EndEffector to the EndEffector NameManager
+  void addEntryToEndEffectorNameMgr(EndEffector* _ee);
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
@@ -804,8 +1054,9 @@ protected:
   const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
 
 protected:
-  /// Name
-  std::string mName;
+
+  /// Properties of this Skeleton
+  Properties mSkeletonP;
 
   /// Number of degrees of freedom (aka generalized coordinates)
   size_t mNumDofs;
@@ -819,43 +1070,32 @@ protected:
   /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
   std::vector<DegreeOfFreedom*> mDofs;
 
-  /// True if self collision check is enabled
-  bool mEnabledSelfCollisionCheck;
-
-  /// True if self collision check is enabled including adjacent bodies
-  bool mEnabledAdjacentBodyCheck;
-
   /// List of body nodes in the skeleton.
   std::vector<BodyNode*> mBodyNodes;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
+  /// List of EndEffectors in the Skeleton
+  std::vector<EndEffector*> mEndEffectors;
+
   /// NameManager for tracking BodyNodes
-  dart::common::NameManager<BodyNode> mNameMgrForBodyNodes;
+  dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
 
   /// NameManager for tracking Joints
-  dart::common::NameManager<Joint> mNameMgrForJoints;
+  dart::common::NameManager<Joint*> mNameMgrForJoints;
 
   /// NameManager for tracking DegreesOfFreedom
-  dart::common::NameManager<DegreeOfFreedom> mNameMgrForDofs;
+  dart::common::NameManager<DegreeOfFreedom*> mNameMgrForDofs;
 
   /// NameManager for tracking SoftBodyNodes
-  dart::common::NameManager<SoftBodyNode> mNameMgrForSoftBodyNodes;
+  dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
 
   /// NameManager for tracking Markers
-  dart::common::NameManager<Marker> mNameMgrForMarkers;
+  dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
-  /// If the skeleton is not mobile, its dynamic effect is equivalent
-  /// to having infinite mass. If the configuration of an immobile skeleton are
-  /// manually changed, the collision results might not be correct.
-  bool mIsMobile;
-
-  /// Time step for implicit joint damping force.
-  double mTimeStep;
-
-  /// Gravity vector.
-  Eigen::Vector3d mGravity;
+  /// NameManager for tracking EndEffectors
+  dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
 
   /// Total mass.
   double mTotalMass;
@@ -925,11 +1165,15 @@ protected:
   /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
 
-  //----------------------------------------------------------------------------
-  // Union finding
-  //----------------------------------------------------------------------------
-public:
+  //--------------------------------------------------------------------------
+  // Signals
+  //--------------------------------------------------------------------------
+  NameChangedSignal mNameChangedSignal;
 
+public:
+  //--------------------------------------------------------------------------
+  // Union finding
+  //--------------------------------------------------------------------------
   ///
   void resetUnion()
   {
@@ -946,10 +1190,17 @@ public:
   ///
   size_t mUnionIndex;
 
+  //--------------------------------------------------------------------------
+  // Slot registers
+  //--------------------------------------------------------------------------
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef std::shared_ptr<Skeleton> SkeletonPtr;
 
 }  // namespace dynamics
 }  // namespace dart

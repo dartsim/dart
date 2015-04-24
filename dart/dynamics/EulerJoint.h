@@ -48,6 +48,9 @@ namespace dynamics {
 class EulerJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
   /// Axis order
   enum AxisOrder
   {
@@ -55,11 +58,49 @@ public:
     AO_XYZ = 1
   };
 
+  struct UniqueProperties
+  {
+    /// Euler angle order
+    AxisOrder mAxisOrder;
+
+    /// Constructor
+    UniqueProperties(AxisOrder _axisOrder = AO_XYZ);
+  };
+
+  struct Properties : MultiDofJoint<3>::Properties, EulerJoint::UniqueProperties
+  {
+    /// Composed constructor
+    Properties(
+        const MultiDofJoint<3>::Properties& _multiDofProperties =
+                                                MultiDofJoint<3>::Properties(),
+        const EulerJoint::UniqueProperties& _eulerJointProperties =
+                                                EulerJoint::UniqueProperties());
+  };
+
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit EulerJoint(const std::string& _name = "EulerJoint");
 
   /// Destructor
   virtual ~EulerJoint();
+
+  /// Set the Properties of this EulerJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this EulerJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this EulerJoint
+  Properties getEulerJointProperties() const;
+
+  /// Copy the Properties of another EulerJoint
+  void copy(const EulerJoint& _otherJoint);
+
+  /// Copy the Properties of another EulerJoint
+  void copy(const EulerJoint* _otherJoint);
+
+  /// Same as copy(const EulerJoint&)
+  EulerJoint& operator=(const EulerJoint& _otherJoint);
 
   /// Set the axis order
   /// \param[in] _order Axis order
@@ -99,7 +140,7 @@ public:
   template <typename RotationType>
   Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
   {
-    return convertToPositions(_rotation, mAxisOrder);
+    return convertToPositions(_rotation, mEulerP.mAxisOrder);
   }
 
   /// Convert a set of Euler angle positions into a transform
@@ -118,6 +159,13 @@ public:
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  EulerJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.
   virtual void updateDegreeOfFreedomNames();
@@ -132,8 +180,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Euler angle order
-  AxisOrder mAxisOrder;
+
+  /// EulerJoint Properties
+  UniqueProperties mEulerP;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -38,6 +38,8 @@
 #ifndef DART_DYNAMICS_SHAPE_H_
 #define DART_DYNAMICS_SHAPE_H_
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
@@ -107,6 +109,9 @@ public:
 
   /// \brief Get RGBA color components
   const Eigen::Vector4d& getRGBA() const;
+
+  /// \brief Set the transparency of this Shape
+  virtual void setAlpha(double _alpha);
 
   /// \brief Get dimensions of bounding box.
   ///        The dimension will be automatically determined by the sub-classes
@@ -212,6 +217,9 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef std::shared_ptr<Shape> ShapePtr;
+typedef std::shared_ptr<const Shape> ConstShapePtr;
 
 }  // namespace dynamics
 }  // namespace dart

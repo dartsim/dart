@@ -62,7 +62,7 @@ public:
 };
 
 //==============================================================================
-WorldNode::WorldNode(dart::simulation::World* _world)
+WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> _world)
   : mWorld(_world),
     mSimulating(false),
     mNumStepsPerCycle(1),
@@ -72,13 +72,13 @@ WorldNode::WorldNode(dart::simulation::World* _world)
 }
 
 //==============================================================================
-void WorldNode::setWorld(dart::simulation::World* _newWorld)
+void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> _newWorld)
 {
   mWorld = _newWorld;
 }
 
 //==============================================================================
-dart::simulation::World* WorldNode::getWorld() const
+std::shared_ptr<dart::simulation::World> WorldNode::getWorld() const
 {
   return mWorld;
 }
@@ -102,7 +102,6 @@ void WorldNode::refresh()
 
   refreshSkeletons();
   refreshCustomFrames();
-  refreshCustomEntities();
 
   clearUnusedNodes();
 
@@ -227,17 +226,7 @@ void WorldNode::refreshCustomFrames()
     return;
 
   for(size_t i=0, end=mWorld->getNumFrames(); i<end; ++i)
-    refreshBaseFrameNode(mWorld->getFrame(i));
-}
-
-//==============================================================================
-void WorldNode::refreshCustomEntities()
-{
-  if(!mWorld)
-    return;
-
-  for(size_t i=0, end=mWorld->getNumEntities(); i<end; ++i)
-    refreshBaseEntityNode(mWorld->getEntity(i));
+    refreshBaseFrameNode(mWorld->getFrame(i).get());
 }
 
 //==============================================================================

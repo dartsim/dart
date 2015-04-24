@@ -45,14 +45,29 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+WeldJoint::Properties::Properties(const Joint::Properties& _properties)
+  : ZeroDofJoint::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 WeldJoint::WeldJoint(const std::string& _name)
   : ZeroDofJoint(_name)
 {
+  // Do nothing
 }
 
 //==============================================================================
 WeldJoint::~WeldJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+WeldJoint::Properties WeldJoint::getWeldJointProperties() const
+{
+  return getZeroDofJointProperties();
 }
 
 //==============================================================================
@@ -60,7 +75,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -68,7 +83,20 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
+}
+
+//==============================================================================
+WeldJoint::WeldJoint(const Properties& _properties)
+  : ZeroDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
+Joint* WeldJoint::clone() const
+{
+  return new WeldJoint(getWeldJointProperties());
 }
 
 //==============================================================================

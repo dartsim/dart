@@ -43,6 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -80,13 +81,43 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
   using VizShapeAddedSignal
-      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+      = common::Signal<void(const Entity*, ConstShapePtr _newVisShape)>;
+
+  using VizShapeRemovedSignal = VizShapeAddedSignal;
+
+  struct Properties
+  {
+    /// Name of the Entity
+    std::string mName;
+
+    /// Visualization shapes for the Entity
+    std::vector<ShapePtr> mVizShapes;
+
+    /// Constructor
+    Properties(const std::string& _name = "",
+               const std::vector<ShapePtr>& _vizShapes=std::vector<ShapePtr>());
+  };
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
+
+  /// Set the Properties of this Entity
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Entity
+  const Properties& getEntityProperties() const;
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity& _otherEntity);
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity* _otherEntity);
+
+  /// Same as copy(const Entity&)
+  Entity& operator=(const Entity& _otherEntity);
 
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
@@ -96,23 +127,26 @@ public:
   /// Return the name of this Entity
   virtual const std::string& getName() const;
 
-  /// Add a visualization shape for this Entity
-  virtual void addVisualizationShape(Shape* _p);
+  /// Add a visualization Shape for this Entity
+  virtual void addVisualizationShape(ShapePtr _shape);
+
+  /// Remove a visualization Shape from this Entity
+  virtual void removeVisualizationShape(ShapePtr _shape);
+
+  /// Remove all visualization Shapes from this Entity
+  virtual void removeAllVisualizationShapes();
+
+  /// Return the number of visualization shapes
+  size_t getNumVisualizationShapes() const;
+
+  /// Return _index-th visualization shape
+  ShapePtr getVisualizationShape(size_t _index);
+
+  /// Return (const) _index-th visualization shape
+  ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Get the visualization shapes of this Entity
-  const std::vector<Shape*>& getVisualizationShapes();
-
-  /// Get a vector of const visualization Shapes for this Entity. Note that this
-  /// is slightly less efficient than the non-const version.
-  std::vector<const Shape*> getVisualizationShapes() const;
-
-  /// Remove a visualization shape from this Entity without deleting it. Returns
-  /// true if successful; false if the shape was not in this Entity.
-  virtual bool withdrawVisualizationShape(Shape* _p);
-
-  /// Remove a visualization shape from this Entity and delete it. Returns true
-  /// if successful; false if the shape was not in this Entity.
-  virtual bool deleteVisualizationShape(Shape* _p);
+  const std::vector<ShapePtr>& getVisualizationShapes() const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -164,14 +198,12 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
+
+  /// Properties of this Entity
+  Properties mEntityP;
+
   /// Parent frame of this Entity
   Frame* mParentFrame;
-
-  /// Name of this Entity
-  std::string mName;
-
-  /// Vector of visualization shapes
-  std::vector<Shape*> mVizShapes;
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;
@@ -190,6 +222,9 @@ protected:
 
   /// Visualization added signal
   VizShapeAddedSignal mVizShapeAddedSignal;
+
+  /// Visualization removed signal
+  VizShapeRemovedSignal mVizShapeRemovedSignal;
 
   /// Transform changed signal
   EntitySignal mTransformUpdatedSignal;
@@ -222,8 +257,6 @@ public:
 
   /// Slot register for acceleration updated signal
   common::SlotRegister<EntitySignal> onAccelerationChanged;
-
-  /// \}
 
 private:
   /// Whether or not this Entity is set to be quiet

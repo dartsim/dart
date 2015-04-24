@@ -37,6 +37,8 @@
 #ifndef OSGDART_RENDER_SHAPEGEODE_H
 #define OSGDART_RENDER_SHAPEGEODE_H
 
+#include <memory>
+
 namespace osg {
 class Node;
 } // namespace osg
@@ -57,13 +59,14 @@ class ShapeNode
 {
 public:
 
-  ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
+  ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
+            EntityNode* _parent,
             osg::Node* _node);
 
   virtual ~ShapeNode();
 
   /// Pointer to the Shape associated with this ShapeNode
-  dart::dynamics::Shape* getShape() const;
+  std::shared_ptr<dart::dynamics::Shape> getShape() const;
 
   /// Cast this ShapeNode into an osg::Node
   osg::Node* getNode();
@@ -88,7 +91,7 @@ public:
 
 protected:
   /// Pointer to the Shape associated with this ShapeNode
-  dart::dynamics::Shape* const mShape;
+  const std::shared_ptr<dart::dynamics::Shape> mShape;
 
   /// Should generally be equal to 'this'
   osg::Node* const mNode;

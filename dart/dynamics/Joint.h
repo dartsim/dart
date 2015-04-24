@@ -121,14 +121,57 @@ public:
     LOCKED
   };
 
+  struct Properties
+  {
+    /// Joint name
+    std::string mName;
+
+    /// Transformation from parent BodyNode to this Joint
+    Eigen::Isometry3d mT_ParentBodyToJoint;
+
+    /// Transformation from child BodyNode to this Joint
+    Eigen::Isometry3d mT_ChildBodyToJoint;
+
+    /// True if the joint limits should be enforced in dynamic simulation
+    bool mIsPositionLimited;
+
+    /// Actuator type
+    ActuatorType mActuatorType;
+
+    /// Constructor
+    Properties(const std::string& _name = "Joint",
+               const Eigen::Isometry3d& _T_ParentBodyToJoint =
+                                   Eigen::Isometry3d::Identity(),
+               const Eigen::Isometry3d& _T_ChildBodyToJoint =
+                                   Eigen::Isometry3d::Identity(),
+               bool _isPositionLimited = false,
+               ActuatorType _actuatorType = DefaultActuatorType);
+  };
+
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
 
   /// Constructor
+//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit Joint(const std::string& _name = "Joint");
 
   /// Destructor
   virtual ~Joint();
+
+  /// Set the Properties of this Joint
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Joint
+  const Properties& getJointProperties() const;
+
+  /// Copy the properties of another Joint
+  void copy(const Joint& _otherJoint);
+
+  /// Copy the properties of another Joint
+  void copy(const Joint* _otherJoint);
+
+  /// Same as copy(const Joint&)
+  Joint& operator=(const Joint& _otherJoint);
 
   /// \brief Set joint name and return the name.
   /// \param[in] _renameDofs If true, the names of the joint's degrees of
@@ -222,6 +265,20 @@ public:
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
   virtual const DegreeOfFreedom* getDof(size_t _index) const = 0;
+
+  /// Alternative to DegreeOfFreedom::setName()
+  virtual const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) = 0;
+
+  /// Alternative to DegreeOfFreedom::preserveName()
+  virtual void preserveDofName(size_t _index, bool _preserve) = 0;
+
+  /// Alternative to DegreeOfFreedom::isNamePreserved()
+  virtual bool isDofNamePreserved(size_t _index) const = 0;
+
+  /// Alternative to DegreeOfFreedom::getName()
+  virtual const std::string& getDofName(size_t _index) const = 0;
 
   /// Get number of generalized coordinates
   virtual size_t getNumDofs() const = 0;
@@ -547,6 +604,17 @@ public:
   friend class Skeleton;
 
 protected:
+
+  /// Constructor called by inheriting class
+  Joint(const Properties& _properties);
+
+  /// Create a clone of this Joint. This may only be called by the Skeleton
+  /// class.
+  virtual Joint* clone() const = 0;
+
+  /// Called by the Skeleton class
+  virtual void registerDofs() = 0;
+
   /// Initialize this joint. This function is called by BodyNode::init()
   virtual void init(Skeleton* _skel);
 
@@ -558,8 +626,7 @@ protected:
   /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
   /// class has a protected constructor, and the Joint is responsible for memory
   /// management of the pointer which is returned.
-  DegreeOfFreedom* createDofPointer(const std::string& _name,
-                                    size_t _indexInJoint);
+  DegreeOfFreedom* createDofPointer(size_t _indexInJoint);
 
   /// Update the names of the joint's degrees of freedom. Used when setName() is
   /// called with _renameDofs set to true.
@@ -765,23 +832,15 @@ protected:
   void notifyAccelerationUpdate();
 
 protected:
-  /// Joint name
-  std::string mName;
 
-  /// Actuator type
-  ActuatorType mActuatorType;
+  /// Properties of this Joint
+  Properties mJointP;
 
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
 
   /// Skeleton pointer that this joint belongs to
   Skeleton* mSkeleton;
-
-  /// Transformation from parent body node to this joint
-  Eigen::Isometry3d mT_ParentBodyToJoint;
-
-  /// Transformation from child body node to this joint
-  Eigen::Isometry3d mT_ChildBodyToJoint;
 
   /// Local transformation
   ///
@@ -832,10 +891,6 @@ protected:
   /// Transmitting wrench from parent body to child body expressed in child body
   DEPRECATED(4.3)
   Eigen::Vector6d mWrench;
-
-protected:
-  /// True if the joint limits are enforced in dynamic simulation
-  bool mIsPositionLimited;
 
 public:
   // To get byte-aligned Eigen vectors

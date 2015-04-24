@@ -89,10 +89,10 @@ void EntityNode::refresh()
 {
   mUtilized = true;
 
-  const std::vector<dart::dynamics::Shape*>& visShapes =
+  const std::vector<dart::dynamics::ShapePtr>& visShapes =
       mEntity->getVisualizationShapes();
 
-  for(dart::dynamics::Shape* shape : visShapes)
+  for(dart::dynamics::ShapePtr shape : visShapes)
     refreshShapeNode(shape);
 }
 
@@ -138,9 +138,9 @@ void EntityNode::clearUnusedNodes()
 }
 
 //==============================================================================
-void EntityNode::refreshShapeNode(dart::dynamics::Shape* shape)
+void EntityNode::refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
 {
-  std::map<dart::dynamics::Shape*, render::ShapeNode*>::iterator it =
+  std::map<dart::dynamics::ShapePtr, render::ShapeNode*>::iterator it =
       mShapeToNode.find(shape);
 
   if(it == mShapeToNode.end())
@@ -164,7 +164,7 @@ static void warnAboutUnsuccessfulCast(const std::string& shapeType,
 }
 
 //==============================================================================
-void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
+void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
 {
   using namespace dart::dynamics;
   render::ShapeNode* node = nullptr;
@@ -173,7 +173,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
   {
     case Shape::BOX:
     {
-      BoxShape* bs = dynamic_cast<BoxShape*>(shape);
+      std::shared_ptr<BoxShape> bs =
+          std::dynamic_pointer_cast<BoxShape>(shape);
       if(bs)
         node = new render::BoxShapeNode(bs, this);
       else
@@ -183,7 +184,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::ELLIPSOID:
     {
-      EllipsoidShape* es = dynamic_cast<EllipsoidShape*>(shape);
+      std::shared_ptr<EllipsoidShape> es =
+          std::dynamic_pointer_cast<EllipsoidShape>(shape);
       if(es)
         node = new render::EllipsoidShapeNode(es, this);
       else
@@ -193,7 +195,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::CYLINDER:
     {
-      CylinderShape* cs = dynamic_cast<CylinderShape*>(shape);
+      std::shared_ptr<CylinderShape> cs =
+          std::dynamic_pointer_cast<CylinderShape>(shape);
       if(cs)
         node = new render::CylinderShapeNode(cs, this);
       else
@@ -203,7 +206,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::PLANE:
     {
-      PlaneShape* ps = dynamic_cast<PlaneShape*>(shape);
+      std::shared_ptr<PlaneShape> ps =
+          std::dynamic_pointer_cast<PlaneShape>(shape);
       if(ps)
         node = new render::PlaneShapeNode(ps, this);
       else
@@ -213,7 +217,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::MESH:
     {
-      MeshShape* ms = dynamic_cast<MeshShape*>(shape);
+      std::shared_ptr<MeshShape> ms =
+          std::dynamic_pointer_cast<MeshShape>(shape);
       if(ms)
         node = new render::MeshShapeNode(ms, this);
       else
@@ -223,7 +228,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::SOFT_MESH:
     {
-      SoftMeshShape* sms = dynamic_cast<SoftMeshShape*>(shape);
+      std::shared_ptr<SoftMeshShape> sms =
+          std::dynamic_pointer_cast<SoftMeshShape>(shape);
       if(sms)
         node = new render::SoftMeshShapeNode(sms, this);
       else
@@ -233,7 +239,8 @@ void EntityNode::createShapeNode(dart::dynamics::Shape* shape)
 
     case Shape::LINE_SEGMENT:
     {
-      LineSegmentShape* lss = dynamic_cast<LineSegmentShape*>(shape);
+      std::shared_ptr<LineSegmentShape> lss =
+          std::dynamic_pointer_cast<LineSegmentShape>(shape);
       if(lss)
         node = new render::LineSegmentShapeNode(lss, this);
       else

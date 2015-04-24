@@ -51,7 +51,9 @@ class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape, EntityNode* parent);
+  SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape,
+                     EntityNode* parentEntity,
+                     SoftMeshShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -89,8 +91,9 @@ protected:
 };
 
 //==============================================================================
-SoftMeshShapeNode::SoftMeshShapeNode(dart::dynamics::SoftMeshShape* shape,
-                                     EntityNode* parent)
+SoftMeshShapeNode::SoftMeshShapeNode(
+    std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
+    EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mSoftMeshShape(shape),
     mGeode(nullptr)
@@ -121,7 +124,7 @@ void SoftMeshShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new SoftMeshShapeGeode(mSoftMeshShape, mParentEntity);
+    mGeode = new SoftMeshShapeGeode(mSoftMeshShape.get(), mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -136,9 +139,11 @@ SoftMeshShapeNode::~SoftMeshShapeNode()
 }
 
 //==============================================================================
-SoftMeshShapeGeode::SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape,
-                                       EntityNode* parent)
-  : ShapeNode(shape, parent, this),
+SoftMeshShapeGeode::SoftMeshShapeGeode(
+    dart::dynamics::SoftMeshShape* shape,
+    EntityNode* parentEntity,
+    SoftMeshShapeNode* parentNode)
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mSoftMeshShape(shape),
     mDrawable(nullptr)
 {

@@ -70,11 +70,11 @@ public:
 
   // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
-  MatrixXd getMassMatrix(dynamics::Skeleton* _skel);
+  MatrixXd getMassMatrix(dynamics::SkeletonPtr _skel);
 
   // Get augmented mass matrix of _skel using Jacobians and inertias of
   // each body in _skel.
-  MatrixXd getAugMassMatrix(dynamics::Skeleton* _skel);
+  MatrixXd getAugMassMatrix(dynamics::SkeletonPtr _skel);
 
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
@@ -91,6 +91,9 @@ public:
 
   // Test skeleton's COM and its related quantities.
   void testCenterOfMass(const std::string& _fileName);
+
+  // Test if the com acceleration is equal to the gravity
+  void testCenterOfMassFreeFall(const std::string& _fileName);
 
   //
   void testConstraintImpulse(const std::string& _fileName);
@@ -174,7 +177,7 @@ void DynamicsTest::randomizeRefFrames()
 }
 
 //==============================================================================
-MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
+MatrixXd DynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
 {
   int skelDof = _skel->getNumDofs();
 
@@ -215,7 +218,7 @@ MatrixXd DynamicsTest::getMassMatrix(dynamics::Skeleton* _skel)
 }
 
 //==============================================================================
-MatrixXd DynamicsTest::getAugMassMatrix(dynamics::Skeleton* _skel)
+MatrixXd DynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 {
   int    dof = _skel->getNumDofs();
   double dt  = _skel->getTimeStep();
@@ -269,71 +272,134 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
                                  const Frame* refFrame,
                                  double tolerance)
 {
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
   const Skeleton* skel = bn->getSkeleton();
 
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dq = skel->getVelocitySegment(coords);
-  VectorXd ddq = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocitySegment(coords);
+  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+
+  //-- Spatial Jacobian tests --------------------------------------------------
 
   Vector6d SpatialVelFk = bn->getSpatialVelocity(Frame::World(), refFrame);
   Vector6d SpatialAccFk = bn->getSpatialAcceleration(Frame::World(), refFrame);
 
-  math::Jacobian SpatialJac = bn->getJacobian(refFrame);
-  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(refFrame);
+  Jacobian SpatialJacSeg      = bn->getJacobian(refFrame);
+  Jacobian SpatialJacDerivSeg = bn->getJacobianSpatialDeriv(refFrame);
+
+  Vector6d SpatialVelJacSeg = SpatialJacSeg * dqSeg;
+  Vector6d SpatialAccJacSeg = SpatialJacSeg * ddqSeg
+                              + SpatialJacDerivSeg * dqSeg;
+
+  Jacobian SpatialJac      = skel->getJacobian(bn, refFrame);
+  Jacobian SpatialJacDeriv = skel->getJacobianSpatialDeriv(bn, refFrame);
 
   Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual    = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelSegEqual );
   EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelSegEqual)
+    printComparisonError("spatial velocity (seg)", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJacSeg);
   if(!spatialVelEqual)
     printComparisonError("spatial velocity", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual    = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE( spatialAccSegEqual );
   EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccSegEqual)
+    printComparisonError("spatial acceleration (seg)", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJacSeg);
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration", bn->getName(),
                          refFrame->getName(), SpatialAccFk, SpatialAccJac);
 
+  //-- Linear Jacobian tests ---------------------------------------------------
+
   Vector3d LinearVelFk = bn->getLinearVelocity(Frame::World(), refFrame);
   Vector3d LinearAccFk = bn->getLinearAcceleration(Frame::World(), refFrame);
 
-  math::LinearJacobian LinearJac = bn->getLinearJacobian(refFrame);
-  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(refFrame);
+  LinearJacobian LinearJacSeg      = bn->getLinearJacobian(refFrame);
+  LinearJacobian LinearJacDerivSeg = bn->getLinearJacobianDeriv(refFrame);
+
+  Vector3d LinearVelJacSeg = LinearJacSeg * dqSeg;
+  Vector3d LinearAccJacSeg = LinearJacSeg * ddqSeg + LinearJacDerivSeg * dqSeg;
+
+  LinearJacobian LinearJac      = skel->getLinearJacobian(bn, refFrame);
+  LinearJacobian LinearJacDeriv = skel->getLinearJacobianDeriv(bn, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual    = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelSegEqual );
   EXPECT_TRUE( linearVelEqual );
+  if(!linearVelSegEqual)
+    printComparisonError("linear velocity (seg)", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJacSeg);
   if(!linearVelEqual)
     printComparisonError("linear velocity", bn->getName(),
                          refFrame->getName(), LinearVelFk, LinearVelJac);
 
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual    = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccSegEqual );
   EXPECT_TRUE( linearAccEqual );
+  if(!linearAccSegEqual)
+    printComparisonError("linear acceleration (seg)", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJacSeg);
   if(!linearAccEqual)
     printComparisonError("linear acceleration", bn->getName(),
                          refFrame->getName(), LinearAccFk, LinearAccJac);
 
+  //-- Angular Jacobian tests
+
   Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
   Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
 
-  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
-  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+  AngularJacobian AngularJacSeg      = bn->getAngularJacobian(refFrame);
+  AngularJacobian AngularJacDerivSeg = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJacSeg = AngularJacSeg * dqSeg;
+  Vector3d AngularAccJacSeg = AngularJacSeg * ddqSeg
+                              + AngularJacDerivSeg * dqSeg;
+
+  AngularJacobian AngularJac      = skel->getAngularJacobian(bn, refFrame);
+  AngularJacobian AngularJacDeriv = skel->getAngularJacobianDeriv(bn, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual    = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelSegEqual );
   EXPECT_TRUE( angularVelEqual );
+  if(!angularVelSegEqual)
+    printComparisonError("angular velocity (seg)", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJacSeg);
   if(!angularVelEqual)
     printComparisonError("angular velocity", bn->getName(),
                          refFrame->getName(), AngularVelFk, AngularVelJac);
 
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual    = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccSegEqual );
   EXPECT_TRUE( angularAccEqual );
+  if(!angularAccSegEqual)
+    printComparisonError("angular acceleration (seg)", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJacSeg);
   if(!angularAccEqual)
     printComparisonError("angular acceleration", bn->getName(),
                          refFrame->getName(), AngularAccFk, AngularAccJac);
@@ -345,76 +411,143 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
                                  const Eigen::Vector3d& offset,
                                  double tolerance)
 {
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
   const Skeleton* skel = bn->getSkeleton();
 
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dq = skel->getVelocitySegment(coords);
-  VectorXd ddq = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocitySegment(coords);
+  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+
+  //-- Spatial Jacobian tests --------------------------------------------------
 
   Vector6d SpatialVelFk = bn->getSpatialVelocity(
         offset, Frame::World(), refFrame);
   Vector6d SpatialAccFk = bn->getSpatialAcceleration(
         offset, Frame::World(), refFrame);
 
-  math::Jacobian SpatialJac = bn->getJacobian(offset, refFrame);
-  math::Jacobian SpatialJacDeriv = bn->getJacobianSpatialDeriv(
-        offset, refFrame);
+  Jacobian SpatialJacSeg      = bn->getJacobian(offset, refFrame);
+  Jacobian SpatialJacDerivSeg = bn->getJacobianSpatialDeriv(offset, refFrame);
+
+  Vector6d SpatialVelJacSeg = SpatialJacSeg * dqSeg;
+  Vector6d SpatialAccJacSeg = SpatialJacSeg * ddqSeg
+                              + SpatialJacDerivSeg * dqSeg;
+
+  Jacobian SpatialJac
+      = skel->getJacobian(bn, offset, refFrame);
+  Jacobian SpatialJacDeriv
+      = skel->getJacobianSpatialDeriv(bn, offset, refFrame);
 
   Vector6d SpatialVelJac = SpatialJac * dq;
-  Vector6d SpatialAccJac = SpatialJac*ddq + SpatialJacDeriv*dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
 
-  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  bool spatialVelSegEqual = equals(SpatialVelFk, SpatialVelJacSeg, tolerance);
+  bool spatialVelEqual    = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE( spatialVelSegEqual );
   EXPECT_TRUE( spatialVelEqual );
+  if(!spatialVelSegEqual)
+    printComparisonError("spatial velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), SpatialVelFk, SpatialVelJacSeg);
   if(!spatialVelEqual)
     printComparisonError("spatial velocity w/ offset", bn->getName(),
                          refFrame->getName(), SpatialVelFk, SpatialVelJac);
 
-  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccFk, tolerance);
+  bool spatialAccSegEqual = equals(SpatialAccFk, SpatialAccJacSeg, tolerance);
+  bool spatialAccEqual    = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE( spatialAccSegEqual );
   EXPECT_TRUE( spatialAccEqual );
+  if(!spatialAccSegEqual)
+    printComparisonError("spatial acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), SpatialAccFk, SpatialAccJacSeg);
   if(!spatialAccEqual)
     printComparisonError("spatial acceleration w/ offset", bn->getName(),
                          refFrame->getName(), SpatialAccFk, SpatialAccJac);
 
-  Vector3d LinearVelFk = bn->getLinearVelocity(
-        offset, Frame::World(), refFrame);
-  Vector3d LinearAccFk = bn->getLinearAcceleration(
-        offset, Frame::World(), refFrame);
+  //-- Linear Jacobian tests ---------------------------------------------------
 
-  math::LinearJacobian LinearJac = bn->getLinearJacobian(offset, refFrame);
-  math::LinearJacobian LinearJacDeriv = bn->getLinearJacobianDeriv(
-        offset, refFrame);
+  Vector3d LinearVelFk
+      = bn->getLinearVelocity(offset, Frame::World(), refFrame);
+  Vector3d LinearAccFk
+      = bn->getLinearAcceleration(offset, Frame::World(), refFrame);
+
+  LinearJacobian LinearJacSeg
+      = bn->getLinearJacobian(offset, refFrame);
+  LinearJacobian LinearJacDerivSeg
+      = bn->getLinearJacobianDeriv(offset, refFrame);
+
+  Vector3d LinearVelJacSeg = LinearJacSeg * dqSeg;
+  Vector3d LinearAccJacSeg = LinearJacSeg * ddqSeg + LinearJacDerivSeg * dqSeg;
+
+  LinearJacobian LinearJac
+      = skel->getLinearJacobian(bn, offset, refFrame);
+  LinearJacobian LinearJacDeriv
+      = skel->getLinearJacobianDeriv(bn, offset, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac*ddq + LinearJacDeriv*dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
-  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  bool linearVelSegEqual = equals(LinearVelFk, LinearVelJacSeg, tolerance);
+  bool linearVelEqual    = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE( linearVelSegEqual );
   EXPECT_TRUE( linearVelEqual );
+  if(!linearVelSegEqual)
+    printComparisonError("linear velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), LinearVelFk, LinearVelJacSeg);
   if(!linearVelEqual)
     printComparisonError("linear velocity w/ offset", bn->getName(),
                          refFrame->getName(), LinearVelFk, LinearVelJac);
 
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  bool linearAccSegEqual = equals(LinearAccFk, LinearAccJacSeg, tolerance);
+  bool linearAccEqual    = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE( linearAccSegEqual );
   EXPECT_TRUE( linearAccEqual );
+  if(!linearAccSegEqual)
+    printComparisonError("linear acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), LinearAccFk, LinearAccJacSeg);
   if(!linearAccEqual)
     printComparisonError("linear acceleration w/ offset", bn->getName(),
                          refFrame->getName(), LinearAccFk, LinearAccJac);
 
+  //-- Angular Jacobian tests --------------------------------------------------
+
   Vector3d AngularVelFk = bn->getAngularVelocity(Frame::World(), refFrame);
   Vector3d AngularAccFk = bn->getAngularAcceleration(Frame::World(), refFrame);
 
-  math::AngularJacobian AngularJac = bn->getAngularJacobian(refFrame);
-  math::AngularJacobian AngularJacDeriv = bn->getAngularJacobianDeriv(refFrame);
+  AngularJacobian AngularJacSeg      = bn->getAngularJacobian(refFrame);
+  AngularJacobian AngularJacDerivSeg = bn->getAngularJacobianDeriv(refFrame);
+
+  Vector3d AngularVelJacSeg = AngularJacSeg * dqSeg;
+  Vector3d AngularAccJacSeg = AngularJacSeg * ddqSeg
+                              + AngularJacDerivSeg * dqSeg;
+
+  AngularJacobian AngularJac      = skel->getAngularJacobian(bn, refFrame);
+  AngularJacobian AngularJacDeriv = skel->getAngularJacobianDeriv(bn, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac*ddq + AngularJacDeriv*dq;
+  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
-  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  bool angularVelSegEqual = equals(AngularVelFk, AngularVelJacSeg, tolerance);
+  bool angularVelEqual    = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE( angularVelSegEqual );
   EXPECT_TRUE( angularVelEqual );
+  if(!angularVelSegEqual)
+    printComparisonError("angular velocity w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), AngularVelFk, AngularVelJacSeg);
   if(!angularVelEqual)
     printComparisonError("angular velocity w/ offset", bn->getName(),
                          refFrame->getName(), AngularVelFk, AngularVelJac);
 
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
+  bool angularAccSegEqual = equals(AngularAccFk, AngularAccJacSeg, tolerance);
+  bool angularAccEqual    = equals(AngularAccFk, AngularAccJac, tolerance);
+  EXPECT_TRUE( angularAccSegEqual );
+  if(!angularAccSegEqual)
+    printComparisonError("angular acceleration w/ offset (seg)", bn->getName(),
+                         refFrame->getName(), AngularAccFk, AngularAccJacSeg);
   EXPECT_TRUE( angularAccEqual );
   if(!angularAccEqual)
     printComparisonError("angular acceleration w/ offset", bn->getName(),
@@ -448,14 +581,14 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  World* world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
 
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
-    Skeleton* skeleton = world->getSkeleton(i);
+    SkeletonPtr skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
     int dof = skeleton->getNumDofs();
 
@@ -515,8 +648,6 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
       }
     }
   }
-
-  delete world;
 }
 
 //==============================================================================
@@ -547,7 +678,7 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
   double timeStep = 1.0e-6;
 
   // load skeleton
-  World* world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(_fileName);
   assert(world != NULL);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -555,7 +686,7 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
-    Skeleton* skeleton = world->getSkeleton(i);
+    SkeletonPtr skeleton = world->getSkeleton(i);
     assert(skeleton != NULL);
     int dof = skeleton->getNumDofs();
 
@@ -678,8 +809,6 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
       }
     }
   }
-
-  delete world;
 }
 
 //==============================================================================
@@ -711,17 +840,17 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof = skel->getNumDofs();
 //    int nBodyNodes = skel->getNumBodyNodes();
@@ -762,7 +891,6 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
       skel->setState(x);
-      skel->computeForwardKinematics(true, true, true);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
@@ -780,6 +908,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       MatrixXd I        = MatrixXd::Identity(dof, dof);
 
+      bool failure = false;
+
       // Check if the number of generalized coordinates and dimension of mass
       // matrix are same.
       EXPECT_EQ(M.rows(), (int)dof);
@@ -791,6 +921,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "M :" << endl << M  << endl << endl;
         cout << "M2:" << endl << M2 << endl << endl;
+        failure = true;
       }
 
       // Check augmented mass matrix
@@ -799,6 +930,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "AugM :" << endl << AugM  << endl << endl;
         cout << "AugM2:" << endl << AugM2 << endl << endl;
+        failure = true;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
@@ -806,11 +938,13 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       if (!equals(M_InvM, I, 1e-6))
       {
         cout << "InvM  :" << endl << InvM << endl << endl;
+        failure = true;
       }
       EXPECT_TRUE(equals(InvM_M, I, 1e-6));
       if (!equals(InvM_M, I, 1e-6))
       {
         cout << "InvM_M:" << endl << InvM_M << endl << endl;
+        failure = true;
       }
 
       // Check if both of (M * InvM) and (InvM * M) are identity.
@@ -818,6 +952,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       if (!equals(AugM_InvAugM, I, 1e-6))
       {
         cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
+        failure = true;
       }
       EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
       if (!equals(InvAugM_AugM, I, 1e-6))
@@ -859,6 +994,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "C :" << C.transpose()  << endl;
         cout << "C2:" << C2.transpose() << endl;
+        failure = true;
       }
 
       EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
@@ -866,6 +1002,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       {
         cout << "Cg :" << Cg.transpose()  << endl;
         cout << "Cg2:" << Cg2.transpose() << endl;
+        failure = true;
       }
 
       skel->setForces(oldTau);
@@ -880,14 +1017,18 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       //--------------------- External Force Test ----------------------------
       // TODO(JS): Not implemented yet.
+
+      if(failure)
+      {
+        std::cout << "Failure occurred in the World of file: " << _fileName
+                  << "\nWith Skeleton named: " << skel->getName() << "\n\n";
+      }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
-void compareCOMJacobianToFk(const Skeleton* skel,
+void compareCOMJacobianToFk(const SkeletonPtr skel,
                             const Frame* refFrame,
                             double tolerance)
 {
@@ -972,17 +1113,17 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   double lbK =  0.0;
   double ubK = 10.0;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof = skel->getNumDofs();
     if (dof == 0)
@@ -1038,8 +1179,160 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
         compareCOMJacobianToFk(skel, refFrames[r], 1e-6);
     }
   }
+}
 
-  delete myWorld;
+//==============================================================================
+void compareCOMAccelerationToGravity(SkeletonPtr skel,
+                                     const Eigen::Vector3d& gravity,
+                                     double tolerance)
+{
+  const size_t numFrames = 1e+2;
+  skel->setGravity(gravity);
+
+  for (size_t i = 0; i < numFrames; ++i)
+  {
+    skel->computeForwardDynamics();
+
+    Vector3d comLinearAccFk = skel->getCOMLinearAcceleration();
+
+    bool comLinearAccFkEqual = equals(gravity, comLinearAccFk, tolerance);
+    EXPECT_TRUE(comLinearAccFkEqual);
+    if (!comLinearAccFkEqual)
+    {
+      printComparisonError("COM linear acceleration", skel->getName(),
+                           Frame::World()->getName(), gravity, comLinearAccFk);
+    }
+
+    VectorXd dq  = skel->getVelocities();
+    VectorXd ddq = skel->getAccelerations();
+    math::LinearJacobian comLinearJac      = skel->getCOMLinearJacobian();
+    math::LinearJacobian comLinearJacDeriv = skel->getCOMLinearJacobianDeriv();
+    Vector3d comLinearAccJac = comLinearJac * ddq + comLinearJacDeriv * dq;
+
+    bool comLinearAccJacEqual = equals(gravity, comLinearAccJac,tolerance);
+    EXPECT_TRUE(comLinearAccJacEqual);
+    if (!comLinearAccJacEqual)
+    {
+      printComparisonError("COM linear acceleration", skel->getName(),
+                           Frame::World()->getName(), gravity, comLinearAccJac);
+    }
+  }
+
+}
+
+//==============================================================================
+void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //---------------------------- Settings --------------------------------------
+  // Number of random state tests for each skeletons
+#ifndef BUILD_TYPE_DEBUG
+  size_t nRandomItr = 2;
+#else
+  size_t nRandomItr = 10;
+#endif
+
+  // Lower and upper bound of configuration for system
+  double lb = -1.5 * DART_PI;
+  double ub =  1.5 * DART_PI;
+
+  // Lower and upper bound of joint damping and stiffness
+  double lbD =  0.0;
+  double ubD = 10.0;
+  double lbK =  0.0;
+  double ubK = 10.0;
+
+  simulation::WorldPtr myWorld;
+  std::vector<Vector3d> gravities(4);
+  gravities[0] = Vector3d::Zero();
+  gravities[1] = Vector3d(-9.81, 0, 0);
+  gravities[2] = Vector3d(0, -9.81, 0);
+  gravities[3] = Vector3d(0, 0, -9.81);
+
+  //----------------------------- Tests ----------------------------------------
+  // Check whether multiplication of mass matrix and its inverse is identity
+  // matrix.
+  myWorld = utils::SkelParser::readWorld(_fileName);
+  EXPECT_TRUE(myWorld != nullptr);
+
+  for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
+  {
+    auto skel          = myWorld->getSkeleton(i);
+    auto rootJoint     = skel->getJoint(0);
+    auto rootFreeJoint = dynamic_cast<dynamics::FreeJoint*>(rootJoint);
+
+    auto dof = skel->getNumDofs();
+
+    if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
+    {
+#ifdef BUILD_TYPE_DEBUG
+      dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
+            << "] since the Skeleton doesn't have FreeJoint at the root body "
+            << " or immobile." << endl;
+#endif
+      continue;
+    }
+    else
+    {
+      rootFreeJoint->setActuatorType(dynamics::Joint::PASSIVE);
+    }
+
+    // Make sure the damping and spring forces are zero for the root FreeJoint.
+    for (size_t l = 0; l < rootJoint->getNumDofs(); ++l)
+    {
+      rootJoint->setDampingCoefficient(l, 0.0);
+      rootJoint->setSpringStiffness(l, 0.0);
+      rootJoint->setRestPosition(l, 0.0);
+    }
+
+    for (size_t j = 0; j < nRandomItr; ++j)
+    {
+      // Random joint stiffness and damping coefficient
+      for (size_t k = 1; k < skel->getNumBodyNodes(); ++k)
+      {
+        auto body     = skel->getBodyNode(k);
+        auto joint    = body->getParentJoint();
+        auto localDof = joint->getNumDofs();
+
+        for (size_t l = 0; l < localDof; ++l)
+        {
+          joint->setDampingCoefficient(l, random(lbD,  ubD));
+          joint->setSpringStiffness(l, random(lbK,  ubK));
+
+          double lbRP = joint->getPositionLowerLimit(l);
+          double ubRP = joint->getPositionUpperLimit(l);
+          if (lbRP < -DART_PI)
+            lbRP = -DART_PI;
+          if (ubRP > DART_PI)
+            ubRP = DART_PI;
+          joint->setRestPosition(l, random(lbRP, ubRP));
+        }
+      }
+
+      // Set random states
+      VectorXd q  = VectorXd(dof);
+      VectorXd dq = VectorXd(dof);
+      for (size_t k = 0; k < dof; ++k)
+      {
+        q[k]   = math::random(lb, ub);
+        dq[k]  = math::random(lb, ub);
+      }
+      VectorXd ddq = VectorXd::Zero(dof);
+      skel->setPositions(q);
+      skel->setVelocities(dq);
+      skel->setAccelerations(ddq);
+
+      for (const auto& gravity : gravities)
+        compareCOMAccelerationToGravity(skel, gravity, 1e-6);
+    }
+  }
 }
 
 //==============================================================================
@@ -1065,17 +1358,17 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 //  double lb = -1.5 * DART_PI;
 //  double ub =  1.5 * DART_PI;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     size_t dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
@@ -1134,8 +1427,6 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
       }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1161,17 +1452,17 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   double lb = -1.5 * DART_PI;
   double ub =  1.5 * DART_PI;
 
-  simulation::World* myWorld = NULL;
+  simulation::WorldPtr myWorld;
 
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::Skeleton* skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
 
     int dof            = skel->getNumDofs();
 //    int nBodyNodes     = skel->getNumBodyNodes();
@@ -1233,8 +1524,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       }
     }
   }
-
-  delete myWorld;
 }
 
 //==============================================================================
@@ -1301,6 +1590,18 @@ TEST_F(DynamicsTest, testCenterOfMass)
 }
 
 //==============================================================================
+TEST_F(DynamicsTest, testCenterOfMassFreeFall)
+{
+  for (size_t i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    testCenterOfMassFreeFall(getList()[i]);
+  }
+}
+
+//==============================================================================
 TEST_F(DynamicsTest, testConstraintImpulse)
 {
   for (size_t i = 0; i < getList().size(); ++i)
@@ -1332,13 +1633,13 @@ TEST_F(DynamicsTest, HybridDynamics)
   const size_t numFrames = 5e+3;  // 5 secs
 
   // Load world and skeleton
-  World* world = utils::SkelParser::readWorld(
+  WorldPtr world = utils::SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != NULL);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
-  Skeleton* skel = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel != NULL);
   EXPECT_NEAR(skel->getTimeStep(), timeStep, tol);
 

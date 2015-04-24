@@ -57,8 +57,8 @@ InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
 void InteractiveTool::setEnabled(bool enabled)
 {
   mEnabled = enabled;
-  for(size_t i=0; i<mVizShapes.size(); ++i)
-    mVizShapes[i]->setHidden(!enabled);
+  for(size_t i=0; i<mEntityP.mVizShapes.size(); ++i)
+    mEntityP.mVizShapes[i]->setHidden(!enabled);
 }
 
 //==============================================================================
@@ -70,31 +70,8 @@ bool InteractiveTool::getEnabled() const
 //==============================================================================
 void InteractiveTool::setAlpha(double alpha)
 {
-  for(size_t i=0; i<mVizShapes.size(); ++i)
-  {
-    dart::dynamics::MeshShape* ms =
-        dynamic_cast<dart::dynamics::MeshShape*>(mVizShapes[i]);
-    if(ms)
-    {
-      const aiScene* scene = ms->getMesh();
-      if(!scene)
-        continue;
-
-      for(size_t i=0; i<scene->mNumMeshes; ++i)
-      {
-        aiMesh* mesh = scene->mMeshes[i];
-        for(size_t j=0; j<mesh->mNumVertices; ++j)
-          mesh->mColors[0][j][3] = alpha;
-      }
-    }
-    else
-    {
-      dart::dynamics::Shape* shape = mVizShapes[i];
-      Eigen::Vector4d c = shape->getRGBA();
-      c[3] = alpha;
-      shape->setColor(c);
-    }
-  }
+  for(size_t i=0; i<mEntityP.mVizShapes.size(); ++i)
+    mEntityP.mVizShapes[i]->setAlpha(alpha);
 }
 
 //==============================================================================
@@ -229,14 +206,16 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     p.mDoubleArrow = false;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
-          new dart::dynamics::ArrowShape(tail, head, p, color, 100));
+          dart::dynamics::ShapePtr(
+            new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
 
 //    tail[a] = -1.2*plane_length;
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
-          new dart::dynamics::ArrowShape(tail, head, p, color, 100));
+          dart::dynamics::ShapePtr(
+            new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
   }
 
   // Create rotation rings
@@ -382,8 +361,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
-    dart::dynamics::MeshShape* shape =
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene);
+    std::shared_ptr<dart::dynamics::MeshShape> shape(
+        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( r == 1 )
@@ -470,8 +449,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
-    dart::dynamics::MeshShape* shape =
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene);
+    std::shared_ptr<dart::dynamics::MeshShape> shape(
+        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( p == 1 )
@@ -488,7 +467,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   {
     for(size_t j=0; j<3; ++j)
     {
-      const std::vector<dart::dynamics::Shape*> shapes =
+      const std::vector<dart::dynamics::ShapePtr> shapes =
           mTools[i][j]->getVisualizationShapes();
       for(size_t s=0; s<shapes.size(); ++s)
         shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
@@ -498,8 +477,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   // Create axes
   for(size_t i=0; i<3; ++i)
   {
-    dart::dynamics::LineSegmentShape* line =
-        new dart::dynamics::LineSegmentShape(3.0);
+    std::shared_ptr<dart::dynamics::LineSegmentShape> line(
+        new dart::dynamics::LineSegmentShape(3.0));
     line->addVertex(Eigen::Vector3d::Zero());
     Eigen::Vector3d v(Eigen::Vector3d::Zero());
     v[i] = 0.9*size;
@@ -514,21 +493,14 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 //==============================================================================
 void InteractiveFrame::deleteAllVisualizationShapes()
 {
-  for(size_t i=0; i<mVizShapes.size(); ++i)
-  {
-    delete mVizShapes[i];
-  }
-  mVizShapes.clear();
+  mEntityP.mVizShapes.clear();
 
   for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
     for(size_t j=0; j<3; ++j)
     {
       InteractiveTool* tool = mTools[i][j];
-      const std::vector<dart::dynamics::Shape*> shapes =
-          tool->getVisualizationShapes();
-      for(size_t s=0; s<shapes.size(); ++s)
-        tool->deleteVisualizationShape(shapes[s]);
+      tool->removeAllVisualizationShapes();
     }
   }
 }

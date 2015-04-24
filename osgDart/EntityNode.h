@@ -37,8 +37,10 @@
 #ifndef OSGDART_ENTITYNODE_H
 #define OSGDART_ENTITYNODE_H
 
-#include <osg/Group>
 #include <map>
+#include <memory>
+
+#include <osg/Group>
 
 namespace dart {
 namespace dynamics {
@@ -88,9 +90,9 @@ protected:
 
   void clearUnusedNodes();
 
-  void refreshShapeNode(dart::dynamics::Shape* shape);
+  void refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
 
-  void createShapeNode(dart::dynamics::Shape* shape);
+  void createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
 
   /// Pointer to the Entity that this EntityNode is associated with
   dart::dynamics::Entity* mEntity;
@@ -99,10 +101,12 @@ protected:
   FrameNode* mParent;
 
   /// Map from Shapes to ShapeGeodes
-  std::map<dart::dynamics::Shape*, render::ShapeNode*> mShapeToNode;
+  std::map<std::shared_ptr<dart::dynamics::Shape>,
+           render::ShapeNode*> mShapeToNode;
 
   /// Map from ShapeGeodes to Shapes
-  std::map<render::ShapeNode*, dart::dynamics::Shape*> mNodeToShape;
+  std::map<render::ShapeNode*,
+           std::shared_ptr<dart::dynamics::Shape> > mNodeToShape;
 
   /// True iff this EntityNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being

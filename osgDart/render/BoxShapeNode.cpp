@@ -49,7 +49,9 @@ class BoxShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape, EntityNode* parent);
+  BoxShapeGeode(dart::dynamics::BoxShape* shape,
+                EntityNode* parentEntity,
+                BoxShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -81,7 +83,8 @@ protected:
 };
 
 //==============================================================================
-BoxShapeNode::BoxShapeNode(dart::dynamics::BoxShape* shape, EntityNode* parent)
+BoxShapeNode::BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
+                           EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mBoxShape(shape),
     mGeode(nullptr)
@@ -112,7 +115,7 @@ void BoxShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new BoxShapeGeode(mBoxShape, mParentEntity);
+    mGeode = new BoxShapeGeode(mBoxShape.get(), mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -128,8 +131,9 @@ BoxShapeNode::~BoxShapeNode()
 
 //==============================================================================
 BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
-                             EntityNode* parent)
-  : ShapeNode(shape, parent, this),
+                             EntityNode* parent,
+                             BoxShapeNode* parentNode)
+  : ShapeNode(parentNode->getShape(), parent, this),
     mBoxShape(shape),
     mDrawable(nullptr)
 {

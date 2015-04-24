@@ -57,7 +57,8 @@ class CylinderShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  CylinderShapeNode(dart::dynamics::CylinderShape* shape, EntityNode* parent);
+  CylinderShapeNode(std::shared_ptr<dart::dynamics::CylinderShape> shape,
+                    EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -66,7 +67,7 @@ protected:
 
   virtual ~CylinderShapeNode();
 
-  dart::dynamics::CylinderShape* mCylinderShape;
+  std::shared_ptr<dart::dynamics::CylinderShape> mCylinderShape;
   CylinderShapeGeode* mGeode;
 
 };

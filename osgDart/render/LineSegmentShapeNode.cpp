@@ -50,7 +50,7 @@ class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  LineSegmentShapeGeode(dart::dynamics::LineSegmentShape* shape,
+  LineSegmentShapeGeode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
                         EntityNode* parent);
 
   void refresh();
@@ -60,7 +60,7 @@ protected:
 
   virtual ~LineSegmentShapeGeode();
 
-  dart::dynamics::LineSegmentShape* mLineSegmentShape;
+  std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeDrawable* mDrawable;
 
   osg::ref_ptr<osg::LineWidth> mLineWidth;
@@ -88,7 +88,8 @@ protected:
 
 //==============================================================================
 LineSegmentShapeNode::LineSegmentShapeNode(
-    dart::dynamics::LineSegmentShape* shape, EntityNode* parent)
+    std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+    EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mGeode(nullptr)
@@ -135,7 +136,7 @@ LineSegmentShapeNode::~LineSegmentShapeNode()
 
 //==============================================================================
 LineSegmentShapeGeode::LineSegmentShapeGeode(
-    dart::dynamics::LineSegmentShape* shape, EntityNode* parent)
+    std::shared_ptr<dart::dynamics::LineSegmentShape> shape, EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mDrawable(nullptr),
@@ -167,7 +168,7 @@ void LineSegmentShapeGeode::extractData(bool firstTime)
 
   if(nullptr == mDrawable)
   {
-    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape);
+    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape.get());
     addDrawable(mDrawable);
     return;
   }

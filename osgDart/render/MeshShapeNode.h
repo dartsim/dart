@@ -64,7 +64,8 @@ class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  MeshShapeNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity);
+  MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
+                EntityNode* parentEntity);
 
   void refresh();
   void extractData(bool firstTime);
@@ -75,7 +76,7 @@ protected:
 
   virtual ~MeshShapeNode();
 
-  dart::dynamics::MeshShape* mMeshShape;
+  std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
   std::vector< osg::ref_ptr<osg::Material> > mMaterials;
 

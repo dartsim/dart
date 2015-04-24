@@ -42,5 +42,5 @@
 #include <urdf_world/world.h>
 
 namespace urdf{
-  World* parseWorldURDF(const std::string &xml_string, std::string _path );
+  std::shared_ptr<World> parseWorldURDF(const std::string &xml_string, std::string _path );
 }

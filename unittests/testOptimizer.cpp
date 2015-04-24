@@ -120,27 +120,27 @@ TEST(Optimizer, BasicNlopt)
 {
   // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
 
-  Problem prob(2);
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
 
-  SampleObjFunc obj;
-  prob.setObjective(&obj);
+  FunctionPtr obj = std::make_shared<SampleObjFunc>();
+  prob->setObjective(obj);
 
-  SampleConstFunc const1( 2, 0);
-  SampleConstFunc const2(-1, 1);
-  prob.addIneqConstraint(&const1);
-  prob.addIneqConstraint(&const2);
+  FunctionPtr const1 = std::make_shared<SampleConstFunc>( 2, 0);
+  FunctionPtr const2 = std::make_shared<SampleConstFunc>(-1, 1);
+  prob->addIneqConstraint(const1);
+  prob->addIneqConstraint(const2);
 
-  NloptSolver solver(&prob, NLOPT_LD_MMA);
+  NloptSolver solver(prob, NLOPT_LD_MMA);
   solver.solve();
 
-  double minF = prob.getOptimumValue();
-  Eigen::VectorXd optX = prob.getOptimalSolution();
+  double minF = prob->getOptimumValue();
+  Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), prob.getDimension());
+  EXPECT_EQ(optX.size(), prob->getDimension());
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
@@ -153,27 +153,27 @@ TEST(Optimizer, BasicIpopt)
   dterr << "Ipopt does not pass this test yet. Please see #153.";
   return;
 
-  Problem prob(2);
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
-  prob.setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
-  prob.setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
 
-  SampleObjFunc obj;
-  prob.setObjective(&obj);
+  FunctionPtr obj = std::make_shared<SampleObjFunc>();
+  prob->setObjective(obj);
 
-  SampleConstFunc const1( 2, 0);
-  SampleConstFunc const2(-1, 1);
-  prob.addIneqConstraint(&const1);
-  prob.addIneqConstraint(&const2);
+  FunctionPtr const1 = std::make_shared<SampleConstFunc>( 2, 0);
+  FunctionPtr const2 = std::make_shared<SampleConstFunc>(-1, 1);
+  prob->addIneqConstraint(const1);
+  prob->addIneqConstraint(const2);
 
-  IpoptSolver solver(&prob);
+  IpoptSolver solver(prob);
   solver.solve();
 
-  double minF = prob.getOptimumValue();
-  Eigen::VectorXd optX = prob.getOptimalSolution();
+  double minF = prob->getOptimumValue();
+  Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), prob.getDimension());
+  EXPECT_EQ(optX.size(), prob->getDimension());
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }

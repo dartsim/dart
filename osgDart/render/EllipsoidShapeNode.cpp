@@ -88,8 +88,9 @@ protected:
 };
 
 //==============================================================================
-EllipsoidShapeNode::EllipsoidShapeNode(dart::dynamics::EllipsoidShape* shape,
-                                       EntityNode* parent)
+EllipsoidShapeNode::EllipsoidShapeNode(
+    std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
+    EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mEllipsoidShape(shape),
     mGeode(nullptr)
@@ -133,7 +134,7 @@ void EllipsoidShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new EllipsoidShapeGeode(mEllipsoidShape, mParentEntity, this);
+    mGeode = new EllipsoidShapeGeode(mEllipsoidShape.get(), mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -151,7 +152,7 @@ EllipsoidShapeNode::~EllipsoidShapeNode()
 EllipsoidShapeGeode::EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
                                          EntityNode* parentEntity,
                                          EllipsoidShapeNode* parentNode)
-  : ShapeNode(shape, parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mParentNode(parentNode),
     mEllipsoidShape(shape),
     mDrawable(nullptr)

@@ -38,6 +38,7 @@
 #define OSGDART_VIEWER_H
 
 #include <map>
+#include <memory>
 
 #include <osgViewer/Viewer>
 
@@ -102,11 +103,12 @@ public:
   void removeWorldNode(WorldNode* _oldWorldNode);
 
   /// Remove the WorldNode associated with _oldWorld from this Viewer
-  void removeWorldNode(dart::simulation::World* _oldWorld);
+  void removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld);
 
   /// Get the WorldNode associated with the given _world. Returns nullptr if
   /// this Viewer does not contain a WorldNode associated with _world.
-  WorldNode* getWorldNode(dart::simulation::World* _world) const;
+  WorldNode* getWorldNode(
+      std::shared_ptr<dart::simulation::World> _world) const;
 
   /// Get the Group node that contains the LightSources for this Viewer
   osg::Group* getLightGroup();
@@ -129,7 +131,8 @@ public:
   void setWorldNodeActive(WorldNode* _node, bool _active=true);
 
   /// Set the given World to active
-  void setWorldNodeActive(dart::simulation::World* _world, bool _active=true);
+  void setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
+                          bool _active=true);
 
   /// Set all currently active WorldNodes to simulate _on
   void simulate(bool _on);

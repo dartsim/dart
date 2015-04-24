@@ -46,9 +46,17 @@
 
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
+#include "dart/common/sub_ptr.h"
 #include "dart/math/Geometry.h"
 
 #include "dart/dynamics/Frame.h"
+#include "dart/dynamics/Inertia.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/InverseKinematics.h"
+#include "dart/dynamics/Marker.h"
+
+const double DART_DEFAULT_FRICTION_COEFF = 1.0;
+const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 namespace dart {
 namespace renderer {
@@ -76,18 +84,82 @@ class Marker;
 class BodyNode : public Frame
 {
 public:
+
+  using ColShapeAddedSignal
+      = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
+
+  using ColShapeRemovedSignal = ColShapeAddedSignal;
+
+  struct UniqueProperties
+  {
+    /// Inertia information for the BodyNode
+    Inertia mInertia;
+
+    /// Array of collision shapes
+    std::vector<ShapePtr> mColShapes;
+
+    /// Indicates whether this node is collidable;
+    bool mIsCollidable;
+
+    /// Coefficient of friction
+    double mFrictionCoeff;
+
+    /// Coefficient of restitution
+    double mRestitutionCoeff;
+
+    /// Gravity will be applied if true
+    bool mGravityMode;
+
+    /// Properties of the Markers belonging to this BodyNode
+    std::vector<Marker::Properties> mMarkerProperties;
+
+    /// Constructor
+    UniqueProperties(
+        const Inertia& _inertia = Inertia(),
+        const std::vector<ShapePtr>& _collisionShapes = std::vector<ShapePtr>(),
+        bool _isCollidable = true,
+        double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
+        double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
+        bool _gravityMode = true);
+  };
+
+  /// Composition of Entity and BodyNode properties
+  struct Properties : Entity::Properties, UniqueProperties
+  {
+    /// Composed constructor
+    Properties(
+        const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
+        const UniqueProperties& _bodyNodeProperties = UniqueProperties());
+  };
+
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit BodyNode(const std::string& _name = "BodyNode");
 
   /// Destructor
   virtual ~BodyNode();
 
+  /// Set the Properties of this BodyNode
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this BodyNode
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this BodyNode
+  Properties getBodyNodeProperties() const;
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode& _otherBodyNode);
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode* _otherBodyNode);
+
+  /// Same as copy(const BodyNode&)
+  BodyNode& operator=(const BodyNode& _otherBodyNode);
+
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name);
-
-  /// Return the name of the bodynode
-  const std::string& getName() const;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
@@ -124,6 +196,12 @@ public:
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
+
+  /// Set the inertia data for this BodyNode
+  void setInertia(const Inertia& _inertia);
+
+  /// Get the inertia data for this BodyNode
+  const Inertia& getInertia() const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;
@@ -207,29 +285,23 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Add a visualization shape into the bodynode
-  void addVisualizationShape(Shape* _p);
+  /// Add a collision Shape into the BodyNode
+  void addCollisionShape(ShapePtr _shape);
 
-  /// Return the number of visualization shapes
-  size_t getNumVisualizationShapes() const;
+  /// Remove a collision Shape from this BodyNode
+  void removeCollisionShape(ShapePtr _shape);
 
-  /// Return _index-th visualization shape
-  Shape* getVisualizationShape(size_t _index);
-
-  /// Return (const) _index-th visualization shape
-  const Shape* getVisualizationShape(size_t _index) const;
-
-  /// Add a collision shape into the bodynode
-  void addCollisionShape(Shape* _p);
+  /// Remove all collision Shapes from this BodyNode
+  void removeAllCollisionShapes();
 
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
 
   /// Return _index-th collision shape
-  Shape* getCollisionShape(size_t _index);
+  ShapePtr getCollisionShape(size_t _index);
 
   /// Return (const) _index-th collision shape
-  const Shape* getCollisionShape(size_t _index) const;
+  ConstShapePtr getCollisionShape(size_t _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
   Skeleton* getSkeleton();
@@ -238,6 +310,7 @@ public:
   const Skeleton* getSkeleton() const;
 
   /// Set _joint as the parent joint of the bodynode
+  // TODO(MXG): Deprecate this
   void setParentJoint(Joint* _joint);
 
   /// Return the parent Joint of this BodyNode
@@ -253,7 +326,20 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Add a child bodynode into the bodynode
+  // TODO(MXG): This should be made protected at the same time that we remove
+  // the public constructor for BodyNode
   void addChildBodyNode(BodyNode* _body);
+
+  template <class JointType, class NodeType = BodyNode>
+  std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
+      const typename JointType::Properties& _jointProperties =
+                                              typename JointType::Properties(),
+      const typename NodeType::Properties& _bodyProperties =
+                                              typename NodeType::Properties())
+  {
+    return mSkeleton->createJointAndBodyNodePair<JointType, NodeType>(
+          this, _jointProperties, _bodyProperties);
+  }
 
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
@@ -297,6 +383,21 @@ public:
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
   std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+
+  /// Returns a std::vector of generalized coordinate indices of the linkage
+  /// that leads up to this BodyNode. In this context, a linkage refers to the
+  /// longest unbranching chain of BodyNodes that leads up to this BodyNode.
+  ///
+  /// Note that we will always attempt to get at least one degree of freedom in
+  /// this linkage vector, even if we have to ignore some branching.
+  std::vector<size_t> getLinkageGenCoordIndices() const;
+
+  /// A version of getLinkageGenCoordIndices() that returns DegreeOfFreedom
+  /// pointers instead of index values.
+  std::vector<DegreeOfFreedom*> getLinkageDofs();
+
+  /// const version of getLinkageDofs()
+  std::vector<const DegreeOfFreedom*> getLinkageDofs() const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -829,6 +930,15 @@ public:
   friend class PointMass;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+           const Properties& _properties);
+
+  /// Create a clone of this BodyNode. This may only be called by the Skeleton
+  /// class.
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+
   /// Initialize the vector members with proper sizes.
   virtual void init(Skeleton* _skeleton);
 
@@ -1025,37 +1135,11 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
-  /// Name
-  std::string mName;
+  /// BodyNode-specific properties
+  UniqueProperties mBodyP;
 
-  /// If the gravity mode is false, this body node does not being affected by
-  /// gravity.
-  bool mGravityMode;
-
-  /// Generalized inertia.
-  math::Inertia mI;
-
-  /// Generalized inertia at center of mass.
-  Eigen::Vector3d mCenterOfMass;
-  double mIxx;
-  double mIyy;
-  double mIzz;
-  double mIxy;
-  double mIxz;
-  double mIyz;
-  double mMass;
-
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of friction
-  double mRestitutionCoeff;
-
-  /// Array of collision shpaes
-  std::vector<Shape*> mColShapes;
-
-  /// Indicating whether this node is collidable.
-  bool mIsCollidable;
+  /// InverseKinematics module for this BodyNode
+  InverseKinematics<BodyNode> mIK;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
@@ -1209,13 +1293,27 @@ protected:
   /// mIsWorldJacobianClassicDerivDirty is true.
   void _updateWorldJacobianClassicDeriv() const;
 
-private:
-  ///
-  void _updateSpatialInertia();
+  /// Collision shape added signal
+  ColShapeAddedSignal mColShapeAddedSignal;
+
+  /// Collision shape removed signal
+  ColShapeRemovedSignal mColShapeRemovedSignal;
 
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for collision shape added signal
+  common::SlotRegister<ColShapeAddedSignal> onColShapeAdded;
+
+  /// Slot register for collision shape removed signal
+  common::SlotRegister<ColShapeRemovedSignal> onColShapeRemoved;
+
+  /// \}
 };
 
 }  // namespace dynamics

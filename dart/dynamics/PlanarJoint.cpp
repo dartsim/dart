@@ -47,62 +47,63 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PlanarJoint::PlanarJoint(const std::string& _name)
-  : MultiDofJoint(_name)
+PlanarJoint::UniqueProperties::UniqueProperties(PlaneType _planeType)
 {
-  setXYPlane();
-  updateDegreeOfFreedomNames();
-  updateLocalJacobian();
+  switch(_planeType)
+  {
+    case PT_ARBITRARY:
+    case PT_XY:
+      setXYPlane();
+      mPlaneType = _planeType; // In case the PlaneType was supposed to be arbitrary
+      break;
+    case PT_YZ:
+      setYZPlane();
+       break;
+    case PT_ZX:
+      setZXPlane();
+      break;
+  }
 }
 
 //==============================================================================
-PlanarJoint::~PlanarJoint()
+PlanarJoint::UniqueProperties::UniqueProperties(
+    const Eigen::Vector3d& _transAxis1,
+    const Eigen::Vector3d& _transAxis2)
 {
+  setArbitraryPlane(_transAxis1, _transAxis2);
 }
 
 //==============================================================================
-void PlanarJoint::setXYPlane(bool _renameDofs)
+void PlanarJoint::UniqueProperties::setXYPlane()
 {
   mPlaneType = PT_XY;
   mRotAxis   = Eigen::Vector3d::UnitZ();
   mTransAxis1 = Eigen::Vector3d::UnitX();
   mTransAxis2 = Eigen::Vector3d::UnitY();
-
-  if (_renameDofs)
-    updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
 }
 
 //==============================================================================
-void PlanarJoint::setYZPlane(bool _renameDofs)
+void PlanarJoint::UniqueProperties::setYZPlane()
 {
   mPlaneType = PT_YZ;
   mRotAxis   = Eigen::Vector3d::UnitX();
   mTransAxis1 = Eigen::Vector3d::UnitY();
   mTransAxis2 = Eigen::Vector3d::UnitZ();
-
-  if (_renameDofs)
-    updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
 }
 
 //==============================================================================
-void PlanarJoint::setZXPlane(bool _renameDofs)
+void PlanarJoint::UniqueProperties::setZXPlane()
 {
   mPlaneType = PT_ZX;
   mRotAxis   = Eigen::Vector3d::UnitY();
   mTransAxis1 = Eigen::Vector3d::UnitZ();
   mTransAxis2 = Eigen::Vector3d::UnitX();
-
-  if (_renameDofs)
-    updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
 }
 
 //==============================================================================
-void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                                    const Eigen::Vector3d& _transAxis2,
-                                    bool _renameDofs)
+void PlanarJoint::UniqueProperties::setArbitraryPlane(
+    const Eigen::Vector3d& _transAxis1,
+    const Eigen::Vector3d& _transAxis2)
 {
   // Set plane type as arbitrary plane
   mPlaneType = PT_ARBITRARY;
@@ -121,6 +122,128 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   // Rotational axis
   mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();
+}
+
+//==============================================================================
+PlanarJoint::Properties::Properties(
+    const MultiDofJoint<3>::Properties& _multiDofProperties,
+    const PlanarJoint::UniqueProperties& _planarProperties)
+  : MultiDofJoint<3>::Properties(_multiDofProperties),
+    PlanarJoint::UniqueProperties(_planarProperties)
+{
+
+}
+
+//==============================================================================
+PlanarJoint::PlanarJoint(const std::string& _name)
+  : MultiDofJoint(_name)
+{
+  setXYPlane();
+  updateDegreeOfFreedomNames();
+  updateLocalJacobian();
+}
+
+//==============================================================================
+PlanarJoint::~PlanarJoint()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void PlanarJoint::setProperties(const Properties& _properties)
+{
+  MultiDofJoint<3>::setProperties(
+        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void PlanarJoint::setProperties(const UniqueProperties& _properties)
+{
+  switch(_properties.mPlaneType)
+  {
+    case PT_XY:
+      setXYPlane();
+      break;
+    case PT_YZ:
+      setYZPlane();
+      break;
+    case PT_ZX:
+      setZXPlane();
+      break;
+    case PT_ARBITRARY:
+      setArbitraryPlane(_properties.mTransAxis1, _properties.mTransAxis2);
+      break;
+  }
+}
+
+//==============================================================================
+PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
+{
+  return Properties(getMultiDofJointProperties(), mPlanarP);
+}
+
+//==============================================================================
+void PlanarJoint::copy(const PlanarJoint& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getPlanarJointProperties());
+}
+
+//==============================================================================
+void PlanarJoint::copy(const PlanarJoint* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+PlanarJoint& PlanarJoint::operator=(const PlanarJoint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
+}
+
+//==============================================================================
+void PlanarJoint::setXYPlane(bool _renameDofs)
+{
+  mPlanarP.setXYPlane();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
+}
+
+//==============================================================================
+void PlanarJoint::setYZPlane(bool _renameDofs)
+{
+  mPlanarP.setYZPlane();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
+}
+
+//==============================================================================
+void PlanarJoint::setZXPlane(bool _renameDofs)
+{
+  mPlanarP.setZXPlane();
+
+  if (_renameDofs)
+    updateDegreeOfFreedomNames();
+  notifyPositionUpdate();
+}
+
+//==============================================================================
+void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
+                                    const Eigen::Vector3d& _transAxis2,
+                                    bool _renameDofs)
+{
+  mPlanarP.setArbitraryPlane(_transAxis1, _transAxis2);
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
@@ -130,32 +253,46 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 //==============================================================================
 PlanarJoint::PlaneType PlanarJoint::getPlaneType() const
 {
-  return mPlaneType;
+  return mPlanarP.mPlaneType;
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getRotationalAxis() const
 {
-  return mRotAxis;
+  return mPlanarP.mRotAxis;
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
 {
-  return mTransAxis1;
+  return mPlanarP.mTransAxis1;
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
-  return mTransAxis2;
+  return mPlanarP.mTransAxis2;
+}
+
+//==============================================================================
+PlanarJoint::PlanarJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+  updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* PlanarJoint::clone() const
+{
+  return new PlanarJoint(getPlanarJointProperties());
 }
 
 //==============================================================================
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (mPlaneType)
+  switch (mPlanarP.mPlaneType)
   {
     case PT_XY:
       affixes.push_back("_x");
@@ -174,8 +311,8 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_2");
       break;
     default:
-      dterr << "Unsupported plane type in PlanarJoint named '" << mName
-            << "' (" << mPlaneType << ")\n";
+      dterr << "Unsupported plane type in PlanarJoint named '" << mJointP.mName
+            << "' (" << mPlanarP.mPlaneType << ")\n";
   }
 
   if (affixes.size() == 2)
@@ -183,7 +320,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
     for (size_t i = 0; i < 2; ++i)
     {
       if (!mDofs[i]->isNamePreserved())
-        mDofs[i]->setName(mName + affixes[i], false);
+        mDofs[i]->setName(mJointP.mName + affixes[i], false);
     }
   }
 }
@@ -192,11 +329,11 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 void PlanarJoint::updateLocalTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
-  mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(mTransAxis1 * positions[0])
-       * Eigen::Translation3d(mTransAxis2 * positions[1])
-       * math::expAngular    (mRotAxis    * positions[2])
-       * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint
+       * Eigen::Translation3d(mPlanarP.mTransAxis1 * positions[0])
+       * Eigen::Translation3d(mPlanarP.mTransAxis2 * positions[1])
+       * math::expAngular    (mPlanarP.mRotAxis    * positions[2])
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -206,15 +343,15 @@ void PlanarJoint::updateLocalTransform() const
 void PlanarJoint::updateLocalJacobian(bool) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mTransAxis1;
-  J.block<3, 1>(3, 1) = mTransAxis2;
-  J.block<3, 1>(0, 2) = mRotAxis;
+  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
+  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
+  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
 
   mJacobian.leftCols<2>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
-                        * math::expAngular(mRotAxis * -getPositionsStatic()[2]),
-                        J.leftCols<2>());
-  mJacobian.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
+      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
+              * math::expAngular(mPlanarP.mRotAxis * -getPositionsStatic()[2]),
+              J.leftCols<2>());
+  mJacobian.col(2) = math::AdTJac(mJointP.mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(mJacobian));
@@ -224,23 +361,23 @@ void PlanarJoint::updateLocalJacobian(bool) const
 void PlanarJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mTransAxis1;
-  J.block<3, 1>(3, 1) = mTransAxis2;
-  J.block<3, 1>(0, 2) = mRotAxis;
+  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
+  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
+  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
 
   const Eigen::Matrix<double, 6, 3>& Jacobian = getLocalJacobianStatic();
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mT_ChildBodyToJoint
-                            * math::expAngular(mRotAxis
+                  math::AdT(mJointP.mT_ChildBodyToJoint
+                            * math::expAngular(mPlanarP.mRotAxis
                                                * -getPositionsStatic()[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mT_ChildBodyToJoint
-                            * math::expAngular(mRotAxis
+                  math::AdT(mJointP.mT_ChildBodyToJoint
+                            * math::expAngular(mPlanarP.mRotAxis
                                                * -getPositionsStatic()[2]),
                             J.col(1)));
 

@@ -40,14 +40,15 @@
 namespace osgDart {
 namespace render {
 
-ShapeNode::ShapeNode(dart::dynamics::Shape* _shape, EntityNode* _parent,
+ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
+                     EntityNode* _parent,
                      osg::Node* _node)
   : mShape(_shape),
     mNode(_node),
     mParentEntity(_parent),
     mUtilized(true)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -57,7 +58,7 @@ ShapeNode::~ShapeNode()
 }
 
 //==============================================================================
-dart::dynamics::Shape* ShapeNode::getShape() const
+std::shared_ptr<dart::dynamics::Shape> ShapeNode::getShape() const
 {
   return mShape;
 }

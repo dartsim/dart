@@ -44,12 +44,33 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
+Entity::Properties::Properties(const std::string& _name,
+                               const std::vector<ShapePtr>& _vizShapes)
+  : mName(_name),
+    mVizShapes(_vizShapes)
+{
+ // Do nothing
+}
+
+//==============================================================================
+template <typename T>
+static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
+{
+  assert(_index < _vec.size());
+  if (_index < _vec.size())
+    return _vec[_index];
+
+  return nullptr;
+}
+
+//==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : mParentFrame(NULL),
-    mName(_name),
+  : mEntityP(_name),
+    mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
@@ -78,78 +99,132 @@ Entity::~Entity()
 }
 
 //==============================================================================
+void Entity::setProperties(const Properties& _properties)
+{
+  // Set name
+  setName(_properties.mName);
+
+  // Set visualization shapes
+  removeAllVisualizationShapes();
+  for(size_t i=0; i<_properties.mVizShapes.size(); ++i)
+    addVisualizationShape(_properties.mVizShapes[i]);
+}
+
+//==============================================================================
+const Entity::Properties& Entity::getEntityProperties() const
+{
+  return mEntityP;
+}
+
+//==============================================================================
+void Entity::copy(const Entity& _otherEntity)
+{
+  if(this == &_otherEntity)
+    return;
+
+  setProperties(_otherEntity.getEntityProperties());
+}
+
+//==============================================================================
+void Entity::copy(const Entity *_otherEntity)
+{
+  if(nullptr == _otherEntity)
+    return;
+
+  copy(*_otherEntity);
+}
+
+//==============================================================================
+Entity& Entity::operator=(const Entity& _otherEntity)
+{
+  copy(_otherEntity);
+  return *this;
+}
+
+//==============================================================================
 const std::string& Entity::setName(const std::string& _name)
 {
-  if (mName == _name)
-    return mName;
+  if (mEntityP.mName == _name)
+    return mEntityP.mName;
 
-  const std::string oldName = mName;
-  mName = _name;
-  mNameChangedSignal.raise(this, oldName, mName);
+  const std::string oldName = mEntityP.mName;
+  mEntityP.mName = _name;
+  mNameChangedSignal.raise(this, oldName, mEntityP.mName);
 
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& Entity::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(Shape* _p)
+void Entity::addVisualizationShape(ShapePtr _shape)
 {
-  mVizShapes.push_back(_p);
+  if (nullptr == _shape)
+    return;
 
-  mVizShapeAddedSignal.raise(this, _p);
-}
-
-//==============================================================================
-const std::vector<Shape*>& Entity::getVisualizationShapes()
-{
-  return mVizShapes;
-}
-
-//==============================================================================
-std::vector<const Shape*> Entity::getVisualizationShapes() const
-{
-  std::vector<const Shape*> const_shapes;
-  for(const auto& shape : mVizShapes)
-    const_shapes.push_back(shape);
-
-  return const_shapes;
-}
-
-//==============================================================================
-bool Entity::withdrawVisualizationShape(Shape* _p)
-{
-  if(nullptr == _p)
+  if (std::find(mEntityP.mVizShapes.begin(), mEntityP.mVizShapes.end(), _shape)
+      != mEntityP.mVizShapes.end())
   {
-    dtwarn << "Attempting to remove a nullptr visualization shape from the "
-           << "Entity named '" << getName() << "'\n";
-    return false;
+    dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
+           << "duplicate visualization shape.\n";
+    return;
   }
 
-  std::vector<Shape*>::iterator it =
-      std::find(mVizShapes.begin(), mVizShapes.end(), _p);
+  mEntityP.mVizShapes.push_back(_shape);
 
-  if(it == mVizShapes.end())
-    return false;
-
-  mVizShapes.erase(it);
-  return true;
+  mVizShapeAddedSignal.raise(this, _shape);
 }
 
 //==============================================================================
-bool Entity::deleteVisualizationShape(Shape* _p)
+void Entity::removeVisualizationShape(ShapePtr _shape)
 {
-  if(withdrawVisualizationShape(_p))
-  {
-    delete _p;
-    return true;
-  }
+  if (nullptr == _shape)
+    return;
 
-  return false;
+  mEntityP.mVizShapes.erase(std::remove(mEntityP.mVizShapes.begin(),
+                                        mEntityP.mVizShapes.end(), _shape),
+                            mEntityP.mVizShapes.end());
+
+  mVizShapeRemovedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void Entity::removeAllVisualizationShapes()
+{
+  std::vector<ShapePtr>::iterator it = mEntityP.mVizShapes.begin();
+  while (it != mEntityP.mVizShapes.end())
+  {
+    removeVisualizationShape(*it);
+    it = mEntityP.mVizShapes.begin();
+  }
+}
+
+//==============================================================================
+size_t Entity::getNumVisualizationShapes() const
+{
+  return mEntityP.mVizShapes.size();
+}
+
+//==============================================================================
+ShapePtr Entity::getVisualizationShape(size_t _index)
+{
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
+}
+
+//==============================================================================
+ConstShapePtr Entity::getVisualizationShape(size_t _index) const
+{
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
+}
+
+//==============================================================================
+const std::vector<ShapePtr>& Entity::getVisualizationShapes() const
+{
+  return mEntityP.mVizShapes;
 }
 
 //==============================================================================
@@ -166,10 +241,10 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
   // This all seems questionable to me.
 
   // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri->popName();

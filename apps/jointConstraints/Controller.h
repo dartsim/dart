@@ -46,7 +46,7 @@
 class Controller
 {
 public:
-  Controller(dart::dynamics::Skeleton* _skel,
+  Controller(dart::dynamics::SkeletonPtr _skel,
              dart::constraint::ConstraintSolver* _collisionSolver, double _t);
   virtual ~Controller() {}
 
@@ -55,7 +55,7 @@ public:
   void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; }
   void computeTorques(const Eigen::VectorXd& _dof,
                       const Eigen::VectorXd& _dofVel);
-  dart::dynamics::Skeleton* getSkel() { return mSkel; }
+  dart::dynamics::SkeletonPtr getSkel() { return mSkel; }
   Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; }
   Eigen::MatrixXd getKp() {return mKp; }
   Eigen::MatrixXd getKd() {return mKd; }
@@ -68,7 +68,7 @@ protected:
   Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
   Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum,
                                     Eigen::VectorXd _controlledAxis);
-  dart::dynamics::Skeleton* mSkel;
+  dart::dynamics::SkeletonPtr mSkel;
   dart::constraint::ConstraintSolver* mCollisionHandle;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;

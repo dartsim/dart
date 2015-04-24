@@ -45,7 +45,8 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-NloptSolver::NloptSolver(Problem* _problem, nlopt_algorithm _alg)
+NloptSolver::NloptSolver(std::shared_ptr<Problem> _problem,
+                         nlopt_algorithm _alg)
   : Solver(_problem),
     mMinF(0.0)
 {
@@ -62,31 +63,33 @@ NloptSolver::NloptSolver(Problem* _problem, nlopt_algorithm _alg)
   nlopt_set_ftol_rel(mOpt, 1e-8);
 
   // Set initial guess for x
-  mX = mProblem->getInitialGuess();
+  mX = mProperties.mProblem->getInitialGuess();
 
   // Set tolerance for x
   nlopt_set_xtol_rel(mOpt, 1e-9);
 
   // Set lower/upper bounds
-  nlopt_set_lower_bounds(mOpt, mProblem->getLowerBounds().data());
-  nlopt_set_upper_bounds(mOpt, mProblem->getUpperBounds().data());
+  nlopt_set_lower_bounds(mOpt, mProperties.mProblem->getLowerBounds().data());
+  nlopt_set_upper_bounds(mOpt, mProperties.mProblem->getUpperBounds().data());
 
   // Set objective function
-  Function* obj = mProblem->getObjective();
-  nlopt_set_min_objective(mOpt, NloptSolver::_nlopt_func, obj);
+  FunctionPtr obj = mProperties.mProblem->getObjective();
+  nlopt_set_min_objective(mOpt, NloptSolver::_nlopt_func, obj.get());
 
   // Add equality constraint functions
-  for (size_t i = 0; i < mProblem->getNumEqConstraints(); ++i)
+  for (size_t i = 0; i < mProperties.mProblem->getNumEqConstraints(); ++i)
   {
-    Function* fn = mProblem->getEqConstraint(i);
-    nlopt_add_equality_constraint(mOpt, NloptSolver::_nlopt_func, fn, 1e-8);
+    FunctionPtr fn = mProperties.mProblem->getEqConstraint(i);
+    nlopt_add_equality_constraint(
+          mOpt, NloptSolver::_nlopt_func, fn.get(), 1e-8);
   }
 
   // Add inequality constraint functions
-  for (size_t i = 0; i < mProblem->getNumIneqConstraints(); ++i)
+  for (size_t i = 0; i < mProperties.mProblem->getNumIneqConstraints(); ++i)
   {
-    Function* fn = mProblem->getIneqConstraint(i);
-    nlopt_add_inequality_constraint(mOpt, NloptSolver::_nlopt_func, fn, 1e-8);
+    FunctionPtr fn = mProperties.mProblem->getIneqConstraint(i);
+    nlopt_add_inequality_constraint(
+          mOpt, NloptSolver::_nlopt_func, fn.get(), 1e-8);
   }
 }
 
@@ -119,13 +122,19 @@ bool NloptSolver::solve()
     return false;
 
   // Store optimal and optimum values
-  mProblem->setOptimumValue(mMinF);
-  Eigen::VectorXd minX = Eigen::VectorXd::Zero(mProblem->getDimension());
-  for (size_t i = 0; i < mProblem->getDimension(); ++i)
+  mProperties.mProblem->setOptimumValue(mMinF);
+  Eigen::VectorXd minX = Eigen::VectorXd::Zero(getProblem()->getDimension());
+  for (size_t i = 0; i < getProblem()->getDimension(); ++i)
     minX[i] = mX[i];
-  mProblem->setOptimalSolution(minX);
+  getProblem()->setOptimalSolution(minX);
 
   return true;
+}
+
+//==============================================================================
+std::string NloptSolver::getType() const
+{
+  return "NloptSolver";
 }
 
 //==============================================================================

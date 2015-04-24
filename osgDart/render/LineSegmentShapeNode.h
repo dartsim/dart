@@ -57,7 +57,8 @@ class LineSegmentShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  LineSegmentShapeNode(dart::dynamics::LineSegmentShape* shape, EntityNode* parent);
+  LineSegmentShapeNode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+                       EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -66,7 +67,7 @@ protected:
 
   virtual ~LineSegmentShapeNode();
 
-  dart::dynamics::LineSegmentShape* mLineSegmentShape;
+  std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeGeode* mGeode;
 
 };

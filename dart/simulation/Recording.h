@@ -47,6 +47,8 @@
 
 #include <Eigen/Dense>
 
+#include "dart/dynamics/Skeleton.h"
+
 namespace dart {
 
 namespace dynamics {
@@ -60,7 +62,7 @@ class Recording
 {
 public:
   /// \brief Create Recording with a list of skeletons
-  explicit Recording(const std::vector<dynamics::Skeleton*>& _skeletons);
+  explicit Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
   /// \brief Create Recording with a list of number of dofs
   explicit Recording(const std::vector<int>& _skelDofs);
@@ -104,7 +106,7 @@ public:
   void addState(const Eigen::VectorXd& _state);
 
   /// \brief Update list for number of generalized coordinates
-  void updateNumGenCoords(const std::vector<dynamics::Skeleton*>& _skeletons);
+  void updateNumGenCoords(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
 private:
   /// \brief Baked states

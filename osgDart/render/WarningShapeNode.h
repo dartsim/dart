@@ -38,6 +38,7 @@
 #define OSGDART_RENDER_WARNINGSHAPENODE_H
 
 #include <osg/Node>
+#include <memory>
 
 #include "osgDart/render/ShapeNode.h"
 
@@ -48,7 +49,8 @@ class WarningShapeNode : public ShapeNode, public osg::Node
 {
 public:
 
-  WarningShapeNode(dart::dynamics::Shape* shape, EntityNode* parent);
+  WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
+                   EntityNode* parent);
 
   void refresh();
 

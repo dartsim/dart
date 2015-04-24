@@ -287,7 +287,7 @@ void frameChangecCallback(const Entity* _entity,
 
 //==============================================================================
 void vizShapeAddedCallback(const Entity* _entity,
-                           const Shape* _newShape)
+                           std::shared_ptr<const Shape> _newShape)
 {
   assert(_entity);
 
@@ -321,9 +321,12 @@ TEST(Signal, FrameSignals)
   Connection cv2 = F2.onVizShapeAdded.connect(vizShapeAddedCallback);
   ScopedConnection cv3(F3.onVizShapeAdded.connect(vizShapeAddedCallback));
 
-  F1.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
-  F2.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
-  F3.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
+  F1.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
+  F2.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
+  F3.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
 
   F3.setParentFrame(&F1);
 }

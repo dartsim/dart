@@ -51,7 +51,7 @@ MyWindow::~MyWindow()
 //==============================================================================
 void MyWindow::timeStepping()
 {
-  dart::dynamics::Skeleton* skel  = mWorld->getSkeleton(1);
+  dart::dynamics::SkeletonPtr skel  = mWorld->getSkeleton(1);
 
   size_t index0 = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
   size_t index1 = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);

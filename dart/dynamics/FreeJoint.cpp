@@ -45,6 +45,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+FreeJoint::Properties::Properties(
+    const MultiDofJoint<6>::Properties& _properties)
+  : MultiDofJoint<6>::Properties(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
 FreeJoint::FreeJoint(const std::string& _name)
   : MultiDofJoint(_name),
     mQ(Eigen::Isometry3d::Identity())
@@ -55,6 +63,13 @@ FreeJoint::FreeJoint(const std::string& _name)
 //==============================================================================
 FreeJoint::~FreeJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+FreeJoint::Properties FreeJoint::getFreeJointProperties() const
+{
+  return getMultiDofJointProperties();
 }
 
 //==============================================================================
@@ -77,6 +92,21 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
+FreeJoint::FreeJoint(const Properties& _properties)
+  : MultiDofJoint<6>(_properties),
+    mQ(Eigen::Isometry3d::Identity())
+{
+  setProperties(_properties);
+  updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* FreeJoint::clone() const
+{
+  return new FreeJoint(getFreeJointProperties());
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Vector6d& velocities = getVelocitiesStatic();
@@ -91,17 +121,17 @@ void FreeJoint::integratePositions(double _dt)
 void FreeJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mName + "_rot_x", false);
+    mDofs[0]->setName(mJointP.mName + "_rot_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mName + "_rot_y", false);
+    mDofs[1]->setName(mJointP.mName + "_rot_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mName + "_rot_z", false);
+    mDofs[2]->setName(mJointP.mName + "_rot_z", false);
   if(!mDofs[3]->isNamePreserved())
-    mDofs[3]->setName(mName + "_pos_x", false);
+    mDofs[3]->setName(mJointP.mName + "_pos_x", false);
   if(!mDofs[4]->isNamePreserved())
-    mDofs[4]->setName(mName + "_pos_y", false);
+    mDofs[4]->setName(mJointP.mName + "_pos_y", false);
   if(!mDofs[5]->isNamePreserved())
-    mDofs[5]->setName(mName + "_pos_z", false);
+    mDofs[5]->setName(mJointP.mName + "_pos_z", false);
 }
 
 //==============================================================================
@@ -109,7 +139,8 @@ void FreeJoint::updateLocalTransform() const
 {
   mQ = convertToTransform(getPositionsStatic());
 
-  mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mQ
+      * mJointP.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -122,9 +153,9 @@ void FreeJoint::updateLocalJacobian(bool) const
   J.topLeftCorner<3,3>() = math::expMapJac(positions.head<3>()).transpose();
 
   mJacobian.leftCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
+      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, J.leftCols<3>());
   mJacobian.rightCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
+      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
                           * math::expAngular(-positions.head<3>()),
                           J.rightCols<3>());
 
@@ -145,10 +176,11 @@ void FreeJoint::updateLocalJacobianTimeDeriv() const
                                           velocities.head<3>()).transpose();
   dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
-  const Eigen::Isometry3d T = mT_ChildBodyToJoint
+  const Eigen::Isometry3d T = mJointP.mT_ChildBodyToJoint
                               * math::expAngular(-positions.head<3>());
 
-  mJacobianDeriv.leftCols<3>() = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
+  mJacobianDeriv.leftCols<3>() =
+      math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, dJ);
   const Eigen::Matrix<double, 6, 6>& Jacobian = getLocalJacobianStatic();
   mJacobianDeriv.col(3)
       = -math::ad(Jacobian.leftCols<3>() * velocities.head<3>(),

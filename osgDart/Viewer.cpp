@@ -183,7 +183,7 @@ void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
 }
 
 //==============================================================================
-void Viewer::removeWorldNode(dart::simulation::World* _oldWorld)
+void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
 {
   WorldNode* node = getWorldNode(_oldWorld);
 
@@ -195,7 +195,8 @@ void Viewer::removeWorldNode(dart::simulation::World* _oldWorld)
 }
 
 //==============================================================================
-WorldNode* Viewer::getWorldNode(dart::simulation::World* _world) const
+WorldNode* Viewer::getWorldNode(
+    std::shared_ptr<dart::simulation::World> _world) const
 {
   std::map<WorldNode*,bool>::const_iterator it = mWorldNodes.begin(),
                                             end = mWorldNodes.end();
@@ -288,7 +289,8 @@ void Viewer::setWorldNodeActive(WorldNode* _node, bool _active)
 }
 
 //==============================================================================
-void Viewer::setWorldNodeActive(dart::simulation::World* _world, bool _active)
+void Viewer::setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
+                                bool _active)
 {
   setWorldNodeActive(getWorldNode(_world), _active);
 }
@@ -392,7 +394,8 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 }
 
 //==============================================================================
-InteractiveFrameDnD* Viewer::enableDragAndDrop(InteractiveFrame* _frame)
+InteractiveFrameDnD* Viewer::enableDragAndDrop(
+    osgDart::InteractiveFrame* _frame)
 {
   if(nullptr == _frame)
     return nullptr;

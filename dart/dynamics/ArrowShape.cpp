@@ -104,8 +104,8 @@ void ArrowShape::setRGBA(const Eigen::Vector4d& _color)
     aiMesh* mesh = mMesh->mMeshes[i];
     for(size_t j=0; j<mesh->mNumVertices; ++j)
     {
-      mesh->mColors[0][j] = aiColor4D(_color.x(), _color.y(),
-                                      _color.z(), _color[3]);
+      mesh->mColors[0][j] = aiColor4D(_color[0], _color[1],
+                                      _color[2], _color[3]);
     }
   }
 }

@@ -47,6 +47,8 @@
 #undef HAVE_CSTDDEF
 //------------------------------------------------------------------------------
 
+#include <memory>
+
 #include "dart/optimizer/Solver.h"
 
 namespace dart {
@@ -60,13 +62,15 @@ class IpoptSolver : public Solver
 {
 public:
   /// \brief Constructor
-  explicit IpoptSolver(Problem* _problem);
+  explicit IpoptSolver(std::shared_ptr<Problem> _problem);
 
   /// \brief Destructor
   virtual ~IpoptSolver();
 
   /// \copydoc Solver::solve
   virtual bool solve();
+
+  virtual std::string getType() const override;
 
 private:
   /// \brief IPOPT nonlinear programming problem
@@ -81,7 +85,7 @@ class DartTNLP : public Ipopt::TNLP
 {
 public:
   /// \brief
-  explicit DartTNLP(Problem* _problem);
+  explicit DartTNLP(std::shared_ptr<Problem> _problem);
 
   /// \brief
   virtual ~DartTNLP();
@@ -178,7 +182,7 @@ public:
 
 private:
   /// \brief DART optimization problem
-  Problem* mProblem;
+  std::shared_ptr<Problem> mProblem;
 
   /// \brief Objective value
   Ipopt::Number mObjValue;

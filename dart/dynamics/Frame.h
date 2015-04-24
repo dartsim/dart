@@ -310,10 +310,10 @@ public:
   /// Always returns a zero vector
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
 
-  /// Always return a zero vector
+  /// Always returns a zero vector
   const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
 
-  /// Always return a zero vector
+  /// Always returns a zero vector
   const Eigen::Vector6d& getPartialAcceleration() const;
 
 private:

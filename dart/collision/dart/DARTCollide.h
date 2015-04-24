@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
@@ -52,8 +53,8 @@ class Shape;
 namespace dart {
 namespace collision {
 
-int collide(const dynamics::Shape* _shape0, const Eigen::Isometry3d& _T0,
-            const dynamics::Shape* _shape1, const Eigen::Isometry3d& _T1,
+int collide(dart::dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
+            dart::dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
             std::vector<Contact>* _result);
 
 int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,

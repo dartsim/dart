@@ -130,7 +130,7 @@ protected:
 };
 
 //==============================================================================
-MeshShapeNode::MeshShapeNode(dart::dynamics::MeshShape* shape,
+MeshShapeNode::MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
                              EntityNode* parentEntity)
   : ShapeNode(shape, parentEntity, this),
     mMeshShape(shape),
@@ -237,7 +237,7 @@ void MeshShapeNode::extractData(bool firstTime)
 
   if( (nullptr == mRootAiNode) && root)
   {
-    mRootAiNode = new osgAiNode(mMeshShape, mParentEntity, this, root);
+    mRootAiNode = new osgAiNode(mMeshShape.get(), mParentEntity, this, root);
     addChild(mRootAiNode);
     return;
   }
@@ -269,9 +269,10 @@ MeshShapeNode::~MeshShapeNode()
 
 //==============================================================================
 osgAiNode::osgAiNode(dart::dynamics::MeshShape* shape,
-                     EntityNode* parentEntity, MeshShapeNode* parentNode,
+                     EntityNode* parentEntity,
+                     MeshShapeNode* parentNode,
                      const aiNode* node)
-  : ShapeNode(shape, parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mMainNode(parentNode),
     mMeshShape(shape),
     mAiNode(node),
@@ -361,7 +362,7 @@ void osgAiNode::clearUnusedNodes()
 MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
                                EntityNode* parentEntity,
                                MeshShapeNode* parentNode, const aiNode* node)
-  : ShapeNode(shape, parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mMeshShape(shape),
     mAiNode(node),
     mMainNode(parentNode)
@@ -446,7 +447,7 @@ MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
                                      MeshShapeNode* parentNode,
                                      MeshShapeGeode* parentGeode,
                                      aiMesh* mesh)
-  : ShapeNode(shape, parentEntity, parentGeode),
+  : ShapeNode(parentNode->getShape(), parentEntity, parentGeode),
     mVertices(new osg::Vec3Array),
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),

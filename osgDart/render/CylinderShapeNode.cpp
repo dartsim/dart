@@ -49,7 +49,9 @@ class CylinderShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  CylinderShapeGeode(dart::dynamics::CylinderShape* shape, EntityNode* parent);
+  CylinderShapeGeode(dart::dynamics::CylinderShape* shape,
+                     EntityNode* parentEntity,
+                     CylinderShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -83,8 +85,9 @@ protected:
 };
 
 //==============================================================================
-CylinderShapeNode::CylinderShapeNode(dart::dynamics::CylinderShape* shape,
-                                     EntityNode* parent)
+CylinderShapeNode::CylinderShapeNode(
+    std::shared_ptr<dart::dynamics::CylinderShape> shape,
+    EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mCylinderShape(shape),
     mGeode(nullptr)
@@ -115,7 +118,7 @@ void CylinderShapeNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new CylinderShapeGeode(mCylinderShape, mParentEntity);
+    mGeode = new CylinderShapeGeode(mCylinderShape.get(), mParentEntity, this);
     addChild(mGeode);
     return;
   }
@@ -131,8 +134,9 @@ CylinderShapeNode::~CylinderShapeNode()
 
 //==============================================================================
 CylinderShapeGeode::CylinderShapeGeode(dart::dynamics::CylinderShape* shape,
-                                       EntityNode* parent)
-  : ShapeNode(shape, parent, this),
+    EntityNode* parentEntity,
+    CylinderShapeNode* parentNode)
+  : ShapeNode(parentNode->getShape(), parentEntity, this),
     mCylinderShape(shape),
     mDrawable(nullptr)
 {

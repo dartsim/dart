@@ -45,7 +45,7 @@ int main()
 {
   using namespace dart::dynamics;
 
-  dart::simulation::World* world =
+  dart::simulation::WorldPtr world =
       dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);

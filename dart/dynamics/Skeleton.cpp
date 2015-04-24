@@ -48,6 +48,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -56,17 +57,30 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Skeleton::Skeleton(const std::string& _name)
+Skeleton::Properties::Properties(
+    const std::string& _name,
+    bool _isMobile,
+    const Eigen::Vector3d& _gravity,
+    double _timeStep,
+    bool _enabledSelfCollisionCheck,
+    bool _enableAdjacentBodyCheck)
   : mName(_name),
+    mIsMobile(_isMobile),
+    mGravity(_gravity),
+    mTimeStep(_timeStep),
+    mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
+    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Skeleton::Skeleton(const std::string& _name)
+  : mSkeletonP(_name),
     mNumDofs(0),
-    mEnabledSelfCollisionCheck(false),
-    mEnabledAdjacentBodyCheck(false),
     mNameMgrForBodyNodes("BodyNode"),
     mNameMgrForJoints("Joint"),
     mNameMgrForSoftBodyNodes("BodyNode"),
-    mIsMobile(true),
-    mTimeStep(0.001),
-    mGravity(Eigen::Vector3d(0.0, 0.0, -9.81)),
     mTotalMass(0.0),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
@@ -80,55 +94,138 @@ Skeleton::Skeleton(const std::string& _name)
     mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
     mUnionRootSkeleton(this),
-    mUnionSize(1)
+    mUnionSize(1),
+    onNameChanged(mNameChangedSignal)
 {
+  // Do nothing
 }
 
 //==============================================================================
 Skeleton::~Skeleton()
 {
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (BodyNode* bn : mBodyNodes)
   {
-    delete (*it);
+    if(bn->getParentJoint())
+      delete bn->getParentJoint();
+
+    delete bn;
+  }
+
+  for (EndEffector* ee : mEndEffectors)
+  {
+    delete ee;
   }
 }
 
 //==============================================================================
-void Skeleton::setName(const std::string& _name)
+std::shared_ptr<Skeleton> Skeleton::clone() const
 {
-  mName = _name;
+  SkeletonPtr skelClone(new Skeleton(getName()));
+
+  for(size_t i=0; i<getNumBodyNodes(); ++i)
+  {
+    // Create a clone of the parent Joint
+    Joint* joint = getJoint(i)->clone();
+
+    // Identify the original parent BodyNode
+    const BodyNode* originalParent = getBodyNode(i)->getParentBodyNode();
+
+    // Grab the parent BodyNode clone (using its name, which is guaranteed to be
+    // unique), or use nullptr if this is a root BodyNode
+    BodyNode* parentClone = originalParent == nullptr? nullptr :
+          skelClone->getBodyNode(originalParent->getName());
+
+    if( (nullptr != originalParent) && (nullptr == parentClone) )
+    {
+      dterr << "[Skeleton::clone] Failed to find a clone of BodyNode named ["
+            << originalParent->getName() << "] which is needed as the parent "
+            << "of the BodyNode named [" << getBodyNode(i)->getName()
+            << "] and should already have been created. Please report this as "
+            << "a bug!\n";
+    }
+
+    skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
+  }
+
+  for(size_t i=0; i<getNumEndEffectors(); ++i)
+  {
+    // Grab the EndEffector we want to clone
+    const EndEffector* originalEE = getEndEffector(i);
+
+    // Identify the original parent BodyNode
+    const BodyNode* originalParent = originalEE->getParentBodyNode();
+
+    // Grab the clone of the original parent
+    BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
+
+    skelClone->registerEndEffector(parentClone, originalEE->clone(parentClone));
+  }
+
+  skelClone->setProperties(getSkeletonProperties());
+
+  return skelClone;
+}
+
+//==============================================================================
+void Skeleton::setProperties(const Properties& _properties)
+{
+  setName(_properties.mName);
+  setMobile(_properties.mIsMobile);
+  setGravity(_properties.mGravity);
+  setTimeStep(_properties.mTimeStep);
+
+  if(_properties.mEnabledSelfCollisionCheck)
+    enableSelfCollision(_properties.mEnabledAdjacentBodyCheck);
+  else
+    disableSelfCollision();
+}
+
+//==============================================================================
+const Skeleton::Properties& Skeleton::getSkeletonProperties() const
+{
+  return mSkeletonP;
+}
+
+//==============================================================================
+const std::string& Skeleton::setName(const std::string& _name)
+{
+  if(_name == mSkeletonP.mName)
+    return mSkeletonP.mName;
+
+  const std::string oldName = mSkeletonP.mName;
+  mSkeletonP.mName = _name;
+
+  mNameChangedSignal.raise(this, oldName, mSkeletonP.mName);
+
+  return mSkeletonP.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::getName() const
 {
-  return mName;
+  return mSkeletonP.mName;
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
+void Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
-  _newNode->mName = mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(),
-                                                            _newNode);
-  return _newNode->mName;
+  _newNode->mEntityP.mName =
+      mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
+void Skeleton::addEntryToJointNameMgr(Joint* _newJoint)
 {
-  _newJoint->mName = mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(),
-                                                          _newJoint);
+  _newJoint->mJointP.mName =
+      mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
   _newJoint->updateDegreeOfFreedomNames();
-  return _newJoint->mName;
 }
 
 //==============================================================================
-const std::string& Skeleton::addEntryToDofNameMgr(DegreeOfFreedom* _newDof)
+void Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
 {
-  _newDof->mName = mNameMgrForDofs.issueNewNameAndAdd(_newDof->getName(),
-                                                      _newDof);
-  return _newDof->mName;
+  _ee->mEntityP.mName =
+      mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
 }
 
 //==============================================================================
@@ -157,67 +254,67 @@ void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
 //==============================================================================
 const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 {
-  _newMarker->mName = mNameMgrForMarkers.issueNewNameAndAdd(
+  _newMarker->mProperties.mName = mNameMgrForMarkers.issueNewNameAndAdd(
       _newMarker->getName(), _newMarker);
-  return _newMarker->mName;
+  return _newMarker->mProperties.mName;
 }
 
 //==============================================================================
 void Skeleton::enableSelfCollision(bool _enableAdjecentBodyCheck)
 {
-  mEnabledSelfCollisionCheck = true;
-  mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
+  mSkeletonP.mEnabledSelfCollisionCheck = true;
+  mSkeletonP.mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mEnabledSelfCollisionCheck = false;
-  mEnabledAdjacentBodyCheck = false;
+  mSkeletonP.mEnabledSelfCollisionCheck = false;
+  mSkeletonP.mEnabledAdjacentBodyCheck = false;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledSelfCollisionCheck() const
 {
-  return mEnabledSelfCollisionCheck;
+  return mSkeletonP.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledAdjacentBodyCheck() const
 {
-  return mEnabledAdjacentBodyCheck;
+  return mSkeletonP.mEnabledAdjacentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::setMobile(bool _isMobile)
 {
-  mIsMobile = _isMobile;
+  mSkeletonP.mIsMobile = _isMobile;
 }
 
 //==============================================================================
 bool Skeleton::isMobile() const
 {
-  return mIsMobile;
+  return mSkeletonP.mIsMobile;
 }
 
 //==============================================================================
 void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
-  mTimeStep = _timeStep;
+  mSkeletonP.mTimeStep = _timeStep;
   notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 double Skeleton::getTimeStep() const
 {
-  return mTimeStep;
+  return mSkeletonP.mTimeStep;
 }
 
 //==============================================================================
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
-  mGravity = _gravity;
+  mSkeletonP.mGravity = _gravity;
   mIsGravityForcesDirty = true;
   mIsCoriolisAndGravityForcesDirty = true;
 }
@@ -225,13 +322,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 //==============================================================================
 const Eigen::Vector3d& Skeleton::getGravity() const
 {
-  return mGravity;
-}
-
-//==============================================================================
-double Skeleton::getMass() const
-{
-  return mTotalMass;
+  return mSkeletonP.mGravity;
 }
 
 //==============================================================================
@@ -251,6 +342,12 @@ void Skeleton::addBodyNode(BodyNode* _body)
     mSoftBodyNodes.push_back(softBodyNode);
     addEntryToSoftBodyNodeNameMgr(softBodyNode);
   }
+}
+
+//==============================================================================
+double Skeleton::getMass() const
+{
+  return mTotalMass;
 }
 
 //==============================================================================
@@ -295,7 +392,7 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
   if (_idx < _vec.size())
     return _vec[_idx];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -383,23 +480,13 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 //==============================================================================
 DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return NULL;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return NULL;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================
@@ -412,6 +499,36 @@ DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 {
   return mNameMgrForDofs.getObject(_name);
+}
+
+//==============================================================================
+size_t Skeleton::getNumEndEffectors() const
+{
+  return mEndEffectors.size();
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(size_t _idx)
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(const std::string& _name)
+{
+  return mNameMgrForEndEffectors.getObject(_name);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
+{
+  return mNameMgrForEndEffectors.getObject(_name);
 }
 
 //==============================================================================
@@ -458,6 +575,8 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     }
   }
 
+  ///////////////////////////////////////////////////////////////////////////
+
   // Initialize body nodes and generalized coordinates
   mDofs.clear();
   mNumDofs = 0;
@@ -478,9 +597,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     mNumDofs += joint->getNumDofs();
   }
 
-  // Compute transformations, velocities, and partial accelerations
-//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
-
   // Set dimension of dynamics quantities
   size_t dof = getNumDofs();
   mM    = Eigen::MatrixXd::Zero(dof, dof);
@@ -499,9 +615,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   resetForces();
 
   // Calculate mass
-  mTotalMass = 0.0;
-  for (size_t i = 0; i < getNumBodyNodes(); i++)
-    mTotalMass += getBodyNode(i)->getMass();
+  updateTotalMass();
 }
 
 //==============================================================================
@@ -1194,6 +1308,439 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 }
 
 //==============================================================================
+bool isValidBodyNode(const Skeleton* _skeleton,
+                     const BodyNode* _bodyNode,
+                     const std::string& _jacobianType)
+{
+  if (nullptr == _bodyNode)
+  {
+    dtwarn << "[Skeleton::getJacobian] Invalid BodyNode pointer, 'nullptr'. "
+           << "Returning zero Jacobian." << std::endl;
+    return false;
+  }
+
+  // The given BodyNode should be in the Skeleton.
+  if (_bodyNode->getSkeleton() != _skeleton)
+  {
+    dtwarn << "[Skeleton::getJacobian] Attempting to get a "
+           << _jacobianType << " of a BodyNode '"
+           << _bodyNode->getName() << "' that is not in this Skeleton '"
+           << _skeleton->getName() << ". Returning zero Jacobian." << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+template <typename JacobianType>
+void assignJacobian(JacobianType& _J,
+                    const BodyNode* _bodyNode,
+                    const JacobianType& _JBodyNode)
+{
+  // Assign the BodyNode's Jacobian to the result Jacobian.
+  size_t localIndex = 0;
+  const auto& indices = _bodyNode->getDependentGenCoordIndices();
+  for (const auto& index : indices)
+  {
+    // Each index should be less than the number of dofs of this Skeleton.
+    assert(index < _bodyNode->getSkeleton()->getNumDofs());
+
+    _J.col(index) = _JBodyNode.col(localIndex++);
+  }
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getJacobian();
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+                                     const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+                                     const Eigen::Vector3d& _localOffset) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_localOffset);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+                                     const Eigen::Vector3d& _localOffset,
+                                     const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_localOffset,
+                                                          _inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getWorldJacobian(const BodyNode* _bodyNode) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian();
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getWorldJacobian(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset) const
+{
+  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+    return J;
+
+  // Get the spatial Jacobian of the targeting BodyNode
+  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian(_localOffset);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
+}
+
+//==============================================================================
+math::LinearJacobian Skeleton::getLinearJacobian(
+    const BodyNode* _bodyNode,
+    const Frame* _inCoordinatesOf) const
+{
+  math::LinearJacobian Jv = math::LinearJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian"))
+    return Jv;
+
+  // Get the linear Jacobian of the targeting BodyNode
+  math::LinearJacobian JvBodyNode
+      = _bodyNode->getLinearJacobian(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::LinearJacobian>(Jv, _bodyNode, JvBodyNode);
+
+  return Jv;
+}
+
+//==============================================================================
+math::LinearJacobian Skeleton::getLinearJacobian(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset,
+    const Frame* _inCoordinatesOf) const
+{
+  math::LinearJacobian Jv = math::LinearJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian"))
+    return Jv;
+
+  // Get the linear Jacobian of the targeting BodyNode
+  math::LinearJacobian JvBodyNode
+      = _bodyNode->getLinearJacobian(_localOffset, _inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::LinearJacobian>(Jv, _bodyNode, JvBodyNode);
+
+  return Jv;
+}
+
+//==============================================================================
+math::AngularJacobian Skeleton::getAngularJacobian(
+    const BodyNode* _bodyNode,
+    const Frame* _inCoordinatesOf) const
+{
+  math::AngularJacobian Jw = math::AngularJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "angular Jacobian"))
+    return Jw;
+
+  // Get the angular Jacobian of the targeting BodyNode
+  math::AngularJacobian JwBodyNode
+      = _bodyNode->getAngularJacobian(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::AngularJacobian>(Jw, _bodyNode, JwBodyNode);
+
+  return Jw;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianSpatialDeriv(
+    const BodyNode* _bodyNode) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode = _bodyNode->getJacobianSpatialDeriv();
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianSpatialDeriv(
+    const BodyNode* _bodyNode,
+    const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode
+      = _bodyNode->getJacobianSpatialDeriv(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianSpatialDeriv(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode
+      = _bodyNode->getJacobianSpatialDeriv(_localOffset);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianSpatialDeriv(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset,
+    const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode
+      = _bodyNode->getJacobianSpatialDeriv(_localOffset, _inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianClassicDeriv(
+    const BodyNode* _bodyNode) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode,
+                       "spatial Jacobian (classical) time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode = _bodyNode->getJacobianClassicDeriv();
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianClassicDeriv(
+    const BodyNode* _bodyNode,
+    const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode,
+                       "spatial Jacobian (classical) time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode
+      = _bodyNode->getJacobianClassicDeriv(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobianClassicDeriv(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset,
+    const Frame* _inCoordinatesOf) const
+{
+  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode,
+                       "spatial Jacobian (classical) time derivative"))
+    return dJ;
+
+  // Get the spatial Jacobian time derivative of the targeting BodyNode
+  math::Jacobian dJBodyNode
+      = _bodyNode->getJacobianClassicDeriv(_localOffset, _inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+
+  return dJ;
+}
+
+//==============================================================================
+math::LinearJacobian Skeleton::getLinearJacobianDeriv(
+    const BodyNode* _bodyNode,
+    const Frame* _inCoordinatesOf) const
+{
+  math::LinearJacobian dJv = math::LinearJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian time derivative"))
+    return dJv;
+
+  // Get the linear Jacobian time derivative of the targeting BodyNode
+  math::LinearJacobian JvBodyNode
+      = _bodyNode->getLinearJacobianDeriv(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, JvBodyNode);
+
+  return dJv;
+}
+
+//==============================================================================
+math::LinearJacobian Skeleton::getLinearJacobianDeriv(
+    const BodyNode* _bodyNode,
+    const Eigen::Vector3d& _localOffset,
+    const Frame* _inCoordinatesOf) const
+{
+  math::LinearJacobian dJv = math::LinearJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian time derivative"))
+    return dJv;
+
+  // Get the linear Jacobian time derivative of the targeting BodyNode
+  math::LinearJacobian JvBodyNode
+      = _bodyNode->getLinearJacobianDeriv(_localOffset, _inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, JvBodyNode);
+
+  return dJv;
+}
+
+//==============================================================================
+math::AngularJacobian Skeleton::getAngularJacobianDeriv(
+    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+{
+  math::AngularJacobian dJw = math::AngularJacobian::Zero(3, getNumDofs());
+
+  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
+  if (!isValidBodyNode(this, _bodyNode, "angular Jacobian time derivative"))
+    return dJw;
+
+  // Get the angular Jacobian time derivative of the targeting BodyNode
+  math::AngularJacobian JwBodyNode
+      = _bodyNode->getAngularJacobianDeriv(_inCoordinatesOf);
+
+  // Assign the BodyNode's Jacobian to the full-sized Jacobian
+  assignJacobian<math::AngularJacobian>(dJw, _bodyNode, JwBodyNode);
+
+  return dJw;
+}
+
+//==============================================================================
 const Eigen::MatrixXd& Skeleton::getMassMatrix()
 {
   if (mIsMassMatrixDirty)
@@ -1289,7 +1836,7 @@ const Eigen::VectorXd& Skeleton::getConstraintForces()
   assert(index == dof);
 
   // Get force by devide impulse by time step
-  mFc = mFc / mTimeStep;
+  mFc = mFc / mSkeletonP.mTimeStep;
 
   return mFc;
 }
@@ -1347,23 +1894,48 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
+void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
+{
+  mBodyNodes.push_back(_newBodyNode);
+  addEntryToBodyNodeNameMgr(_newBodyNode);
+  registerJoint(_newBodyNode->getParentJoint());
+
+  SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_newBodyNode);
+  if (softBodyNode)
+  {
+    mSoftBodyNodes.push_back(softBodyNode);
+    addEntryToSoftBodyNodeNameMgr(softBodyNode);
+  }
+
+  Joint* newJoint = _newBodyNode->getParentJoint();
+  for(size_t i = 0; i < newJoint->getNumDofs(); ++i)
+  {
+    mDofs.push_back(newJoint->getDof(i));
+    newJoint->setIndexInSkeleton(i, mNumDofs + i);
+  }
+  mNumDofs += newJoint->getNumDofs();
+
+  _newBodyNode->init(this);
+
+  updateTotalMass();
+  updateDataDimensions();
+  clearExternalForces();
+  resetForces();
+}
+
+//==============================================================================
 void Skeleton::registerJoint(Joint* _newJoint)
 {
-  if (NULL == _newJoint)
+  if (nullptr == _newJoint)
   {
-    dterr << "[Skeleton::registerJoint] Error: Attempting to add a NULL joint "
-             "to the Skeleton named '" << mName << "'!\n";
+    dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
+             "Joint to the Skeleton named [" << mSkeletonP.mName << "]!\n";
     return;
   }
 
   addEntryToJointNameMgr(_newJoint);
   _newJoint->mSkeleton = this;
-
-  for (size_t i = 0; i < _newJoint->getNumDofs(); ++i)
-  {
-    DegreeOfFreedom* dof = _newJoint->getDof(i);
-    dof->mName = mNameMgrForDofs.issueNewNameAndAdd(dof->getName(), dof);
-  }
+  _newJoint->registerDofs();
 }
 
 //==============================================================================
@@ -1379,6 +1951,31 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
   }
+}
+
+//==============================================================================
+bool Skeleton::registerEndEffector(BodyNode* _parent,
+                                   EndEffector* _newEndEffector)
+{
+  if(this != _parent->getSkeleton())
+    return false;
+
+  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
+                                                mEndEffectors.end(),
+                                                _newEndEffector);
+
+  if(it != mEndEffectors.end())
+  {
+    dtwarn << "[Skeleton::registerEndEffector] Attempting to double-register "
+           << "an EndEffector. This is most likely a bug; please report this!\n";
+    return false;
+  }
+
+  mEndEffectors.push_back(_newEndEffector);
+  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+  addEntryToEndEffectorNameMgr(_newEndEffector);
+
+  return true;
 }
 
 //==============================================================================
@@ -1398,12 +1995,38 @@ void Skeleton::notifyArticulatedInertiaUpdate()
 }
 
 //==============================================================================
+void Skeleton::updateTotalMass()
+{
+  mTotalMass = 0.0;
+  for(size_t i=0; i<getNumBodyNodes(); ++i)
+    mTotalMass += getBodyNode(i)->getMass();
+}
+
+//==============================================================================
+void Skeleton::updateDataDimensions()
+{
+  size_t dof = getNumDofs();
+  mM    = Eigen::MatrixXd::Zero(dof, dof);
+  mAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvM = Eigen::MatrixXd::Zero(dof, dof);
+  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
+  mCvec = Eigen::VectorXd::Zero(dof);
+  mG    = Eigen::VectorXd::Zero(dof);
+  mCg   = Eigen::VectorXd::Zero(dof);
+  mFext = Eigen::VectorXd::Zero(dof);
+  mFc   = Eigen::VectorXd::Zero(dof);
+  mFd   = Eigen::VectorXd::Zero(dof);
+
+  notifyArticulatedInertiaUpdate();
+}
+
+//==============================================================================
 void Skeleton::updateArticulatedInertia() const
 {
   for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateArtInertia(mTimeStep);
+    (*it)->updateArtInertia(mSkeletonP.mTimeStep);
   }
 
   mIsArticulatedInertiaDirty = false;
@@ -1495,7 +2118,7 @@ void Skeleton::updateAugMassMatrix()
     //         it != mBodyNodes.end(); ++it)
     for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
     {
-      mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mTimeStep);
+      mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mSkeletonP.mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -1609,7 +2232,7 @@ void Skeleton::updateInvAugMassMatrix()
     //         it != mBodyNodes.end(); ++it)
     for (size_t i = 0; i < mBodyNodes.size(); ++i)
     {
-      mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mTimeStep);
+      mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mSkeletonP.mTimeStep);
       int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -1680,7 +2303,7 @@ void Skeleton::updateGravityForces()
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateGravityForceVector(&mG, mGravity);
+    (*it)->aggregateGravityForceVector(&mG, mSkeletonP.mGravity);
   }
 
   mIsGravityForcesDirty = false;
@@ -1710,7 +2333,7 @@ void Skeleton::updateCoriolisAndGravityForces()
   for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateCombinedVector(&mCg, mGravity);
+    (*it)->aggregateCombinedVector(&mCg, mSkeletonP.mGravity);
   }
 
   mIsCoriolisAndGravityForcesDirty = false;
@@ -1851,14 +2474,14 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    (*it)->updateBiasForce(mGravity, mTimeStep);
+    (*it)->updateBiasForce(mSkeletonP.mGravity, mSkeletonP.mTimeStep);
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
   {
     bodyNode->updateAccelerationFD();
     bodyNode->updateTransmittedForceFD();
-    bodyNode->updateJointForceFD(mTimeStep, true, true);
+    bodyNode->updateJointForceFD(mSkeletonP.mTimeStep, true, true);
   }
 }
 
@@ -1915,8 +2538,8 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
   // Backward recursion
   for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
   {
-    (*it)->updateTransmittedForceID(mGravity, _withExternalForces);
-    (*it)->updateJointForceID(mTimeStep,
+    (*it)->updateTransmittedForceID(mSkeletonP.mGravity, _withExternalForces);
+    (*it)->updateJointForceID(mSkeletonP.mTimeStep,
                               _withDampingForces,
                               _withSpringForces);
   }
@@ -1940,7 +2563,7 @@ void Skeleton::clearConstraintImpulses()
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
   // Assertions
-  assert(_bodyNode != NULL);
+  assert(_bodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contains _bodyNode
@@ -1955,7 +2578,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 
   // Prepare cache data
   BodyNode* it = _bodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
@@ -1967,7 +2590,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                  const Eigen::Vector6d& _imp)
 {
   // Assertions
-  assert(_bodyNode != NULL);
+  assert(_bodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -1985,7 +2608,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 
   // Prepare cache data
   BodyNode* it = _bodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
@@ -2001,8 +2624,8 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
                                  const Eigen::Vector6d& _imp2)
 {
   // Assertions
-  assert(_bodyNode1 != NULL);
-  assert(_bodyNode2 != NULL);
+  assert(_bodyNode1 != nullptr);
+  assert(_bodyNode2 != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -2043,7 +2666,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
                                  const Eigen::Vector3d& _imp)
 {
   // Assertions
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
@@ -2062,7 +2685,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 
   // Prepare cache data
   BodyNode* it = _softBodyNode;
-  while (it != NULL)
+  while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
@@ -2112,7 +2735,7 @@ void Skeleton::computeImpulseForwardDynamics()
     bodyNode->updateVelocityChangeFD();
     bodyNode->updateTransmittedImpulse();
     bodyNode->updateJointImpulseFD();
-    bodyNode->updateConstrainedTerms(mTimeStep);
+    bodyNode->updateConstrainedTerms(mSkeletonP.mTimeStep);
   }
 }
 
@@ -2317,7 +2940,7 @@ double Skeleton::getPotentialEnergy() const
   for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
-    PE += (*it)->getPotentialEnergy(mGravity);
+    PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
     PE += (*it)->getParentJoint()->getPotentialEnergy();
   }
 

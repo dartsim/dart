@@ -57,7 +57,9 @@ class SoftMeshShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  SoftMeshShapeNode(dart::dynamics::SoftMeshShape* shape, EntityNode* parent);
+  SoftMeshShapeNode(
+      std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
+      EntityNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -66,7 +68,7 @@ protected:
 
   virtual ~SoftMeshShapeNode();
 
-  dart::dynamics::SoftMeshShape* mSoftMeshShape;
+  std::shared_ptr<dart::dynamics::SoftMeshShape> mSoftMeshShape;
   SoftMeshShapeGeode* mGeode;
 
 };

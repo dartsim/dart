@@ -46,7 +46,7 @@ class OperationalSpaceControlWorld : public osgDart::WorldNode
 {
 public:
 
-  OperationalSpaceControlWorld(dart::simulation::World* _world)
+  OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
     : osgDart::WorldNode(_world)
   {
     // Extract the relevant pointers
@@ -75,8 +75,8 @@ public:
     // Create target Frame
     Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
     tf.pretranslate(mOffset);
-    mTarget = new SimpleFrame(Frame::World(), "target", tf);
-    Shape* ball = new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05));
+    mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
+    ShapePtr ball(new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
     ball->setColor(Eigen::Vector3d(0.9,0,0));
     mTarget->addVisualizationShape(ball);
     mWorld->addFrame(mTarget);
@@ -119,7 +119,7 @@ protected:
   {
     if(mViewer)
     {
-      dnd = mViewer->enableDragAndDrop(mTarget);
+      dnd = mViewer->enableDragAndDrop(mTarget.get());
       dnd->setObstructable(false);
       mViewer->addInstructionText("\nClick and drag the red ball to move the target of the operational space controller\n");
       mViewer->addInstructionText("Hold key 1 to constrain movements to the x-axis\n");
@@ -128,9 +128,9 @@ protected:
     }
   }
 
-  Skeleton* mRobot;
+  SkeletonPtr mRobot;
   BodyNode* mEndEffector;
-  SimpleFrame* mTarget;
+  SimpleFramePtr mTarget;
 
   Eigen::Vector3d mOffset;
   Eigen::Matrix3d mKp;
@@ -253,11 +253,11 @@ public:
 
 int main()
 {
-  dart::simulation::World* world = new dart::simulation::World;
+  dart::simulation::WorldPtr world(new dart::simulation::World);
   dart::utils::DartLoader loader;
 
   // Load the robot
-  dart::dynamics::Skeleton* robot =
+  dart::dynamics::SkeletonPtr robot =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
@@ -265,7 +265,7 @@ int main()
   robot->getJoint(0)->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
 
   // Load the ground
-  dart::dynamics::Skeleton* ground =
+  dart::dynamics::SkeletonPtr ground =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 

@@ -49,7 +49,7 @@ class CustomWorldNode : public osgDart::WorldNode
 {
 public:
 
-  CustomWorldNode(dart::simulation::World* _world)
+  CustomWorldNode(dart::simulation::WorldPtr _world)
     : WorldNode(_world), F(nullptr), T(nullptr),
       C(nullptr), S(nullptr), SC(nullptr), t(0.0)
   { }
@@ -102,53 +102,52 @@ public:
     }
   }
 
-  SimpleFrame* F;    // Change the transform of this Frame over time
-  Shape* T;          // Change the transform of this Shape over time
-  Shape* C;          // Change the color of this Shape over time
-  CylinderShape* S;  // Change the scaling of this Shape over time
-  CylinderShape* SC; // Change the scaling and color of this Shape over time
+  SimpleFramePtr F;                  // Change the transform of this Frame over time
+  ShapePtr T;                        // Change the transform of this Shape over time
+  ShapePtr C;                        // Change the color of this Shape over time
+  std::shared_ptr<CylinderShape> S;  // Change the scaling of this Shape over time
+  std::shared_ptr<CylinderShape> SC; // Change the scaling and color of this Shape over time
 
   double t;
 };
 
 int main()
 {
-  dart::simulation::World* myWorld = new dart::simulation::World;
+  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 
-  SimpleFrame cyl1(Frame::World(), "cyl1");
-  CylinderShape* shape1 = new CylinderShape(0.1,0.1);
-  cyl1.addVisualizationShape(shape1);
+  SimpleFramePtr cyl1(new SimpleFrame(Frame::World(), "cyl1"));
+  std::shared_ptr<CylinderShape> shape1(new CylinderShape(0.1,0.1));
+  cyl1->addVisualizationShape(shape1);
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translate(Eigen::Vector3d(0,-0.5,0.5));
-  cyl1.setRelativeTransform(tf);
+  cyl1->setRelativeTransform(tf);
 
-  Entity cyl2(Frame::World(), "cyl2", false);
-  CylinderShape* shape2 = new CylinderShape(0.2, 0.2);
+  Entity cyl2(cyl1.get(), "cyl2", false);
+  std::shared_ptr<CylinderShape> shape2(new CylinderShape(0.2, 0.2));
   tf.translate(Eigen::Vector3d(0.5,0,0));
   shape2->setLocalTransform(tf);
   shape2->setColor(Eigen::Vector3d(1,0,0));
   cyl2.addVisualizationShape(shape2);
 
-  SimpleFrame F(Frame::World(), "F");
-  F.addVisualizationShape(new CylinderShape(0.1,0.3));
+  SimpleFramePtr F(new SimpleFrame(Frame::World(), "F"));
+  F->addVisualizationShape(std::make_shared<CylinderShape>(0.1,0.3));
 
-  Entity cyl3(&F, "cyl3", false);
-  CylinderShape* shape3 = new CylinderShape(0.05,0.05);
+  Entity cyl3(F.get(), "cyl3", false);
+  std::shared_ptr<CylinderShape> shape3(new CylinderShape(0.05,0.05));
   shape3->setLocalTransform(tf);
   shape3->setColor(Eigen::Vector3d(0,1,0));
   cyl3.addVisualizationShape(shape3);
 
-  Entity cyl4(&F, "cyl4", false);
-  CylinderShape* shape4 = new CylinderShape(0.15,0.15);
+  Entity cyl4(F.get(), "cyl4", false);
+  std::shared_ptr<CylinderShape> shape4(new CylinderShape(0.15,0.15));
   shape4->setLocalTransform(tf.inverse());
   cyl4.addVisualizationShape(shape4);
 
-  myWorld->addEntity(&cyl1);
-  myWorld->addEntity(&cyl2);
-  myWorld->addFrame(&F);
+  myWorld->addFrame(cyl1);
+  myWorld->addFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
-  node->F = &F;
+  node->F = F;
   node->T = shape2;
   shape2->setDataVariance(Shape::DYNAMIC_TRANSFORM);
   node->C = shape3;

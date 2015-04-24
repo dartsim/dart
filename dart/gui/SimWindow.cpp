@@ -50,6 +50,7 @@
 //#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
+#include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/utils/FileInfoWorld.h"
 #include "dart/gui/GraphWindow.h"
@@ -88,8 +89,8 @@ void SimWindow::drawSkels() {
 
 void SimWindow::drawEntities()
 {
-  for (size_t i = 0; i < mWorld->getNumEntities(); ++i)
-    mWorld->getEntity(i)->draw(mRI);
+  for (size_t i = 0; i < mWorld->getNumFrames(); ++i)
+    mWorld->getFrame(i)->draw(mRI);
 }
 
 void SimWindow::displayTimer(int _val) {
@@ -226,7 +227,7 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void SimWindow::setWorld(simulation::World* _world) {
+void SimWindow::setWorld(simulation::WorldPtr _world) {
   mWorld = _world;
 }
 

@@ -49,7 +49,7 @@ class CustomWorldNode : public osgDart::WorldNode
 {
 public:
 
-  CustomWorldNode(dart::simulation::World* _world)
+  CustomWorldNode(dart::simulation::WorldPtr _world)
     : WorldNode(_world), F(nullptr), T(nullptr), S(nullptr), t(0.0) { }
 
   void customPreRefresh() override
@@ -99,53 +99,57 @@ public:
     }
   }
 
-  SimpleFrame* F;     // Change the transform of this Frame over time
-  Shape* T;           // Change the transform of this Shape over time
-  Shape* C;           // Change the color of this Shape over time
-  EllipsoidShape* S;  // Change the scaling of this Shape over time
-  EllipsoidShape* SC; // Change the scaling and color this Shape over time
+  SimpleFramePtr F;                   // Change the transform of this Frame over time
+  ShapePtr T;                         // Change the transform of this Shape over time
+  ShapePtr C;                         // Change the color of this Shape over time
+  std::shared_ptr<EllipsoidShape> S;  // Change the scaling of this Shape over time
+  std::shared_ptr<EllipsoidShape> SC; // Change the scaling and color this Shape over time
 
   double t;
 };
 
 int main()
 {
-  dart::simulation::World* myWorld = new dart::simulation::World;
+  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
 
-  SimpleFrame ellipsoid1(Frame::World(), "ellipsoid1");
-  EllipsoidShape* shape1 = new EllipsoidShape(Eigen::Vector3d(0.1,0.1,0.1));
-  ellipsoid1.addVisualizationShape(shape1);
+  SimpleFramePtr ellipsoid1(new SimpleFrame(Frame::World(), "ellipsoid1"));
+  std::shared_ptr<EllipsoidShape> shape1(
+        new EllipsoidShape(Eigen::Vector3d(0.1, 0.1, 0.1)));
+  ellipsoid1->addVisualizationShape(shape1);
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translate(Eigen::Vector3d(0,-0.5,0.5));
-  ellipsoid1.setRelativeTransform(tf);
+  ellipsoid1->setRelativeTransform(tf);
 
-  Entity ellipsoid2(Frame::World(), "ellipsoid2", false);
-  EllipsoidShape* shape2 = new EllipsoidShape(Eigen::Vector3d(0.15, 0.3, 0.15));
+  Entity ellipsoid2(ellipsoid1.get(), "ellipsoid2", false);
+  std::shared_ptr<EllipsoidShape> shape2(
+        new EllipsoidShape(Eigen::Vector3d(0.15, 0.3, 0.15)));
   tf.translate(Eigen::Vector3d(0.5,0,0));
   shape2->setLocalTransform(tf);
   shape2->setColor(Eigen::Vector3d(1,0,0));
   ellipsoid2.addVisualizationShape(shape2);
 
-  SimpleFrame F(Frame::World(), "F");
-  F.addVisualizationShape(new EllipsoidShape(Eigen::Vector3d(0.1,0.3,0.1)));
+  SimpleFramePtr F(new SimpleFrame(Frame::World(), "F"));
+  F->addVisualizationShape(
+        std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.1,0.3,0.1)));
 
-  Entity ellipsoid3(&F, "ellipsoid3", false);
-  EllipsoidShape* shape3 = new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05));
+  Entity ellipsoid3(F.get(), "ellipsoid3", false);
+  std::shared_ptr<EllipsoidShape> shape3(
+        new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
   shape3->setLocalTransform(tf);
   shape3->setColor(Eigen::Vector3d(0,1,0));
   ellipsoid3.addVisualizationShape(shape3);
 
-  Entity ellipsoid4(&F, "ellipsoid4", false);
-  EllipsoidShape* shape4 = new EllipsoidShape(Eigen::Vector3d(0.15,0.15,0.15));
+  Entity ellipsoid4(F.get(), "ellipsoid4", false);
+  std::shared_ptr<EllipsoidShape> shape4(
+        new EllipsoidShape(Eigen::Vector3d(0.15,0.15,0.15)));
   shape4->setLocalTransform(tf.inverse());
   ellipsoid4.addVisualizationShape(shape4);
 
-  myWorld->addEntity(&ellipsoid1);
-  myWorld->addEntity(&ellipsoid2);
-  myWorld->addFrame(&F);
+  myWorld->addFrame(ellipsoid1);
+  myWorld->addFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
-  node->F = &F;
+  node->F = F;
   node->T = shape2;
   shape2->setDataVariance(Shape::DYNAMIC_TRANSFORM);
   node->C = shape3;

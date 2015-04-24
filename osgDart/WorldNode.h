@@ -39,6 +39,7 @@
 
 #include <osg/Group>
 #include <map>
+#include <memory>
 
 namespace dart {
 
@@ -67,13 +68,13 @@ public:
 
   friend class Viewer;
 
-  explicit WorldNode(dart::simulation::World* _world = nullptr);
+  explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr);
 
   /// Set the World that this WorldNode is associated with
-  void setWorld(dart::simulation::World* _newWorld);
+  void setWorld(std::shared_ptr<dart::simulation::World> _newWorld);
 
   /// Get the World that this WorldNode is associated with
-  dart::simulation::World* getWorld() const;
+  std::shared_ptr<dart::simulation::World> getWorld() const;
 
   /// This function is called at the beginning of each rendering cycle. It
   /// updates the tree of Frames and Entities that need to be rendered. It may
@@ -152,9 +153,6 @@ protected:
   /// Refresh all the custom Frame rendering data
   void refreshCustomFrames();
 
-  /// Refresh all the custom Entity rendering data
-  void refreshCustomEntities();
-
   /// Refresh the specified Frame's rendering data
   void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
 
@@ -180,7 +178,7 @@ protected:
   std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
 
   /// The World that this WorldNode is associated with
-  dart::simulation::World* mWorld;
+  std::shared_ptr<dart::simulation::World> mWorld;
 
   /// True iff simulation is active
   bool mSimulating;

@@ -48,11 +48,24 @@ namespace dynamics {
 class BallJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _properties =
+                                                MultiDofJoint<3>::Properties());
+  };
+
   /// Constructor
+  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
   explicit BallJoint(const std::string& _name = "BallJoint");
 
   /// Destructor
   virtual ~BallJoint();
+
+  /// Get the Properties of this BallJoint
+  Properties getBallJointProperties() const;
 
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of a BallJoint. The positions returned by this function will result in a
@@ -73,6 +86,13 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
 protected:
+
+  /// Constructor called by Skeleton class
+  BallJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

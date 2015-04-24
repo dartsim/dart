@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <array>
+#include <memory>
 
 #include <Eigen/Core>
 
@@ -60,7 +61,7 @@ namespace osgDart
 struct PickInfo
 {
   dart::dynamics::Entity* entity;
-  dart::dynamics::Shape* shape;
+  std::shared_ptr<dart::dynamics::Shape> shape;
   Eigen::Vector3d position;
   Eigen::Vector3d normal;
 };

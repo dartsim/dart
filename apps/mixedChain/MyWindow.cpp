@@ -59,8 +59,8 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-//  dart::dynamics::Skeleton* Skeleton =
-//      static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(0));
+//  dart::dynamics::SkeletonPtr Skeleton =
+//      static_cast<dart::dynamics::SkeletonPtr>(mWorld->getSkeleton(0));
 //  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
 //  softBodyNode->addExtForce(mForceOnRigidBody);
 
@@ -88,8 +88,7 @@ void MyWindow::drawSkels()
   // draw arrow
   if (mImpulseDuration > 0)
   {
-    dart::dynamics::Skeleton* Skeleton
-        = static_cast<dart::dynamics::Skeleton*>(mWorld->getSkeleton(1));
+    dart::dynamics::SkeletonPtr Skeleton = mWorld->getSkeleton(1);
     dart::dynamics::SoftBodyNode* softBodyNode
         = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);

@@ -51,7 +51,7 @@ using namespace dart::dynamics;
 using namespace dart::constraint;
 
 //==============================================================================
-State::State(Skeleton* _skeleton, const std::string& _name)
+State::State(SkeletonPtr _skeleton, const std::string& _name)
   : mName(_name),
     mSkeleton(_skeleton),
     mNextState(this),
