@@ -1337,16 +1337,17 @@ void InverseKinematics<JacobianEntity>::initialize()
   mConstraint = std::shared_ptr<optimizer::ModularFunction>(
         new optimizer::ModularFunction(mEntity->getName()+"_constraint"));
 
+  mProblem = std::make_shared<optimizer::Problem>();
   resetProblem();
-
-  // Create the default target for this IK module
-  setTarget(nullptr);
 
   // The default error method is the one based on Task Space Regions
   setErrorMethod<EulerAngleXYZMethod>();
 
   // The default gradient method is damped least squares Jacobian
   setGradientMethod<JacobianDLS>();
+
+  // Create the default target for this IK module
+  setTarget(nullptr);
 
   // Set up the cache clearing connections. These connections will ensure that
   // any time an outsider alters the transform of the object's transform or the
