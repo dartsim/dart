@@ -87,7 +87,7 @@ public:
 
     Properties(std::shared_ptr<Problem> _problem = nullptr,
                double _tolerance = 1e-9,
-               size_t _numMaxIterations = 100,
+               size_t _numMaxIterations = 500,
                size_t _iterationsPerPrint = 0,
                bool _printFinalResult = false,
                const std::string& _resultFile = "");

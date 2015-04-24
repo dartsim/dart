@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Console.h"
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 
@@ -81,7 +82,7 @@ GradientDescentSolver::GradientDescentSolver(const Properties& _properties)
     mGradientP(_properties),
     mRD(),
     mMT(mRD()),
-    mDistribution(0.0, std::nextafter(1.0, 2.0)) // This allows mDistrubtion to produce numbers in [0,1] inclusive
+    mDistribution(0.0, std::nextafter(1.0, 2.0)) // This allows mDistrubtion to produce numbers in the range [0,1] inclusive
 {
   // Do nothing
 }
@@ -114,6 +115,7 @@ bool GradientDescentSolver::solve()
   size_t dim = problem->getDimension();
 
   Eigen::VectorXd x = problem->getInitialGuess();
+  Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
   Eigen::VectorXd grad(x.size());
   std::vector<bool> ineqViolated(problem->getNumIneqConstraints());
@@ -194,13 +196,24 @@ bool GradientDescentSolver::solve()
       }
 
       x -= gamma*dx;
+      clampToBoundary(x);
 
-      if(dx.norm() < tol)
+      if((x-lastx).norm() < tol)
         minimized = true;
       else
         minimized = false;
 
+      lastx = x;
       ++stepCount;
+
+      if(mProperties.mIterationsPerPrint > 0 &&
+         stepCount%mProperties.mIterationsPerPrint == 0)
+      {
+        std::cout << "[GradientDescentSolver] Progress (attempt #"
+                  << attemptCount << " | iteration #" << stepCount << ")\n"
+                  << "cost: " << problem->getObjective()->eval(x) <<  " | x: "
+                  << x.transpose() << std::endl;
+      }
 
       if(stepCount > mProperties.mNumMaxIterations)
         break;
@@ -377,6 +390,29 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
     }
 
     _x[i] = step*mDistribution(mMT) + lower;
+  }
+}
+
+//==============================================================================
+void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
+{
+  if(nullptr == mProperties.mProblem)
+    return;
+
+  if( _x.size() != static_cast<int>(mProperties.mProblem->getDimension()) )
+  {
+    dtwarn << "[GradientDescentSolver::clampToBoundary] Mismatch between "
+           << "configuration size [" << _x.size() << "] and the dimension of "
+           << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
+    return;
+  }
+
+  for(int i=0; i<_x.size(); ++i)
+  {
+    if( _x[i] < mProperties.mProblem->getLowerBounds()[i] )
+      _x[i] = mProperties.mProblem->getLowerBounds()[i];
+    else if( mProperties.mProblem->getUpperBounds()[i] < _x[i] )
+      _x[i] = mProperties.mProblem->getUpperBounds()[i];
   }
 }
 

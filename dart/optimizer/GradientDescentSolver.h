@@ -177,6 +177,8 @@ public:
 
   void randomizeConfiguration(Eigen::VectorXd& _x);
 
+  void clampToBoundary(Eigen::VectorXd& _x);
+
 protected:
 
   UniqueProperties mGradientP;

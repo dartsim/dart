@@ -45,11 +45,11 @@
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 #include "dart/optimizer/Solver.h"
+#include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -79,7 +79,7 @@ public:
 
     virtual Eigen::Vector6d computeError() = 0;
 
-    const Eigen::Vector6d& computeError(Eigen::Map<const Eigen::VectorXd>& _q);
+    const Eigen::Vector6d& computeError(const Eigen::VectorXd& _q);
 
     const std::string& getMethodName() const;
 
@@ -178,7 +178,7 @@ public:
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) = 0;
 
-    void computeGradient(Eigen::Map<const Eigen::VectorXd>& _q,
+    void computeGradient(const Eigen::VectorXd& _q,
                          Eigen::Map<Eigen::VectorXd> _grad);
 
     const std::string& getMethodName() const;
@@ -283,9 +283,9 @@ public:
   /// Get the null space objective for this IK module
   std::shared_ptr<const optimizer::Function> getNullSpaceObjective() const;
 
-  double evalObjective(Eigen::Map<const Eigen::VectorXd>& _q);
+  double evalObjective(const Eigen::VectorXd& _q);
 
-  void evalObjectiveGradient(Eigen::Map<const Eigen::VectorXd>& _q,
+  void evalObjectiveGradient(const Eigen::VectorXd& _q,
                              Eigen::Map<Eigen::VectorXd> _grad);
 
   template <class IKErrorMethod>
@@ -335,6 +335,8 @@ public:
 protected:
 
   InverseKinematics(JacobianEntity* _entity);
+
+  void initialize();
 
   void resetTargetConnection();
 
@@ -389,6 +391,8 @@ protected:
   mutable math::Jacobian mJacobian;
 };
 
+typedef InverseKinematics<BodyNode> BodyNodeIK;
+
 //==============================================================================
 template <class JacobianEntity>
 InverseKinematics<JacobianEntity>::ErrorMethod::ErrorMethod(
@@ -396,8 +400,7 @@ InverseKinematics<JacobianEntity>::ErrorMethod::ErrorMethod(
     const std::string& _methodName)
   : mIK(_ik),
     mMethodName(_methodName),
-    mLastConfig(0),
-    mLastError(Eigen::Vector6d::Constant(std::nan(nullptr))),
+    mLastError(Eigen::Vector6d::Constant(std::nan(""))),
     mBounds(Eigen::Vector6d::Constant(DefaultIKTolerance),
             Eigen::Vector6d::Constant(DefaultIKTolerance)),
     mErrorLengthClamp(DefaultIKErrorClamp)
@@ -416,9 +419,9 @@ InverseKinematics<JacobianEntity>::ErrorMethod::~ErrorMethod()
 //==============================================================================
 template <class JacobianEntity>
 const Eigen::Vector6d& InverseKinematics<JacobianEntity>::
-ErrorMethod::computeError(Eigen::Map<const Eigen::VectorXd>& _q)
+ErrorMethod::computeError(const Eigen::VectorXd& _q)
 {
-  if(_q.size() != mIK->getDofs().size())
+  if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
     dterr << "[InverseKinematics::ErrorMethod::computeError] Mismatch between "
           << "configuration size [" << _q.size() << "] and the available "
@@ -608,7 +611,7 @@ void InverseKinematics<JacobianEntity>::ErrorMethod::clearCache()
 {
   // This will force the error to be recomputed the next time computeError is called
   if(mLastConfig.size() > 0)
-    mLastConfig[0] = std::nan(nullptr);
+    mLastConfig[0] = std::nan("");
 }
 
 //==============================================================================
@@ -700,7 +703,8 @@ InverseKinematics<JacobianEntity>::EulerAngleXYZMethod::computeError()
     // Transform the error term into the world frame if it's not already
     const Eigen::Isometry3d& R =
         this->mIK->getTarget()->getParentFrame()->getWorldTransform();
-    error = R.linear()*error;
+    error.head<3>() = R.linear()*error.head<3>();
+    error.tail<3>() = R.linear()*error.tail<3>();
   }
 
   return error;
@@ -711,9 +715,7 @@ template <class JacobianEntity>
 InverseKinematics<JacobianEntity>::GradientMethod::GradientMethod(
     InverseKinematics<JacobianEntity>* _ik, const std::string& _methodName)
   : mIK(_ik),
-    mMethodName(_methodName),
-    mLastConfig(0),
-    mLastGradient(0)
+    mMethodName(_methodName)
 {
   setComponentWiseClamp();
 }
@@ -728,10 +730,10 @@ InverseKinematics<JacobianEntity>::GradientMethod::~GradientMethod()
 //==============================================================================
 template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::GradientMethod::computeGradient(
-    Eigen::Map<const Eigen::VectorXd>& _q,
+    const Eigen::VectorXd& _q,
     Eigen::Map<Eigen::VectorXd> _grad)
 {
-  if(_q.size() != mIK->getDofs().size())
+  if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
     dterr << "[InverseKinematics::GradientMethod::computeGradient] Mismatch "
           << "between configuration size [" << _q.size() << "] and the "
@@ -758,13 +760,17 @@ void InverseKinematics<JacobianEntity>::GradientMethod::computeGradient(
     }
 
     if(repeat)
-      return mLastGradient;
+    {
+      _grad = mLastGradient;
+      return;
+    }
   }
 
   Eigen::Vector6d error = mIK->getErrorMethod()->computeError(_q);
   mIK->setConfiguration(_q);
-  computeGradient(error, _grad);
-  mLastGradient = _grad;
+  mLastGradient.resize(_grad.size());
+  computeGradient(error, mLastGradient);
+  _grad = mLastGradient;
 }
 
 //==============================================================================
@@ -810,7 +816,7 @@ void InverseKinematics<JacobianEntity>::GradientMethod::clearCache()
 {
   // This will force the gradient to be recomputed the next time computeGradient is called
   if(mLastConfig.size() > 0)
-    mLastConfig[0] = std::nan(nullptr);
+    mLastConfig[0] = std::nan("");
 }
 
 //==============================================================================
@@ -935,30 +941,7 @@ void InverseKinematics<JacobianEntity>::useLinkage()
     return;
   }
 
-  BodyNode* baseBn = mEntity->getParentBodyNode();
-
-  // Attempt to get at least one degree of freedom
-  while(baseBn &&
-      baseBn->getNumDependentGenCoords() == mEntity->getNumDependentGenCoords())
-  {
-    baseBn = baseBn->getParentBodyNode();
-  }
-
-  // Keep moving upstream, as long as the parent has no other children
-  while(baseBn && baseBn->getNumChildBodyNodes() == 1)
-  {
-    baseBn = baseBn->getParentBodyNode();
-  }
-
-  size_t start = 0;
-  // Ignore any coordinates that the base BodyNode depends on
-  if(baseBn)
-    start = baseBn->getNumDependentGenCoords();
-
-  for(size_t i=start; i<mEntity->getNumDependentGenCoords(); ++i)
-    mDofs.push_back(mEntity->getDependentGenCoordIndex(i));
-
-  useDofs(mDofs);
+  useDofs(mEntity->getLinkageGenCoordIndices());
 }
 
 //==============================================================================
@@ -1068,7 +1051,7 @@ InverseKinematics<JacobianEntity>::getNullSpaceObjective() const
 //==============================================================================
 template <class JacobianEntity>
 double InverseKinematics<JacobianEntity>::evalObjective(
-    Eigen::Map<const Eigen::VectorXd>& _q)
+    const Eigen::VectorXd& _q)
 {
   return mObjective->eval(_q) + mNullSpaceObjective->eval(_q);
 }
@@ -1076,14 +1059,16 @@ double InverseKinematics<JacobianEntity>::evalObjective(
 //==============================================================================
 template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::evalObjectiveGradient(
-    Eigen::Map<const Eigen::VectorXd>& _q,
+    const Eigen::VectorXd& _q,
     Eigen::Map<Eigen::VectorXd> _grad)
 {
   mObjective->evalGradient(_q, _grad);
 
   if(mUseNullSpace)
   {
-    mNullSpaceObjective->evalGradient(_q, Eigen::Map<Eigen::VectorXd>(mGradCache));
+    mGradCache.resize(_grad.size());
+    Eigen::Map<Eigen::VectorXd> grad_map(mGradCache.data(), _grad.size());
+    mNullSpaceObjective->evalGradient(_q, grad_map);
 
     setConfiguration(_q);
 
@@ -1168,19 +1153,19 @@ template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::resetProblem(bool _clearSeeds)
 {
   mOverallObjective->setCostFunction(
-        [=](Eigen::Map<const Eigen::VectorXd>& _q)
+        [=](const Eigen::VectorXd& _q)
         { return this->evalObjective(_q); } );
   mOverallObjective->setGradientFunction(
-        [=](Eigen::Map<const Eigen::VectorXd>& _q,
+        [=](const Eigen::VectorXd& _q,
             Eigen::Map<Eigen::VectorXd> _grad)
         { this->evalObjectiveGradient(_q, _grad); } );
   mOverallObjective->clearHessianFunction();
 
   mConstraint->setCostFunction(
-        [=](Eigen::Map<const Eigen::VectorXd>& _q)
-        { return this->mErrorMethod->computeError(_q); } );
+        [=](const Eigen::VectorXd& _q)
+        { return this->mErrorMethod->computeError(_q).norm(); } );
   mConstraint->setGradientFunction(
-        [=](Eigen::Map<const Eigen::VectorXd>& _q,
+        [=](const Eigen::VectorXd& _q,
             Eigen::Map<Eigen::VectorXd> _grad)
         { this->mGradientMethod->computeGradient(_q, _grad); } );
   mConstraint->clearHessianFunction();
@@ -1272,14 +1257,16 @@ template <class JacobianEntity>
 const math::Jacobian& InverseKinematics<JacobianEntity>::computeJacobian() const
 {
   const math::Jacobian& fullJacobian =
-      this->mIK->getEntity()->getWorldJacobian();
-  mJacobian.resize(6, this->mIK->getDofs().size());
+      this->getEntity()->getWorldJacobian();
+  mJacobian.resize(6, this->getDofs().size());
 
-  for(int i=0; i<this->mIK->getDofMap().size(); ++i)
+  for(int i=0; i< static_cast<int>(this->getDofMap().size()); ++i)
   {
-    int j = this->mIK->getDofMap()[i];
+    int j = this->getDofMap()[i];
     if(j >= 0)
       mJacobian.block<6,1>(0,i) = fullJacobian.block<6,1>(0,j);
+    else
+      mJacobian.block<6,1>(0,i).setZero();
   }
 
   return mJacobian;
@@ -1290,7 +1277,7 @@ template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::setConfiguration(
     const Eigen::VectorXd& _q)
 {
-  if(_q.size() != mDofs.size())
+  if(_q.size() != static_cast<int>(mDofs.size()))
   {
     dterr << "[InverseKinematics::setConfiguration] Mismatch between config "
           << "size [" << _q.size() << "] and number of available degrees of "
@@ -1306,8 +1293,8 @@ void InverseKinematics<JacobianEntity>::setConfiguration(
 template <class JacobianEntity>
 void InverseKinematics<JacobianEntity>::clearCaches()
 {
-  mErrorMethod->clearCaches();
-  mGradientMethod->clearCaches();
+  mErrorMethod->clearCache();
+  mGradientMethod->clearCache();
 }
 
 //==============================================================================
@@ -1333,15 +1320,22 @@ InverseKinematics<JacobianEntity>::InverseKinematics(JacobianEntity* _entity)
     mHierarchyLevel(0),
     mEntity(_entity)
 {
+  // Do nothing until the owner calls initialize()
+}
+
+//==============================================================================
+template <class JacobianEntity>
+void InverseKinematics<JacobianEntity>::initialize()
+{
   // Default to having no objectives
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
 
   mOverallObjective = std::shared_ptr<optimizer::ModularFunction>(
-        new optimizer::ModularFunction(_entity->getName()+"_objective"));
+        new optimizer::ModularFunction(mEntity->getName()+"_objective"));
 
   mConstraint = std::shared_ptr<optimizer::ModularFunction>(
-        new optimizer::ModularFunction(_entity->getName()+"_constraint"));
+        new optimizer::ModularFunction(mEntity->getName()+"_constraint"));
 
   resetProblem();
 
@@ -1364,8 +1358,8 @@ InverseKinematics<JacobianEntity>::InverseKinematics(JacobianEntity* _entity)
   // By default, we use the linkage when performing IK
   useLinkage();
 
-  // TODO(MXG): Instantiate mSolver using a default native solver
-  // TODO(MXG): Write a default native solver
+  // Default to the native DART gradient descent solver
+  mSolver = std::make_shared<optimizer::GradientDescentSolver>(mProblem);
 }
 
 //==============================================================================

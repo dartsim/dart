@@ -100,6 +100,7 @@ BodyNode::BodyNode(const std::string& _name)
   : Entity(Frame::World(), _name, false),
     Frame(Frame::World(), _name),
     mID(BodyNode::msBodyNodeCount++),
+    mIK(this),
     mIsColliding(false),
     mSkeleton(nullptr),
     mParentJoint(nullptr),
@@ -687,6 +688,9 @@ const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
 template <typename DofType, typename BnType, typename SkelType, typename JType>
 std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
 {
+  // TODO(MXG): This first section is outdated, because it's a contingency in
+  // case this BodyNode does not belong to a Skeleton yet. Once the public
+  // constructor for BodyNode is removed, this chunk of code can be thrown out.
   std::vector<DofType*> dofs;
   SkelType* skel = bn->getSkeleton();
   if(!skel)
@@ -724,6 +728,63 @@ std::vector<const DegreeOfFreedom*> BodyNode::getDependentDofs() const
 {
   return getDependentDofsTemplate<
       const DegreeOfFreedom, const BodyNode, const Skeleton, const Joint>(this);
+}
+
+//==============================================================================
+std::vector<size_t> BodyNode::getLinkageGenCoordIndices() const
+{
+  const BodyNode* baseBn = getParentBodyNode();
+
+  // Attempt to get at least one degree of freedom
+  while(baseBn &&
+      baseBn->getNumDependentGenCoords() == getNumDependentGenCoords())
+  {
+    baseBn = baseBn->getParentBodyNode();
+  }
+
+  // Keep moving upstream, as long as the parent has no other children
+  while(baseBn && baseBn->getNumChildBodyNodes() == 1)
+  {
+    baseBn = baseBn->getParentBodyNode();
+  }
+
+  size_t start = 0;
+  // Ignore any coordinates that the base BodyNode depends on
+  if(baseBn)
+    start = baseBn->getNumDependentGenCoords();
+
+  std::vector<size_t> linkage;
+  linkage.reserve(getNumDependentGenCoords() - start);
+  for(size_t i=start; i<getNumDependentGenCoords(); ++i)
+    linkage.push_back(getDependentGenCoordIndex(i));
+
+  return linkage;
+}
+
+//==============================================================================
+template <typename DofType, typename SkeletonType>
+static std::vector<DofType*> swapIndicesWithDofs(
+    const std::vector<size_t>& _indices, SkeletonType* _skel)
+{
+  size_t nDofs = _indices.size();
+  std::vector<DofType*> dofs; dofs.reserve(nDofs);
+  for(size_t i=0; i<nDofs; ++i)
+    dofs.push_back(_skel->getDof(_indices[i]));
+  return dofs;
+}
+
+//==============================================================================
+std::vector<DegreeOfFreedom*> BodyNode::getLinkageDofs()
+{
+  return swapIndicesWithDofs<DegreeOfFreedom, Skeleton>(
+        getLinkageGenCoordIndices(), getSkeleton());
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> BodyNode::getLinkageDofs() const
+{
+  return swapIndicesWithDofs<const DegreeOfFreedom, const Skeleton>(
+        getLinkageGenCoordIndices(), getSkeleton());
 }
 
 //==============================================================================
@@ -1256,6 +1317,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
   : Entity(Frame::World(), "", false), // Name gets set later by setProperties
     Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
+    mIK(this),
     mIsColliding(false),
     mSkeleton(nullptr),
     mParentJoint(_parentJoint),
@@ -1346,6 +1408,8 @@ void BodyNode::init(Skeleton* _skeleton)
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
   mWorldJacobianClassicDeriv.setZero(6, numDepGenCoords);
+
+  mIK.initialize();
 }
 
 //==============================================================================

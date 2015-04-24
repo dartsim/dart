@@ -52,6 +52,7 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/Marker.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
@@ -382,6 +383,21 @@ public:
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
   std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+
+  /// Returns a std::vector of generalized coordinate indices of the linkage
+  /// that leads up to this BodyNode. In this context, a linkage refers to the
+  /// longest unbranching chain of BodyNodes that leads up to this BodyNode.
+  ///
+  /// Note that we will always attempt to get at least one degree of freedom in
+  /// this linkage vector, even if we have to ignore some branching.
+  std::vector<size_t> getLinkageGenCoordIndices() const;
+
+  /// A version of getLinkageGenCoordIndices() that returns DegreeOfFreedom
+  /// pointers instead of index values.
+  std::vector<DegreeOfFreedom*> getLinkageDofs();
+
+  /// const version of getLinkageDofs()
+  std::vector<const DegreeOfFreedom*> getLinkageDofs() const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -1121,6 +1137,9 @@ protected:
 
   /// BodyNode-specific properties
   UniqueProperties mBodyP;
+
+  /// InverseKinematics module for this BodyNode
+  InverseKinematics<BodyNode> mIK;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;

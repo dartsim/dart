@@ -64,15 +64,15 @@ public:
   const std::string& getName() const;
 
   /// \brief Evaluate and return the objective function at the point x
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) = 0;
+  virtual double eval(const Eigen::VectorXd& _x) = 0;
 
   /// \brief Evaluate and return the objective function at the point x
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+  virtual void evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad);
 
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
+      const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
 
 protected:
@@ -83,13 +83,13 @@ protected:
 
 typedef std::shared_ptr<Function> FunctionPtr;
 
-typedef std::function<double(Eigen::Map<const Eigen::VectorXd>&)> CostFunction;
+typedef std::function<double(const Eigen::VectorXd&)> CostFunction;
 
-typedef std::function<void(Eigen::Map<const Eigen::VectorXd>&,
+typedef std::function<void(const Eigen::VectorXd&,
                            Eigen::Map<Eigen::VectorXd>)> GradientFunction;
 
 typedef std::function<void(
-    Eigen::Map<const Eigen::VectorXd>&,
+    const Eigen::VectorXd&,
     Eigen::Map<Eigen::VectorXd, Eigen::RowMajor>)> HessianFunction;
 
 /// \brief ModularFunction uses C++11 std::function to allow you to easily swap
@@ -106,17 +106,17 @@ public:
 
   /// \brief eval() will now call whatever CostFunction you set using
   /// setCostFunction()
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x) override;
+  virtual double eval(const Eigen::VectorXd& _x) override;
 
   /// \brief evalGradient() will now call whatever GradientFunction you set
   /// using setGradientFunction()
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+  virtual void evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// \brief evalHessian() will now call whatever HessianFunction you set using
   /// setHessianFunction()
   virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
+      const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
 
   /// \brief Set the function that gets called by eval()
@@ -164,17 +164,17 @@ public:
   virtual ~NullFunction();
 
   /// \brief eval() will always return exactly zero
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>&) override;
+  virtual double eval(const Eigen::VectorXd&) override;
 
   /// \brief evalGradient will always set _grad to a zero vector that
   /// matches the dimensionality of _x
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+  virtual void evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// \brief evalHessian() will always set _Hess to a zero matrix that matches
   /// the dimensionality of _x
   virtual void evalHessian(
-      Eigen::Map<const Eigen::VectorXd>& _x,
+      const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
 };
 
@@ -189,7 +189,7 @@ public:
   virtual ~MultiFunction();
 
   /// \brief Operator ()
-  virtual void operator()(Eigen::Map<const Eigen::VectorXd>& _x,
+  virtual void operator()(const Eigen::VectorXd& _x,
                           Eigen::Map<Eigen::VectorXd>& _f,
                           Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
 };
