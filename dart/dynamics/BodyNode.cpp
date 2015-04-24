@@ -554,6 +554,12 @@ const Skeleton* BodyNode::getSkeleton() const
 }
 
 //==============================================================================
+size_t BodyNode::getIndex() const
+{
+  return mIndexInSkeleton;
+}
+
+//==============================================================================
 void BodyNode::setParentJoint(Joint* _joint)
 {
   if (_joint->getChildBodyNode())
@@ -568,7 +574,7 @@ void BodyNode::setParentJoint(Joint* _joint)
   }
 
   if (mParentJoint)
-    mParentJoint->mChildBodyNode = NULL;
+    mParentJoint->mChildBodyNode = nullptr;
 
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;

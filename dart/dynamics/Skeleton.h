@@ -929,6 +929,30 @@ protected:
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
+  /// Remove a subtree of BodyNodes from this Skeleton and delete them
+  void removeBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
+  void moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+                        Skeleton* _newSkeleton, BodyNode* _parentNode);
+
+  /// Create a vector representation of a subtree of BodyNode clones
+  std::vector<BodyNode*> cloneBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Create a vector representation of a subtree of BodyNodes
+  std::vector<BodyNode*> constructBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Recursive function to be used by constructBodyNodeTree()
+  void recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
+                                      BodyNode* _currentBodyNode);
+
+  /// Create a vector representation of a subtree of BodyNodes and remove that
+  /// subtree from this Skeleton without deleting them
+  std::vector<BodyNode*> extractBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Take in and register a subtree of BodyNodes
+  void receiveBodyNodeTree(const std::vector<BodyNode*>& _tree);
+
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
   void notifyArticulatedInertiaUpdate();

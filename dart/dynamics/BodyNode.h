@@ -315,13 +315,19 @@ public:
   /// Return the (const) Skeleton this BodyNode belongs to
   const Skeleton* getSkeleton() const;
 
-  /// Set _joint as the parent joint of the bodynode
-  // TODO(MXG): Deprecate this
+  /// Return the index of this BodyNode within its Skeleton
+  size_t getIndex() const;
+
+  /// Set _joint as the parent Joint of the BodyNode
+  // TODO(MXG): Remove this along with the public constructors of Joint and
+  // BodyNode
   void setParentJoint(Joint* _joint);
 
   /// Remove this BodyNode and all of its children (recursively) from their
   /// current Skeleton, and transfer them to a new Skeleton with a new parent
   /// BodyNode. The pointers of all the BodyNodes and Joints will be preserved.
+  /// Use nullptr for _newParent to make this BodyNode a root node in the new
+  /// Skeleton.
   ///
   /// This function can be used to change the parent BodyNode while keeping the
   /// Skeleton the same.
@@ -1182,6 +1188,9 @@ protected:
 
   /// Pointer to the model this body node belongs to.
   Skeleton* mSkeleton;
+
+  /// Index of this BodyNode in its Skeleton
+  size_t mIndexInSkeleton;
 
   /// Parent joint
   Joint* mParentJoint;

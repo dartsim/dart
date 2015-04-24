@@ -320,6 +320,12 @@ bool Joint::isPositionLimited() const
 }
 
 //==============================================================================
+size_t Joint::getJointIndex() const
+{
+  return mChildBodyNode->getIndex();
+}
+
+//==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));

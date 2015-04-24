@@ -254,6 +254,9 @@ public:
   /// Get an unique index in skeleton of a generalized coordinate in this joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
+  /// Get the index of this Joint within its Skeleton
+  size_t getJointIndex() const;
+
   /// Get number of generalized coordinates
   DEPRECATED(4.1)
   virtual size_t getDof() const = 0;

@@ -1854,6 +1854,7 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
   mBodyNodes.push_back(_newBodyNode);
+  _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
   registerJoint(_newBodyNode->getParentJoint());
 
@@ -1898,7 +1899,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
 //==============================================================================
 void Skeleton::unregisterJoint(Joint* _oldJoint)
 {
-  if (NULL == _oldJoint)
+  if (nullptr == _oldJoint)
     return;
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
@@ -1908,6 +1909,50 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
   }
+}
+
+//==============================================================================
+void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+                                Skeleton* _newSkeleton, BodyNode* _parentNode)
+{
+  Joint* originalParent = _bodyNode->getParentJoint();
+
+  std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
+
+  _bodyNode->mParentJoint = _parentJoint;
+  _parentJoint->mChildBodyNode = _bodyNode;
+
+  _bodyNode->mParentBodyNode = _parentNode;
+  if(_parentNode)
+    _parentNode->addChildBodyNode(_bodyNode);
+
+  _newSkeleton->receiveBodyNodeTree(tree);
+
+  if(originalParent != _parentJoint)
+    delete originalParent;
+}
+
+//==============================================================================
+std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode* _bodyNode)
+{
+  std::vector<BodyNode*> tree;
+  recursiveConstructBodyNodeTree(tree, _bodyNode);
+  return tree;
+}
+
+//==============================================================================
+void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
+                                              BodyNode* _currentBodyNode)
+{
+  tree.push_back(_currentBodyNode);
+  for(size_t i=0; i<_currentBodyNode->getNumChildBodyNodes(); ++i)
+    recursiveConstructBodyNodeTree(tree, _currentBodyNode->getChildBodyNode(i));
+}
+
+//==============================================================================
+std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
+{
+
 }
 
 //==============================================================================
