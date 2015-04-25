@@ -581,6 +581,18 @@ void BodyNode::setParentJoint(Joint* _joint)
 }
 
 //==============================================================================
+void BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent)
+{
+  mSkeleton->moveBodyNodeTree(getParentJoint(), this, _newSkeleton, _newParent);
+}
+
+//==============================================================================
+void BodyNode::copyTo(Skeleton* _newSkeleton, BodyNode* _newParent)
+{
+  mSkeleton->cloneBodyNodeTree(nullptr, this, _newSkeleton, _newParent);
+}
+
+//==============================================================================
 Joint* BodyNode::getParentJoint()
 {
   return mParentJoint;

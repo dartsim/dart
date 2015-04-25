@@ -1877,8 +1877,9 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   updateTotalMass();
   updateDataDimensions();
-  clearExternalForces();
-  resetForces();
+  // TODO(MXG): Decide if the following are necessary
+//  clearExternalForces();
+//  resetForces();
 }
 
 //==============================================================================
@@ -1897,6 +1898,31 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
+void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
+{
+  mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
+
+  mBodyNodes.erase(mBodyNodes.begin()+_oldBodyNode->getIndex());
+  for(size_t i=_oldBodyNode->getIndex(); i < mBodyNodes.size(); ++i)
+  {
+    BodyNode* bn = mBodyNodes[i];
+    bn->mIndexInSkeleton = i;
+  }
+
+  SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(_oldBodyNode);
+  if(soft)
+  {
+    mNameMgrForSoftBodyNodes.removeName(soft->getName());
+
+    mSoftBodyNodes.erase(std::remove(mSoftBodyNodes.begin(),
+                                     mSoftBodyNodes.end(), soft),
+                         mSoftBodyNodes.end());
+  }
+
+  unregisterJoint(_oldBodyNode->getParentJoint());
+}
+
+//==============================================================================
 void Skeleton::unregisterJoint(Joint* _oldJoint)
 {
   if (nullptr == _oldJoint)
@@ -1904,10 +1930,31 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
 
+  size_t firstDofIndex = (size_t)(-1);
   for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
+
+    firstDofIndex = std::min(firstDofIndex, dof->getIndexInSkeleton());
+    mDofs.erase(std::remove(mDofs.begin(), mDofs.end(), dof), mDofs.end());
+  }
+
+  for (size_t i = firstDofIndex; i < mDofs.size(); ++i)
+  {
+    DegreeOfFreedom* dof = mDofs[i];
+    dof->mIndexInSkeleton = i;
+  }
+}
+
+//==============================================================================
+void Skeleton::removeBodyNodeTree(BodyNode* _bodyNode)
+{
+  std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
+  for(BodyNode* bn : tree)
+  {
+    delete bn->getParentJoint();
+    delete bn;
   }
 }
 
@@ -1915,21 +1962,60 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
-  Joint* originalParent = _bodyNode->getParentJoint();
-
   std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
 
-  _bodyNode->mParentJoint = _parentJoint;
-  _parentJoint->mChildBodyNode = _bodyNode;
+  Joint* originalParent = _bodyNode->getParentJoint();
+  if(originalParent != _parentJoint)
+  {
+    _bodyNode->mParentJoint = _parentJoint;
+    _parentJoint->mChildBodyNode = _bodyNode;
+    delete originalParent;
+  }
 
-  _bodyNode->mParentBodyNode = _parentNode;
-  if(_parentNode)
-    _parentNode->addChildBodyNode(_bodyNode);
+  if(_parentNode != _bodyNode->getParentBodyNode())
+  {
+    _bodyNode->mParentBodyNode = _parentNode;
+    if(_parentNode)
+    {
+      _parentNode->mChildBodyNodes.push_back(_bodyNode);
+      _bodyNode->changeParentFrame(_parentNode);
+    }
+    else
+    {
+      _bodyNode->changeParentFrame(Frame::World());
+    }
+  }
+  _newSkeleton->receiveBodyNodeTree(tree);
+}
+
+//==============================================================================
+void Skeleton::cloneBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
+{
+  std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
+
+  std::map<std::string, BodyNode*> nameMap;
+  std::vector<BodyNode*> clones;
+  clones.reserve(tree.size());
+
+  for(size_t i=0; i<tree.size(); ++i)
+  {
+    BodyNode* original = tree[i];
+    // If this is the root of the tree, and the user has requested a change in
+    // its parent Joint, use the specified parent Joint instead of created a
+    // clone
+    Joint* joint = (i==0 && _parentJoint != nullptr) ? _parentJoint :
+        original->getParentJoint()->clone();
+
+    BodyNode* newParent = i==0 ? _parentNode :
+        nameMap[original->getParentBodyNode()->getName()];
+
+    BodyNode* clone = original->clone(newParent, joint);
+    clones.push_back(clone);
+    nameMap[clone->getName()] = clone;
+  }
 
   _newSkeleton->receiveBodyNodeTree(tree);
-
-  if(originalParent != _parentJoint)
-    delete originalParent;
 }
 
 //==============================================================================
@@ -1952,7 +2038,21 @@ void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
 //==============================================================================
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
+  std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
+  for(int i=tree.size()-1; i>=0; ++i) // Go backwards to minimize the amount of shifting
+  {
+    BodyNode* bn = tree[i];
+    unregisterBodyNode(bn);
+  }
 
+  return tree;
+}
+
+//==============================================================================
+void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
+{
+  for(BodyNode* bn : _tree)
+    registerBodyNode(bn);
 }
 
 //==============================================================================

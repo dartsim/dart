@@ -355,10 +355,7 @@ public:
   /// BodyNodes and Joints in the Skeleton.
   template <class JointType>
   JointType* changeParentJointType(
-      const typename JointType::Properties& _joint = JointType::Properties())
-  {
-    return moveTo<JointType>(getSkeleton(), getParentBodyNode(), _joint);
-  }
+      const typename JointType::Properties& _joint = JointType::Properties());
 
   /// Create clones of this BodyNode and all of its children (recursively) from
   /// and attach the clones to the specified BodyNode of the specified Skeleton.
@@ -1356,6 +1353,32 @@ public:
 
   /// \}
 };
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+    const typename JointType::Properties& _joint)
+{
+  return getSkeleton()->moveBodyNodeTree<JointType>(
+        this, _newSkeleton, _newParent, _joint);
+}
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::changeParentJointType(
+    const typename JointType::Properties& _joint)
+{
+  return moveTo<JointType>(getSkeleton(), getParentBodyNode(), _joint);
+}
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::copyTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+    const typename JointType::Properties& _joint)
+{
+  return getSkeleton()->cloneBodyNodeTree<JointType>(
+        this, _newSkeleton, _newParent, _joint);
+}
 
 }  // namespace dynamics
 }  // namespace dart
