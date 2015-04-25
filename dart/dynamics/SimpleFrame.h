@@ -70,6 +70,12 @@ public:
   /// Set the relative transform of this SimpleFrame
   void setRelativeTransform(const Eigen::Isometry3d& _newRelTransform);
 
+  /// Set the transform of this SimpleFrame so that its transform with respect
+  /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
+  /// Frame of this SimpleFrame will not be changed.
+  void setTransform(const Eigen::Isometry3d& _newTransform,
+                    const Frame* _withRespectTo);
+
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const;
 
