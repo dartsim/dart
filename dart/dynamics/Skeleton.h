@@ -953,19 +953,21 @@ protected:
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact
-  void cloneBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                         Skeleton* _newSkeleton, BodyNode* _parentNode);
+  std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
+      Joint* _parentJoint, BodyNode* _bodyNode,
+      Skeleton* _newSkeleton, BodyNode* _parentNode);
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact, but alter the top parent Joint to a new type
   template <class JointType>
-  JointType* cloneBodyNodeTree(
+  std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
       BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
       const typename JointType::Properties& _joint)
   {
     JointType* parentJoint = new JointType(_joint);
-    cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
-    return parentJoint;
+    std::pair<Joint*, BodyNode*> root =
+        cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
+    return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
   }
 
   /// Create a vector representation of a subtree of BodyNodes

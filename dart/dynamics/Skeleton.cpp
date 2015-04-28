@@ -460,7 +460,7 @@ DegreeOfFreedom* Skeleton::getDof(size_t _idx)
   assert(_idx < getNumDofs());
 
   if (_idx >= getNumDofs())
-    return NULL;
+    return nullptr;
 
   return mDofs[_idx];
 }
@@ -471,7 +471,7 @@ const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
   assert(_idx < getNumDofs());
 
   if (_idx >= getNumDofs())
-    return NULL;
+    return nullptr;
 
   return mDofs[_idx];
 }
@@ -1989,9 +1989,11 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
 }
 
 //==============================================================================
-void Skeleton::cloneBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
+std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
+    Joint* _parentJoint, BodyNode* _bodyNode,
+    Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
+  std::pair<Joint*, BodyNode*> root(nullptr, nullptr);
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
 
   std::map<std::string, BodyNode*> nameMap;
@@ -2013,9 +2015,16 @@ void Skeleton::cloneBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
     BodyNode* clone = original->clone(newParent, joint);
     clones.push_back(clone);
     nameMap[clone->getName()] = clone;
+
+    if(0==i)
+    {
+      root.first = joint;
+      root.second = clone;
+    }
   }
 
-  _newSkeleton->receiveBodyNodeTree(tree);
+  _newSkeleton->receiveBodyNodeTree(clones);
+  return root;
 }
 
 //==============================================================================
@@ -2039,7 +2048,7 @@ void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
-  for(int i=tree.size()-1; i>=0; ++i) // Go backwards to minimize the amount of shifting
+  for(int i=tree.size()-1; i>=0; --i) // Go backwards to minimize the amount of shifting
   {
     BodyNode* bn = tree[i];
     unregisterBodyNode(bn);
