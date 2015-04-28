@@ -197,28 +197,70 @@ int main()
 {
   WorldPtr world(new World);
 
+  SkeletonPtr ground(new Skeleton("ground"));
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0,0,-0.95);
-  SimpleFramePtr ground(new SimpleFrame(Frame::World(), "ground", tf));
-  ground->addVisualizationShape(
-        std::make_shared<BoxShape>(Eigen::Vector3d(10,10,0.01)));
-  world->addFrame(ground);
+  WeldJoint::Properties joint;
+  joint.mT_ParentBodyToJoint = tf;
+  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
+  ShapePtr groundShape = std::make_shared<BoxShape>(Eigen::Vector3d(10,10,0.01));
+  ground->getBodyNode(0)->addVisualizationShape(groundShape);
+  ground->getBodyNode(0)->addCollisionShape(groundShape);
 
   DartLoader urdf;
   SkeletonPtr atlas =
       urdf.parseSkeleton(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf");
-  world->addSkeleton(atlas);
 
-  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
+  SkeletonPtr original = atlas->clone();
+
+  std::cout << "original count: " << atlas->getNumBodyNodes() << std::endl;
+
+//  BodyNode* larm = atlas->getBodyNode("l_uarm");
+  BodyNode* larm = atlas->getBodyNode("l_larm");
+  larm->moveTo(atlas.get(), atlas->getBodyNode("r_hand"));
+  Joint* Jlarm = larm->getParentJoint();
+//  std::pair<Joint*, BodyNode*> copy = larm->copyTo(
+//        atlas.get(), atlas->getBodyNode("r_hand"));
+//  Joint* Jlarm = copy.first;
+  Eigen::Isometry3d T = Jlarm->getTransformFromParentBodyNode().inverse();
+  T.linear() = dart::math::eulerXYZToMatrix(Eigen::Vector3d(91.0*M_PI/180.0, 0, 0));
+  Jlarm->setTransformFromParentBodyNode(T);
+
+
+  world->addSkeleton(atlas);
+  world->addSkeleton(ground);
+
+
+  std::cout << "new count: " << atlas->getNumBodyNodes() << std::endl;
+
+//  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
+  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
 
   std::cout << viewer.getInstructions() << std::endl;
 
-  for(size_t i=0; i<atlas->getNumDofs(); ++i)
-    std::cout << atlas->getDof(i)->getName()
-              << " : " << atlas->getDof(i)->getPosition() << std::endl;
+//  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
+//    std::cout << i << ") " << atlas->getBodyNode(i)->getName() << std::endl;
+
+//  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
+//  {
+//    for(size_t j=0; j<atlas->getNumBodyNodes(); ++j)
+//    {
+//      if(i != j)
+//      {
+//        if(atlas->getBodyNode(i) == atlas->getBodyNode(j))
+//          std::cout << "repeat BodyNode: " << i << " & " << j << std::endl;
+//      }
+//    }
+//  }
+
+//  for(size_t i=0; i<original->getNumBodyNodes(); ++i)
+//  {
+//    if(atlas->getBodyNode(original->getBodyNode(i)->getName()) == nullptr)
+//      std::cout << "Lost " << original->getBodyNode(i)->getName() << std::endl;
+//  }
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
 

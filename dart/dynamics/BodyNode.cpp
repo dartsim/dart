@@ -549,6 +549,12 @@ const Skeleton* BodyNode::getSkeleton() const
 }
 
 //==============================================================================
+size_t BodyNode::getIndex() const
+{
+  return mIndexInSkeleton;
+}
+
+//==============================================================================
 void BodyNode::setParentJoint(Joint* _joint)
 {
   if (_joint->getChildBodyNode())
@@ -563,10 +569,23 @@ void BodyNode::setParentJoint(Joint* _joint)
   }
 
   if (mParentJoint)
-    mParentJoint->mChildBodyNode = NULL;
+    mParentJoint->mChildBodyNode = nullptr;
 
   mParentJoint = _joint;
   mParentJoint->mChildBodyNode = this;
+}
+
+//==============================================================================
+void BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent)
+{
+  mSkeleton->moveBodyNodeTree(getParentJoint(), this, _newSkeleton, _newParent);
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(
+    Skeleton* _newSkeleton, BodyNode* _newParent)
+{
+  return mSkeleton->cloneBodyNodeTree(nullptr, this, _newSkeleton, _newParent);
 }
 
 //==============================================================================

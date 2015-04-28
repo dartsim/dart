@@ -285,6 +285,10 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// Skeleton and <b>deletes</b> all of them.
+  void remove();
+
   /// Add a collision Shape into the BodyNode
   void addCollisionShape(ShapePtr _shape);
 
@@ -309,9 +313,57 @@ public:
   /// Return the (const) Skeleton this BodyNode belongs to
   const Skeleton* getSkeleton() const;
 
-  /// Set _joint as the parent joint of the bodynode
-  // TODO(MXG): Deprecate this
+  /// Return the index of this BodyNode within its Skeleton
+  size_t getIndex() const;
+
+  /// Set _joint as the parent Joint of the BodyNode
+  // TODO(MXG): Remove this along with the public constructors of Joint and
+  // BodyNode
   void setParentJoint(Joint* _joint);
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// current Skeleton, and transfer them to a new Skeleton with a new parent
+  /// BodyNode. The pointers of all the BodyNodes and Joints will be preserved.
+  /// Use nullptr for _newParent to make this BodyNode a root node in the new
+  /// Skeleton.
+  ///
+  /// This function can be used to change the parent BodyNode while keeping the
+  /// Skeleton the same.
+  ///
+  /// Using this function will result in changes to the indexing of
+  /// (potentially) all BodyNodes and Joints in the current Skeleton, even if
+  /// the BodyNodes are kept within the same Skeleton.
+  void moveTo(Skeleton* _newSkeleton, BodyNode* _newParent);
+
+  /// A version of moveTo(Skeleton*,BodyNode*) that also changes the Joint type
+  /// of the parent Joint of this BodyNode. This function returns the pointer to
+  /// the newly created Joint. The original parent Joint will be deleted.
+  ///
+  /// This function can be used to change the Joint type of the parent Joint of
+  /// this BodyNode, but note that the indexing of the BodyNodes and Joints in
+  /// this Skeleton will still be changed, even if only the Joint type is
+  /// changed.
+  template <class JointType>
+  JointType* moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+      const typename JointType::Properties& _joint = JointType::Properties());
+
+  /// Change the Joint type of this BodyNode's parent Joint.
+  ///
+  /// Note that this function will change the indexing of (potentially) all
+  /// BodyNodes and Joints in the Skeleton.
+  template <class JointType>
+  JointType* changeParentJointType(
+      const typename JointType::Properties& _joint = JointType::Properties());
+
+  /// Create clones of this BodyNode and all of its children (recursively) from
+  /// and attach the clones to the specified BodyNode of the specified Skeleton.
+  std::pair<Joint*,BodyNode*> copyTo(Skeleton* _newSkeleton,
+                                     BodyNode* _newParent);
+
+  /// A version of copyTo(Skeleton*,BodyNode*) which
+  template <class JointType>
+  JointType* copyTo(Skeleton *_newSkeleton, BodyNode *_newParent,
+      const typename JointType::Properties& _joint = JointType::Properties());
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
@@ -1151,6 +1203,9 @@ protected:
   /// Pointer to the model this body node belongs to.
   Skeleton* mSkeleton;
 
+  /// Index of this BodyNode in its Skeleton
+  size_t mIndexInSkeleton;
+
   /// Parent joint
   Joint* mParentJoint;
 
@@ -1315,6 +1370,32 @@ public:
 
   /// \}
 };
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+    const typename JointType::Properties& _joint)
+{
+  return getSkeleton()->moveBodyNodeTree<JointType>(
+        this, _newSkeleton, _newParent, _joint);
+}
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::changeParentJointType(
+    const typename JointType::Properties& _joint)
+{
+  return moveTo<JointType>(getSkeleton(), getParentBodyNode(), _joint);
+}
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::copyTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+    const typename JointType::Properties& _joint)
+{
+  return getSkeleton()->cloneBodyNodeTree<JointType>(
+        this, _newSkeleton, _newParent, _joint);
+}
 
 }  // namespace dynamics
 }  // namespace dart

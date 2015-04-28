@@ -89,8 +89,8 @@ public:
     std::string mName;
 
     /// If the skeleton is not mobile, its dynamic effect is equivalent
-    /// to having infinite mass. If the configuration of an immobile skeleton are
-    /// manually changed, the collision results might not be correct.
+    /// to having infinite mass. If the configuration of an immobile skeleton
+    /// are manually changed, the collision results might not be correct.
     bool mIsMobile;
 
     /// Gravity vector.
@@ -964,11 +964,66 @@ protected:
   /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
+  /// Remove a BodyNode from the Skeleton. Internal use only.
+  void unregisterBodyNode(BodyNode* _oldBodyNode);
+
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
   /// Register an EndEffector with the Skeleton. Internal use only.
   bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
+
+  /// Remove a subtree of BodyNodes from this Skeleton and delete them
+  void removeBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
+  void moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+                        Skeleton* _newSkeleton, BodyNode* _parentNode);
+
+  /// Move a subtree of BodyNodes from this Skeleton to another Skeleton while
+  /// changing the Joint type of the top parent Joint
+  template <class JointType>
+  JointType* moveBodyNodeTree(
+      BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
+      const typename JointType::Properties& _joint)
+  {
+    JointType* parentJoint = new JointType(_joint);
+    moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
+    return parentJoint;
+  }
+
+  /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
+  /// originals intact
+  std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
+      Joint* _parentJoint, BodyNode* _bodyNode,
+      Skeleton* _newSkeleton, BodyNode* _parentNode);
+
+  /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
+  /// originals intact, but alter the top parent Joint to a new type
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
+      BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
+      const typename JointType::Properties& _joint)
+  {
+    JointType* parentJoint = new JointType(_joint);
+    std::pair<Joint*, BodyNode*> pair = cloneBodyNodeTree(
+          parentJoint, _bodyNode, _newSkeleton, _parentNode);
+    return std::pair<JointType*, BodyNode*>(parentJoint, pair.second);
+  }
+
+  /// Create a vector representation of a subtree of BodyNodes
+  std::vector<BodyNode*> constructBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Recursive function to be used by constructBodyNodeTree()
+  void recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
+                                      BodyNode* _currentBodyNode);
+
+  /// Create a vector representation of a subtree of BodyNodes and remove that
+  /// subtree from this Skeleton without deleting them
+  std::vector<BodyNode*> extractBodyNodeTree(BodyNode* _bodyNode);
+
+  /// Take in and register a subtree of BodyNodes
+  void receiveBodyNodeTree(const std::vector<BodyNode*>& _tree);
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
