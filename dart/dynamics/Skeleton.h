@@ -202,27 +202,6 @@ public:
     return std::pair<JointType*, NodeType*>(joint, node);
   }
 
-  /// Create an EndEffector of an arbitrary type (but it must inherit the
-  /// default EndEffector class)
-  template <class EndEffectorType>
-  EndEffectorType* createEndEffector(
-      BodyNode* _parent,
-      const typename EndEffectorType::Properties& _properties =
-                                        typename EndEffectorType::Properties())
-  {
-    if(nullptr == _parent)
-      return nullptr;
-
-    EndEffectorType* ee = new EndEffectorType(_parent, _properties);
-    if(!registerEndEffector(_parent, ee))
-    {
-      delete ee;
-      return nullptr;
-    }
-
-    return ee;
-  }
-
   /// Add a body node
   DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
@@ -282,9 +261,6 @@ public:
   /// Get joint whose name is _name
   Joint* getJoint(const std::string& _name);
 
-  /// Get const joint whose name is _name
-  const Joint* getJoint(const std::string& _name) const;
-
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
   DegreeOfFreedom* getDof(size_t _idx);
 
@@ -297,20 +273,8 @@ public:
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
 
-  /// Get the number of EndEffectors on this Skeleton
-  size_t getNumEndEffectors() const;
-
-  /// Get EndEffector whose index is _idx
-  EndEffector* getEndEffector(size_t _idx);
-
-  /// Get EndEffector whose index is _idx
-  const EndEffector* getEndEffector(size_t _idx) const;
-
-  /// Get EndEffector whose name is _name
-  EndEffector* getEndEffector(const std::string& _name);
-
-  /// Get EndEffector whose name is _name
-  const EndEffector* getEndEffector(const std::string &_name) const;
+  /// Get const joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -955,7 +919,6 @@ public:
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
-  friend class EndEffector;
 
 protected:
   /// Register a BodyNode with the Skeleton. Internal use only.
@@ -1006,9 +969,9 @@ protected:
       const typename JointType::Properties& _joint)
   {
     JointType* parentJoint = new JointType(_joint);
-    std::pair<Joint*, BodyNode*> pair = cloneBodyNodeTree(
-          parentJoint, _bodyNode, _newSkeleton, _parentNode);
-    return std::pair<JointType*, BodyNode*>(parentJoint, pair.second);
+    std::pair<Joint*, BodyNode*> root =
+        cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
+    return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
   }
 
   /// Create a vector representation of a subtree of BodyNodes

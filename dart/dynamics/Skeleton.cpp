@@ -2010,9 +2010,11 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
   if(_parentNode && _parentNode->descendsFrom(_bodyNode))
   {
     dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
-          << _bodyNode->getName() << "] to be a child of the BodyNode named ["
-          << _parentNode->getName() << "] but that would create a closed "
-          << "kinematic chain, which is not permitted! Nothing will be moved\n";
+          << _bodyNode->getName() << "] of Skeleton [" << getName() << "] to "
+          << "be a child of BodyNode [" << _parentNode->getName() << "] of "
+          << "Skeleton [" << _newSkeleton->getName() << "], but that would "
+          << "create a closed kinematic chain, which is not permitted! Nothing "
+          << "will be moved.\n";
     return;
   }
 
