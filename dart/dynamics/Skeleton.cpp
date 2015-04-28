@@ -369,7 +369,7 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
   if (_idx < _vec.size())
     return _vec[_idx];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -457,23 +457,13 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 //==============================================================================
 DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return nullptr;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
-  assert(_idx < getNumDofs());
-
-  if (_idx >= getNumDofs())
-    return nullptr;
-
-  return mDofs[_idx];
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
 }
 
 //==============================================================================
@@ -1902,8 +1892,9 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
-  mBodyNodes.erase(mBodyNodes.begin()+_oldBodyNode->getIndex());
-  for(size_t i=_oldBodyNode->getIndex(); i < mBodyNodes.size(); ++i)
+  size_t index = _oldBodyNode->getIndex();
+  mBodyNodes.erase(mBodyNodes.begin()+index);
+  for(size_t i=index; i < mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mBodyNodes[i];
     bn->mIndexInSkeleton = i;
@@ -1963,6 +1954,16 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
   std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
+  if(_parentNode && _parentNode->descendsFrom(_bodyNode))
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
+          << _bodyNode->getName() << "] of Skeleton [" << getName() << "] to "
+          << "be a child of BodyNode [" << _parentNode->getName() << "] of "
+          << "Skeleton [" << _newSkeleton->getName() << "], but that would "
+          << "create a closed kinematic chain, which is not permitted! Nothing "
+          << "will be moved.\n";
+    return;
+  }
 
   Joint* originalParent = _bodyNode->getParentJoint();
   if(originalParent != _parentJoint)
@@ -2048,11 +2049,9 @@ void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
-  for(int i=tree.size()-1; i>=0; --i) // Go backwards to minimize the amount of shifting
-  {
-    BodyNode* bn = tree[i];
-    unregisterBodyNode(bn);
-  }
+  std::vector<BodyNode*>::reverse_iterator rit;
+  for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
+    unregisterBodyNode(*rit);
 
   return tree;
 }
