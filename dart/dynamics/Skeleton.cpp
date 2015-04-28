@@ -1921,8 +1921,8 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateTotalMass();
   updateDataDimensions();
   // TODO(MXG): Decide if the following are necessary
-  clearExternalForces();
-  resetForces();
+//  clearExternalForces();
+//  resetForces();
 }
 
 //==============================================================================
@@ -2756,16 +2756,8 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  std::vector<BodyNode*>::iterator check = std::find(
-        mBodyNodes.begin(), mBodyNodes.end(), _bodyNode);
-  if(check == mBodyNodes.end())
-  {
-    std::cout << "MISSING BODYNODE: " << _bodyNode->getName() << std::endl;
-    assert(false);
-  }
-
-//  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
-//         != mBodyNodes.end());
+  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
+         != mBodyNodes.end());
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
