@@ -1945,16 +1945,9 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
-//  mBodyNodes.erase(mBodyNodes.begin()+_oldBodyNode->getIndex());
-  //  for(size_t i=_oldBodyNode->getIndex(); i < mBodyNodes.size(); ++i)
-  //  {
-  //    BodyNode* bn = mBodyNodes[i];
-  //    bn->mIndexInSkeleton = i;
-  //  }
-  mBodyNodes.erase(std::remove(
-        mBodyNodes.begin(), mBodyNodes.end(), _oldBodyNode), mBodyNodes.end());
-
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
+  size_t index = _oldBodyNode->getIndex();
+  mBodyNodes.erase(mBodyNodes.begin()+index);
+  for(size_t i=index; i < mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mBodyNodes[i];
     bn->mIndexInSkeleton = i;
@@ -2014,6 +2007,14 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
   std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
+  if(_parentNode && _parentNode->descendsFrom(_bodyNode))
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
+          << _bodyNode->getName() << "] to be a child of the BodyNode named ["
+          << _parentNode->getName() << "] but that would create a closed "
+          << "kinematic chain, which is not permitted! Nothing will be moved\n";
+    return;
+  }
 
   Joint* originalParent = _bodyNode->getParentJoint();
   if(originalParent != _parentJoint)
@@ -2099,16 +2100,10 @@ void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
-//  for(int i=tree.size()-1; i>=0; --i) // Go backwards to minimize the amount of shifting
-//  {
-//    BodyNode* bn = tree[i];
-//    unregisterBodyNode(bn);
-//  }
-  for(size_t i=0; i<tree.size(); ++i)
-  {
-    BodyNode* bn = tree[i];
-    unregisterBodyNode(bn);
-  }
+  std::vector<BodyNode*>::reverse_iterator rit;
+  // Go backwards to minimize the amount of element shifting in the vectors
+  for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
+    unregisterBodyNode(*rit);
 
   return tree;
 }
