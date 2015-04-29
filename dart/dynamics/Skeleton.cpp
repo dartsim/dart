@@ -79,7 +79,33 @@ Skeleton::Skeleton(const std::string& _name)
     mNumDofs(0),
     mNameMgrForBodyNodes("BodyNode"),
     mNameMgrForJoints("Joint"),
-    mNameMgrForSoftBodyNodes("BodyNode"),
+    mNameMgrForSoftBodyNodes("SoftBodyNode"),
+    mTotalMass(0.0),
+    mIsArticulatedInertiaDirty(true),
+    mIsMassMatrixDirty(true),
+    mIsAugMassMatrixDirty(true),
+    mIsInvMassMatrixDirty(true),
+    mIsInvAugMassMatrixDirty(true),
+    mIsCoriolisForcesDirty(true),
+    mIsGravityForcesDirty(true),
+    mIsCoriolisAndGravityForcesDirty(true),
+    mIsExternalForcesDirty(true),
+    mIsDampingForcesDirty(true),
+    mIsImpulseApplied(false),
+    mUnionRootSkeleton(this),
+    mUnionSize(1),
+    onNameChanged(mNameChangedSignal)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Skeleton::Skeleton(const Properties& _properties)
+  : mSkeletonP(_properties),
+    mNumDofs(0),
+    mNameMgrForBodyNodes("BodyNode"),
+    mNameMgrForJoints("Joint"),
+    mNameMgrForSoftBodyNodes("SoftBodyNode"),
     mTotalMass(0.0),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
@@ -1953,7 +1979,6 @@ void Skeleton::removeBodyNodeTree(BodyNode* _bodyNode)
 void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
-  std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
   if(_parentNode && _parentNode->descendsFrom(_bodyNode))
   {
     dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
@@ -1964,6 +1989,35 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
           << "will be moved.\n";
     return;
   }
+
+  if(nullptr == _newSkeleton)
+  {
+    if(nullptr == _parentNode)
+    {
+      dterr << "[Skeleton::moveBodyNodeTree] Attempting to move a BodyNode "
+            << "tree starting from [" << _bodyNode->getName() << "] in "
+            << "Skeleton [" << getName() << "] into a nullptr Skeleton. This "
+            << "is not permitted!\n";
+      return;
+    }
+
+    _newSkeleton = _parentNode->getSkeleton();
+  }
+
+  if(_parentNode && _newSkeleton != _parentNode->getSkeleton())
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Mismatch between the specified "
+          << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
+          << ") and the specified new parent BodyNode ["
+          << _parentNode->getName() << "] whose actual Skeleton is named ["
+          << _parentNode->getSkeleton()->getName() << "] ("
+          << _parentNode->getSkeleton() << ") while attempting to move a "
+          << "BodyNode tree starting from [" << _bodyNode->getName() << "] in "
+          << "Skeleton [" << getName() << "] (" << this << ")\n";
+    return;
+  }
+
+  std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
 
   Joint* originalParent = _bodyNode->getParentJoint();
   if(originalParent != _parentJoint)
@@ -1991,11 +2045,11 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
 
 //==============================================================================
 std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
-    Joint* _parentJoint, BodyNode* _bodyNode,
-    Skeleton* _newSkeleton, BodyNode* _parentNode)
+    Joint* _parentJoint, const BodyNode* _bodyNode,
+    Skeleton* _newSkeleton, BodyNode* _parentNode) const
 {
   std::pair<Joint*, BodyNode*> root(nullptr, nullptr);
-  std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
+  std::vector<const BodyNode*> tree = constructBodyNodeTree(_bodyNode);
 
   std::map<std::string, BodyNode*> nameMap;
   std::vector<BodyNode*> clones;
@@ -2003,7 +2057,7 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
 
   for(size_t i=0; i<tree.size(); ++i)
   {
-    BodyNode* original = tree[i];
+    const BodyNode* original = tree[i];
     // If this is the root of the tree, and the user has requested a change in
     // its parent Joint, use the specified parent Joint instead of created a
     // clone
@@ -2029,20 +2083,30 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
 }
 
 //==============================================================================
-std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode* _bodyNode)
-{
-  std::vector<BodyNode*> tree;
-  recursiveConstructBodyNodeTree(tree, _bodyNode);
-  return tree;
-}
-
-//==============================================================================
-void Skeleton::recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
-                                              BodyNode* _currentBodyNode)
+template <typename BodyNodeT>
+static void recursiveConstructBodyNodeTree(
+    std::vector<BodyNodeT*>& tree, BodyNodeT* _currentBodyNode)
 {
   tree.push_back(_currentBodyNode);
   for(size_t i=0; i<_currentBodyNode->getNumChildBodyNodes(); ++i)
     recursiveConstructBodyNodeTree(tree, _currentBodyNode->getChildBodyNode(i));
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::constructBodyNodeTree(
+    const BodyNode* _bodyNode) const
+{
+  std::vector<const BodyNode*> tree;
+  recursiveConstructBodyNodeTree<const BodyNode>(tree, _bodyNode);
+  return tree;
+}
+
+//==============================================================================
+std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode *_bodyNode)
+{
+  std::vector<BodyNode*> tree;
+  recursiveConstructBodyNodeTree<BodyNode>(tree, _bodyNode);
+  return tree;
 }
 
 //==============================================================================

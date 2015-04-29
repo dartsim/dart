@@ -581,15 +581,100 @@ void BodyNode::setParentJoint(Joint* _joint)
 }
 
 //==============================================================================
-void BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent)
+static bool checkSkeletonNodeAgreement(
+    const BodyNode* _bodyNode,
+    ConstSkeletonPtr _newSkeleton, const BodyNode* _newParent,
+    const std::string& _function,
+    const std::string& _operation)
 {
-  mSkeleton->moveBodyNodeTree(getParentJoint(), this, _newSkeleton, _newParent);
+  if(nullptr == _newSkeleton)
+  {
+    dterr << "[BodyNode::" << _function << "] Attempting to " << _operation
+          << " a BodyNode tree starting " << "from [" << _bodyNode->getName()
+          << "] in the Skeleton named [" << _bodyNode->getSkeleton()->getName()
+          << "] into a nullptr Skeleton.\n";
+    return false;
+  }
+
+  if(_newParent && _newSkeleton.get() != _newParent->getSkeleton())
+  {
+    dterr << "[BodyNode::" << _function << "] Mismatch between the specified "
+          << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
+          << ") and the specified new parent BodyNode ["
+          << _newParent->getName() << "] whose actual Skeleton is named ["
+          << _newParent->getSkeleton()->getName() <<  "] ("
+          << _newParent->getSkeleton() << ") while attempting to " << _operation
+          << " the BodyNode [" << _bodyNode->getName() << "] from the "
+          << "Skeleton named [" << _bodyNode->getSkeleton()->getName() << "] ("
+          << _bodyNode->getSkeleton() << ").\n";
+    return false;
+  }
+
+  return true;
 }
 
 //==============================================================================
-void BodyNode::copyTo(Skeleton* _newSkeleton, BodyNode* _newParent)
+void BodyNode::moveTo(BodyNode* _newParent)
 {
-  mSkeleton->cloneBodyNodeTree(nullptr, this, _newSkeleton, _newParent);
+  if(nullptr == _newParent)
+    mSkeleton->moveBodyNodeTree(
+          getParentJoint(), this, getSkeleton(), nullptr);
+  else
+    mSkeleton->moveBodyNodeTree(
+          getParentJoint(), this, _newParent->getSkeleton(), _newParent);
+}
+
+//==============================================================================
+void BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent)
+{
+  if(checkSkeletonNodeAgreement(
+       this, _newSkeleton, _newParent, "moveTo", "move"))
+  {
+    mSkeleton->moveBodyNodeTree(
+          getParentJoint(), this, _newParent->getSkeleton(), _newParent);
+  }
+}
+
+//==============================================================================
+SkeletonPtr BodyNode::split(const std::string& _skeletonName)
+{
+  SkeletonPtr skel(new Skeleton(getSkeleton()->getSkeletonProperties()));
+  skel->setName(_skeletonName);
+  moveTo(skel);
+  return skel;
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent)
+{
+  if(nullptr == _newParent)
+    return mSkeleton->cloneBodyNodeTree(
+          nullptr, this, getSkeleton(), nullptr);
+  else
+    return mSkeleton->cloneBodyNodeTree(
+          nullptr, this, _newParent->getSkeleton(), _newParent);
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(SkeletonPtr _newSkeleton,
+                                              BodyNode* _newParent) const
+{
+  if(checkSkeletonNodeAgreement(
+       this, _newSkeleton, _newParent, "copyTo", "copy"))
+  {
+    return mSkeleton->cloneBodyNodeTree(nullptr, this, _newSkeleton.get(), _newParent);
+  }
+
+  return std::pair<Joint*, BodyNode*>(nullptr, nullptr);
+}
+
+//==============================================================================
+SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName) const
+{
+  SkeletonPtr skel(new Skeleton(getSkeleton()->getSkeletonProperties()));
+  skel->setName(_skeletonName);
+  copyTo(skel);
+  return skel;
 }
 
 //==============================================================================

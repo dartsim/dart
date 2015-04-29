@@ -117,8 +117,11 @@ public:
   // Constructor and Destructor
   //----------------------------------------------------------------------------
 
-  /// Constructor
+  /// Default Constructor
   explicit Skeleton(const std::string& _name = "Skeleton");
+
+  /// Alternative Constructor
+  explicit Skeleton(const Properties& _properties);
 
   /// Destructor
   virtual ~Skeleton();
@@ -954,15 +957,15 @@ protected:
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact
   std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
-      Joint* _parentJoint, BodyNode* _bodyNode,
-      Skeleton* _newSkeleton, BodyNode* _parentNode);
+      Joint* _parentJoint, const BodyNode* _bodyNode,
+      Skeleton* _newSkeleton, BodyNode* _parentNode) const;
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact, but alter the top parent Joint to a new type
   template <class JointType>
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
       BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
-      const typename JointType::Properties& _joint)
+      const typename JointType::Properties& _joint) const
   {
     JointType* parentJoint = new JointType(_joint);
     std::pair<Joint*, BodyNode*> root =
@@ -971,11 +974,10 @@ protected:
   }
 
   /// Create a vector representation of a subtree of BodyNodes
-  std::vector<BodyNode*> constructBodyNodeTree(BodyNode* _bodyNode);
+  std::vector<const BodyNode*> constructBodyNodeTree(
+      const BodyNode* _bodyNode) const;
 
-  /// Recursive function to be used by constructBodyNodeTree()
-  void recursiveConstructBodyNodeTree(std::vector<BodyNode*>& tree,
-                                      BodyNode* _currentBodyNode);
+  std::vector<BodyNode*> constructBodyNodeTree(BodyNode* _bodyNode);
 
   /// Create a vector representation of a subtree of BodyNodes and remove that
   /// subtree from this Skeleton without deleting them
@@ -1206,6 +1208,7 @@ public:
 };
 
 typedef std::shared_ptr<Skeleton> SkeletonPtr;
+typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
 
 }  // namespace dynamics
 }  // namespace dart
