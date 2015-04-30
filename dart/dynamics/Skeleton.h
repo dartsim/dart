@@ -995,7 +995,7 @@ protected:
 
   /// Update the dimensions for various data structures, such as mass matrix
   /// and force vector
-  void updateDataDimensions();
+  void updateCacheDimensions();
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
@@ -1070,9 +1070,6 @@ protected:
 
   /// Properties of this Skeleton
   Properties mSkeletonP;
-
-  /// Number of degrees of freedom (aka generalized coordinates)
-  size_t mNumDofs;
 
   /// \brief Array of GenCoordInfo objects
   /// \warning GenCoordInfo is deprecated because the functionality is replaced

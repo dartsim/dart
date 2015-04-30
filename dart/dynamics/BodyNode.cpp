@@ -1441,11 +1441,11 @@ void BodyNode::init(Skeleton* _skeleton)
     for (size_t j = i + 1; j < nDepGenCoordIndices; ++j)
     {
       assert(mDependentGenCoordIndices[i] !=
-          mDependentGenCoordIndices[j] &&
-          "Duplicated index is found in mDependentGenCoordIndices.");
+             mDependentGenCoordIndices[j] &&
+             "Duplicated index is found in mDependentGenCoordIndices.");
     }
   }
-#endif
+#endif // NDEBUG
 
   //--------------------------------------------------------------------------
   // Set dimensions of dynamics matrices and vectors.
@@ -1455,6 +1455,7 @@ void BodyNode::init(Skeleton* _skeleton)
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
   mWorldJacobianClassicDeriv.setZero(6, numDepGenCoords);
+  notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -1472,9 +1473,9 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   // Check if it's already accounted for in our Non-BodyNode Entities
   if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
   {
-    dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity '"
-           << _newChildEntity->getName() << "' as a child Entity of '"
-           << getName() << "', which is already its parent." << std::endl;
+    dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity ["
+           << _newChildEntity->getName() << "] as a child Entity of ["
+           << getName() << "], which is already its parent." << std::endl;
     return;
   }
 

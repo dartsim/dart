@@ -3,6 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ *            Michael Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -115,7 +116,7 @@ TEST(World, AddingAndRemovingSkeletons)
 
     EXPECT_TRUE(skeleton1 == world->getSkeleton(s1name));
     EXPECT_FALSE(skeleton2 == world->getSkeleton(s2name));
-    EXPECT_TRUE(world->getSkeleton(s2name) == NULL);
+    EXPECT_TRUE(world->getSkeleton(s2name) == nullptr);
 
     // Add skeleton3, skeleton4
     world->addSkeleton(skeleton3);
@@ -138,7 +139,7 @@ TEST(World, AddingAndRemovingSkeletons)
         world->step();
 
     EXPECT_FALSE(skeleton1 == world->getSkeleton(s1name));
-    EXPECT_TRUE(world->getSkeleton(s1name) == NULL);
+    EXPECT_TRUE(world->getSkeleton(s1name) == nullptr);
 
     // Remove all the skeletons
     world->removeAllSkeletons();
@@ -147,10 +148,10 @@ TEST(World, AddingAndRemovingSkeletons)
         world->step();
 
     EXPECT_FALSE(skeleton3 == world->getSkeleton(s3name));
-    EXPECT_TRUE(world->getSkeleton(s3name) == NULL);
+    EXPECT_TRUE(world->getSkeleton(s3name) == nullptr);
 
     EXPECT_FALSE(skeleton4 == world->getSkeleton(s4name));
-    EXPECT_TRUE(world->getSkeleton(s4name) == NULL);
+    EXPECT_TRUE(world->getSkeleton(s4name) == nullptr);
 }
 
 //==============================================================================

@@ -76,7 +76,6 @@ Skeleton::Properties::Properties(
 //==============================================================================
 Skeleton::Skeleton(const std::string& _name)
   : mSkeletonP(_name),
-    mNumDofs(0),
     mNameMgrForBodyNodes("BodyNode"),
     mNameMgrForJoints("Joint"),
     mNameMgrForSoftBodyNodes("SoftBodyNode"),
@@ -102,7 +101,6 @@ Skeleton::Skeleton(const std::string& _name)
 //==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
   : mSkeletonP(_properties),
-    mNumDofs(0),
     mNameMgrForBodyNodes("BodyNode"),
     mNameMgrForJoints("Joint"),
     mNameMgrForSoftBodyNodes("SoftBodyNode"),
@@ -375,7 +373,7 @@ size_t Skeleton::getNumSoftBodyNodes() const
 BodyNode* Skeleton::getRootBodyNode()
 {
   if (mBodyNodes.size()==0)
-    return NULL;
+    return nullptr;
 
   // We assume that the first element of body nodes is root.
   return mBodyNodes[0];
@@ -527,13 +525,20 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   std::vector<BodyNode*> rootBodyNodes;
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
   {
-    if (mBodyNodes[i]->getParentBodyNode() == NULL)
+    if (mBodyNodes[i]->getParentBodyNode() == nullptr)
       rootBodyNodes.push_back(mBodyNodes[i]);
   }
 
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
   mBodyNodes.clear();
+  mSoftBodyNodes.clear();
+  mDofs.clear();
+  mNameMgrForBodyNodes.clear();
+  mNameMgrForJoints.clear();
+  mNameMgrForDofs.clear();
+  mNameMgrForSoftBodyNodes.clear();
+  mNameMgrForMarkers.clear();
   for (size_t i = 0; i < rootBodyNodes.size(); ++i)
   {
     queue.push(rootBodyNodes[i]);
@@ -542,7 +547,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     {
       BodyNode* itBodyNode = queue.front();
       queue.pop();
-      mBodyNodes.push_back(itBodyNode);
+      registerBodyNode(itBodyNode);
       for (size_t j = 0; j < itBodyNode->getNumChildBodyNodes(); ++j)
         queue.push(itBodyNode->getChildBodyNode(j));
     }
@@ -550,38 +555,8 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   ///////////////////////////////////////////////////////////////////////////
 
-  // Initialize body nodes and generalized coordinates
-  mDofs.clear();
-  mNumDofs = 0;
-  const size_t numBodyNodes = getNumBodyNodes();
-  for (size_t i = 0; i < numBodyNodes; ++i)
-  {
-    BodyNode* bodyNode = mBodyNodes[i];
-    Joint*    joint    = bodyNode->getParentJoint();
-
-    const size_t numDofsOfJoint = joint->getNumDofs();
-    for (size_t j = 0; j < numDofsOfJoint; ++j)
-    {
-      mDofs.push_back(joint->getDof(j));
-      joint->setIndexInSkeleton(j, mNumDofs + j);
-    }
-
-    bodyNode->init(this);
-    mNumDofs += joint->getNumDofs();
-  }
-
   // Set dimension of dynamics quantities
-  size_t dof = getNumDofs();
-  mM    = Eigen::MatrixXd::Zero(dof, dof);
-  mAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mCvec = Eigen::VectorXd::Zero(dof);
-  mG    = Eigen::VectorXd::Zero(dof);
-  mCg   = Eigen::VectorXd::Zero(dof);
-  mFext = Eigen::VectorXd::Zero(dof);
-  mFc   = Eigen::VectorXd::Zero(dof);
-  mFd   = Eigen::VectorXd::Zero(dof);
+  updateCacheDimensions();
 
   // Clear external/internal force
   clearExternalForces();
@@ -600,7 +575,7 @@ size_t Skeleton::getDof() const
 //==============================================================================
 size_t Skeleton::getNumDofs() const
 {
-  return mNumDofs;
+  return mDofs.size();
 }
 
 //==============================================================================
@@ -1869,6 +1844,19 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 //==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
+#ifndef NDEBUG  // Debug mode
+  std::vector<BodyNode*>::iterator repeat =
+      std::find(mBodyNodes.begin(), mBodyNodes.end(), _newBodyNode);
+  if(repeat != mBodyNodes.end())
+  {
+    dterr << "[Skeleton::registerBodyNode] Attempting to double-register the "
+          << "BodyNode named [" << _newBodyNode->getName() << "] in the "
+          << "Skeleton named [" << getName() << "]. Please report this as a "
+          << "bug!\n";
+    return;
+  }
+#endif // -------- Debug mode
+
   mBodyNodes.push_back(_newBodyNode);
   _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
@@ -1882,20 +1870,35 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 
   Joint* newJoint = _newBodyNode->getParentJoint();
+  const size_t startDof = getNumDofs();
   for(size_t i = 0; i < newJoint->getNumDofs(); ++i)
   {
     mDofs.push_back(newJoint->getDof(i));
-    newJoint->setIndexInSkeleton(i, mNumDofs + i);
+    newJoint->setIndexInSkeleton(i, startDof + i);
   }
-  mNumDofs += newJoint->getNumDofs();
 
   _newBodyNode->init(this);
 
   updateTotalMass();
-  updateDataDimensions();
+  updateCacheDimensions();
   // TODO(MXG): Decide if the following are necessary
 //  clearExternalForces();
 //  resetForces();
+
+#ifndef NDEBUG // Debug mode
+  for(size_t i=0; i<mBodyNodes.size(); ++i)
+  {
+    if(mBodyNodes[i]->mIndexInSkeleton != i)
+    {
+      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
+            << mBodyNodes[i]->getName() << "] in Skeleton [" << getName()
+            << "] is mistaken about its index ( " << i << " : "
+            << mBodyNodes[i]->mIndexInSkeleton << " ). Please report this as "
+            << "a bug!\n";
+      assert(false);
+    }
+  }
+#endif // ------- Debug mode
 }
 
 //==============================================================================
@@ -1919,6 +1922,7 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
   size_t index = _oldBodyNode->getIndex();
+  assert(mBodyNodes[index] == _oldBodyNode);
   mBodyNodes.erase(mBodyNodes.begin()+index);
   for(size_t i=index; i < mBodyNodes.size(); ++i)
   {
@@ -1979,14 +1983,22 @@ void Skeleton::removeBodyNodeTree(BodyNode* _bodyNode)
 void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 Skeleton* _newSkeleton, BodyNode* _parentNode)
 {
+  if(_bodyNode == _parentNode)
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
+          << _bodyNode->getName() << "] (" << _bodyNode << ") to be its own "
+          << "parent. This is not permitted!\n";
+    return;
+  }
+
   if(_parentNode && _parentNode->descendsFrom(_bodyNode))
   {
     dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
-          << _bodyNode->getName() << "] of Skeleton [" << getName() << "] to "
-          << "be a child of BodyNode [" << _parentNode->getName() << "] of "
-          << "Skeleton [" << _newSkeleton->getName() << "], but that would "
-          << "create a closed kinematic chain, which is not permitted! Nothing "
-          << "will be moved.\n";
+          << _bodyNode->getName() << "] of Skeleton [" << getName() << "] ("
+          << this << ") to be a child of BodyNode [" << _parentNode->getName()
+          << "] in Skeleton [" << _newSkeleton->getName() << "] ("
+          << _newSkeleton << "), but that would create a closed kinematic "
+          << "chain, which is not permitted! Nothing will be moved.\n";
     return;
   }
 
@@ -2098,6 +2110,7 @@ std::vector<const BodyNode*> Skeleton::constructBodyNodeTree(
 {
   std::vector<const BodyNode*> tree;
   recursiveConstructBodyNodeTree<const BodyNode>(tree, _bodyNode);
+
   return tree;
 }
 
@@ -2106,6 +2119,7 @@ std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode *_bodyNode)
 {
   std::vector<BodyNode*> tree;
   recursiveConstructBodyNodeTree<BodyNode>(tree, _bodyNode);
+
   return tree;
 }
 
@@ -2113,9 +2127,14 @@ std::vector<BodyNode*> Skeleton::constructBodyNodeTree(BodyNode *_bodyNode)
 std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
+
+  // Go backwards to minimize the number of shifts needed
   std::vector<BodyNode*>::reverse_iterator rit;
   for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
     unregisterBodyNode(*rit);
+
+  for(size_t i=0; i<mBodyNodes.size(); ++i)
+    mBodyNodes[i]->init(this);
 
   return tree;
 }
@@ -2152,7 +2171,7 @@ void Skeleton::updateTotalMass()
 }
 
 //==============================================================================
-void Skeleton::updateDataDimensions()
+void Skeleton::updateCacheDimensions()
 {
   size_t dof = getNumDofs();
   mM    = Eigen::MatrixXd::Zero(dof, dof);
@@ -2192,7 +2211,7 @@ void Skeleton::updateMassMatrix()
 
   mM.setZero();
 
-  // Backup the origianl internal force
+  // Backup the original internal force
   Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
   size_t dof = getNumDofs();
@@ -2228,7 +2247,7 @@ void Skeleton::updateMassMatrix()
   }
   mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
-  // Restore the origianl generalized accelerations
+  // Restore the original generalized accelerations
   setAccelerations(originalGenAcceleration);
 
   mIsMassMatrixDirty = false;

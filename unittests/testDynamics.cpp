@@ -568,9 +568,9 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
 #ifndef NDEBUG  // Debug mode
-  int nTestItr = 10;
+  int nTestItr = 5;
 #else
-  int nTestItr = 1;
+  int nTestItr = 100;
 #endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
@@ -582,18 +582,38 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
 
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nTestItr; ++j)
     {
+      // For the second half of the tests, scramble up the Skeleton
+      if(j > ceil(nTestItr/2))
+      {
+        SkeletonPtr copy = skeleton->clone();
+        size_t maxNode = skeleton->getNumBodyNodes()-1;
+        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+
+        if(bn1 != bn2)
+        {
+          BodyNode* child = bn1->descendsFrom(bn2)? bn1 : bn2;
+          BodyNode* parent = child == bn1? bn2 : bn1;
+
+          child->moveTo(parent);
+        }
+
+        EXPECT_TRUE(skeleton->getNumBodyNodes() == copy->getNumBodyNodes());
+        EXPECT_TRUE(skeleton->getNumDofs() == copy->getNumDofs());
+      }
+
       // Generate a random state
       VectorXd q   = VectorXd(dof);
       VectorXd dq  = VectorXd(dof);
@@ -1098,7 +1118,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 10;
+  size_t nRandomItr = 5;
 #else
   size_t nRandomItr = 100;
 #endif
@@ -1123,22 +1143,42 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skeleton = myWorld->getSkeleton(i);
 
-    size_t dof = skel->getNumDofs();
+    size_t dof = skeleton->getNumDofs();
     if (dof == 0)
     {
-      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF." << endl;
+      dtmsg << "Skeleton [" << skeleton->getName() << "] is skipped since it "
+            << "has 0 DOF." << endl;
       continue;
     }
 
     for (size_t j = 0; j < nRandomItr; ++j)
     {
-      // Random joint stiffness and damping coefficient
-      for (size_t k = 0; k < skel->getNumBodyNodes(); ++k)
+      // For the second half of the tests, scramble up the Skeleton
+      if(j > ceil(nRandomItr/2))
       {
-        BodyNode* body     = skel->getBodyNode(k);
+        SkeletonPtr copy = skeleton->clone();
+        size_t maxNode = skeleton->getNumBodyNodes()-1;
+        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+
+        if(bn1 != bn2)
+        {
+          BodyNode* child = bn1->descendsFrom(bn2)? bn1 : bn2;
+          BodyNode* parent = child == bn1? bn2 : bn1;
+
+          child->moveTo(parent);
+        }
+
+        EXPECT_TRUE(skeleton->getNumBodyNodes() == copy->getNumBodyNodes());
+        EXPECT_TRUE(skeleton->getNumDofs() == copy->getNumDofs());
+      }
+
+      // Random joint stiffness and damping coefficient
+      for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
+      {
+        BodyNode* body     = skeleton->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
         int       localDof = joint->getNumDofs();
 
@@ -1167,16 +1207,16 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
         dq[k]  = math::random(lb, ub);
         ddq[k] = math::random(lb, ub);
       }
-      skel->setPositions(q);
-      skel->setVelocities(dq);
-      skel->setAccelerations(ddq);
+      skeleton->setPositions(q);
+      skeleton->setVelocities(dq);
+      skeleton->setAccelerations(ddq);
 
       randomizeRefFrames();
 
-      compareCOMJacobianToFk(skel, Frame::World(), 1e-6);
+      compareCOMJacobianToFk(skeleton, Frame::World(), 1e-6);
 
       for(size_t r=0; r<refFrames.size(); ++r)
-        compareCOMJacobianToFk(skel, refFrames[r], 1e-6);
+        compareCOMJacobianToFk(skeleton, refFrames[r], 1e-6);
     }
   }
 }
