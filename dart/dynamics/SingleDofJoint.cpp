@@ -253,9 +253,8 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
 
   if(mSkeleton)
   {
-    mSkeleton->mNameMgrForDofs.removeName(mSingleDofP.mDofName);
     mSingleDofP.mDofName =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDof);
+        mSkeleton->mNameMgrForDofs.changeObjectName(mDof, _name);
   }
   else
     mSingleDofP.mDofName = _name;

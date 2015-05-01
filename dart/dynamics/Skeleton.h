@@ -964,7 +964,7 @@ protected:
   /// originals intact, but alter the top parent Joint to a new type
   template <class JointType>
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
-      BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
+      const BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
       const typename JointType::Properties& _joint) const
   {
     JointType* parentJoint = new JointType(_joint);

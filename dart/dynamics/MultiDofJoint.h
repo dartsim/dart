@@ -995,9 +995,8 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
 
   if(mSkeleton)
   {
-    mSkeleton->mNameMgrForDofs.removeName(dofName);
     dofName =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDofs[_index]);
+        mSkeleton->mNameMgrForDofs.changeObjectName(mDofs[_index], _name);
   }
   else
     dofName = _name;
@@ -1042,9 +1041,9 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
 {
   if(DOF <= _index)
   {
-    dtwarn << "[MultiDofJoint::getDofName] Requested name of DOF index "
-           << _index << ", but that is out of bounds (max " << DOF-1 << "). "
-           << "Returning name of DOF 0\n";
+    dterr << "[MultiDofJoint::getDofName] Requested name of DOF index "
+          << _index << ", but that is out of bounds (max " << DOF-1 << "). "
+          << "Returning name of DOF 0\n";
     return mMultiDofP.mDofNames[0];
   }
 
@@ -1933,9 +1932,11 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::registerDofs()
 {
   for (size_t i = 0; i < DOF; ++i)
+  {
     mMultiDofP.mDofNames[i] =
         mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
                                                       mDofs[i]);
+  }
 }
 
 //==============================================================================

@@ -68,8 +68,10 @@ class NameManager
 {
 public:
   /// Constructor
-  NameManager(const std::string& _defaultName = "default")
-    : mDefaultName(_defaultName),
+  NameManager(const std::string& _managerName,
+              const std::string& _defaultName = "default")
+    : mManagerName(_managerName),
+      mDefaultName(_defaultName),
       mNameBeforeNumber(true),
       mPrefix(""), mInfix("("), mAffix(")") {}
 
@@ -128,8 +130,9 @@ public:
       newName = ss.str();
     } while (hasName(newName));
 
-    dtwarn << "The name '" << _name << "' is a duplicate, "
-           << "so it has been renamed to '" << newName << "'\n";
+    dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
+          << _name << "] is a duplicate, so it has been renamed to ["
+          << newName << "]\n";
 
     return newName;
   }
@@ -149,13 +152,15 @@ public:
   {
     if (_name.empty())
     {
-      dtwarn << "Empty name is not allowed.\n";
+      dtwarn << "[NameManager::addName] (" << mManagerName
+             << ") Empty name is not allowed!\n";
       return false;
     }
 
     if (hasName(_name))
     {
-      dtwarn << "Name [" << _name << "] already exist.\n";
+      dtwarn << "[NameManager::addName] (" << mManagerName << ") The name ["
+             << _name << "] already exists!\n";
       return false;
     }
 
@@ -165,7 +170,7 @@ public:
     return true;
   }
 
-  /// Remove an object from the map based on its name
+  /// Remove an object from the Manager based on its name
   bool removeName(const std::string& _name)
   {
     typename std::map<std::string, T>::iterator it = mMap.find(_name);
@@ -176,16 +181,44 @@ public:
     typename std::map<T, std::string>::iterator rit =
         mReverseMap.find(it->second);
 
-    mReverseMap.erase(rit);
+    if (rit != mReverseMap.end())
+      mReverseMap.erase(rit);
+
     mMap.erase(it);
 
     return true;
+  }
+
+  /// Remove an object from the Manager based on reverse lookup
+  bool removeObject(T _obj)
+  {
+    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+
+    if (rit == mReverseMap.end())
+      return false;
+
+    typename std::map<std::string, T>::iterator it = mMap.find(rit->second);
+    if (it != mMap.end())
+      mMap.erase(it);
+
+    mReverseMap.erase(rit);
+
+    return true;
+  }
+
+  /// Remove _name using the forward lookup and _obj using the reverse lookup.
+  /// This will allow you to add _obj under the name _name without any conflicts
+  void removeEntries(const std::string& _name, T _obj)
+  {
+    removeObject(_obj);
+    removeName(_name, false);
   }
 
   /// Clear all the objects
   void clear()
   {
     mMap.clear();
+    mReverseMap.clear();
   }
 
   /// Return true if the name is contained
@@ -210,7 +243,7 @@ public:
   /// \param[in] _name
   ///   Name of the requested object
   /// \return
-  ///   The object if it exists, or NULL if it does not exist
+  ///   The object if it exists, or nullptr if it does not exist
   T getObject(const std::string& _name) const
   {
     typename std::map<std::string, T>::const_iterator result =
@@ -220,6 +253,19 @@ public:
       return result->second;
     else
       return nullptr;
+  }
+
+  /// Use a reverse lookup to get the name that the manager has _obj listed
+  /// under. Returns an empty string if it is not in the list.
+  std::string getName(T _obj) const
+  {
+    typename std::map<T, std::string>::const_iterator result =
+        mReverseMap.find(_obj);
+
+    if (result != mReverseMap.end())
+      return result->second;
+    else
+      return "";
   }
 
   /// Change the name of a currently held object. This will do nothing if the
@@ -233,7 +279,7 @@ public:
   {
     typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
     if(rit == mReverseMap.end())
-      return "";
+      return _newName;
 
     if(rit->second == _newName)
       return rit->second;
@@ -256,7 +302,22 @@ public:
     return mDefaultName;
   }
 
+  /// Set the name of this NameManager so that it can be printed in error reports
+  void setManagerName(const std::string& _managerName)
+  {
+    mManagerName = _managerName;
+  }
+
+  /// Get the name of this NameManager
+  const std::string& getManagerName() const
+  {
+    return mManagerName;
+  }
+
 protected:
+  /// Name of this NameManager. This is used to report errors.
+  std::string mManagerName;
+
   /// Map of objects that have been added to the NameManager
   std::map<std::string, T> mMap;
 

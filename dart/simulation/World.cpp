@@ -57,7 +57,8 @@ namespace simulation {
 //==============================================================================
 World::World(const std::string& _name)
   : mName(_name),
-    mNameMgrForSkeletons("skeleton"),
+    mNameMgrForSkeletons("World::Skeleton | " + _name, "skeleton"),
+    mNameMgrForFrames("World::SimpleFrame | " + _name, "frame"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
@@ -218,6 +219,11 @@ const std::string& World::setName(const std::string& _newName)
   mName = _newName;
 
   mNameChangedSignal.raise(oldName, mName);
+
+  mNameMgrForSkeletons.setManagerName(
+        "World::Skeleton | " + mName);
+  mNameMgrForFrames.setManagerName(
+        "World::SimpleFrame | " + mName);
 
   return mName;
 }

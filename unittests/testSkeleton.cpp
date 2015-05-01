@@ -50,6 +50,40 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
+void check_self_consistency(SkeletonPtr skeleton)
+{
+  for(size_t i=0; i<skeleton->getNumBodyNodes(); ++i)
+  {
+    BodyNode* bn = skeleton->getBodyNode(i);
+    EXPECT_TRUE(bn->getIndex() == i);
+    EXPECT_TRUE(skeleton->getBodyNode(bn->getName()) == bn);
+
+    Joint* joint = bn->getParentJoint();
+    EXPECT_TRUE(skeleton->getJoint(joint->getName()) == joint);
+
+    for(size_t j=0; j<joint->getNumDofs(); ++j)
+    {
+      DegreeOfFreedom* dof = joint->getDof(j);
+      EXPECT_TRUE(dof->getIndexInJoint() == j);
+      EXPECT_TRUE(skeleton->getDof(dof->getName()) == dof);
+    }
+  }
+
+  for(size_t i=0; i<skeleton->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = skeleton->getDof(i);
+    EXPECT_TRUE(dof->getIndexInSkeleton() == i);
+    EXPECT_TRUE(skeleton->getDof(dof->getName()) == dof);
+  }
+}
+
+void constructSubtree(std::vector<BodyNode*>& _tree, BodyNode* bn)
+{
+  _tree.push_back(bn);
+  for(size_t i=0; i<bn->getNumChildBodyNodes(); ++i)
+    constructSubtree(_tree, bn->getChildBodyNode(i));
+}
+
 TEST(Skeleton, Restructuring)
 {
   std::vector<std::string> fileList;
@@ -163,6 +197,116 @@ TEST(Skeleton, Restructuring)
       if(dof)
         EXPECT_TRUE(dof->getName() == name);
     }
+  }
+
+  // Test moves between Skeletons
+  for(size_t i=0; i<numIterations; ++i)
+  {
+    size_t fromIndex = floor(math::random(0, skeletons.size()));
+    fromIndex = std::min(fromIndex, skeletons.size()-1);
+    SkeletonPtr fromSkel = skeletons[fromIndex];
+
+    if(fromSkel->getNumBodyNodes() == 0)
+    {
+      --i;
+      continue;
+    }
+
+    size_t toIndex = floor(math::random(0, skeletons.size()));
+    toIndex = std::min(toIndex, skeletons.size()-1);
+    SkeletonPtr toSkel = skeletons[toIndex];
+
+    if(toSkel->getNumBodyNodes() == 0)
+    {
+      --i;
+      continue;
+    }
+
+    BodyNode* childBn = fromSkel->getBodyNode(
+          floor(math::random(0, fromSkel->getNumBodyNodes()-1)));
+    BodyNode* parentBn = toSkel->getBodyNode(
+          floor(math::random(0, toSkel->getNumBodyNodes()-1)));
+
+    if(fromSkel == toSkel)
+    {
+      if(childBn == parentBn)
+      {
+        --i;
+        continue;
+      }
+
+      if(parentBn->descendsFrom(childBn))
+      {
+        BodyNode* tempBn = childBn;
+        childBn = parentBn;
+        parentBn = tempBn;
+
+        SkeletonPtr tempSkel = fromSkel;
+        fromSkel = toSkel;
+        toSkel = tempSkel;
+      }
+    }
+
+    BodyNode* originalParent = childBn->getParentBodyNode();
+    std::vector<BodyNode*> subtree;
+    constructSubtree(subtree, childBn);
+
+    // Move to a new Skeleton
+    childBn->moveTo(parentBn);
+
+    // Make sure all the objects have moved
+    for(size_t j=0; j<subtree.size(); ++j)
+    {
+      BodyNode* bn = subtree[j];
+      EXPECT_TRUE(bn->getSkeleton() == toSkel.get());
+    }
+
+    // Move to the Skeleton's root while producing a new Joint type
+    sub_ptr<Joint> originalJoint = childBn->getParentJoint();
+    childBn->moveTo<FreeJoint>(nullptr);
+
+    // The original parent joint should be deleted now
+    EXPECT_TRUE(originalJoint == nullptr);
+
+    // The BodyNode should now be a root node
+    EXPECT_TRUE(childBn->getParentBodyNode() == nullptr);
+
+    // The subtree should still be in the same Skeleton
+    for(size_t j=0; j<subtree.size(); ++j)
+    {
+      BodyNode* bn = subtree[j];
+      EXPECT_TRUE(bn->getSkeleton() == toSkel.get());
+    }
+
+    // Create some new Skeletons and mangle them all up
+
+    childBn->copyTo<RevoluteJoint>(fromSkel, originalParent);
+
+    SkeletonPtr temporary = childBn->split("temporary");
+    SkeletonPtr other_temporary =
+        childBn->split<PrismaticJoint>("other temporary");
+    SkeletonPtr another_temporary = childBn->copyAs("another temporary");
+    SkeletonPtr last_temporary = childBn->copyAs<ScrewJoint>("last temporary");
+
+    childBn->copyTo(another_temporary->getBodyNode(
+                      another_temporary->getNumBodyNodes()-1));
+    childBn->copyTo<PlanarJoint>(another_temporary->getBodyNode(0));
+    childBn->copyTo<TranslationalJoint>(temporary, nullptr);
+    childBn->moveTo(last_temporary,
+        last_temporary->getBodyNode(last_temporary->getNumBodyNodes()-1));
+    childBn->moveTo<BallJoint>(last_temporary, nullptr);
+    childBn->moveTo<EulerJoint>(last_temporary.get(),
+                                last_temporary->getBodyNode(0));
+    childBn->changeParentJointType<FreeJoint>();
+
+
+    // Check that the mangled Skeletons are all self-consistent
+    check_self_consistency(fromSkel);
+    check_self_consistency(toSkel);
+    check_self_consistency(temporary);
+    check_self_consistency(other_temporary);
+    check_self_consistency(another_temporary);
+    check_self_consistency(last_temporary);
   }
 }
 

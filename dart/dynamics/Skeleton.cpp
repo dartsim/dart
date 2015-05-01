@@ -76,9 +76,11 @@ Skeleton::Properties::Properties(
 //==============================================================================
 Skeleton::Skeleton(const std::string& _name)
   : mSkeletonP(_name),
-    mNameMgrForBodyNodes("BodyNode"),
-    mNameMgrForJoints("Joint"),
-    mNameMgrForSoftBodyNodes("SoftBodyNode"),
+    mNameMgrForBodyNodes("Skeleton::BodyNode | "+_name, "BodyNode"),
+    mNameMgrForJoints("Skeleton::Joint | "+_name, "Joint"),
+    mNameMgrForSoftBodyNodes("Skeleton::SoftBodyNode | "+_name, "SoftBodyNode"),
+    mNameMgrForDofs("Skeleton::DegreeOfFreedom | "+_name, "dof"),
+    mNameMgrForMarkers("Skeleton::Marker | "+_name, "Marker"),
     mTotalMass(0.0),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
@@ -101,9 +103,11 @@ Skeleton::Skeleton(const std::string& _name)
 //==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
   : mSkeletonP(_properties),
-    mNameMgrForBodyNodes("BodyNode"),
-    mNameMgrForJoints("Joint"),
-    mNameMgrForSoftBodyNodes("SoftBodyNode"),
+    mNameMgrForBodyNodes("Skeleton::BodyNode | "+_properties.mName, "BodyNode"),
+    mNameMgrForJoints("Skeleton::Joint | "+_properties.mName, "Joint"),
+    mNameMgrForSoftBodyNodes("Skeleton::SoftBodyNode | "+_properties.mName, "SoftBodyNode"),
+    mNameMgrForDofs("Skeleton::DegreeOfFreedom | "+_properties.mName, "dof"),
+    mNameMgrForMarkers("Skeleton::Marker | "+_properties.mName, "Marker"),
     mTotalMass(0.0),
     mIsArticulatedInertiaDirty(true),
     mIsMassMatrixDirty(true),
@@ -198,6 +202,17 @@ const std::string& Skeleton::setName(const std::string& _name)
 
   const std::string oldName = mSkeletonP.mName;
   mSkeletonP.mName = _name;
+
+  mNameMgrForBodyNodes.setManagerName(
+        "Skeleton::BodyNode | "+mSkeletonP.mName);
+  mNameMgrForSoftBodyNodes.setManagerName(
+        "Skeleton::SoftBodyNode | "+mSkeletonP.mName);
+  mNameMgrForJoints.setManagerName(
+        "Skeleton::Joint | "+mSkeletonP.mName);
+  mNameMgrForDofs.setManagerName(
+        "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
+  mNameMgrForMarkers.setManagerName(
+        "Skeleton::Marker | "+mSkeletonP.mName);
 
   mNameChangedSignal.raise(this, oldName, mSkeletonP.mName);
 
@@ -532,12 +547,12 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
   mBodyNodes.clear();
-  mSoftBodyNodes.clear();
-  mDofs.clear();
   mNameMgrForBodyNodes.clear();
   mNameMgrForJoints.clear();
-  mNameMgrForDofs.clear();
+  mSoftBodyNodes.clear();
   mNameMgrForSoftBodyNodes.clear();
+  mDofs.clear();
+  mNameMgrForDofs.clear();
   mNameMgrForMarkers.clear();
   for (size_t i = 0; i < rootBodyNodes.size(); ++i)
   {
@@ -1869,14 +1884,6 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
     addEntryToSoftBodyNodeNameMgr(softBodyNode);
   }
 
-  Joint* newJoint = _newBodyNode->getParentJoint();
-  const size_t startDof = getNumDofs();
-  for(size_t i = 0; i < newJoint->getNumDofs(); ++i)
-  {
-    mDofs.push_back(newJoint->getDof(i));
-    newJoint->setIndexInSkeleton(i, startDof + i);
-  }
-
   _newBodyNode->init(this);
 
   updateTotalMass();
@@ -1907,13 +1914,22 @@ void Skeleton::registerJoint(Joint* _newJoint)
   if (nullptr == _newJoint)
   {
     dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
-             "Joint to the Skeleton named [" << mSkeletonP.mName << "]!\n";
+             "Joint to the Skeleton named [" << mSkeletonP.mName << "]. Report "
+             "this as a bug!\n";
+    assert(false);
     return;
   }
 
   addEntryToJointNameMgr(_newJoint);
   _newJoint->mSkeleton = this;
   _newJoint->registerDofs();
+
+  const size_t startDof = getNumDofs();
+  for(size_t i = 0; i < _newJoint->getNumDofs(); ++i)
+  {
+    mDofs.push_back(_newJoint->getDof(i));
+    _newJoint->setIndexInSkeleton(i, startDof + i);
+  }
 }
 
 //==============================================================================
@@ -1947,7 +1963,13 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 void Skeleton::unregisterJoint(Joint* _oldJoint)
 {
   if (nullptr == _oldJoint)
+  {
+    dterr << "[Skeleton::unregisterJoint] Attempting to unregister nullptr "
+          << "Joint from Skeleton named [" << getName() << "]. Report this as "
+          << "a bug!\n";
+    assert(false);
     return;
+  }
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
 
@@ -1955,7 +1977,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
   for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
-    mNameMgrForDofs.removeName(dof->getName());
+    mNameMgrForDofs.removeObject(dof);
 
     firstDofIndex = std::min(firstDofIndex, dof->getIndexInSkeleton());
     mDofs.erase(std::remove(mDofs.begin(), mDofs.end(), dof), mDofs.end());
