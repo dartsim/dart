@@ -568,7 +568,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
 #ifndef NDEBUG  // Debug mode
-  int nTestItr = 5;
+  int nTestItr = 2;
 #else
   int nTestItr = 100;
 #endif
@@ -845,7 +845,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 5;
+  size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 100;
 #endif
@@ -1118,7 +1118,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 5;
+  size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 100;
 #endif
@@ -1273,11 +1273,11 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef BUILD_TYPE_DEBUG
+#ifndef NDEBUG // Debug mode
   size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 10;
-#endif
+#endif // ------- Debug mode
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
@@ -1670,7 +1670,11 @@ TEST_F(DynamicsTest, HybridDynamics)
 {
   const double tol       = 1e-9;
   const double timeStep  = 1e-3;
+#ifndef NDEBUG // Debug mode
+  const size_t numFrames = 50;  // 0.05 secs
+#else
   const size_t numFrames = 5e+3;  // 5 secs
+#endif // ------- Debug mode
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
