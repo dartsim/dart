@@ -993,10 +993,11 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(_name == dofName)
     return dofName;
 
-  if(mSkeleton)
+  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  if(skel)
   {
     dofName =
-        mSkeleton->mNameMgrForDofs.changeObjectName(mDofs[_index], _name);
+        skel->mNameMgrForDofs.changeObjectName(mDofs[_index], _name);
   }
   else
     dofName = _name;
@@ -1931,11 +1932,11 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
 template <size_t DOF>
 void MultiDofJoint<DOF>::registerDofs()
 {
+  SkeletonPtr skel = mChildBodyNode->getSkeleton();
   for (size_t i = 0; i < DOF; ++i)
   {
     mMultiDofP.mDofNames[i] =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
-                                                      mDofs[i]);
+        skel->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(), mDofs[i]);
   }
 }
 

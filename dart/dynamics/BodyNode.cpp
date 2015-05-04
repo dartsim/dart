@@ -1424,11 +1424,11 @@ BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
 }
 
 //==============================================================================
-void BodyNode::init(Skeleton* _skeleton)
+void BodyNode::init(SkeletonPtr _skeleton)
 {
+  mSkeleton = _skeleton;
   assert(_skeleton);
 
-  mSkeleton = _skeleton->getPtr();
   mParentJoint->init(_skeleton);
 
   //--------------------------------------------------------------------------

@@ -38,6 +38,7 @@
 #define DART_DYNAMICS_DEGREEOFFREEDOM_H_
 
 #include <string>
+#include <memory>
 #include <Eigen/Core>
 
 #include "dart/common/Subject.h"
@@ -227,10 +228,10 @@ public:
   const Joint* getJoint() const;
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  Skeleton* getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton();
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Get the BodyNode downstream of this DegreeOfFreedom
   BodyNode* getChildBodyNode();

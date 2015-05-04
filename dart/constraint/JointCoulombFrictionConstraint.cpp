@@ -186,7 +186,7 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
   assert(_index < mDim && "Invalid Index.");
 
   size_t localIndex = 0;
-  dynamics::Skeleton* skeleton = mJoint->getSkeleton();
+  dynamics::SkeletonPtr skeleton = mJoint->getSkeleton();
 
   size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)

@@ -1872,6 +1872,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 #endif // -------- Debug mode
 
   mBodyNodes.push_back(_newBodyNode);
+  _newBodyNode->mSkeleton = getPtr();
   _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
   registerJoint(_newBodyNode->getParentJoint());
@@ -1883,7 +1884,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
     addEntryToSoftBodyNodeNameMgr(softBodyNode);
   }
 
-  _newBodyNode->init(this);
+  _newBodyNode->init(getPtr());
 
   updateTotalMass();
   updateCacheDimensions();
@@ -1920,7 +1921,6 @@ void Skeleton::registerJoint(Joint* _newJoint)
   }
 
   addEntryToJointNameMgr(_newJoint);
-  _newJoint->mSkeleton = this;
   _newJoint->registerDofs();
 
   const size_t startDof = getNumDofs();
@@ -2156,7 +2156,7 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
     unregisterBodyNode(*rit);
 
   for(size_t i=0; i<mBodyNodes.size(); ++i)
-    mBodyNodes[i]->init(this);
+    mBodyNodes[i]->init(getPtr());
 
   return tree;
 }

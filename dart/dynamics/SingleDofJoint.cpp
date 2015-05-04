@@ -251,10 +251,11 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
   if (_name == mSingleDofP.mDofName)
     return mSingleDofP.mDofName;
 
-  if(mSkeleton)
+  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  if(skel)
   {
     mSingleDofP.mDofName =
-        mSkeleton->mNameMgrForDofs.changeObjectName(mDof, _name);
+        skel->mNameMgrForDofs.changeObjectName(mDof, _name);
   }
   else
     mSingleDofP.mDofName = _name;
@@ -1058,8 +1059,10 @@ SingleDofJoint::SingleDofJoint(const Properties& _properties)
 //==============================================================================
 void SingleDofJoint::registerDofs()
 {
-  mSingleDofP.mDofName =
-      mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    mSingleDofP.mDofName =
+        skel->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
 }
 
 //==============================================================================

@@ -317,13 +317,13 @@ const Joint* DegreeOfFreedom::getJoint() const
 }
 
 //==============================================================================
-Skeleton* DegreeOfFreedom::getSkeleton()
+SkeletonPtr DegreeOfFreedom::getSkeleton()
 {
   return mJoint->getSkeleton();
 }
 
 //==============================================================================
-const Skeleton* DegreeOfFreedom::getSkeleton() const
+std::shared_ptr<const Skeleton> DegreeOfFreedom::getSkeleton() const
 {
   return mJoint->getSkeleton();
 }

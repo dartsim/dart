@@ -966,8 +966,7 @@ public:
   /// Return true if the body can react to force or constraint impulse.
   ///
   /// A body node is reactive if the skeleton is mobile and the number of
-  /// dependent generalized coordinates is non zero. BodyNode::init() should be
-  /// called first to update the number of dependent generalized coordinates.
+  /// dependent generalized coordinates is non zero.
   bool isReactive() const;
 
   /// Set constraint impulse
@@ -1045,7 +1044,7 @@ protected:
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
 
   /// Initialize the vector members with proper sizes.
-  virtual void init(Skeleton* _skeleton);
+  virtual void init(SkeletonPtr _skeleton);
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

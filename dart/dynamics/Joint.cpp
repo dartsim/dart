@@ -71,7 +71,6 @@ Joint::Properties::Properties(const std::string& _name,
 Joint::Joint(const std::string& _name)
   : mJointP(Properties(_name)),
     mChildBodyNode(nullptr),
-    mSkeleton(nullptr),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
     mSpatialAcceleration(Eigen::Vector6d::Zero()),
@@ -143,11 +142,12 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
     return mJointP.mName;
   }
 
-  if (mSkeleton)
+  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  if (skel)
   {
-    mSkeleton->mNameMgrForJoints.removeName(mJointP.mName);
+    skel->mNameMgrForJoints.removeName(mJointP.mName);
     mJointP.mName = _name;
-    mSkeleton->addEntryToJointNameMgr(this);
+    skel->addEntryToJointNameMgr(this);
   }
   else
   {
@@ -233,15 +233,15 @@ const BodyNode* Joint::getParentBodyNode() const
 }
 
 //==============================================================================
-Skeleton* Joint::getSkeleton()
+std::shared_ptr<Skeleton> Joint::getSkeleton()
 {
-  return mSkeleton;
+  return mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
 }
 
 //==============================================================================
-const Skeleton* Joint::getSkeleton() const
+std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 {
-  return mSkeleton;
+  return mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
 }
 
 //==============================================================================
@@ -364,7 +364,6 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 Joint::Joint(const Properties& _properties)
   : mJointP(_properties),
     mChildBodyNode(nullptr),
-    mSkeleton(nullptr),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
     mSpatialAcceleration(Eigen::Vector6d::Zero()),
@@ -380,9 +379,9 @@ Joint::Joint(const Properties& _properties)
 }
 
 //==============================================================================
-void Joint::init(Skeleton* _skel)
+void Joint::init(std::shared_ptr<Skeleton>)
 {
-  mSkeleton = _skel;
+  // Currently unused
 }
 
 //==============================================================================
@@ -394,8 +393,9 @@ DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
 //==============================================================================
 void Joint::updateArticulatedInertia() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
+  ConstSkeletonPtr skel = getSkeleton();
+  if(skel && skel->mIsArticulatedInertiaDirty)
+      skel->updateArticulatedInertia();
 }
 
 //==============================================================================
@@ -446,10 +446,11 @@ void Joint::notifyPositionUpdate()
   mNeedSpatialVelocityUpdate = true;
   mNeedSpatialAccelerationUpdate = true;
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->notifyArticulatedInertiaUpdate();
-    mSkeleton->mIsExternalForcesDirty = true;
+    skel->notifyArticulatedInertiaUpdate();
+    skel->mIsExternalForcesDirty = true;
   }
 }
 

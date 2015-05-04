@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
@@ -215,10 +216,10 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
-  Skeleton* getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton();
 
   /// Get the (const) Skeleton that this Joint belongs to.
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
@@ -619,7 +620,7 @@ protected:
   virtual void registerDofs() = 0;
 
   /// Initialize this joint. This function is called by BodyNode::init()
-  virtual void init(Skeleton* _skel);
+  virtual void init(std::shared_ptr<Skeleton> _skel);
 
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _name DegreeOfFreedom's name.
@@ -841,9 +842,6 @@ protected:
 
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
-
-  /// Skeleton pointer that this joint belongs to
-  Skeleton* mSkeleton;
 
   /// Local transformation
   ///
