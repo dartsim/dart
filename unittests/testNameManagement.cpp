@@ -46,7 +46,7 @@ using namespace dynamics;
 //==============================================================================
 TEST(NameManagement, Skeleton)
 {
-  SkeletonPtr skel(new Skeleton);
+  SkeletonPtr skel = Skeleton::create();
 
   std::pair<Joint*, BodyNode*> pair;
   pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
@@ -219,9 +219,9 @@ TEST(NameManagement, WorldSkeletons)
 {
   dart::simulation::WorldPtr world1(new dart::simulation::World);
 
-  dart::dynamics::SkeletonPtr skel0(new dart::dynamics::Skeleton);
-  dart::dynamics::SkeletonPtr skel1(new dart::dynamics::Skeleton);
-  dart::dynamics::SkeletonPtr skel2(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr skel0 = dart::dynamics::Skeleton::create();
+  dart::dynamics::SkeletonPtr skel1 = dart::dynamics::Skeleton::create();
+  dart::dynamics::SkeletonPtr skel2 = dart::dynamics::Skeleton::create();
 
   world1->addSkeleton(skel0);
   world1->addSkeleton(skel1);
@@ -247,7 +247,8 @@ TEST(NameManagement, WorldSkeletons)
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
 
-  dart::dynamics::SkeletonPtr skel3(new dart::dynamics::Skeleton("OtherName"));
+  dart::dynamics::SkeletonPtr skel3 =
+      dart::dynamics::Skeleton::create("OtherName");
   world2->addSkeleton(skel3);
   world2->addSkeleton(skel2);
   world2->addSkeleton(skel1);

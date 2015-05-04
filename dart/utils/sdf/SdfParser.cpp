@@ -373,7 +373,7 @@ dynamics::SkeletonPtr SdfParser::makeSkeleton(
 {
   assert(_skeletonElement != nullptr);
 
-  dynamics::SkeletonPtr newSkeleton(new dynamics::Skeleton);
+  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
   //--------------------------------------------------------------------------
   // Name attribute

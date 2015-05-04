@@ -74,57 +74,29 @@ Skeleton::Properties::Properties(
 }
 
 //==============================================================================
-Skeleton::Skeleton(const std::string& _name)
-  : mSkeletonP(_name),
-    mNameMgrForBodyNodes("Skeleton::BodyNode | "+_name, "BodyNode"),
-    mNameMgrForJoints("Skeleton::Joint | "+_name, "Joint"),
-    mNameMgrForSoftBodyNodes("Skeleton::SoftBodyNode | "+_name, "SoftBodyNode"),
-    mNameMgrForDofs("Skeleton::DegreeOfFreedom | "+_name, "dof"),
-    mNameMgrForMarkers("Skeleton::Marker | "+_name, "Marker"),
-    mTotalMass(0.0),
-    mIsArticulatedInertiaDirty(true),
-    mIsMassMatrixDirty(true),
-    mIsAugMassMatrixDirty(true),
-    mIsInvMassMatrixDirty(true),
-    mIsInvAugMassMatrixDirty(true),
-    mIsCoriolisForcesDirty(true),
-    mIsGravityForcesDirty(true),
-    mIsCoriolisAndGravityForcesDirty(true),
-    mIsExternalForcesDirty(true),
-    mIsDampingForcesDirty(true),
-    mIsImpulseApplied(false),
-    mUnionRootSkeleton(this),
-    mUnionSize(1),
-    onNameChanged(mNameChangedSignal)
+std::shared_ptr<Skeleton> Skeleton::create(const std::string& _name)
 {
-  // Do nothing
+  return create(Properties(_name));
 }
 
 //==============================================================================
-Skeleton::Skeleton(const Properties& _properties)
-  : mSkeletonP(_properties),
-    mNameMgrForBodyNodes("Skeleton::BodyNode | "+_properties.mName, "BodyNode"),
-    mNameMgrForJoints("Skeleton::Joint | "+_properties.mName, "Joint"),
-    mNameMgrForSoftBodyNodes("Skeleton::SoftBodyNode | "+_properties.mName, "SoftBodyNode"),
-    mNameMgrForDofs("Skeleton::DegreeOfFreedom | "+_properties.mName, "dof"),
-    mNameMgrForMarkers("Skeleton::Marker | "+_properties.mName, "Marker"),
-    mTotalMass(0.0),
-    mIsArticulatedInertiaDirty(true),
-    mIsMassMatrixDirty(true),
-    mIsAugMassMatrixDirty(true),
-    mIsInvMassMatrixDirty(true),
-    mIsInvAugMassMatrixDirty(true),
-    mIsCoriolisForcesDirty(true),
-    mIsGravityForcesDirty(true),
-    mIsCoriolisAndGravityForcesDirty(true),
-    mIsExternalForcesDirty(true),
-    mIsDampingForcesDirty(true),
-    mIsImpulseApplied(false),
-    mUnionRootSkeleton(this),
-    mUnionSize(1),
-    onNameChanged(mNameChangedSignal)
+std::shared_ptr<Skeleton> Skeleton::create(const Properties& _properties)
 {
-  // Do nothing
+  std::shared_ptr<Skeleton> skel(new Skeleton(_properties));
+  skel->mPtr = skel;
+  return skel;
+}
+
+//==============================================================================
+std::shared_ptr<Skeleton> Skeleton::getPtr()
+{
+  return mPtr.lock();
+}
+
+//==============================================================================
+std::shared_ptr<const Skeleton> Skeleton::getPtr() const
+{
+  return mPtr.lock();
 }
 
 //==============================================================================
@@ -142,7 +114,7 @@ Skeleton::~Skeleton()
 //==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
-  SkeletonPtr skelClone(new Skeleton(getName()));
+  SkeletonPtr skelClone = Skeleton::create(getName());
 
   for(size_t i=0; i<getNumBodyNodes(); ++i)
   {
@@ -1854,6 +1826,27 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
                            bool _useDefaultColor) const
 {
   getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
+}
+
+//==============================================================================
+Skeleton::Skeleton(const Properties& _properties)
+  : mTotalMass(0.0),
+    mIsArticulatedInertiaDirty(true),
+    mIsMassMatrixDirty(true),
+    mIsAugMassMatrixDirty(true),
+    mIsInvMassMatrixDirty(true),
+    mIsInvAugMassMatrixDirty(true),
+    mIsCoriolisForcesDirty(true),
+    mIsGravityForcesDirty(true),
+    mIsCoriolisAndGravityForcesDirty(true),
+    mIsExternalForcesDirty(true),
+    mIsDampingForcesDirty(true),
+    mIsImpulseApplied(false),
+    mUnionRootSkeleton(this),
+    mUnionSize(1),
+    onNameChanged(mNameChangedSignal)
+{
+  setProperties(_properties);
 }
 
 //==============================================================================

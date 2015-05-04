@@ -445,7 +445,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 {
   assert(_skeletonElement != nullptr);
 
-  dynamics::SkeletonPtr newSkeleton(new dynamics::Skeleton);
+  dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
 
   //--------------------------------------------------------------------------

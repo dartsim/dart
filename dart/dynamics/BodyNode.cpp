@@ -644,7 +644,7 @@ void BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent)
 //==============================================================================
 SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 {
-  SkeletonPtr skel(new Skeleton(getSkeleton()->getSkeletonProperties()));
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   moveTo(skel, nullptr);
   return skel;

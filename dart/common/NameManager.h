@@ -68,7 +68,7 @@ class NameManager
 {
 public:
   /// Constructor
-  NameManager(const std::string& _managerName,
+  NameManager(const std::string& _managerName = "default",
               const std::string& _defaultName = "default")
     : mManagerName(_managerName),
       mDefaultName(_defaultName),

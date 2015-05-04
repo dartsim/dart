@@ -157,7 +157,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
                                  bool collisionShape = true,
                                  size_t stopAfter = 3)
 {
-  SkeletonPtr robot(new Skeleton);
+  SkeletonPtr robot = Skeleton::create();
 
   Vector3d dimEE = dim1;
 
@@ -242,7 +242,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
 {
   assert(_n > 0);
 
-  SkeletonPtr robot(new Skeleton);
+  SkeletonPtr robot = Skeleton::create();
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
@@ -312,7 +312,7 @@ SkeletonPtr createGround(
     node.mColShapes.push_back(shape);
     node.mInertia.setMass(mass);
 
-    SkeletonPtr skeleton(new Skeleton);
+    SkeletonPtr skeleton = Skeleton::create();
     skeleton->createJointAndBodyNodePair<WeldJoint>(nullptr, joint, node);
 
     return skeleton;
@@ -330,7 +330,7 @@ SkeletonPtr createObject(
   BodyNode::Properties node(std::string("link1"));
   node.mInertia.setMass(mass);
 
-  SkeletonPtr skeleton(new Skeleton);
+  SkeletonPtr skeleton = Skeleton::create();
   skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, node);
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();

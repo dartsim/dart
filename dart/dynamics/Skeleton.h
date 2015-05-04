@@ -98,10 +98,13 @@ public:
     /// Time step for implicit joint damping force.
     double mTimeStep;
 
-    /// True if self collision check is enabled
+    /// True if self collision check is enabled. Use mEnabledAdjacentBodyCheck
+    /// to disable collision checks between adjacent bodies.
     bool mEnabledSelfCollisionCheck;
 
-    /// True if self collision check is enabled including adjacent bodies
+    /// True if self collision check is enabled, including adjacent bodies.
+    /// Note: If mEnabledSelfCollisionCheck is false, then this value will be
+    /// ignored.
     bool mEnabledAdjacentBodyCheck;
 
     Properties(
@@ -117,11 +120,17 @@ public:
   // Constructor and Destructor
   //----------------------------------------------------------------------------
 
-  /// Default Constructor
-  explicit Skeleton(const std::string& _name = "Skeleton");
+  /// Create a new Skeleton inside of a shared_ptr
+  static std::shared_ptr<Skeleton> create(const std::string& _name="Skeleton");
 
-  /// Alternative Constructor
-  explicit Skeleton(const Properties& _properties);
+  /// Create a new Skeleton inside of a shared_ptr
+  static std::shared_ptr<Skeleton> create(const Properties& _properties);
+
+  /// Get the shared_ptr that manages this Skeleton
+  std::shared_ptr<Skeleton> getPtr();
+
+  /// Get the shared_ptr that manages this Skeleton
+  std::shared_ptr<const Skeleton> getPtr() const;
 
   /// Destructor
   virtual ~Skeleton();
@@ -129,7 +138,7 @@ public:
   /// Create an identical clone of this Skeleton.
   ///
   /// Note: the state of the Skeleton will NOT be cloned, only the structure and
-  /// properties will be [TODO: copy the state as well]
+  /// properties will be [TODO(MXG): copy the state as well]
   std::shared_ptr<Skeleton> clone() const;
 
   //----------------------------------------------------------------------------
@@ -923,6 +932,9 @@ public:
   friend class DegreeOfFreedom;
 
 protected:
+  /// Constructor called by create()
+  Skeleton(const Properties& _properties);
+
   /// Register a BodyNode with the Skeleton. Internal use only.
   void registerBodyNode(BodyNode* _newBodyNode);
 
@@ -1070,6 +1082,9 @@ protected:
 
   /// Properties of this Skeleton
   Properties mSkeletonP;
+
+  /// The resource-managing pointer to this Skeleton
+  std::weak_ptr<Skeleton> mPtr;
 
   /// \brief Array of GenCoordInfo objects
   /// \warning GenCoordInfo is deprecated because the functionality is replaced

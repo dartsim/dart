@@ -272,7 +272,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
  */
 dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model) {
 
-  dynamics::SkeletonPtr skeleton(new dynamics::Skeleton(_model->getName()));
+  dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(_model->getName());
 
   dynamics::BodyNode* rootNode = nullptr;
   const urdf::Link* root = _model->getRoot().get();
