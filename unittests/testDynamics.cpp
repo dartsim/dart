@@ -1711,7 +1711,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
   Eigen::VectorXd amp = Eigen::VectorXd::Zero(numDofs);
   for (size_t i = 0; i < numDofs; ++i)
-    amp[i] = math::random(-2.0, 2.0);
+    amp[i] = math::random(-1.5, 1.5);
   for (size_t i = 0; i < numFrames; ++i)
   {
     for (size_t j = 0; j < numDofs; ++j)
