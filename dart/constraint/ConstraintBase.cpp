@@ -64,23 +64,25 @@ size_t ConstraintBase::getDimension() const
 }
 
 //==============================================================================
-dynamics::Skeleton* ConstraintBase::compressPath(dynamics::Skeleton* _skeleton)
+dynamics::SkeletonPtr ConstraintBase::compressPath(
+    dynamics::SkeletonPtr _skeleton)
 {
-  while (_skeleton->mUnionRootSkeleton != _skeleton)
+  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
   {
     _skeleton->mUnionRootSkeleton
-        = _skeleton->mUnionRootSkeleton->mUnionRootSkeleton;
-    _skeleton = _skeleton->mUnionRootSkeleton;
+        = _skeleton->mUnionRootSkeleton.lock()->mUnionRootSkeleton.lock();
+    _skeleton = _skeleton->mUnionRootSkeleton.lock();
   }
 
   return _skeleton;
 }
 
 //==============================================================================
-dynamics::Skeleton*ConstraintBase::getRootSkeleton(dynamics::Skeleton* _skeleton)
+dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
+    dynamics::SkeletonPtr _skeleton)
 {
-  while (_skeleton->mUnionRootSkeleton != _skeleton)
-    _skeleton = _skeleton->mUnionRootSkeleton;
+  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
+    _skeleton = _skeleton->mUnionRootSkeleton.lock();
 
   return _skeleton;
 }

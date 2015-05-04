@@ -83,7 +83,7 @@ std::shared_ptr<Skeleton> Skeleton::create(const std::string& _name)
 std::shared_ptr<Skeleton> Skeleton::create(const Properties& _properties)
 {
   std::shared_ptr<Skeleton> skel(new Skeleton(_properties));
-  skel->mPtr = skel;
+  skel->setPtr(skel);
   return skel;
 }
 
@@ -321,7 +321,7 @@ void Skeleton::addBodyNode(BodyNode* _body)
   mBodyNodes.push_back(_body);
   addEntryToBodyNodeNameMgr(_body);
   addMarkersOfBodyNode(_body);
-  _body->mSkeleton = this;
+  _body->mSkeleton = mPtr;
   registerJoint(_body->getParentJoint());
 
   SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_body);
@@ -1243,9 +1243,9 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 }
 
 //==============================================================================
-bool isValidBodyNode(const Skeleton* _skeleton,
-                     const BodyNode* _bodyNode,
-                     const std::string& _jacobianType)
+static bool isValidBodyNode(const Skeleton* _skeleton,
+                            const BodyNode* _bodyNode,
+                            const std::string& _jacobianType)
 {
   if (nullptr == _bodyNode)
   {
@@ -1255,7 +1255,7 @@ bool isValidBodyNode(const Skeleton* _skeleton,
   }
 
   // The given BodyNode should be in the Skeleton.
-  if (_bodyNode->getSkeleton() != _skeleton)
+  if (_bodyNode->getSkeleton().get() != _skeleton)
   {
     dtwarn << "[Skeleton::getJacobian] Attempting to get a "
            << _jacobianType << " of a BodyNode '"
@@ -1842,11 +1842,17 @@ Skeleton::Skeleton(const Properties& _properties)
     mIsExternalForcesDirty(true),
     mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
-    mUnionRootSkeleton(this),
     mUnionSize(1),
     onNameChanged(mNameChangedSignal)
 {
   setProperties(_properties);
+}
+
+//==============================================================================
+void Skeleton::setPtr(std::shared_ptr<Skeleton> _ptr)
+{
+  mPtr = _ptr;
+  resetUnion();
 }
 
 //==============================================================================
@@ -1996,7 +2002,8 @@ void Skeleton::removeBodyNodeTree(BodyNode* _bodyNode)
 
 //==============================================================================
 void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                                Skeleton* _newSkeleton, BodyNode* _parentNode)
+                                std::shared_ptr<Skeleton> _newSkeleton,
+                                BodyNode* _parentNode)
 {
   if(_bodyNode == _parentNode)
   {
@@ -2073,7 +2080,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
 //==============================================================================
 std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     Joint* _parentJoint, const BodyNode* _bodyNode,
-    Skeleton* _newSkeleton, BodyNode* _parentNode) const
+    std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode) const
 {
   std::pair<Joint*, BodyNode*> root(nullptr, nullptr);
   std::vector<const BodyNode*> tree = constructBodyNodeTree(_bodyNode);

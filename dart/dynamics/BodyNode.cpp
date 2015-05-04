@@ -101,7 +101,6 @@ BodyNode::BodyNode(const std::string& _name)
     Frame(Frame::World(), _name),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
-    mSkeleton(nullptr),
     mParentJoint(nullptr),
     mParentBodyNode(nullptr),
     mChildBodyNodes(std::vector<BodyNode*>(0)),
@@ -215,18 +214,19 @@ const std::string& BodyNode::setName(const std::string& _name)
     return mEntityP.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mNameMgrForBodyNodes.removeName(mEntityP.mName);
+    skel->mNameMgrForBodyNodes.removeName(mEntityP.mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mEntityP.mName);
+      skel->mNameMgrForSoftBodyNodes.removeName(mEntityP.mName);
 
     mEntityP.mName = _name;
-    mSkeleton->addEntryToBodyNodeNameMgr(this);
+    skel->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
-      mSkeleton->addEntryToSoftBodyNodeNameMgr(softnode);
+      skel->addEntryToSoftBodyNodeNameMgr(softnode);
   }
   else
   {
@@ -252,8 +252,9 @@ void BodyNode::setGravityMode(bool _gravityMode)
 
   mBodyP.mGravityMode = _gravityMode;
 
-  if (mSkeleton)
-    mSkeleton->mIsGravityForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if (skel)
+    skel->mIsGravityForcesDirty = true;
 }
 
 //==============================================================================
@@ -281,10 +282,11 @@ void BodyNode::setMass(double _mass)
 
   mBodyP.mInertia.setMass(_mass);
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->notifyArticulatedInertiaUpdate();
-    mSkeleton->updateTotalMass();
+    skel->notifyArticulatedInertiaUpdate();
+    skel->updateTotalMass();
   }
 }
 
@@ -301,8 +303,9 @@ void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
   mBodyP.mInertia.setMoment(_Ixx, _Iyy, _Izz,
                           _Ixy, _Ixz, _Iyz);
 
-  if(mSkeleton)
-    mSkeleton->notifyArticulatedInertiaUpdate();
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -329,10 +332,11 @@ void BodyNode::setInertia(const Inertia& _inertia)
 {
   mBodyP.mInertia = _inertia;
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->notifyArticulatedInertiaUpdate();
-    mSkeleton->updateTotalMass();
+    skel->notifyArticulatedInertiaUpdate();
+    skel->updateTotalMass();
   }
 }
 
@@ -345,8 +349,9 @@ const Inertia& BodyNode::getInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-    mSkeleton->updateArticulatedInertia();
+  ConstSkeletonPtr skel = getSkeleton();
+  if(skel && skel->mIsArticulatedInertiaDirty)
+    skel->updateArticulatedInertia();
 
   return mArtInertia;
 }
@@ -354,8 +359,9 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-    mSkeleton->updateArticulatedInertia();
+  ConstSkeletonPtr skel = getSkeleton();
+  if(skel && skel->mIsArticulatedInertiaDirty)
+    skel->updateArticulatedInertia();
 
   return mArtInertiaImplicit;
 }
@@ -365,8 +371,9 @@ void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
   mBodyP.mInertia.setLocalCOM(_com);
 
-  if(mSkeleton)
-    mSkeleton->notifyArticulatedInertiaUpdate();
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -542,15 +549,15 @@ ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
 }
 
 //==============================================================================
-Skeleton* BodyNode::getSkeleton()
+std::shared_ptr<Skeleton> BodyNode::getSkeleton()
 {
-  return mSkeleton;
+  return mSkeleton.lock();
 }
 
 //==============================================================================
-const Skeleton* BodyNode::getSkeleton() const
+std::shared_ptr<const Skeleton> BodyNode::getSkeleton() const
 {
-  return mSkeleton;
+  return mSkeleton.lock();
 }
 
 //==============================================================================
@@ -567,10 +574,11 @@ void BodyNode::setParentJoint(Joint* _joint)
     assert(_joint->getChildBodyNode() != this);
   }
 
-  if (mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if (skel)
   {
-    mSkeleton->unregisterJoint(mParentJoint);
-    mSkeleton->registerJoint(_joint);
+    skel->unregisterJoint(mParentJoint);
+    skel->registerJoint(_joint);
   }
 
   if (mParentJoint)
@@ -583,7 +591,7 @@ void BodyNode::setParentJoint(Joint* _joint)
 //==============================================================================
 static bool checkSkeletonNodeAgreement(
     const BodyNode* _bodyNode,
-    const Skeleton* _newSkeleton, const BodyNode* _newParent,
+    ConstSkeletonPtr _newSkeleton, const BodyNode* _newParent,
     const std::string& _function,
     const std::string& _operation)
 {
@@ -617,26 +625,20 @@ static bool checkSkeletonNodeAgreement(
 void BodyNode::moveTo(BodyNode* _newParent)
 {
   if(nullptr == _newParent)
-    mSkeleton->moveBodyNodeTree(
+    getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, getSkeleton(), nullptr);
   else
-    mSkeleton->moveBodyNodeTree(
+    getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, _newParent->getSkeleton(), _newParent);
 }
 
 //==============================================================================
 void BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent)
 {
-  moveTo(_newSkeleton.get(), _newParent);
-}
-
-//==============================================================================
-void BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent)
-{
   if(checkSkeletonNodeAgreement(
        this, _newSkeleton, _newParent, "moveTo", "move"))
   {
-    mSkeleton->moveBodyNodeTree(
+    getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, _newSkeleton, _newParent);
   }
 }
@@ -654,10 +656,10 @@ SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent)
 {
   if(nullptr == _newParent)
-    return mSkeleton->cloneBodyNodeTree(
+    return getSkeleton()->cloneBodyNodeTree(
           nullptr, this, getSkeleton(), nullptr);
   else
-    return mSkeleton->cloneBodyNodeTree(
+    return getSkeleton()->cloneBodyNodeTree(
           nullptr, this, _newParent->getSkeleton(), _newParent);
 }
 
@@ -665,17 +667,10 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent)
 std::pair<Joint*, BodyNode*> BodyNode::copyTo(SkeletonPtr _newSkeleton,
                                               BodyNode* _newParent) const
 {
-  return copyTo(_newSkeleton.get(), _newParent);
-}
-
-//==============================================================================
-std::pair<Joint*, BodyNode*> BodyNode::copyTo(Skeleton* _newSkeleton,
-                                              BodyNode* _newParent) const
-{
   if(checkSkeletonNodeAgreement(
        this, _newSkeleton, _newParent, "copyTo", "copy"))
   {
-    return mSkeleton->cloneBodyNodeTree(
+    return getSkeleton()->cloneBodyNodeTree(
           nullptr, this, _newSkeleton, _newParent);
   }
 
@@ -685,7 +680,7 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(Skeleton* _newSkeleton,
 //==============================================================================
 SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName) const
 {
-  SkeletonPtr skel(new Skeleton(getSkeleton()->getSkeletonProperties()));
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   copyTo(skel, nullptr);
   return skel;
@@ -756,8 +751,9 @@ size_t BodyNode::getNumChildBodyNodes() const
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
-  if(mSkeleton)
-    mSkeleton->addEntryToMarkerNameMgr(_marker);
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->addEntryToMarkerNameMgr(_marker);
 }
 
 //==============================================================================
@@ -811,7 +807,7 @@ template <typename DofType, typename BnType, typename SkelType, typename JType>
 std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
 {
   std::vector<DofType*> dofs;
-  SkelType* skel = bn->getSkeleton();
+  SkelType skel = bn->getSkeleton();
   if(!skel)
   {
     JType* joint = bn->getParentJoint();
@@ -839,14 +835,14 @@ std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
 std::vector<DegreeOfFreedom*> BodyNode::getDependentDofs()
 {
   return getDependentDofsTemplate<
-      DegreeOfFreedom, BodyNode, Skeleton, Joint>(this);
+    DegreeOfFreedom, BodyNode, SkeletonPtr, Joint>(this);
 }
 
 //==============================================================================
 std::vector<const DegreeOfFreedom*> BodyNode::getDependentDofs() const
 {
   return getDependentDofsTemplate<
-      const DegreeOfFreedom, const BodyNode, const Skeleton, const Joint>(this);
+    const DegreeOfFreedom, const BodyNode, ConstSkeletonPtr, const Joint>(this);
 }
 
 //==============================================================================
@@ -1320,8 +1316,9 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
 
   mFext += math::dAdInvT(T, F);
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -1345,8 +1342,9 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
 
   mFext = math::dAdInvT(T, F);
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -1357,8 +1355,9 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -1369,8 +1368,9 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
@@ -1380,7 +1380,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
-    mSkeleton(nullptr),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mIsBodyJacobianDirty(true),
@@ -1429,7 +1428,7 @@ void BodyNode::init(Skeleton* _skeleton)
 {
   assert(_skeleton);
 
-  mSkeleton = _skeleton;
+  mSkeleton = _skeleton->getPtr();
   mParentJoint->init(_skeleton);
 
   //--------------------------------------------------------------------------
@@ -1543,12 +1542,13 @@ void BodyNode::notifyTransformUpdate()
 
   mNeedTransformUpdate = true;
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mIsCoriolisForcesDirty = true;
-    mSkeleton->mIsGravityForcesDirty = true;
-    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
-    mSkeleton->mIsExternalForcesDirty = true;
+    skel->mIsCoriolisForcesDirty = true;
+    skel->mIsGravityForcesDirty = true;
+    skel->mIsCoriolisAndGravityForcesDirty = true;
+    skel->mIsExternalForcesDirty = true;
   }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
@@ -1573,10 +1573,11 @@ void BodyNode::notifyVelocityUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mIsCoriolisForcesDirty = true;
-    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+    skel->mIsCoriolisForcesDirty = true;
+    skel->mIsCoriolisAndGravityForcesDirty = true;
   }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
@@ -2038,7 +2039,8 @@ bool BodyNode::isImpulseReponsible() const
 //==============================================================================
 bool BodyNode::isReactive() const
 {
-  if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
+  ConstSkeletonPtr skel = getSkeleton();
+  if (skel->isMobile() && getNumDependentGenCoords() > 0)
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
@@ -2564,8 +2566,9 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 void BodyNode::clearExternalForces()
 {
   mFext.setZero();
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 }  // namespace dynamics

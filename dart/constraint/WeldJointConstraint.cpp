@@ -336,34 +336,34 @@ void WeldJointConstraint::applyImpulse(double* _lambda)
 }
 
 //==============================================================================
-dynamics::Skeleton* WeldJointConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr WeldJointConstraint::getRootSkeleton() const
 {
   if (mBodyNode1->isReactive())
-    return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
+    return mBodyNode1->getSkeleton()->mUnionRootSkeleton.lock();
 
   if (mBodyNode2)
   {
     if (mBodyNode2->isReactive())
     {
-      return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
+      return mBodyNode2->getSkeleton()->mUnionRootSkeleton.lock();
     }
     else
     {
       assert(0);
-      return NULL;
+      return nullptr;
     }
   }
   else
   {
     assert(0);
-    return NULL;
+    return nullptr;
   }
 }
 
 //==============================================================================
 void WeldJointConstraint::uniteSkeletons()
 {
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
@@ -372,9 +372,9 @@ void WeldJointConstraint::uniteSkeletons()
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     return;
 
-  dynamics::Skeleton* unionId1
+  dynamics::SkeletonPtr unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
-  dynamics::Skeleton* unionId2
+  dynamics::SkeletonPtr unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)

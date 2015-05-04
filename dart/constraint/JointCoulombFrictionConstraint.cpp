@@ -271,9 +271,9 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 }
 
 //==============================================================================
-dynamics::Skeleton* JointCoulombFrictionConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton;
+  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================

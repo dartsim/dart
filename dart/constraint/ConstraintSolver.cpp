@@ -490,7 +490,7 @@ void ConstraintSolver::buildConstrainedGroups()
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
+    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
 
     for (std::vector<ConstrainedGroup>::const_iterator itConstGroup
          = mConstrainedGroups.begin();
@@ -516,7 +516,7 @@ void ConstraintSolver::buildConstrainedGroups()
   for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
+    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
     mConstrainedGroups[skel->mUnionIndex].addConstraint(*it);
   }
 

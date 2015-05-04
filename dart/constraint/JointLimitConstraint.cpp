@@ -379,9 +379,9 @@ void JointLimitConstraint::applyImpulse(double* _lambda)
 }
 
 //==============================================================================
-dynamics::Skeleton* JointLimitConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr JointLimitConstraint::getRootSkeleton() const
 {
-  return mJoint->getSkeleton()->mUnionRootSkeleton;
+  return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================

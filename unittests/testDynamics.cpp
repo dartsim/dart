@@ -276,7 +276,7 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   using math::LinearJacobian;
   using math::AngularJacobian;
 
-  const Skeleton* skel = bn->getSkeleton();
+  ConstSkeletonPtr skel = bn->getSkeleton();
 
   VectorXd dq  = skel->getVelocities();
   VectorXd ddq = skel->getAccelerations();
@@ -415,7 +415,7 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   using math::LinearJacobian;
   using math::AngularJacobian;
 
-  const Skeleton* skel = bn->getSkeleton();
+  ConstSkeletonPtr skel = bn->getSkeleton();
 
   VectorXd dq  = skel->getVelocities();
   VectorXd ddq = skel->getAccelerations();

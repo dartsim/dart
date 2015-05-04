@@ -454,32 +454,36 @@ void SoftBodyNode::clearConstraintImpulse()
 //==============================================================================
 void SoftBodyNode::notifyArticulatedInertiaUpdate()
 {
-  if(mSkeleton)
-    mSkeleton->notifyArticulatedInertiaUpdate();
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 void SoftBodyNode::notifyExternalForcesUpdate()
 {
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
 }
 
 //==============================================================================
 void SoftBodyNode::notifyCoriolisUpdate()
 {
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mIsCoriolisForcesDirty = true;
-    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+    skel->mIsCoriolisForcesDirty = true;
+    skel->mIsCoriolisAndGravityForcesDirty = true;
   }
 }
 
 //==============================================================================
 void SoftBodyNode::checkArticulatedInertiaUpdate() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-    updateArtInertia(mSkeleton->getTimeStep());
+  ConstSkeletonPtr skel = getSkeleton();
+  if(skel && skel->mIsArticulatedInertiaDirty)
+    updateArtInertia(skel->getTimeStep());
 }
 
 //==============================================================================

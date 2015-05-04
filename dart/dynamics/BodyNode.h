@@ -310,10 +310,10 @@ public:
   ConstShapePtr getCollisionShape(size_t _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
-  Skeleton* getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton();
 
   /// Return the (const) Skeleton this BodyNode belongs to
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Return the index of this BodyNode within its Skeleton
   size_t getIndex() const;
@@ -335,13 +335,11 @@ public:
   void moveTo(BodyNode* _newParent);
 
   /// This is a version of moveTo(BodyNode*) that allows you to explicitly move
-  /// this BodyNode into a new Skeleton. The key difference for this version of
-  /// the function is that you can make this BodyNode a root node in a new
-  /// Skeleton, which is not something that can be done by the other version.
+  /// this BodyNode into a different Skeleton. The key difference for this
+  /// version of the function is that you can make this BodyNode a root node in
+  /// a different Skeleton, which is not something that can be done by the other
+  /// version.
   void moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent);
-
-  /// Same as moveTo(SkeletonPtr, _newParent)
-  void moveTo(Skeleton* _newSkeleton, BodyNode* _newParent);
 
   /// A version of moveTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode. This function returns the pointer to the
@@ -361,12 +359,6 @@ public:
   /// pointer to the newly created Joint. The original Joint will be deleted.
   template <class JointType>
   JointType* moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent,
-      const typename JointType::Properties& _joint =
-          typename JointType::Properties());
-
-  /// Same as moveTo<JointType>(SkeletonPtr, BodyNode*, JointType::Properties)
-  template <class JointType>
-  JointType* moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
       const typename JointType::Properties& _joint =
           typename JointType::Properties());
 
@@ -414,10 +406,6 @@ public:
   std::pair<Joint*, BodyNode*> copyTo(SkeletonPtr _newSkeleton,
                                       BodyNode* _newParent) const;
 
-  /// Same as copyTo(SkeletonPtr, BodyNode*)
-  std::pair<Joint*, BodyNode*> copyTo(Skeleton* _newSkeleton,
-                                      BodyNode* _newParent) const;
-
   /// A version of copyTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode.
   template <class JointType>
@@ -430,13 +418,6 @@ public:
   template <class JointType>
   std::pair<JointType*, BodyNode*> copyTo(
       SkeletonPtr _newSkeleton, BodyNode* _newParent,
-      const typename JointType::Properties& _joint =
-          typename JointType::Properties()) const;
-
-  /// Same as copyTo<JointType>(SkeletonPtr, BodyNode*, JointType::Properties)
-  template <class JointType>
-  std::pair<JointType*, BodyNode*> copyTo(
-      Skeleton* _newSkeleton, BodyNode* _newParent,
       const typename JointType::Properties& _joint =
           typename JointType::Properties()) const;
 
@@ -476,7 +457,7 @@ public:
       const typename NodeType::Properties& _bodyProperties =
           typename NodeType::Properties())
   {
-    return mSkeleton->createJointAndBodyNodePair<JointType, NodeType>(
+    return getSkeleton()->createJointAndBodyNodePair<JointType, NodeType>(
           this, _jointProperties, _bodyProperties);
   }
 
@@ -1266,11 +1247,11 @@ protected:
   bool mIsColliding;
 
   //--------------------------------------------------------------------------
-  // Structual Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Pointer to the model this body node belongs to.
-  Skeleton* mSkeleton;
+  /// Weak pointer to the Skeleton this BodyNode belongs to.
+  std::weak_ptr<Skeleton> mSkeleton;
 
   /// Index of this BodyNode in its Skeleton
   size_t mIndexInSkeleton;
@@ -1458,14 +1439,6 @@ template <class JointType>
 JointType* BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent,
     const typename JointType::Properties& _joint)
 {
-  return moveTo<JointType>(_newSkeleton.get(), _newParent, _joint);
-}
-
-//==============================================================================
-template <class JointType>
-JointType* BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
-    const typename JointType::Properties& _joint)
-{
   return getSkeleton()->moveBodyNodeTree<JointType>(
         this, _newSkeleton, _newParent, _joint);
 }
@@ -1507,15 +1480,6 @@ std::pair<JointType*, BodyNode*> BodyNode::copyTo(
 template <class JointType>
 std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     SkeletonPtr _newSkeleton, BodyNode* _newParent,
-    const typename JointType::Properties& _joint) const
-{
-  return copyTo<JointType>(_newSkeleton.get(), _newParent, _joint);
-}
-
-//==============================================================================
-template <class JointType>
-std::pair<JointType*, BodyNode*> BodyNode::copyTo(
-    Skeleton* _newSkeleton, BodyNode* _newParent,
     const typename JointType::Properties& _joint) const
 {
   return getSkeleton()->cloneBodyNodeTree<JointType>(

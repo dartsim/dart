@@ -258,7 +258,7 @@ TEST(Skeleton, Restructuring)
     for(size_t j=0; j<subtree.size(); ++j)
     {
       BodyNode* bn = subtree[j];
-      EXPECT_TRUE(bn->getSkeleton() == toSkel.get());
+      EXPECT_TRUE(bn->getSkeleton() == toSkel);
     }
 
     // Move to the Skeleton's root while producing a new Joint type
@@ -275,7 +275,7 @@ TEST(Skeleton, Restructuring)
     for(size_t j=0; j<subtree.size(); ++j)
     {
       BodyNode* bn = subtree[j];
-      EXPECT_TRUE(bn->getSkeleton() == toSkel.get());
+      EXPECT_TRUE(bn->getSkeleton() == toSkel);
     }
 
     // Create some new Skeletons and mangle them all up
@@ -295,7 +295,7 @@ TEST(Skeleton, Restructuring)
     childBn->moveTo(last_temporary,
         last_temporary->getBodyNode(last_temporary->getNumBodyNodes()-1));
     childBn->moveTo<BallJoint>(last_temporary, nullptr);
-    childBn->moveTo<EulerJoint>(last_temporary.get(),
+    childBn->moveTo<EulerJoint>(last_temporary,
                                 last_temporary->getBodyNode(0));
     childBn->changeParentJointType<FreeJoint>();
 

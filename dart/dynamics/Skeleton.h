@@ -935,6 +935,9 @@ protected:
   /// Constructor called by create()
   Skeleton(const Properties& _properties);
 
+  /// Setup this Skeleton with its shared_ptr
+  void setPtr(std::shared_ptr<Skeleton> _ptr);
+
   /// Register a BodyNode with the Skeleton. Internal use only.
   void registerBodyNode(BodyNode* _newBodyNode);
 
@@ -952,13 +955,15 @@ protected:
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   void moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                        Skeleton* _newSkeleton, BodyNode* _parentNode);
+                        std::shared_ptr<Skeleton> _newSkeleton,
+                        BodyNode* _parentNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton while
   /// changing the Joint type of the top parent Joint
   template <class JointType>
   JointType* moveBodyNodeTree(
-      BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
+      BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+      BodyNode* _parentNode,
       const typename JointType::Properties& _joint)
   {
     JointType* parentJoint = new JointType(_joint);
@@ -970,13 +975,14 @@ protected:
   /// originals intact
   std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
       Joint* _parentJoint, const BodyNode* _bodyNode,
-      Skeleton* _newSkeleton, BodyNode* _parentNode) const;
+      std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode) const;
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact, but alter the top parent Joint to a new type
   template <class JointType>
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
-      const BodyNode* _bodyNode, Skeleton* _newSkeleton, BodyNode* _parentNode,
+      const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+      BodyNode* _parentNode,
       const typename JointType::Properties& _joint) const
   {
     JointType* parentJoint = new JointType(_joint);
@@ -1196,12 +1202,12 @@ public:
   ///
   void resetUnion()
   {
-    mUnionRootSkeleton = this;
+    mUnionRootSkeleton = mPtr;
     mUnionSize = 1;
   }
 
   ///
-  Skeleton* mUnionRootSkeleton;
+  std::weak_ptr<Skeleton> mUnionRootSkeleton;
 
   ///
   size_t mUnionSize;
