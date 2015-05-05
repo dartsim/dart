@@ -1488,10 +1488,13 @@ public:
     else
       mSkeleton = _ptr->getSkeleton();
 
-    mPtr = _ptr;
     mMoveConnection.disconnect();
-    mMoveConnection = mPtr->onStructuralChange.connect(
-        [=](const BodyNode* _ptr) { this->changeSkeleton(_ptr); } );
+    if(mSkeleton != nullptr)
+    {
+      mPtr = _ptr;
+      mMoveConnection = mPtr->onStructuralChange.connect(
+          [=](const BodyNode* _ptr) { this->changeSkeleton(_ptr); } );
+    }
   }
 
 protected:
