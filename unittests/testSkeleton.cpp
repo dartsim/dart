@@ -310,6 +310,84 @@ TEST(Skeleton, Restructuring)
   }
 }
 
+TEST(Skeleton, Persistence)
+{
+  sub_ptr<BodyNode> weakBnPtr;
+  std::weak_ptr<Skeleton> weakSkelPtr;
+  {
+    BodyNodePtr strongPtr;
+    {
+      {
+        SkeletonPtr skeleton = createThreeLinkRobot(
+              Eigen::Vector3d(1.0, 1.0, 1.0), DOF_X,
+              Eigen::Vector3d(1.0, 1.0, 1.0), DOF_Y,
+              Eigen::Vector3d(1.0, 1.0, 1.0), DOF_Z);
+        weakSkelPtr = skeleton;
+
+        strongPtr = skeleton->getBodyNode(0);
+        weakBnPtr = strongPtr;
+      }
+
+      // The BodyNode should still be alive, because a BodyNodePtr still
+      // references it
+      EXPECT_TRUE(weakBnPtr.valid());
+
+      // The Skeleton should still be alive, because a BodyNodePtr still
+      // references one of its BodyNodes
+      EXPECT_FALSE(weakSkelPtr.lock() == nullptr);
+
+      // Take the BodyNode out of its Skeleton and put it into a temporary one
+      strongPtr->remove();
+
+      // The BodyNode should still be alive, because a BodyNodePtr still
+      // references it
+      EXPECT_TRUE(weakBnPtr.valid());
+
+      // The Skeleton should be destroyed, because it lost the only BodyNode
+      // that still had a reference
+      EXPECT_TRUE(weakSkelPtr.lock() == nullptr);
+
+      // Update the weakSkelPtr so it references the Skeleton that still exists
+      weakSkelPtr = strongPtr->getSkeleton();
+      EXPECT_FALSE(weakSkelPtr.lock() == nullptr);
+
+      // Change the BodyNode that this BodyNodePtr is referencing
+      strongPtr = strongPtr->getChildBodyNode(0);
+
+      // Make sure the Skeleton is still alive. If the SkeletonPtr being used
+      // by the BodyNodePtr is not swapped atomically, then this will fail,
+      // which means we cannot rely on BodyNodePtr to keep BodyNodes alive.
+      EXPECT_FALSE(weakSkelPtr.lock() == nullptr);
+    }
+
+    SkeletonPtr other_skeleton = createThreeLinkRobot(
+          Eigen::Vector3d(1.0, 1.0, 1.0), DOF_X,
+          Eigen::Vector3d(1.0, 1.0, 1.0), DOF_Y,
+          Eigen::Vector3d(1.0, 1.0, 1.0), DOF_Z);
+    BodyNode* tail = other_skeleton->getBodyNode(
+          other_skeleton->getNumBodyNodes()-1);
+
+    sub_ptr<const BodyNode> weakParentPtr;
+    {
+      ConstBodyNodePtr parent = strongPtr->getParentBodyNode();
+      weakParentPtr = parent;
+      strongPtr->moveTo(tail);
+
+      // The Skeleton should still be alive because 'parent' exists
+      EXPECT_FALSE(weakSkelPtr.lock() == nullptr);
+    }
+
+    // Now that 'parent' is out of scope, the Skeleton should be gone
+    EXPECT_TRUE(weakSkelPtr.lock() == nullptr);
+    EXPECT_FALSE(weakParentPtr.valid());
+
+    weakBnPtr = strongPtr;
+    EXPECT_TRUE(weakBnPtr.valid());
+  }
+
+  EXPECT_FALSE(weakBnPtr.valid());
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

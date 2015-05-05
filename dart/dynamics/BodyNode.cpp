@@ -130,8 +130,10 @@ BodyNode::BodyNode(const std::string& _name)
     mConstraintImpulse(Eigen::Vector6d::Zero()),
     mImpF(Eigen::Vector6d::Zero()),
     onColShapeAdded(mColShapeAddedSignal),
-    onColShapeRemoved(mColShapeRemovedSignal)
+    onColShapeRemoved(mColShapeRemovedSignal),
+    onStructuralChange(mStructuralChangeSignal)
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -1414,7 +1416,8 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     mConstraintImpulse(Eigen::Vector6d::Zero()),
     mImpF(Eigen::Vector6d::Zero()),
     onColShapeAdded(mColShapeAddedSignal),
-    onColShapeRemoved(mColShapeRemovedSignal)
+    onColShapeRemoved(mColShapeRemovedSignal),
+    onStructuralChange(mStructuralChangeSignal)
 {
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);

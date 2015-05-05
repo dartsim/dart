@@ -83,6 +83,7 @@ public:
   /// Get the Subject of this sub_ptr
   T* get() const { return mSubject; }
 
+  /// Set the subject of this sub_ptr
   void set(T* _ptr)
   {
     if(mSubject == _ptr)

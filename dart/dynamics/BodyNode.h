@@ -47,6 +47,7 @@
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
 #include "dart/common/sub_ptr.h"
+#include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 
 #include "dart/dynamics/Frame.h"
@@ -88,6 +89,9 @@ public:
       = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
 
   using ColShapeRemovedSignal = ColShapeAddedSignal;
+
+  using StructuralChangeSignal
+      = common::Signal<void(const BodyNode*)>;
 
   struct UniqueProperties
   {
@@ -1410,6 +1414,9 @@ protected:
   /// Collision shape removed signal
   ColShapeRemovedSignal mColShapeRemovedSignal;
 
+  /// Structural change signal
+  StructuralChangeSignal mStructuralChangeSignal;
+
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -1424,8 +1431,98 @@ public:
   /// Slot register for collision shape removed signal
   common::SlotRegister<ColShapeRemovedSignal> onColShapeRemoved;
 
+  /// Raised when (1) parent BodyNode is changed, (2) moved between Skeletons,
+  /// (3) parent Joint is changed
+  mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
+
   /// \}
 };
+
+//==============================================================================
+template <class BodyNodeT>
+class TemplateBodyNodePtr
+{
+public:
+  /// Default constructor
+  TemplateBodyNodePtr() : mPtr(nullptr) { }
+
+  virtual ~TemplateBodyNodePtr() { mMoveConnection.disconnect(); }
+
+  /// Alternative constructor. _ptr must be a valid pointer when passed to this
+  /// constructor
+  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
+
+  /// Change the BodyNode that this BodyNodePtr references
+  TemplateBodyNodePtr& operator = (const TemplateBodyNodePtr& _bnp)
+  {
+    set(_bnp.get());
+    return *this;
+  }
+
+  TemplateBodyNodePtr& operator = (BodyNodeT* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Implicit conversion
+  operator BodyNodeT*() const { return mPtr; }
+
+  /// Dereferencing operator
+  BodyNodeT& operator*() const { return *mPtr; }
+
+  /// Dereferencing operation
+  BodyNodeT* operator->() const { return mPtr; }
+
+  /// Get the raw BodyNode pointer
+  BodyNodeT* get() const { return mPtr; }
+
+  /// Set the BodyNode for this BodyNodePtr
+  void set(BodyNodeT* _ptr)
+  {
+    if(mPtr == _ptr)
+      return;
+
+    if(nullptr == _ptr)
+      mSkeleton = nullptr;
+    else
+      mSkeleton = _ptr->getSkeleton();
+
+    mPtr = _ptr;
+    mMoveConnection.disconnect();
+    mMoveConnection = mPtr->onStructuralChange.connect(
+        [=](const BodyNode* _ptr) { this->changeSkeleton(_ptr); } );
+  }
+
+protected:
+  /// Called when the Skeleton of this BodyNode is changed
+  void changeSkeleton(const BodyNode* _ptr)
+  {
+    if(_ptr != mPtr)
+    {
+      dterr << "[BodyNodePtr::changeSkeleton] Incoming pointer [" << _ptr
+            << "] did not match the one assigned to this BodyNodePtr [" << mPtr
+            << "]. Please report this as a bug!\n";
+      assert(false);
+      return;
+    }
+
+    mSkeleton = _ptr->getSkeleton();
+  }
+
+  /// Raw pointer for the BodyNode that this BodyNodePtr references
+  BodyNodeT* mPtr;
+
+  /// shared_ptr to the BodyNode's Skeleton. We hold this to keep its reference
+  /// count up, which ensures that the BodyNode stays alive.
+  ConstSkeletonPtr mSkeleton;
+
+  /// Signal used to register when a BodyNode is moved between Skeletons
+  common::Connection mMoveConnection;
+};
+
+typedef TemplateBodyNodePtr<BodyNode> BodyNodePtr;
+typedef TemplateBodyNodePtr<const BodyNode> ConstBodyNodePtr;
 
 //==============================================================================
 template <class JointType>

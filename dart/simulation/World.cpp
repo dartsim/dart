@@ -79,6 +79,9 @@ World::~World()
 
   for(common::Connection& connection : mNameConnectionsForSkeletons)
     connection.disconnect();
+
+  for(common::Connection& connection : mNameConnectionsForFrames)
+    connection.disconnect();
 }
 
 //==============================================================================
@@ -548,6 +551,7 @@ void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
     dterr << "[World::handleSkeletonNameChange] Could not find Skeleton named ["
           << _skeleton->getName() << "] in the shared_ptr map of World ["
           << getName() <<"]. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
   }
   dynamics::SkeletonPtr sharedSkel = it->second;
@@ -585,6 +589,7 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
     dterr << "[World::handleFrameNameChange] Could not find SimpleFrame named ["
           << frame->getName() << "] in the shared_ptr map of World ["
           << getName() << "]. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
   }
   dynamics::SimpleFramePtr sharedFrame = it->second;

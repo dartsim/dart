@@ -94,7 +94,7 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 //==============================================================================
 Entity::~Entity()
 {
-  changeParentFrame(NULL);
+  changeParentFrame(nullptr);
 }
 
 //==============================================================================
