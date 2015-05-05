@@ -287,10 +287,6 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Remove this BodyNode and all of its children (recursively) from their
-  /// Skeleton and <b>deletes</b> all of them.
-  void remove();
-
   /// Add a collision Shape into the BodyNode
   void addCollisionShape(ShapePtr _shape);
 
@@ -322,6 +318,17 @@ public:
   // TODO(MXG): Remove this along with the public constructors of Joint and
   // BodyNode
   void setParentJoint(Joint* _joint);
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// Skeleton. If a BodyNodePtr that references this BodyNode (or any of its
+  /// children) still exists, the subtree will be moved into a new Skeleton
+  /// with the given name. If the returned SkeletonPtr goes unused and no
+  /// relevant BodyNodePtrs are held anywhere, then this BodyNode and all its
+  /// children will be deleted.
+  ///
+  /// Note that this function is actually the same as split(), but given a
+  /// different name for semantic reasons.
+  SkeletonPtr remove(const std::string& _name = "temporary");
 
   /// Remove this BodyNode and all of its children (recursively) from their
   /// current parent BodyNode, and move them to another parent BodyNode. The new

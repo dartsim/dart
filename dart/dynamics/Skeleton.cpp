@@ -1990,17 +1990,6 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::removeBodyNodeTree(BodyNode* _bodyNode)
-{
-  std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
-  for(BodyNode* bn : tree)
-  {
-    delete bn->getParentJoint();
-    delete bn;
-  }
-}
-
-//==============================================================================
 void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 std::shared_ptr<Skeleton> _newSkeleton,
                                 BodyNode* _parentNode)

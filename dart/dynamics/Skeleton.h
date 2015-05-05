@@ -950,9 +950,6 @@ protected:
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
-  /// Remove a subtree of BodyNodes from this Skeleton and delete them
-  void removeBodyNodeTree(BodyNode* _bodyNode);
-
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   void moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                         std::shared_ptr<Skeleton> _newSkeleton,

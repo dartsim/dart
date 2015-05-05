@@ -622,6 +622,12 @@ static bool checkSkeletonNodeAgreement(
 }
 
 //==============================================================================
+SkeletonPtr BodyNode::remove(const std::string& _name)
+{
+  return split(_name);
+}
+
+//==============================================================================
 void BodyNode::moveTo(BodyNode* _newParent)
 {
   if(nullptr == _newParent)
