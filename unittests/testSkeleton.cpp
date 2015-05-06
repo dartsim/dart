@@ -312,8 +312,10 @@ TEST(Skeleton, Restructuring)
 
 TEST(Skeleton, Persistence)
 {
-  sub_ptr<BodyNode> weakBnPtr;
-  std::weak_ptr<Skeleton> weakSkelPtr;
+  WeakBodyNodePtr weakBnPtr;
+  SoftBodyNodePtr softBnPtr;
+  WeakSoftBodyNodePtr weakSoftBnPtr;
+  WeakSkeletonPtr weakSkelPtr;
   {
     BodyNodePtr strongPtr;
     {
@@ -326,11 +328,19 @@ TEST(Skeleton, Persistence)
 
         strongPtr = skeleton->getBodyNode(0);
         weakBnPtr = strongPtr;
+
+        BodyNodePtr tail = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
+        std::pair<Joint*, SoftBodyNode*> pair =
+            skeleton->createJointAndBodyNodePair<RevoluteJoint, SoftBodyNode>(
+              tail);
+
+        softBnPtr = pair.second;
+        weakSoftBnPtr = softBnPtr;
       }
 
       // The BodyNode should still be alive, because a BodyNodePtr still
       // references it
-      EXPECT_TRUE(weakBnPtr.valid());
+      EXPECT_FALSE(weakBnPtr.expired());
 
       // The Skeleton should still be alive, because a BodyNodePtr still
       // references one of its BodyNodes
@@ -341,7 +351,7 @@ TEST(Skeleton, Persistence)
 
       // The BodyNode should still be alive, because a BodyNodePtr still
       // references it
-      EXPECT_TRUE(weakBnPtr.valid());
+      EXPECT_FALSE(weakBnPtr.expired());
 
       // The Skeleton should be destroyed, because it lost the only BodyNode
       // that still had a reference
@@ -367,9 +377,10 @@ TEST(Skeleton, Persistence)
     BodyNode* tail = other_skeleton->getBodyNode(
           other_skeleton->getNumBodyNodes()-1);
 
-    sub_ptr<const BodyNode> weakParentPtr;
+    WeakConstBodyNodePtr weakParentPtr;
     {
-      ConstBodyNodePtr parent = strongPtr->getParentBodyNode();
+      ConstBodyNodePtr parent = strongPtr;
+      parent = parent->getParentBodyNode();
       weakParentPtr = parent;
       strongPtr->moveTo(tail);
 
@@ -379,13 +390,33 @@ TEST(Skeleton, Persistence)
 
     // Now that 'parent' is out of scope, the Skeleton should be gone
     EXPECT_TRUE(weakSkelPtr.lock() == nullptr);
-    EXPECT_FALSE(weakParentPtr.valid());
+    EXPECT_TRUE(weakParentPtr.lock() == nullptr);
 
     weakBnPtr = strongPtr;
-    EXPECT_TRUE(weakBnPtr.valid());
+    weakSkelPtr = strongPtr->getSkeleton();
+    EXPECT_FALSE(weakBnPtr.expired());
+    EXPECT_FALSE(weakSkelPtr.expired());
   }
 
-  EXPECT_FALSE(weakBnPtr.valid());
+  // softBnPtr still exists, so it should be keeping the Skeleton active
+  EXPECT_FALSE(weakBnPtr.expired());
+
+  softBnPtr->remove();
+
+  // Now that the SoftBodyNode which is holding the reference has been moved to
+  // another Skeleton, the weakBnPtr and weakSkelPtr should disappear
+  EXPECT_TRUE(weakBnPtr.expired());
+  EXPECT_TRUE(weakSkelPtr.expired());
+
+  // The WeakSoftBodyNodePtr should not have expired yet, because a strong
+  // reference to its SoftBodyNode still exists
+  EXPECT_FALSE(weakSoftBnPtr.expired());
+
+  softBnPtr = nullptr;
+
+  // Now that the SoftBodyNodePtr has been cleared, the WeakSoftBodyNodePtr
+  // should also be cleared
+  EXPECT_TRUE(weakSoftBnPtr.lock() == nullptr);
 }
 
 int main(int argc, char* argv[])

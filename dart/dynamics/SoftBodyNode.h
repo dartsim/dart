@@ -391,6 +391,11 @@ private:
   void updateInertiaWithPointMass();
 };
 
+typedef TemplateBodyNodePtr<SoftBodyNode> SoftBodyNodePtr;
+typedef TemplateBodyNodePtr<const SoftBodyNode> ConstSoftBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<SoftBodyNode> WeakSoftBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<const SoftBodyNode> WeakConstSoftBodyNodePtr;
+
 class SoftBodyNodeHelper
 {
 public:

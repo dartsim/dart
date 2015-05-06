@@ -1224,6 +1224,8 @@ public:
 
 typedef std::shared_ptr<Skeleton> SkeletonPtr;
 typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
+typedef std::weak_ptr<Skeleton> WeakSkeletonPtr;
+typedef std::weak_ptr<const Skeleton> WeakConstSkeletonPtr;
 
 }  // namespace dynamics
 }  // namespace dart

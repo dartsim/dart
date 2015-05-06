@@ -59,8 +59,21 @@ public:
   /// constructor
   TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
 
+  /// Templated constructor for copying other BodyNodePtrs
+  template <class OtherBodyNodeT>
+  TemplateBodyNodePtr(const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)
+    : mPtr(nullptr)
+  {
+    set(_bnp.get());
+  }
+
+  /// Destructor. Releases the BodyNode reference before being destroyed
+  ~TemplateBodyNodePtr() { set(nullptr); }
+
   /// Change the BodyNode that this BodyNodePtr references
-  TemplateBodyNodePtr& operator = (const TemplateBodyNodePtr& _bnp)
+  template <class OtherBodyNodeT>
+  TemplateBodyNodePtr& operator = (
+      const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)
   {
     set(_bnp.get());
     return *this;
@@ -88,8 +101,30 @@ public:
   /// Set the BodyNode for this BodyNodePtr
   void set(BodyNodeT* _ptr)
   {
-    ConstSkeletonPtr skeleton = _ptr->getSkeleton();
-    // TODO
+    if(mPtr == _ptr)
+      return;
+
+    // Get a shared_ptr to each Skeleton before making any modifications to the
+    // reference counts
+    ConstSkeletonPtr old_skeleton = mPtr == nullptr ?
+          nullptr : mPtr->getSkeleton();
+
+    ConstSkeletonPtr new_skeleton = _ptr == nullptr ?
+          nullptr : _ptr->getSkeleton();
+
+    if(nullptr != mPtr)
+    {
+      if(nullptr != old_skeleton)
+        mPtr->decrementReferenceCount();
+
+      mPtr = nullptr;
+    }
+
+    if(nullptr != new_skeleton)
+    {
+      mPtr = _ptr;
+      _ptr->incrementReferenceCount();
+    }
   }
 
 private:
@@ -119,6 +154,21 @@ public:
   /// Constructor that takes in a WeakBodyNodePtr
   TemplateWeakBodyNodePtr(const TemplateWeakBodyNodePtr& _weakPtr) :
     mPtr(nullptr) { set(_weakPtr); }
+
+  /// Assignment operator for raw BodyNode pointers
+  TemplateWeakBodyNodePtr& operator = (BodyNodeT* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Assignment operator for WeakBodyNodePtrs
+  TemplateWeakBodyNodePtr& operator = (
+      const TemplateWeakBodyNodePtr<BodyNodeT>& _weakPtr)
+  {
+    set(_weakPtr);
+    return *this;
+  }
 
   /// Locks the BodyNode reference to ensure that the referenced BodyNode (1) is
   /// currently still available, and (2) does not get deleted. If the BodyNode

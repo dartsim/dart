@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -1045,6 +1046,7 @@ public:
   friend class SoftBodyNode;
   friend class PointMass;
   template<class> friend class TemplateBodyNodePtr;
+  template<class> friend class TemplateWeakBodyNodePtr;
 
 protected:
 
@@ -1240,7 +1242,41 @@ protected:
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
                                              const Eigen::Vector6d& _spatial);
 
+  /// Update body Jacobian. getBodyJacobian() calls this function if
+  /// mIsBodyJacobianDirty is true.
+  void updateBodyJacobian() const;
+
+  /// Update the World Jacobian. The commonality of using the World Jacobian
+  /// makes it worth caching.
+  void updateWorldJacobian() const;
+
+  /// Update spatial time derivative of body Jacobian.
+  /// getJacobianSpatialTimeDeriv() calls this function if
+  /// mIsBodyJacobianSpatialDerivDirty is true.
+  void updateBodyJacobianSpatialDeriv() const;
+
+  /// Update classic time derivative of body Jacobian.
+  /// getJacobianClassicTimeDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void updateWorldJacobianClassicDeriv() const;
+
   /// \}
+
+private:
+
+  //--------------------------------------------------------------------------
+  // Reference counting
+  //--------------------------------------------------------------------------
+
+  /// Atomically increment the reference count for this BodyNode. This should
+  /// only be called by the BodyNodePtr class
+  void incrementReferenceCount() const;
+
+  /// Atomically decrement the reference count for this BodyNode. This should
+  /// only be called by the BodyNodePtr class
+  void decrementReferenceCount() const;
+
+protected:
 
   //--------------------------------------------------------------------------
   // General properties
@@ -1264,6 +1300,17 @@ protected:
 
   /// Weak pointer to the Skeleton this BodyNode belongs to.
   std::weak_ptr<Skeleton> mSkeleton;
+
+  /// Reference count for the number of BodyNodePtrs that are referring to this
+  /// BodyNode
+  mutable std::atomic<int> mReferenceCount;
+
+  /// If mReferenceCount is zero, then mReferenceSkeleton will hold a nullptr.
+  /// If mReferenceCount is greater than zero, then mReferenceSkeleton will hold
+  /// a shared_ptr to the Skeleton that this BodyNode belongs to. This is to
+  /// keep this BodyNode alive, so long as a BodyNodePtr that references it
+  /// exists.
+  mutable std::shared_ptr<Skeleton> mReferenceSkeleton;
 
   /// Shared reference to a weak_ptr of this BodyNode's Skeleton, along with a
   /// mutex to ensure thread safety. This is used by WeakBodyNodePtrs to know
@@ -1397,24 +1444,6 @@ protected:
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector6d mImpF;
 
-  /// Update body Jacobian. getBodyJacobian() calls this function if
-  /// mIsBodyJacobianDirty is true.
-  void _updateBodyJacobian() const;
-
-  /// Update the World Jacobian. The commonality of using the World Jacobian
-  /// makes it worth caching.
-  void _updateWorldJacobian() const;
-
-  /// Update spatial time derivative of body Jacobian.
-  /// getJacobianSpatialTimeDeriv() calls this function if
-  /// mIsBodyJacobianSpatialDerivDirty is true.
-  void _updateBodyJacobianSpatialDeriv() const;
-
-  /// Update classic time derivative of body Jacobian.
-  /// getJacobianClassicTimeDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void _updateWorldJacobianClassicDeriv() const;
-
   /// Collision shape added signal
   ColShapeAddedSignal mColShapeAddedSignal;
 
@@ -1447,6 +1476,8 @@ public:
 
 typedef TemplateBodyNodePtr<BodyNode> BodyNodePtr;
 typedef TemplateBodyNodePtr<const BodyNode> ConstBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<BodyNode> WeakBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<const BodyNode> WeakConstBodyNodePtr;
 
 //==============================================================================
 template <class JointType>

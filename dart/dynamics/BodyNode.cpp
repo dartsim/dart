@@ -101,6 +101,8 @@ BodyNode::BodyNode(const std::string& _name)
     Frame(Frame::World(), _name),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
+    mReferenceCount(0),
+    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>()),
     mParentJoint(nullptr),
     mParentBodyNode(nullptr),
     mChildBodyNodes(std::vector<BodyNode*>(0)),
@@ -935,7 +937,7 @@ const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
 const math::Jacobian& BodyNode::getJacobian() const
 {
   if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
+    updateBodyJacobian();
 
   return mBodyJacobian;
 }
@@ -979,7 +981,7 @@ math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
 const math::Jacobian& BodyNode::getWorldJacobian() const
 {
   if(mIsWorldJacobianDirty)
-    _updateWorldJacobian();
+    updateWorldJacobian();
 
   return mWorldJacobian;
 }
@@ -1036,7 +1038,7 @@ math::AngularJacobian BodyNode::getAngularJacobian(
 const math::Jacobian& BodyNode::getJacobianSpatialDeriv() const
 {
   if(mIsBodyJacobianSpatialDerivDirty)
-    _updateBodyJacobianSpatialDeriv();
+    updateBodyJacobianSpatialDeriv();
 
   return mBodyJacobianSpatialDeriv;
 }
@@ -1076,7 +1078,7 @@ math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
 const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
 {
   if(mIsWorldJacobianClassicDerivDirty)
-    _updateWorldJacobianClassicDeriv();
+    updateWorldJacobianClassicDeriv();
 
   return mWorldJacobianClassicDeriv;
 }
@@ -1388,6 +1390,8 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
+    mReferenceCount(0),
+    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>()),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mIsBodyJacobianDirty(true),
@@ -1437,6 +1441,17 @@ void BodyNode::init(SkeletonPtr _skeleton)
 {
   mSkeleton = _skeleton;
   assert(_skeleton);
+  if(mReferenceCount > 0)
+  {
+    mReferenceSkeleton = mSkeleton.lock();
+  }
+
+  // Put the scope around this so that 'lock' releases the mutex immediately
+  // after we're done with it
+  {
+    std::lock_guard<std::mutex> lock(mLockedSkeleton->mMutex);
+    mLockedSkeleton->mSkeleton = mSkeleton;
+  }
 
   mParentJoint->init(_skeleton);
 
@@ -1934,6 +1949,15 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
 }
 
 //==============================================================================
+void BodyNode::clearExternalForces()
+{
+  mFext.setZero();
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->mIsExternalForcesDirty = true;
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
   return mFext;
@@ -2409,7 +2433,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobian() const
+void BodyNode::updateBodyJacobian() const
 {
   //--------------------------------------------------------------------------
   // Jacobian update
@@ -2450,7 +2474,7 @@ void BodyNode::_updateBodyJacobian() const
 }
 
 //==============================================================================
-void BodyNode::_updateWorldJacobian() const
+void BodyNode::updateWorldJacobian() const
 {
   mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
 
@@ -2458,7 +2482,7 @@ void BodyNode::_updateWorldJacobian() const
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobianSpatialDeriv() const
+void BodyNode::updateBodyJacobianSpatialDeriv() const
 {
   //--------------------------------------------------------------------------
   // Body Jacobian first spatial derivative update
@@ -2503,7 +2527,7 @@ void BodyNode::_updateBodyJacobianSpatialDeriv() const
 }
 
 //==============================================================================
-void BodyNode::_updateWorldJacobianClassicDeriv() const
+void BodyNode::updateWorldJacobianClassicDeriv() const
 {
   //----------------------------------------------------------------------------
   // World Jacobian first classic deriv update
@@ -2572,12 +2596,19 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 }
 
 //==============================================================================
-void BodyNode::clearExternalForces()
+void BodyNode::incrementReferenceCount() const
 {
-  mFext.setZero();
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
+  if(0 == previous)
+    mReferenceSkeleton = mSkeleton.lock();
+}
+
+//==============================================================================
+void BodyNode::decrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
+  if(1 == previous)
+    mReferenceSkeleton = nullptr;
 }
 
 }  // namespace dynamics
