@@ -53,6 +53,7 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNodePtr.h"
 #include "dart/dynamics/Marker.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
@@ -1043,6 +1044,7 @@ public:
   friend class Joint;
   friend class SoftBodyNode;
   friend class PointMass;
+  template<class> friend class TemplateBodyNodePtr;
 
 protected:
 
@@ -1263,6 +1265,11 @@ protected:
   /// Weak pointer to the Skeleton this BodyNode belongs to.
   std::weak_ptr<Skeleton> mSkeleton;
 
+  /// Shared reference to a weak_ptr of this BodyNode's Skeleton, along with a
+  /// mutex to ensure thread safety. This is used by WeakBodyNodePtrs to know
+  /// when this BodyNode has expired.
+  std::shared_ptr<MutexedWeakSkeletonPtr> mLockedSkeleton;
+
   /// Index of this BodyNode in its Skeleton
   size_t mIndexInSkeleton;
 
@@ -1436,92 +1443,6 @@ public:
   mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
 
   /// \}
-};
-
-//==============================================================================
-template <class BodyNodeT>
-class TemplateBodyNodePtr
-{
-public:
-  /// Default constructor
-  TemplateBodyNodePtr() : mPtr(nullptr) { }
-
-  virtual ~TemplateBodyNodePtr() { mMoveConnection.disconnect(); }
-
-  /// Alternative constructor. _ptr must be a valid pointer when passed to this
-  /// constructor
-  TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
-
-  /// Change the BodyNode that this BodyNodePtr references
-  TemplateBodyNodePtr& operator = (const TemplateBodyNodePtr& _bnp)
-  {
-    set(_bnp.get());
-    return *this;
-  }
-
-  TemplateBodyNodePtr& operator = (BodyNodeT* _ptr)
-  {
-    set(_ptr);
-    return *this;
-  }
-
-  /// Implicit conversion
-  operator BodyNodeT*() const { return mPtr; }
-
-  /// Dereferencing operator
-  BodyNodeT& operator*() const { return *mPtr; }
-
-  /// Dereferencing operation
-  BodyNodeT* operator->() const { return mPtr; }
-
-  /// Get the raw BodyNode pointer
-  BodyNodeT* get() const { return mPtr; }
-
-  /// Set the BodyNode for this BodyNodePtr
-  void set(BodyNodeT* _ptr)
-  {
-    if(mPtr == _ptr)
-      return;
-
-    if(nullptr == _ptr)
-      mSkeleton = nullptr;
-    else
-      mSkeleton = _ptr->getSkeleton();
-
-    mMoveConnection.disconnect();
-    if(mSkeleton != nullptr)
-    {
-      mPtr = _ptr;
-      mMoveConnection = mPtr->onStructuralChange.connect(
-          [=](const BodyNode* _ptr) { this->changeSkeleton(_ptr); } );
-    }
-  }
-
-protected:
-  /// Called when the Skeleton of this BodyNode is changed
-  void changeSkeleton(const BodyNode* _ptr)
-  {
-    if(_ptr != mPtr)
-    {
-      dterr << "[BodyNodePtr::changeSkeleton] Incoming pointer [" << _ptr
-            << "] did not match the one assigned to this BodyNodePtr [" << mPtr
-            << "]. Please report this as a bug!\n";
-      assert(false);
-      return;
-    }
-
-    mSkeleton = _ptr->getSkeleton();
-  }
-
-  /// Raw pointer for the BodyNode that this BodyNodePtr references
-  BodyNodeT* mPtr;
-
-  /// shared_ptr to the BodyNode's Skeleton. We hold this to keep its reference
-  /// count up, which ensures that the BodyNode stays alive.
-  ConstSkeletonPtr mSkeleton;
-
-  /// Signal used to register when a BodyNode is moved between Skeletons
-  common::Connection mMoveConnection;
 };
 
 typedef TemplateBodyNodePtr<BodyNode> BodyNodePtr;
