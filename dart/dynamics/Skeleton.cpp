@@ -1996,6 +1996,35 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 std::shared_ptr<Skeleton> _newSkeleton,
                                 BodyNode* _parentNode)
 {
+  if(nullptr == _bodyNode)
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Skeleton named [" << getName()
+          << "] (" << this << ") is attempting to move a nullptr BodyNode. "
+          << "Please report this as a bug!\n";
+    assert(false);
+    return;
+  }
+
+  if(this != _bodyNode->getSkeleton().get())
+  {
+    dterr << "[Skeleton::moveBodyNodeTree] Skeleton named [" << getName()
+          << "] (" << this << ") is attempting to move a BodyNode named ["
+          << _bodyNode->getName() << "] even though it belongs to another "
+          << "Skeleton [" << _bodyNode->getSkeleton()->getName() << "] ("
+          << _bodyNode->getSkeleton() << "). Please report this as a bug!\n";
+    assert(false);
+    return;
+  }
+
+  if( (nullptr == _parentJoint)
+      && (_bodyNode->getParentBodyNode() == _parentNode)
+      && (this == _newSkeleton.get()) )
+  {
+    // Short-circuit if the BodyNode is already in the requested place, and its
+    // Joint does not need to be changed
+    return;
+  }
+
   if(_bodyNode == _parentNode)
   {
     dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
