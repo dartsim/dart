@@ -46,7 +46,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
-#include "dart/common/Subject.h"
+#include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/Frame.h"
 
 namespace dart {
@@ -58,13 +58,6 @@ class RenderInterface;
 namespace dart {
 namespace dynamics {
 
-class BodyNode;
-class SoftBodyNode;
-class PointMass;
-class Joint;
-class Marker;
-class DegreeOfFreedom;
-
 /// struct GenCoordInfo
 struct GenCoordInfo
 {
@@ -73,14 +66,9 @@ struct GenCoordInfo
 } DEPRECATED(4.3);
 
 /// class Skeleton
-class Skeleton : public common::Subject
+class Skeleton : public MetaSkeleton
 {
 public:
-
-  using NameChangedSignal
-      = common::Signal<void(const Skeleton* _skeleton,
-                            const std::string& _oldName,
-                            const std::string& _newName)>;
 
   struct Properties
   {
@@ -217,12 +205,8 @@ public:
   DEPRECATED(4.5)
   void addBodyNode(BodyNode* _body);
 
-  /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
-  /// are added
-  double getMass() const;
-
-  /// Get number of body nodes
-  size_t getNumBodyNodes() const;
+  // Documentation inherited
+  size_t getNumBodyNodes() const override;
 
   /// Get number of rigid body nodes.
   size_t getNumRigidBodyNodes() const;
@@ -230,22 +214,22 @@ public:
   /// Get number of soft body nodes.
   size_t getNumSoftBodyNodes() const;
 
-  /// Get root BodyNode
-  BodyNode* getRootBodyNode();
+  /// Get the root BodyNode of the tree whose index in this Skeleton is _treeIdx
+  BodyNode* getRootBodyNode(size_t _treeIdx = 0);
 
-  /// Get const root BodyNode
-  const BodyNode* getRootBodyNode() const;
+  /// Get the const root BodyNode of the tree whose index in this Skeleton is _treeIdx
+  const BodyNode* getRootBodyNode(size_t _treeIdx = 0) const;
 
-  /// Get body node whose index is _idx
-  BodyNode* getBodyNode(size_t _idx);
+  // Documentation inherited
+  BodyNode* getBodyNode(size_t _idx) override;
 
-  /// Get const body node whose index is _idx
-  const BodyNode* getBodyNode(size_t _idx) const;
+  // Documentation inherited
+  const BodyNode* getBodyNode(size_t _idx) const override;
 
-  /// Get soft body node whose index is _idx
+  /// Get SoftBodyNode whose index is _idx
   SoftBodyNode* getSoftBodyNode(size_t _idx);
 
-  /// Get const soft body node whose index is _idx
+  /// Get const SoftBodyNode whose index is _idx
   const SoftBodyNode* getSoftBodyNode(size_t _idx) const;
 
   /// Get body node whose name is _name
@@ -260,32 +244,35 @@ public:
   /// Get const soft body node whose name is _name
   const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
-  /// Get number of joints
-  size_t getNumJoints() const;
+  // Documentation inherited
+  size_t getNumJoints() const override;
 
-  /// Get joint whose index is _idx
-  Joint* getJoint(size_t _idx);
+  // Documentation inherited
+  Joint* getJoint(size_t _idx) override;
 
-  /// Get const joint whose index is _idx
-  const Joint* getJoint(size_t _idx) const;
+  // Documentation inherited
+  const Joint* getJoint(size_t _idx) const override;
 
-  /// Get joint whose name is _name
-  Joint* getJoint(const std::string& _name);
+  /// Get Joint whose name is _name
+  Joint* getJoint(const std::string& _name) override;
 
-  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  DegreeOfFreedom* getDof(size_t _idx);
+  /// Get const Joint whose name is _name
+  const Joint* getJoint(const std::string& _name) const;
 
-  /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  const DegreeOfFreedom* getDof(size_t _idx) const;
+  // Documentation inherited
+  size_t getNumDofs() const override;
+
+  // Documentation inherited
+  DegreeOfFreedom* getDof(size_t _idx) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDof(size_t _idx) const override;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   DegreeOfFreedom* getDof(const std::string& _name);
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
-
-  /// Get const joint whose name is _name
-  const Joint* getJoint(const std::string& _name) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -310,9 +297,6 @@ public:
   DEPRECATED(4.1)
   size_t getDof() const;
 
-  /// Return degrees of freedom of this skeleton
-  size_t getNumDofs() const;
-
   /// \brief Return _index-th GenCoordInfo
   /// \warning GenCoordInfo is deprecated so this function is not necessary
   /// anymore. Please use DegreeOfFreedom by calling getDof(). We will keep this
@@ -325,20 +309,20 @@ public:
   /// \{ \name Command
   //----------------------------------------------------------------------------
 
-  /// Set a single command
-  virtual void setCommand(size_t _index, double _command);
+  // Documentation inherited
+  void setCommand(size_t _index, double _command) override;
 
-  /// Set a sinlge command
-  virtual double getCommand(size_t _index) const;
+  // Documentation inherited
+  double getCommand(size_t _index) const;
 
   /// Set commands
-  virtual void setCommands(const Eigen::VectorXd& _commands);
+  void setCommands(const Eigen::VectorXd& _commands);
 
   /// Get commands
-  virtual Eigen::VectorXd getCommands() const;
+  Eigen::VectorXd getCommands() const;
 
   /// Set zero all the positions
-  virtual void resetCommands();
+  void resetCommands();
 
   /// \}
 
@@ -728,6 +712,10 @@ public:
   //----------------------------------------------------------------------------
   // Equations of Motion
   //----------------------------------------------------------------------------
+
+  /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
+  /// are added
+  double getMass() const;
 
   /// Get mass matrix of the skeleton.
   const Eigen::MatrixXd& getMassMatrix();
@@ -1187,11 +1175,6 @@ protected:
   /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
 
-  //--------------------------------------------------------------------------
-  // Signals
-  //--------------------------------------------------------------------------
-  NameChangedSignal mNameChangedSignal;
-
 public:
   //--------------------------------------------------------------------------
   // Union finding
@@ -1211,11 +1194,6 @@ public:
 
   ///
   size_t mUnionIndex;
-
-  //--------------------------------------------------------------------------
-  // Slot registers
-  //--------------------------------------------------------------------------
-  common::SlotRegister<NameChangedSignal> onNameChanged;
 
 public:
   // To get byte-aligned Eigen vectors

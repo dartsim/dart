@@ -333,12 +333,6 @@ void Skeleton::addBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
-double Skeleton::getMass() const
-{
-  return mTotalMass;
-}
-
-//==============================================================================
 size_t Skeleton::getNumBodyNodes() const
 {
   return mBodyNodes.size();
@@ -466,6 +460,12 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 }
 
 //==============================================================================
+size_t Skeleton::getNumDofs() const
+{
+  return mDofs.size();
+}
+
+//==============================================================================
 DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
   return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mDofs);
@@ -557,12 +557,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 size_t Skeleton::getDof() const
 {
   return getNumDofs();
-}
-
-//==============================================================================
-size_t Skeleton::getNumDofs() const
-{
-  return mDofs.size();
 }
 
 //==============================================================================
@@ -1673,6 +1667,12 @@ math::AngularJacobian Skeleton::getAngularJacobianDeriv(
   assignJacobian<math::AngularJacobian>(dJw, _bodyNode, JwBodyNode);
 
   return dJw;
+}
+
+//==============================================================================
+double Skeleton::getMass() const
+{
+  return mTotalMass;
 }
 
 //==============================================================================
