@@ -43,7 +43,7 @@
 // version up.
 //==============================================================================
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
   #define DEPRECATED(version) __attribute__ ((deprecated))
   #define FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
