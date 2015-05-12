@@ -299,7 +299,7 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
   mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
-        [=](const dynamics::ConstMetaSkeletonPtr skel,
+        [=](dynamics::ConstMetaSkeletonPtr skel,
             const std::string&, const std::string&)
         { this->handleSkeletonNameChange(skel); } ));
 
@@ -536,10 +536,16 @@ Recording* World::getRecording()
 
 //==============================================================================
 void World::handleSkeletonNameChange(
-    const dynamics::ConstMetaSkeletonPtr _skeleton)
+    dynamics::ConstMetaSkeletonPtr _skeleton)
 {
   if(nullptr == _skeleton)
+  {
+    dterr << "[World::handleSkeletonNameChange] Received a name change "
+          << "callback for a nullptr Skeleton. This is most likely a bug. "
+          << "Please report this!\n";
+    assert(false);
     return;
+  }
 
   // Get the new name of the Skeleton
   const std::string& newName = _skeleton->getName();
@@ -567,6 +573,15 @@ void World::handleSkeletonNameChange(
   {
     sharedSkel->setName(issuedName);
   }
+  else if(issuedName.empty())
+  {
+    dterr << "[World::handleSkeletonNameChange] Skeleton named ["
+          << sharedSkel->getName() << "] (" << sharedSkel << ") does not exist "
+          << "in the NameManager of World [" << getName() << "]. This is most "
+          << "likely a bug. Please report this!\n";
+    assert(false);
+    return;
+  }
 }
 
 //==============================================================================
@@ -577,7 +592,12 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
       dynamic_cast<const dynamics::SimpleFrame*>(_entity);
 
   if(nullptr == frame)
+  {
+    dterr << "[World::handleFrameNameChange] Received a callback for a nullptr "
+          << "enity. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
+  }
 
   // Get the new name of the Frame
   const std::string& newName = frame->getName();
@@ -601,6 +621,15 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
   if( (!issuedName.empty()) && (newName != issuedName) )
   {
     sharedFrame->setName(issuedName);
+  }
+  else if(issuedName.empty())
+  {
+    dterr << "[World::handleFrameNameChange] SimpleFrame named ["
+          << frame->getName() << "] (" << frame << ") does not exist in the "
+          << "NameManager of World [" << getName() << "]. This is most likely "
+          << "a bug. Please report this!\n";
+    assert(false);
+    return;
   }
 }
 

@@ -218,6 +218,7 @@ TEST(NameManagement, SetPattern)
 TEST(NameManagement, WorldSkeletons)
 {
   dart::simulation::WorldPtr world1(new dart::simulation::World);
+  world1->setName("world1");
 
   dart::dynamics::SkeletonPtr skel0 = dart::dynamics::Skeleton::create();
   dart::dynamics::SkeletonPtr skel1 = dart::dynamics::Skeleton::create();

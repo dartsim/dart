@@ -212,7 +212,7 @@ public:
 protected:
 
   /// Register when a Skeleton's name is changed
-  void handleSkeletonNameChange(const dynamics::ConstMetaSkeletonPtr _skeleton);
+  void handleSkeletonNameChange(dynamics::ConstMetaSkeletonPtr _skeleton);
 
   /// Register when a SimpleFrame's name is changed
   void handleFrameNameChange(const dynamics::Entity* _entity);

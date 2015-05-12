@@ -236,7 +236,8 @@ const std::string& Skeleton::setName(const std::string& _name)
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
 
-  mNameChangedSignal.raise(mPtr.lock(), oldName, mSkeletonP.mName);
+  ConstMetaSkeletonPtr me = mPtr.lock();
+  mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
 
   return mSkeletonP.mName;
 }
