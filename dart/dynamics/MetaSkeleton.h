@@ -282,13 +282,13 @@ public:
                          const Eigen::VectorXd& _forces) = 0;
 
   /// Get the forces for all generalized coordinates
-  virtual Eigen::VectorXd getForces() const;
+  virtual Eigen::VectorXd getForces() const = 0;
 
   /// Get the forces for a subset of the generalized coordinates
   virtual Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const = 0;
 
   /// Set all forces of the generalized coordinates to zero
-  virtual void resetForces();
+  virtual void resetForces() = 0;
 
   /// Set the lower limit of a generalized coordinate's force
   virtual void setForceLowerLimit(size_t _index, double _force) = 0;
@@ -541,7 +541,7 @@ public:
 
 protected:
 
-  inline MetaSkeleton() : onNameChanged(mNameChangedSignal) { }
+  MetaSkeleton();
 
   //--------------------------------------------------------------------------
   // Signals

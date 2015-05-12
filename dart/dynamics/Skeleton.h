@@ -410,7 +410,7 @@ public:
   /// DEPRECATED: Use setVelocities(const std::vector<size_t>&,
   /// const Eigen::VectorXd&) instead
   DEPRECATED(4.5)
-  void setVelocitySegment(const std::vector<size_t>& _id,
+  void setVelocitySegment(const std::vector<size_t>& _indices,
                           const Eigen::VectorXd& _velocities);
 
   // Documentation inherited
@@ -480,7 +480,7 @@ public:
   ///
   /// DEPRECATED: Use getAccelerations(const std::vector<size_t>&) instead
   DEPRECATED(4.5)
-  Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _id) const;
+  Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _indices) const;
 
   // Documentation inherited
   void resetAccelerations();
@@ -513,7 +513,7 @@ public:
   void setForces(const Eigen::VectorXd& _forces) override;
 
   // Documentation inherited
-  void setForces(const std::vector<size_t>& _index,
+  void setForces(const std::vector<size_t>& _indices,
                  const Eigen::VectorXd& _forces) override;
 
   // Documentation inherited

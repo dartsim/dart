@@ -294,16 +294,16 @@ public:
   /// Set a single command
   virtual void setCommand(size_t _index, double _command) = 0;
 
-  /// Set a sinlge command
+  /// Get a single command
   virtual double getCommand(size_t _index) const = 0;
 
-  /// Set commands
+  /// Set all commands for this Joint
   virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
 
-  /// Get commands
+  /// Get all commands for this Joint
   virtual Eigen::VectorXd getCommands() const = 0;
 
-  /// Set zero all the positions
+  /// Set all the commands for this Joint to zero
   virtual void resetCommands() = 0;
 
   /// \}
@@ -312,22 +312,22 @@ public:
   /// \{ \name Position
   //----------------------------------------------------------------------------
 
-  /// Set a single position
+  /// Set the position of a single generalized coordinate
   virtual void setPosition(size_t _index, double _position) = 0;
 
-  /// Get a single position
+  /// Get the position of a single generalized coordinate
   virtual double getPosition(size_t _index) const = 0;
 
-  /// Set positions
+  /// Set the positions of all generalized coordinates in this Joint
   virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
 
-  /// Get positions
+  /// Get the positions of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getPositions() const = 0;
 
-  /// Set zero all the positions
+  /// Set the positions of all generalized coordinates in this Joint to zero
   virtual void resetPositions() = 0;
 
-  /// Set lower limit of position
+  /// Set lower limit for position
   virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
   /// Get lower limit for position
@@ -345,31 +345,31 @@ public:
   /// \{ \name Velocity
   //----------------------------------------------------------------------------
 
-  /// Set a single velocity
+  /// Set the velocity of a single generalized coordinate
   virtual void setVelocity(size_t _index, double _velocity) = 0;
 
-  /// Get a single velocity
+  /// Get the velocity of a single generalized coordinate
   virtual double getVelocity(size_t _index) const = 0;
 
-  /// Set velocities
+  /// Set the velocities of all generalized coordinates in this Joint
   virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
 
-  /// Get velocities
+  /// Get the velocities of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getVelocities() const = 0;
 
-  /// Set zero all the velocities
+  /// Set the velocities of all generalized coordinates in this Joint to zero
   virtual void resetVelocities() = 0;
 
-  /// Set lower limit of velocity
+  /// Set lower limit for velocity
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
-  /// Get lower limit of velocity
+  /// Get lower limit for velocity
   virtual double getVelocityLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of velocity
+  /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
 
-  /// Get upper limit of velocity
+  /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -378,31 +378,31 @@ public:
   /// \{ \name Acceleration
   //----------------------------------------------------------------------------
 
-  /// Set a single acceleration
+  /// Set the acceleration of a single generalized coordinate
   virtual void setAcceleration(size_t _index, double _acceleration) = 0;
 
-  /// Get a single acceleration
+  /// Get the acceleration of a single generalized coordinate
   virtual double getAcceleration(size_t _index) const = 0;
 
-  /// Set accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint
   virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
 
-  /// Get accelerations
+  /// Get the accelerations of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getAccelerations() const = 0;
 
-  /// Set zero all the accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint to zero
   virtual void resetAccelerations() = 0;
 
-  /// Set lower limit of acceleration
+  /// Set lower limit for acceleration
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get lower limit of acceleration
+  /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of acceleration
+  /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get upper limit of acceleration
+  /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -411,31 +411,31 @@ public:
   /// \{ \name Force
   //----------------------------------------------------------------------------
 
-  /// Set a single force
+  /// Set the force of a single generalized coordinate
   virtual void setForce(size_t _index, double _force) = 0;
 
-  /// Get a single force
+  /// Get the force of a single generalized coordinate
   virtual double getForce(size_t _index) = 0;
 
-  /// Set forces
+  /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
 
-  /// Get forces
+  /// Get the forces of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getForces() const = 0;
 
-  /// Set zero all the forces
+  /// Set the forces of all generalized coordinates in this Joint to zero
   virtual void resetForces() = 0;
 
-  /// Set lower limit of force
+  /// Set lower limit for force
   virtual void setForceLowerLimit(size_t _index, double _force) = 0;
 
-  /// Get lower limit of force
+  /// Get lower limit for force
   virtual double getForceLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of position
+  /// Set upper limit for force
   virtual void setForceUpperLimit(size_t _index, double _force) = 0;
 
-  /// Get upper limit of position
+  /// Get upper limit for force
   virtual double getForceUpperLimit(size_t _index) const = 0;
 
   /// \}

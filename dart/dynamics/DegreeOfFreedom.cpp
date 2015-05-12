@@ -79,6 +79,24 @@ size_t DegreeOfFreedom::getIndexInJoint() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::setCommand(double _command)
+{
+  mJoint->setCommand(mIndexInJoint, _command);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getCommand() const
+{
+  mJoint->getCommand(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetCommand()
+{
+  setCommand(0.0);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setPosition(double _position)
 {
   mJoint->setPosition(mIndexInJoint, _position);
@@ -88,6 +106,12 @@ void DegreeOfFreedom::setPosition(double _position)
 double DegreeOfFreedom::getPosition() const
 {
   return mJoint->getPosition(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetPosition()
+{
+  setPosition(0.0);
 }
 
 //==============================================================================
@@ -148,6 +172,12 @@ double DegreeOfFreedom::getVelocity() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::resetVelocity()
+{
+  setVelocity(0.0);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setVelocityLimits(double _lowerLimit, double _upperLimit)
 {
   setVelocityLowerLimit(_lowerLimit);
@@ -201,6 +231,12 @@ void DegreeOfFreedom::setAcceleration(double _acceleration)
 double DegreeOfFreedom::getAcceleration() const
 {
   return mJoint->getAcceleration(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetAcceleration()
+{
+  setAcceleration(0.0);
 }
 
 //==============================================================================
@@ -259,6 +295,12 @@ void DegreeOfFreedom::setForce(double _force)
 double DegreeOfFreedom::getForce() const
 {
   return mJoint->getForce(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetForce()
+{
+  setForce(0.0);
 }
 
 //==============================================================================

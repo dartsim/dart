@@ -103,6 +103,17 @@ public:
   /// Get this DegreeOfFreedom's index within its Joint
   size_t getIndexInJoint() const;
 
+  // -- Command functions ------------------------------------------------------
+
+  /// Set the command of this DegreeOfFreedom
+  void setCommand(double _command);
+
+  /// Get the command of this DegreeOfFreedom
+  double getCommand() const;
+
+  /// Set the command of this DegreeOfFreedom to zero
+  void resetCommand();
+
   // -- Position functions -----------------------------------------------------
 
   /// Set the position of this DegreeOfFreedom
@@ -110,6 +121,9 @@ public:
 
   /// Get the position of this DegreeOfFreedom
   double getPosition() const;
+
+  /// Set the position of this DegreeOfFreedom to zero
+  void resetPosition();
 
   /// Set the position limits of this DegreeOfFreedom
   void setPositionLimits(double _lowerLimit, double _upperLimit);
@@ -140,6 +154,9 @@ public:
   /// Get the velocity of this DegreeOfFreedom
   double getVelocity() const;
 
+  /// Set the velocity of this DegreeOfFreedom to zero
+  void resetVelocity();
+
   /// Set the velocity limits of this DegreeOfFreedom
   void setVelocityLimits(double _lowerLimit, double _upperLimit);
 
@@ -169,6 +186,9 @@ public:
   /// Get the acceleration of this DegreeOfFreedom
   double getAcceleration() const;
 
+  /// Set the acceleration of this DegreeOfFreedom to zero
+  void resetAcceleration();
+
   /// Set the acceleration limits of this DegreeOfFreedom
   void setAccelerationLimits(double _lowerLimit, double _upperLimit);
 
@@ -197,6 +217,9 @@ public:
 
   /// Get the generalized force of this DegreeOfFreedom
   double getForce() const;
+
+  /// Set the generalized force of this DegreeOfFreedom to zero
+  void resetForce();
 
   /// Set the generalized force limits of this DegreeOfFreedom
   void setForceLimits(double _lowerLimit, double _upperLimit);

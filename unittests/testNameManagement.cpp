@@ -246,6 +246,7 @@ TEST(NameManagement, WorldSkeletons)
   EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
+  world2->setName("world2");
 
   dart::dynamics::SkeletonPtr skel3 =
       dart::dynamics::Skeleton::create("OtherName");
@@ -312,6 +313,7 @@ TEST(NameManagement, WorldSimpleFrames)
   EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
+  world2->setName("world2");
 
   dart::dynamics::SimpleFramePtr frame3(
         new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));

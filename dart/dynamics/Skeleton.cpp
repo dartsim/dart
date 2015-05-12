@@ -484,7 +484,7 @@ Joint* Skeleton::getJoint(size_t _idx)
   if (bn)
     return bn->getParentJoint();
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -626,8 +626,31 @@ static void setValuesFromVector(Skeleton* skel,
 
   for (size_t i=0; i<_indices.size(); ++i)
   {
-    DegreeOfFreedom* dof = skel->getDof(_indices[i]);
-    (dof->*setValue)(_values[i]);
+    (skel->getDof(_indices[i])->*setValue)(_values[i]);
+  }
+}
+
+//==============================================================================
+template <void (DegreeOfFreedom::*setValue)(double _value)>
+static void setAllValuesFromVector(Skeleton* skel,
+                                   const Eigen::VectorXd& _values,
+                                   const std::string& _fname,
+                                   const std::string& _vname)
+{
+  size_t nDofs = skel->getNumDofs();
+  if( _values.size() != static_cast<int>(skel->getNumDofs()) )
+  {
+    dterr << "[Skeleton::" << _fname << "] Invalid number of entries ("
+          << _values.size() << ") in " << _vname << " for Skeleton named ["
+          << skel->getName() << "] (" << skel << ") . Must be equal to ("
+          << skel->getNumDofs() << "). Nothing will be set!\n";
+    assert(false);
+    return;
+  }
+
+  for(size_t i=0; i < nDofs; ++i)
+  {
+    (skel->getDof(i)->*setValue)(_values[i]);
   }
 }
 
@@ -655,6 +678,29 @@ static Eigen::VectorXd getValuesFromVector(
   }
 
   return q;
+}
+
+//==============================================================================
+template <double (DegreeOfFreedom::*getValue)() const>
+static Eigen::VectorXd getValuesFromAllDofs(
+    const Skeleton* skel)
+{
+  size_t nDofs = skel->getNumDofs();
+  Eigen::VectorXd values(nDofs);
+
+  for(size_t i=0; i<nDofs; ++i)
+    values[i] = (skel->getDof(i)->*getValue)();
+
+  return values;
+}
+
+//==============================================================================
+template <void (DegreeOfFreedom::*apply)()>
+static void applyToAllDofs(Skeleton* skel)
+{
+  size_t nDofs = skel->getNumDofs();
+  for(size_t i=0; i<nDofs; ++i)
+    (skel->getDof(i)->*apply)();
 }
 
 //==============================================================================
@@ -704,98 +750,70 @@ static double getValueFromIndex(const Skeleton* skel, size_t _index,
 //==============================================================================
 void Skeleton::setCommand(size_t _index, double _command)
 {
-  assert(_index < getNumDofs());
-
-  Joint* joint = mDofs[_index]->getJoint();
-  const size_t localIndex = mDofs[_index]->getIndexInJoint();
-
-  return joint->setCommand(localIndex, _command);
+  setValueFromIndex<&DegreeOfFreedom::setCommand>(
+        this, _index, _command, "setCommand");
 }
 
 //==============================================================================
 double Skeleton::getCommand(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  const Joint* joint = mDofs[_index]->getJoint();
-  const size_t localIndex = mDofs[_index]->getIndexInJoint();
-
-  return joint->getCommand(localIndex);
+  return getValueFromIndex<&DegreeOfFreedom::getCommand>(
+        this, _index, "getCommand");
 }
 
 //==============================================================================
 void Skeleton::setCommands(const Eigen::VectorXd& _commands)
 {
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    Joint*       joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
+  setAllValuesFromVector<&DegreeOfFreedom::setCommand>(
+        this, _commands, "setCommands", "_commands");
+}
 
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      joint->setCommands(_commands.segment(index, dof));
-    }
-  }
+//==============================================================================
+void Skeleton::setCommands(const std::vector<size_t>& _indices,
+                           const Eigen::VectorXd& _commands)
+{
+  setValuesFromVector<&DegreeOfFreedom::setCommand>(
+        this, _indices, _commands, "setCommands", "_commands");
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getCommands() const
 {
-  Eigen::VectorXd commands(getNumDofs());
+  return getValuesFromAllDofs<&DegreeOfFreedom::getCommand>(this);
+}
 
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      commands.segment(index, dof) = joint->getCommands();
-    }
-  }
-
-  return commands;
+//==============================================================================
+Eigen::VectorXd Skeleton::getCommands(const std::vector<size_t>& _indices) const
+{
+  return getValuesFromVector<&DegreeOfFreedom::getCommand>(
+        this, _indices, "getCommands");
 }
 
 //==============================================================================
 void Skeleton::resetCommands()
 {
-  for (auto& bodyNode : mBodyNodes)
-    bodyNode->getParentJoint()->resetCommands();
+  applyToAllDofs<&DegreeOfFreedom::resetCommand>(this);
 }
 
 //==============================================================================
 void Skeleton::setPosition(size_t _index, double _position)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setPosition(_position);
+  setValueFromIndex<&DegreeOfFreedom::setPosition>(
+        this, _index, _position, "setPosition");
 }
 
 //==============================================================================
 double Skeleton::getPosition(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getPosition();
+  return getValueFromIndex<&DegreeOfFreedom::getPosition>(
+        this, _index, "getPosition");
 }
 
 //==============================================================================
 void Skeleton::setPositions(const Eigen::VectorXd& _positions)
 {
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    Joint*       joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      joint->setPositions(_positions.segment(index, dof));
-    }
-  }
+  setAllValuesFromVector<&DegreeOfFreedom::setPosition>(
+        this, _positions, "setPositions", "_positions");
 }
 
 //==============================================================================
@@ -809,21 +827,7 @@ void Skeleton::setPositions(const std::vector<size_t>& _indices,
 //==============================================================================
 Eigen::VectorXd Skeleton::getPositions() const
 {
-  Eigen::VectorXd q(getNumDofs());
-
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      q.segment(index, dof) = joint->getPositions();
-    }
-  }
-
-  return q;
+  return getValuesFromAllDofs<&DegreeOfFreedom::getPosition>(this);
 }
 
 //==============================================================================
@@ -851,8 +855,7 @@ void Skeleton::setPositionSegment(const std::vector<size_t>& _indices,
 //==============================================================================
 void Skeleton::resetPositions()
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->resetPositions();
+  applyToAllDofs<&DegreeOfFreedom::resetPosition>(this);
 }
 
 //==============================================================================
@@ -886,87 +889,50 @@ double Skeleton::getPositionUpperLimit(size_t _index) const
 //==============================================================================
 void Skeleton::setVelocity(size_t _index, double _velocity)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setVelocity(_velocity);
+  setValueFromIndex<&DegreeOfFreedom::setVelocity>(
+        this, _index, _velocity, "setVelocity");
 }
 
 //==============================================================================
 double Skeleton::getVelocity(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getVelocity();
+  return getValueFromIndex<&DegreeOfFreedom::getVelocity>(
+        this, _index, "getVelocity");
 }
 
 //==============================================================================
 void Skeleton::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    Joint*       joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      joint->setVelocities(_velocities.segment(index, dof));
-    }
-  }
+  setAllValuesFromVector<&DegreeOfFreedom::setVelocity>(
+        this, _velocities, "setVelocities", "_velocities");
 }
 
 //==============================================================================
-void Skeleton::setVelocitySegment(const std::vector<size_t>& _id,
+void Skeleton::setVelocities(const std::vector<size_t>& _indices,
+                             const Eigen::VectorXd& _velocities)
+{
+  setValuesFromVector<&DegreeOfFreedom::setVelocity>(
+        this, _indices, _velocities, "setVelocities", "_velocities");
+}
+
+//==============================================================================
+void Skeleton::setVelocitySegment(const std::vector<size_t>& _indices,
                                   const Eigen::VectorXd& _velocities)
 {
-  assert((int)_id.size() == _velocities.size());
-  if((int)_id.size() != _velocities.size())
-  {
-    dterr << "[Skeleton::setVelocitySegment] Mismatch between _id size ("
-          << _id.size() << ") and _velocity size (" << _velocities.size()
-          << "). Velocities will NOT be set!\n";
-    return;
-  }
-
-  for (size_t i=0; i<_id.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_id[i]);
-    dof->setVelocity(_velocities[i]);
-  }
+  setVelocities(_indices, _velocities);
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getVelocities() const
 {
-  Eigen::VectorXd dq(getNumDofs());
-
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      dq.segment(index, dof) = joint->getVelocities();
-    }
-  }
-
-  return dq;
+  return getValuesFromAllDofs<&DegreeOfFreedom::getVelocity>(this);
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getVelocities(const std::vector<size_t> &_indices) const
+Eigen::VectorXd Skeleton::getVelocities(const std::vector<size_t>& _indices) const
 {
-  Eigen::VectorXd dq(_indices.size());
-
-  for(size_t i=0; i<_indices.size(); ++i)
-  {
-    const DegreeOfFreedom* dof = getDof(_indices[i]);
-    dq[i] = dof->getVelocity();
-  }
-
-  return dq;
+  return getValuesFromVector<&DegreeOfFreedom::getVelocity>(
+        this, _indices, "getVelocities");
 }
 
 //==============================================================================
@@ -978,147 +944,98 @@ Eigen::VectorXd Skeleton::getVelocitySegment(const std::vector<size_t>& _id) con
 //==============================================================================
 void Skeleton::resetVelocities()
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->resetVelocities();
+  applyToAllDofs<&DegreeOfFreedom::resetVelocity>(this);
 }
 
 //==============================================================================
 void Skeleton::setVelocityLowerLimit(size_t _index, double _velocity)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setVelocityLowerLimit(_velocity);
+  setValueFromIndex<&DegreeOfFreedom::setVelocityLowerLimit>(
+        this, _index, _velocity, "setVelocityLowerLimit");
 }
 
 //==============================================================================
 double Skeleton::getVelocityLowerLimit(size_t _index)
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getVelocityLowerLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getVelocityLowerLimit>(
+        this, _index, "getVelocityLowerLimit");
 }
 
 //==============================================================================
 void Skeleton::setVelocityUpperLimit(size_t _index, double _velocity)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setVelocityUpperLimit(_velocity);
+  setValueFromIndex<&DegreeOfFreedom::setVelocityUpperLimit>(
+        this, _index, _velocity, "setVelocityUpperLimit");
 }
 
 //==============================================================================
 double Skeleton::getVelocityUpperLimit(size_t _index)
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getVelocityUpperLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getVelocityUpperLimit>(
+        this, _index, "getVelocityUpperLimit");
 }
 
 //==============================================================================
 void Skeleton::setAcceleration(size_t _index, double _acceleration)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setAcceleration(_acceleration);
+  setValueFromIndex<&DegreeOfFreedom::setAcceleration>(
+        this, _index, _acceleration, "setAcceleration");
 }
 
 //==============================================================================
 double Skeleton::getAcceleration(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getAcceleration();
+  return getValueFromIndex<&DegreeOfFreedom::getAcceleration>(
+        this, _index, "getAcceleration");
 }
 
 //==============================================================================
 void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    Joint*       joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      joint->setAccelerations(_accelerations.segment(index, dof));
-    }
-  }
+  setAllValuesFromVector<&DegreeOfFreedom::setAcceleration>(
+        this, _accelerations, "setAccelerations", "_accelerations");
 }
 
 //==============================================================================
 void Skeleton::setAccelerations(const std::vector<size_t>& _indices,
                                 const Eigen::VectorXd& _accelerations)
 {
-  if((int)_indices.size() != _accelerations.size())
-  {
-    dterr << "[Skeleton::setAccelerationSegment] Mismatch between _id size ("
-          << _indices.size() << ") and _acceleration size (" << _accelerations.size()
-          << "). Accelerations will NOT be set!\n";
-    assert(false);
-    return;
-  }
-
-  for (size_t i=0; i<_indices.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_indices[i]);
-    dof->setAcceleration(_accelerations[i]);
-  }
+  setValuesFromVector<&DegreeOfFreedom::setAcceleration>(
+        this, _indices, _accelerations, "setAccelerations", "_accelerations");
 }
 
 //==============================================================================
 void Skeleton::setAccelerationSegment(const std::vector<size_t>& _indices,
                                       const Eigen::VectorXd& _accelerations)
 {
-  return setAccelerations(_indices, _accelerations);
+  setAccelerations(_indices, _accelerations);
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getAccelerations() const
 {
-  Eigen::VectorXd ddq(getNumDofs());
-
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      ddq.segment(index, dof) = joint->getAccelerations();
-    }
-  }
-
-  return ddq;
+  return getValuesFromAllDofs<&DegreeOfFreedom::getAcceleration>(this);
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getAccelerations(
     const std::vector<size_t>& _indices) const
 {
-  Eigen::VectorXd ddq(_indices.size());
-
-  for (size_t i=0; i<_indices.size(); ++i)
-  {
-    const DegreeOfFreedom* dof = getDof(_indices[i]);
-    ddq[i] = dof->getAcceleration();
-  }
-
-  return ddq;
+  return getValuesFromVector<&DegreeOfFreedom::getAcceleration>(
+        this, _indices, "getAccelerations");
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id) const
+Eigen::VectorXd Skeleton::getAccelerationSegment(
+    const std::vector<size_t>& _indices) const
 {
-  return getAccelerations(_id);
+  return getAccelerations(_indices);
 }
 
 //==============================================================================
 void Skeleton::resetAccelerations()
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->resetAccelerations();
+  applyToAllDofs<&DegreeOfFreedom::resetAcceleration>(this);
 }
 
 //==============================================================================
@@ -1129,62 +1046,72 @@ void Skeleton::setAccelerationLowerLimit(size_t _index, double _acceleration)
 }
 
 //==============================================================================
+double Skeleton::getAccelerationLowerLimit(size_t _index) const
+{
+  return getValueFromIndex<&DegreeOfFreedom::getAccelerationLowerLimit>(
+        this, _index, "getAccelerationLowerLimit");
+}
+
+//==============================================================================
+void Skeleton::setAccelerationUpperLimit(size_t _index, double _acceleration)
+{
+  setValueFromIndex<&DegreeOfFreedom::setAccelerationUpperLimit>(
+        this, _index, _acceleration, "setAccelerationUpperLimit");
+}
+
+//==============================================================================
+double Skeleton::getAccelerationUpperLimit(size_t _index) const
+{
+  return getValueFromIndex<&DegreeOfFreedom::getAccelerationUpperLimit>(
+        this, _index, "getAccelerationUpperLimit");
+}
+
+//==============================================================================
 void Skeleton::setForce(size_t _index, double _force)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setForce(_force);
+  setValueFromIndex<&DegreeOfFreedom::setForce>(
+        this, _index, _force, "setForce");
 }
 
 //==============================================================================
 double Skeleton::getForce(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getForce();
+  return getValueFromIndex<&DegreeOfFreedom::getForce>(
+        this, _index, "getForce");
 }
 
 //==============================================================================
 void Skeleton::setForces(const Eigen::VectorXd& _forces)
 {
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    Joint*       joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
+  setAllValuesFromVector<&DegreeOfFreedom::setForce>(
+        this, _forces, "setForces", "_forces");
+}
 
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      joint->setForces(_forces.segment(index, dof));
-    }
-  }
+//==============================================================================
+void Skeleton::setForces(const std::vector<size_t>& _indices,
+                         const Eigen::VectorXd& _forces)
+{
+  setValuesFromVector<&DegreeOfFreedom::setForce>(
+        this, _indices, _forces, "setForces", "_forces");
 }
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getForces() const
 {
-  Eigen::VectorXd forces(getNumDofs());
+  return getValuesFromAllDofs<&DegreeOfFreedom::getForce>(this);
+}
 
-  for (const auto& bodyNode : mBodyNodes)
-  {
-    const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
-
-    if (dof)
-    {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
-      forces.segment(index, dof) = joint->getForces();
-    }
-  }
-
-  return forces;
+//==============================================================================
+Eigen::VectorXd Skeleton::getForces(const std::vector<size_t>& _indices) const
+{
+  return getValuesFromVector<&DegreeOfFreedom::getForce>(
+        this, _indices, "getForces");
 }
 
 //==============================================================================
 void Skeleton::resetForces()
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->resetForces();
+  applyToAllDofs<&DegreeOfFreedom::resetForce>(this);
 
   // TODO(JS): Find better place
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
@@ -1197,33 +1124,29 @@ void Skeleton::resetForces()
 //==============================================================================
 void Skeleton::setForceLowerLimit(size_t _index, double _force)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setForceLowerLimit(_force);
+  setValueFromIndex<&DegreeOfFreedom::setForceLowerLimit>(
+        this, _index, _force, "setForceLowerLimit");
 }
 
 //==============================================================================
 double Skeleton::getForceLowerLimit(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getForceLowerLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getForceLowerLimit>(
+        this, _index, "getForceLowerLimit");
 }
 
 //==============================================================================
 void Skeleton::setForceUpperLimit(size_t _index, double _force)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setForceUpperLimit(_force);
+  setValueFromIndex<&DegreeOfFreedom::setForceUpperLimit>(
+        this, _index, _force, "setForceUpperLimit");
 }
 
 //==============================================================================
 double Skeleton::getForceUpperLimit(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getVelocityUpperLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getForceUpperLimit>(
+        this, _index, "getForceUpperLimit");
 }
 
 //==============================================================================
