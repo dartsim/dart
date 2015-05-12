@@ -212,7 +212,7 @@ public:
 protected:
 
   /// Register when a Skeleton's name is changed
-  void handleSkeletonNameChange(const dynamics::Skeleton* _skeleton);
+  void handleSkeletonNameChange(const dynamics::ConstMetaSkeletonPtr _skeleton);
 
   /// Register when a SimpleFrame's name is changed
   void handleFrameNameChange(const dynamics::Entity* _entity);
@@ -223,12 +223,12 @@ protected:
   /// Skeletons in this world
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
+  std::map<dynamics::ConstMetaSkeletonPtr,
+           dynamics::SkeletonPtr> mMapForSkeletons;
+
   /// Connections for noticing changes in Skeleton names
   /// TODO(MXG): Consider putting this functionality into NameManager
   std::vector<common::Connection> mNameConnectionsForSkeletons;
-
-  /// Map from raw Skeleton pointers to their shared_ptrs
-  std::map<const dynamics::Skeleton*, dynamics::SkeletonPtr> mSkeletonToShared;
 
   /// NameManager for keeping track of Skeletons
   dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;

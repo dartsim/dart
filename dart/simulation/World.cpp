@@ -296,10 +296,10 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
-  mSkeletonToShared[_skeleton.get()] = _skeleton;
+  mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
-        [=](const dynamics::Skeleton* skel,
+        [=](const dynamics::ConstMetaSkeletonPtr skel,
             const std::string&, const std::string&)
         { this->handleSkeletonNameChange(skel); } ));
 
@@ -372,7 +372,7 @@ void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
   mNameMgrForSkeletons.removeName(_skeleton->getName());
 
   // Remove from the pointer map
-  mSkeletonToShared.erase(_skeleton.get());
+  mMapForSkeletons.erase(_skeleton);
 }
 
 //==============================================================================
@@ -535,7 +535,8 @@ Recording* World::getRecording()
 }
 
 //==============================================================================
-void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
+void World::handleSkeletonNameChange(
+    const dynamics::ConstMetaSkeletonPtr _skeleton)
 {
   if(nullptr == _skeleton)
     return;
@@ -544,9 +545,9 @@ void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
   const std::string& newName = _skeleton->getName();
 
   // Find the shared version of the Skeleton
-  std::map<const dynamics::Skeleton*, dynamics::SkeletonPtr>::iterator it =
-      mSkeletonToShared.find(_skeleton);
-  if( it == mSkeletonToShared.end() )
+  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>::iterator it =
+      mMapForSkeletons.find(_skeleton);
+  if( it == mMapForSkeletons.end() )
   {
     dterr << "[World::handleSkeletonNameChange] Could not find Skeleton named ["
           << _skeleton->getName() << "] in the shared_ptr map of World ["

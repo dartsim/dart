@@ -56,6 +56,56 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+static bool checkIndexArrayValidity(const Skeleton* skel,
+                                    const std::vector<size_t>& _indices,
+                                    const std::string& _fname)
+{
+  size_t dofs = skel->getNumDofs();
+  for(size_t i=0; i<_indices.size(); ++i)
+  {
+    if(_indices[i] >= dofs)
+    {
+      if(dofs > 0)
+      {
+        dterr << "[Skeleton::" << _fname << "] Invalid entry (" << i << ") in "
+              << "_indices array: " << _indices[i] << ". Value must be less than "
+              << dofs << " for the Skeleton named [" << skel->getName() << "] ("
+              << skel << ")\n";
+      }
+      else
+      {
+        dterr << "[Skeleton::" << _fname << "] The Skeleton named ["
+              << skel->getName() << "] (" << skel << ") is empty, but _indices "
+              << "has entries in it. Nothing will be set!\n";
+      }
+
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+static bool checkIndexArrayAgreement(const Skeleton* skel,
+                                     const std::vector<size_t>& _indices,
+                                     const Eigen::VectorXd& _values,
+                                     const std::string& _fname,
+                                     const std::string& _vname)
+{
+  if( static_cast<int>(_indices.size()) != _values.size() )
+  {
+    dterr << "[Skeleton::" << _fname << "] Mismatch between _indices size ("
+          << _indices.size() << ") and " << _vname << " size ("
+          << _values.size() << ") for Skeleton named [" << skel->getName()
+          << "] (" << skel << "). Nothing will be set!\n";
+    assert(false);
+    return false;
+  }
+
+  return checkIndexArrayValidity(skel, _indices, _fname);
+}
+
+//==============================================================================
 Skeleton::Properties::Properties(
     const std::string& _name,
     bool _isMobile,
@@ -186,7 +236,7 @@ const std::string& Skeleton::setName(const std::string& _name)
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
 
-  mNameChangedSignal.raise(this, oldName, mSkeletonP.mName);
+  mNameChangedSignal.raise(mPtr.lock(), oldName, mSkeletonP.mName);
 
   return mSkeletonP.mName;
 }
@@ -351,22 +401,6 @@ size_t Skeleton::getNumSoftBodyNodes() const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getRootBodyNode()
-{
-  if (mBodyNodes.size()==0)
-    return nullptr;
-
-  // We assume that the first element of body nodes is root.
-  return mBodyNodes[0];
-}
-
-//==============================================================================
-const BodyNode* Skeleton::getRootBodyNode() const
-{
-  return const_cast<Skeleton*>(this)->getRootBodyNode();
-}
-
-//==============================================================================
 template<typename T>
 static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 {
@@ -375,6 +409,18 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
     return _vec[_idx];
 
   return nullptr;
+}
+
+//==============================================================================
+BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
+{
+  return getVectorObjectIfAvailable(_treeIdx, mRootBodyNodes);
+}
+
+//==============================================================================
+const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
+{
+  return getVectorObjectIfAvailable(_treeIdx, mRootBodyNodes);
 }
 
 //==============================================================================
@@ -568,6 +614,94 @@ GenCoordInfo Skeleton::getGenCoordInfo(size_t _index) const
 }
 
 //==============================================================================
+template <void (DegreeOfFreedom::*setValue)(double _value)>
+static void setValuesFromVector(Skeleton* skel,
+                                const std::vector<size_t>& _indices,
+                                const Eigen::VectorXd& _values,
+                                const std::string& _fname,
+                                const std::string& _vname)
+{
+  if(!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname))
+    return;
+
+  for (size_t i=0; i<_indices.size(); ++i)
+  {
+    DegreeOfFreedom* dof = skel->getDof(_indices[i]);
+    (dof->*setValue)(_values[i]);
+  }
+}
+
+//==============================================================================
+template <double (DegreeOfFreedom::*getValue)() const>
+static Eigen::VectorXd getValuesFromVector(
+    const Skeleton* skel, const std::vector<size_t>& _indices,
+    const std::string& _fname)
+{
+  Eigen::VectorXd q(_indices.size());
+
+  for(size_t i=0; i<_indices.size(); ++i)
+  {
+    const DegreeOfFreedom* dof = skel->getDof(_indices[i]);
+    if(dof)
+      q[i] = (dof->*getValue)();
+    else
+    {
+      q[i] = 0.0;
+      dterr << "[Skeleton::" << _fname << "] Requesting invalid index ("
+            << _indices[i] << ") for Skeleton named [" << skel->getName()
+            << "] (" << skel << "). Setting value to zero.\n";
+      assert(false);
+    }
+  }
+
+  return q;
+}
+
+//==============================================================================
+template <void (DegreeOfFreedom::*setValue)(double _value)>
+static void setValueFromIndex(Skeleton* skel, size_t _index, double _value,
+                              const std::string& _fname)
+{
+  if(_index >= skel->getNumDofs())
+  {
+    if(skel->getNumDofs() > 0)
+      dterr << "[Skeleton::" << _fname << "] Out of bounds index (" << _index
+            << ") for Skeleton named [" << skel->getName() << "] (" << skel
+            << "). Must be less than " << skel->getNumDofs() << "!\n";
+    else
+      dterr << "[Skeleton::" << _fname << "] Index (" << _index << ") cannot "
+            << "be used on Skeleton [" << skel->getName() << "] (" << skel
+            << ") because it is empty!\n";
+    assert(false);
+    return;
+  }
+
+  (skel->getDof(_index)->*setValue)(_value);
+}
+
+//==============================================================================
+template <double (DegreeOfFreedom::*getValue)() const>
+static double getValueFromIndex(const Skeleton* skel, size_t _index,
+                                const std::string& _fname)
+{
+  if(_index >= skel->getNumDofs())
+  {
+    if(skel->getNumDofs() > 0)
+      dterr << "[Skeleton::" << _fname << "] Out of bounds index (" << _index
+            << ") for Skeleton named [" << skel->getName() << "] (" << skel
+            << "). Must be less than " << skel->getNumDofs() << "!\n";
+    else
+      dterr << "[Skeleton::" << _fname << "] Index (" << _index << ") cannot "
+            << "be requested for Skeleton [" << skel->getName() << "] (" << skel
+            << ") because it is empty!\n";
+    assert(false);
+    return 0;
+  }
+
+  return (skel->getDof(_index)->*getValue)();
+}
+
+//==============================================================================
 void Skeleton::setCommand(size_t _index, double _command)
 {
   assert(_index < getNumDofs());
@@ -665,6 +799,14 @@ void Skeleton::setPositions(const Eigen::VectorXd& _positions)
 }
 
 //==============================================================================
+void Skeleton::setPositions(const std::vector<size_t>& _indices,
+                            const Eigen::VectorXd& _positions)
+{
+  setValuesFromVector<&DegreeOfFreedom::setPosition>(
+        this, _indices, _positions, "setPositions", "_positions");
+}
+
+//==============================================================================
 Eigen::VectorXd Skeleton::getPositions() const
 {
   Eigen::VectorXd q(getNumDofs());
@@ -685,35 +827,25 @@ Eigen::VectorXd Skeleton::getPositions() const
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getPositionSegment(
-    const std::vector<size_t>& _id) const
+Eigen::VectorXd Skeleton::getPositions(const std::vector<size_t>& _indices) const
 {
-  Eigen::VectorXd q(_id.size());
-
-  for (size_t i = 0; i < _id.size(); ++i)
-    q[i] = mDofs[_id[i]]->getPosition();
-
-  return q;
+  return getValuesFromVector<&DegreeOfFreedom::getPosition>(
+        this, _indices, "getPositions");
 }
 
 //==============================================================================
-void Skeleton::setPositionSegment(const std::vector<size_t>& _id,
+Eigen::VectorXd Skeleton::getPositionSegment(
+    const std::vector<size_t>& _indices) const
+{
+  return getValuesFromVector<&DegreeOfFreedom::getPosition>(
+        this, _indices, "getPositionSegment");
+}
+
+//==============================================================================
+void Skeleton::setPositionSegment(const std::vector<size_t>& _indices,
                                   const Eigen::VectorXd& _positions)
 {
-  assert((int)_id.size() == _positions.size());
-  if((int)_id.size() != _positions.size())
-  {
-    dterr << "[Skeleton::setPositionSegment] Mismatch between _id size ("
-          << _id.size() << ") and _positions size (" << _positions.size()
-          << "). Positions will NOT be set!\n";
-    return;
-  }
-
-  for (size_t i = 0; i < _id.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_id[i]);
-    dof->setPosition(_positions[i]);
-  }
+  setPositions(_indices, _positions);
 }
 
 //==============================================================================
@@ -726,33 +858,29 @@ void Skeleton::resetPositions()
 //==============================================================================
 void Skeleton::setPositionLowerLimit(size_t _index, double _position)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setPositionLowerLimit(_position);
+  setValueFromIndex<&DegreeOfFreedom::setPositionLowerLimit>(
+        this, _index, _position, "setPositionLowerLimit");
 }
 
 //==============================================================================
-double Skeleton::getPositionLowerLimit(size_t _index)
+double Skeleton::getPositionLowerLimit(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getPositionLowerLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getPositionLowerLimit>(
+        this, _index, "getPositionLowerLimit");
 }
 
 //==============================================================================
 void Skeleton::setPositionUpperLimit(size_t _index, double _position)
 {
-  assert(_index < getNumDofs());
-
-  mDofs[_index]->setPositionUpperLimit(_position);
+  setValueFromIndex<&DegreeOfFreedom::setPositionUpperLimit>(
+        this, _index, _position, "setPositionUpperLimit");
 }
 
 //==============================================================================
-double Skeleton::getPositionUpperLimit(size_t _index)
+double Skeleton::getPositionUpperLimit(size_t _index) const
 {
-  assert(_index <getNumDofs());
-
-  return mDofs[_index]->getPositionUpperLimit();
+  return getValueFromIndex<&DegreeOfFreedom::getPositionUpperLimit>(
+        this, _index, "getPositionUpperLimit");
 }
 
 //==============================================================================
@@ -828,17 +956,23 @@ Eigen::VectorXd Skeleton::getVelocities() const
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getVelocitySegment(const std::vector<size_t>& _id) const
+Eigen::VectorXd Skeleton::getVelocities(const std::vector<size_t> &_indices) const
 {
-  Eigen::VectorXd dq(_id.size());
+  Eigen::VectorXd dq(_indices.size());
 
-  for(size_t i=0; i<_id.size(); ++i)
+  for(size_t i=0; i<_indices.size(); ++i)
   {
-    const DegreeOfFreedom* dof = getDof(_id[i]);
+    const DegreeOfFreedom* dof = getDof(_indices[i]);
     dq[i] = dof->getVelocity();
   }
 
   return dq;
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getVelocitySegment(const std::vector<size_t>& _id) const
+{
+  return getVelocities(_id);
 }
 
 //==============================================================================
@@ -913,23 +1047,30 @@ void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 }
 
 //==============================================================================
-void Skeleton::setAccelerationSegment(const std::vector<size_t>& _id,
-                                      const Eigen::VectorXd& _accelerations)
+void Skeleton::setAccelerations(const std::vector<size_t>& _indices,
+                                const Eigen::VectorXd& _accelerations)
 {
-  assert((int)_id.size() == _accelerations.size());
-  if((int)_id.size() != _accelerations.size())
+  if((int)_indices.size() != _accelerations.size())
   {
     dterr << "[Skeleton::setAccelerationSegment] Mismatch between _id size ("
-          << _id.size() << ") and _acceleration size (" << _accelerations.size()
+          << _indices.size() << ") and _acceleration size (" << _accelerations.size()
           << "). Accelerations will NOT be set!\n";
+    assert(false);
     return;
   }
 
-  for (size_t i=0; i<_id.size(); ++i)
+  for (size_t i=0; i<_indices.size(); ++i)
   {
-    DegreeOfFreedom* dof = getDof(_id[i]);
+    DegreeOfFreedom* dof = getDof(_indices[i]);
     dof->setAcceleration(_accelerations[i]);
   }
+}
+
+//==============================================================================
+void Skeleton::setAccelerationSegment(const std::vector<size_t>& _indices,
+                                      const Eigen::VectorXd& _accelerations)
+{
+  return setAccelerations(_indices, _accelerations);
 }
 
 //==============================================================================
@@ -953,13 +1094,14 @@ Eigen::VectorXd Skeleton::getAccelerations() const
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id) const
+Eigen::VectorXd Skeleton::getAccelerations(
+    const std::vector<size_t>& _indices) const
 {
-  Eigen::VectorXd ddq(_id.size());
+  Eigen::VectorXd ddq(_indices.size());
 
-  for (size_t i=0; i<_id.size(); ++i)
+  for (size_t i=0; i<_indices.size(); ++i)
   {
-    const DegreeOfFreedom* dof = getDof(_id[i]);
+    const DegreeOfFreedom* dof = getDof(_indices[i]);
     ddq[i] = dof->getAcceleration();
   }
 
@@ -967,10 +1109,23 @@ Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id)
 }
 
 //==============================================================================
+Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id) const
+{
+  return getAccelerations(_id);
+}
+
+//==============================================================================
 void Skeleton::resetAccelerations()
 {
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
     mBodyNodes[i]->getParentJoint()->resetAccelerations();
+}
+
+//==============================================================================
+void Skeleton::setAccelerationLowerLimit(size_t _index, double _acceleration)
+{
+  setValueFromIndex<&DegreeOfFreedom::setAccelerationLowerLimit>(
+        this, _index, _acceleration, "setAccelerationLowerLimit");
 }
 
 //==============================================================================
@@ -982,7 +1137,7 @@ void Skeleton::setForce(size_t _index, double _force)
 }
 
 //==============================================================================
-double Skeleton::getForce(size_t _index)
+double Skeleton::getForce(size_t _index) const
 {
   assert(_index <getNumDofs());
 
@@ -1048,7 +1203,7 @@ void Skeleton::setForceLowerLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double Skeleton::getForceLowerLimit(size_t _index)
+double Skeleton::getForceLowerLimit(size_t _index) const
 {
   assert(_index <getNumDofs());
 
@@ -1064,7 +1219,7 @@ void Skeleton::setForceUpperLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double Skeleton::getForceUpperLimit(size_t _index)
+double Skeleton::getForceUpperLimit(size_t _index) const
 {
   assert(_index <getNumDofs());
 
@@ -1676,7 +1831,7 @@ double Skeleton::getMass() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getMassMatrix()
+const Eigen::MatrixXd& Skeleton::getMassMatrix() const
 {
   if (mIsMassMatrixDirty)
     updateMassMatrix();
@@ -1684,7 +1839,7 @@ const Eigen::MatrixXd& Skeleton::getMassMatrix()
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getAugMassMatrix()
+const Eigen::MatrixXd& Skeleton::getAugMassMatrix() const
 {
   if (mIsAugMassMatrixDirty)
     updateAugMassMatrix();
@@ -1693,7 +1848,7 @@ const Eigen::MatrixXd& Skeleton::getAugMassMatrix()
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvMassMatrix()
+const Eigen::MatrixXd& Skeleton::getInvMassMatrix() const
 {
   if (mIsInvMassMatrixDirty)
     updateInvMassMatrix();
@@ -1702,7 +1857,7 @@ const Eigen::MatrixXd& Skeleton::getInvMassMatrix()
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix()
+const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix() const
 {
   if (mIsInvAugMassMatrixDirty)
     updateInvAugMassMatrix();
@@ -1711,7 +1866,7 @@ const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForces()
+const Eigen::VectorXd& Skeleton::getCoriolisForces() const
 {
   if (mIsCoriolisForcesDirty)
     updateCoriolisForces();
@@ -1720,7 +1875,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisForces()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForces()
+const Eigen::VectorXd& Skeleton::getGravityForces() const
 {
   if (mIsGravityForcesDirty)
     updateGravityForces();
@@ -1729,7 +1884,7 @@ const Eigen::VectorXd& Skeleton::getGravityForces()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces()
+const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces() const
 {
   if (mIsCoriolisAndGravityForcesDirty)
     updateCoriolisAndGravityForces();
@@ -1738,7 +1893,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForces()
+const Eigen::VectorXd& Skeleton::getExternalForces() const
 {
   if (mIsExternalForcesDirty)
     updateExternalForces();
@@ -1747,13 +1902,13 @@ const Eigen::VectorXd& Skeleton::getExternalForces()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getConstraintForces()
+const Eigen::VectorXd& Skeleton::getConstraintForces() const
 {
   const size_t dof = getNumDofs();
   mFc = Eigen::VectorXd::Zero(dof);
 
   // Body constraint impulses
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
     (*it)->aggregateSpatialToGeneralized(&mFc, (*it)->getConstraintImpulse());
@@ -1777,25 +1932,25 @@ const Eigen::VectorXd& Skeleton::getConstraintForces()
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForceVector()
+const Eigen::VectorXd& Skeleton::getCoriolisForceVector() const
 {
   return getCoriolisForces();
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForceVector()
+const Eigen::VectorXd& Skeleton::getGravityForceVector() const
 {
   return getGravityForces();
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCombinedVector()
+const Eigen::VectorXd& Skeleton::getCombinedVector() const
 {
   return getCoriolisAndGravityForces();
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForceVector()
+const Eigen::VectorXd& Skeleton::getExternalForceVector() const
 {
   return getExternalForces();
 }
@@ -1842,8 +1997,7 @@ Skeleton::Skeleton(const Properties& _properties)
     mIsExternalForcesDirty(true),
     mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
-    mUnionSize(1),
-    onNameChanged(mNameChangedSignal)
+    mUnionSize(1)
 {
   setProperties(_properties);
 }
@@ -1872,6 +2026,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 #endif // -------- Debug mode
 
   mBodyNodes.push_back(_newBodyNode);
+  if(nullptr == _newBodyNode->getParentBodyNode())
+  {
+    mRootBodyNodes.push_back(_newBodyNode);
+  }
   _newBodyNode->mSkeleton = getPtr();
   _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
@@ -2243,7 +2401,7 @@ void Skeleton::updateArticulatedInertia() const
 }
 
 //==============================================================================
-void Skeleton::updateMassMatrix()
+void Skeleton::updateMassMatrix() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2261,17 +2419,19 @@ void Skeleton::updateMassMatrix()
   for (size_t j = 0; j < dof; ++j)
   {
     e[j] = 1.0;
-    setAccelerations(e);
+    // This const_cast is okay, because we will return the accelerations to
+    // their original values at the end of the function
+    const_cast<Skeleton*>(this)->setAccelerations(e);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
     {
       (*it)->updateMassMatrix();
     }
 
     // Mass matrix
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
       (*it)->aggregateMassMatrix(&mM, j);
@@ -2290,13 +2450,13 @@ void Skeleton::updateMassMatrix()
   mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
 
   // Restore the original generalized accelerations
-  setAccelerations(originalGenAcceleration);
+  const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
 
   mIsMassMatrixDirty = false;
 }
 
 //==============================================================================
-void Skeleton::updateAugMassMatrix()
+void Skeleton::updateAugMassMatrix() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2314,10 +2474,12 @@ void Skeleton::updateAugMassMatrix()
   for (int j = 0; j < dof; ++j)
   {
     e[j] = 1.0;
-    setAccelerations(e);
+    // This const_cast is okay, because we will return the accelerations to
+    // their original values at the end of the function
+    const_cast<Skeleton*>(this)->setAccelerations(e);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
          it != mBodyNodes.end(); ++it)
     {
       (*it)->updateMassMatrix();
@@ -2344,13 +2506,13 @@ void Skeleton::updateAugMassMatrix()
   mAugM.triangularView<Eigen::StrictlyUpper>() = mAugM.transpose();
 
   // Restore the origianl internal force
-  setAccelerations(originalGenAcceleration);
+  const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
 
   mIsAugMassMatrixDirty = false;
 }
 
 //==============================================================================
-void Skeleton::updateInvMassMatrix()
+void Skeleton::updateInvMassMatrix() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2373,10 +2535,12 @@ void Skeleton::updateInvMassMatrix()
   for (int j = 0; j < dof; ++j)
   {
     e[j] = 1.0;
-    setForces(e);
+    // This const_cast is okay, because we set the forces back to their original
+    // values at the end of this function
+    const_cast<Skeleton*>(this)->setForces(e);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
       (*it)->updateInvMassMatrix();
@@ -2403,13 +2567,13 @@ void Skeleton::updateInvMassMatrix()
   mInvM.triangularView<Eigen::StrictlyLower>() = mInvM.transpose();
 
   // Restore the origianl internal force
-  setForces(originalInternalForce);
+  const_cast<Skeleton*>(this)->setForces(originalInternalForce);
 
   mIsInvMassMatrixDirty = false;
 }
 
 //==============================================================================
-void Skeleton::updateInvAugMassMatrix()
+void Skeleton::updateInvAugMassMatrix() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2428,10 +2592,12 @@ void Skeleton::updateInvAugMassMatrix()
   for (int j = 0; j < dof; ++j)
   {
     e[j] = 1.0;
-    setForces(e);
+    // This const_cast is okay, because we set the forces back to their original
+    // values at the end
+    const_cast<Skeleton*>(this)->setForces(e);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
          it != mBodyNodes.rend(); ++it)
     {
       (*it)->updateInvAugMassMatrix();
@@ -2458,7 +2624,7 @@ void Skeleton::updateInvAugMassMatrix()
   mInvAugM.triangularView<Eigen::StrictlyLower>() = mInvAugM.transpose();
 
   // Restore the origianl internal force
-  setForces(originalInternalForce);
+  const_cast<Skeleton*>(this)->setForces(originalInternalForce);
 
   mIsInvAugMassMatrixDirty = false;
 }
@@ -2470,7 +2636,7 @@ void Skeleton::updateCoriolisForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisForces()
+void Skeleton::updateCoriolisForces() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2479,13 +2645,13 @@ void Skeleton::updateCoriolisForces()
 
   mCvec.setZero();
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
     (*it)->aggregateCoriolisForceVector(&mCvec);
@@ -2501,7 +2667,7 @@ void Skeleton::updateGravityForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateGravityForces()
+void Skeleton::updateGravityForces() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2510,7 +2676,7 @@ void Skeleton::updateGravityForces()
 
   // Calcualtion mass matrix, M
   mG.setZero();
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
     (*it)->aggregateGravityForceVector(&mG, mSkeletonP.mGravity);
@@ -2526,7 +2692,7 @@ void Skeleton::updateCombinedVector()
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisAndGravityForces()
+void Skeleton::updateCoriolisAndGravityForces() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2534,13 +2700,13 @@ void Skeleton::updateCoriolisAndGravityForces()
   assert(static_cast<size_t>(mCg.size()) == getNumDofs());
 
   mCg.setZero();
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
        it != mBodyNodes.end(); ++it)
   {
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
        it != mBodyNodes.rend(); ++it)
   {
     (*it)->aggregateCombinedVector(&mCg, mSkeletonP.mGravity);
@@ -2556,7 +2722,7 @@ void Skeleton::updateExternalForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateExternalForces()
+void Skeleton::updateExternalForces() const
 {
   if (getNumDofs() == 0)
     return;
@@ -2566,7 +2732,7 @@ void Skeleton::updateExternalForces()
   // Clear external force.
   mFext.setZero();
 
-  for (std::vector<BodyNode*>::reverse_iterator itr = mBodyNodes.rbegin();
+  for (std::vector<BodyNode*>::const_reverse_iterator itr = mBodyNodes.rbegin();
        itr != mBodyNodes.rend(); ++itr)
   {
     (*itr)->aggregateExternalForces(&mFext);
@@ -2956,6 +3122,36 @@ void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc)
 }
 
 //==============================================================================
+double Skeleton::getKineticEnergy() const
+{
+  double KE = 0.0;
+
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    KE += (*it)->getKineticEnergy();
+  }
+
+  assert(KE >= 0.0 && "Kinetic energy should be positive value.");
+  return KE;
+}
+
+//==============================================================================
+double Skeleton::getPotentialEnergy() const
+{
+  double PE = 0.0;
+
+  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
+    PE += (*it)->getParentJoint()->getPotentialEnergy();
+  }
+
+  return PE;
+}
+
+//==============================================================================
 Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 {
   Eigen::Vector3d com(0.0, 0.0, 0.0);
@@ -3125,36 +3321,6 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian()
 Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv()
 {
   return getCOMLinearJacobianDeriv();
-}
-
-//==============================================================================
-double Skeleton::getKineticEnergy() const
-{
-  double KE = 0.0;
-
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    KE += (*it)->getKineticEnergy();
-  }
-
-  assert(KE >= 0.0 && "Kinetic energy should be positive value.");
-  return KE;
-}
-
-//==============================================================================
-double Skeleton::getPotentialEnergy() const
-{
-  double PE = 0.0;
-
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
-  {
-    PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
-    PE += (*it)->getParentJoint()->getPotentialEnergy();
-  }
-
-  return PE;
 }
 
 }  // namespace dynamics

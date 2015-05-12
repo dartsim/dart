@@ -38,16 +38,9 @@
 #ifndef DART_DYNAMICS_SKELETON_H_
 #define DART_DYNAMICS_SKELETON_H_
 
-#include <vector>
-#include <string>
-
-#include <Eigen/Dense>
-
 #include "dart/common/Deprecated.h"
-#include "dart/math/Geometry.h"
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/Frame.h"
 
 namespace dart {
 namespace renderer {
@@ -105,7 +98,7 @@ public:
   };
 
   //----------------------------------------------------------------------------
-  // Constructor and Destructor
+  /// \{ \name Constructor and Destructor
   //----------------------------------------------------------------------------
 
   /// Create a new Skeleton inside of a shared_ptr
@@ -129,8 +122,10 @@ public:
   /// properties will be [TODO(MXG): copy the state as well]
   std::shared_ptr<Skeleton> clone() const;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Properties
+  /// \{ \name Properties
   //----------------------------------------------------------------------------
 
   /// Set the Properties of this Skeleton
@@ -180,8 +175,10 @@ public:
   /// Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
 
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Structural Properties
+  /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Create a Joint and child BodyNode pair of the given types. When creating
@@ -254,7 +251,7 @@ public:
   const Joint* getJoint(size_t _idx) const override;
 
   /// Get Joint whose name is _name
-  Joint* getJoint(const std::string& _name) override;
+  Joint* getJoint(const std::string& _name);
 
   /// Get const Joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;
@@ -279,6 +276,8 @@ public:
 
   /// Get const marker whose name is _name
   const Marker* getMarker(const std::string& _name) const;
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Initialization
@@ -313,158 +312,232 @@ public:
   void setCommand(size_t _index, double _command) override;
 
   // Documentation inherited
-  double getCommand(size_t _index) const;
+  double getCommand(size_t _index) const override;
 
-  /// Set commands
-  void setCommands(const Eigen::VectorXd& _commands);
+  // Documentation inherited
+  void setCommands(const Eigen::VectorXd& _commands) override;
 
-  /// Get commands
-  Eigen::VectorXd getCommands() const;
+  void setCommands(const std::vector<size_t>& _indices,
+                   const Eigen::VectorXd& _commands) override;
 
-  /// Set zero all the positions
-  void resetCommands();
+  // Documentation inherited
+  Eigen::VectorXd getCommands() const override;
+
+  // Documentation inherited
+  Eigen::VectorXd getCommands(const std::vector<size_t>& _indices) const override;
+
+  // Documentation inherited
+  void resetCommands() override;
 
   /// \}
 
   //----------------------------------------------------------------------------
-  // Position
+  /// \{ \name Position
   //----------------------------------------------------------------------------
 
-  /// Set a single position
-  void setPosition(size_t _index, double _position);
+  // Documentation inherited
+  void setPosition(size_t _index, double _position) override;
 
-  /// Get a single position
-  double getPosition(size_t _index) const;
+  // Documentation inherited
+  double getPosition(size_t _index) const override;
 
-  /// Set generalized positions
-  void setPositions(const Eigen::VectorXd& _positions);
+  // Documentation inherited
+  void setPositions(const Eigen::VectorXd& _positions) override;
 
-  /// Get generalized positions
-  Eigen::VectorXd getPositions() const;
+  // Documentation inherited
+  void setPositions(const std::vector<size_t>& _indices,
+                    const Eigen::VectorXd& _positions) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getPositions() const override;
+
+  // Documentation inherited
+  Eigen::VectorXd getPositions(const std::vector<size_t>& _indices) const override;
 
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
-  void setPositionSegment(const std::vector<size_t>& _id,
+  ///
+  /// DEPRECATED: Use setPositionSegment(const std::vector<size_t>&,
+  /// const Eigen::VectorXd&) instead
+  DEPRECATED(4.5)
+  void setPositionSegment(const std::vector<size_t>& _indices,
                           const Eigen::VectorXd& _positions);
 
   /// Get the configuration of this skeleton described in generalized
   /// coordinates. The returned order of configuration is determined by _id.
-  Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _id) const;
+  ///
+  /// DEPRECATED: Use getPositions(const std::vector<size_t>&) instead
+  DEPRECATED(4.5)
+  Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _indices) const;
 
-  /// Set zero all the positions
-  void resetPositions();
+  // Documentation inherited
+  void resetPositions() override;
 
-  /// Set lower limit of position
-  void setPositionLowerLimit(size_t _index, double _position);
+  // Documentation inherited
+  void setPositionLowerLimit(size_t _index, double _position) override;
 
-  /// Get lower limit for position
-  double getPositionLowerLimit(size_t _index);
+  // Documentation inherited
+  double getPositionLowerLimit(size_t _index) const override;
 
-  /// Set upper limit for position
-  void setPositionUpperLimit(size_t _index, double _position);
+  // Documentation inherited
+  void setPositionUpperLimit(size_t _index, double _position) override;
 
-  /// Get upper limit for position
-  double getPositionUpperLimit(size_t _index);
+  // Documentation inherited
+  double getPositionUpperLimit(size_t _index) const override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
-  // Velocity
+  /// \{ \name Velocity
   //----------------------------------------------------------------------------
 
-  /// Set a single velocity
-  void setVelocity(size_t _index, double _velocity);
+  // Documentation inherited
+  void setVelocity(size_t _index, double _velocity) override;
 
-  /// Get a single velocity
-  double getVelocity(size_t _index) const;
+  // Documentation inherited
+  double getVelocity(size_t _index) const override;
 
-  /// Set generalized velocities
-  void setVelocities(const Eigen::VectorXd& _velocities);
+  // Documentation inherited
+  void setVelocities(const Eigen::VectorXd& _velocities) override;
+
+  // Documentation inherited
+  void setVelocities(const std::vector<size_t>& _indices,
+                     const Eigen::VectorXd& _velocities) override;
 
   /// Set the generalized velocities of a segment of this Skeleton. The order of
   /// input is determined by _id
+  ///
+  /// DEPRECATED: Use setVelocities(const std::vector<size_t>&,
+  /// const Eigen::VectorXd&) instead
+  DEPRECATED(4.5)
   void setVelocitySegment(const std::vector<size_t>& _id,
                           const Eigen::VectorXd& _velocities);
 
-  /// Get generalized velocities
-  Eigen::VectorXd getVelocities() const;
+  // Documentation inherited
+  Eigen::VectorXd getVelocities() const override;
+
+  // Documentation inherited
+  Eigen::VectorXd getVelocities(const std::vector<size_t>& _indices) const override;
 
   /// Get the generalized velocities of a segment of this Skeleton. The returned
   /// order of the velocities is determined by _id.
+  ///
+  /// DEPRECATED: use getVelocities(const std::vector<size_t>&) instead
+  DEPRECATED(4.5)
   Eigen::VectorXd getVelocitySegment(const std::vector<size_t>& _id) const;
 
-  /// Set zero all the velocities
-  void resetVelocities();
+  // Documentation inherited
+  void resetVelocities() override;
 
-  /// Set lower limit of velocity
-  void setVelocityLowerLimit(size_t _index, double _velocity);
+  // Documentation inherited
+  void setVelocityLowerLimit(size_t _index, double _velocity) override;
 
-  /// Get lower limit of velocity
-  double getVelocityLowerLimit(size_t _index);
+  // Documentation inherited
+  double getVelocityLowerLimit(size_t _index) override;
 
-  /// Set upper limit of velocity
-  void setVelocityUpperLimit(size_t _index, double _velocity);
+  // Documentation inherited
+  void setVelocityUpperLimit(size_t _index, double _velocity) override;
 
-  /// Get upper limit of velocity
-  double getVelocityUpperLimit(size_t _index);
+  // Documentation inherited
+  double getVelocityUpperLimit(size_t _index) override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
-  // Acceleration
+  /// \{ \name Acceleration
   //----------------------------------------------------------------------------
 
-  /// Set a single acceleration
-  /// \param[in] _updateAccs True to update spacial accelerations of body nodes
-  void setAcceleration(size_t _index, double _acceleration);
+  // Documentation inherited
+  void setAcceleration(size_t _index, double _acceleration) override;
 
-  /// Get a single acceleration
-  double getAcceleration(size_t _index) const;
+  // Documentation inherited
+  double getAcceleration(size_t _index) const override;
 
-  /// Set generalized accelerations
-  void setAccelerations(const Eigen::VectorXd& _accelerations);
+  // Documentation inherited
+  void setAccelerations(const Eigen::VectorXd& _accelerations) override;
+
+  // Documentation inherited
+  void setAccelerations(const std::vector<size_t>& _indices,
+                        const Eigen::VectorXd& _accelerations) override;
 
   /// Set the generalized accelerations of a segment of this Skeleton. The order
   /// of input is determined by _id
+  ///
+  /// DEPRECATED: Use setAccelerations(const std::vector<size_t>&,
+  /// const Eigen::VectorXd&) instead
+  DEPRECATED(4.5)
   void setAccelerationSegment(const std::vector<size_t>& _id,
                               const Eigen::VectorXd& _accelerations);
 
-  /// Get accelerations
-  Eigen::VectorXd getAccelerations() const;
+  // Documentation inherited
+  Eigen::VectorXd getAccelerations() const override;
+
+  // Documentation inherited
+  Eigen::VectorXd getAccelerations(const std::vector<size_t>& _indices) const override;
 
   /// Get the generalized accelerations of a segment of this Skeleton. The
   /// returned order of the accelerations is determined by _id
+  ///
+  /// DEPRECATED: Use getAccelerations(const std::vector<size_t>&) instead
+  DEPRECATED(4.5)
   Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _id) const;
 
-  /// Set zero all the accelerations
+  // Documentation inherited
   void resetAccelerations();
 
+  // Documentation inherited
+  void setAccelerationLowerLimit(size_t _index, double _acceleration) override;
+
+  // Documentation inherited
+  double getAccelerationLowerLimit(size_t _index) const override;
+
+  // Documentation inherited
+  void setAccelerationUpperLimit(size_t _index, double _acceleration) override;
+
+  // Documentation inherited
+  double getAccelerationUpperLimit(size_t _index) const override;
+
+  /// \}
+
   //----------------------------------------------------------------------------
-  // Force
+  /// \{ \name Force
   //----------------------------------------------------------------------------
 
-  /// Set a single force
-  void setForce(size_t _index, double _force);
+  // Documentation inherited
+  void setForce(size_t _index, double _force) override;
 
-  /// Get a single force
-  double getForce(size_t _index);
+  // Documentation inherited
+  double getForce(size_t _index) const override;
 
-  /// Set forces
-  void setForces(const Eigen::VectorXd& _forces);
+  // Documentation inherited
+  void setForces(const Eigen::VectorXd& _forces) override;
 
-  /// Get forces
-  Eigen::VectorXd getForces() const;
+  // Documentation inherited
+  void setForces(const std::vector<size_t>& _index,
+                 const Eigen::VectorXd& _forces) override;
 
-  /// Set zero all the forces
-  void resetForces();
+  // Documentation inherited
+  Eigen::VectorXd getForces() const override;
 
-  /// Set lower limit of force
-  void setForceLowerLimit(size_t _index, double _force);
+  // Documentation inherited
+  Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const override;
 
-  /// Get lower limit of force
-  double getForceLowerLimit(size_t _index);
+  // Documentation inherited
+  void resetForces() override;
 
-  /// Set upper limit of position
-  void setForceUpperLimit(size_t _index, double _force);
+  // Documentation inherited
+  void setForceLowerLimit(size_t _index, double _force) override;
 
-  /// Get upper limit of position
-  double getForceUpperLimit(size_t _index);
+  // Documentation inherited
+  double getForceLowerLimit(size_t _index) const override;
+
+  // Documentation inherited
+  void setForceUpperLimit(size_t _index, double _force) override;
+
+  // Documentation inherited
+  double getForceUpperLimit(size_t _index) const override;
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Velocity change
@@ -579,133 +652,101 @@ public:
   /// Compute impulse-based forward dynamics
   void computeImpulseForwardDynamics();
 
-  /// Compute impulse-based inverse dynamics
-//  void computeImpulseInverseDynamics() {}
-
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians
   //----------------------------------------------------------------------------
 
-  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
-  /// is expressed in the Frame of the BodyNode.
-  math::Jacobian getJacobian(const BodyNode* _bodyNode) const;
+  // Documentation inherited
+  math::Jacobian getJacobian(const BodyNode* _bodyNode) const override;
 
-  /// Get the spatial Jacobian targeting the origin of a BodyNode. You can
-  /// specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
-  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
-  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
-  /// in the Frame of the BodyNode.
+  // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
-  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
-  /// expected in coordinates of the BodyNode Frame. You can specify a
-  /// coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
-  /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
-  /// is expressed in the World Frame.
-  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const;
+  // Documentation inherited
+  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const override;
 
-  /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
-  /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
-  /// in the World Frame.
+  // Documentation inherited
   math::Jacobian getWorldJacobian(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
-  /// Get the linear Jacobian targeting the origin of a BodyNode. You can
-  /// specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the linear Jacobian targeting an offset in a BodyNode. The _offset is
-  /// expected in coordinates of the BodyNode Frame. You can specify a
-  /// coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the angular Jacobian of a BodyNode. You can specify a coordinate Frame
-  /// to express the Jabocian in.
+  // Documentation inherited
   math::AngularJacobian getAngularJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the spatial Jacobian time derivative targeting the origin of a
-  /// BodyNode. The Jacobian is expressed in the Frame of the BodyNode.
-  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const;
+  // Documentation inherited
+  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const override;
 
-  /// Get the spatial Jacobian time derivative targeting the origin of a
-  /// BodyNode. You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
-  /// Get the spatial Jacobian time derivative targeting an offset in a
-  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
-  /// The Jacobian is expressed in the Frame of the BodyNode.
+  // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
-  /// Get the spatial Jacobian time derivative targeting an offset in a
-  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
-  /// You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
-  /// Get the spatial Jacobian time derivative targeting the origin of a
-  /// BodyNode. The Jacobian is expressed in the World Frame.
-  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const;
+  // Documentation inherited
+  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const override;
 
-  /// Get the spatial Jacobian time derivative targeting the origin a
-  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
-  /// You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
-  /// Get the spatial Jacobian time derivative targeting an offset in a
-  /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
-  /// You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the linear Jacobian (classical) time derivative targeting the origin
-  /// of a BodyNode. The _offset is expected in coordinates of the BodyNode
-  /// Frame. You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the linear Jacobian (classical) time derivative targeting an offset in
-  /// a BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
-  /// You can specify a coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get the angular Jacobian time derivative of a BodyNode. You can specify a
-  /// coordinate Frame to express the Jabocian in.
+  // Documentation inherited
   math::AngularJacobian getAngularJacobianDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// \}
 
@@ -714,55 +755,53 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
-  /// are added
-  double getMass() const;
+  /// are added and is updated as BodyNode mass is changed, so this is a
+  /// constant-time O(1) operation for the Skeleton class.
+  double getMass() const override;
 
-  /// Get mass matrix of the skeleton.
-  const Eigen::MatrixXd& getMassMatrix();
+  // Documentation inherited
+  const Eigen::MatrixXd& getMassMatrix() const override;
 
-  /// Get augmented mass matrix of the skeleton. This matrix is used
-  /// in ConstraintDynamics to compute constraint forces. The matrix is
-  /// M + h*D + h*h*K where D is diagonal joint damping coefficient matrix, K is
-  /// diagonal joint stiffness matrix, and h is simulation time step.
-  const Eigen::MatrixXd& getAugMassMatrix();
+  // Documentation inherited
+  const Eigen::MatrixXd& getAugMassMatrix() const override;
 
   /// Get inverse of mass matrix of the skeleton.
-  const Eigen::MatrixXd& getInvMassMatrix();
+  const Eigen::MatrixXd& getInvMassMatrix() const override;
 
   /// Get inverse of augmented mass matrix of the skeleton.
-  const Eigen::MatrixXd& getInvAugMassMatrix();
+  const Eigen::MatrixXd& getInvAugMassMatrix() const override;
 
   /// Get Coriolis force vector of the skeleton.
   /// \remarks Please use getCoriolisForces() instead.
   DEPRECATED(4.2)
-  const Eigen::VectorXd& getCoriolisForceVector();
+  const Eigen::VectorXd& getCoriolisForceVector() const;
 
   /// Get Coriolis force vector of the skeleton.
-  const Eigen::VectorXd& getCoriolisForces();
+  const Eigen::VectorXd& getCoriolisForces() const override;
 
   /// Get gravity force vector of the skeleton.
   /// \remarks Please use getGravityForces() instead.
   DEPRECATED(4.2)
-  const Eigen::VectorXd& getGravityForceVector();
+  const Eigen::VectorXd& getGravityForceVector() const;
 
   /// Get gravity force vector of the skeleton.
-  const Eigen::VectorXd& getGravityForces();
+  const Eigen::VectorXd& getGravityForces() const override;
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
   /// \remarks Please use getCoriolisAndGravityForces() instead.
   DEPRECATED(4.2)
-  const Eigen::VectorXd& getCombinedVector();
+  const Eigen::VectorXd& getCombinedVector() const;
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
-  const Eigen::VectorXd& getCoriolisAndGravityForces();
+  const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
 
   /// Get external force vector of the skeleton.
   /// \remarks Please use getExternalForces() instead.
   DEPRECATED(4.2)
-  const Eigen::VectorXd& getExternalForceVector();
+  const Eigen::VectorXd& getExternalForceVector() const;
 
   /// Get external force vector of the skeleton.
-  const Eigen::VectorXd& getExternalForces();
+  const Eigen::VectorXd& getExternalForces() const override;
 
   /// Get damping force of the skeleton.
 //  const Eigen::VectorXd& getDampingForceVector();
@@ -773,56 +812,55 @@ public:
   const Eigen::VectorXd& getConstraintForceVector();
 
   /// Get constraint force vector.
-  const Eigen::VectorXd& getConstraintForces();
+  const Eigen::VectorXd& getConstraintForces() const override;
 
-  /// Set internal force vector.
-//  void setInternalForceVector(const Eigen::VectorXd& _forces);
+  // Documentation inherited
+  void clearExternalForces() override;
 
-  /// Clear internal forces.
-//  void clearInternalForces();
+  // Documentation inherited
+  double getKineticEnergy() const override;
 
-  /// Clear external forces, which are manually added to the body nodes
-  /// by the user.
-  void clearExternalForces();
+  // Documentation inherited
+  double getPotentialEnergy() const override;
 
-  //----------------------------------------------------------------------------
+  // -- Center of Mass Jacobian ---
 
   /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
-  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
+  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const override;
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
   /// World Frame)
   Eigen::Vector6d getCOMSpatialVelocity(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM linear velocity in terms of any Frame (default is
   /// World Frame)
   Eigen::Vector3d getCOMLinearVelocity(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM spatial acceleration in terms of any Frame (default
   /// is World Frame)
   Eigen::Vector6d getCOMSpatialAcceleration(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM linear acceleration in terms of any Frame (default
   /// is World Frame)
   Eigen::Vector3d getCOMLinearAcceleration(
-                          const Frame* _relativeTo = Frame::World(),
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM Jacobian in terms of any Frame (default is World
   /// Frame)
   math::Jacobian getCOMJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM Linear Jacobian in terms of any Frame (default is
   /// World Frame)
   math::LinearJacobian getCOMLinearJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM Jacobian spatial time derivative in terms of any
   /// Frame (default is World Frame).
@@ -831,7 +869,7 @@ public:
   /// with spatial acceleration vectors. If you are using classical linear
   /// vectors, then use getCOMLinearJacobianDeriv() instead.
   math::Jacobian getCOMJacobianSpatialDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get the Skeleton's COM Linear Jacobian time derivative in terms of any
   /// Frame (default is World Frame).
@@ -840,7 +878,7 @@ public:
   /// used with classical acceleration vectors. If you are using spatial
   /// vectors, then use getCOMJacobianSpatialDeriv() instead.
   math::LinearJacobian getCOMLinearJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// Get skeleton's COM w.r.t. world frame.
   ///
@@ -867,12 +905,6 @@ public:
   /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
   DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
-
-  /// Get kinetic energy of this skeleton.
-  double getKineticEnergy() const;
-
-  /// Get potential energy of this skeleton.
-  double getPotentialEnergy() const;
 
   //----------------------------------------------------------------------------
   // Rendering
@@ -1004,16 +1036,16 @@ protected:
   void updateArticulatedInertia() const;
 
   /// Update mass matrix of the skeleton.
-  void updateMassMatrix();
+  void updateMassMatrix() const;
 
   /// Update augmented mass matrix of the skeleton.
-  void updateAugMassMatrix();
+  void updateAugMassMatrix() const;
 
   /// Update inverse of mass matrix of the skeleton.
-  void updateInvMassMatrix();
+  void updateInvMassMatrix() const;
 
   /// Update inverse of augmented mass matrix of the skeleton.
-  void updateInvAugMassMatrix();
+  void updateInvAugMassMatrix() const;
 
   /// Update Coriolis force vector of the skeleton.
   /// \remarks Please use updateCoriolisForces() instead.
@@ -1021,7 +1053,7 @@ protected:
   virtual void updateCoriolisForceVector();
 
   /// Update Coriolis force vector of the skeleton.
-  void updateCoriolisForces();
+  void updateCoriolisForces() const;
 
   /// Update gravity force vector of the skeleton.
   /// \remarks Please use updateGravityForces() instead.
@@ -1029,7 +1061,7 @@ protected:
   virtual void updateGravityForceVector();
 
   /// Update gravity force vector of the skeleton.
-  void updateGravityForces();
+  void updateGravityForces() const;
 
   /// Update combined vector of the skeleton.
   /// \remarks Please use updateCoriolisAndGravityForces() instead.
@@ -1037,7 +1069,7 @@ protected:
   virtual void updateCombinedVector();
 
   /// Update combined vector of the skeleton.
-  void updateCoriolisAndGravityForces();
+  void updateCoriolisAndGravityForces() const;
 
   /// update external force vector to generalized forces.
   /// \remarks Please use updateExternalForces() instead.
@@ -1046,7 +1078,7 @@ protected:
 
   // TODO(JS): Not implemented yet
   /// update external force vector to generalized forces.
-  void updateExternalForces();
+  void updateExternalForces() const;
 
 //  /// Update damping force vector.
 //  virtual void updateDampingForceVector();
@@ -1086,8 +1118,11 @@ protected:
   /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
   std::vector<DegreeOfFreedom*> mDofs;
 
-  /// List of body nodes in the skeleton.
+  /// List of BodyNodes in the Skeleton
   std::vector<BodyNode*> mBodyNodes;
+
+  /// List of root BodyNodes in the Skeleton
+  std::vector<BodyNode*> mRootBodyNodes;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
@@ -1114,62 +1149,62 @@ protected:
   mutable bool mIsArticulatedInertiaDirty;
 
   /// Mass matrix for the skeleton.
-  Eigen::MatrixXd mM;
+  mutable Eigen::MatrixXd mM;
 
   /// Dirty flag for the mass matrix.
-  bool mIsMassMatrixDirty;
+  mutable bool mIsMassMatrixDirty;
 
   /// Mass matrix for the skeleton.
-  Eigen::MatrixXd mAugM;
+  mutable Eigen::MatrixXd mAugM;
 
   /// Dirty flag for the mass matrix.
-  bool mIsAugMassMatrixDirty;
+  mutable bool mIsAugMassMatrixDirty;
 
   /// Inverse of mass matrix for the skeleton.
-  Eigen::MatrixXd mInvM;
+  mutable Eigen::MatrixXd mInvM;
 
   /// Dirty flag for the inverse of mass matrix.
-  bool mIsInvMassMatrixDirty;
+  mutable bool mIsInvMassMatrixDirty;
 
   /// Inverse of augmented mass matrix for the skeleton.
-  Eigen::MatrixXd mInvAugM;
+  mutable Eigen::MatrixXd mInvAugM;
 
   /// Dirty flag for the inverse of augmented mass matrix.
-  bool mIsInvAugMassMatrixDirty;
+  mutable bool mIsInvAugMassMatrixDirty;
 
   /// Coriolis vector for the skeleton which is C(q,dq)*dq.
-  Eigen::VectorXd mCvec;
+  mutable Eigen::VectorXd mCvec;
 
   /// Dirty flag for the Coriolis force vector.
-  bool mIsCoriolisForcesDirty;
+  mutable bool mIsCoriolisForcesDirty;
 
   /// Gravity vector for the skeleton; computed in nonrecursive
   /// dynamics only.
-  Eigen::VectorXd mG;
+  mutable Eigen::VectorXd mG;
 
   /// Dirty flag for the gravity force vector.
-  bool mIsGravityForcesDirty;
+  mutable bool mIsGravityForcesDirty;
 
   /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
-  Eigen::VectorXd mCg;
+  mutable Eigen::VectorXd mCg;
 
   /// Dirty flag for the combined vector of Coriolis and gravity.
-  bool mIsCoriolisAndGravityForcesDirty;
+  mutable bool mIsCoriolisAndGravityForcesDirty;
 
   /// External force vector for the skeleton.
-  Eigen::VectorXd mFext;
+  mutable Eigen::VectorXd mFext;
 
   /// Dirty flag for the external force vector.
-  bool mIsExternalForcesDirty;
+  mutable bool mIsExternalForcesDirty;
 
   /// Constraint force vector.
-  Eigen::VectorXd mFc;
+  mutable Eigen::VectorXd mFc;
 
   /// Damping force vector.
-  Eigen::VectorXd mFd;
+  mutable Eigen::VectorXd mFd;
 
   /// Dirty flag for the damping force vector.
-  bool mIsDampingForcesDirty;
+  mutable bool mIsDampingForcesDirty;
 
   // TODO(JS): Better naming
   /// Flag for status of impulse testing.
