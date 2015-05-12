@@ -106,13 +106,13 @@ public:
   virtual const Joint* getJoint(size_t _idx) const = 0;
 
   /// Return the number of degrees of freedom in this skeleton
-  virtual size_t getNumDofs() const = 0;
+  size_t getNumDofs() const;
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  virtual DegreeOfFreedom* getDof(size_t _idx) = 0;
+  virtual DegreeOfFreedom* getDof(size_t _idx);
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  virtual const DegreeOfFreedom* getDof(size_t _idx) const = 0;
+  virtual const DegreeOfFreedom* getDof(size_t _idx) const;
 
   /// \}
 
@@ -121,26 +121,26 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set a single command
-  virtual void setCommand(size_t _index, double _command) = 0;
+  void setCommand(size_t _index, double _command);
 
   /// Get a single command
-  virtual double getCommand(size_t _index) const = 0;
+  double getCommand(size_t _index) const;
 
   /// Set commands for all generalized coordinates
-  virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
+  void setCommands(const Eigen::VectorXd& _commands);
 
   /// Set commands for a subset of the generalized coordinates
-  virtual void setCommands(const std::vector<size_t>& _indices,
-                           const Eigen::VectorXd& _commands) = 0;
+  void setCommands(const std::vector<size_t>& _indices,
+                           const Eigen::VectorXd& _commands);
 
   /// Get commands for all generalized coordinates
-  virtual Eigen::VectorXd getCommands() const = 0;
+  Eigen::VectorXd getCommands() const;
 
   /// Get commands for a subset of the generalized coordinates
-  virtual Eigen::VectorXd getCommands(const std::vector<size_t>& _indices) const = 0;
+  Eigen::VectorXd getCommands(const std::vector<size_t>& _indices) const;
 
   /// Set all commands to zero
-  virtual void resetCommands() = 0;
+  void resetCommands();
 
   /// \}
 
@@ -149,38 +149,38 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the position of a single generalized coordinate
-  virtual void setPosition(size_t index, double _position) = 0;
+  void setPosition(size_t index, double _position);
 
   /// Get the position of a single generalized coordinate
-  virtual double getPosition(size_t _index) const = 0;
+  double getPosition(size_t _index) const;
 
   /// Set the positions for all generalized coordinates
-  virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
+  void setPositions(const Eigen::VectorXd& _positions);
 
   /// Set the positions for a subset of the generalized coordinates
-  virtual void setPositions(const std::vector<size_t>& _indices,
-                            const Eigen::VectorXd& _positions) = 0;
+  void setPositions(const std::vector<size_t>& _indices,
+                    const Eigen::VectorXd& _positions);
 
   /// Get the positions for all generalized coordinates
-  virtual Eigen::VectorXd getPositions() const = 0;
+  Eigen::VectorXd getPositions() const;
 
   /// Get the positions for a subset of the generalized coordinates
-  virtual Eigen::VectorXd getPositions(const std::vector<size_t>& _indices) const = 0;
+  Eigen::VectorXd getPositions(const std::vector<size_t>& _indices) const;
 
   /// Set all positions to zero
-  virtual void resetPositions() = 0;
+  void resetPositions();
 
   /// Set the lower limit of a generalized coordinate's position
-  virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
+  void setPositionLowerLimit(size_t _index, double _position);
 
   /// Get the lower limit of a generalized coordinate's position
-  virtual double getPositionLowerLimit(size_t _index) const = 0;
+  double getPositionLowerLimit(size_t _index) const;
 
   /// Set the upper limit of a generalized coordainte's position
-  virtual void setPositionUpperLimit(size_t _index, double _position) = 0;
+  void setPositionUpperLimit(size_t _index, double _position);
 
   /// Get the upper limit of a generalized coordinate's position
-  virtual double getPositionUpperLimit(size_t _index) const = 0;
+  double getPositionUpperLimit(size_t _index) const;
 
   /// \}
 
@@ -189,38 +189,38 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the velocity of a single generalized coordinate
-  virtual void setVelocity(size_t _index, double _velocity) = 0;
+  void setVelocity(size_t _index, double _velocity);
 
   /// Get the velocity of a single generalized coordinate
-  virtual double getVelocity(size_t _index) const = 0;
+  double getVelocity(size_t _index) const;
 
   /// Set the velocities of all generalized coordinates
-  virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
+  void setVelocities(const Eigen::VectorXd& _velocities);
 
   /// Set the velocities of a subset of the generalized coordinates
-  virtual void setVelocities(const std::vector<size_t>& _indices,
-                             const Eigen::VectorXd& _velocities) = 0;
+  void setVelocities(const std::vector<size_t>& _indices,
+                     const Eigen::VectorXd& _velocities);
 
   /// Get the velocities for all generalized coordinates
-  virtual Eigen::VectorXd getVelocities() const = 0;
+  Eigen::VectorXd getVelocities() const;
 
   /// Get the velocities for a subset of the generalized coordinates
-  virtual Eigen::VectorXd getVelocities(const std::vector<size_t>& _indices) const = 0;
+  Eigen::VectorXd getVelocities(const std::vector<size_t>& _indices) const;
 
   /// Set all velocities to zero
-  virtual void resetVelocities() = 0;
+  void resetVelocities();
 
   /// Set the lower limit of a generalized coordinate's velocity
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
+  void setVelocityLowerLimit(size_t _index, double _velocity);
 
   /// Get the lower limit of a generalized coordinate's velocity
-  virtual double getVelocityLowerLimit(size_t _index) = 0;
+  double getVelocityLowerLimit(size_t _index);
 
   /// Set the upper limit of a generalized coordinate's velocity
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
+  void setVelocityUpperLimit(size_t _index, double _velocity);
 
   /// Get the upper limit of a generalized coordinate's velocity
-  virtual double getVelocityUpperLimit(size_t _index) = 0;
+  double getVelocityUpperLimit(size_t _index);
 
   /// \}
 
@@ -229,38 +229,38 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the acceleration of a single generalized coordinate
-  virtual void setAcceleration(size_t _index, double _acceleration) = 0;
+  void setAcceleration(size_t _index, double _acceleration);
 
   /// Get the acceleration of a single generalized coordinate
-  virtual double getAcceleration(size_t _index) const = 0;
+  double getAcceleration(size_t _index) const;
 
   /// Set the accelerations of all generalized coordinates
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
+  void setAccelerations(const Eigen::VectorXd& _accelerations);
 
   /// Set the accelerations of a subset of the generalized coordinates
-  virtual void setAccelerations(const std::vector<size_t>& _indices,
-                                const Eigen::VectorXd& _accelerations) = 0;
+  void setAccelerations(const std::vector<size_t>& _indices,
+                        const Eigen::VectorXd& _accelerations);
 
   /// Get the accelerations for all generalized coordinates
-  virtual Eigen::VectorXd getAccelerations() const = 0;
+  Eigen::VectorXd getAccelerations() const;
 
   /// Get the accelerations for a subset of the generalized coordinates
-  virtual Eigen::VectorXd getAccelerations(const std::vector<size_t>& _indices) const = 0;
+  Eigen::VectorXd getAccelerations(const std::vector<size_t>& _indices) const;
 
   /// Set all accelerations to zero
-  virtual void resetAccelerations() = 0;
+  void resetAccelerations();
 
   /// Set the lower limit of a generalized coordinate's acceleration
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
+  void setAccelerationLowerLimit(size_t _index, double _acceleration);
 
   /// Get the lower limit of a generalized coordinate's acceleration
-  virtual double getAccelerationLowerLimit(size_t _index) const = 0;
+  double getAccelerationLowerLimit(size_t _index) const;
 
   /// Set the upper limit of a generalized coordinate's acceleration
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
+  void setAccelerationUpperLimit(size_t _index, double _acceleration);
 
   /// Get the upper limit of a generalized coordinate's acceleration
-  virtual double getAccelerationUpperLimit(size_t _index) const = 0;
+  double getAccelerationUpperLimit(size_t _index) const;
 
   /// \}
 
@@ -269,38 +269,38 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the force of a single generalized coordinate
-  virtual void setForce(size_t _index, double _force) = 0;
+  void setForce(size_t _index, double _force);
 
   /// Get the force of a single generalized coordinate
-  virtual double getForce(size_t _index) const = 0;
+  double getForce(size_t _index) const;
 
   /// Set the forces of all generalized coordinates
-  virtual void setForces(const Eigen::VectorXd& _forces) = 0;
+  void setForces(const Eigen::VectorXd& _forces);
 
   /// Set the forces of a subset of the generalized coordinates
-  virtual void setForces(const std::vector<size_t>& _index,
-                         const Eigen::VectorXd& _forces) = 0;
+  void setForces(const std::vector<size_t>& _index,
+                 const Eigen::VectorXd& _forces);
 
   /// Get the forces for all generalized coordinates
-  virtual Eigen::VectorXd getForces() const = 0;
+  Eigen::VectorXd getForces() const;
 
   /// Get the forces for a subset of the generalized coordinates
-  virtual Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const = 0;
+  Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const;
 
   /// Set all forces of the generalized coordinates to zero
-  virtual void resetForces() = 0;
+  void resetForces();
 
   /// Set the lower limit of a generalized coordinate's force
-  virtual void setForceLowerLimit(size_t _index, double _force) = 0;
+  void setForceLowerLimit(size_t _index, double _force);
 
   /// Get the lower limit of a generalized coordinate's force
-  virtual double getForceLowerLimit(size_t _index) const = 0;
+  double getForceLowerLimit(size_t _index) const;
 
   /// Set the upper limit of a generalized coordinate's force
-  virtual void setForceUpperLimit(size_t _index, double _force) = 0;
+  void setForceUpperLimit(size_t _index, double _force);
 
   /// Get the upper limit of a generalized coordinate's force
-  virtual double getForceUpperLimit(size_t _index) const = 0;
+  double getForceUpperLimit(size_t _index) const;
 
   /// \}
 
@@ -541,7 +541,11 @@ public:
 
 protected:
 
+  /// Default constructor
   MetaSkeleton();
+
+  /// Array of DegreeOfFreedom objects within this MetaSkeleton
+  std::vector<DegreeOfFreedom*> mDofs;
 
   //--------------------------------------------------------------------------
   // Signals

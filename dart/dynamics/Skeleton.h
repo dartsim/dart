@@ -256,14 +256,8 @@ public:
   /// Get const Joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;
 
-  // Documentation inherited
-  size_t getNumDofs() const override;
-
-  // Documentation inherited
-  DegreeOfFreedom* getDof(size_t _idx) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _idx) const override;
+  // Inform the compiler not to hide the MetaSkeleton's getDof
+  using MetaSkeleton::getDof;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   DegreeOfFreedom* getDof(const std::string& _name);
@@ -289,7 +283,7 @@ public:
             const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
   //----------------------------------------------------------------------------
-  // Generalized coordinate system
+  /// \{ \name Deprecated
   //----------------------------------------------------------------------------
 
   /// Return degrees of freedom of this skeleton
@@ -303,56 +297,6 @@ public:
   /// in minor version ups.
   DEPRECATED(4.3)
   GenCoordInfo getGenCoordInfo(size_t _index) const;
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Command
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  void setCommand(size_t _index, double _command) override;
-
-  // Documentation inherited
-  double getCommand(size_t _index) const override;
-
-  // Documentation inherited
-  void setCommands(const Eigen::VectorXd& _commands) override;
-
-  void setCommands(const std::vector<size_t>& _indices,
-                   const Eigen::VectorXd& _commands) override;
-
-  // Documentation inherited
-  Eigen::VectorXd getCommands() const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getCommands(const std::vector<size_t>& _indices) const override;
-
-  // Documentation inherited
-  void resetCommands() override;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Position
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  void setPosition(size_t _index, double _position) override;
-
-  // Documentation inherited
-  double getPosition(size_t _index) const override;
-
-  // Documentation inherited
-  void setPositions(const Eigen::VectorXd& _positions) override;
-
-  // Documentation inherited
-  void setPositions(const std::vector<size_t>& _indices,
-                    const Eigen::VectorXd& _positions) override;
-
-  // Documentation inherited
-  Eigen::VectorXd getPositions() const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getPositions(const std::vector<size_t>& _indices) const override;
 
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
@@ -370,40 +314,6 @@ public:
   DEPRECATED(4.5)
   Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _indices) const;
 
-  // Documentation inherited
-  void resetPositions() override;
-
-  // Documentation inherited
-  void setPositionLowerLimit(size_t _index, double _position) override;
-
-  // Documentation inherited
-  double getPositionLowerLimit(size_t _index) const override;
-
-  // Documentation inherited
-  void setPositionUpperLimit(size_t _index, double _position) override;
-
-  // Documentation inherited
-  double getPositionUpperLimit(size_t _index) const override;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Velocity
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  void setVelocity(size_t _index, double _velocity) override;
-
-  // Documentation inherited
-  double getVelocity(size_t _index) const override;
-
-  // Documentation inherited
-  void setVelocities(const Eigen::VectorXd& _velocities) override;
-
-  // Documentation inherited
-  void setVelocities(const std::vector<size_t>& _indices,
-                     const Eigen::VectorXd& _velocities) override;
-
   /// Set the generalized velocities of a segment of this Skeleton. The order of
   /// input is determined by _id
   ///
@@ -413,52 +323,12 @@ public:
   void setVelocitySegment(const std::vector<size_t>& _indices,
                           const Eigen::VectorXd& _velocities);
 
-  // Documentation inherited
-  Eigen::VectorXd getVelocities() const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getVelocities(const std::vector<size_t>& _indices) const override;
-
   /// Get the generalized velocities of a segment of this Skeleton. The returned
   /// order of the velocities is determined by _id.
   ///
   /// DEPRECATED: use getVelocities(const std::vector<size_t>&) instead
   DEPRECATED(4.5)
   Eigen::VectorXd getVelocitySegment(const std::vector<size_t>& _id) const;
-
-  // Documentation inherited
-  void resetVelocities() override;
-
-  // Documentation inherited
-  void setVelocityLowerLimit(size_t _index, double _velocity) override;
-
-  // Documentation inherited
-  double getVelocityLowerLimit(size_t _index) override;
-
-  // Documentation inherited
-  void setVelocityUpperLimit(size_t _index, double _velocity) override;
-
-  // Documentation inherited
-  double getVelocityUpperLimit(size_t _index) override;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Acceleration
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  void setAcceleration(size_t _index, double _acceleration) override;
-
-  // Documentation inherited
-  double getAcceleration(size_t _index) const override;
-
-  // Documentation inherited
-  void setAccelerations(const Eigen::VectorXd& _accelerations) override;
-
-  // Documentation inherited
-  void setAccelerations(const std::vector<size_t>& _indices,
-                        const Eigen::VectorXd& _accelerations) override;
 
   /// Set the generalized accelerations of a segment of this Skeleton. The order
   /// of input is determined by _id
@@ -469,73 +339,12 @@ public:
   void setAccelerationSegment(const std::vector<size_t>& _id,
                               const Eigen::VectorXd& _accelerations);
 
-  // Documentation inherited
-  Eigen::VectorXd getAccelerations() const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getAccelerations(const std::vector<size_t>& _indices) const override;
-
   /// Get the generalized accelerations of a segment of this Skeleton. The
   /// returned order of the accelerations is determined by _id
   ///
   /// DEPRECATED: Use getAccelerations(const std::vector<size_t>&) instead
   DEPRECATED(4.5)
   Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _indices) const;
-
-  // Documentation inherited
-  void resetAccelerations();
-
-  // Documentation inherited
-  void setAccelerationLowerLimit(size_t _index, double _acceleration) override;
-
-  // Documentation inherited
-  double getAccelerationLowerLimit(size_t _index) const override;
-
-  // Documentation inherited
-  void setAccelerationUpperLimit(size_t _index, double _acceleration) override;
-
-  // Documentation inherited
-  double getAccelerationUpperLimit(size_t _index) const override;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Force
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  void setForce(size_t _index, double _force) override;
-
-  // Documentation inherited
-  double getForce(size_t _index) const override;
-
-  // Documentation inherited
-  void setForces(const Eigen::VectorXd& _forces) override;
-
-  // Documentation inherited
-  void setForces(const std::vector<size_t>& _indices,
-                 const Eigen::VectorXd& _forces) override;
-
-  // Documentation inherited
-  Eigen::VectorXd getForces() const override;
-
-  // Documentation inherited
-  Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const override;
-
-  // Documentation inherited
-  void resetForces() override;
-
-  // Documentation inherited
-  void setForceLowerLimit(size_t _index, double _force) override;
-
-  // Documentation inherited
-  double getForceLowerLimit(size_t _index) const override;
-
-  // Documentation inherited
-  void setForceUpperLimit(size_t _index, double _force) override;
-
-  // Documentation inherited
-  double getForceUpperLimit(size_t _index) const override;
 
   /// \}
 
@@ -1114,9 +923,6 @@ protected:
   /// by DegreeOfFreedom.
   DEPRECATED(4.3)
   std::vector<GenCoordInfo> mGenCoordInfos;
-
-  /// Array of DegreeOfFreedom objects within all the joints in this Skeleton
-  std::vector<DegreeOfFreedom*> mDofs;
 
   /// List of BodyNodes in the Skeleton
   std::vector<BodyNode*> mBodyNodes;
