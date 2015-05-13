@@ -189,14 +189,7 @@ public:
     const typename JointType::Properties& _jointProperties =
                                               typename JointType::Properties(),
     const typename NodeType::Properties& _bodyProperties =
-                                              typename NodeType::Properties())
-  {
-    JointType* joint = new JointType(_jointProperties);
-    NodeType* node = new NodeType(_parent, joint, _bodyProperties);
-    registerBodyNode(node);
-
-    return std::pair<JointType*, NodeType*>(joint, node);
-  }
+                                              typename NodeType::Properties());
 
   /// Add a body node
   DEPRECATED(4.5)
@@ -214,7 +207,8 @@ public:
   /// Get the root BodyNode of the tree whose index in this Skeleton is _treeIdx
   BodyNode* getRootBodyNode(size_t _treeIdx = 0);
 
-  /// Get the const root BodyNode of the tree whose index in this Skeleton is _treeIdx
+  /// Get the const root BodyNode of the tree whose index in this Skeleton is
+  /// _treeIdx
   const BodyNode* getRootBodyNode(size_t _treeIdx = 0) const;
 
   // Documentation inherited
@@ -839,7 +833,10 @@ protected:
 
   /// Update the dimensions for various data structures, such as mass matrix
   /// and force vector
-  void updateCacheDimensions();
+  void updateCacheDimensions(size_t _treeIdx);
+
+  /// Update the articulated inertia of a tree
+  void updateArticulatedInertia(size_t _tree);
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
@@ -948,69 +945,86 @@ protected:
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
+  struct DirtyFlags
+  {
+    /// Default constructor
+    DirtyFlags();
+
+    /// Dirty flag for articulated body inertia
+    bool mArticulatedInertia;
+
+    /// Dirty flag for the mass matrix.
+    bool mMassMatrix;
+
+    /// Dirty flag for the mass matrix.
+    bool mAugMassMatrix;
+
+    /// Dirty flag for the inverse of mass matrix.
+    bool mInvMassMatrix;
+
+    /// Dirty flag for the inverse of augmented mass matrix.
+    bool mInvAugMassMatrix;
+
+    /// Dirty flag for the gravity force vector.
+    bool mGravityForces;
+
+    /// Dirty flag for the Coriolis force vector.
+    bool mCoriolisForces;
+
+    /// Dirty flag for the combined vector of Coriolis and gravity.
+    bool mCoriolisAndGravityForces;
+
+    /// Dirty flag for the external force vector.
+    bool mExternalForces;
+
+    /// Dirty flag for the damping force vector.
+    bool mDampingForces;
+  };
+
+  struct DataCache
+  {
+    /// BodyNodes belonging to this tree
+    std::vector<BodyNode*> mBodyNodes;
+
+    /// Mass matrix cache
+    Eigen::MatrixXd mM;
+
+    /// Mass matrix for the skeleton.
+    Eigen::MatrixXd mAugM;
+
+    /// Inverse of mass matrix for the skeleton.
+    Eigen::MatrixXd mInvM;
+
+    /// Inverse of augmented mass matrix for the skeleton.
+    Eigen::MatrixXd mInvAugM;
+
+    /// Coriolis vector for the skeleton which is C(q,dq)*dq.
+    Eigen::VectorXd mCvec;
+
+    /// Gravity vector for the skeleton; computed in nonrecursive
+    /// dynamics only.
+    Eigen::VectorXd mG;
+
+    /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
+    Eigen::VectorXd mCg;
+
+    /// External force vector for the skeleton.
+    Eigen::VectorXd mFext;
+
+    /// Constraint force vector.
+    Eigen::VectorXd mFc;
+  };
+
+  mutable std::vector<DirtyFlags> mTreeFlags;
+
+  mutable std::vector<DataCache> mTreeCache;
+
+  mutable DirtyFlags mSkelFlags;
+
+  mutable DataCache mSkelCache;
+
   /// Total mass.
   double mTotalMass;
-
-  /// Dirty flag for articulated body inertia
-  mutable bool mIsArticulatedInertiaDirty;
-
-  /// Mass matrix for the skeleton.
-  mutable Eigen::MatrixXd mM;
-
-  /// Dirty flag for the mass matrix.
-  mutable bool mIsMassMatrixDirty;
-
-  /// Mass matrix for the skeleton.
-  mutable Eigen::MatrixXd mAugM;
-
-  /// Dirty flag for the mass matrix.
-  mutable bool mIsAugMassMatrixDirty;
-
-  /// Inverse of mass matrix for the skeleton.
-  mutable Eigen::MatrixXd mInvM;
-
-  /// Dirty flag for the inverse of mass matrix.
-  mutable bool mIsInvMassMatrixDirty;
-
-  /// Inverse of augmented mass matrix for the skeleton.
-  mutable Eigen::MatrixXd mInvAugM;
-
-  /// Dirty flag for the inverse of augmented mass matrix.
-  mutable bool mIsInvAugMassMatrixDirty;
-
-  /// Coriolis vector for the skeleton which is C(q,dq)*dq.
-  mutable Eigen::VectorXd mCvec;
-
-  /// Dirty flag for the Coriolis force vector.
-  mutable bool mIsCoriolisForcesDirty;
-
-  /// Gravity vector for the skeleton; computed in nonrecursive
-  /// dynamics only.
-  mutable Eigen::VectorXd mG;
-
-  /// Dirty flag for the gravity force vector.
-  mutable bool mIsGravityForcesDirty;
-
-  /// Combined coriolis and gravity vector which is C(q, dq)*dq + g(q).
-  mutable Eigen::VectorXd mCg;
-
-  /// Dirty flag for the combined vector of Coriolis and gravity.
-  mutable bool mIsCoriolisAndGravityForcesDirty;
-
-  /// External force vector for the skeleton.
-  mutable Eigen::VectorXd mFext;
-
-  /// Dirty flag for the external force vector.
-  mutable bool mIsExternalForcesDirty;
-
-  /// Constraint force vector.
-  mutable Eigen::VectorXd mFc;
-
-  /// Damping force vector.
-  mutable Eigen::VectorXd mFd;
-
-  /// Dirty flag for the damping force vector.
-  mutable bool mIsDampingForcesDirty;
 
   // TODO(JS): Better naming
   /// Flag for status of impulse testing.
@@ -1041,10 +1055,25 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
+//==============================================================================
 typedef std::shared_ptr<Skeleton> SkeletonPtr;
 typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
 typedef std::weak_ptr<Skeleton> WeakSkeletonPtr;
 typedef std::weak_ptr<const Skeleton> WeakConstSkeletonPtr;
+
+//==============================================================================
+template <class JointType, class NodeType>
+std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
+    BodyNode* _parent,
+    const typename JointType::Properties& _jointProperties,
+    const typename NodeType::Properties& _bodyProperties)
+{
+  JointType* joint = new JointType(_jointProperties);
+  NodeType* node = new NodeType(_parent, joint, _bodyProperties);
+  registerBodyNode(node);
+
+  return std::pair<JointType*, NodeType*>(joint, node);
+}
 
 }  // namespace dynamics
 }  // namespace dart

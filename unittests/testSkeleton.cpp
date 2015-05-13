@@ -55,7 +55,7 @@ void check_self_consistency(SkeletonPtr skeleton)
   for(size_t i=0; i<skeleton->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = skeleton->getBodyNode(i);
-    EXPECT_TRUE(bn->getIndex() == i);
+    EXPECT_TRUE(bn->getIndexInSkeleton() == i);
     EXPECT_TRUE(skeleton->getBodyNode(bn->getName()) == bn);
 
     Joint* joint = bn->getParentJoint();

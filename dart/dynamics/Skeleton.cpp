@@ -55,6 +55,11 @@
 namespace dart {
 namespace dynamics {
 
+#define SET_ALL_FLAGS( X ) for(auto& flags : mTreeFlags) flags. X = true;      \
+                           mSkelFlags. X = true;
+
+#define SET_FLAG( Y, X ) mTreeFlags[ Y ]. X = true; mSkelFlags. X = true;
+
 //==============================================================================
 Skeleton::Properties::Properties(
     const std::string& _name,
@@ -304,8 +309,8 @@ double Skeleton::getTimeStep() const
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
   mSkeletonP.mGravity = _gravity;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
+  SET_ALL_FLAGS(mGravityForces);
+  SET_ALL_FLAGS(mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -1390,7 +1395,20 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   if(nullptr == _newBodyNode->getParentBodyNode())
   {
     mRootBodyNodes.push_back(_newBodyNode);
+    _newBodyNode->mTreeIndex = mRootBodyNodes.size()-1;
+    _newBodyNode->mIndexInTree = 0;
+    mTreeFlags.push_back(DirtyFlags());
+    mTreeFlags.back().mBodyNodes.push_back(_newBodyNode);
   }
+  else
+  {
+    size_t tree = _newBodyNode->getParentBodyNode()->getTreeIndex();
+    _newBodyNode->mTreeIndex = tree;
+    DataCache& cache = mTreeCache[tree];
+    cache.mBodyNodes.push_back(_newBodyNode);
+    _newBodyNode->mIndexInTree = cache.mBodyNodes.size()-1;
+  }
+
   _newBodyNode->mSkeleton = getPtr();
   _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
@@ -1406,10 +1424,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   _newBodyNode->init(getPtr());
 
   updateTotalMass();
-  updateCacheDimensions();
-  // TODO(MXG): Decide if the following are necessary
-//  clearExternalForces();
-//  resetForces();
+  updateCacheDimensions(_newBodyNode->mTreeIndex);
 
 #ifndef NDEBUG // Debug mode
   for(size_t i=0; i<mBodyNodes.size(); ++i)
@@ -1418,9 +1433,55 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
     {
       dterr << "[Skeleton::registerBodyNode] BodyNode named ["
             << mBodyNodes[i]->getName() << "] in Skeleton [" << getName()
-            << "] is mistaken about its index ( " << i << " : "
-            << mBodyNodes[i]->mIndexInSkeleton << " ). Please report this as "
+            << "] is mistaken about its index in the Skeleton ( " << i << " : "
+            << mBodyNodes[i]->mIndexInSkeleton << "). Please report this as "
             << "a bug!\n";
+      assert(false);
+    }
+  }
+
+  for(size_t i=0; i<mTreeCache.size(); ++i)
+  {
+    const DataCache& cache = mTreeCache[i];
+    for(size_t j=0; j<cache.mBodyNodes.size(); ++j)
+    {
+      BodyNode* bn = cache.mBodyNodes[j];
+      if(bn->mTreeIndex != i)
+      {
+        dterr << "[Skeleton::registerBodyNode] BodyNode named ["
+              << bn->getName() << "] in Skeleton [" << getName() << "] is "
+              << "mistaken about its tree's index (" << i << " : "
+              << bn->mTreeIndex << "). Please report this as a bug!\n";
+        assert(false);
+      }
+
+      if(bn->mIndexInTree != j)
+      {
+        dterr << "[Skeleton::registerBodyNode] BodyNode named ["
+              << bn->getName() << "] in Skeleton [" << getName() << "] is "
+              << "mistaken about its index in the tree (" << j << " : "
+              << bn->mIndexInTree << "). Please report this as a bug!\n";
+        assert(false);
+      }
+    }
+  }
+
+  for(size_t i=0; i<mRootBodyNodes.size(); ++i)
+  {
+    BodyNode* bn = mRootBodyNodes[i];
+    if(bn->mTreeIndex != i)
+    {
+      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
+            << bn->getName() << "] disagrees with mRootBodyNodes (" << i
+            << " : " << bn->mTreeIndex << "). Please report this as a bug!\n";
+      assert(false);
+    }
+
+    if(bn->mIndexInTree != 0)
+    {
+      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
+            << bn->getName() << "] disagrees about its root node status ("
+            << bn->mIndexInTree << "). Please report this as a bug!\n";
       assert(false);
     }
   }
@@ -1457,13 +1518,54 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
-  size_t index = _oldBodyNode->getIndex();
+  size_t index = _oldBodyNode->getIndexInSkeleton();
   assert(mBodyNodes[index] == _oldBodyNode);
   mBodyNodes.erase(mBodyNodes.begin()+index);
   for(size_t i=index; i < mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mBodyNodes[i];
     bn->mIndexInSkeleton = i;
+  }
+
+  if(nullptr == _oldBodyNode->getParentBodyNode())
+  {
+    // If the parent of this BodyNode is a nullptr, then this is the root of its
+    // tree. If the root of the tree is being removed, then the tree itself
+    // should be destroyed.
+
+    // There is no way that any child BodyNodes of this root BodyNode are still
+    // registered, because the BodyNodes always get unregistered from leaf to
+    // root.
+
+    size_t tree = _oldBodyNode->getTreeIndex();
+    assert(mRootBodyNodes[tree] == _oldBodyNode);
+    mRootBodyNodes.erase(mRootBodyNodes.begin() + tree);
+    mTreeFlags.erase(mTreeFlags.begin() + tree);
+    assert(mTreeCache[tree].mBodyNodes.size() == 1);
+    mTreeCache.erase(mTreeCache.begin() + tree);
+
+    // Decrease the tree index of every BodyNode whose tree index is higher than
+    // the one which is being removed. None of the BodyNodes that predate the
+    // current one can have a higher tree index, so they can be ignored.
+    for(size_t i=index; i < mBodyNodes.size(); ++i)
+    {
+      BodyNode* bn = mBodyNodes[i];
+      if(bn->mTreeIndex > tree)
+        --bn->mTreeIndex;
+    }
+  }
+  else
+  {
+    size_t tree = _oldBodyNode->getTreeIndex();
+    size_t indexInTree = _oldBodyNode->getIndexInTree();
+    assert(mTreeCache[tree].mBodyNodes[indexInTree] == _oldBodyNode);
+    mTreeCache[tree].mBodyNodes.erase(
+          mTreeCache[tree].mBodyNodes.begin() + indexInTree);
+
+    for(size_t i=indexInTree; i<mTreeCache[tree].mBodyNodes.size(); ++i)
+      mTreeCache[tree].mBodyNodes[i]->mIndexInTree = i;
+
+    updateCacheDimensions(tree);
   }
 
   SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(_oldBodyNode);
@@ -1732,7 +1834,7 @@ void Skeleton::updateTotalMass()
 }
 
 //==============================================================================
-void Skeleton::updateCacheDimensions()
+void Skeleton::updateCacheDimensions(size_t _treeIdx)
 {
   size_t dof = getNumDofs();
   mM    = Eigen::MatrixXd::Zero(dof, dof);
@@ -1744,7 +1846,6 @@ void Skeleton::updateCacheDimensions()
   mCg   = Eigen::VectorXd::Zero(dof);
   mFext = Eigen::VectorXd::Zero(dof);
   mFc   = Eigen::VectorXd::Zero(dof);
-  mFd   = Eigen::VectorXd::Zero(dof);
 
   notifyArticulatedInertiaUpdate();
 }
@@ -2163,10 +2264,6 @@ void Skeleton::updateExternalForces() const
 //==============================================================================
 void Skeleton::computeForwardDynamics()
 {
-  //
-//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
-
-  //
   computeForwardDynamicsRecursionPartB();
 }
 
@@ -2682,6 +2779,22 @@ Eigen::MatrixXd Skeleton::getWorldCOMJacobian()
 Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv()
 {
   return getCOMLinearJacobianDeriv();
+}
+
+//==============================================================================
+Skeleton::DirtyFlags::DirtyFlags()
+  : mArticulatedInertia(true),
+    mMassMatrix(true),
+    mAugMassMatrix(true),
+    mInvMassMatrix(true),
+    mInvAugMassMatrix(true),
+    mGravityForces(true),
+    mCoriolisForces(true),
+    mCoriolisAndGravityForces(true),
+    mExternalForces(true),
+    mDampingForces(true)
+{
+  // Do nothing
 }
 
 }  // namespace dynamics

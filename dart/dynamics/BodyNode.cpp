@@ -53,6 +53,10 @@
 namespace dart {
 namespace dynamics {
 
+#define SET_SKEL_FLAGS( X ) SkeletonPtr skel = getSkeleton();                  \
+                            skel->mTreeFlags[mTreeIndex]. X = true;            \
+                            skel->mSkelFlags. X = true;
+
 //==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
 
@@ -565,9 +569,21 @@ std::shared_ptr<const Skeleton> BodyNode::getSkeleton() const
 }
 
 //==============================================================================
-size_t BodyNode::getIndex() const
+size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
+}
+
+//==============================================================================
+size_t BodyNode::getIndexInTree() const
+{
+  return mIndexInTree;
+}
+
+//==============================================================================
+size_t BodyNode::getTreeIndex() const
+{
+  return mTreeIndex;
 }
 
 //==============================================================================
@@ -1326,9 +1342,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
 
   mFext += math::dAdInvT(T, F);
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  SET_SKEL_FLAGS(mExternalForces);
 }
 
 //==============================================================================

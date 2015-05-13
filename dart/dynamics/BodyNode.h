@@ -318,7 +318,13 @@ public:
   std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Return the index of this BodyNode within its Skeleton
-  size_t getIndex() const;
+  size_t getIndexInSkeleton() const;
+
+  /// Return the index of this BodyNode within its tree
+  size_t getIndexInTree() const;
+
+  /// Return the index of the tree that this BodyNode belongs to
+  size_t getTreeIndex() const;
 
   /// Set _joint as the parent Joint of the BodyNode
   // TODO(MXG): Remove this along with the public constructors of Joint and
@@ -1319,6 +1325,12 @@ protected:
 
   /// Index of this BodyNode in its Skeleton
   size_t mIndexInSkeleton;
+
+  /// Index of this BodyNode in its Tree
+  size_t mIndexInTree;
+
+  /// Index of this BodyNode's tree
+  size_t mTreeIndex;
 
   /// Parent joint
   Joint* mParentJoint;

@@ -322,7 +322,7 @@ bool Joint::isPositionLimited() const
 //==============================================================================
 size_t Joint::getJointIndex() const
 {
-  return mChildBodyNode->getIndex();
+  return mChildBodyNode->getIndexInSkeleton();
 }
 
 //==============================================================================
@@ -393,9 +393,7 @@ DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
 //==============================================================================
 void Joint::updateArticulatedInertia() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
-  if(skel && skel->mIsArticulatedInertiaDirty)
-      skel->updateArticulatedInertia();
+  mChildBodyNode->getArticulatedInertia();
 }
 
 //==============================================================================
