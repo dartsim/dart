@@ -470,11 +470,6 @@ protected:
 
   /// \}
 
-protected:
-
-  /// Empty Jacobian to return by reference
-  math::Jacobian mJacobian;
-
 private:
 
   /// Used by getDofName()

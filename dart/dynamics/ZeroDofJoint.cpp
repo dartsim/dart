@@ -55,7 +55,6 @@ ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
 ZeroDofJoint::ZeroDofJoint(const std::string& _name)
   : Joint(_name)
 {
-  mJacobian.resize(6,0);
   // Do nothing
 }
 

@@ -239,6 +239,18 @@ public:
   const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
 
   // Documentation inherited
+  const std::vector<BodyNode*>& getBodyNodes() override;
+
+  // Documentation inherited
+  std::vector<const BodyNode*> getBodyNodes() const override;
+
+  /// Get the BodyNodes belonging to a tree in this Skeleton
+  const std::vector<BodyNode*>& getTreeBodyNodes(size_t _treeIdx);
+
+  /// Get the BodyNodes belonging to a tree in this Skeleton
+  std::vector<const BodyNode*> getTreeBodyNodes(size_t _treeIdx) const;
+
+  // Documentation inherited
   size_t getNumJoints() const override;
 
   // Documentation inherited
@@ -261,6 +273,12 @@ public:
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
+
+  /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
+  const std::vector<DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx);
+
+  /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
+  std::vector<const DegreeOfFreedom*> getTreeDofs(size_t _treeIdx) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -980,9 +998,6 @@ protected:
   /// by DegreeOfFreedom.
   DEPRECATED(4.3)
   std::vector<GenCoordInfo> mGenCoordInfos;
-
-  /// List of root BodyNodes in the Skeleton
-  std::vector<BodyNode*> mRootBodyNodes;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;

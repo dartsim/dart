@@ -455,8 +455,8 @@ void SoftBodyNode::clearConstraintImpulse()
 void SoftBodyNode::checkArticulatedInertiaUpdate() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if(skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
-    updateArtInertia(skel->getTimeStep());
+  if(skel && skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
+    skel->updateArticulatedInertia(mTreeIndex);
 }
 
 //==============================================================================
@@ -591,7 +591,7 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   for (auto& pointMass : mPointMasses)
     pointMass->updateArtInertiaFD(_timeStep);
 
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
 
   // Set spatial inertia to the articulated body inertia
   mArtInertia = mI;
@@ -766,7 +766,7 @@ void SoftBodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col)
+void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
 {
   BodyNode::aggregateMassMatrix(_MCol, _col);
 //  //------------------------ PointMass Part ------------------------------------
@@ -803,14 +803,14 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col)
 //  int dof = mParentJoint->getNumDofs();
 //  if (dof > 0)
 //  {
-//    int iStart = mParentJoint->getIndexInSkeleton(0);
+//    int iStart = mParentJoint->getIndexInTree(0);
 //    _MCol->block(iStart, _col, dof, 1).noalias()
 //        = mParentJoint->getLocalJacobian().transpose() * mM_F;
 //  }
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
+void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                           double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -848,7 +848,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    int iStart = mParentJoint->getIndexInTree(0);
 
     // TODO(JS): Not recommended to use Joint::getAccelerations
     _MCol.block(iStart, _col, dof, 1).noalias()
@@ -929,7 +929,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, int _col)
+void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
 {
   if (mParentBodyNode)
   {
@@ -961,7 +961,7 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, int _col)
 
 //==============================================================================
 void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol,
-                                             int _col,
+                                             size_t _col,
                                              double _timeStep)
 {
   BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
@@ -1032,7 +1032,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    int iStart = mParentJoint->getIndexInTree(0);
     _g.segment(iStart, nGenCoords) = g;
   }
 }
@@ -1085,7 +1085,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 //  if (nGenCoords > 0)
 //  {
 //    Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-//    int iStart = mParentJoint->getIndexInSkeleton(0);
+//    int iStart = mParentJoint->getIndexInTree(0);
 //    _Cg->segment(iStart, nGenCoords) = Cg;
 //  }
 }
@@ -1119,7 +1119,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
   {
     Eigen::VectorXd Fext
         = mParentJoint->getLocalJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getIndexInSkeleton(0);
+    int iStart = mParentJoint->getIndexInTree(0);
     _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }

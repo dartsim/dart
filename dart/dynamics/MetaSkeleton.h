@@ -96,6 +96,12 @@ public:
   /// Get const BodyNode whose index is _idx
   virtual const BodyNode* getBodyNode(size_t _idx) const = 0;
 
+  /// Get all the BodyNodes that are held by this MetaSkeleton
+  virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
+
+  /// Get all the BodyNodes that are held by this MetaSkeleton
+  virtual std::vector<const BodyNode*> getBodyNodes() const = 0;
+
   /// Get number of Joints
   virtual size_t getNumJoints() const = 0;
 

@@ -303,7 +303,8 @@ void BodyNode::setMass(double _mass)
 
   notifyArticulatedInertiaUpdate();
   SkeletonPtr skel = getSkeleton();
-  skel->updateTotalMass();
+  if(skel)
+    skel->updateTotalMass();
 }
 
 //==============================================================================
@@ -347,6 +348,9 @@ void BodyNode::setInertia(const Inertia& _inertia)
   mBodyP.mInertia = _inertia;
 
   notifyArticulatedInertiaUpdate();
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->updateTotalMass();
 }
 
 //==============================================================================
@@ -359,7 +363,7 @@ const Inertia& BodyNode::getInertia() const
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if( CHECK_FLAG(mArticulatedInertia) )
+  if( skel && CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia(mTreeIndex);
 
   return mArtInertia;
@@ -369,8 +373,8 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if( CHECK_FLAG(mArticulatedInertia) )
-    skel->updateArticulatedInertia();
+  if( skel && CHECK_FLAG(mArticulatedInertia) )
+    skel->updateArticulatedInertia(mTreeIndex);
 
   return mArtInertiaImplicit;
 }
@@ -1574,10 +1578,13 @@ void BodyNode::notifyTransformUpdate()
   mNeedTransformUpdate = true;
 
   SkeletonPtr skel = getSkeleton();
-  SET_FLAGS(mCoriolisForces);
-  SET_FLAGS(mGravityForces);
-  SET_FLAGS(mCoriolisAndGravityForces);
-  SET_FLAGS(mExternalForces);
+  if(skel)
+  {
+    SET_FLAGS(mCoriolisForces);
+    SET_FLAGS(mGravityForces);
+    SET_FLAGS(mCoriolisAndGravityForces);
+    SET_FLAGS(mExternalForces);
+  }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
@@ -1602,8 +1609,11 @@ void BodyNode::notifyVelocityUpdate()
   mIsPartialAccelerationDirty = true;
 
   SkeletonPtr skel = getSkeleton();
-  SET_FLAGS(mCoriolisForces);
-  SET_FLAGS(mCoriolisAndGravityForces);
+  if(skel)
+  {
+    SET_FLAGS(mCoriolisForces);
+    SET_FLAGS(mCoriolisAndGravityForces);
+  }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
@@ -2093,7 +2103,7 @@ bool BodyNode::isImpulseReponsible() const
 bool BodyNode::isReactive() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if (skel->isMobile() && getNumDependentGenCoords() > 0)
+  if (skel && skel->isMobile() && getNumDependentGenCoords() > 0)
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
@@ -2240,7 +2250,7 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 }
 
 //==============================================================================
-void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial)
 {
   //
@@ -2256,7 +2266,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
 
   // Project the spatial quantity to generalized coordinates
   size_t iStart = mParentJoint->getIndexInTree(0);
-  _generalized->segment(iStart, mParentJoint->getNumDofs())
+  _generalized.segment(iStart, mParentJoint->getNumDofs())
       = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
 }
 

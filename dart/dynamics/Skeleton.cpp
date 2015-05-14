@@ -379,13 +379,13 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 //==============================================================================
 BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
 {
-  return getVectorObjectIfAvailable(_treeIdx, mRootBodyNodes);
+  return mTreeCache[_treeIdx].mBodyNodes[0];
 }
 
 //==============================================================================
 const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
 {
-  return getVectorObjectIfAvailable(_treeIdx, mRootBodyNodes);
+  return mTreeCache[_treeIdx].mBodyNodes[0];
 }
 
 //==============================================================================
@@ -433,6 +433,41 @@ SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
 const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
   return mNameMgrForSoftBodyNodes.getObject(_name);
+}
+
+//==============================================================================
+template <class T>
+static std::vector<const T*> convertToConstVector(const std::vector<T*>& vec)
+{
+  std::vector<const T*> const_vec;
+  const_vec.reserve(vec.size());
+  for(size_t i=0; i<vec.size(); ++i)
+    const_vec.push_back(vec[i]);
+  return const_vec;
+}
+
+//==============================================================================
+const std::vector<BodyNode*>& Skeleton::getBodyNodes()
+{
+  return mSkelCache.mBodyNodes;
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::getBodyNodes() const
+{
+  return convertToConstVector<BodyNode>(mSkelCache.mBodyNodes);
+}
+
+//==============================================================================
+const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
+{
+  return mTreeCache[_treeIdx].mBodyNodes;
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::getTreeBodyNodes(size_t _treeIdx) const
+{
+  return convertToConstVector<BodyNode>(mTreeCache[_treeIdx].mBodyNodes);
 }
 
 //==============================================================================
@@ -484,6 +519,18 @@ const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 }
 
 //==============================================================================
+const std::vector<DegreeOfFreedom*>& Skeleton::getTreeDofs(size_t _treeIdx)
+{
+  return mTreeCache[_treeIdx].mDofs;
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> Skeleton::getTreeDofs(size_t _treeIdx) const
+{
+  return convertToConstVector<DegreeOfFreedom>(mTreeCache[_treeIdx].mDofs);
+}
+
+//==============================================================================
 Marker* Skeleton::getMarker(const std::string& _name)
 {
   return mNameMgrForMarkers.getObject(_name);
@@ -513,6 +560,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
   mSkelCache.mBodyNodes.clear();
+  mTreeCache.clear();
   mNameMgrForBodyNodes.clear();
   mNameMgrForJoints.clear();
   mSoftBodyNodes.clear();
@@ -1443,11 +1491,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   mSkelCache.mBodyNodes.push_back(_newBodyNode);
   if(nullptr == _newBodyNode->getParentBodyNode())
   {
-    mRootBodyNodes.push_back(_newBodyNode);
-    _newBodyNode->mTreeIndex = mRootBodyNodes.size()-1;
     _newBodyNode->mIndexInTree = 0;
     mTreeCache.push_back(DataCache());
     mTreeCache.back().mBodyNodes.push_back(_newBodyNode);
+    _newBodyNode->mTreeIndex = mTreeCache.size()-1;
   }
   else
   {
@@ -1514,26 +1561,6 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
       }
     }
   }
-
-  for(size_t i=0; i<mRootBodyNodes.size(); ++i)
-  {
-    BodyNode* bn = mRootBodyNodes[i];
-    if(bn->mTreeIndex != i)
-    {
-      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-            << bn->getName() << "] disagrees with mRootBodyNodes (" << i
-            << " : " << bn->mTreeIndex << "). Please report this as a bug!\n";
-      assert(false);
-    }
-
-    if(bn->mIndexInTree != 0)
-    {
-      dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-            << bn->getName() << "] disagrees about its root node status ("
-            << bn->mIndexInTree << "). Please report this as a bug!\n";
-      assert(false);
-    }
-  }
 #endif // ------- Debug mode
 
   _newBodyNode->mStructuralChangeSignal.raise(_newBodyNode);
@@ -1595,8 +1622,6 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     // root.
 
     size_t tree = _oldBodyNode->getTreeIndex();
-    assert(mRootBodyNodes[tree] == _oldBodyNode);
-    mRootBodyNodes.erase(mRootBodyNodes.begin() + tree);
     assert(mTreeCache[tree].mBodyNodes.size() == 1);
     assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
     mTreeCache.erase(mTreeCache.begin() + tree);
@@ -2620,12 +2645,12 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
        it != cache.mBodyNodes.rend(); ++it)
   {
     (*it)->aggregateSpatialToGeneralized(
-          &cache.mFc, (*it)->getConstraintImpulse());
+          cache.mFc, (*it)->getConstraintImpulse());
   }
 
   // Joint constraint impulses
   for (size_t i = 0; i < dof; ++i)
-    cache.mFc[i] = cache.mDofs[i]->getConstraintImpulse();
+    cache.mFc[i] += cache.mDofs[i]->getConstraintImpulse();
 
   // Get force by dividing the impulse by the time step
   cache.mFc = cache.mFc / mSkeletonP.mTimeStep;
@@ -2795,14 +2820,36 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                  const Eigen::Vector6d& _imp)
 {
-  // Set impulse to _bodyNode
-  if(_bodyNode)
-    _bodyNode->mConstraintImpulse = _imp;
+  if(nullptr == _bodyNode)
+  {
+    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
+    assert(false);
+    return;
+  }
 
-  updateBiasImpulse(_bodyNode);
+  assert(getNumDofs() > 0);
 
-  if(_bodyNode)
-    _bodyNode->mConstraintImpulse.setZero();
+  // This skeleton should contain _bodyNode
+  assert(_bodyNode->getSkeleton().get() == this);
+
+#ifndef NDEBUG
+  // All the constraint impulse should be zero
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+#endif
+
+  // Set impulse of _bodyNode
+  _bodyNode->mConstraintImpulse = _imp;
+
+  // Prepare cache data
+  BodyNode* it = _bodyNode;
+  while (it != nullptr)
+  {
+    it->updateBiasImpulse();
+    it = it->getParentBodyNode();
+  }
+
+  _bodyNode->mConstraintImpulse.setZero();
 }
 
 //==============================================================================

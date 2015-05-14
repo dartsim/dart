@@ -99,7 +99,7 @@ void DegreeOfFreedom::setCommand(double _command)
 //==============================================================================
 double DegreeOfFreedom::getCommand() const
 {
-  mJoint->getCommand(mIndexInJoint);
+  return mJoint->getCommand(mIndexInJoint);
 }
 
 //==============================================================================

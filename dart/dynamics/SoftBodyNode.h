@@ -295,27 +295,27 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateMassMatrix();
+  virtual void updateMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
-                                      double _timeStep);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+                                      double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateInvMassMatrix();
+  virtual void updateInvMassMatrix() override;
 
   // Documentation inherited.
-  virtual void updateInvAugMassMatrix();
+  virtual void updateInvAugMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, int _col);
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, int _col,
-                                         double _timeStep);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+                                         double _timeStep) override;
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
@@ -323,22 +323,22 @@ protected:
 
   // Documentation inherited.
   virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
-                                           const Eigen::Vector3d& _gravity);
+                                           const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void updateCombinedVector();
+  virtual void updateCombinedVector() override;
 
   // Documentation inherited.
   virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
-                                       const Eigen::Vector3d& _gravity);
+                                       const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
 
   /// \}
 
   // Documentation inherited.
-  virtual void clearExternalForces();
+  virtual void clearExternalForces() override;
 
   //--------------------------------------------------------------------------
   // Rendering

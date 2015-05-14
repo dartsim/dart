@@ -1259,7 +1259,7 @@ protected:
   virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   ///
-  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial);
 
   /// Update body Jacobian. getBodyJacobian() calls this function if
