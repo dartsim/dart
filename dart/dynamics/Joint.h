@@ -249,14 +249,21 @@ public:
   /// \sa ActuatorType
   bool isPositionLimited() const;
 
-  /// Set an unique index in skeleton of a generalized coordinate in this joint
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) = 0;
-
-  /// Get an unique index in skeleton of a generalized coordinate in this joint
+  /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
+  /// Get a unique index in the kinematic tree of a generalized coordinate in
+  /// this Joint
+  virtual size_t getIndexInTree(size_t _index) const = 0;
+
   /// Get the index of this Joint within its Skeleton
-  size_t getJointIndex() const;
+  size_t getJointIndexInSkeleton() const;
+
+  /// Get the index of this Joint within its tree
+  size_t getJointIndexInTree() const;
+
+  /// Get the index of the tree that this Joint belongs to
+  size_t getTreeIndex() const;
 
   /// Get number of generalized coordinates
   DEPRECATED(4.1)

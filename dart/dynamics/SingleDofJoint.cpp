@@ -192,25 +192,13 @@ size_t SingleDofJoint::getNumDofs() const
 }
 
 //==============================================================================
-void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
-{
-  if (_index != 0)
-  {
-    dterr << "[SingleDofJoint::setIndexInSkeleton] index[" << _index
-          << "] out of range" << std::endl;
-    return;
-  }
-
-  mDof->mIndexInSkeleton = _indexInSkeleton;
-}
-
-//==============================================================================
 size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[SingleDofJoint::getIndexInSkeleton] index (" << _index
+          << ") may only be 0\n";
+    assert(false);
     return 0;
   }
 
@@ -218,11 +206,25 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
+size_t SingleDofJoint::getIndexInTree(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "[SingleDofJoint::getIndexInTree] index (" << _index
+          << ") may only be 0\n";
+    assert(false);
+    return 0;
+  }
+
+  return mDof->mIndexInTree;
+}
+
+//==============================================================================
 DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 {
   if (0 == _index)
     return mDof;
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -230,7 +232,7 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
 {
   if (0 == _index)
     return mDof;
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -1886,7 +1888,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -1909,7 +1911,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;

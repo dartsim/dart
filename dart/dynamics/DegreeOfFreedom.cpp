@@ -73,9 +73,21 @@ size_t DegreeOfFreedom::getIndexInSkeleton() const
 }
 
 //==============================================================================
+size_t DegreeOfFreedom::getIndexInTree() const
+{
+  return mIndexInTree;
+}
+
+//==============================================================================
 size_t DegreeOfFreedom::getIndexInJoint() const
 {
   return mIndexInJoint;
+}
+
+//==============================================================================
+size_t DegreeOfFreedom::getTreeIndex() const
+{
+  return mJoint->getTreeIndex();
 }
 
 //==============================================================================
@@ -344,6 +356,24 @@ void DegreeOfFreedom::setForceUpperLimit(double _limit)
 double DegreeOfFreedom::getForceUpperLimit() const
 {
   return mJoint->getForceUpperLimit(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setConstraintImpulse(double _impulse)
+{
+  mJoint->setConstraintImpulse(mIndexInJoint, _impulse);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getConstraintImpulse() const
+{
+  return mJoint->getConstraintImpulse(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetConstraintImpulse()
+{
+  setConstraintImpulse(0.0);
 }
 
 //==============================================================================

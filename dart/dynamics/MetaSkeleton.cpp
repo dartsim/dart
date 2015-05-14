@@ -78,6 +78,23 @@ const DegreeOfFreedom* MetaSkeleton::getDof(size_t _idx) const
 }
 
 //==============================================================================
+const std::vector<DegreeOfFreedom*>& MetaSkeleton::getDofs()
+{
+  return mDofs;
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> MetaSkeleton::getDofs() const
+{
+  std::vector<const DegreeOfFreedom*> dofs;
+  dofs.reserve(mDofs.size());
+  for(const DegreeOfFreedom* dof : mDofs)
+    dofs.push_back(dof);
+
+  return dofs;
+}
+
+//==============================================================================
 static bool checkIndexArrayValidity(const MetaSkeleton* skel,
                                     const std::vector<size_t>& _indices,
                                     const std::string& _fname)

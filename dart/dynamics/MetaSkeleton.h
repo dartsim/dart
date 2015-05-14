@@ -109,10 +109,16 @@ public:
   size_t getNumDofs() const;
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  virtual DegreeOfFreedom* getDof(size_t _idx);
+  DegreeOfFreedom* getDof(size_t _idx);
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  virtual const DegreeOfFreedom* getDof(size_t _idx) const;
+  const DegreeOfFreedom* getDof(size_t _idx) const;
+
+  /// Get the vector of DegreesOfFreedom for this MetaSkeleton
+  const std::vector<DegreeOfFreedom*>& getDofs();
+
+  /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
+  std::vector<const DegreeOfFreedom*> getDofs() const;
 
   /// \}
 

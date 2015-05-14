@@ -204,6 +204,9 @@ public:
   /// Get number of soft body nodes.
   size_t getNumSoftBodyNodes() const;
 
+  /// Get the number of independent trees that this Skeleton contains
+  size_t getNumTrees() const;
+
   /// Get the root BodyNode of the tree whose index in this Skeleton is _treeIdx
   BodyNode* getRootBodyNode(size_t _treeIdx = 0);
 
@@ -562,16 +565,28 @@ public:
   /// constant-time O(1) operation for the Skeleton class.
   double getMass() const override;
 
+  /// Get the mass matrix of a specific tree in the Skeleton
+  const Eigen::MatrixXd& getMassMatrix(size_t _treeIdx) const;
+
   // Documentation inherited
   const Eigen::MatrixXd& getMassMatrix() const override;
+
+  /// Get the augmented mass matrix of a specific tree in the Skeleton
+  const Eigen::MatrixXd& getAugMassMatrix(size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::MatrixXd& getAugMassMatrix() const override;
 
-  /// Get inverse of mass matrix of the skeleton.
+  /// Get the inverse mass matrix of a specific tree in the Skeleton
+  const Eigen::MatrixXd& getInvMassMatrix(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::MatrixXd& getInvMassMatrix() const override;
 
-  /// Get inverse of augmented mass matrix of the skeleton.
+  /// Get the inverse augmented mass matrix of a tree
+  const Eigen::MatrixXd& getInvAugMassMatrix(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::MatrixXd& getInvAugMassMatrix() const override;
 
   /// Get Coriolis force vector of the skeleton.
@@ -579,7 +594,10 @@ public:
   DEPRECATED(4.2)
   const Eigen::VectorXd& getCoriolisForceVector() const;
 
-  /// Get Coriolis force vector of the skeleton.
+  /// Get the Coriolis force vector of a tree in this Skeleton
+  const Eigen::VectorXd& getCoriolisForces(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::VectorXd& getCoriolisForces() const override;
 
   /// Get gravity force vector of the skeleton.
@@ -587,7 +605,10 @@ public:
   DEPRECATED(4.2)
   const Eigen::VectorXd& getGravityForceVector() const;
 
-  /// Get gravity force vector of the skeleton.
+  /// Get the gravity forces for a tree in this Skeleton
+  const Eigen::VectorXd& getGravityForces(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::VectorXd& getGravityForces() const override;
 
   /// Get combined vector of Coriolis force and gravity force of the skeleton.
@@ -595,7 +616,10 @@ public:
   DEPRECATED(4.2)
   const Eigen::VectorXd& getCombinedVector() const;
 
-  /// Get combined vector of Coriolis force and gravity force of the skeleton.
+  /// Get the combined vector of Coriolis force and gravity force of a tree
+  const Eigen::VectorXd& getCoriolisAndGravityForces(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
 
   /// Get external force vector of the skeleton.
@@ -603,7 +627,10 @@ public:
   DEPRECATED(4.2)
   const Eigen::VectorXd& getExternalForceVector() const;
 
-  /// Get external force vector of the skeleton.
+  /// Get the external force vector of a tree in the Skeleton
+  const Eigen::VectorXd& getExternalForces(size_t _treeIdx) const;
+
+  // Documentation inherited
   const Eigen::VectorXd& getExternalForces() const override;
 
   /// Get damping force of the skeleton.
@@ -614,7 +641,10 @@ public:
   DEPRECATED(4.2)
   const Eigen::VectorXd& getConstraintForceVector();
 
-  /// Get constraint force vector.
+  /// Get constraint force vector for a tree
+  const Eigen::VectorXd& getConstraintForces(size_t _treeIdx) const;
+
+  /// Get constraint force vector
   const Eigen::VectorXd& getConstraintForces() const override;
 
   // Documentation inherited
@@ -755,6 +785,8 @@ public:
   friend class DegreeOfFreedom;
 
 protected:
+  class DataCache;
+
   /// Constructor called by create()
   Skeleton(const Properties& _properties);
 
@@ -826,29 +858,42 @@ protected:
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
-  void notifyArticulatedInertiaUpdate();
+  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
 
   /// Update the computation for total mass
   void updateTotalMass();
 
-  /// Update the dimensions for various data structures, such as mass matrix
-  /// and force vector
+  /// Update the dimensions for a specific cache
+  void updateCacheDimensions(DataCache& _cache);
+
+  /// Update the dimensions for a tree's cache
   void updateCacheDimensions(size_t _treeIdx);
 
   /// Update the articulated inertia of a tree
-  void updateArticulatedInertia(size_t _tree);
+  void updateArticulatedInertia(size_t _tree) const;
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
 
+  /// Update the mass matrix of a tree
+  void updateMassMatrix(size_t _treeIdx) const;
+
   /// Update mass matrix of the skeleton.
   void updateMassMatrix() const;
+
+  void updateAugMassMatrix(size_t _treeIdx) const;
 
   /// Update augmented mass matrix of the skeleton.
   void updateAugMassMatrix() const;
 
+  /// Update the inverse mass matrix of a tree
+  void updateInvMassMatrix(size_t _treeIdx) const;
+
   /// Update inverse of mass matrix of the skeleton.
   void updateInvMassMatrix() const;
+
+  /// Update the inverse augmented mass matrix of a tree
+  void updateInvAugMassMatrix(size_t _treeIdx) const;
 
   /// Update inverse of augmented mass matrix of the skeleton.
   void updateInvAugMassMatrix() const;
@@ -858,6 +903,9 @@ protected:
   DEPRECATED(4.2)
   virtual void updateCoriolisForceVector();
 
+  /// Update Coriolis force vector for a tree in the Skeleton
+  void updateCoriolisForces(size_t _treeIdx) const;
+
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces() const;
 
@@ -865,6 +913,9 @@ protected:
   /// \remarks Please use updateGravityForces() instead.
   DEPRECATED(4.2)
   virtual void updateGravityForceVector();
+
+  /// Update the gravity force vector of a tree
+  void updateGravityForces(size_t _treeIdx) const;
 
   /// Update gravity force vector of the skeleton.
   void updateGravityForces() const;
@@ -874,6 +925,9 @@ protected:
   DEPRECATED(4.2)
   virtual void updateCombinedVector();
 
+  /// Update the combined vector for a tree in this Skeleton
+  void updateCoriolisAndGravityForces(size_t _treeIdx) const;
+
   /// Update combined vector of the skeleton.
   void updateCoriolisAndGravityForces() const;
 
@@ -882,9 +936,15 @@ protected:
   DEPRECATED(4.2)
   virtual void updateExternalForceVector();
 
+  /// Update external force vector to generalized forces for a tree
+  void updateExternalForces(size_t _treeIdx) const;
+
   // TODO(JS): Not implemented yet
   /// update external force vector to generalized forces.
   void updateExternalForces() const;
+
+  /// Compute the constraint force vector for a tree
+  const Eigen::VectorXd& computeConstraintForces(DataCache& cache) const;
 
 //  /// Update damping force vector.
 //  virtual void updateDampingForceVector();
@@ -920,9 +980,6 @@ protected:
   /// by DegreeOfFreedom.
   DEPRECATED(4.3)
   std::vector<GenCoordInfo> mGenCoordInfos;
-
-  /// List of BodyNodes in the Skeleton
-  std::vector<BodyNode*> mBodyNodes;
 
   /// List of root BodyNodes in the Skeleton
   std::vector<BodyNode*> mRootBodyNodes;
@@ -983,8 +1040,13 @@ protected:
 
   struct DataCache
   {
+    DirtyFlags mDirty;
+
     /// BodyNodes belonging to this tree
     std::vector<BodyNode*> mBodyNodes;
+
+    /// Degrees of Freedom belonging to this tree
+    std::vector<DegreeOfFreedom*> mDofs;
 
     /// Mass matrix cache
     Eigen::MatrixXd mM;
@@ -1015,11 +1077,7 @@ protected:
     Eigen::VectorXd mFc;
   };
 
-  mutable std::vector<DirtyFlags> mTreeFlags;
-
   mutable std::vector<DataCache> mTreeCache;
-
-  mutable DirtyFlags mSkelFlags;
 
   mutable DataCache mSkelCache;
 

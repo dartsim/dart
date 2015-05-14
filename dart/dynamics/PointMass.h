@@ -510,10 +510,10 @@ protected:
   void updateMassMatrix();
 
   ///
-  void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
 
   ///
-  void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+  void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
                               double _timeStep);
 
   ///
@@ -523,26 +523,26 @@ protected:
   void updateInvAugMassMatrix();
 
   ///
-  void aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col);
+  void aggregateInvMassMatrix(Eigen::MatrixXd& _MInvCol, int _col);
 
   ///
-  void aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
+  void aggregateInvAugMassMatrix(Eigen::MatrixXd& _MInvCol, int _col,
                                  double _timeStep);
 
   ///
-  void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  void aggregateGravityForceVector(Eigen::VectorXd& _g,
                                    const Eigen::Vector3d& _gravity);
 
   ///
   void updateCombinedVector();
 
   ///
-  void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  void aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized
   ///        coordinates recursively.
-  void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   /// \}
 

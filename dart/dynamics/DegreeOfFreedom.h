@@ -100,8 +100,14 @@ public:
   /// Get this DegreeOfFreedom's index within its Skeleton
   size_t getIndexInSkeleton() const;
 
+  /// Get this DegreeOfFreedom's index within its tree
+  size_t getIndexInTree() const;
+
   /// Get this DegreeOfFreedom's index within its Joint
   size_t getIndexInJoint() const;
+
+  /// Get the index of the tree that this DegreeOfFreedom belongs to
+  size_t getTreeIndex() const;
 
   // -- Command functions ------------------------------------------------------
 
@@ -242,6 +248,17 @@ public:
   /// Get the upper generalized force limit of this DegreeOfFreedom
   double getForceUpperLimit() const;
 
+  // -- Constraint Impulse -----------------------------------------------------
+
+  /// Set the constraint impulse of this generalized coordinate
+  void setConstraintImpulse(double _impulse);
+
+  /// Get the constraint impulse of this generalized coordinate
+  double getConstraintImpulse() const;
+
+  /// Set the constraint impulse of this generalized coordinate to zero
+  void resetConstraintImpulse();
+
   // -- Relationships ----------------------------------------------------------
 
   /// Get the Joint that this DegreeOfFreedom belongs to
@@ -281,6 +298,9 @@ protected:
 
   /// Index of this DegreeOfFreedom within its Skeleton
   size_t mIndexInSkeleton;
+
+  /// Index of this DegreeOfFreedom within its tree
+  size_t mIndexInTree;
 
   /// The joint that this DegreeOfFreedom belongs to
   Joint* mJoint;

@@ -174,10 +174,10 @@ public:
   size_t getNumDofs() const override;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  size_t getIndexInSkeleton(size_t _index) const override;
+  size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command

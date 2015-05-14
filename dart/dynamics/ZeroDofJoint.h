@@ -96,10 +96,10 @@ public:
   virtual size_t getNumDofs() const override;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t) override;
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const override;
+  virtual size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -469,6 +469,11 @@ protected:
       const Eigen::Vector6d& _spatial);
 
   /// \}
+
+protected:
+
+  /// Empty Jacobian to return by reference
+  math::Jacobian mJacobian;
 
 private:
 

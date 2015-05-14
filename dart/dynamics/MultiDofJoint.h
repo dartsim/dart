@@ -187,10 +187,10 @@ public:
   const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
+  virtual size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -1060,31 +1060,32 @@ size_t MultiDofJoint<DOF>::getNumDofs() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
-                                            size_t _indexInSkeleton)
-{
-  if (_index >= getNumDofs())
-  {
-    dterr << "[MultiDofJoint::setIndexInSkeleton] index[" << _index
-          << "] out of range" << std::endl;
-    return;
-  }
-
-  mDofs[_index]->mIndexInSkeleton = _indexInSkeleton;
-}
-
-//==============================================================================
-template <size_t DOF>
 size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[MultiDofJoint::getIndexInSkeleton] index (" << _index
+          << ") out of range. Must be less than " << getNumDofs() << "!\n";
+    assert(false);
     return 0;
   }
 
   return mDofs[_index]->mIndexInSkeleton;
+}
+
+//==============================================================================
+template <size_t DOF>
+size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::getIndexInTree] index (" << _index
+          << ") out of range. Must be less than " << getNumDofs() << "!\n";
+    assert(false);
+    return 0;
+  }
+
+  return mDofs[_index]->mIndexInTree;
 }
 
 //==============================================================================
@@ -2852,7 +2853,7 @@ void MultiDofJoint<DOF>::getInvMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDofs[0]->mIndexInSkeleton;
+  size_t iStart = mDofs[0]->mIndexInTree;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;
@@ -2876,7 +2877,7 @@ void MultiDofJoint<DOF>::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDofs[0]->mIndexInSkeleton;
+  size_t iStart = mDofs[0]->mIndexInTree;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;

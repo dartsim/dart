@@ -55,10 +55,11 @@
 namespace dart {
 namespace dynamics {
 
-#define SET_ALL_FLAGS( X ) for(auto& flags : mTreeFlags) flags. X = true;      \
-                           mSkelFlags. X = true;
+#define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
+                           mSkelCache.mDirty. X = true;
 
-#define SET_FLAG( Y, X ) mTreeFlags[ Y ]. X = true; mSkelFlags. X = true;
+#define SET_FLAG( Y, X ) mTreeCache[ Y ].mDirty. X = true;                      \
+                         mSkelCache.mDirty. X = true;
 
 //==============================================================================
 Skeleton::Properties::Properties(
@@ -107,7 +108,7 @@ std::shared_ptr<const Skeleton> Skeleton::getPtr() const
 //==============================================================================
 Skeleton::~Skeleton()
 {
-  for (BodyNode* bn : mBodyNodes)
+  for (BodyNode* bn : mSkelCache.mBodyNodes)
   {
     if(bn->getParentJoint())
       delete bn->getParentJoint();
@@ -296,7 +297,9 @@ void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
   mSkeletonP.mTimeStep = _timeStep;
-  notifyArticulatedInertiaUpdate();
+
+  for(size_t i=0; i<mTreeCache.size(); ++i)
+    notifyArticulatedInertiaUpdate(i);
 }
 
 //==============================================================================
@@ -324,7 +327,7 @@ void Skeleton::addBodyNode(BodyNode* _body)
 {
   assert(_body && _body->getParentJoint());
 
-  mBodyNodes.push_back(_body);
+  mSkelCache.mBodyNodes.push_back(_body);
   addEntryToBodyNodeNameMgr(_body);
   addMarkersOfBodyNode(_body);
   _body->mSkeleton = mPtr;
@@ -341,19 +344,25 @@ void Skeleton::addBodyNode(BodyNode* _body)
 //==============================================================================
 size_t Skeleton::getNumBodyNodes() const
 {
-  return mBodyNodes.size();
+  return mSkelCache.mBodyNodes.size();
 }
 
 //==============================================================================
 size_t Skeleton::getNumRigidBodyNodes() const
 {
-  return mBodyNodes.size() - mSoftBodyNodes.size();
+  return mSkelCache.mBodyNodes.size() - mSoftBodyNodes.size();
 }
 
 //==============================================================================
 size_t Skeleton::getNumSoftBodyNodes() const
 {
   return mSoftBodyNodes.size();
+}
+
+//==============================================================================
+size_t Skeleton::getNumTrees() const
+{
+  return mTreeCache.size();
 }
 
 //==============================================================================
@@ -382,13 +391,13 @@ const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
 //==============================================================================
 BodyNode* Skeleton::getBodyNode(size_t _idx)
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
 const BodyNode* Skeleton::getBodyNode(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+  return getVectorObjectIfAvailable<BodyNode*>(_idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
@@ -436,7 +445,8 @@ size_t Skeleton::getNumJoints() const
 //==============================================================================
 Joint* Skeleton::getJoint(size_t _idx)
 {
-  BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(_idx, mBodyNodes);
+  BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(
+                   _idx, mSkelCache.mBodyNodes);
   if (bn)
     return bn->getParentJoint();
 
@@ -494,15 +504,15 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   // Get root bodynodes that don't have parent bodynode
   std::vector<BodyNode*> rootBodyNodes;
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
   {
-    if (mBodyNodes[i]->getParentBodyNode() == nullptr)
-      rootBodyNodes.push_back(mBodyNodes[i]);
+    if (mSkelCache.mBodyNodes[i]->getParentBodyNode() == nullptr)
+      rootBodyNodes.push_back(mSkelCache.mBodyNodes[i]);
   }
 
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
-  mBodyNodes.clear();
+  mSkelCache.mBodyNodes.clear();
   mNameMgrForBodyNodes.clear();
   mNameMgrForJoints.clear();
   mSoftBodyNodes.clear();
@@ -526,15 +536,9 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   ///////////////////////////////////////////////////////////////////////////
 
-  // Set dimension of dynamics quantities
-  updateCacheDimensions();
-
   // Clear external/internal force
   clearExternalForces();
   resetForces();
-
-  // Calculate mass
-  updateTotalMass();
 }
 
 //==============================================================================
@@ -671,9 +675,9 @@ void Skeleton::setState(const Eigen::VectorXd& _state)
   size_t halfSize = _state.size() / 2;
   Joint* joint;
 
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
   {
-    joint = mBodyNodes[i]->getParentJoint();
+    joint = mSkelCache.mBodyNodes[i]->getParentJoint();
 
     dof = joint->getNumDofs();
 
@@ -700,8 +704,8 @@ Eigen::VectorXd Skeleton::getState() const
 //==============================================================================
 void Skeleton::integratePositions(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    mSkelCache.mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
 
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
@@ -713,8 +717,8 @@ void Skeleton::integratePositions(double _dt)
 //==============================================================================
 void Skeleton::integrateVelocities(double _dt)
 {
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    mSkelCache.mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
 
   for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
@@ -730,8 +734,8 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 {
   if (_updateTransforms)
   {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
     {
       (*it)->updateTransform();
     }
@@ -739,8 +743,8 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 
   if (_updateVels)
   {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
     {
       (*it)->updateVelocity();
       (*it)->updatePartialAcceleration();
@@ -749,8 +753,8 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 
   if (_updateAccs)
   {
-    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
     {
       (*it)->updateAccelerationID();
     }
@@ -1197,104 +1201,157 @@ double Skeleton::getMass() const
 }
 
 //==============================================================================
+const Eigen::MatrixXd& Skeleton::getMassMatrix(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mMassMatrix)
+    updateMassMatrix(_treeIdx);
+  return mTreeCache[_treeIdx].mM;
+}
+
+//==============================================================================
 const Eigen::MatrixXd& Skeleton::getMassMatrix() const
 {
-  if (mIsMassMatrixDirty)
+  if (mSkelCache.mDirty.mMassMatrix)
     updateMassMatrix();
-  return mM;
+  return mSkelCache.mM;
+}
+
+//==============================================================================
+const Eigen::MatrixXd& Skeleton::getAugMassMatrix(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mAugMassMatrix)
+    updateAugMassMatrix(_treeIdx);
+
+  return mTreeCache[_treeIdx].mAugM;
 }
 
 //==============================================================================
 const Eigen::MatrixXd& Skeleton::getAugMassMatrix() const
 {
-  if (mIsAugMassMatrixDirty)
+  if (mSkelCache.mDirty.mAugMassMatrix)
     updateAugMassMatrix();
 
-  return mAugM;
+  return mSkelCache.mAugM;
+}
+
+//==============================================================================
+const Eigen::MatrixXd& Skeleton::getInvMassMatrix(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mInvMassMatrix)
+    updateInvMassMatrix(_treeIdx);
+
+  return mTreeCache[_treeIdx].mInvM;
 }
 
 //==============================================================================
 const Eigen::MatrixXd& Skeleton::getInvMassMatrix() const
 {
-  if (mIsInvMassMatrixDirty)
+  if (mSkelCache.mDirty.mInvMassMatrix)
     updateInvMassMatrix();
 
-  return mInvM;
+  return mSkelCache.mInvM;
+}
+
+//==============================================================================
+const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mInvAugMassMatrix)
+    updateInvAugMassMatrix(_treeIdx);
+
+  return mTreeCache[_treeIdx].mInvAugM;
 }
 
 //==============================================================================
 const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix() const
 {
-  if (mIsInvAugMassMatrixDirty)
+  if (mSkelCache.mDirty.mInvAugMassMatrix)
     updateInvAugMassMatrix();
 
-  return mInvAugM;
+  return mSkelCache.mInvAugM;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getCoriolisForces(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mCoriolisForces)
+    updateCoriolisForces(_treeIdx);
+
+  return mTreeCache[_treeIdx].mCvec;
 }
 
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getCoriolisForces() const
 {
-  if (mIsCoriolisForcesDirty)
+  if (mSkelCache.mDirty.mCoriolisForces)
     updateCoriolisForces();
 
-  return mCvec;
+  return mSkelCache.mCvec;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getGravityForces(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mGravityForces)
+    updateGravityForces(_treeIdx);
+
+  return mTreeCache[_treeIdx].mG;
 }
 
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getGravityForces() const
 {
-  if (mIsGravityForcesDirty)
+  if (mSkelCache.mDirty.mGravityForces)
     updateGravityForces();
 
-  return mG;
+  return mSkelCache.mG;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mCoriolisAndGravityForces)
+    updateCoriolisAndGravityForces(_treeIdx);
+
+  return mTreeCache[_treeIdx].mCg;
 }
 
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces() const
 {
-  if (mIsCoriolisAndGravityForcesDirty)
+  if (mSkelCache.mDirty.mCoriolisAndGravityForces)
     updateCoriolisAndGravityForces();
 
-  return mCg;
+  return mSkelCache.mCg;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getExternalForces(size_t _treeIdx) const
+{
+  if (mTreeCache[_treeIdx].mDirty.mExternalForces)
+    updateExternalForces(_treeIdx);
+
+  return mTreeCache[_treeIdx].mFext;
 }
 
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getExternalForces() const
 {
-  if (mIsExternalForcesDirty)
+  if (mSkelCache.mDirty.mExternalForces)
     updateExternalForces();
 
-  return mFext;
+  return mSkelCache.mFext;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::getConstraintForces(size_t _treeIdx) const
+{
+  return computeConstraintForces(mTreeCache[_treeIdx]);
 }
 
 //==============================================================================
 const Eigen::VectorXd& Skeleton::getConstraintForces() const
 {
-  const size_t dof = getNumDofs();
-  mFc = Eigen::VectorXd::Zero(dof);
-
-  // Body constraint impulses
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->aggregateSpatialToGeneralized(&mFc, (*it)->getConstraintImpulse());
-  }
-
-  // Joint constraint impulses
-  size_t index = 0;
-  for (size_t i = 0; i < dof; ++i)
-  {
-    Joint* joint      = mDofs[i]->getJoint();
-    size_t localIndex = mDofs[i]->getIndexInJoint();
-
-    mFc[index++] += joint->getConstraintImpulse(localIndex);
-  }
-  assert(index == dof);
-
-  // Get force by devide impulse by time step
-  mFc = mFc / mSkeletonP.mTimeStep;
-
-  return mFc;
+  return computeConstraintForces(mSkelCache);
 }
 
 //==============================================================================
@@ -1352,16 +1409,6 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 //==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
   : mTotalMass(0.0),
-    mIsArticulatedInertiaDirty(true),
-    mIsMassMatrixDirty(true),
-    mIsAugMassMatrixDirty(true),
-    mIsInvMassMatrixDirty(true),
-    mIsInvAugMassMatrixDirty(true),
-    mIsCoriolisForcesDirty(true),
-    mIsGravityForcesDirty(true),
-    mIsCoriolisAndGravityForcesDirty(true),
-    mIsExternalForcesDirty(true),
-    mIsDampingForcesDirty(true),
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
@@ -1380,25 +1427,27 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
 #ifndef NDEBUG  // Debug mode
   std::vector<BodyNode*>::iterator repeat =
-      std::find(mBodyNodes.begin(), mBodyNodes.end(), _newBodyNode);
-  if(repeat != mBodyNodes.end())
+      std::find(mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(),
+                _newBodyNode);
+  if(repeat != mSkelCache.mBodyNodes.end())
   {
     dterr << "[Skeleton::registerBodyNode] Attempting to double-register the "
           << "BodyNode named [" << _newBodyNode->getName() << "] in the "
           << "Skeleton named [" << getName() << "]. Please report this as a "
           << "bug!\n";
+    assert(false);
     return;
   }
 #endif // -------- Debug mode
 
-  mBodyNodes.push_back(_newBodyNode);
+  mSkelCache.mBodyNodes.push_back(_newBodyNode);
   if(nullptr == _newBodyNode->getParentBodyNode())
   {
     mRootBodyNodes.push_back(_newBodyNode);
     _newBodyNode->mTreeIndex = mRootBodyNodes.size()-1;
     _newBodyNode->mIndexInTree = 0;
-    mTreeFlags.push_back(DirtyFlags());
-    mTreeFlags.back().mBodyNodes.push_back(_newBodyNode);
+    mTreeCache.push_back(DataCache());
+    mTreeCache.back().mBodyNodes.push_back(_newBodyNode);
   }
   else
   {
@@ -1410,7 +1459,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 
   _newBodyNode->mSkeleton = getPtr();
-  _newBodyNode->mIndexInSkeleton = mBodyNodes.size()-1;
+  _newBodyNode->mIndexInSkeleton = mSkelCache.mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
   registerJoint(_newBodyNode->getParentJoint());
 
@@ -1427,15 +1476,15 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
 #ifndef NDEBUG // Debug mode
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
+  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
   {
-    if(mBodyNodes[i]->mIndexInSkeleton != i)
+    if(mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i)
     {
       dterr << "[Skeleton::registerBodyNode] BodyNode named ["
-            << mBodyNodes[i]->getName() << "] in Skeleton [" << getName()
-            << "] is mistaken about its index in the Skeleton ( " << i << " : "
-            << mBodyNodes[i]->mIndexInSkeleton << "). Please report this as "
-            << "a bug!\n";
+            << mSkelCache.mBodyNodes[i]->getName() << "] in Skeleton ["
+            << getName() << "] is mistaken about its index in the Skeleton ( "
+            << i << " : " << mSkelCache.mBodyNodes[i]->mIndexInSkeleton
+            << "). Please report this as a bug!\n";
       assert(false);
     }
   }
@@ -1505,25 +1554,33 @@ void Skeleton::registerJoint(Joint* _newJoint)
   addEntryToJointNameMgr(_newJoint);
   _newJoint->registerDofs();
 
-  const size_t startDof = getNumDofs();
+  size_t tree = _newJoint->getChildBodyNode()->getTreeIndex();
+  std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
   for(size_t i = 0; i < _newJoint->getNumDofs(); ++i)
   {
     mDofs.push_back(_newJoint->getDof(i));
-    _newJoint->setIndexInSkeleton(i, startDof + i);
+    _newJoint->getDof(i)->mIndexInSkeleton = mDofs.size()-1;
+
+    treeDofs.push_back(_newJoint->getDof(i));
+    _newJoint->getDof(i)->mIndexInTree = treeDofs.size()-1;
   }
+
+  mSkelCache.mDofs = mDofs;
 }
 
 //==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
+  unregisterJoint(_oldBodyNode->getParentJoint());
+
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
   size_t index = _oldBodyNode->getIndexInSkeleton();
-  assert(mBodyNodes[index] == _oldBodyNode);
-  mBodyNodes.erase(mBodyNodes.begin()+index);
-  for(size_t i=index; i < mBodyNodes.size(); ++i)
+  assert(mSkelCache.mBodyNodes[index] == _oldBodyNode);
+  mSkelCache.mBodyNodes.erase(mSkelCache.mBodyNodes.begin()+index);
+  for(size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
   {
-    BodyNode* bn = mBodyNodes[i];
+    BodyNode* bn = mSkelCache.mBodyNodes[i];
     bn->mIndexInSkeleton = i;
   }
 
@@ -1540,19 +1597,21 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     size_t tree = _oldBodyNode->getTreeIndex();
     assert(mRootBodyNodes[tree] == _oldBodyNode);
     mRootBodyNodes.erase(mRootBodyNodes.begin() + tree);
-    mTreeFlags.erase(mTreeFlags.begin() + tree);
     assert(mTreeCache[tree].mBodyNodes.size() == 1);
+    assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
     mTreeCache.erase(mTreeCache.begin() + tree);
 
     // Decrease the tree index of every BodyNode whose tree index is higher than
     // the one which is being removed. None of the BodyNodes that predate the
     // current one can have a higher tree index, so they can be ignored.
-    for(size_t i=index; i < mBodyNodes.size(); ++i)
+    for(size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
     {
-      BodyNode* bn = mBodyNodes[i];
+      BodyNode* bn = mSkelCache.mBodyNodes[i];
       if(bn->mTreeIndex > tree)
         --bn->mTreeIndex;
     }
+
+    updateCacheDimensions(mSkelCache);
   }
   else
   {
@@ -1577,8 +1636,6 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
                                      mSoftBodyNodes.end(), soft),
                          mSoftBodyNodes.end());
   }
-
-  unregisterJoint(_oldBodyNode->getParentJoint());
 }
 
 //==============================================================================
@@ -1595,21 +1652,38 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
 
-  size_t firstDofIndex = (size_t)(-1);
+  size_t tree = _oldJoint->getChildBodyNode()->getTreeIndex();
+  std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+
+  size_t firstDofSkelIndex = (size_t)(-1);
+  size_t firstDofTreeIndex = (size_t)(-1);
   for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeObject(dof);
 
-    firstDofIndex = std::min(firstDofIndex, dof->getIndexInSkeleton());
+    firstDofSkelIndex = std::min(firstDofSkelIndex, dof->getIndexInSkeleton());
     mDofs.erase(std::remove(mDofs.begin(), mDofs.end(), dof), mDofs.end());
+
+    firstDofTreeIndex = std::min(firstDofTreeIndex, dof->getIndexInTree());
+    treeDofs.erase(
+          std::remove(treeDofs.begin(), treeDofs.end(), dof), treeDofs.end());
   }
 
-  for (size_t i = firstDofIndex; i < mDofs.size(); ++i)
+  for (size_t i = firstDofSkelIndex; i < mDofs.size(); ++i)
   {
     DegreeOfFreedom* dof = mDofs[i];
     dof->mIndexInSkeleton = i;
   }
+
+
+  for(size_t i = firstDofTreeIndex; i < treeDofs.size(); ++i)
+  {
+    DegreeOfFreedom* dof = treeDofs[i];
+    dof->mIndexInTree = i;
+  }
+
+  mSkelCache.mDofs = mDofs;
 }
 
 //==============================================================================
@@ -1796,8 +1870,8 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
   for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
     unregisterBodyNode(*rit);
 
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
-    mBodyNodes[i]->init(getPtr());
+  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
+    mSkelCache.mBodyNodes[i]->init(getPtr());
 
   return tree;
 }
@@ -1810,19 +1884,16 @@ void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
 }
 
 //==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate()
+void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
 {
-  if(mIsArticulatedInertiaDirty)
-    return;
-
-  mIsArticulatedInertiaDirty = true;
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisForcesDirty = true;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
+  SET_FLAG(_treeIdx, mArticulatedInertia);
+  SET_FLAG(_treeIdx, mMassMatrix);
+  SET_FLAG(_treeIdx, mAugMassMatrix);
+  SET_FLAG(_treeIdx, mInvMassMatrix);
+  SET_FLAG(_treeIdx, mInvAugMassMatrix);
+  SET_FLAG(_treeIdx, mCoriolisForces);
+  SET_FLAG(_treeIdx, mGravityForces);
+  SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -1834,214 +1905,353 @@ void Skeleton::updateTotalMass()
 }
 
 //==============================================================================
+void Skeleton::updateCacheDimensions(Skeleton::DataCache& _cache)
+{
+  size_t dof = _cache.mDofs.size();
+  _cache.mM        = Eigen::MatrixXd::Zero(dof, dof);
+  _cache.mAugM     = Eigen::MatrixXd::Zero(dof, dof);
+  _cache.mInvM     = Eigen::MatrixXd::Zero(dof, dof);
+  _cache.mInvAugM  = Eigen::MatrixXd::Zero(dof, dof);
+  _cache.mCvec     = Eigen::VectorXd::Zero(dof);
+  _cache.mG        = Eigen::VectorXd::Zero(dof);
+  _cache.mCg       = Eigen::VectorXd::Zero(dof);
+  _cache.mFext     = Eigen::VectorXd::Zero(dof);
+  _cache.mFc       = Eigen::VectorXd::Zero(dof);
+}
+
+//==============================================================================
 void Skeleton::updateCacheDimensions(size_t _treeIdx)
 {
-  size_t dof = getNumDofs();
-  mM    = Eigen::MatrixXd::Zero(dof, dof);
-  mAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvM = Eigen::MatrixXd::Zero(dof, dof);
-  mInvAugM = Eigen::MatrixXd::Zero(dof, dof);
-  mCvec = Eigen::VectorXd::Zero(dof);
-  mG    = Eigen::VectorXd::Zero(dof);
-  mCg   = Eigen::VectorXd::Zero(dof);
-  mFext = Eigen::VectorXd::Zero(dof);
-  mFc   = Eigen::VectorXd::Zero(dof);
+  updateCacheDimensions(mTreeCache[_treeIdx]);
+  updateCacheDimensions(mSkelCache);
 
-  notifyArticulatedInertiaUpdate();
+  notifyArticulatedInertiaUpdate(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::updateArticulatedInertia(size_t _tree) const
+{
+  DataCache& cache = mTreeCache[_tree];
+  for (std::vector<BodyNode*>::const_reverse_iterator it = cache.mBodyNodes.rbegin();
+       it != cache.mBodyNodes.rend(); ++it)
+  {
+    (*it)->updateArtInertia(mSkeletonP.mTimeStep);
+  }
+
+  cache.mDirty.mArticulatedInertia = false;
 }
 
 //==============================================================================
 void Skeleton::updateArticulatedInertia() const
 {
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
+  for(size_t i=0; i<mTreeCache.size(); ++i)
   {
-    (*it)->updateArtInertia(mSkeletonP.mTimeStep);
+    DataCache& cache = mTreeCache[i];
+    if(cache.mDirty.mArticulatedInertia)
+      updateArticulatedInertia(i);
   }
 
-  mIsArticulatedInertiaDirty = false;
+  mSkelCache.mDirty.mArticulatedInertia = false;
+}
+
+//==============================================================================
+void Skeleton::updateMassMatrix(size_t _treeIdx) const
+{
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mM.cols()) == dof
+         && static_cast<size_t>(cache.mM.rows()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mMassMatrix = false;
+    return;
+  }
+
+  cache.mM.setZero();
+
+  // Backup the original internal force
+  Eigen::VectorXd originalGenAcceleration = getAccelerations();
+
+  // Clear out the accelerations of the dofs in this tree so that we can set
+  // them to 1.0 one at a time to build up the mass matrix
+  for (size_t i = 0; i < dof; ++i)
+    cache.mDofs[i]->setAcceleration(0.0);
+
+  for (size_t j = 0; j < dof; ++j)
+  {
+    // Set the acceleration of this DOF to 1.0 while all the rest are 0.0
+    cache.mDofs[j]->setAcceleration(1.0);
+
+    // Prepare cache data
+    for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+         it != cache.mBodyNodes.end(); ++it)
+    {
+      (*it)->updateMassMatrix();
+    }
+
+    // Mass matrix
+    for (std::vector<BodyNode*>::const_reverse_iterator it =
+         cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
+    {
+      (*it)->aggregateMassMatrix(cache.mM, j);
+      size_t localDof = (*it)->mParentJoint->getNumDofs();
+      if (localDof > 0)
+      {
+        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+
+        if (iStart + localDof < j)
+          break;
+      }
+    }
+
+    // Set the acceleration of this DOF back to 0.0
+    cache.mDofs[j]->setAcceleration(0.0);
+  }
+  cache.mM.triangularView<Eigen::StrictlyUpper>() = cache.mM.transpose();
+
+  // Restore the original generalized accelerations
+  const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
+
+  cache.mDirty.mMassMatrix = false;
 }
 
 //==============================================================================
 void Skeleton::updateMassMatrix() const
 {
-  if (getNumDofs() == 0)
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mM.cols()) == dof
+         && static_cast<size_t>(mSkelCache.mM.rows()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mMassMatrix = false;
     return;
+  }
 
-  assert(static_cast<size_t>(mM.cols()) == getNumDofs()
-         && static_cast<size_t>(mM.rows()) == getNumDofs());
+  mSkelCache.mM.setZero();
 
-  mM.setZero();
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::MatrixXd& treeM = getMassMatrix(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      for(size_t j=0; j<nTreeDofs; ++j)
+      {
+        size_t ki = treeDofs[i]->getIndexInSkeleton();
+        size_t kj = treeDofs[j]->getIndexInSkeleton();
 
-  // Backup the original internal force
+        mSkelCache.mM(ki,kj) = treeM(i,j);
+      }
+    }
+  }
+
+  mSkelCache.mDirty.mMassMatrix = false;
+}
+
+//==============================================================================
+void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
+{
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mAugM.cols()) == dof
+         && static_cast<size_t>(cache.mAugM.rows()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mAugMassMatrix = false;
+    return;
+  }
+
+  cache.mAugM.setZero();
+
+  // Backup the origianl internal force
   Eigen::VectorXd originalGenAcceleration = getAccelerations();
 
-  size_t dof = getNumDofs();
-  Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
+  // Clear out the accelerations of the DOFs in this tree so that we can set
+  // them to 1.0 one at a time to build up the augmented mass matrix
+  for (size_t i = 0; i < dof; ++i)
+    cache.mDofs[i]->setAcceleration(0.0);
+
   for (size_t j = 0; j < dof; ++j)
   {
-    e[j] = 1.0;
-    // This const_cast is okay, because we will return the accelerations to
-    // their original values at the end of the function
-    const_cast<Skeleton*>(this)->setAccelerations(e);
+    // Set the acceleration of this DOF to 1.0 while all the rest are 0.0
+    cache.mDofs[j]->setAcceleration(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
+    for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+         it != cache.mBodyNodes.end(); ++it)
     {
       (*it)->updateMassMatrix();
     }
 
-    // Mass matrix
-    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
+    // Augmented Mass matrix
+    for (std::vector<BodyNode*>::const_reverse_iterator it =
+         cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
-      (*it)->aggregateMassMatrix(&mM, j);
+      (*it)->aggregateAugMassMatrix(cache.mAugM, j, mSkeletonP.mTimeStep);
       size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        size_t iStart = (*it)->mParentJoint->getIndexInSkeleton(0);
+        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j)
           break;
       }
     }
 
-    e[j] = 0.0;
+    // Set the acceleration of this DOF back to 0.0
+    cache.mDofs[j]->setAcceleration(0.0);
   }
-  mM.triangularView<Eigen::StrictlyUpper>() = mM.transpose();
+  cache.mAugM.triangularView<Eigen::StrictlyUpper>() = cache.mAugM.transpose();
 
-  // Restore the original generalized accelerations
+  // Restore the origianl internal force
   const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
 
-  mIsMassMatrixDirty = false;
+  cache.mDirty.mAugMassMatrix = false;
 }
 
 //==============================================================================
 void Skeleton::updateAugMassMatrix() const
 {
-  if (getNumDofs() == 0)
-    return;
-
-  assert(static_cast<size_t>(mAugM.cols()) == getNumDofs()
-         && static_cast<size_t>(mAugM.rows()) == getNumDofs());
-
-  mAugM.setZero();
-
-  // Backup the origianl internal force
-  Eigen::VectorXd originalGenAcceleration = getAccelerations();
-
-  int dof = getNumDofs();
-  Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j)
+  size_t dof = getNumDofs();
+  assert(static_cast<size_t>(mSkelCache.mAugM.cols()) == dof
+         && static_cast<size_t>(mSkelCache.mAugM.rows()) == dof);
+  if(dof == 0)
   {
-    e[j] = 1.0;
-    // This const_cast is okay, because we will return the accelerations to
-    // their original values at the end of the function
-    const_cast<Skeleton*>(this)->setAccelerations(e);
+    mSkelCache.mDirty.mMassMatrix = false;
+    return;
+  }
 
-    // Prepare cache data
-    for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-         it != mBodyNodes.end(); ++it)
-    {
-      (*it)->updateMassMatrix();
-    }
+  mSkelCache.mAugM.setZero();
 
-    // Mass matrix
-    //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-    //         it != mBodyNodes.end(); ++it)
-    for (int i = mBodyNodes.size() - 1; i > -1 ; --i)
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::MatrixXd& treeAugM = getAugMassMatrix(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
     {
-      mBodyNodes[i]->aggregateAugMassMatrix(&mAugM, j, mSkeletonP.mTimeStep);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
-      if (localDof > 0)
+      for(size_t j=0; j<nTreeDofs; ++j)
       {
-        int iStart =
-            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
-        if (iStart + localDof < j)
-          break;
+        size_t ki = treeDofs[i]->getIndexInSkeleton();
+        size_t kj = treeDofs[j]->getIndexInSkeleton();
+
+        mSkelCache.mAugM(ki,kj) = treeAugM(i,j);
       }
     }
-
-    e[j] = 0.0;
   }
-  mAugM.triangularView<Eigen::StrictlyUpper>() = mAugM.transpose();
 
-  // Restore the origianl internal force
-  const_cast<Skeleton*>(this)->setAccelerations(originalGenAcceleration);
-
-  mIsAugMassMatrixDirty = false;
+  mSkelCache.mDirty.mAugMassMatrix = false;
 }
 
 //==============================================================================
-void Skeleton::updateInvMassMatrix() const
+void Skeleton::updateInvMassMatrix(size_t _treeIdx) const
 {
-  if (getNumDofs() == 0)
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mInvM.cols()) == dof
+         && static_cast<size_t>(cache.mInvM.rows()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mInvMassMatrix = false;
     return;
-
-  assert(static_cast<size_t>(mInvM.cols()) == getNumDofs()
-         && static_cast<size_t>(mInvM.rows()) == getNumDofs());
+  }
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
-  // mInvM.setZero();
+  // cache.mInvM.setZero();
 
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
-  // Note: we do not need to update articulated inertias here, because they will
-  // be updated when BodyNode::updateInvMassMatrix() calls
-  // BodyNode::getArticulatedInertia()
+  // Clear out the forces of the dofs in this tree so that we can set them to
+  // 1.0 one at a time to build up the inverse mass matrix
+  for (size_t i = 0; i < dof; ++i)
+    cache.mDofs[i]->setForce(0.0);
 
-  int dof = getNumDofs();
-  Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j)
+  for (size_t j = 0; j < dof; ++j)
   {
-    e[j] = 1.0;
-    // This const_cast is okay, because we set the forces back to their original
-    // values at the end of this function
-    const_cast<Skeleton*>(this)->setForces(e);
+    // Set the force of this DOF to 1.0 while all the rest are 0.0
+    cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
+    for (std::vector<BodyNode*>::const_reverse_iterator it =
+         cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
       (*it)->updateInvMassMatrix();
     }
 
     // Inverse of mass matrix
-    //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-    //         it != mBodyNodes.end(); ++it)
-    for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+         it != cache.mBodyNodes.end(); ++it)
     {
-      mBodyNodes[i]->aggregateInvMassMatrix(&mInvM, j);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
+      (*it)->aggregateInvMassMatrix(cache.mInvM, j);
+      size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        int iStart =
-            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+
         if (iStart + localDof > j)
           break;
       }
     }
 
-    e[j] = 0.0;
+    // Set the force of this DOF back to 0.0
+    cache.mDofs[j]->setForce(0.0);
   }
-  mInvM.triangularView<Eigen::StrictlyLower>() = mInvM.transpose();
+  cache.mInvM.triangularView<Eigen::StrictlyLower>() = cache.mInvM.transpose();
 
-  // Restore the origianl internal force
+  // Restore the original internal force
   const_cast<Skeleton*>(this)->setForces(originalInternalForce);
 
-  mIsInvMassMatrixDirty = false;
+  cache.mDirty.mInvMassMatrix = false;
 }
 
 //==============================================================================
-void Skeleton::updateInvAugMassMatrix() const
+void Skeleton::updateInvMassMatrix() const
 {
-  if (getNumDofs() == 0)
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mInvM.cols()) == dof
+         && static_cast<size_t>(mSkelCache.mInvM.rows()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mInvMassMatrix = false;
     return;
+  }
 
-  assert(static_cast<size_t>(mInvAugM.cols()) == getNumDofs()
-         && static_cast<size_t>(mInvAugM.rows()) == getNumDofs());
+  mSkelCache.mInvM.setZero();
+
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::MatrixXd& treeInvM = getInvMassMatrix(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      for(size_t j=0; j<nTreeDofs; ++j)
+      {
+        size_t ki = treeDofs[i]->getIndexInSkeleton();
+        size_t kj = treeDofs[j]->getIndexInSkeleton();
+
+        mSkelCache.mInvM(ki,kj) = treeInvM(i,j);
+      }
+    }
+  }
+
+  mSkelCache.mDirty.mInvMassMatrix = false;
+}
+
+//==============================================================================
+void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
+{
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mInvAugM.cols()) == dof
+         && static_cast<size_t>(cache.mInvAugM.rows()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mInvAugMassMatrix = false;
+    return;
+  }
 
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // mInvM.setZero();
@@ -2049,46 +2259,82 @@ void Skeleton::updateInvAugMassMatrix() const
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
-  int dof = getNumDofs();
-  Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
-  for (int j = 0; j < dof; ++j)
+  // Clear out the forces of the dofs in this tree so that we can set them to
+  // 1.0 one at a time to build up the inverse augmented mass matrix
+  for (size_t i = 0; i < dof; ++i)
+    cache.mDofs[i]->setForce(0.0);
+
+  for (size_t j = 0; j < dof; ++j)
   {
-    e[j] = 1.0;
-    // This const_cast is okay, because we set the forces back to their original
-    // values at the end
-    const_cast<Skeleton*>(this)->setForces(e);
+    // Set the force of this DOF to 1.0 while all the rest are 0.0
+    cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-         it != mBodyNodes.rend(); ++it)
+    for (std::vector<BodyNode*>::const_reverse_iterator it =
+         cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
       (*it)->updateInvAugMassMatrix();
     }
 
-    // Inverse of mass matrix
-    //    for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-    //         it != mBodyNodes.end(); ++it)
-    for (size_t i = 0; i < mBodyNodes.size(); ++i)
+    // Inverse of augmented mass matrix
+    for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+         it != cache.mBodyNodes.end(); ++it)
     {
-      mBodyNodes[i]->aggregateInvAugMassMatrix(&mInvAugM, j, mSkeletonP.mTimeStep);
-      int localDof = mBodyNodes[i]->mParentJoint->getNumDofs();
+      (*it)->aggregateInvAugMassMatrix(cache.mInvAugM, j, mSkeletonP.mTimeStep);
+      size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        int iStart =
-            mBodyNodes[i]->mParentJoint->getIndexInSkeleton(0);
+        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+
         if (iStart + localDof > j)
           break;
       }
     }
 
-    e[j] = 0.0;
+    // Set the force of this DOF back to 0.0
+    cache.mDofs[j]->setForce(0.0);
   }
-  mInvAugM.triangularView<Eigen::StrictlyLower>() = mInvAugM.transpose();
+  cache.mInvAugM.triangularView<Eigen::StrictlyLower>() =
+      cache.mInvAugM.transpose();
 
-  // Restore the origianl internal force
+  // Restore the original internal force
   const_cast<Skeleton*>(this)->setForces(originalInternalForce);
 
-  mIsInvAugMassMatrixDirty = false;
+  cache.mDirty.mInvAugMassMatrix = false;
+}
+
+//==============================================================================
+void Skeleton::updateInvAugMassMatrix() const
+{
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mInvAugM.cols()) == dof
+         && static_cast<size_t>(mSkelCache.mInvAugM.rows()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mInvAugMassMatrix = false;
+    return;
+  }
+
+  mSkelCache.mInvAugM.setZero();
+
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::MatrixXd& treeInvAugM = getInvAugMassMatrix(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      for(size_t j=0; j<nTreeDofs; ++j)
+      {
+        size_t ki = treeDofs[i]->getIndexInSkeleton();
+        size_t kj = treeDofs[j]->getIndexInSkeleton();
+
+        mSkelCache.mInvAugM(ki,kj) = treeInvAugM(i,j);
+      }
+    }
+  }
+
+  mSkelCache.mDirty.mInvAugMassMatrix = false;
 }
 
 //==============================================================================
@@ -2098,28 +2344,60 @@ void Skeleton::updateCoriolisForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisForces() const
+void Skeleton::updateCoriolisForces(size_t _treeIdx) const
 {
-  if (getNumDofs() == 0)
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mCvec.size()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mCoriolisForces = false;
     return;
+  }
 
-  assert(static_cast<size_t>(mCvec.size()) == getNumDofs());
+  cache.mCvec.setZero();
 
-  mCvec.setZero();
-
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+       it != cache.mBodyNodes.end(); ++it)
   {
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
+  for (std::vector<BodyNode*>::const_reverse_iterator it =
+       cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateCoriolisForceVector(&mCvec);
+    (*it)->aggregateCoriolisForceVector(cache.mCvec);
   }
 
-  mIsCoriolisForcesDirty = false;
+  cache.mDirty.mCoriolisForces = false;
+}
+
+//==============================================================================
+void Skeleton::updateCoriolisForces() const
+{
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mCvec.size()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mCoriolisForces = false;
+    return;
+  }
+
+  mSkelCache.mCvec.setZero();
+
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::VectorXd& treeCvec = getCoriolisForces(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      size_t k = treeDofs[i]->getIndexInSkeleton();
+      mSkelCache.mCvec[k] = treeCvec[i];
+    }
+  }
+
+  mSkelCache.mDirty.mCoriolisForces = false;
 }
 
 //==============================================================================
@@ -2129,22 +2407,54 @@ void Skeleton::updateGravityForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateGravityForces() const
+void Skeleton::updateGravityForces(size_t _treeIdx) const
 {
-  if (getNumDofs() == 0)
-    return;
-
-  assert(static_cast<size_t>(mG.size()) == getNumDofs());
-
-  // Calcualtion mass matrix, M
-  mG.setZero();
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mG.size()) == dof);
+  if (dof == 0)
   {
-    (*it)->aggregateGravityForceVector(&mG, mSkeletonP.mGravity);
+    cache.mDirty.mGravityForces = false;
+    return;
   }
 
-  mIsGravityForcesDirty = false;
+  cache.mG.setZero();
+
+  for (std::vector<BodyNode*>::const_reverse_iterator it =
+       cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
+  {
+    (*it)->aggregateGravityForceVector(cache.mG, mSkeletonP.mGravity);
+  }
+
+  cache.mDirty.mGravityForces = false;
+}
+
+//==============================================================================
+void Skeleton::updateGravityForces() const
+{
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mG.size()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mGravityForces = false;
+    return;
+  }
+
+  mSkelCache.mG.setZero();
+
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::VectorXd& treeG = getGravityForces(tree);
+    std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      size_t k = treeDofs[i]->getIndexInSkeleton();
+      mSkelCache.mG[k] = treeG[i];
+    }
+  }
+
+  mSkelCache.mDirty.mGravityForces = false;
 }
 
 //==============================================================================
@@ -2154,27 +2464,60 @@ void Skeleton::updateCombinedVector()
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisAndGravityForces() const
+void Skeleton::updateCoriolisAndGravityForces(size_t _treeIdx) const
 {
-  if (getNumDofs() == 0)
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mCg.size()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mCoriolisAndGravityForces = false;
     return;
+  }
 
-  assert(static_cast<size_t>(mCg.size()) == getNumDofs());
+  cache.mCg.setZero();
 
-  mCg.setZero();
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
+       it != cache.mBodyNodes.end(); ++it)
   {
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
+  for (std::vector<BodyNode*>::const_reverse_iterator it =
+       cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateCombinedVector(&mCg, mSkeletonP.mGravity);
+    (*it)->aggregateCombinedVector(cache.mCg, mSkeletonP.mGravity);
   }
 
-  mIsCoriolisAndGravityForcesDirty = false;
+  cache.mDirty.mCoriolisAndGravityForces = false;
+}
+
+//==============================================================================
+void Skeleton::updateCoriolisAndGravityForces() const
+{
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mCg.size()) == dof);
+  if (dof == 0)
+  {
+    mSkelCache.mDirty.mCoriolisAndGravityForces = false;
+    return;
+  }
+
+  mSkelCache.mCg.setZero();
+
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::VectorXd& treeCg = getCoriolisAndGravityForces(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      size_t k = treeDofs[i]->getIndexInSkeleton();
+      mSkelCache.mCg[k] = treeCg[i];
+    }
+  }
+
+  mSkelCache.mDirty.mCoriolisAndGravityForces = false;
 }
 
 //==============================================================================
@@ -2184,20 +2527,24 @@ void Skeleton::updateExternalForceVector()
 }
 
 //==============================================================================
-void Skeleton::updateExternalForces() const
+void Skeleton::updateExternalForces(size_t _treeIdx) const
 {
-  if (getNumDofs() == 0)
+  DataCache& cache = mTreeCache[_treeIdx];
+  size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mFext.size()) == dof);
+  if (dof == 0)
+  {
+    cache.mDirty.mExternalForces = false;
     return;
-
-  assert(static_cast<size_t>(mFext.size()) == getNumDofs());
+  }
 
   // Clear external force.
-  mFext.setZero();
+  cache.mFext.setZero();
 
-  for (std::vector<BodyNode*>::const_reverse_iterator itr = mBodyNodes.rbegin();
-       itr != mBodyNodes.rend(); ++itr)
+  for (std::vector<BodyNode*>::const_reverse_iterator itr =
+       cache.mBodyNodes.rbegin(); itr != cache.mBodyNodes.rend(); ++itr)
   {
-    (*itr)->aggregateExternalForces(&mFext);
+    (*itr)->aggregateExternalForces(cache.mFext);
   }
 
   // TODO(JS): Not implemented yet
@@ -2230,36 +2577,61 @@ void Skeleton::updateExternalForces() const
 //    }
 //  }
 
-  mIsExternalForcesDirty = false;
+  cache.mDirty.mExternalForces = false;
 }
 
 //==============================================================================
-//void Skeleton::updateDampingForceVector() {
-//  assert(mFd.size() == getNumDofs());
-//  assert(getNumDofs() > 0);
+void Skeleton::updateExternalForces() const
+{
+  size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<size_t>(mSkelCache.mFext.size()) == dof);
+  if(dof == 0)
+  {
+    mSkelCache.mDirty.mExternalForces = false;
+    return;
+  }
 
-//  // Clear external force.
-//  mFd.setZero();
+  mSkelCache.mFext.setZero();
 
-//  for (std::vector<BodyNode*>::iterator itr = mBodyNodes.begin();
-//       itr != mBodyNodes.end(); ++itr) {
-//    Eigen::VectorXd jointDampingForce =
-//        (*itr)->getParentJoint()->getDampingForces();
-//    for (int i = 0; i < jointDampingForce.size(); i++) {
-//      mFd((*itr)->getParentJoint()->getIndexInSkeleton(0)) =
-//          jointDampingForce(i);
-//    }
-//  }
+  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  {
+    const Eigen::VectorXd& treeFext = getExternalForces(tree);
+    const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+    size_t nTreeDofs = treeDofs.size();
+    for(size_t i=0; i<nTreeDofs; ++i)
+    {
+      size_t k = treeDofs[i]->getIndexInSkeleton();
+      mSkelCache.mFext[k] = treeFext[i];
+    }
+  }
 
-//  for (std::vector<SoftBodyNode*>::iterator it = mSoftBodyNodes.begin();
-//       it != mSoftBodyNodes.end(); ++it) {
-//    for (int i = 0; i < (*it)->getNumPointMasses(); ++i) {
-//      PointMass* pm = (*it)->getPointMass(i);
-//      int iStart = pm->getGenCoord(0)->getIndexInSkeleton();
-//      mFd.segment<3>(iStart) = -(*it)->getDampingCoefficient() * pm->getVelocities();
-//    }
-//  }
-//}
+  mSkelCache.mDirty.mExternalForces = false;
+}
+
+//==============================================================================
+const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
+{
+  const size_t dof = cache.mDofs.size();
+  assert(static_cast<size_t>(cache.mFc.size()) == dof);
+
+  // Body constraint impulses
+  for (std::vector<BodyNode*>::reverse_iterator it =
+       cache.mBodyNodes.rbegin();
+       it != cache.mBodyNodes.rend(); ++it)
+  {
+    (*it)->aggregateSpatialToGeneralized(
+          &cache.mFc, (*it)->getConstraintImpulse());
+  }
+
+  // Joint constraint impulses
+  for (size_t i = 0; i < dof; ++i)
+    cache.mFc[i] = cache.mDofs[i]->getConstraintImpulse();
+
+  // Get force by dividing the impulse by the time step
+  cache.mFc = cache.mFc / mSkeletonP.mTimeStep;
+
+  return cache.mFc;
+}
 
 //==============================================================================
 void Skeleton::computeForwardDynamics()
@@ -2272,27 +2644,24 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
 {
   // Update body transformations, velocities, and partial acceleration due to
   // parent joint's velocity
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     (*it)->updateTransform();
     (*it)->updateVelocity();
     (*it)->updatePartialAcceleration();
   }
 
-  mIsArticulatedInertiaDirty = true;
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisForcesDirty = true;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
-  mIsExternalForcesDirty = true;
-//  mIsDampingForceVectorDirty = true;
+  // TODO(MXG): All of the following notifications should be unnecessary
+  // Test the code with them removed
+  for (size_t i = 0; i < mTreeCache.size(); ++i)
+  {
+    notifyArticulatedInertiaUpdate(i);
+    SET_FLAG(i, mExternalForces);
+  }
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
     (*it)->mIsWorldJacobianDirty = true;
@@ -2307,11 +2676,12 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
   // Note: Articulated Inertias will be updated automatically when
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
-  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+  for (auto it = mSkelCache.mBodyNodes.rbegin();
+       it != mSkelCache.mBodyNodes.rend(); ++it)
     (*it)->updateBiasForce(mSkeletonP.mGravity, mSkeletonP.mTimeStep);
 
   // Forward recursion
-  for (auto& bodyNode : mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
     bodyNode->updateAccelerationFD();
     bodyNode->updateTransmittedForceFD();
@@ -2330,8 +2700,8 @@ void Skeleton::computeInverseDynamics(bool _withExternalForces,
 //==============================================================================
 void Skeleton::computeInverseDynamicsRecursionA()
 {
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     (*it)->updateTransform();
     (*it)->updateVelocity();
@@ -2339,19 +2709,16 @@ void Skeleton::computeInverseDynamicsRecursionA()
     (*it)->updateAccelerationID();
   }
 
-  mIsArticulatedInertiaDirty = true;
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisForcesDirty = true;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
-  mIsExternalForcesDirty = true;
-//  mIsDampingForceVectorDirty = true;
+  // TODO(MXG): All the following notifications should be unnecessary.
+  // Test the code with the notifications removed
+  for (size_t i = 0; i < mTreeCache.size(); ++i)
+  {
+    notifyArticulatedInertiaUpdate(i);
+    SET_FLAG(i, mExternalForces);
+  }
 
-  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
     (*it)->mIsWorldJacobianDirty = true;
@@ -2370,7 +2737,8 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
     return;
 
   // Backward recursion
-  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+  for (auto it = mSkelCache.mBodyNodes.rbegin();
+       it != mSkelCache.mBodyNodes.rend(); ++it)
   {
     (*it)->updateTransmittedForceID(mSkeletonP.mGravity, _withExternalForces);
     (*it)->updateJointForceID(mSkeletonP.mTimeStep,
@@ -2382,32 +2750,36 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
 //==============================================================================
 void Skeleton::clearExternalForces()
 {
-  for (auto& bodyNode : mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->clearExternalForces();
 }
 
 //==============================================================================
 void Skeleton::clearConstraintImpulses()
 {
-  for (auto& bodyNode : mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->clearConstraintImpulse();
 }
 
 //==============================================================================
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 {
-  // Assertions
-  assert(_bodyNode != nullptr);
+  if(nullptr == _bodyNode)
+  {
+    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
+    assert(false);
+    return;
+  }
+
   assert(getNumDofs() > 0);
 
-  // This skeleton should contains _bodyNode
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
-         != mBodyNodes.end());
+  // This skeleton should contain _bodyNode
+  assert(_bodyNode->getSkeleton().get() == this);
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 
   // Prepare cache data
@@ -2423,32 +2795,14 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
                                  const Eigen::Vector6d& _imp)
 {
-  // Assertions
-  assert(_bodyNode != nullptr);
-  assert(getNumDofs() > 0);
-
-  // This skeleton should contain _bodyNode
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode)
-         != mBodyNodes.end());
-
-#ifndef NDEBUG
-  // All the constraint impulse should be zero
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
-#endif
-
   // Set impulse to _bodyNode
-  _bodyNode->mConstraintImpulse = _imp;
+  if(_bodyNode)
+    _bodyNode->mConstraintImpulse = _imp;
 
-  // Prepare cache data
-  BodyNode* it = _bodyNode;
-  while (it != nullptr)
-  {
-    it->updateBiasImpulse();
-    it = it->getParentBodyNode();
-  }
+  updateBiasImpulse(_bodyNode);
 
-  _bodyNode->mConstraintImpulse.setZero();
+  if(_bodyNode)
+    _bodyNode->mConstraintImpulse.setZero();
 }
 
 //==============================================================================
@@ -2458,20 +2812,31 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
                                  const Eigen::Vector6d& _imp2)
 {
   // Assertions
-  assert(_bodyNode1 != nullptr);
-  assert(_bodyNode2 != nullptr);
+  if(nullptr == _bodyNode1)
+  {
+    dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode1!\n";
+    assert(false);
+    return;
+  }
+
+  if(nullptr == _bodyNode2)
+  {
+    dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode2!\n";
+    assert(false);
+    return;
+  }
+
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode1)
-         != mBodyNodes.end());
-  assert(std::find(mBodyNodes.begin(), mBodyNodes.end(), _bodyNode2)
-         != mBodyNodes.end());
+  assert(_bodyNode1->getSkeleton().get() == this);
+  assert(_bodyNode2->getSkeleton().get() == this);
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
+           Eigen::Vector6d::Zero());
 #endif
 
   // Set impulse to _bodyNode
@@ -2479,16 +2844,14 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
   _bodyNode2->mConstraintImpulse = _imp2;
 
   // Find which body is placed later in the list of body nodes in this skeleton
-  std::vector<BodyNode*>::reverse_iterator it1
-      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode1);
-  std::vector<BodyNode*>::reverse_iterator it2
-      = std::find(mBodyNodes.rbegin(), mBodyNodes.rend(), _bodyNode2);
+  size_t index1 = _bodyNode1->getIndexInSkeleton();
+  size_t index2 = _bodyNode2->getIndexInSkeleton();
 
-  std::vector<BodyNode*>::reverse_iterator it = std::min(it1, it2);
+  size_t index = std::max(index1, index2);
 
   // Prepare cache data
-  for (; it != mBodyNodes.rend(); ++it)
-    (*it)->updateBiasImpulse();
+  for (int i = index; 0 <= i; --i)
+    mSkelCache.mBodyNodes[i]->updateBiasImpulse();
 
   _bodyNode1->mConstraintImpulse.setZero();
   _bodyNode2->mConstraintImpulse.setZero();
@@ -2509,8 +2872,9 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mBodyNodes.size(); ++i)
-    assert(mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
+           Eigen::Vector6d::Zero());
 #endif
 
   // Set impulse to _bodyNode
@@ -2532,7 +2896,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 //==============================================================================
 void Skeleton::updateVelocityChange()
 {
-  for (auto& bodyNode : mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->updateVelocityChangeFD();
 }
 
@@ -2560,11 +2924,12 @@ void Skeleton::computeImpulseForwardDynamics()
   // BodyNode::getArticulatedInertia()
 
   // Backward recursion
-  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+  for (auto it = mSkelCache.mBodyNodes.rbegin();
+       it != mSkelCache.mBodyNodes.rend(); ++it)
     (*it)->updateBiasImpulse();
 
   // Forward recursion
-  for (auto& bodyNode : mBodyNodes)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
     bodyNode->updateVelocityChangeFD();
     bodyNode->updateTransmittedImpulse();
@@ -2576,7 +2941,7 @@ void Skeleton::computeImpulseForwardDynamics()
 //==============================================================================
 void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc)
 {
-  mFc = _Fc;
+  mSkelCache.mFc = _Fc;
 }
 
 //==============================================================================
@@ -2584,8 +2949,8 @@ double Skeleton::getKineticEnergy() const
 {
   double KE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     KE += (*it)->getKineticEnergy();
   }
@@ -2599,8 +2964,8 @@ double Skeleton::getPotentialEnergy() const
 {
   double PE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mBodyNodes.begin();
-       it != mBodyNodes.end(); ++it)
+  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
+       it != mSkelCache.mBodyNodes.end(); ++it)
   {
     PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
     PE += (*it)->getParentJoint()->getPotentialEnergy();

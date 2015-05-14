@@ -230,15 +230,6 @@ protected:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Tell the Skeleton that an articulated inertia update is needed
-  void notifyArticulatedInertiaUpdate();
-
-  /// Tell the Skeleton that the external forces need to be updated
-  void notifyExternalForcesUpdate();
-
-  /// Tell the Skeleton that the coriolis forces need to be update
-  void notifyCoriolisUpdate();
-
   /// Update articulated inertia if necessary
   void checkArticulatedInertiaUpdate() const;
 
@@ -307,10 +298,10 @@ protected:
   virtual void updateMassMatrix();
 
   // Documentation inherited.
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col);
 
   // Documentation inherited.
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
                                       double _timeStep);
 
   // Documentation inherited.
@@ -320,29 +311,29 @@ protected:
   virtual void updateInvAugMassMatrix();
 
   // Documentation inherited.
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col);
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, int _col);
 
   // Documentation inherited.
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, int _col,
                                          double _timeStep);
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
 
   // Documentation inherited.
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity);
 
   // Documentation inherited.
   virtual void updateCombinedVector();
 
   // Documentation inherited.
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity);
 
   // Documentation inherited.
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   /// \}
 

@@ -452,37 +452,10 @@ void SoftBodyNode::clearConstraintImpulse()
 }
 
 //==============================================================================
-void SoftBodyNode::notifyArticulatedInertiaUpdate()
-{
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->notifyArticulatedInertiaUpdate();
-}
-
-//==============================================================================
-void SoftBodyNode::notifyExternalForcesUpdate()
-{
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
-}
-
-//==============================================================================
-void SoftBodyNode::notifyCoriolisUpdate()
-{
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-  {
-    skel->mIsCoriolisForcesDirty = true;
-    skel->mIsCoriolisAndGravityForcesDirty = true;
-  }
-}
-
-//==============================================================================
 void SoftBodyNode::checkArticulatedInertiaUpdate() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if(skel && skel->mIsArticulatedInertiaDirty)
+  if(skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
     updateArtInertia(skel->getTimeStep());
 }
 
@@ -793,7 +766,7 @@ void SoftBodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
+void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, int _col)
 {
   BodyNode::aggregateMassMatrix(_MCol, _col);
 //  //------------------------ PointMass Part ------------------------------------
@@ -837,7 +810,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
                                           double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -878,7 +851,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
     int iStart = mParentJoint->getIndexInSkeleton(0);
 
     // TODO(JS): Not recommended to use Joint::getAccelerations
-    _MCol->block(iStart, _col, dof, 1).noalias()
+    _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getAccelerations())
           + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
@@ -956,13 +929,13 @@ void SoftBodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
+void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, int _col)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
+          _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
     mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
@@ -972,7 +945,7 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+          _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -987,7 +960,7 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col)
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
+void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol,
                                              int _col,
                                              double _timeStep)
 {
@@ -1021,13 +994,13 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol,
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
+void SoftBodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
 {
   BodyNode::aggregateCoriolisForceVector(_C);
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
+void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
                                                const Eigen::Vector3d& _gravity)
 {
   const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
@@ -1060,7 +1033,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
     int iStart = mParentJoint->getIndexInSkeleton(0);
-    _g->segment(iStart, nGenCoords) = g;
+    _g.segment(iStart, nGenCoords) = g;
   }
 }
 
@@ -1074,7 +1047,7 @@ void SoftBodyNode::updateCombinedVector()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
+void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                            const Eigen::Vector3d& _gravity)
 {
   BodyNode::aggregateCombinedVector(_Cg, _gravity);
@@ -1118,7 +1091,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
+void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
   //------------------------ PointMass Part ------------------------------------
   for (size_t i = 0; i < mPointMasses.size(); ++i)
@@ -1147,7 +1120,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
     Eigen::VectorXd Fext
         = mParentJoint->getLocalJacobian().transpose() * mFext_F;
     int iStart = mParentJoint->getIndexInSkeleton(0);
-    _Fext->segment(iStart, nGenCoords) = Fext;
+    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 

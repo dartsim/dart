@@ -1025,14 +1025,18 @@ public:
   Eigen::Vector3d getAngularMomentum(
       const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
 
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   // Rendering
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
 
   /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  //----------------------------------------------------------------------------
+  // Notifications
+  //----------------------------------------------------------------------------
 
   // Documentation inherited
   void notifyTransformUpdate() override;
@@ -1042,6 +1046,16 @@ public:
 
   // Documentation inherited
   void notifyAccelerationUpdate() override;
+
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void notifyArticulatedInertiaUpdate();
+
+  /// Tell the Skeleton that the external forces need to be updated
+  void notifyExternalForcesUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void notifyCoriolisUpdate();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -1217,32 +1231,32 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                       double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
                                          double _timeStep);
 
   ///
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
 
   ///
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity);
 
   ///
   virtual void updateCombinedVector();
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized coordinates
   /// recursively
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   ///
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,

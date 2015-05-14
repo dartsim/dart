@@ -293,21 +293,6 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-//bool Joint::contains(const GenCoord* _genCoord) const {
-//  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
-//      mGenCoords.end() ? true : false;
-//}
-
-//==============================================================================
-//int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
-//{
-//  for (unsigned int i = 0; i < mGenCoords.size(); i++)
-//    if (mGenCoords[i]->getIndexInSkeleton() == _dofSkelIndex)
-//      return i;
-//  return -1;
-//}
-
-//==============================================================================
 void Joint::setPositionLimited(bool _isPositionLimited)
 {
   mJointP.mIsPositionLimited = _isPositionLimited;
@@ -320,9 +305,21 @@ bool Joint::isPositionLimited() const
 }
 
 //==============================================================================
-size_t Joint::getJointIndex() const
+size_t Joint::getJointIndexInSkeleton() const
 {
   return mChildBodyNode->getIndexInSkeleton();
+}
+
+//==============================================================================
+size_t Joint::getJointIndexInTree() const
+{
+  return mChildBodyNode->getIndexInTree();
+}
+
+//==============================================================================
+size_t Joint::getTreeIndex() const
+{
+  return mChildBodyNode->getTreeIndex();
 }
 
 //==============================================================================
@@ -447,8 +444,10 @@ void Joint::notifyPositionUpdate()
   SkeletonPtr skel = getSkeleton();
   if(skel)
   {
-    skel->notifyArticulatedInertiaUpdate();
-    skel->mIsExternalForcesDirty = true;
+    size_t tree = mChildBodyNode->mTreeIndex;
+    skel->notifyArticulatedInertiaUpdate(tree);
+    skel->mTreeCache[tree].mDirty.mExternalForces = true;
+    skel->mSkelCache.mDirty.mExternalForces = true;
   }
 }
 

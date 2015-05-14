@@ -53,9 +53,21 @@
 namespace dart {
 namespace dynamics {
 
-#define SET_SKEL_FLAGS( X ) SkeletonPtr skel = getSkeleton();                  \
-                            skel->mTreeFlags[mTreeIndex]. X = true;            \
-                            skel->mSkelFlags. X = true;
+/// SKEL_SET_FLAGS : Lock a Skeleton pointer and activate dirty flags of X for
+/// the tree that this BodyNode belongs to, as well as the flag for the Skeleton
+/// overall
+#define SKEL_SET_FLAGS( X ) { SkeletonPtr skel = getSkeleton(); if(skel) {      \
+                            skel->mTreeCache[mTreeIndex].mDirty. X = true;      \
+                            skel->mSkelCache.mDirty. X = true; } }
+
+/// SET_FLAGS : A version of SKEL_SET_FLAGS that assumes a SkeletonPtr named
+/// 'skel' has already been locked
+#define SET_FLAGS( X ) skel->mTreeCache[mTreeIndex].mDirty. X = true;           \
+                       skel->mSkelCache.mDirty. X = true;
+
+/// CHECK_FLAG : Check if the dirty flag X for the tree of this BodyNode is
+/// active
+#define CHECK_FLAG( X ) skel->mTreeCache[mTreeIndex].mDirty. X
 
 //==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
@@ -87,7 +99,7 @@ BodyNode::UniqueProperties::UniqueProperties(
     mRestitutionCoeff(_restitutionCoeff),
     mGravityMode(_gravityMode)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -260,9 +272,8 @@ void BodyNode::setGravityMode(bool _gravityMode)
 
   mBodyP.mGravityMode = _gravityMode;
 
-  SkeletonPtr skel = getSkeleton();
-  if (skel)
-    skel->mIsGravityForcesDirty = true;
+  SKEL_SET_FLAGS(mGravityForces);
+  SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -290,12 +301,9 @@ void BodyNode::setMass(double _mass)
 
   mBodyP.mInertia.setMass(_mass);
 
+  notifyArticulatedInertiaUpdate();
   SkeletonPtr skel = getSkeleton();
-  if(skel)
-  {
-    skel->notifyArticulatedInertiaUpdate();
-    skel->updateTotalMass();
-  }
+  skel->updateTotalMass();
 }
 
 //==============================================================================
@@ -311,9 +319,7 @@ void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
   mBodyP.mInertia.setMoment(_Ixx, _Iyy, _Izz,
                           _Ixy, _Ixz, _Iyz);
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->notifyArticulatedInertiaUpdate();
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -340,12 +346,7 @@ void BodyNode::setInertia(const Inertia& _inertia)
 {
   mBodyP.mInertia = _inertia;
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-  {
-    skel->notifyArticulatedInertiaUpdate();
-    skel->updateTotalMass();
-  }
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -358,8 +359,8 @@ const Inertia& BodyNode::getInertia() const
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if(skel && skel->mIsArticulatedInertiaDirty)
-    skel->updateArticulatedInertia();
+  if( CHECK_FLAG(mArticulatedInertia) )
+    skel->updateArticulatedInertia(mTreeIndex);
 
   return mArtInertia;
 }
@@ -368,7 +369,7 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
   ConstSkeletonPtr skel = getSkeleton();
-  if(skel && skel->mIsArticulatedInertiaDirty)
+  if( CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia();
 
   return mArtInertiaImplicit;
@@ -379,9 +380,7 @@ void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
   mBodyP.mInertia.setLocalCOM(_com);
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->notifyArticulatedInertiaUpdate();
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -1342,7 +1341,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
 
   mFext += math::dAdInvT(T, F);
 
-  SET_SKEL_FLAGS(mExternalForces);
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1366,9 +1365,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
 
   mFext = math::dAdInvT(T, F);
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1379,9 +1376,7 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1392,9 +1387,7 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
 
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1581,13 +1574,10 @@ void BodyNode::notifyTransformUpdate()
   mNeedTransformUpdate = true;
 
   SkeletonPtr skel = getSkeleton();
-  if(skel)
-  {
-    skel->mIsCoriolisForcesDirty = true;
-    skel->mIsGravityForcesDirty = true;
-    skel->mIsCoriolisAndGravityForcesDirty = true;
-    skel->mIsExternalForcesDirty = true;
-  }
+  SET_FLAGS(mCoriolisForces);
+  SET_FLAGS(mGravityForces);
+  SET_FLAGS(mCoriolisAndGravityForces);
+  SET_FLAGS(mExternalForces);
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
@@ -1612,11 +1602,8 @@ void BodyNode::notifyVelocityUpdate()
   mIsPartialAccelerationDirty = true;
 
   SkeletonPtr skel = getSkeleton();
-  if(skel)
-  {
-    skel->mIsCoriolisForcesDirty = true;
-    skel->mIsCoriolisAndGravityForcesDirty = true;
-  }
+  SET_FLAGS(mCoriolisForces);
+  SET_FLAGS(mCoriolisAndGravityForces);
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
@@ -1641,6 +1628,27 @@ void BodyNode::notifyAccelerationUpdate()
 
   for(Entity* entity : mNonBodyNodeEntities)
     entity->notifyAccelerationUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyArticulatedInertiaUpdate()
+{
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->notifyArticulatedInertiaUpdate(mTreeIndex);
+}
+
+//==============================================================================
+void BodyNode::notifyExternalForcesUpdate()
+{
+  SKEL_SET_FLAGS(mExternalForces);
+}
+
+//==============================================================================
+void BodyNode::notifyCoriolisUpdate()
+{
+  SKEL_SET_FLAGS(mCoriolisForces);
+  SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -1966,9 +1974,7 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
 void BodyNode::clearExternalForces()
 {
   mFext.setZero();
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -2134,13 +2140,13 @@ void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
 }
 
 //==============================================================================
-void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
+void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
 {
   aggregateCombinedVector(_C, Eigen::Vector3d::Zero());
 }
 
 //==============================================================================
-void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
+void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity)
 {
   const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
@@ -2160,8 +2166,8 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _g->segment(iStart, nGenCoords) = g;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _g.segment(iStart, nGenCoords) = g;
   }
 }
 
@@ -2180,7 +2186,7 @@ void BodyNode::updateCombinedVector()
 }
 
 //==============================================================================
-void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
+void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity)
 {
   // H(i) = I(i) * W(i) -
@@ -2207,13 +2213,13 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   {
     Eigen::VectorXd Cg
         = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _Cg->segment(iStart, nGenCoords) = Cg;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _Cg.segment(iStart, nGenCoords) = Cg;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
+void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
   mFext_F = mFext;
 
@@ -2228,8 +2234,8 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _Fext->segment(iStart, nGenCoords) = Fext;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 
@@ -2249,7 +2255,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
   }
 
   // Project the spatial quantity to generalized coordinates
-  size_t iStart = mParentJoint->getIndexInSkeleton(0);
+  size_t iStart = mParentJoint->getIndexInTree(0);
   _generalized->segment(iStart, mParentJoint->getNumDofs())
       = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
 }
@@ -2272,7 +2278,7 @@ void BodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
 {
   const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   //
@@ -2296,14 +2302,14 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
   size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _MCol->block(iStart, _col, dof, 1).noalias() =
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _MCol.block(iStart, _col, dof, 1).noalias() =
         mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
+void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                       double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -2338,9 +2344,9 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
 
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInTree(0);
 
-    _MCol->block(iStart, _col, dof, 1).noalias()
+    _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getAccelerations())
           + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
@@ -2390,13 +2396,13 @@ void BodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
+          _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
     mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
@@ -2406,7 +2412,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+          _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -2417,14 +2423,14 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
 }
 
 //==============================================================================
-void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
+void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
                                          double /*_timeStep*/)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          _InvMCol, _col, getArticulatedInertiaImplicit(),
           mParentBodyNode->mInvM_U);
 
     //
@@ -2435,7 +2441,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          _InvMCol, _col, getArticulatedInertiaImplicit(),
           Eigen::Vector6d::Zero());
 
     //

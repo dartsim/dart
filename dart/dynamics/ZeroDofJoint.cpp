@@ -55,6 +55,7 @@ ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
 ZeroDofJoint::ZeroDofJoint(const std::string& _name)
   : Joint(_name)
 {
+  mJacobian.resize(6,0);
   // Do nothing
 }
 
@@ -119,17 +120,21 @@ size_t ZeroDofJoint::getNumDofs() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t)
+size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 {
-  dterr << "[ZeroDofJoint::setIndexInSkeleton] index[" << _index
-        << "] out of range" << std::endl;
+  dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
+
+  return 0;
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
+size_t ZeroDofJoint::getIndexInTree(size_t _index) const
 {
-  dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-        << std::endl;
+  dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
 
   return 0;
 }
