@@ -991,7 +991,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd oldDdq     = skel->getAccelerations();
       // TODO(JS): Save external forces of body nodes
 
-      skel->resetForces();
+      skel->clearInternalForces();
       skel->clearExternalForces();
       skel->setAccelerations(VectorXd::Zero(dof));
 

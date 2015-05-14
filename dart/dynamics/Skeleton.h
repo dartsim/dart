@@ -669,6 +669,9 @@ public:
   void clearExternalForces() override;
 
   // Documentation inherited
+  void clearInternalForces() override;
+
+  // Documentation inherited
   double getKineticEnergy() const override;
 
   // Documentation inherited

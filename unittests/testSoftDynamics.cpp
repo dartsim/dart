@@ -403,7 +403,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
         oldD[k]  = sbn->getDampingCoefficient();
       }
 
-      softSkel->resetForces();
+      softSkel->resetGeneralizedForces();
       softSkel->clearExternalForces();
       softSkel->setAccelerations(VectorXd::Zero(dof));
       for (int k = 0; k < nSoftBodyNodes; ++k)

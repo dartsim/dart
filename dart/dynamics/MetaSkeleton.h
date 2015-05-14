@@ -300,7 +300,7 @@ public:
   Eigen::VectorXd getForces(const std::vector<size_t>& _indices) const;
 
   /// Set all forces of the generalized coordinates to zero
-  void resetForces();
+  void resetGeneralizedForces();
 
   /// Set the lower limit of a generalized coordinate's force
   void setForceLowerLimit(size_t _index, double _force);
@@ -484,6 +484,9 @@ public:
 
   /// Clear the external forces of the BodyNodes in this MetaSkeleton
   virtual void clearExternalForces() = 0;
+
+  /// Clear the internal forces of the BodyNodes in this MetaSkeleton
+  virtual void clearInternalForces() = 0;
 
   /// Get the kinetic energy of this MetaSkeleton
   virtual double getKineticEnergy() const = 0;
