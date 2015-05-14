@@ -581,11 +581,11 @@ Eigen::VectorXd MetaSkeleton::getForces(const std::vector<size_t>& _indices) con
 }
 
 //==============================================================================
-void MetaSkeleton::resetForces()
+void MetaSkeleton::resetGeneralizedForces()
 {
   applyToAllDofs<&DegreeOfFreedom::resetForce>(this);
-  // TODO(MXG): This used to also clear internal forces in SoftBodyNodes
-  // Something should be done to facilitate clearing those as well
+  // Note: This function used to clear the internal forces of SoftBodyNodes as
+  // well. Now you should use clearInternalForces for that
 }
 
 //==============================================================================

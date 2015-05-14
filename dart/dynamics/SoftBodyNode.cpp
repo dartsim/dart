@@ -1161,6 +1161,15 @@ void SoftBodyNode::clearExternalForces()
 }
 
 //==============================================================================
+void SoftBodyNode::clearInternalForces()
+{
+  BodyNode::clearInternalForces();
+
+  for (size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses[i]->resetForces();
+}
+
+//==============================================================================
 void SoftBodyNode::draw(renderer::RenderInterface* _ri,
                         const Eigen::Vector4d& _color,
                         bool _useDefaultColor,

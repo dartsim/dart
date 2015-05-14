@@ -526,7 +526,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 
   // Clear external/internal force
   clearExternalForces();
-  resetForces();
+  resetGeneralizedForces();
 
   // Calculate mass
   updateTotalMass();
@@ -2287,6 +2287,13 @@ void Skeleton::clearExternalForces()
 {
   for (auto& bodyNode : mBodyNodes)
     bodyNode->clearExternalForces();
+}
+
+//==============================================================================
+void Skeleton::clearInternalForces()
+{
+  for (auto& bodyNode : mBodyNodes)
+    bodyNode->clearInternalForces();
 }
 
 //==============================================================================

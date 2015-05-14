@@ -954,6 +954,11 @@ public:
   /// Called by Skeleton::clearExternalForces.
   virtual void clearExternalForces();
 
+  /// Clear out the generalized forces of the parent Joint and any other forces
+  /// related to this BodyNode that are internal to the Skeleton. For example,
+  /// the point mass forces for SoftBodyNodes.
+  virtual void clearInternalForces();
+
   ///
   const Eigen::Vector6d& getExternalForceLocal() const;
 

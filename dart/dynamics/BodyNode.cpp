@@ -1958,6 +1958,12 @@ void BodyNode::clearExternalForces()
 }
 
 //==============================================================================
+void BodyNode::clearInternalForces()
+{
+  mParentJoint->resetForces();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
   return mFext;

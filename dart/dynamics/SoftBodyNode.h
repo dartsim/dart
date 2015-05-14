@@ -347,7 +347,9 @@ protected:
   /// \}
 
   // Documentation inherited.
-  virtual void clearExternalForces();
+  virtual void clearExternalForces() override;
+
+  virtual void clearInternalForces() override;
 
   //--------------------------------------------------------------------------
   // Rendering
