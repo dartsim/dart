@@ -909,6 +909,9 @@ template <class JointT, class BodyNodeT>
 class TemplateJointPtr
 {
 public:
+
+  template<class, class> friend class TemplateJointPtr;
+
   /// Default constructor
   TemplateJointPtr() = default;
 
@@ -969,6 +972,60 @@ public:
 
     mBodyNodePtr = _ptr->getChildBodyNode();
   }
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Comparison operators
+  //----------------------------------------------------------------------------
+
+  /// Equality
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator == (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return mBodyNodePtr == _rhs.mBodyNodePtr;
+  }
+
+  /// Inequality
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator != (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return !( *this == _rhs );
+  }
+
+  /// Less than
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator < (const TemplateJointPtr<OtherJointT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    return (mBodyNodePtr < _rhs.mBodyNodePtr);
+  }
+
+  /// Greater than
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator > (const TemplateJointPtr<OtherJointT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    return (mBodyNodePtr > _rhs.mBodyNodePtr);
+  }
+
+  /// Less than or equal to
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator <= (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this < _rhs) || (*this == _rhs);
+  }
+
+  /// Greater than or equal to
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator >= (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this > _rhs) || (*this == _rhs);
+  }
+
+  /// \}
 
 private:
   /// Reference-holding pointer to the child BodyNode of this Joint

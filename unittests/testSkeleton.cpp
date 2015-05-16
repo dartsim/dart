@@ -326,8 +326,30 @@ TEST(Skeleton, Persistence)
               Eigen::Vector3d(1.0, 1.0, 1.0), DOF_Z);
         weakSkelPtr = skeleton;
 
+        // Test usability of the BodyNodePtr
         strongPtr = skeleton->getBodyNode(0);
         weakBnPtr = strongPtr;
+        ConstBodyNodePtr constPtr = strongPtr;
+
+        EXPECT_FALSE( strongPtr == nullptr );
+        EXPECT_FALSE( nullptr == strongPtr );
+
+        EXPECT_TRUE( strongPtr == skeleton->getBodyNode(0) );
+        EXPECT_TRUE( skeleton->getBodyNode(0) == strongPtr );
+        EXPECT_TRUE( constPtr == strongPtr );
+        EXPECT_TRUE( weakBnPtr.lock() == strongPtr );
+
+        EXPECT_FALSE( strongPtr < constPtr );
+        EXPECT_FALSE( strongPtr < skeleton->getBodyNode(0) );
+        EXPECT_FALSE( strongPtr < weakBnPtr.lock() );
+        EXPECT_FALSE( skeleton->getBodyNode(0) < strongPtr );
+        EXPECT_FALSE( weakBnPtr.lock() < strongPtr);
+
+        EXPECT_FALSE( strongPtr > constPtr );
+        EXPECT_FALSE( strongPtr > skeleton->getBodyNode(0) );
+        EXPECT_FALSE( strongPtr > weakBnPtr.lock() );
+        EXPECT_FALSE( skeleton->getBodyNode(0) > strongPtr );
+        EXPECT_FALSE( weakBnPtr.lock() > strongPtr );
 
         BodyNodePtr tail = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
         std::pair<Joint*, SoftBodyNode*> pair =
@@ -349,6 +371,19 @@ TEST(Skeleton, Persistence)
         EXPECT_TRUE( dof == const_dof );
         EXPECT_TRUE( weakdof.lock() == const_weakdof.lock() );
         EXPECT_TRUE( const_weakdof.lock() == skeleton->getDof(1) );
+        EXPECT_TRUE( skeleton->getDof(1) == const_weakdof.lock() );
+
+        EXPECT_FALSE( dof < const_dof );
+        EXPECT_FALSE( dof < skeleton->getDof(1) );
+        EXPECT_FALSE( dof < weakdof.lock() );
+        EXPECT_FALSE( skeleton->getDof(1) < dof );
+        EXPECT_FALSE( weakdof.lock() < dof );
+
+        EXPECT_FALSE( dof > const_dof );
+        EXPECT_FALSE( dof > skeleton->getDof(1) );
+        EXPECT_FALSE( dof > weakdof.lock() );
+        EXPECT_FALSE( skeleton->getDof(1) > dof );
+        EXPECT_FALSE( weakdof.lock() > dof );
 
         dof = nullptr;
         weakdof = nullptr;
@@ -356,9 +391,13 @@ TEST(Skeleton, Persistence)
         const_weakdof = nullptr;
 
         EXPECT_TRUE( dof == nullptr );
+        EXPECT_TRUE( nullptr == dof );
         EXPECT_TRUE( weakdof.lock() == nullptr );
+        EXPECT_TRUE( nullptr == weakdof.lock() );
         EXPECT_TRUE( const_dof == nullptr );
         EXPECT_TRUE( const_weakdof.lock() == nullptr );
+
+        EXPECT_FALSE( dof < const_dof );
 
         // Test usability of the JointPtr
         JointPtr joint = skeleton->getJoint(1);
@@ -370,6 +409,18 @@ TEST(Skeleton, Persistence)
         EXPECT_TRUE( joint == const_joint );
         EXPECT_TRUE( weakjoint.lock() == const_weakjoint.lock() );
         EXPECT_TRUE( const_weakjoint.lock() == skeleton->getJoint(1) );
+
+        EXPECT_FALSE( joint < const_joint );
+        EXPECT_FALSE( joint < skeleton->getJoint(1) );
+        EXPECT_FALSE( joint < weakjoint.lock() );
+        EXPECT_FALSE( skeleton->getJoint(1) < joint );
+        EXPECT_FALSE( weakjoint.lock() < joint );
+
+        EXPECT_FALSE( joint > const_joint );
+        EXPECT_FALSE( joint > skeleton->getJoint(1) );
+        EXPECT_FALSE( joint > weakjoint.lock() );
+        EXPECT_FALSE( skeleton->getJoint(1) > joint );
+        EXPECT_FALSE( weakjoint.lock() > joint );
 
         joint = nullptr;
         weakjoint = nullptr;

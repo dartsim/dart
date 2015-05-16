@@ -336,6 +336,9 @@ template <class DegreeOfFreedomT, class BodyNodeT>
 class TemplateDegreeOfFreedomPtr
 {
 public:
+
+  template<class, class> friend class TemplateDegreeOfFreedomPtr;
+
   /// Default constructor
   TemplateDegreeOfFreedomPtr() = default;
 
@@ -400,6 +403,72 @@ public:
     mIndex = _ptr->getIndexInJoint();
   }
 
+  //----------------------------------------------------------------------------
+  /// \{ \name Comparison operators
+  //----------------------------------------------------------------------------
+
+  /// Equality
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator == (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    if(nullptr == mBodyNodePtr && nullptr == _rhs.mBodyNodePtr)
+      return true;
+
+    if( (mBodyNodePtr == _rhs.mBodyNodePtr) && (mIndex == _rhs.mIndex) )
+      return true;
+
+    return false;
+  }
+
+  /// Inequality
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator != (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return !( *this == _rhs );
+  }
+
+  /// Less than
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator < (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    if( mBodyNodePtr == _rhs.mBodyNodePtr )
+      return (mIndex < _rhs.mIndex);
+
+    return (mBodyNodePtr < _rhs.mBodyNodePtr);
+  }
+
+  /// Greater than
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator > (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    if( mBodyNodePtr == _rhs.mBodyNodePtr )
+      return (mIndex > _rhs.mIndex);
+
+    return (mBodyNodePtr > _rhs.mBodyNodePtr);
+  }
+
+  /// Less than or equal to
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator <= (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this < _rhs) || (*this == _rhs);
+  }
+
+  /// Greater than or equal to
+  template <class OtherDofT, class OtherBodyNodeT>
+  bool operator >= (const TemplateDegreeOfFreedomPtr<OtherDofT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this > _rhs) || (*this == _rhs);
+  }
+
+  /// \}
+
 private:
   /// Reference-holding pointer to the child BodyNode of this DegreeOfFreedom
   TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
@@ -432,18 +501,18 @@ public:
   TemplateWeakDegreeOfFreedomPtr(DegreeOfFreedomT* _ptr) { set(_ptr); }
 
   /// Constructor that takes in a WeakDegreeOfFreedomPtr
-  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  template <class OtherDofT, class OtherBodyNodeT>
   TemplateWeakDegreeOfFreedomPtr(
-      const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      const TemplateWeakDegreeOfFreedomPtr<OtherDofT,
       OtherBodyNodeT>& _weakPtr)
   {
     set(_weakPtr);
   }
 
   /// Constructor that takes in a strong DegreeOfFreedomPtr
-  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  template <class OtherDofT, class OtherBodyNodeT>
   TemplateWeakDegreeOfFreedomPtr(
-      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      const TemplateDegreeOfFreedomPtr<OtherDofT,
       OtherBodyNodeT>& _strongPtr)
   {
     set(_strongPtr.get());
@@ -457,9 +526,9 @@ public:
   }
 
   /// Assignemnt operator for WeakDegreeOfFreedomPtrs
-  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  template <class OtherDofT, class OtherBodyNodeT>
   TemplateWeakDegreeOfFreedomPtr& operator = (
-      const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      const TemplateWeakDegreeOfFreedomPtr<OtherDofT,
       OtherBodyNodeT>& _weakPtr)
   {
     set(_weakPtr);
@@ -467,9 +536,9 @@ public:
   }
 
   /// Assignment operator for strong DegreeOfFreedomPtrs
-  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  template <class OtherDofT, class OtherBodyNodeT>
   TemplateWeakDegreeOfFreedomPtr& operator = (
-      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      const TemplateDegreeOfFreedomPtr<OtherDofT,
       OtherBodyNodeT>& _strongPtr)
   {
     set(_strongPtr.get());
@@ -506,8 +575,8 @@ public:
 
   /// Attempt to set the DegreeOfFreedom for this WeakDegreeOfFreedomPtr based
   /// on another WeakDegreeOfFreedomPtr
-  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
-  void set(const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+  template <class OtherDofT, class OtherBodyNodeT>
+  void set(const TemplateWeakDegreeOfFreedomPtr<OtherDofT,
            OtherBodyNodeT>& _weakPtr)
   {
     mWeakBodyNode = _weakPtr.mWeakBodyNode;
