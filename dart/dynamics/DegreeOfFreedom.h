@@ -353,7 +353,7 @@ public:
   }
 
   /// Assignment operator
-  TemplateDegreeOfFreedomPtr& operator = (DegreeOfFreedom* _ptr)
+  TemplateDegreeOfFreedomPtr& operator = (DegreeOfFreedomT* _ptr)
   {
     set(_ptr);
     return *this;
@@ -411,6 +411,12 @@ private:
 typedef TemplateDegreeOfFreedomPtr<DegreeOfFreedom, BodyNode> DegreeOfFreedomPtr;
 typedef TemplateDegreeOfFreedomPtr<const DegreeOfFreedom, const BodyNode> ConstDegreeOfFreedomPtr;
 
+/// TemplateWeakDegreeOfFreedomPtr is a templated class that enables users to
+/// create a non-reference-holding WeakDegreeOfFreedomPtr. Holding onto a
+/// WeakDegreeOfFreedomPtr will NOT prevent anything from getting deleted, but
+/// you can use lock() to check whether the DegreeOfFreedom still exists. If it
+/// does exist, it will return a valid strong DegreeOfFreedomPtr. Otherwise it
+/// will return a nullptr DegreeOfFreedomPtr.
 template <class DegreeOfFreedomT, class BodyNodeT>
 class TemplateWeakDegreeOfFreedomPtr
 {
@@ -419,7 +425,7 @@ public:
   template<class, class> friend class TemplateWeakDegreeOfFreedomPtr;
 
   /// Default constructor
-  TemplateWeakDegreeOfFreedomPtr() = default;
+  TemplateWeakDegreeOfFreedomPtr() { set(nullptr); }
 
   /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
   /// passed to this constructor
@@ -470,6 +476,10 @@ public:
     return *this;
   }
 
+  /// Locks the DegreeOfFreedom reference to ensure that the referenced
+  /// DegreeOfFreedom is currently still available. If the DegreeOfFreedom
+  /// is not available any longer (i.e. has been deleted), then this will return
+  /// a nullptr.
   TemplateDegreeOfFreedomPtr<DegreeOfFreedomT, BodyNodeT> lock() const
   {
     TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
@@ -480,12 +490,22 @@ public:
           bodyNode->getParentJoint()->getDof(mIndex));
   }
 
+  /// Set the DegreeOfFreedom for this WeakDegreeOfFreedomPtr
   void set(DegreeOfFreedomT* _ptr)
   {
+    if(nullptr == _ptr)
+    {
+      mWeakBodyNode = nullptr;
+      mIndex = 0;
+      return;
+    }
+
     mWeakBodyNode = _ptr->getChildBodyNode();
     mIndex = _ptr->getIndexInJoint();
   }
 
+  /// Attempt to set the DegreeOfFreedom for this WeakDegreeOfFreedomPtr based
+  /// on another WeakDegreeOfFreedomPtr
   template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
   void set(const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
            OtherBodyNodeT>& _weakPtr)

@@ -338,6 +338,7 @@ TEST(Skeleton, Persistence)
         weakSoftBnPtr = softBnPtr;
         WeakBodyNodePtr otherWeakPtr = weakSoftBnPtr; // Test convertability
 
+        // Test usability of the DegreeOfFreedomPtr
         DegreeOfFreedomPtr dof = skeleton->getDof(1);
         WeakDegreeOfFreedomPtr weakdof = dof;
         ConstDegreeOfFreedomPtr const_dof = dof;
@@ -345,7 +346,40 @@ TEST(Skeleton, Persistence)
         const_weakdof = const_dof;
 
         EXPECT_TRUE( dof == skeleton->getDof(1) );
+        EXPECT_TRUE( dof == const_dof );
+        EXPECT_TRUE( weakdof.lock() == const_weakdof.lock() );
         EXPECT_TRUE( const_weakdof.lock() == skeleton->getDof(1) );
+
+        dof = nullptr;
+        weakdof = nullptr;
+        const_dof = nullptr;
+        const_weakdof = nullptr;
+
+        EXPECT_TRUE( dof == nullptr );
+        EXPECT_TRUE( weakdof.lock() == nullptr );
+        EXPECT_TRUE( const_dof == nullptr );
+        EXPECT_TRUE( const_weakdof.lock() == nullptr );
+
+        // Test usability of the JointPtr
+        JointPtr joint = skeleton->getJoint(1);
+        WeakJointPtr weakjoint = joint;
+        ConstJointPtr const_joint = joint;
+        WeakConstJointPtr const_weakjoint = const_joint;
+
+        EXPECT_TRUE( joint == skeleton->getJoint(1) );
+        EXPECT_TRUE( joint == const_joint );
+        EXPECT_TRUE( weakjoint.lock() == const_weakjoint.lock() );
+        EXPECT_TRUE( const_weakjoint.lock() == skeleton->getJoint(1) );
+
+        joint = nullptr;
+        weakjoint = nullptr;
+        const_joint = nullptr;
+        const_weakjoint = nullptr;
+
+        EXPECT_TRUE( joint == nullptr );
+        EXPECT_TRUE( weakjoint.lock() == nullptr );
+        EXPECT_TRUE( const_joint == nullptr );
+        EXPECT_TRUE( const_weakjoint.lock() == nullptr );
       }
 
       // The BodyNode should still be alive, because a BodyNodePtr still
