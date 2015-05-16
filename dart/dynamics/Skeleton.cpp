@@ -507,6 +507,24 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 }
 
 //==============================================================================
+size_t Skeleton::getNumDofs() const
+{
+  return mSkelCache.mDofs.size();
+}
+
+//==============================================================================
+DegreeOfFreedom* Skeleton::getDof(size_t _idx)
+{
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mSkelCache.mDofs);
+}
+
+//==============================================================================
+const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mSkelCache.mDofs);
+}
+
+//==============================================================================
 DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 {
   return mNameMgrForDofs.getObject(_name);
@@ -516,6 +534,18 @@ DegreeOfFreedom* Skeleton::getDof(const std::string& _name)
 const DegreeOfFreedom* Skeleton::getDof(const std::string& _name) const
 {
   return mNameMgrForDofs.getObject(_name);
+}
+
+//==============================================================================
+const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
+{
+  return mSkelCache.mDofs;
+}
+
+//==============================================================================
+std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
+{
+  return convertToConstVector<DegreeOfFreedom>(mSkelCache.mDofs);
 }
 
 //==============================================================================
@@ -560,12 +590,12 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   // Rearrange the list of body nodes with BFS (Breadth First Search)
   std::queue<BodyNode*> queue;
   mSkelCache.mBodyNodes.clear();
+  mSkelCache.mDofs.clear();
   mTreeCache.clear();
   mNameMgrForBodyNodes.clear();
   mNameMgrForJoints.clear();
   mSoftBodyNodes.clear();
   mNameMgrForSoftBodyNodes.clear();
-  mDofs.clear();
   mNameMgrForDofs.clear();
   mNameMgrForMarkers.clear();
   for (size_t i = 0; i < rootBodyNodes.size(); ++i)
@@ -587,12 +617,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   // Clear external/internal force
   clearExternalForces();
   resetGeneralizedForces();
-}
-
-//==============================================================================
-size_t Skeleton::getDof() const
-{
-  return getNumDofs();
 }
 
 //==============================================================================
@@ -645,72 +669,15 @@ Eigen::VectorXd Skeleton::getAccelerationSegment(
 }
 
 //==============================================================================
-Eigen::VectorXd Skeleton::getVelocityChanges() const
-{
-  const size_t dof = getNumDofs();
-  Eigen::VectorXd velChange(dof);
-
-  size_t index = 0;
-  for (size_t i = 0; i < dof; ++i)
-  {
-    Joint* joint      = mDofs[i]->getJoint();
-    size_t localIndex = mDofs[i]->getIndexInJoint();
-
-    velChange[index++] = joint->getVelocityChange(localIndex);
-  }
-
-  assert(index == dof);
-
-  return velChange;
-}
-
-//==============================================================================
 void Skeleton::setConstraintImpulses(const Eigen::VectorXd& _impulses)
 {
   setJointConstraintImpulses(_impulses);
 }
 
 //==============================================================================
-void Skeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
-{
-  const size_t dof = getNumDofs();
-
-  size_t index = 0;
-  for (size_t i = 0; i < dof; ++i)
-  {
-    Joint* joint      = mDofs[i]->getJoint();
-    size_t localIndex = mDofs[i]->getIndexInJoint();
-
-    joint->setConstraintImpulse(localIndex, _impulses[index++]);
-  }
-
-  assert(index == dof);
-}
-
-//==============================================================================
 Eigen::VectorXd Skeleton::getConstraintImpulses() const
 {
   return getJointConstraintImpulses();
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getJointConstraintImpulses() const
-{
-  const size_t dof = getNumDofs();
-  Eigen::VectorXd impulse(dof);
-
-  size_t index = 0;
-  for (size_t i = 0; i < dof; ++i)
-  {
-    Joint* joint      = mDofs[i]->getJoint();
-    size_t localIndex = mDofs[i]->getIndexInJoint();
-
-    impulse[index++] = joint->getConstraintImpulse(localIndex);
-  }
-
-  assert(index == dof);
-
-  return impulse;
 }
 
 //==============================================================================
@@ -1585,14 +1552,12 @@ void Skeleton::registerJoint(Joint* _newJoint)
   std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
   for(size_t i = 0; i < _newJoint->getNumDofs(); ++i)
   {
-    mDofs.push_back(_newJoint->getDof(i));
-    _newJoint->getDof(i)->mIndexInSkeleton = mDofs.size()-1;
+    mSkelCache.mDofs.push_back(_newJoint->getDof(i));
+    _newJoint->getDof(i)->mIndexInSkeleton = mSkelCache.mDofs.size()-1;
 
     treeDofs.push_back(_newJoint->getDof(i));
     _newJoint->getDof(i)->mIndexInTree = treeDofs.size()-1;
   }
-
-  mSkelCache.mDofs = mDofs;
 }
 
 //==============================================================================
@@ -1679,36 +1644,35 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 
   size_t tree = _oldJoint->getChildBodyNode()->getTreeIndex();
   std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
+  std::vector<DegreeOfFreedom*>& skelDofs = mSkelCache.mDofs;
 
-  size_t firstDofSkelIndex = (size_t)(-1);
-  size_t firstDofTreeIndex = (size_t)(-1);
+  size_t firstSkelIndex = (size_t)(-1);
+  size_t firstTreeIndex = (size_t)(-1);
   for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeObject(dof);
 
-    firstDofSkelIndex = std::min(firstDofSkelIndex, dof->getIndexInSkeleton());
-    mDofs.erase(std::remove(mDofs.begin(), mDofs.end(), dof), mDofs.end());
+    firstSkelIndex = std::min(firstSkelIndex, dof->getIndexInSkeleton());
+    skelDofs.erase(
+          std::remove(skelDofs.begin(), skelDofs.end(), dof), skelDofs.end());
 
-    firstDofTreeIndex = std::min(firstDofTreeIndex, dof->getIndexInTree());
+    firstTreeIndex = std::min(firstTreeIndex, dof->getIndexInTree());
     treeDofs.erase(
           std::remove(treeDofs.begin(), treeDofs.end(), dof), treeDofs.end());
   }
 
-  for (size_t i = firstDofSkelIndex; i < mDofs.size(); ++i)
+  for (size_t i = firstSkelIndex; i < skelDofs.size(); ++i)
   {
-    DegreeOfFreedom* dof = mDofs[i];
+    DegreeOfFreedom* dof = skelDofs[i];
     dof->mIndexInSkeleton = i;
   }
 
-
-  for(size_t i = firstDofTreeIndex; i < treeDofs.size(); ++i)
+  for (size_t i = firstTreeIndex; i < treeDofs.size(); ++i)
   {
     DegreeOfFreedom* dof = treeDofs[i];
     dof->mIndexInTree = i;
   }
-
-  mSkelCache.mDofs = mDofs;
 }
 
 //==============================================================================

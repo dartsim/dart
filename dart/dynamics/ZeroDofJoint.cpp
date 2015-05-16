@@ -71,20 +71,20 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
   return nullptr;
 }
 
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 {
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
   return nullptr;
 }
 

@@ -147,10 +147,6 @@ public:
   SingleDofJoint& operator=(const SingleDofJoint& _otherJoint);
 
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
-
-  // Documentation inherited
   DegreeOfFreedom* getDof(size_t _index) override;
 
   // Documentation inherited

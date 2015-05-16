@@ -282,8 +282,8 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   VectorXd ddq = skel->getAccelerations();
 
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dqSeg  = skel->getVelocitySegment(coords);
-  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocities(coords);
+  VectorXd ddqSeg = skel->getAccelerations(coords);
 
   //-- Spatial Jacobian tests --------------------------------------------------
 
@@ -421,8 +421,8 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   VectorXd ddq = skel->getAccelerations();
 
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dqSeg  = skel->getVelocitySegment(coords);
-  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocities(coords);
+  VectorXd ddqSeg = skel->getAccelerations(coords);
 
   //-- Spatial Jacobian tests --------------------------------------------------
 

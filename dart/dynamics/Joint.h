@@ -265,10 +265,6 @@ public:
   /// Get the index of the tree that this Joint belongs to
   size_t getTreeIndex() const;
 
-  /// Get number of generalized coordinates
-  DEPRECATED(4.1)
-  virtual size_t getDof() const = 0;
-
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
   virtual DegreeOfFreedom* getDof(size_t _index) = 0;

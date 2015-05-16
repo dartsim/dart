@@ -265,14 +265,26 @@ public:
   /// Get const Joint whose name is _name
   const Joint* getJoint(const std::string& _name) const;
 
-  // Inform the compiler not to hide the MetaSkeleton's getDof
-  using MetaSkeleton::getDof;
+  // Documentation inherited
+  size_t getNumDofs() const override;
+
+  // Documentation inherited
+  DegreeOfFreedom* getDof(size_t _idx) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDof(size_t _idx) const override;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   DegreeOfFreedom* getDof(const std::string& _name);
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   const DegreeOfFreedom* getDof(const std::string& _name) const;
+
+  // Documentation inherited
+  const std::vector<DegreeOfFreedom*>& getDofs() override;
+
+  // Documentation inherited
+  std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx);
@@ -301,15 +313,11 @@ public:
   /// \{ \name Deprecated
   //----------------------------------------------------------------------------
 
-  /// Return degrees of freedom of this skeleton
-  DEPRECATED(4.1)
-  size_t getDof() const;
-
   /// \brief Return _index-th GenCoordInfo
   /// \warning GenCoordInfo is deprecated so this function is not necessary
-  /// anymore. Please use DegreeOfFreedom by calling getDof(). We will keep this
-  /// function until the next major version up only for backward compatibility
-  /// in minor version ups.
+  /// anymore. Please use DegreeOfFreedom by calling getDof(size_t). We will
+  /// keep this function until the next major version up only for backward
+  /// compatibility in minor version ups.
   DEPRECATED(4.3)
   GenCoordInfo getGenCoordInfo(size_t _index) const;
 
@@ -364,13 +372,6 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  // Velocity change
-  //----------------------------------------------------------------------------
-
-  ///
-  Eigen::VectorXd getVelocityChanges() const;
-
-  //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
@@ -378,15 +379,9 @@ public:
   DEPRECATED(4.2)
   void setConstraintImpulses(const Eigen::VectorXd& _impulses);
 
-  /// Set constraint impulses applying to joint
-  void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
-
   ///
   DEPRECATED(4.2)
   Eigen::VectorXd getConstraintImpulses() const;
-
-  /// Return constraint impulses applied to joint
-  Eigen::VectorXd getJointConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
   // Integration

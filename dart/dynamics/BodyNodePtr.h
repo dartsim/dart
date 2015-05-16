@@ -44,7 +44,7 @@
 namespace dart{
 namespace dynamics {
 
-/// TemplateBodyNodePtr is a templated class enables users to create a
+/// TemplateBodyNodePtr is a templated class that enables users to create a
 /// reference-counting BodyNodePtr. Holding onto a BodyNodePtr will ensure that
 /// the BodyNode (and by extension, its Skeleton) does not get deleted. This
 /// remains true even if the BodyNode is moved into another Skeleton.
@@ -55,8 +55,8 @@ public:
   /// Default constructor
   TemplateBodyNodePtr() : mPtr(nullptr) { }
 
-  /// Typical constructor. _ptr must be a valid pointer when passed to this
-  /// constructor
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
   TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
 
   /// Templated constructor for copying other BodyNodePtrs
@@ -139,21 +139,30 @@ struct MutexedWeakSkeletonPtr
   std::weak_ptr<const Skeleton> mSkeleton;
 };
 
-//==============================================================================
+/// TemplateWeakBodyNodePtr is a templated class that enables users to create a
+/// non-reference-holding WeakBodyNodePtr. Holding onto a WeakBodyNodePtr will
+/// NOT prevent the BodyNode from getting deleted, but you can use lock() to
+/// check whether the BodyNode still exists. If it does exist, it will return a
+/// valid strong BodyNodePtr. Otherwise, it will return a nullptr BodyNodePtr.
 template <class BodyNodeT>
 class TemplateWeakBodyNodePtr
 {
 public:
+
+  template<class> friend class TemplateWeakBodyNodePtr;
+
   /// Default constructor
   TemplateWeakBodyNodePtr() : mPtr(nullptr) { }
 
-  /// Typical constructor. _ptr must be a valid pointer when passed to this
-  /// constructor
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
   TemplateWeakBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
 
   /// Constructor that takes in a WeakBodyNodePtr
-  TemplateWeakBodyNodePtr(const TemplateWeakBodyNodePtr& _weakPtr) :
-    mPtr(nullptr) { set(_weakPtr); }
+  template <class OtherBodyNodeT>
+  TemplateWeakBodyNodePtr(
+      const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
+    : mPtr(nullptr) { set(_weakPtr); }
 
   /// Assignment operator for raw BodyNode pointers
   TemplateWeakBodyNodePtr& operator = (BodyNodeT* _ptr)
@@ -163,8 +172,9 @@ public:
   }
 
   /// Assignment operator for WeakBodyNodePtrs
+  template <class OtherBodyNodeT>
   TemplateWeakBodyNodePtr& operator = (
-      const TemplateWeakBodyNodePtr<BodyNodeT>& _weakPtr)
+      const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
   {
     set(_weakPtr);
     return *this;
@@ -206,7 +216,8 @@ public:
 
   /// Attempt to set the BodyNode for this WeakBodyNodePtr based on another
   /// WeakBodyNodePtr
-  void set(const TemplateWeakBodyNodePtr& _weakPtr)
+  template <class OtherBodyNodeT>
+  void set(const TemplateWeakBodyNodePtr<OtherBodyNodeT>& _weakPtr)
   {
     if(nullptr == _weakPtr.mLocker)
     {

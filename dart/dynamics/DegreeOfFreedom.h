@@ -41,7 +41,7 @@
 #include <memory>
 #include <Eigen/Core>
 
-#include "dart/common/Subject.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -248,6 +248,17 @@ public:
   /// Get the upper generalized force limit of this DegreeOfFreedom
   double getForceUpperLimit() const;
 
+  // -- Velocity Change --------------------------------------------------------
+
+  /// Set the velocity change of this DegreeOfFreedom
+  void setVelocityChange(double _velocityChange);
+
+  /// Get the velocity change of this DegreeOfFreedom
+  double getVelocityChange() const;
+
+  /// Set the velocity change of this DegreeOfFreedom to zero
+  void resetVelocityChange();
+
   // -- Constraint Impulse -----------------------------------------------------
 
   /// Set the constraint impulse of this generalized coordinate
@@ -311,6 +322,188 @@ protected:
   // destructed.
 
 };
+
+/// TemplateDegreeOfFreedomPtr is a templated class that enables users to create
+/// a reference-counting DegreeOfFreedomPtr. Holding onto a DegreeOfFreedomPtr
+/// will ensure that the BodyNode (and by extension, Skeleton) corresponding to
+/// a DegreeOfFreedom does not get deleted. However, the DegreeOfFreedom itself
+/// will be deleted if the parent Joint of the BodyNode is changed to a Joint
+/// type that has a small number of DegreesOfFreedom than the local of the
+/// DegreeOfFreedom that this DegreeOfFreedomPtr referred to. In such a case,
+/// this will trigger and assertion in debug mode, or have a nullptr value if
+/// not in debug mode.
+template <class DegreeOfFreedomT, class BodyNodeT>
+class TemplateDegreeOfFreedomPtr
+{
+public:
+  /// Default constructor
+  TemplateDegreeOfFreedomPtr() = default;
+
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
+  TemplateDegreeOfFreedomPtr(DegreeOfFreedomT* _ptr) { set(_ptr); }
+
+  /// Constructor that takes in a strong DegreeOfFreedomPtrs
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateDegreeOfFreedomPtr(
+      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _dofp)
+  {
+    set(_dofp.get());
+  }
+
+  /// Assignment operator
+  TemplateDegreeOfFreedomPtr& operator = (DegreeOfFreedom* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Assignment operator for DegreeOfFreedomPtrs
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateDegreeOfFreedomPtr& operator = (
+      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _dofp)
+  {
+    set(_dofp.get());
+    return *this;
+  }
+
+  /// Implicit conversion
+  operator DegreeOfFreedomT*() const { return get(); }
+
+  /// Dereferencing operator
+  DegreeOfFreedomT& operator*() const { return *get(); }
+
+  /// Dereferencing operation
+  DegreeOfFreedomT* operator->() const { return get(); }
+
+  /// Get the raw DegreeOfFreedom pointer
+  DegreeOfFreedomT* get() const
+  {
+    if(nullptr == mBodyNodePtr)
+      return nullptr;
+
+    return mBodyNodePtr->getParentJoint()->getDof(mIndex);
+  }
+
+  /// Set the DegreeOfFreedom for this DegreeOfFreedomPtr
+  void set(DegreeOfFreedomT* _ptr)
+  {
+    if(nullptr == _ptr)
+    {
+      mBodyNodePtr = nullptr;
+      return;
+    }
+
+    mBodyNodePtr = _ptr->getChildBodyNode();
+    mIndex = _ptr->getIndexInJoint();
+  }
+
+private:
+  /// Reference-holding pointer to the child BodyNode of this DegreeOfFreedom
+  TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+
+  /// Local index of this DegreeOfFreedom within its Joint
+  size_t mIndex;
+};
+
+typedef TemplateDegreeOfFreedomPtr<DegreeOfFreedom, BodyNode> DegreeOfFreedomPtr;
+typedef TemplateDegreeOfFreedomPtr<const DegreeOfFreedom, const BodyNode> ConstDegreeOfFreedomPtr;
+
+template <class DegreeOfFreedomT, class BodyNodeT>
+class TemplateWeakDegreeOfFreedomPtr
+{
+public:
+
+  template<class, class> friend class TemplateWeakDegreeOfFreedomPtr;
+
+  /// Default constructor
+  TemplateWeakDegreeOfFreedomPtr() = default;
+
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
+  TemplateWeakDegreeOfFreedomPtr(DegreeOfFreedomT* _ptr) { set(_ptr); }
+
+  /// Constructor that takes in a WeakDegreeOfFreedomPtr
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateWeakDegreeOfFreedomPtr(
+      const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _weakPtr)
+  {
+    set(_weakPtr);
+  }
+
+  /// Constructor that takes in a strong DegreeOfFreedomPtr
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateWeakDegreeOfFreedomPtr(
+      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _strongPtr)
+  {
+    set(_strongPtr.get());
+  }
+
+  /// Assignment operator for raw DegreeOfFreedom pointers
+  TemplateWeakDegreeOfFreedomPtr& operator = (DegreeOfFreedomT* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Assignemnt operator for WeakDegreeOfFreedomPtrs
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateWeakDegreeOfFreedomPtr& operator = (
+      const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _weakPtr)
+  {
+    set(_weakPtr);
+    return *this;
+  }
+
+  /// Assignment operator for strong DegreeOfFreedomPtrs
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  TemplateWeakDegreeOfFreedomPtr& operator = (
+      const TemplateDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+      OtherBodyNodeT>& _strongPtr)
+  {
+    set(_strongPtr.get());
+    return *this;
+  }
+
+  TemplateDegreeOfFreedomPtr<DegreeOfFreedomT, BodyNodeT> lock() const
+  {
+    TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
+    if(nullptr == bodyNode)
+      return nullptr;
+
+    return TemplateDegreeOfFreedomPtr<DegreeOfFreedomT, BodyNodeT>(
+          bodyNode->getParentJoint()->getDof(mIndex));
+  }
+
+  void set(DegreeOfFreedomT* _ptr)
+  {
+    mWeakBodyNode = _ptr->getChildBodyNode();
+    mIndex = _ptr->getIndexInJoint();
+  }
+
+  template <class OtherDegreeOfFreedomT, class OtherBodyNodeT>
+  void set(const TemplateWeakDegreeOfFreedomPtr<OtherDegreeOfFreedomT,
+           OtherBodyNodeT>& _weakPtr)
+  {
+    mWeakBodyNode = _weakPtr.mWeakBodyNode;
+    mIndex = _weakPtr.mIndex;
+  }
+
+private:
+  /// Weak pointer to the child BodyNode of this DegreeOfFreedom
+  TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
+
+  /// Local index of this DegreeOfFreedom within its Joint
+  size_t mIndex;
+};
+
+typedef TemplateWeakDegreeOfFreedomPtr<DegreeOfFreedom, BodyNode> WeakDegreeOfFreedomPtr;
+typedef TemplateWeakDegreeOfFreedomPtr<const DegreeOfFreedom, const BodyNode> WeakConstDegreeOfFreedomPtr;
 
 } // namespace dynamics
 } // namespace dart

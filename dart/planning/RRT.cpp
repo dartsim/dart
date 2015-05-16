@@ -222,7 +222,7 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-  robot->setPositionSegment(dofs, c);
+  robot->setPositions(dofs, c);
   robot->computeForwardKinematics(true, false, false);
 	return world->checkCollision();
 }

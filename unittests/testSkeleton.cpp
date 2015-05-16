@@ -336,6 +336,16 @@ TEST(Skeleton, Persistence)
 
         softBnPtr = pair.second;
         weakSoftBnPtr = softBnPtr;
+        WeakBodyNodePtr otherWeakPtr = weakSoftBnPtr; // Test convertability
+
+        DegreeOfFreedomPtr dof = skeleton->getDof(1);
+        WeakDegreeOfFreedomPtr weakdof = dof;
+        ConstDegreeOfFreedomPtr const_dof = dof;
+        WeakConstDegreeOfFreedomPtr const_weakdof = weakdof;
+        const_weakdof = const_dof;
+
+        EXPECT_TRUE( dof == skeleton->getDof(1) );
+        EXPECT_TRUE( const_weakdof.lock() == skeleton->getDof(1) );
       }
 
       // The BodyNode should still be alive, because a BodyNodePtr still

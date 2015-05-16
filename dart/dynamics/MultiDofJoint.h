@@ -160,10 +160,6 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
-
-  // Documentation inherited
   DegreeOfFreedom* getDof(size_t index) override;
 
   // Documentation inherited
@@ -951,17 +947,14 @@ MultiDofJoint<DOF>& MultiDofJoint<DOF>::operator=(
 
 //==============================================================================
 template <size_t DOF>
-size_t MultiDofJoint<DOF>::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
-template <size_t DOF>
 DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
   if (_index < DOF)
     return mDofs[_index];
+
+  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
+        << "). The index must be less than (" << DOF << ")!\n";
+  assert(false);
   return nullptr;
 }
 
@@ -971,6 +964,10 @@ const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
 {
   if (_index < DOF)
     return mDofs[_index];
+
+  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
+        << "). The index must be less than (" << DOF << ")!\n";
+  assert(false);
   return nullptr;
 }
 

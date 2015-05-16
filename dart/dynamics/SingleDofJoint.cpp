@@ -180,12 +180,6 @@ SingleDofJoint& SingleDofJoint::operator=(const SingleDofJoint& _otherJoint)
 }
 
 //==============================================================================
-size_t SingleDofJoint::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
 size_t SingleDofJoint::getNumDofs() const
 {
   return 1;
@@ -224,6 +218,10 @@ DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 {
   if (0 == _index)
     return mDof;
+
+  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
+        << ") of a SingleDofJoint!\n";
+  assert(false);
   return nullptr;
 }
 
@@ -232,6 +230,10 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
 {
   if (0 == _index)
     return mDof;
+
+  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
+        << ") of a SingleDofJoint!\n";
+  assert(false);
   return nullptr;
 }
 

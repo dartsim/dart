@@ -63,8 +63,7 @@ int main(int argc, char* argv[])
       dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
       for(size_t k=0; k<bn->getNumVisualizationShapes(); ++k)
       {
-        std::shared_ptr<dart::dynamics::Shape> vs =
-            bn->getVisualizationShape(k);
+        dart::dynamics::ShapePtr vs = bn->getVisualizationShape(k);
         vs->setColor(dart::Color::Random());
       }
     }

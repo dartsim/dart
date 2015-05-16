@@ -359,6 +359,24 @@ double DegreeOfFreedom::getForceUpperLimit() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::setVelocityChange(double _velocityChange)
+{
+  mJoint->setVelocityChange(mIndexInJoint, _velocityChange);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getVelocityChange() const
+{
+  return mJoint->getVelocityChange(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetVelocityChange()
+{
+  setVelocityChange(0.0);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setConstraintImpulse(double _impulse)
 {
   mJoint->setConstraintImpulse(mIndexInJoint, _impulse);

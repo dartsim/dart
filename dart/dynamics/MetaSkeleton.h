@@ -112,19 +112,19 @@ public:
   virtual const Joint* getJoint(size_t _idx) const = 0;
 
   /// Return the number of degrees of freedom in this skeleton
-  size_t getNumDofs() const;
+  virtual size_t getNumDofs() const = 0;
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  DegreeOfFreedom* getDof(size_t _idx);
+  virtual DegreeOfFreedom* getDof(size_t _idx) = 0;
 
   /// Get degree of freedom (aka generalized coordinate) whose index is _idx
-  const DegreeOfFreedom* getDof(size_t _idx) const;
+  virtual const DegreeOfFreedom* getDof(size_t _idx) const = 0;
 
   /// Get the vector of DegreesOfFreedom for this MetaSkeleton
-  const std::vector<DegreeOfFreedom*>& getDofs();
+  virtual const std::vector<DegreeOfFreedom*>& getDofs() = 0;
 
   /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
-  std::vector<const DegreeOfFreedom*> getDofs() const;
+  virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
 
   /// \}
 
@@ -315,6 +315,24 @@ public:
   double getForceUpperLimit(size_t _index) const;
 
   /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Velocity Change
+  //----------------------------------------------------------------------------
+
+  /// Get the velocity changes for all the generalized coordinates
+  Eigen::VectorXd getVelocityChanges() const;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Constraint Impulse
+  //----------------------------------------------------------------------------
+
+  /// Set the constraint impulses for the generalized coordinates
+  void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
+
+  /// Get the constraint impulses for the generalized coordinates
+  Eigen::VectorXd getJointConstraintImpulses() const;
+
 
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians
@@ -558,9 +576,6 @@ protected:
 
   /// Default constructor
   MetaSkeleton();
-
-  /// Array of DegreeOfFreedom objects within this MetaSkeleton
-  std::vector<DegreeOfFreedom*> mDofs;
 
   //--------------------------------------------------------------------------
   // Signals

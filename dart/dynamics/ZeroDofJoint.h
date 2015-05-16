@@ -72,10 +72,6 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
-
-  // Documentation inherited
   virtual DegreeOfFreedom* getDof(size_t) override;
 
   // Documentation inherited

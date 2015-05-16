@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  skel->setPositionSegment(genCoordIds, initConfig);
+  skel->setPositions(genCoordIds, initConfig);
   skel->computeForwardKinematics(true, true, false);
 
   dart::dynamics::Joint* joint0 = skel->getJoint(0);
