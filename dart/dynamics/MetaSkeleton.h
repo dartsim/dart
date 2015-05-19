@@ -69,10 +69,11 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
 
+  /// Default destructor
   virtual ~MetaSkeleton() = default;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Properties
+  /// \{ \name Name
   //----------------------------------------------------------------------------
 
   /// Set the name of this MetaSkeleton
@@ -102,6 +103,10 @@ public:
   /// Get all the BodyNodes that are held by this MetaSkeleton
   virtual std::vector<const BodyNode*> getBodyNodes() const = 0;
 
+  /// Get the index of a specific BodyNode within this ReferentialSkeleton.
+  /// Returns (size_t)(-1) if it is not held in this ReferentialSkeleton.
+  virtual size_t getIndexOf(const BodyNode* _bn) const = 0;
+
   /// Get number of Joints
   virtual size_t getNumJoints() const = 0;
 
@@ -110,6 +115,10 @@ public:
 
   /// Get const Joint whose index is _idx
   virtual const Joint* getJoint(size_t _idx) const = 0;
+
+  /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
+  /// (size_t)(-1) if it is not held in this ReferentialSkeleton.
+  virtual size_t getIndexOf(const Joint* _joint) const = 0;
 
   /// Return the number of degrees of freedom in this skeleton
   virtual size_t getNumDofs() const = 0;
@@ -125,6 +134,11 @@ public:
 
   /// Get a vector of const DegreesOfFreedom for this MetaSkeleton
   virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
+
+  /// Get the index of a specific DegreeOfFreedom within this
+  /// ReferentialSkeleton. Returns (size_t)(-1) if it is not held in this
+  /// ReferentialSkeleton.
+  virtual size_t getIndexOf(const DegreeOfFreedom* _dof) const = 0;
 
   /// \}
 

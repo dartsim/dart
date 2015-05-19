@@ -244,6 +244,9 @@ public:
   // Documentation inherited
   std::vector<const BodyNode*> getBodyNodes() const override;
 
+  // Documentation inherited
+  size_t getIndexOf(const BodyNode *_bn) const override;
+
   /// Get the BodyNodes belonging to a tree in this Skeleton
   const std::vector<BodyNode*>& getTreeBodyNodes(size_t _treeIdx);
 
@@ -266,6 +269,9 @@ public:
   const Joint* getJoint(const std::string& _name) const;
 
   // Documentation inherited
+  size_t getIndexOf(const Joint* _joint) const override;
+
+  // Documentation inherited
   size_t getNumDofs() const override;
 
   // Documentation inherited
@@ -285,6 +291,9 @@ public:
 
   // Documentation inherited
   std::vector<const DegreeOfFreedom*> getDofs() const override;
+
+  // Documentation inherited
+  size_t getIndexOf(const DegreeOfFreedom* _dof) const override;
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx);

@@ -369,10 +369,10 @@ size_t Skeleton::getNumTrees() const
 template<typename T>
 static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 {
-  // TODO: Should we have an out-of-bounds assertion or throw here?
   if (_idx < _vec.size())
     return _vec[_idx];
 
+  assert( _idx < _vec.size() );
   return nullptr;
 }
 
@@ -459,6 +459,38 @@ std::vector<const BodyNode*> Skeleton::getBodyNodes() const
 }
 
 //==============================================================================
+template <class ObjectT, size_t (ObjectT::*getIndexInSkeleton)() const>
+static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
+                                  const std::string& _type)
+{
+  if(nullptr == _obj)
+  {
+    dterr << "[Skeleton::getIndexOf] Requesting the index of a nullptr "
+          << _type << " within the Skeleton [" << _skel->getName() << "] ("
+          << _skel << ")!\n";
+    assert(false);
+    return (size_t)(-1);
+  }
+
+  if(_skel == _obj->getSkeleton().get())
+    return (_obj->*getIndexInSkeleton)();
+
+  dterr << "[Skeleton::getIndexOf] Requesting the index of a " << _type << " ["
+        << _obj->getName() << "] (" << _obj << ") from a Skeleton that it does "
+        << "not belong to!\n";
+  assert(false);
+
+  return (size_t)(-1);
+}
+
+//==============================================================================
+size_t Skeleton::getIndexOf(const BodyNode* _bn) const
+{
+  return templatedGetIndexOf<BodyNode, &BodyNode::getIndexInSkeleton>(
+        this, _bn, "BodyNode");
+}
+
+//==============================================================================
 const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
 {
   return mTreeCache[_treeIdx].mBodyNodes;
@@ -507,6 +539,13 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 }
 
 //==============================================================================
+size_t Skeleton::getIndexOf(const Joint* _joint) const
+{
+  return templatedGetIndexOf<Joint, &Joint::getJointIndexInSkeleton>(
+        this, _joint, "Joint");
+}
+
+//==============================================================================
 size_t Skeleton::getNumDofs() const
 {
   return mSkelCache.mDofs.size();
@@ -546,6 +585,13 @@ const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
 std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
 {
   return convertToConstVector<DegreeOfFreedom>(mSkelCache.mDofs);
+}
+
+//==============================================================================
+size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof) const
+{
+  return templatedGetIndexOf<DegreeOfFreedom,
+      &DegreeOfFreedom::getIndexInSkeleton>(this, _dof, "DegreeOfFreedom");
 }
 
 //==============================================================================
@@ -779,22 +825,25 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
 //==============================================================================
 static bool isValidBodyNode(const Skeleton* _skeleton,
                             const BodyNode* _bodyNode,
-                            const std::string& _jacobianType)
+                            const std::string& _fname)
 {
   if (nullptr == _bodyNode)
   {
-    dtwarn << "[Skeleton::getJacobian] Invalid BodyNode pointer, 'nullptr'. "
-           << "Returning zero Jacobian." << std::endl;
+    dtwarn << "[Skeleton::" << _fname << "] Invalid BodyNode pointer: "
+           << "nullptr. Returning zero Jacobian.\n";
+    assert(false);
     return false;
   }
 
-  // The given BodyNode should be in the Skeleton.
+  // The given BodyNode should be in the Skeleton
   if (_bodyNode->getSkeleton().get() != _skeleton)
   {
-    dtwarn << "[Skeleton::getJacobian] Attempting to get a "
-           << _jacobianType << " of a BodyNode '"
-           << _bodyNode->getName() << "' that is not in this Skeleton '"
-           << _skeleton->getName() << ". Returning zero Jacobian." << std::endl;
+    dtwarn << "[Skeleton::" << _fname << "] Attempting to get a Jacobian "
+           << _fname << " for a BodyNode [" << _bodyNode->getName() << "] ("
+           << _bodyNode << ") that is not in this Skeleton ["
+           << _skeleton->getName() << "] (" << _skeleton
+           << "). Returning zero Jacobian.\n";
+    assert(false);
     return false;
   }
 
@@ -820,59 +869,40 @@ void assignJacobian(JacobianType& _J,
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode) const
+template <typename ...Args>
+math::Jacobian variadicGetJacobian(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+  math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+  if ( !isValidBodyNode(_skel, _bodyNode, "getJacobian") )
     return J;
 
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian();
+  const math::Jacobian JBodyNode = _bodyNode->getJacobian(args...);
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
   assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
 
   return J;
+}
+
+//==============================================================================
+math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode) const
+{
+  return variadicGetJacobian(this, _bodyNode);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
                                      const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
-    return J;
-
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
-
-  return J;
+  return variadicGetJacobian(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
                                      const Eigen::Vector3d& _localOffset) const
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
-    return J;
-
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_localOffset);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
-
-  return J;
+  return variadicGetJacobian(this, _bodyNode, _localOffset);
 }
 
 //==============================================================================
@@ -880,17 +910,21 @@ math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
                                      const Eigen::Vector3d& _localOffset,
                                      const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+  return variadicGetJacobian(this, _bodyNode, _localOffset, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+//==============================================================================
+template <typename ...Args>
+math::Jacobian variadicGetWorldJacobian(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
+
+  if( !isValidBodyNode(_skel, _bodyNode, "getWorldJacobian") )
     return J;
 
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian(_localOffset,
-                                                          _inCoordinatesOf);
+  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian(args...);
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
   assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
 
   return J;
@@ -899,19 +933,7 @@ math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
 //==============================================================================
 math::Jacobian Skeleton::getWorldJacobian(const BodyNode* _bodyNode) const
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
-    return J;
-
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian();
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
-
-  return J;
+  return variadicGetWorldJacobian(this, _bodyNode);
 }
 
 //==============================================================================
@@ -919,40 +941,34 @@ math::Jacobian Skeleton::getWorldJacobian(
     const BodyNode* _bodyNode,
     const Eigen::Vector3d& _localOffset) const
 {
-  math::Jacobian J = math::Jacobian::Zero(6, getNumDofs());
+  return variadicGetWorldJacobian(this, _bodyNode, _localOffset);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian"))
+//==============================================================================
+template <typename ...Args>
+math::LinearJacobian variadicGetLinearJacobian(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::LinearJacobian J =
+      math::LinearJacobian::Zero(3, _skel->getNumDofs());
+
+  if( !isValidBodyNode(_skel, _bodyNode, "getLinearJacobian") )
     return J;
 
-  // Get the spatial Jacobian of the targeting BodyNode
-  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian(_localOffset);
+  const math::LinearJacobian JBodyNode = _bodyNode->getLinearJacobian(args...);
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::LinearJacobian>(J, _bodyNode, JBodyNode);
 
   return J;
 }
+
 
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobian(
     const BodyNode* _bodyNode,
     const Frame* _inCoordinatesOf) const
 {
-  math::LinearJacobian Jv = math::LinearJacobian::Zero(3, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian"))
-    return Jv;
-
-  // Get the linear Jacobian of the targeting BodyNode
-  math::LinearJacobian JvBodyNode
-      = _bodyNode->getLinearJacobian(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::LinearJacobian>(Jv, _bodyNode, JvBodyNode);
-
-  return Jv;
+  return variadicGetLinearJacobian(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -961,20 +977,26 @@ math::LinearJacobian Skeleton::getLinearJacobian(
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  math::LinearJacobian Jv = math::LinearJacobian::Zero(3, getNumDofs());
+  return variadicGetLinearJacobian(
+        this, _bodyNode, _localOffset, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian"))
-    return Jv;
+//==============================================================================
+template <typename ...Args>
+math::AngularJacobian variadicGetAngularJacobian(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::AngularJacobian J =
+      math::AngularJacobian::Zero(3, _skel->getNumDofs());
 
-  // Get the linear Jacobian of the targeting BodyNode
-  math::LinearJacobian JvBodyNode
-      = _bodyNode->getLinearJacobian(_localOffset, _inCoordinatesOf);
+  if( !isValidBodyNode(_skel, _bodyNode, "getAngularJacobian") )
+    return J;
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::LinearJacobian>(Jv, _bodyNode, JvBodyNode);
+  const math::AngularJacobian JBodyNode = _bodyNode->getAngularJacobian(args...);
 
-  return Jv;
+  assignJacobian<math::AngularJacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
 }
 
 //==============================================================================
@@ -982,39 +1004,31 @@ math::AngularJacobian Skeleton::getAngularJacobian(
     const BodyNode* _bodyNode,
     const Frame* _inCoordinatesOf) const
 {
-  math::AngularJacobian Jw = math::AngularJacobian::Zero(3, getNumDofs());
+  return variadicGetAngularJacobian(this, _bodyNode, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "angular Jacobian"))
-    return Jw;
+//==============================================================================
+template <typename ...Args>
+math::Jacobian variadicGetJacobianSpatialDeriv(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::Jacobian dJ = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  // Get the angular Jacobian of the targeting BodyNode
-  math::AngularJacobian JwBodyNode
-      = _bodyNode->getAngularJacobian(_inCoordinatesOf);
+  if( !isValidBodyNode(_skel, _bodyNode, "getJacobianSpatialDeriv") )
+    return dJ;
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::AngularJacobian>(Jw, _bodyNode, JwBodyNode);
+  const math::Jacobian JBodyNode = _bodyNode->getJacobianSpatialDeriv(args...);
 
-  return Jw;
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, JBodyNode);
+
+  return dJ;
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
     const BodyNode* _bodyNode) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
-    return dJ;
-
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode = _bodyNode->getJacobianSpatialDeriv();
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
-
-  return dJ;
+  return variadicGetJacobianSpatialDeriv(this, _bodyNode);
 }
 
 //==============================================================================
@@ -1022,20 +1036,7 @@ math::Jacobian Skeleton::getJacobianSpatialDeriv(
     const BodyNode* _bodyNode,
     const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
-    return dJ;
-
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode
-      = _bodyNode->getJacobianSpatialDeriv(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
-
-  return dJ;
+  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1043,20 +1044,7 @@ math::Jacobian Skeleton::getJacobianSpatialDeriv(
     const BodyNode* _bodyNode,
     const Eigen::Vector3d& _localOffset) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
-    return dJ;
-
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode
-      = _bodyNode->getJacobianSpatialDeriv(_localOffset);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
-
-  return dJ;
+  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _localOffset);
 }
 
 //==============================================================================
@@ -1065,40 +1053,32 @@ math::Jacobian Skeleton::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(6, getNumDofs());
+  return variadicGetJacobianSpatialDeriv(
+        this, _bodyNode, _localOffset, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "spatial Jacobian time derivative"))
-    return dJ;
+//==============================================================================
+template <typename ...Args>
+math::Jacobian variadicGetJacobianClassicDeriv(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode
-      = _bodyNode->getJacobianSpatialDeriv(_localOffset, _inCoordinatesOf);
+  if( !isValidBodyNode(_skel, _bodyNode, "getJacobianClassicDeriv") )
+    return J;
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+  const math::Jacobian JBodyNode = _bodyNode->getJacobianClassicDeriv(args...);
 
-  return dJ;
+  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+
+  return J;
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianClassicDeriv(
     const BodyNode* _bodyNode) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode,
-                       "spatial Jacobian (classical) time derivative"))
-    return dJ;
-
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode = _bodyNode->getJacobianClassicDeriv();
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
-
-  return dJ;
+  return variadicGetJacobianClassicDeriv(this, _bodyNode);
 }
 
 //==============================================================================
@@ -1106,21 +1086,7 @@ math::Jacobian Skeleton::getJacobianClassicDeriv(
     const BodyNode* _bodyNode,
     const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode,
-                       "spatial Jacobian (classical) time derivative"))
-    return dJ;
-
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode
-      = _bodyNode->getJacobianClassicDeriv(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
-
-  return dJ;
+  return variadicGetJacobianClassicDeriv(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1129,21 +1095,27 @@ math::Jacobian Skeleton::getJacobianClassicDeriv(
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  math::Jacobian dJ = math::Jacobian::Zero(3, getNumDofs());
+  return variadicGetJacobianClassicDeriv(
+        this, _bodyNode, _localOffset, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode,
-                       "spatial Jacobian (classical) time derivative"))
-    return dJ;
+//==============================================================================
+template <typename ...Args>
+math::LinearJacobian variadicGetLinearJacobianDeriv(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::LinearJacobian dJv =
+      math::LinearJacobian::Zero(3, _skel->getNumDofs());
 
-  // Get the spatial Jacobian time derivative of the targeting BodyNode
-  math::Jacobian dJBodyNode
-      = _bodyNode->getJacobianClassicDeriv(_localOffset, _inCoordinatesOf);
+  if ( !isValidBodyNode(_skel, _bodyNode, "getLinearJacobianDeriv") )
+    return dJv;
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+  const math::LinearJacobian dJvBodyNode =
+      _bodyNode->getLinearJacobianDeriv(args...);
 
-  return dJ;
+  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, dJvBodyNode);
+
+  return dJv;
 }
 
 //==============================================================================
@@ -1151,20 +1123,7 @@ math::LinearJacobian Skeleton::getLinearJacobianDeriv(
     const BodyNode* _bodyNode,
     const Frame* _inCoordinatesOf) const
 {
-  math::LinearJacobian dJv = math::LinearJacobian::Zero(3, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian time derivative"))
-    return dJv;
-
-  // Get the linear Jacobian time derivative of the targeting BodyNode
-  math::LinearJacobian JvBodyNode
-      = _bodyNode->getLinearJacobianDeriv(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, JvBodyNode);
-
-  return dJv;
+  return variadicGetLinearJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1173,40 +1132,34 @@ math::LinearJacobian Skeleton::getLinearJacobianDeriv(
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  math::LinearJacobian dJv = math::LinearJacobian::Zero(3, getNumDofs());
+  return variadicGetLinearJacobianDeriv(
+        this, _bodyNode, _localOffset, _inCoordinatesOf);
+}
 
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "linear Jacobian time derivative"))
-    return dJv;
+//==============================================================================
+template <typename ...Args>
+math::AngularJacobian variadicGetAngularJacobianDeriv(
+    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+{
+  math::AngularJacobian dJw =
+      math::AngularJacobian::Zero(3, _skel->getNumDofs());
 
-  // Get the linear Jacobian time derivative of the targeting BodyNode
-  math::LinearJacobian JvBodyNode
-      = _bodyNode->getLinearJacobianDeriv(_localOffset, _inCoordinatesOf);
+  if ( !isValidBodyNode(_skel, _bodyNode, "getAngularJacobianDeriv") )
+    return dJw;
 
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, JvBodyNode);
+  const math::AngularJacobian dJwBodyNode =
+      _bodyNode->getAngularJacobianDeriv(args...);
 
-  return dJv;
+  assignJacobian<math::AngularJacobian>(dJw, _bodyNode, dJwBodyNode);
+
+  return dJw;
 }
 
 //==============================================================================
 math::AngularJacobian Skeleton::getAngularJacobianDeriv(
     const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
 {
-  math::AngularJacobian dJw = math::AngularJacobian::Zero(3, getNumDofs());
-
-  // If _bodyNode is nullptr or not in this Skeleton, return zero Jacobian
-  if (!isValidBodyNode(this, _bodyNode, "angular Jacobian time derivative"))
-    return dJw;
-
-  // Get the angular Jacobian time derivative of the targeting BodyNode
-  math::AngularJacobian JwBodyNode
-      = _bodyNode->getAngularJacobianDeriv(_inCoordinatesOf);
-
-  // Assign the BodyNode's Jacobian to the full-sized Jacobian
-  assignJacobian<math::AngularJacobian>(dJw, _bodyNode, JwBodyNode);
-
-  return dJw;
+  return variadicGetAngularJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
 }
 
 //==============================================================================
