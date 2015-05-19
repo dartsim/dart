@@ -37,6 +37,106 @@
 #ifndef DART_DYNAMICS_LINKAGE_H_
 #define DART_DYNAMICS_LINKAGE_H_
 
+#include "ReferentialSkeleton.h"
+#include <unordered_set>
 
+namespace dart {
+namespace dynamics {
+
+class Linkage : public ReferentialSkeleton
+{
+public:
+
+  /// This is the most general derivation of the Criteria class, defined by
+  struct Criteria
+  {
+    /// The ExpansionPolicy indicates how the collection of BodyNodes should
+    /// expand from the starting BodyNode (mStart)
+    enum ExpansionPolicy {
+      NEUTRAL = 0,  ///< Do not expand. Only include the BodyNodes needed to satisfy the mChainTargets
+      DOWNSTREAM,   ///< Expand downstream, toward the leaves of the tree
+      UPSTREAM      ///< Expand upstream, toward the root of the tree
+    };
+
+    // Documentation inherited
+    std::vector<BodyNode*> satisfy() const;
+
+    /// This structure defines targets for the expansion criteria and the
+    /// desired behavior for those targets
+    struct Target
+    {
+      /// Default constructor for Target
+      Target(BodyNode* _target = nullptr,
+             ExpansionPolicy _policy = NEUTRAL,
+             bool _chain = false);
+
+      /// The Linkage will expand from the starting BodyNode up to this target
+      BodyNode* mTarget;
+
+      /// After the target has been reached (if it is reached), the Linkage will
+      /// start to follow this expansion policy.
+      ExpansionPolicy mPolicy;
+
+      /// If this is set to true, the expansion towards this target will
+      /// terminate if (1) a fork/split in the kinematics is reached or (2) a
+      /// FreeJoint is reached.
+      bool mChain;
+    };
+
+    /// This Target will serve as the starting point for the criteria
+    /// satisfaction
+    Target mStart;
+
+    /// The Linkage will extend from mStart to each of these targets. Each
+    /// BodyNode along the way will be included in the Linkage, including the
+    /// mTarget. However, if a terminal BodyNode is reached along the way, then
+    /// nothing past the terminal BodyNode will be included. Therefore, If you
+    /// want to expand towards a target but not include the target, you can set
+    /// the BodyNode as both an mTarget and an mTerminal, and set the mInclusive
+    /// flag in mTerminal to false.
+    std::vector<Target> mTargets;
+
+    /// Any expansion performed by the criteria will be halted if mTerminal is
+    /// reached. If mInclusive is set to true, then mTerminal will be included
+    /// in the Linkage. If mInclusive is set to false, then mTerminal will not
+    /// be included in the Linkage. Note that the BodyNode of mStart may be
+    /// included as an inclusive terminal, but NOT as an exclusive terminal.
+    struct Terminal
+    {
+      /// Default constructor for Terminal
+      Terminal(BodyNode* _terminal = nullptr, bool _inclusive = true);
+
+      /// BodyNode that should halt any expansion
+      BodyNode* mTerminal;
+
+      /// Whether or not the BodyNode should be included after expansion has
+      /// halted
+      bool mInclusive;
+    };
+
+    /// Any expansion (whether from an ExpansionPolicy or an attempt to reach an
+    /// entry in mTargets) will be halted if it reaches any entry in mTerminal
+    std::vector<Terminal> mTerminals;
+
+  protected:
+
+    /// Refresh the content of mMapOfTerminals
+    void refreshTerminalMap() const;
+
+    /// Hashed set for terminals to allow quick lookup.
+    mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
+  };
+
+  /// Constructor for the Linkage class
+  Linkage(const Criteria& _criteria);
+
+protected:
+
+  /// Criteria that defines the structure of this Linkage
+  Criteria mCriteria;
+};
+
+} // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_LINKAGE_H_

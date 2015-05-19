@@ -242,7 +242,7 @@ public:
   const std::vector<BodyNode*>& getBodyNodes() override;
 
   // Documentation inherited
-  std::vector<const BodyNode*> getBodyNodes() const override;
+  const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   // Documentation inherited
   size_t getIndexOf(const BodyNode *_bn) const override;
@@ -299,7 +299,7 @@ public:
   const std::vector<DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx);
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  std::vector<const DegreeOfFreedom*> getTreeDofs(size_t _treeIdx) const;
+  const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -1067,8 +1067,14 @@ protected:
     /// BodyNodes belonging to this tree
     std::vector<BodyNode*> mBodyNodes;
 
+    /// Cache for const BodyNodes, for the sake of the API
+    std::vector<const BodyNode*> mConstBodyNodes;
+
     /// Degrees of Freedom belonging to this tree
     std::vector<DegreeOfFreedom*> mDofs;
+
+    /// Cache for const Degrees of Freedom, for the sake of the API
+    std::vector<const DegreeOfFreedom*> mConstDofs;
 
     /// Mass matrix cache
     Eigen::MatrixXd mM;

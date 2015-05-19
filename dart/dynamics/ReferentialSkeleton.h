@@ -84,7 +84,7 @@ public:
   const std::vector<BodyNode*>& getBodyNodes() override;
 
   // Documentation inherited
-  std::vector<const BodyNode*> getBodyNodes() const override;
+  const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   // Documentation inherited
   size_t getIndexOf(const BodyNode* _bn) const override;
@@ -122,20 +122,69 @@ public:
   /// \}
 
 protected:
+
+  /// Default constructor. Protected to avoid blank and useless instantiations
+  /// of ReferentialSkeleton.
+  ReferentialSkeleton() = default;
+
+  /// Add a BodyNode to this ReferentialSkeleton. Only usable by derived classes
+  void registerBodyNode(BodyNode* _bn);
+
+  /// Add a DegreeOfFreedom to this ReferentialSkeleton. Only usable by
+  /// derived classes.
+  void registerDegreeOfFreedom(DegreeOfFreedom* _dof);
+
+  /// Completely remove a BodyNode from this ReferentialSkeleton. Only usable
+  /// by derived classes
+  void unregisterBodyNode(BodyNode* _bn);
+
+  /// Remove a DegreeOfFreedom from this ReferentialSkeleton. Only usable by
+  /// derived classes.
+  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex,
+                                 bool removeBnIfEmpty = true);
+
+  /// Weak pointer to this Skeleton
+  std::weak_ptr<MetaSkeleton> mPtr;
+
+  /// A simple struct that contains the indexing of a BodyNode and its parent
+  /// DegreesOfFreedom
+  struct IndexMap
+  {
+    /// Index of the BodyNode
+    size_t mBodyNodeIndex;
+
+    /// Indices of the DegreesOfFreedom
+    std::vector<size_t> mDofIndices;
+  };
+
   /// Name of this ReferentialSkeleton
   std::string mName;
 
-  /// BodyNodes that this ReferentialSkeleton references
+  /// BodyNodes that this ReferentialSkeleton references. These hold strong
+  /// references to ensure that the BodyNodes do not disappear
   std::vector<BodyNodePtr> mBodyNodes;
 
-  /// Map for getting the index of a BodyNode within this ReferentialSkeleton
-  std::map<BodyNodePtr, size_t> mMapForBodyNodes;
+  /// Raw BodyNode pointers. This vector is used for the MetaSkeleton API
+  mutable std::vector<BodyNode*> mRawBodyNodes;
+
+  /// Raw const BodyNode pointers. This vector is used for the MetaSkeleton API
+  mutable std::vector<const BodyNode*> mRawConstBodyNodes;
 
   /// DegreesOfFreedom that this ReferentialSkeleton references
   std::vector<DegreeOfFreedomPtr> mDofs;
 
-  /// Map for getting the index of a dof within this ReferentialSkeleton
-  std::map<DegreeOfFreedomPtr, size_t> mMapForDofs;
+  /// Raw DegreeOfFreedom vector. This vector is used for the MetaSkeleton API
+  mutable std::vector<DegreeOfFreedom*> mRawDofs;
+
+  /// Raw const DegreeOfFreedom vector. This vector is used for the MetaSkeleton
+  /// API
+  mutable std::vector<const DegreeOfFreedom*> mRawConstDofs;
+
+  /// Raw const DegreeOfFreedom. This vector is used for the MetaSkeleton API
+
+  /// Map for keeping track of the indices of BodyNodes, Joints, and
+  /// DegreesOfFreedom
+  std::unordered_map<const BodyNode*, IndexMap> mIndexMap;
 };
 
 typedef std::shared_ptr<ReferentialSkeleton> ReferentialSkeletonPtr;

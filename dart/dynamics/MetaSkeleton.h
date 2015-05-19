@@ -101,7 +101,7 @@ public:
   virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
 
   /// Get all the BodyNodes that are held by this MetaSkeleton
-  virtual std::vector<const BodyNode*> getBodyNodes() const = 0;
+  virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
   /// Returns (size_t)(-1) if it is not held in this ReferentialSkeleton.

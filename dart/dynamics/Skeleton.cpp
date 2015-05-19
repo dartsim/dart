@@ -437,12 +437,12 @@ const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 
 //==============================================================================
 template <class T>
-static std::vector<const T*> convertToConstVector(const std::vector<T*>& vec)
+static std::vector<const T*>& convertToConstPtrVector(
+    const std::vector<T*>& vec, std::vector<const T*>& const_vec)
 {
-  std::vector<const T*> const_vec;
-  const_vec.reserve(vec.size());
+  const_vec.resize(vec.size());
   for(size_t i=0; i<vec.size(); ++i)
-    const_vec.push_back(vec[i]);
+    const_vec[i] = vec[i];
   return const_vec;
 }
 
@@ -453,9 +453,10 @@ const std::vector<BodyNode*>& Skeleton::getBodyNodes()
 }
 
 //==============================================================================
-std::vector<const BodyNode*> Skeleton::getBodyNodes() const
+const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 {
-  return convertToConstVector<BodyNode>(mSkelCache.mBodyNodes);
+  return convertToConstPtrVector<BodyNode>(
+        mSkelCache.mBodyNodes, mSkelCache.mConstBodyNodes);
 }
 
 //==============================================================================
@@ -499,7 +500,8 @@ const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
 //==============================================================================
 std::vector<const BodyNode*> Skeleton::getTreeBodyNodes(size_t _treeIdx) const
 {
-  return convertToConstVector<BodyNode>(mTreeCache[_treeIdx].mBodyNodes);
+  return convertToConstPtrVector<BodyNode>(
+        mTreeCache[_treeIdx].mBodyNodes, mTreeCache[_treeIdx].mConstBodyNodes);
 }
 
 //==============================================================================
@@ -584,7 +586,8 @@ const std::vector<DegreeOfFreedom*>& Skeleton::getDofs()
 //==============================================================================
 std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
 {
-  return convertToConstVector<DegreeOfFreedom>(mSkelCache.mDofs);
+  return convertToConstPtrVector<DegreeOfFreedom>(
+        mSkelCache.mDofs, mSkelCache.mConstDofs);
 }
 
 //==============================================================================
@@ -601,9 +604,11 @@ const std::vector<DegreeOfFreedom*>& Skeleton::getTreeDofs(size_t _treeIdx)
 }
 
 //==============================================================================
-std::vector<const DegreeOfFreedom*> Skeleton::getTreeDofs(size_t _treeIdx) const
+const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
+    size_t _treeIdx) const
 {
-  return convertToConstVector<DegreeOfFreedom>(mTreeCache[_treeIdx].mDofs);
+  return convertToConstPtrVector<DegreeOfFreedom>(
+        mTreeCache[_treeIdx].mDofs, mTreeCache[_treeIdx].mConstDofs);
 }
 
 //==============================================================================

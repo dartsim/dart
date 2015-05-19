@@ -390,6 +390,22 @@ public:
     return mBodyNodePtr->getParentJoint()->getDof(mIndex);
   }
 
+  /// Get the BodyNode that this DegreeOfFreedomPtr is tied to
+  TemplateBodyNodePtr<BodyNodeT> getBodyNodePtr() const
+  {
+    return mBodyNodePtr;
+  }
+
+  /// Get the local generalized coordinate index that this DegreeOfFreedomPtr is
+  /// tied to
+  size_t getLocalIndex() const
+  {
+    if(nullptr == mBodyNodePtr)
+      return (size_t)(-1);
+
+    return mIndex;
+  }
+
   /// Set the DegreeOfFreedom for this DegreeOfFreedomPtr
   void set(DegreeOfFreedomT* _ptr)
   {
