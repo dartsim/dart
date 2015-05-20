@@ -351,14 +351,14 @@ public:
   /// Using this function will result in changes to the indexing of
   /// (potentially) all BodyNodes and Joints in the current Skeleton, even if
   /// the BodyNodes are kept within the same Skeleton.
-  void moveTo(BodyNode* _newParent);
+  bool moveTo(BodyNode* _newParent);
 
   /// This is a version of moveTo(BodyNode*) that allows you to explicitly move
   /// this BodyNode into a different Skeleton. The key difference for this
   /// version of the function is that you can make this BodyNode a root node in
   /// a different Skeleton, which is not something that can be done by the other
   /// version.
-  void moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent);
+  bool moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent);
 
   /// A version of moveTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode. This function returns the pointer to the
@@ -388,8 +388,9 @@ public:
   /// shared_ptr to the newly created Skeleton.
   ///
   /// Note that the parent Joint of this BodyNode will remain the same. If you
-  /// want to change the Joint type of this BodyNode's parent Joint, then use
-  /// the templated split<JointType>() function.
+  /// want to change the Joint type of this BodyNode's parent Joint (for
+  /// example, make it a FreeJoint), then use the templated split<JointType>()
+  /// function.
   SkeletonPtr split(const std::string& _skeletonName);
 
   /// A version of split(const std::string&) that also changes the Joint type of

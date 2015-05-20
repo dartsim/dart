@@ -1634,7 +1634,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+bool Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                                 std::shared_ptr<Skeleton> _newSkeleton,
                                 BodyNode* _parentNode)
 {
@@ -1644,7 +1644,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
           << "] (" << this << ") is attempting to move a nullptr BodyNode. "
           << "Please report this as a bug!\n";
     assert(false);
-    return;
+    return false;
   }
 
   if(this != _bodyNode->getSkeleton().get())
@@ -1655,7 +1655,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
           << "Skeleton [" << _bodyNode->getSkeleton()->getName() << "] ("
           << _bodyNode->getSkeleton() << "). Please report this as a bug!\n";
     assert(false);
-    return;
+    return false;
   }
 
   if( (nullptr == _parentJoint)
@@ -1664,7 +1664,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
   {
     // Short-circuit if the BodyNode is already in the requested place, and its
     // Joint does not need to be changed
-    return;
+    return false;
   }
 
   if(_bodyNode == _parentNode)
@@ -1672,7 +1672,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
     dterr << "[Skeleton::moveBodyNodeTree] Attempting to move BodyNode named ["
           << _bodyNode->getName() << "] (" << _bodyNode << ") to be its own "
           << "parent. This is not permitted!\n";
-    return;
+    return false;
   }
 
   if(_parentNode && _parentNode->descendsFrom(_bodyNode))
@@ -1683,7 +1683,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
           << "] in Skeleton [" << _newSkeleton->getName() << "] ("
           << _newSkeleton << "), but that would create a closed kinematic "
           << "chain, which is not permitted! Nothing will be moved.\n";
-    return;
+    return false;
   }
 
   if(nullptr == _newSkeleton)
@@ -1694,7 +1694,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
             << "tree starting from [" << _bodyNode->getName() << "] in "
             << "Skeleton [" << getName() << "] into a nullptr Skeleton. This "
             << "is not permitted!\n";
-      return;
+      return false;
     }
 
     _newSkeleton = _parentNode->getSkeleton();
@@ -1710,7 +1710,7 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
           << _parentNode->getSkeleton() << ") while attempting to move a "
           << "BodyNode tree starting from [" << _bodyNode->getName() << "] in "
           << "Skeleton [" << getName() << "] (" << this << ")\n";
-    return;
+    return false;
   }
 
   std::vector<BodyNode*> tree = extractBodyNodeTree(_bodyNode);
@@ -1737,6 +1737,8 @@ void Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
     }
   }
   _newSkeleton->receiveBodyNodeTree(tree);
+
+  return true;
 }
 
 //==============================================================================

@@ -651,25 +651,27 @@ SkeletonPtr BodyNode::remove(const std::string& _name)
 }
 
 //==============================================================================
-void BodyNode::moveTo(BodyNode* _newParent)
+bool BodyNode::moveTo(BodyNode* _newParent)
 {
   if(nullptr == _newParent)
-    getSkeleton()->moveBodyNodeTree(
+    return getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, getSkeleton(), nullptr);
   else
-    getSkeleton()->moveBodyNodeTree(
+    return getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, _newParent->getSkeleton(), _newParent);
 }
 
 //==============================================================================
-void BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent)
+bool BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent)
 {
   if(checkSkeletonNodeAgreement(
        this, _newSkeleton, _newParent, "moveTo", "move"))
   {
-    getSkeleton()->moveBodyNodeTree(
+    return getSkeleton()->moveBodyNodeTree(
           getParentJoint(), this, _newSkeleton, _newParent);
   }
+
+  return false;
 }
 
 //==============================================================================

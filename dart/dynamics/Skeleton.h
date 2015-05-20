@@ -831,22 +831,19 @@ protected:
   void unregisterJoint(Joint* _oldJoint);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
-  void moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
+  bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
                         std::shared_ptr<Skeleton> _newSkeleton,
                         BodyNode* _parentNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton while
-  /// changing the Joint type of the top parent Joint
+  /// changing the Joint type of the top parent Joint.
+  ///
+  /// Returns a nullptr if the move failed for any reason.
   template <class JointType>
   JointType* moveBodyNodeTree(
       BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
       BodyNode* _parentNode,
-      const typename JointType::Properties& _joint)
-  {
-    JointType* parentJoint = new JointType(_joint);
-    moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
-    return parentJoint;
-  }
+      const typename JointType::Properties& _joint);
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact
@@ -860,13 +857,7 @@ protected:
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
       const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
       BodyNode* _parentNode,
-      const typename JointType::Properties& _joint) const
-  {
-    JointType* parentJoint = new JointType(_joint);
-    std::pair<Joint*, BodyNode*> root =
-        cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
-    return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
-  }
+      const typename JointType::Properties& _joint) const;
 
   /// Create a vector representation of a subtree of BodyNodes
   std::vector<const BodyNode*> constructBodyNodeTree(
@@ -1146,6 +1137,37 @@ typedef std::shared_ptr<Skeleton> SkeletonPtr;
 typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
 typedef std::weak_ptr<Skeleton> WeakSkeletonPtr;
 typedef std::weak_ptr<const Skeleton> WeakConstSkeletonPtr;
+
+//==============================================================================
+template <class JointType>
+JointType* Skeleton::moveBodyNodeTree(
+    BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+    BodyNode* _parentNode,
+    const typename JointType::Properties& _joint)
+{
+  JointType* parentJoint = new JointType(_joint);
+
+  if(moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
+    return parentJoint;
+
+  // If the move failed, we should delete the Joint that we created and return
+  // a nullptr.
+  delete parentJoint;
+  return nullptr;
+}
+
+//==============================================================================
+template <class JointType>
+std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
+    const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+    BodyNode* _parentNode,
+    const typename JointType::Properties& _joint) const
+{
+  JointType* parentJoint = new JointType(_joint);
+  std::pair<Joint*, BodyNode*> root =
+      cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
+  return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
+}
 
 //==============================================================================
 template <class JointType, class NodeType>
