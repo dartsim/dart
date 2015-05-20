@@ -379,13 +379,30 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 //==============================================================================
 BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
 {
-  return mTreeCache[_treeIdx].mBodyNodes[0];
+  if( mTreeCache.size() <= _treeIdx)
+    return mTreeCache[_treeIdx].mBodyNodes[0];
+
+  if(mTreeCache.size() == 0)
+  {
+    dterr << "[Skeleton::getRootBodyNode] Requested a root BodyNode from a "
+          << "Skeleton with no BodyNodes!\n";
+    assert(false);
+  }
+  else
+  {
+    dterr << "[Skeleton::getRootBodyNode] Requested invalid root BodyNode "
+          << "index (" << _treeIdx << ")! Must be less than "
+          << mTreeCache.size() << ".\n";
+    assert(false);
+  }
+
+  return nullptr;
 }
 
 //==============================================================================
 const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
 {
-  return mTreeCache[_treeIdx].mBodyNodes[0];
+  return const_cast<Skeleton*>(this)->getRootBodyNode(_treeIdx);
 }
 
 //==============================================================================
