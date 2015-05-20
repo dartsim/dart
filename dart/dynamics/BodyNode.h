@@ -386,6 +386,10 @@ public:
   /// created Skeleton will have the same Skeleton::Properties as the current
   /// Skeleton, except it will use the specified name. The return value is a
   /// shared_ptr to the newly created Skeleton.
+  ///
+  /// Note that the parent Joint of this BodyNode will remain the same. If you
+  /// want to change the Joint type of this BodyNode's parent Joint, then use
+  /// the templated split<JointType>() function.
   SkeletonPtr split(const std::string& _skeletonName);
 
   /// A version of split(const std::string&) that also changes the Joint type of
