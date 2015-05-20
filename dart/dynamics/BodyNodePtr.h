@@ -59,6 +59,13 @@ public:
   /// passed to this constructor
   TemplateBodyNodePtr(BodyNodeT* _ptr) : mPtr(nullptr) { set(_ptr); }
 
+  /// User defined copy-constructor
+  TemplateBodyNodePtr(const TemplateBodyNodePtr& _bnp)
+    : mPtr(nullptr)
+  {
+    set(_bnp.get());
+  }
+
   /// Templated constructor for copying other BodyNodePtrs
   template <class OtherBodyNodeT>
   TemplateBodyNodePtr(const TemplateBodyNodePtr<OtherBodyNodeT>& _bnp)

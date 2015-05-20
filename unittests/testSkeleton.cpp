@@ -496,7 +496,7 @@ TEST(Skeleton, Persistence)
   // softBnPtr still exists, so it should be keeping the Skeleton active
   EXPECT_FALSE(weakBnPtr.expired());
 
-  softBnPtr->remove();
+  std::weak_ptr<Skeleton> weakSkel = softBnPtr->remove();
 
   // Now that the SoftBodyNode which is holding the reference has been moved to
   // another Skeleton, the weakBnPtr and weakSkelPtr should disappear
@@ -507,11 +507,31 @@ TEST(Skeleton, Persistence)
   // reference to its SoftBodyNode still exists
   EXPECT_FALSE(weakSoftBnPtr.expired());
 
+  // Test the user-defined copy constructor
+  SoftBodyNodePtr otherSoftBnPtr = softBnPtr;
+
   softBnPtr = nullptr;
 
-  // Now that the SoftBodyNodePtr has been cleared, the WeakSoftBodyNodePtr
-  // should also be cleared
+  EXPECT_FALSE(weakSkel.lock() == nullptr);
+  EXPECT_FALSE(weakSoftBnPtr.lock() == nullptr);
+
+  BodyNodePtr strongPtr = otherSoftBnPtr;
+
+  otherSoftBnPtr = nullptr;
+
+  BodyNodePtr otherStrongPtr = strongPtr;
+
+  strongPtr = nullptr;
+
+  EXPECT_FALSE(weakSkel.lock() == nullptr);
+  EXPECT_FALSE(weakSoftBnPtr.lock() == nullptr);
+
+  otherStrongPtr = nullptr;
+
+  // Now that all the strong BodyNodePtrs have been cleared, the
+  // WeakSoftBodyNodePtr should also be cleared
   EXPECT_TRUE(weakSoftBnPtr.lock() == nullptr);
+  EXPECT_TRUE(weakSkel.lock() == nullptr);
 }
 
 int main(int argc, char* argv[])
