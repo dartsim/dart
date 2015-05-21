@@ -98,23 +98,11 @@ void Linkage::Criteria::refreshTerminalMap() const
 }
 
 //==============================================================================
-struct Recorder
-{
-  Recorder() : mNode(nullptr), mCount(0) { }
-
-  BodyNode* mNode;
-  int mCount;
-};
-
-//==============================================================================
 void Linkage::Criteria::expansionPolicy(
     BodyNode* _start,
     Linkage::Criteria::ExpansionPolicy _policy,
     std::vector<BodyNode*>& _bns) const
 {
-  std::vector<Recorder> recording;
-  recording.reserve(_start->getSkeleton()->getNumBodyNodes());
-
   // If the _start is a terminal, we quit before expanding
   std::unordered_map<BodyNode*, bool>::const_iterator check_start =
       mMapOfTerminals.find(_start);
@@ -126,19 +114,108 @@ void Linkage::Criteria::expansionPolicy(
     return;
   }
 
-
-  while(recording.size() > 0)
-  {
-
-  }
+  if(DOWNSTREAM == _policy)
+    expandDownstream(_start, _bns);
+  else if(UPSTREAM == _policy)
+    expandUpstream(_start, _bns);
 }
+
+//==============================================================================
+struct Recording
+{
+  Recording(BodyNode* _node = nullptr, int _count = 0)
+    : mNode(_node), mCount(_count) { }
+
+  BodyNode* mNode;
+  int mCount;
+};
 
 //==============================================================================
 void Linkage::Criteria::expandDownstream(
     BodyNode* _start, std::vector<BodyNode*>& _bns) const
 {
+  std::vector<Recording> recorder;
+  recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
 
+  _bns.push_back(_start);
+  recorder.push_back(Recording(_start, 0));
+
+  while(recorder.size() > 0)
+  {
+    Recording& r = recorder.back();
+    if(r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes()))
+    {
+      recorder.push_back(Recording(r.mNode->getChildBodyNode(r.mCount), 0));
+      ++r.mCount;
+      recorder.push_back(r.mNode);
+    }
+    else
+    {
+      recorder.pop_back();
+    }
+  }
 }
+
+//==============================================================================
+void Linkage::Criteria::expandUpstream(
+    BodyNode* _start, std::vector<BodyNode*>& _bns) const
+{
+  std::vector<Recording> recorder;
+  recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
+
+  _bns.push_back(_start);
+  recorder.push_back(Recording(_start, -1));
+
+  while(recorder.size() > 0)
+  {
+    Recording& r = recorder.back();
+
+    if(r.mCount == -1)
+    {
+      // -1 means we need to take a step upstream
+      if(r.mNode->getParentBodyNode() == nullptr)
+      {
+        ++r.mCount;
+      }
+      else if(recorder.size() == 1 ||
+              r.mNode->getParentBodyNode() != recorder[recorder.size()-2].mNode)
+      {
+        // Go toward this node if we did not originally come from this node
+        // or if we're at the first iteration
+        recorder.push_back(Recording(r.mNode->getParentBodyNode(), -1));
+        ++r.mCount;
+        _bns.push_back(recorder.back().mNode);
+      }
+      else
+      {
+        // If we originally came from this node, then just continue to the next
+        ++r.mCount;
+      }
+    }
+    else if(r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes()))
+    {
+      if(recorder.size()==1)
+      {
+        // If we've arrived back at the bottom of the queue, we're finished
+        break;
+      }
+      else if( r.mNode->getChildBodyNode(r.mCount)
+               != recorder[recorder.size()-2].mNode)
+      {
+        // Go toward this node if we did not originally come from this node
+        recorder.push_back(Recording(r.mNode->getChildBodyNode(r.mCount), -1));
+        ++r.mCount;
+        _bns.push_back(recorder.back().mNode);
+      }
+      else
+      {
+        // If we originally came from this node, then just continue to the next
+        ++r.mCount;
+      }
+    }
+  }
+}
+
 
 //==============================================================================
 void Linkage::Criteria::expandToTarget(
