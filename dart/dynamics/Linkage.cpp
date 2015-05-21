@@ -34,63 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+
 #include "dart/dynamics/Linkage.h"
+#include "dart/dynamics/FreeJoint.h"
 
 namespace dart {
 namespace dynamics {
-
-//==============================================================================
-Linkage::Criteria::Target::Target(BodyNode* _target,
-                                  ExpansionPolicy _policy,
-                                  bool _chain)
-  : mTarget(_target),
-    mPolicy(_policy),
-    mChain(_chain)
-{
-  // Do nothing
-}
-
-//==============================================================================
-Linkage::Criteria::Terminal::Terminal(BodyNode* _terminal, bool _inclusive)
-  : mTerminal(_terminal),
-    mInclusive(_inclusive)
-{
-  // Do nothing
-}
-
-//==============================================================================
-std::vector<BodyNode*> climbToTarget(BodyNode* _start, BodyNode* _target)
-{
-
-}
-
-//==============================================================================
-static void expandToTarget(BodyNode* _start,
-                           const Linkage::Criteria::Target& _target,
-                           std::vector<BodyNode*>& _bns)
-{
-  BodyNode* target_bn = _target.mTarget;
-  if(_start->descendsFrom(target_bn))
-  {
-
-  }
-  else if(target_bn->descendsFrom(_start))
-  {
-
-  }
-  else
-  {
-
-  }
-}
-
-//==============================================================================
-static void expansionPolicy(BodyNode* _start,
-                            Linkage::Criteria::ExpansionPolicy _policy,
-                            std::vector<BodyNode*>& _bns)
-{
-
-}
 
 //==============================================================================
 std::vector<BodyNode*> Linkage::Criteria::satisfy() const
@@ -113,10 +63,28 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   for(size_t i=0; i<mTargets.size(); ++i)
   {
     expandToTarget(mStart.mTarget, mTargets[i], bns);
-    expansionPolicy(mTargets[i].mTarget, mTargets[i].mPolicy, bns);
   }
 
   return bns;
+}
+
+//==============================================================================
+Linkage::Criteria::Target::Target(BodyNode* _target,
+                                  ExpansionPolicy _policy,
+                                  bool _chain)
+  : mTarget(_target),
+    mPolicy(_policy),
+    mChain(_chain)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Linkage::Criteria::Terminal::Terminal(BodyNode* _terminal, bool _inclusive)
+  : mTerminal(_terminal),
+    mInclusive(_inclusive)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -127,6 +95,152 @@ void Linkage::Criteria::refreshTerminalMap() const
   {
     mMapOfTerminals[mTerminals[i].mTerminal] = mTerminals[i].mInclusive;
   }
+}
+
+//==============================================================================
+struct Recorder
+{
+  Recorder() : mNode(nullptr), mCount(0) { }
+
+  BodyNode* mNode;
+  int mCount;
+};
+
+//==============================================================================
+void Linkage::Criteria::expansionPolicy(
+    BodyNode* _start,
+    Linkage::Criteria::ExpansionPolicy _policy,
+    std::vector<BodyNode*>& _bns) const
+{
+  std::vector<Recorder> recording;
+  recording.reserve(_start->getSkeleton()->getNumBodyNodes());
+
+  // If the _start is a terminal, we quit before expanding
+  std::unordered_map<BodyNode*, bool>::const_iterator check_start =
+      mMapOfTerminals.find(_start);
+  if( check_start != mMapOfTerminals.end() )
+  {
+    bool inclusive = check_start->second;
+    if(inclusive)
+      _bns.push_back(_start);
+    return;
+  }
+
+
+  while(recording.size() > 0)
+  {
+
+  }
+}
+
+//==============================================================================
+void Linkage::Criteria::expandDownstream(
+    BodyNode* _start, std::vector<BodyNode*>& _bns) const
+{
+
+}
+
+//==============================================================================
+void Linkage::Criteria::expandToTarget(
+    BodyNode* _start,
+    const Linkage::Criteria::Target& _target,
+    std::vector<BodyNode*>& _bns) const
+{
+  BodyNode* target_bn = _target.mTarget;
+  std::vector<BodyNode*> newBns;
+  newBns.reserve(target_bn->getSkeleton()->getNumBodyNodes());
+
+  if(target_bn == nullptr || _start->descendsFrom(target_bn))
+    newBns = climbToTarget(_start, target_bn);
+  else if(target_bn->descendsFrom(_start))
+    newBns = climbToTarget(target_bn, _start);
+  else
+    newBns = climbToCommonRoot(_start, target_bn);
+
+  trimBodyNodes(newBns, _target.mChain);
+
+  // If we have successfully reached the target, expand from there
+  if(newBns.back() == _target.mTarget)
+    expansionPolicy(_target.mTarget, _target.mPolicy, newBns);
+
+  _bns.insert(_bns.end(), newBns.begin(), newBns.end());
+}
+
+//==============================================================================
+std::vector<BodyNode*> Linkage::Criteria::climbToTarget(
+    BodyNode* _start, BodyNode* _target) const
+{
+  std::vector<BodyNode*> newBns;
+  newBns.reserve(_start->getSkeleton()->getNumBodyNodes());
+
+  BodyNode* bn = _start;
+
+  BodyNode* finalBn = nullptr==_target? nullptr : _target->getParentBodyNode();
+
+  while( bn != finalBn && bn != nullptr )
+  {
+    newBns.push_back(bn);
+    bn = bn->getParentBodyNode();
+  }
+
+  return newBns;
+}
+
+//==============================================================================
+std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
+    BodyNode* _start, BodyNode* _target) const
+{
+  BodyNode* root = _start->getParentBodyNode();
+  while(root != nullptr)
+  {
+    if(_target->descendsFrom(root))
+      break;
+  }
+
+  std::vector<BodyNode*> bnStart = climbToTarget(_start, root);
+  std::vector<BodyNode*> bnTarget = climbToTarget(_target, root);
+  std::reverse(bnTarget.begin(), bnTarget.end());
+
+  std::vector<BodyNode*> bnAll;
+  bnAll.reserve(bnStart.size() + bnTarget.size());
+  bnAll.insert(bnAll.end(), bnStart.begin(), bnStart.end());
+  bnAll.insert(bnAll.end(), bnTarget.begin(), bnTarget.end());
+
+  return bnAll;
+}
+
+//==============================================================================
+void Linkage::Criteria::trimBodyNodes(
+    std::vector<BodyNode *>& _bns, bool _chain) const
+{
+  std::vector<BodyNode*>::iterator it = _bns.begin();
+  while( it != _bns.end() )
+  {
+    std::unordered_map<BodyNode*, bool>::const_iterator terminal =
+        mMapOfTerminals.find(*it);
+
+    if( terminal != mMapOfTerminals.end() )
+    {
+      bool inclusive = terminal->second;
+      if(inclusive)
+        ++it;
+
+      break;
+    }
+
+    ++it;
+
+    if( it != _bns.end() && _chain)
+    {
+      if( (*it)->getNumChildBodyNodes() > 1)
+        break;
+
+      if( dynamic_cast<FreeJoint*>( (*it)->getParentJoint() ) )
+        break;
+    }
+  }
+
+  _bns.erase(it, _bns.end());
 }
 
 } // namespace dynamics

@@ -58,7 +58,7 @@ public:
       UPSTREAM      ///< Expand upstream, toward the root of the tree
     };
 
-    // Documentation inherited
+    /// Return a vector of BodyNodes that satisfy the parameters of the Criteria
     std::vector<BodyNode*> satisfy() const;
 
     /// This structure defines targets for the expansion criteria and the
@@ -122,6 +122,32 @@ public:
 
     /// Refresh the content of mMapOfTerminals
     void refreshTerminalMap() const;
+
+    /// Satisfy the expansion policy of a target
+    void expansionPolicy(BodyNode* _start, ExpansionPolicy _policy,
+                         std::vector<BodyNode*>& _bns) const;
+
+    /// Expand downstream
+    void expandDownstream(BodyNode* _start, std::vector<BodyNode*>& _bns) const;
+
+    /// Expand upstream
+    void expandUpstream(BodyNode* _start, std::vector<BodyNode*>& _bns) const;
+
+    /// Construct a path from start to target
+    void expandToTarget(BodyNode* _start, const Target& _target,
+                        std::vector<BodyNode*>& _bns) const;
+
+    /// Expand upwards from the _start BodyNode to the _target BodyNode
+    std::vector<BodyNode*> climbToTarget(
+        BodyNode* _start, BodyNode* _target) const;
+
+    /// Expand upwards from both BodyNodes to a common root
+    std::vector<BodyNode*> climbToCommonRoot(
+        BodyNode* _start, BodyNode* _target) const;
+
+    /// Crawl through the list and cut it off anywhere that the criteria is
+    /// violated
+    void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain) const;
 
     /// Hashed set for terminals to allow quick lookup.
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
