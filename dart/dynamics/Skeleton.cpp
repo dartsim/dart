@@ -1385,7 +1385,8 @@ const Eigen::VectorXd& Skeleton::getConstraintForceVector()
 void Skeleton::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
                     bool _useDefaultColor) const
 {
-  getRootBodyNode()->draw(_ri, _color, _useDefaultColor);
+  for(size_t i=0; i<getNumTrees(); ++i)
+    getRootBodyNode(i)->draw(_ri, _color, _useDefaultColor);
 }
 
 //==============================================================================
