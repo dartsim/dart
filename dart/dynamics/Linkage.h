@@ -43,17 +43,28 @@
 namespace dart {
 namespace dynamics {
 
+/// A Linkage is a ReferentialSkeleton with the special property that all the
+/// BodyNodes included in it form a contiguous graph. This propery is only
+/// guaranteed during construction of the Linkage. After the Linkage has been
+/// constructed, a user might alter how the BodyNodes in a Linkage are
+/// assembled. The function Linkage::isAssembled() can be used to check whether
+/// the Linkage is still assembled. The function Linkage::satisfyCriteria() can
+/// be used to redefine the Linkage so that the original Linkage::Criteria is
+/// met again. The function Linkage::reassemble() will reassemble the BodyNodes
+/// so that they match whatever assembly they had the last time
+/// Linkage::reassemble() was called (or the assembly that they had when the
+/// Linkage was constructed, if Linkage::reassemble has never been called).
 class Linkage : public ReferentialSkeleton
 {
 public:
 
-  /// This is the most general derivation of the Criteria class, defined by
+  /// The Criteria class is used to specify how a Linkage should be constructed
   struct Criteria
   {
     /// The ExpansionPolicy indicates how the collection of BodyNodes should
     /// expand from the starting BodyNode (mStart)
     enum ExpansionPolicy {
-      NEUTRAL = 0,  ///< Do not expand. Only include the BodyNodes needed to satisfy the mChainTargets
+      NEUTRAL = 0,  ///< Do not expand. Only include the BodyNodes needed to reach the target
       DOWNSTREAM,   ///< Expand downstream, toward the leaves of the tree
       UPSTREAM      ///< Expand upstream, toward the root of the tree
     };
@@ -71,7 +82,7 @@ public:
              bool _chain = false);
 
       /// The Linkage will expand from the starting BodyNode up to this target
-      BodyNode* mTarget;
+      WeakBodyNodePtr mTarget;
 
       /// After the target has been reached (if it is reached), the Linkage will
       /// start to follow this expansion policy.
@@ -107,7 +118,7 @@ public:
       Terminal(BodyNode* _terminal = nullptr, bool _inclusive = true);
 
       /// BodyNode that should halt any expansion
-      BodyNode* mTerminal;
+      WeakBodyNodePtr mTerminal;
 
       /// Whether or not the BodyNode should be included after expansion has
       /// halted
@@ -153,13 +164,31 @@ public:
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
   };
 
-  /// Constructor for the Linkage class
+  /// Constructor for the Linkage class. satisfyCriteria() will be called during
+  /// construction.
   Linkage(const Criteria& _criteria);
+
+  /// Returns false if the original assembly of this Linkage has been broken in
+  /// some way
+  bool isAssembled() const;
+
+  /// Revert the assembly of this Linkage to its original structure
+  void reassemble();
+
+  /// Redefine this Linkage so that its Criteria is satisfied
+  void satisfyCriteria();
 
 protected:
 
+  /// Update any metadata needed by the Linkage or its derived classes
+  virtual void update();
+
   /// Criteria that defines the structure of this Linkage
   Criteria mCriteria;
+
+  /// Recording of the parent BodyNodes that were held by each of the BodyNodes
+  /// when the Linkage was constructed
+  std::vector<WeakBodyNodePtr> mParentBodyNodes;
 };
 
 } // namespace dynamics

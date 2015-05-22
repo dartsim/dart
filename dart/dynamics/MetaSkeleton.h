@@ -50,6 +50,10 @@
 namespace dart {
 namespace dynamics {
 
+enum {
+  INVALID_INDEX = static_cast<size_t>(-1)
+};
+
 class BodyNode;
 class SoftBodyNode;
 class PointMass;
@@ -104,7 +108,7 @@ public:
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
-  /// Returns (size_t)(-1) if it is not held in this ReferentialSkeleton.
+  /// Returns INVALID_INDEX if it is not held in this ReferentialSkeleton.
   virtual size_t getIndexOf(const BodyNode* _bn) const = 0;
 
   /// Get number of Joints
@@ -117,7 +121,7 @@ public:
   virtual const Joint* getJoint(size_t _idx) const = 0;
 
   /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
-  /// (size_t)(-1) if it is not held in this ReferentialSkeleton.
+  /// INVALID_INDEX if it is not held in this ReferentialSkeleton.
   virtual size_t getIndexOf(const Joint* _joint) const = 0;
 
   /// Return the number of degrees of freedom in this skeleton
@@ -136,7 +140,7 @@ public:
   virtual std::vector<const DegreeOfFreedom*> getDofs() const = 0;
 
   /// Get the index of a specific DegreeOfFreedom within this
-  /// ReferentialSkeleton. Returns (size_t)(-1) if it is not held in this
+  /// ReferentialSkeleton. Returns INVALID_INDEX if it is not held in this
   /// ReferentialSkeleton.
   virtual size_t getIndexOf(const DegreeOfFreedom* _dof) const = 0;
 

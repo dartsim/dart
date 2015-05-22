@@ -401,7 +401,7 @@ public:
   size_t getLocalIndex() const
   {
     if(nullptr == mBodyNodePtr)
-      return (size_t)(-1);
+      return INVALID_INDEX;
 
     return mIndex;
   }

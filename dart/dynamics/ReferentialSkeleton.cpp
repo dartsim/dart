@@ -121,13 +121,13 @@ size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn) const
     dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           << "BodyNode!\n";
     assert(false);
-    return (size_t)(-1);
+    return INVALID_INDEX;
   }
 
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(_bn);
   if( it == mIndexMap.end() )
-    return (size_t)(-1);
+    return INVALID_INDEX;
 
   return it->second.mBodyNodeIndex;
 }
@@ -166,13 +166,13 @@ size_t ReferentialSkeleton::getIndexOf(const Joint* _joint) const
     dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           << "Joint!\n";
     assert(false);
-    return (size_t)(-1);
+    return INVALID_INDEX;
   }
 
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(_joint->getChildBodyNode());
   if( it == mIndexMap.end() )
-    return (size_t)(-1);
+    return INVALID_INDEX;
 
   return it->second.mBodyNodeIndex;
 }
@@ -217,18 +217,18 @@ size_t ReferentialSkeleton::getIndexOf(const DegreeOfFreedom* _dof) const
     dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
           << "DegreeOfFreedom!\n";
     assert(false);
-    return (size_t)(-1);
+    return INVALID_INDEX;
   }
 
   const BodyNode* bn = _dof->getChildBodyNode();
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(bn);
   if( it == mIndexMap.end() )
-    return (size_t)(-1);
+    return INVALID_INDEX;
 
   size_t localIndex = _dof->getIndexInJoint();
   if(it->second.mDofIndices.size() <= localIndex ||
-     it->second.mDofIndices[localIndex] == (size_t)(-1) )
+     it->second.mDofIndices[localIndex] == INVALID_INDEX )
   {
     dterr << "[ReferentialSkeleton::getIndexOf] BodyNode named ["
           << bn->getName() << "] (" << bn << ") is referenced by the "
@@ -236,7 +236,7 @@ size_t ReferentialSkeleton::getIndexOf(const DegreeOfFreedom* _dof) const
           << "), but it does not include the DegreeOfFreedom #"
           << localIndex << " of its parent Joint!\n";
     assert(false);
-    return (size_t)(-1);
+    return INVALID_INDEX;
   }
 
   return it->second.mDofIndices[localIndex];
@@ -268,7 +268,7 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
     indexing.mBodyNodeIndex = mBodyNodes.size()-1;
     mBodyNodes.push_back(bn);
 
-    indexing.mDofIndices.resize(localIndex+1, (size_t)(-1));
+    indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
     mDofs.push_back(_dof);
     indexing.mDofIndices[localIndex] = mDofs.size()-1;
   }
@@ -276,7 +276,7 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
   {
     IndexMap& indexing = it->second;
     if(indexing.mDofIndices.size() < localIndex+1)
-      indexing.mDofIndices.resize(localIndex+1, (size_t)(-1));
+      indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
     mDofs.push_back(_dof);
     indexing.mDofIndices[localIndex] = mDofs.size()-1;
   }
@@ -311,7 +311,7 @@ void ReferentialSkeleton::unregisterBodyNode(BodyNode* _bn)
 
   for(size_t i=0; i<indexing.mDofIndices.size(); ++i)
   {
-    if(indexing.mDofIndices[i] != (size_t)(-1))
+    if(indexing.mDofIndices[i] != INVALID_INDEX)
       unregisterDegreeOfFreedom(_bn, i, false);
   }
 
@@ -343,7 +343,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
 
   if( it == mIndexMap.end() ||
       it->second.mDofIndices.size() <= _localIndex ||
-      it->second.mDofIndices[_localIndex] == (size_t)(-1))
+      it->second.mDofIndices[_localIndex] == INVALID_INDEX)
   {
     dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
           << "unregister a DegreeOfFreedom from a BodyNode named ["
@@ -356,7 +356,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
 
   size_t dofIndex = it->second.mDofIndices[_localIndex];
   mDofs.erase(mDofs.begin() + dofIndex);
-  it->second.mDofIndices[_localIndex] = (size_t)(-1);
+  it->second.mDofIndices[_localIndex] = INVALID_INDEX;
 
   for(size_t i = dofIndex; i < mDofs.size(); ++i)
   {
@@ -371,7 +371,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     bool removeBn = true;
     for(size_t i=0; i<dofIndices.size(); ++i)
     {
-      if(dofIndices[i] != (size_t)(-1))
+      if(dofIndices[i] != INVALID_INDEX)
       {
         removeBn = false;
         break;

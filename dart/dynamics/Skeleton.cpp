@@ -487,7 +487,7 @@ static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
           << _type << " within the Skeleton [" << _skel->getName() << "] ("
           << _skel << ")!\n";
     assert(false);
-    return (size_t)(-1);
+    return INVALID_INDEX;
   }
 
   if(_skel == _obj->getSkeleton().get())
@@ -498,7 +498,7 @@ static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
         << "not belong to!\n";
   assert(false);
 
-  return (size_t)(-1);
+  return INVALID_INDEX;
 }
 
 //==============================================================================
@@ -1622,8 +1622,8 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
   std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
   std::vector<DegreeOfFreedom*>& skelDofs = mSkelCache.mDofs;
 
-  size_t firstSkelIndex = (size_t)(-1);
-  size_t firstTreeIndex = (size_t)(-1);
+  size_t firstSkelIndex = INVALID_INDEX;
+  size_t firstTreeIndex = INVALID_INDEX;
   for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
