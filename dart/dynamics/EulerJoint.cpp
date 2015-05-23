@@ -122,6 +122,19 @@ EulerJoint& EulerJoint::operator=(const EulerJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& EulerJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& EulerJoint::getStaticType()
+{
+  static const std::string name = "EulerJoint";
+  return name;
+}
+
+//==============================================================================
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
   mEulerP.mAxisOrder = _order;

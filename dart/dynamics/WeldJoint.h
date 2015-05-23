@@ -69,6 +69,12 @@ public:
   Properties getWeldJointProperties() const;
 
   // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
+  // Documentation inherited
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
 
   // Documentation inherited

@@ -129,6 +129,19 @@ PrismaticJoint& PrismaticJoint::operator=(const PrismaticJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& PrismaticJoint::getType() const
+{
+    return getStaticType();
+}
+
+//==============================================================================
+const std::string& PrismaticJoint::getStaticType()
+{
+  static const std::string name = "PrismaticJoint";
+  return name;
+}
+
+//==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mPrismaticP.mAxis = _axis.normalized();

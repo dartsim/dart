@@ -107,6 +107,19 @@ Joint* FreeJoint::clone() const
 }
 
 //==============================================================================
+const std::string& FreeJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& FreeJoint::getStaticType()
+{
+  static const std::string name = "FreeJoint";
+  return name;
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Vector6d& velocities = getVelocitiesStatic();

@@ -209,6 +209,19 @@ PlanarJoint& PlanarJoint::operator=(const PlanarJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& PlanarJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& PlanarJoint::getStaticType()
+{
+  static const std::string name = "PlanarJoint";
+  return name;
+}
+
+//==============================================================================
 void PlanarJoint::setXYPlane(bool _renameDofs)
 {
   mPlanarP.setXYPlane();

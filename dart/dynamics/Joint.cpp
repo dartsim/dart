@@ -167,6 +167,19 @@ const std::string& Joint::getName() const
 }
 
 //==============================================================================
+const std::string& Joint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& Joint::getStaticType()
+{
+  static const std::string name = "Joint";
+  return name;
+}
+
+//==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
   mJointP.mActuatorType = _actuatorType;

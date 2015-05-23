@@ -97,6 +97,12 @@ public:
   /// Copy the Properties of another UniversalJoint
   UniversalJoint& operator=(const UniversalJoint& _otherJoint);
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   ///
   void setAxis1(const Eigen::Vector3d& _axis);
 

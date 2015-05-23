@@ -64,6 +64,12 @@ public:
   /// Destructor
   virtual ~BallJoint();
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;
 

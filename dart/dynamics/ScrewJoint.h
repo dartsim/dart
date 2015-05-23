@@ -102,6 +102,12 @@ public:
   /// Copy the Properties of another ScrewJoint
   ScrewJoint& operator=(const ScrewJoint& _otherJoint);
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   ///
   void setAxis(const Eigen::Vector3d& _axis);
 

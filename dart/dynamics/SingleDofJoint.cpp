@@ -180,6 +180,19 @@ SingleDofJoint& SingleDofJoint::operator=(const SingleDofJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& SingleDofJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& SingleDofJoint::getStaticType()
+{
+  static const std::string name = "SingleDofJoint";
+  return name;
+}
+
+//==============================================================================
 size_t SingleDofJoint::getNumDofs() const
 {
   return 1;

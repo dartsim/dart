@@ -66,6 +66,19 @@ BallJoint::~BallJoint()
 }
 
 //==============================================================================
+const std::string& BallJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BallJoint::getStaticType()
+{
+  static const std::string name = "BallJoint";
+  return name;
+}
+
+//==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
   return getMultiDofJointProperties();

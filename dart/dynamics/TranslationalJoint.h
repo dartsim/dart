@@ -67,6 +67,12 @@ public:
   /// Get the Properties of this TranslationalJoint
   Properties getTranslationalJointProperties() const;
 
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
 protected:
 
   /// Constructor called by Skeleton class
