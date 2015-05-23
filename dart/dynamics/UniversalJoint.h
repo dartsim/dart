@@ -59,6 +59,8 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
                      const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : MultiDofJoint<2>::Properties,
@@ -68,6 +70,7 @@ public:
                                             MultiDofJoint<2>::Properties(),
                const UniversalJoint::UniqueProperties& _universalProperties =
                                             UniversalJoint::UniqueProperties());
+    virtual ~Properties() = default;
   };
 
   /// Constructor

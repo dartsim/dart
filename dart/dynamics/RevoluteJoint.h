@@ -58,6 +58,8 @@ public:
     Eigen::Vector3d mAxis;
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : SingleDofJoint::Properties,
@@ -68,6 +70,8 @@ public:
                                             SingleDofJoint::Properties(),
         const RevoluteJoint::UniqueProperties& _revoluteProperties =
                                             RevoluteJoint::UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor
