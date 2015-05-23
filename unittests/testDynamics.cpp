@@ -80,9 +80,13 @@ public:
   // difference.
   void testJacobians(const std::string& _fileName);
 
+  // Compare velocities and accelerations with actual vaules and approximates
+  // using finite differece method.
+  void testFiniteDifferenceGeneralizedCoordinates(const std::string& _fileName);
+
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
-  void testFiniteDifference(const std::string& _fileName);
+  void testFiniteDifferenceBodyNodeAcceleration(const std::string& _fileName);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
@@ -653,7 +657,111 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::testFiniteDifference(const std::string& _fileName)
+void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
+    const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //----------------------------- Settings -------------------------------------
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 2;
+#else
+  int nRandomItr = 10;
+#endif
+  double qLB   = -0.5 * DART_PI;
+  double qUB   =  0.5 * DART_PI;
+  double dqLB  = -0.3 * DART_PI;
+  double dqUB  =  0.3 * DART_PI;
+  double ddqLB = -0.1 * DART_PI;
+  double ddqUB =  0.1 * DART_PI;
+  Vector3d gravity(0.0, -9.81, 0.0);
+  double timeStep = 1e-3;
+
+  // load skeleton
+  World* world = SkelParser::readWorld(_fileName);
+  assert(world != NULL);
+  world->setGravity(gravity);
+  world->setTimeStep(timeStep);
+
+  //------------------------------ Tests ---------------------------------------
+  for (size_t i = 0; i < world->getNumSkeletons(); ++i)
+  {
+    Skeleton* skeleton = world->getSkeleton(i);
+    assert(skeleton != NULL);
+    int dof = skeleton->getNumDofs();
+
+    for (int j = 0; j < nRandomItr; ++j)
+    {
+      // Generate a random state and ddq
+      VectorXd q0   = VectorXd(dof);
+      VectorXd dq0  = VectorXd(dof);
+      VectorXd ddq0 = VectorXd(dof);
+      for (int k = 0; k < dof; ++k)
+      {
+        q0[k]   = math::random(qLB,   qUB);
+        dq0[k]  = math::random(dqLB,  dqUB);
+        ddq0[k] = math::random(ddqLB, ddqUB);
+      }
+
+      skeleton->setPositions(q0);
+      skeleton->setVelocities(dq0);
+      skeleton->setAccelerations(ddq0);
+
+      skeleton->integratePositions(timeStep);
+      VectorXd q1 = skeleton->getPositions();
+      skeleton->integrateVelocities(timeStep);
+      VectorXd dq1 = skeleton->getVelocities();
+
+      skeleton->integratePositions(timeStep);
+      VectorXd q2 = skeleton->getPositions();
+      skeleton->integrateVelocities(timeStep);
+      VectorXd dq2 = skeleton->getVelocities();
+
+      VectorXd dq0FD = (q1 - q0) / timeStep;
+      VectorXd dq1FD = (q2 - q1) / timeStep;
+      VectorXd ddqFD1 = (dq1FD - dq0FD) / timeStep;
+      VectorXd ddqFD2 = (dq2 - dq1) / timeStep;
+
+      EXPECT_TRUE(equals(dq0, dq0FD));
+      EXPECT_TRUE(equals(dq1, dq1FD));
+      EXPECT_TRUE(equals(ddq0, ddqFD1));
+      EXPECT_TRUE(equals(ddq0, ddqFD2));
+
+      if (!equals(dq0FD, dq0))
+      {
+        std::cout << "dq0  : " << dq0.transpose() << std::endl;
+        std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
+      }
+      if (!equals(dq1, dq1FD))
+      {
+        std::cout << "dq1  : " << dq1.transpose() << std::endl;
+        std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
+      }
+      if (!equals(ddq0, ddqFD1))
+      {
+        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
+        std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
+      }
+      if (!equals(ddq0, ddqFD2))
+      {
+        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
+        std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
+      }
+    }
+  }
+
+  delete world;
+}
+
+//==============================================================================
+void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
+    const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -703,10 +811,6 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
         q[k]   = math::random(qLB,   qUB);
         dq[k]  = math::random(dqLB,  dqUB);
         ddq[k] = math::random(ddqLB, ddqUB);
-
-//        q[k]   = 0.0;
-//        dq[k]  = 0.0;
-//        ddq[k] = 0.0;
       }
 
       VectorXd qNext  =  q +  dq * timeStep;
@@ -1546,7 +1650,8 @@ TEST_F(DynamicsTest, testFiniteDifference)
 #ifndef NDEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
-    testFiniteDifference(getList()[i]);
+    testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
+    testFiniteDifferenceBodyNodeAcceleration(getList()[i]);
   }
 }
 
