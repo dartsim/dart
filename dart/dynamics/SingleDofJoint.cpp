@@ -746,6 +746,30 @@ void SingleDofJoint::integrateVelocities(double _dt)
 }
 
 //==============================================================================
+Eigen::VectorXd SingleDofJoint::getPositionsDifference(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  {
+    dterr << "SingleDofJoint::getPositionsDifference: q0's size[" << _q0.size()
+          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::Matrix<double, 1, 1>::Zero();
+  }
+
+  return Eigen::Matrix<double, 1, 1>::Constant(
+        getPositionDifferenceStatic(_q0[0], _q1[0]));
+}
+
+//==============================================================================
+double SingleDofJoint::getPositionDifferenceStatic(double _q0,
+                                                    double _q1) const
+{
+  return _q1 - _q0;
+}
+
+//==============================================================================
 void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 {
   if (_index != 0)
@@ -913,12 +937,7 @@ Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 //==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
-  return mJacobian;
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================
@@ -930,6 +949,14 @@ const Eigen::Vector6d& SingleDofJoint::getLocalJacobianStatic() const
     mIsLocalJacobianDirty = false;
   }
   return mJacobian;
+}
+
+//==============================================================================
+math::Jacobian SingleDofJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
+{
+  // The Jacobian is always constant w.r.t. the generalized coordinates.
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================

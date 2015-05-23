@@ -54,7 +54,14 @@ public:
   /// Destructor
   virtual ~TranslationalJoint();
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
+
+  using MultiDofJoint::getLocalJacobianStatic;
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 
@@ -62,7 +69,7 @@ protected:
   virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory=true) const;
+  virtual void updateLocalJacobian(bool _mandatory = true) const;
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const;

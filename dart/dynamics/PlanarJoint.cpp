@@ -152,6 +152,27 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
+Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& _positions) const
+{
+  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  J.block<3, 1>(3, 0) = mTransAxis1;
+  J.block<3, 1>(3, 1) = mTransAxis2;
+  J.block<3, 1>(0, 2) = mRotAxis;
+
+  J.leftCols<2>()
+      = math::AdTJacFixed(mT_ChildBodyToJoint
+                          * math::expAngular(mRotAxis * -_positions[2]),
+                          J.leftCols<2>());
+  J.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
+
+  // Verification
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
@@ -205,19 +226,7 @@ void PlanarJoint::updateLocalTransform() const
 //==============================================================================
 void PlanarJoint::updateLocalJacobian(bool) const
 {
-  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mTransAxis1;
-  J.block<3, 1>(3, 1) = mTransAxis2;
-  J.block<3, 1>(0, 2) = mRotAxis;
-
-  mJacobian.leftCols<2>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
-                        * math::expAngular(mRotAxis * -getPositionsStatic()[2]),
-                        J.leftCols<2>());
-  mJacobian.col(2) = math::AdTJac(mT_ChildBodyToJoint, J.col(2));
-
-  // Verification
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

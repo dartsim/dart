@@ -410,7 +410,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Integration
+  /// \{ \name Integration and finite difference
   //----------------------------------------------------------------------------
 
   /// Integrate positions using Euler method
@@ -418,6 +418,11 @@ public:
 
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
+
+  /// Return the difference of two generalized coordinates which are measured in
+  /// the configuration space of this Skeleton.
+  virtual Eigen::VectorXd getPositionsDifference(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const = 0;
 
   /// \}
 
@@ -486,6 +491,11 @@ public:
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
   virtual const math::Jacobian getLocalJacobian() const = 0;
+
+  /// Get generalized Jacobian from parent body node to child body node
+  /// w.r.t. local generalized coordinate
+  virtual math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const = 0;
 
   /// Get time derivative of generalized Jacobian from parent body node
   /// to child body node w.r.t. local generalized coordinate

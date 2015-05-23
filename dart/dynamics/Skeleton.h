@@ -426,7 +426,7 @@ public:
   Eigen::VectorXd getJointConstraintImpulses() const;
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -434,6 +434,16 @@ public:
 
   // Documentation inherited
   void integrateVelocities(double _dt);
+
+  /// Return the difference of two generalized positions which are measured in
+  /// the configuration space of this Skeleton.
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const;
+
+  /// Return the difference of two generalized velocities or accelerations which
+  /// are measured in the tangent space at the identity.
+  Eigen::VectorXd getVelocityDifferences(
+      const Eigen::VectorXd& _dq0, const Eigen::VectorXd& _dq1) const;
 
   //----------------------------------------------------------------------------
   // State
