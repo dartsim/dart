@@ -155,12 +155,6 @@ public:
   /// Same as copy(const MutliDofJoint&)
   MultiDofJoint<DOF>& operator=(const MultiDofJoint<DOF>& _otherJoint);
 
-  // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Get joint type for this class
-  static const std::string& getStaticType();
-
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
   //----------------------------------------------------------------------------

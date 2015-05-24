@@ -147,12 +147,6 @@ public:
   SingleDofJoint& operator=(const SingleDofJoint& _otherJoint);
 
   // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Get joint type for this class
-  static const std::string& getStaticType();
-
-  // Documentation inherited
   DegreeOfFreedom* getDof(size_t _index) override;
 
   // Documentation inherited

@@ -71,19 +71,6 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 }
 
 //==============================================================================
-const std::string& ZeroDofJoint::getType() const
-{
-  return getStaticType();
-}
-
-//==============================================================================
-const std::string& ZeroDofJoint::getStaticType()
-{
-  static const std::string name = "ZeroDofJoint";
-  return name;
-}
-
-//==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
   dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "

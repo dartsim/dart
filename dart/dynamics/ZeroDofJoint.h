@@ -67,12 +67,6 @@ public:
   /// Get the Properties of this ZeroDofJoint
   Properties getZeroDofJointProperties() const;
 
-  // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Get joint type for this class
-  static const std::string& getStaticType();
-
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
   //----------------------------------------------------------------------------
