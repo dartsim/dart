@@ -56,6 +56,7 @@ public:
   struct Properties : ZeroDofJoint::Properties
   {
     Properties(const Joint::Properties& _properties = Joint::Properties());
+    virtual ~Properties() = default;
   };
 
   /// Constructor

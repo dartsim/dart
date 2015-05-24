@@ -63,6 +63,7 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
                      double _pitch = 0.1);
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : SingleDofJoint::Properties,
@@ -73,6 +74,7 @@ public:
                                               SingleDofJoint::Properties(),
         const ScrewJoint::UniqueProperties& _screwProperties =
                                               ScrewJoint::UniqueProperties());
+    virtual ~Properties() = default;
   };
 
   /// Constructor

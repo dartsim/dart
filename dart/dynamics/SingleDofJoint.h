@@ -112,6 +112,8 @@ public:
                      double _coulombFriction = 0.0,
                      bool _preserveDofName = false,
                      std::string _dofName = "");
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -119,6 +121,8 @@ public:
     Properties(
         const Joint::Properties& _jointProperties = Joint::Properties(),
         const UniqueProperties& _singleDofProperties = UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor

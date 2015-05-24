@@ -145,6 +145,8 @@ public:
                                    Eigen::Isometry3d::Identity(),
                bool _isPositionLimited = false,
                ActuatorType _actuatorType = DefaultActuatorType);
+
+    virtual ~Properties() = default;
   };
 
   /// Default actuator type
@@ -911,6 +913,8 @@ class TemplateJointPtr
 public:
 
   template<class, class> friend class TemplateJointPtr;
+
+  typedef JointT element_type;
 
   /// Default constructor
   TemplateJointPtr() = default;

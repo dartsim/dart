@@ -95,6 +95,8 @@ public:
     UniqueProperties(const Eigen::Vector3d& _transAxis1,
                      const Eigen::Vector3d& _transAxis2);
 
+    virtual ~UniqueProperties() = default;
+
     /// Set plane type as XY-plane
     void setXYPlane();
 
@@ -115,6 +117,8 @@ public:
                                               MultiDofJoint<3>::Properties(),
                const PlanarJoint::UniqueProperties& _planarProperties =
                                               PlanarJoint::UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor
