@@ -129,9 +129,9 @@ aiMaterial::~aiMaterial()
 namespace dart {
 namespace dynamics {
 
-MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
+MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
+                     const std::string &_path)
   : Shape(MESH),
-    mMesh(_mesh),
     mDisplayList(0),
     mScale(_scale)
 {
@@ -139,9 +139,11 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh)
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
 
-  if(nullptr == mMesh)
-    return;
+  setMesh(_mesh, _path);
 
+  if (nullptr == mMesh) {
+    return;
+  }
   _updateBoundingBoxDim();
   computeVolume();
   initMeshes();
@@ -155,12 +157,20 @@ const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
-void MeshShape::setMesh(const aiScene* _mesh) {
+const std::string &MeshShape::getMeshPath() const
+{
+  return mMeshPath;
+}
+
+void MeshShape::setMesh(const aiScene* _mesh, const std::string &_path) {
   mMesh = _mesh;
 
-  if(nullptr == _mesh)
+  if(nullptr == _mesh) {
+    mMeshPath = "";
     return;
+  }
 
+  mMeshPath = _path;
   _updateBoundingBoxDim();
   computeVolume();
 }
