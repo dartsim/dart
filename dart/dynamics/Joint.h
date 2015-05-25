@@ -184,6 +184,9 @@ public:
   /// Get joint name
   const std::string& getName() const;
 
+  /// Gets a string representing the joint type
+  virtual const std::string& getType() const = 0;
+
   /// Set actuator type
   void setActuatorType(ActuatorType _actuatorType);
 

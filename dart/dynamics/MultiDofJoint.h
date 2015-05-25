@@ -947,21 +947,6 @@ MultiDofJoint<DOF>& MultiDofJoint<DOF>::operator=(
 
 //==============================================================================
 template <size_t DOF>
-const std::string& MultiDofJoint<DOF>::getType() const
-{
-    return getStaticType();
-}
-
-template <size_t DOF>
-const std::string& MultiDofJoint<DOF>::getStaticType()
-{
-  static const std::string name = "MultiDofJoint<" + std::to_string(DOF) + ">";
-
-  return name;
-}
-
-//==============================================================================
-template <size_t DOF>
 DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
   if (_index < DOF)

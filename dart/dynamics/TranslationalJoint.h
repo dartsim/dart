@@ -68,7 +68,7 @@ public:
   Properties getTranslationalJointProperties() const;
 
   // Documentation inherited
-  const std::string& getType() const override;
+  virtual const std::string& getType() const override;
 
   /// Get joint type for this class
   static const std::string& getStaticType();
