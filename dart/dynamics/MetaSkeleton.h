@@ -109,7 +109,9 @@ public:
 
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
   /// Returns INVALID_INDEX if it is not held in this ReferentialSkeleton.
-  virtual size_t getIndexOf(const BodyNode* _bn) const = 0;
+  /// When _warning is true, a warning message will be printed if the BodyNode
+  /// is not in the MetaSkeleton.
+  virtual size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const = 0;
 
   /// Get number of Joints
   virtual size_t getNumJoints() const = 0;
@@ -122,7 +124,9 @@ public:
 
   /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
   /// INVALID_INDEX if it is not held in this ReferentialSkeleton.
-  virtual size_t getIndexOf(const Joint* _joint) const = 0;
+  /// When _warning is true, a warning message will be printed if the Joint is
+  /// not in the MetaSkeleton.
+  virtual size_t getIndexOf(const Joint* _joint, bool _warning=true) const = 0;
 
   /// Return the number of degrees of freedom in this skeleton
   virtual size_t getNumDofs() const = 0;
@@ -141,8 +145,10 @@ public:
 
   /// Get the index of a specific DegreeOfFreedom within this
   /// ReferentialSkeleton. Returns INVALID_INDEX if it is not held in this
-  /// ReferentialSkeleton.
-  virtual size_t getIndexOf(const DegreeOfFreedom* _dof) const = 0;
+  /// ReferentialSkeleton. When _warning is true, a warning message will be
+  /// printed if the DegreeOfFreedom is not in the MetaSkeleton.
+  virtual size_t getIndexOf(const DegreeOfFreedom* _dof,
+                            bool _warning=true) const = 0;
 
   /// \}
 

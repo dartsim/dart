@@ -160,7 +160,7 @@ public:
     /// violated
     void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain) const;
 
-    /// Hashed set for terminals to allow quick lookup.
+    /// Hashed set for terminals to allow quick lookup
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
   };
 

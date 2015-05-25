@@ -114,13 +114,16 @@ const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn) const
+size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 {
   if(nullptr == _bn)
   {
-    dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
-          << "BodyNode!\n";
-    assert(false);
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
+            << "nullptr BodyNode!\n";
+      assert(false);
+    }
     return INVALID_INDEX;
   }
 
@@ -159,13 +162,16 @@ const Joint* ReferentialSkeleton::getJoint(size_t _idx) const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(const Joint* _joint) const
+size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
 {
   if(nullptr == _joint)
   {
-    dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
-          << "Joint!\n";
-    assert(false);
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
+            << "Joint!\n";
+      assert(false);
+    }
     return INVALID_INDEX;
   }
 
@@ -210,13 +216,17 @@ std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(const DegreeOfFreedom* _dof) const
+size_t ReferentialSkeleton::getIndexOf(
+    const DegreeOfFreedom* _dof, bool _warning) const
 {
   if(nullptr == _dof)
   {
-    dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a nullptr "
-          << "DegreeOfFreedom!\n";
-    assert(false);
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
+            << "nullptr DegreeOfFreedom!\n";
+      assert(false);
+    }
     return INVALID_INDEX;
   }
 
@@ -230,17 +240,23 @@ size_t ReferentialSkeleton::getIndexOf(const DegreeOfFreedom* _dof) const
   if(it->second.mDofIndices.size() <= localIndex ||
      it->second.mDofIndices[localIndex] == INVALID_INDEX )
   {
-    dterr << "[ReferentialSkeleton::getIndexOf] BodyNode named ["
-          << bn->getName() << "] (" << bn << ") is referenced by the "
-          << "ReferentialSkeleton named [" << getName() << "] (" << this
-          << "), but it does not include the DegreeOfFreedom #"
-          << localIndex << " of its parent Joint!\n";
-    assert(false);
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] BodyNode named ["
+            << bn->getName() << "] (" << bn << ") is referenced by the "
+            << "ReferentialSkeleton named [" << getName() << "] (" << this
+            << "), but it does not include the DegreeOfFreedom #"
+            << localIndex << " of its parent Joint!\n";
+      assert(false);
+    }
     return INVALID_INDEX;
   }
 
   return it->second.mDofIndices[localIndex];
 }
+
+//==============================================================================
+
 
 //==============================================================================
 void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)

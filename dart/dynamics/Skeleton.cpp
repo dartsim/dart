@@ -479,33 +479,39 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 //==============================================================================
 template <class ObjectT, size_t (ObjectT::*getIndexInSkeleton)() const>
 static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
-                                  const std::string& _type)
+                                  const std::string& _type, bool _warning)
 {
   if(nullptr == _obj)
   {
-    dterr << "[Skeleton::getIndexOf] Requesting the index of a nullptr "
-          << _type << " within the Skeleton [" << _skel->getName() << "] ("
-          << _skel << ")!\n";
-    assert(false);
+    if(_warning)
+    {
+      dterr << "[Skeleton::getIndexOf] Requesting the index of a nullptr "
+            << _type << " within the Skeleton [" << _skel->getName() << "] ("
+            << _skel << ")!\n";
+      assert(false);
+    }
     return INVALID_INDEX;
   }
 
   if(_skel == _obj->getSkeleton().get())
     return (_obj->*getIndexInSkeleton)();
 
-  dterr << "[Skeleton::getIndexOf] Requesting the index of a " << _type << " ["
-        << _obj->getName() << "] (" << _obj << ") from a Skeleton that it does "
-        << "not belong to!\n";
-  assert(false);
+  if(_warning)
+  {
+    dterr << "[Skeleton::getIndexOf] Requesting the index of a " << _type << " ["
+          << _obj->getName() << "] (" << _obj << ") from a Skeleton that it does "
+          << "not belong to!\n";
+    assert(false);
+  }
 
   return INVALID_INDEX;
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const BodyNode* _bn) const
+size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 {
   return templatedGetIndexOf<BodyNode, &BodyNode::getIndexInSkeleton>(
-        this, _bn, "BodyNode");
+        this, _bn, "BodyNode", _warning);
 }
 
 //==============================================================================
@@ -558,10 +564,10 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const Joint* _joint) const
+size_t Skeleton::getIndexOf(const Joint* _joint, bool _warning) const
 {
   return templatedGetIndexOf<Joint, &Joint::getJointIndexInSkeleton>(
-        this, _joint, "Joint");
+        this, _joint, "Joint", _warning);
 }
 
 //==============================================================================
@@ -608,10 +614,11 @@ std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof) const
+size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof, bool _warning) const
 {
   return templatedGetIndexOf<DegreeOfFreedom,
-      &DegreeOfFreedom::getIndexInSkeleton>(this, _dof, "DegreeOfFreedom");
+      &DegreeOfFreedom::getIndexInSkeleton>(
+        this, _dof, "DegreeOfFreedom", _warning);
 }
 
 //==============================================================================

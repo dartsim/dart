@@ -87,7 +87,7 @@ public:
   const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const BodyNode* _bn) const override;
+  size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   // Documentation inherited
   size_t getNumJoints() const override;
@@ -99,7 +99,7 @@ public:
   const Joint* getJoint(size_t _idx) const override;
 
   // Documentation inherited
-  size_t getIndexOf(const Joint* _joint) const override;
+  size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
 
   // Documentation inherited
   size_t getNumDofs() const override;
@@ -117,7 +117,106 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const DegreeOfFreedom* _dof) const override;
+  size_t getIndexOf(const DegreeOfFreedom* _dof, bool _warning=true) const override;
+
+  /// \}
+
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Jacobians
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  math::Jacobian getJacobian(const BodyNode *_bodyNode) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  // Documentation inherited
+  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const;
+
+  // Documentation inherited
+  math::Jacobian getWorldJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  // Documentation inherited
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::LinearJacobian getLinearJacobian(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::AngularJacobian getAngularJacobian(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf) const;
+
+  // Documentation inherited
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::LinearJacobian getLinearJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
+      const Frame* _inCoordinatesOf = Frame::World()) const;
+
+  // Documentation inherited
+  math::AngularJacobian getAngularJacobianDeriv(
+      const BodyNode* _bodyNode,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// \}
 

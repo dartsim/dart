@@ -405,6 +405,11 @@ void Linkage::satisfyCriteria()
   while(getNumBodyNodes() > 0)
     unregisterBodyNode(mBodyNodes.back());
 
+  for(BodyNode* bn : bns)
+  {
+    registerBodyNode(bn);
+  }
+
   update();
 }
 
