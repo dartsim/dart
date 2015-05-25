@@ -65,6 +65,8 @@ public:
 
     /// Constructor
     UniqueProperties(AxisOrder _axisOrder = AO_XYZ);
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : MultiDofJoint<3>::Properties, EulerJoint::UniqueProperties
@@ -75,6 +77,8 @@ public:
                                                 MultiDofJoint<3>::Properties(),
         const EulerJoint::UniqueProperties& _eulerJointProperties =
                                                 EulerJoint::UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor

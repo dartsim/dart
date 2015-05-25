@@ -121,6 +121,8 @@ public:
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -128,6 +130,8 @@ public:
     Properties(
         const Joint::Properties& _jointProperties = Joint::Properties(),
         const UniqueProperties& _multiDofProperties = UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor

@@ -379,7 +379,7 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 //==============================================================================
 BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
 {
-  if( mTreeCache.size() <= _treeIdx)
+  if( mTreeCache.size() > _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
 
   if(mTreeCache.size() == 0)

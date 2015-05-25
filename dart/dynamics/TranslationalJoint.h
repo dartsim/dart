@@ -55,6 +55,7 @@ public:
   {
     Properties(const MultiDofJoint<3>::Properties& _properties =
                                                 MultiDofJoint<3>::Properties());
+    virtual ~Properties() = default;
   };
 
   /// Constructor
