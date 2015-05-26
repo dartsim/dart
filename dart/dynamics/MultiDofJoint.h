@@ -131,7 +131,7 @@ public:
         const Joint::Properties& _jointProperties = Joint::Properties(),
         const UniqueProperties& _multiDofProperties = UniqueProperties());
 
-    virtual ~Properties() = default;
+    virtual ~Properties();
   };
 
   /// Constructor
@@ -843,6 +843,13 @@ MultiDofJoint<DOF>::Properties::Properties(
     const UniqueProperties& _multiDofProperties)
   : Joint::Properties(_jointProperties),
     UniqueProperties(_multiDofProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::Properties::~Properties()
 {
   // Do nothing
 }
