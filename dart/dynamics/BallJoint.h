@@ -72,7 +72,21 @@ public:
   /// Convert a BallJoint-style position vector into a rotation matrix
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
+  // Documentation inherited
+  void setPositionsStatic(const Eigen::Vector3d& _positions) override;
+
+  // Documentation inherited
+  Eigen::Vector3d getPositionDifferencesStatic(
+      const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const override;
+
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
+
+  using MultiDofJoint::getLocalJacobianStatic;
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

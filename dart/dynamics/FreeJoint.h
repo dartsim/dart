@@ -67,7 +67,21 @@ public:
   /// Convert a FreeJoint-style 6D vector into a transform
   static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
 
+  // Documentation inherited
+  void setPositionsStatic(const Eigen::Vector6d& _positions) override;
+
+  // Documentation inherited
+  Eigen::Matrix6d getLocalJacobianStatic(
+      const Eigen::Vector6d& _positions) const override;
+
+  // Documentation inherited
+  Eigen::Vector6d getPositionDifferencesStatic(
+      const Eigen::Vector6d& _q0, const Eigen::Vector6d& _q1) const override;
+
 protected:
+
+  using MultiDofJoint::getLocalJacobianStatic;
+
   // Documentation inherited
   virtual void integratePositions(double _dt);
 

@@ -77,11 +77,59 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
+void FreeJoint::setPositionsStatic(const Eigen::Vector6d& _positions)
+{
+  mQ = convertToTransform(_positions);
+
+  MultiDofJoint::setPositionsStatic(_positions);
+}
+
+//==============================================================================
+Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
+    const Eigen::Vector6d& _q0,
+    const Eigen::Vector6d& _q1) const
+{
+  Eigen::Vector6d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q0).topLeftCorner<3,3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q0.head<3>());
+  const Eigen::Matrix3d R1  = math::expMapRot( _q1.head<3>());
+
+  dq.head<3>() = Jw.inverse() * math::logMap(R0T * R1);
+  dq.tail<3>() = _q1.tail<3>() - _q0.tail<3>();
+
+  return dq;
+}
+
+//==============================================================================
+Eigen::Matrix6d FreeJoint::getLocalJacobianStatic(
+    const Eigen::Vector6d& _positions) const
+{
+  // Jacobian expressed in the Joint frame
+  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
+  J.topLeftCorner<3,3>() = math::expMapJac(-_positions.head<3>());
+
+  // Transform the reference frame to the child BodyNode frame
+  J.leftCols<3>()  = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
+  J.bottomRightCorner<3,3>()
+      = mT_ChildBodyToJoint.linear() * math::expMapRot(-_positions.head<3>());
+
+  // Note that the top right 3x3 block of J is always zero
+  assert((J.topRightCorner<3,3>()) == Eigen::Matrix3d::Zero());
+
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   const Eigen::Vector6d& velocities = getVelocitiesStatic();
-  mQ.linear()      = mQ.linear() * math::expMapRot(
-        getLocalJacobianStatic().topRows<3>() * velocities * _dt);
+
+  mQ.linear() = mQ.linear()
+                * math::expMapRot(getLocalJacobianStatic().topLeftCorner<3,3>()
+                                  * velocities.head<3>() * _dt);
   mQ.translation() = mQ.translation() + velocities.tail<3>() * _dt;
 
   setPositionsStatic(convertToPositions(mQ));
@@ -117,18 +165,7 @@ void FreeJoint::updateLocalTransform() const
 //==============================================================================
 void FreeJoint::updateLocalJacobian(bool) const
 {
-  const Eigen::Vector6d& positions = getPositionsStatic();
-  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-  J.topLeftCorner<3,3>() = math::expMapJac(positions.head<3>()).transpose();
-
-  mJacobian.leftCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
-  mJacobian.rightCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
-                          * math::expAngular(-positions.head<3>()),
-                          J.rightCols<3>());
-
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(getPositionsStatic());
 }
 
 //==============================================================================

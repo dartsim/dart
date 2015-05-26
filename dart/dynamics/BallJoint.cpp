@@ -71,6 +71,46 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
+void BallJoint::setPositionsStatic(const Eigen::Vector3d& _positions)
+{
+  mR = convertToRotation(_positions);
+
+  MultiDofJoint::setPositionsStatic(_positions);
+}
+
+//==============================================================================
+Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
+    const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const
+{
+  Eigen::Vector3d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q0).topRows<3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q0);
+  const Eigen::Matrix3d R1  = math::expMapRot( _q1);
+
+  dq = Jw.inverse() * math::logMap(R0T * R1);
+
+  return dq;
+}
+
+//==============================================================================
+Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& _positions) const
+{
+  // Jacobian expressed in the Joint frame
+  Eigen::Matrix<double, 6, 3> J;
+  J.topRows<3>()    = math::expMapJac(-_positions);
+  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  // Transform the reference frame to the child BodyNode frame
+  J = math::AdTJacFixed(mT_ChildBodyToJoint, J);
+
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear()
@@ -104,13 +144,7 @@ void BallJoint::updateLocalTransform() const
 //==============================================================================
 void BallJoint::updateLocalJacobian(bool) const
 {
-  Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = math::expMapJac(getPositionsStatic()).transpose();
-  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
-
-  mJacobian = math::AdTJacFixed(mT_ChildBodyToJoint, J);
-
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(getPositionsStatic());
 }
 
 //==============================================================================
