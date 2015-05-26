@@ -565,6 +565,22 @@ TEST(Skeleton, Referential)
     {
       Branch tree(skeleton->getRootBodyNode(j));
 
+      const std::vector<BodyNode*>& skelBns = skeleton->getTreeBodyNodes(j);
+      EXPECT_TRUE(tree.getNumBodyNodes() == skelBns.size());
+      for(BodyNode* bn : skelBns)
+      {
+        EXPECT_FALSE(tree.getIndexOf(bn) == INVALID_INDEX);
+        EXPECT_TRUE(tree.getBodyNode(tree.getIndexOf(bn)) == bn);
+      }
+
+      const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
+      EXPECT_TRUE(tree.getNumDofs() == skelDofs.size());
+      for(DegreeOfFreedom* dof : skelDofs)
+      {
+        EXPECT_FALSE(tree.getIndexOf(dof) == INVALID_INDEX);
+        EXPECT_TRUE(tree.getDof(tree.getIndexOf(dof)) == dof);
+      }
+
       Eigen::VectorXd q = tree.getPositions();
       Eigen::VectorXd dq = tree.getVelocities();
       Eigen::VectorXd ddq = tree.getAccelerations();
@@ -613,12 +629,13 @@ TEST(Skeleton, Referential)
         const Eigen::VectorXd& skelFc = skeleton->getConstraintForces();
         const Eigen::VectorXd& treeFc = tree.getConstraintForces();
 
-        for(size_t r1=0; r1<tree.getNumDofs(); ++r1)
+        const size_t nDofs = tree.getNumDofs();
+        for(size_t r1=0; r1<nDofs; ++r1)
         {
-          size_t sr1 = tree.getDof(r1)->getIndexInSkeleton();
-          for(size_t r2=0; r2<tree.getNumDofs(); ++r2)
+          const size_t sr1 = tree.getDof(r1)->getIndexInSkeleton();
+          for(size_t r2=0; r2<nDofs; ++r2)
           {
-            size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
+            const size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
 
             EXPECT_TRUE( skelMassMatrix(sr1,sr2) == treeMassMatrix(r1,r2) );
             EXPECT_TRUE( skelAugM(sr1,sr2) == treeAugM(r1,r2) );
@@ -634,6 +651,22 @@ TEST(Skeleton, Referential)
           EXPECT_TRUE( skelFc[sr1]   == treeFc[r1] );
         }
 
+        const size_t numBodyNodes = tree.getNumBodyNodes();
+        for(size_t m=0; m<numBodyNodes; ++m)
+        {
+          const BodyNode* bn = tree.getBodyNode(m);
+          const Eigen::MatrixXd Jtree = tree.getJacobian(bn);
+          const Eigen::MatrixXd Jskel = skeleton->getJacobian(bn);
+
+          for(size_t r2=0; r2<nDofs; ++r2)
+          {
+            const size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
+            for(size_t r1=0; r1<6; ++r1)
+            {
+              EXPECT_TRUE( Jtree(r1,r2) == Jskel(r1, sr2) );
+            }
+          }
+        }
       }
     }
   }

@@ -130,7 +130,17 @@ size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(_bn);
   if( it == mIndexMap.end() )
+  {
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
+            << "BodyNode [" << _bn->getName() << "] (" << _bn << ") that is "
+            << "not in this ReferentialSkeleton [" << getName() << "] ("
+            << this << ").\n";
+      assert(false);
+    }
     return INVALID_INDEX;
+  }
 
   return it->second.mBodyNodeIndex;
 }
@@ -178,7 +188,16 @@ size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(_joint->getChildBodyNode());
   if( it == mIndexMap.end() )
+  {
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a Joint ["
+            << _joint->getName() << "] (" << _joint << ") that is not in this "
+            << "ReferentialSkeleton [" << getName() << "] (" << this << ").\n";
+      assert(false);
+    }
     return INVALID_INDEX;
+  }
 
   return it->second.mBodyNodeIndex;
 }
@@ -234,7 +253,17 @@ size_t ReferentialSkeleton::getIndexOf(
   std::unordered_map<const BodyNode*, IndexMap>::const_iterator it =
       mIndexMap.find(bn);
   if( it == mIndexMap.end() )
+  {
+    if(_warning)
+    {
+      dterr << "[ReferentialSkeleton::getIndexOf] Requesting index of a "
+            << "DegreeOfFreedom [" << _dof->getName() << "] (" << _dof
+            << ") that is not in this ReferentialSkeleton [" << getName()
+            << "] (" << this << ").\n";
+      assert(false);
+    }
     return INVALID_INDEX;
+  }
 
   size_t localIndex = _dof->getIndexInJoint();
   if(it->second.mDofIndices.size() <= localIndex ||
@@ -282,12 +311,12 @@ void assignJacobian(JacobianType& _J,
                     const BodyNode* _bodyNode,
                     const JacobianType& _JBodyNode)
 {
-  const std::vector<const DegreeOfFreedom*>& dofs =
+  const std::vector<const DegreeOfFreedom*>& bn_dofs =
       _bodyNode->getDependentDofs();
-  size_t nDofs = dofs.size();
+  size_t nDofs = bn_dofs.size();
   for(size_t i=0; i<nDofs; ++i)
   {
-    size_t refIndex = _refSkel->getIndexOf(dofs[i], false);
+    size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
     if(INVALID_INDEX == refIndex)
       continue;
 
@@ -937,11 +966,12 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
     IndexMap indexing;
     mBodyNodes.push_back(bn);
     indexing.mBodyNodeIndex = mBodyNodes.size()-1;
-    mBodyNodes.push_back(bn);
 
     indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
     mDofs.push_back(_dof);
     indexing.mDofIndices[localIndex] = mDofs.size()-1;
+
+    mIndexMap[bn] = indexing;
   }
   else
   {

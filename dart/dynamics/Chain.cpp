@@ -65,8 +65,8 @@ Chain::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-Chain::Chain(const Chain::Criteria& _criteria)
-  : Linkage(_criteria)
+Chain::Chain(const Chain::Criteria& _criteria, const std::string& _name)
+  : Linkage(_criteria, _name)
 {
   // Do nothing
 }

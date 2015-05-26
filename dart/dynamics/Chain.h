@@ -71,7 +71,7 @@ public:
   };
 
   /// Constructor for the Chain class
-  Chain(const Chain::Criteria& _criteria);
+  Chain(const Chain::Criteria& _criteria, const std::string& _name = "Chain");
 
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.

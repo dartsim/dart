@@ -71,7 +71,8 @@ public:
   /// Constructor for the Branch class. Note that you can simply pass a BodyNode
   /// pointer into this constructor, and it will be implicitly converted into a
   /// Branch::Criteria.
-  Branch(const Branch::Criteria& _criteria);
+  Branch(const Branch::Criteria& _criteria,
+         const std::string& _name = "Branch");
 
   /// Returns false if a new BodyNode has been attached to any BodyNode of this
   /// Branch, or if a BodyNode of this Branch has been detached.

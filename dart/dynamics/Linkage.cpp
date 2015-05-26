@@ -385,9 +385,10 @@ void Linkage::Criteria::trimBodyNodes(
 }
 
 //==============================================================================
-Linkage::Linkage(const Criteria& _criteria)
+Linkage::Linkage(const Criteria& _criteria, const std::string& _name)
   : mCriteria(_criteria)
 {
+  setName(_name);
   satisfyCriteria();
 }
 

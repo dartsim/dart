@@ -69,8 +69,8 @@ Branch::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-Branch::Branch(const Branch::Criteria& _criteria)
-  : Linkage(_criteria)
+Branch::Branch(const Branch::Criteria& _criteria, const std::string& _name)
+  : Linkage(_criteria, _name)
 {
   update();
 }
