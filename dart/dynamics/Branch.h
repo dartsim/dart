@@ -51,6 +51,9 @@ public:
 
   struct Criteria
   {
+    /// Constructor. Requires a starting BodyNode.
+    Criteria(BodyNode* _start);
+
     /// Return a vector of BodyNodes that form a full subtree, starting from
     /// mStart
     std::vector<BodyNode*> satisfy() const;
@@ -65,7 +68,9 @@ public:
     operator Linkage::Criteria() const;
   };
 
-  /// Constructor for the Branch class
+  /// Constructor for the Branch class. Note that you can simply pass a BodyNode
+  /// pointer into this constructor, and it will be implicitly converted into a
+  /// Branch::Criteria.
   Branch(const Branch::Criteria& _criteria);
 
   /// Returns false if a new BodyNode has been attached to any BodyNode of this
@@ -79,7 +84,6 @@ protected:
 
   /// The original number of child nodes for each BodyNode of this Branch
   std::vector<size_t> mNumChildNodes;
-
 };
 
 } // namespace dynamics

@@ -40,6 +40,13 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+Branch::Criteria::Criteria(BodyNode* _start)
+  : mStart(_start)
+{
+  // Do nothing
+}
+
+//==============================================================================
 std::vector<BodyNode*> Branch::Criteria::satisfy() const
 {
   return convert().satisfy();

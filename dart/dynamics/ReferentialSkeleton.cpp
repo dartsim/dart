@@ -605,7 +605,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
 {
   const size_t nDofs = dofs.size();
 
-  M = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  M.setZero();
 
   for(size_t i=0; i<nDofs; ++i)
   {
@@ -674,7 +674,7 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
 {
   const size_t nDofs = dofs.size();
 
-  V = Eigen::VectorXd::Zero(nDofs);
+  V.setZero();
 
   for(size_t i=0; i<nDofs; ++i)
   {
@@ -951,6 +951,8 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
     mDofs.push_back(_dof);
     indexing.mDofIndices[localIndex] = mDofs.size()-1;
   }
+
+  updateCaches();
 }
 
 //==============================================================================
@@ -1052,6 +1054,48 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     if(removeBn)
       unregisterBodyNode(_bn);
   }
+
+  updateCaches();
+}
+
+//==============================================================================
+void ReferentialSkeleton::updateCaches()
+{
+  if(mBodyNodes.size() != mRawBodyNodes.size())
+  {
+    mRawBodyNodes.clear();
+    mRawBodyNodes.reserve(mBodyNodes.size());
+    mRawConstBodyNodes.clear();
+    mRawConstBodyNodes.reserve(mBodyNodes.size());
+
+    for(const BodyNodePtr& bn : mBodyNodes)
+    {
+      mRawBodyNodes.push_back(bn);
+      mRawConstBodyNodes.push_back(bn);
+    }
+  }
+
+  mRawDofs.clear();
+  mRawDofs.reserve(mDofs.size());
+  mRawConstDofs.clear();
+  mRawConstDofs.reserve(mDofs.size());
+
+  for(const DegreeOfFreedomPtr& dof : mDofs)
+  {
+    mRawDofs.push_back(dof);
+    mRawConstDofs.push_back(dof);
+  }
+
+  size_t nDofs = mDofs.size();
+  mM        = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mAugM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mInvM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mInvAugM  = Eigen::MatrixXd::Zero(nDofs, nDofs);
+  mCvec     = Eigen::VectorXd::Zero(nDofs);
+  mG        = Eigen::VectorXd::Zero(nDofs);
+  mCg       = Eigen::VectorXd::Zero(nDofs);
+  mFext     = Eigen::VectorXd::Zero(nDofs);
+  mFc       = Eigen::VectorXd::Zero(nDofs);
 }
 
 } // namespace dynamics

@@ -35,6 +35,7 @@
  */
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "dart/dynamics/Linkage.h"
 #include "dart/dynamics/FreeJoint.h"
@@ -64,6 +65,16 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   {
     expandToTarget(mStart.mTarget.lock(), mTargets[i], bns);
   }
+
+  // Make sure each BodyNode is only included once
+  std::unordered_set<BodyNode*> unique_bns;
+  unique_bns.reserve(bns.size());
+  for(BodyNode* bn : bns)
+    unique_bns.insert(bn);
+
+  bns.clear();
+  for(BodyNode* bn : unique_bns)
+    bns.push_back(bn);
 
   return bns;
 }
@@ -195,6 +206,8 @@ void Linkage::Criteria::expandDownstream(
     else
     {
       recorder.pop_back();
+      if(recorder.size() > 0)
+        ++recorder.back().mCount;
     }
   }
 }
@@ -261,6 +274,9 @@ void Linkage::Criteria::expandUpstream(
     {
       // If we've iterated through all the children of this node, pop it
       recorder.pop_back();
+      // Move on to the next child
+      if(recorder.size() > 0)
+        ++recorder.back().mCount;
     }
   }
 }

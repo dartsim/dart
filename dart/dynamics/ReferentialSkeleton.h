@@ -339,6 +339,10 @@ protected:
   void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex,
                                  bool removeBnIfEmpty = true);
 
+  /// Update the caches to match any changes to the structure of this
+  /// ReferentialSkeleton
+  void updateCaches();
+
   /// Weak pointer to this Skeleton
   std::weak_ptr<MetaSkeleton> mPtr;
 

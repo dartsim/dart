@@ -50,6 +50,51 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
+std::vector<std::string> getFileList()
+{
+  std::vector<std::string> fileList;
+  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+
+  return fileList;
+}
+
+std::vector<SkeletonPtr> getSkeletons()
+{
+  std::vector<std::string> fileList = getFileList();
+
+  std::vector<WorldPtr> worlds;
+  for(size_t i=0; i<fileList.size(); ++i)
+    worlds.push_back(dart::utils::SkelParser::readWorld(fileList[i]));
+
+  std::vector<SkeletonPtr> skeletons;
+  for(size_t i=0; i<worlds.size(); ++i)
+  {
+    WorldPtr world = worlds[i];
+    for(size_t j=0; j<world->getNumSkeletons(); ++j)
+      skeletons.push_back(world->getSkeleton(j));
+  }
+
+  return skeletons;
+}
+
 void check_self_consistency(SkeletonPtr skeleton)
 {
   for(size_t i=0; i<skeleton->getNumBodyNodes(); ++i)
@@ -86,38 +131,7 @@ void constructSubtree(std::vector<BodyNode*>& _tree, BodyNode* bn)
 
 TEST(Skeleton, Restructuring)
 {
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
-
-  std::vector<WorldPtr> worlds;
-  for(size_t i=0; i<fileList.size(); ++i)
-    worlds.push_back(dart::utils::SkelParser::readWorld(fileList[i]));
-
-  std::vector<SkeletonPtr> skeletons;
-  for(size_t i=0; i<worlds.size(); ++i)
-  {
-    WorldPtr world = worlds[i];
-    for(size_t j=0; j<world->getNumSkeletons(); ++j)
-      skeletons.push_back(world->getSkeleton(j));
-  }
+  std::vector<SkeletonPtr> skeletons = getSkeletons();
 
 #ifndef NDEBUG
   size_t numIterations = 10;
@@ -532,6 +546,97 @@ TEST(Skeleton, Persistence)
   // WeakSoftBodyNodePtr should also be cleared
   EXPECT_TRUE(weakSoftBnPtr.lock() == nullptr);
   EXPECT_TRUE(weakSkel.lock() == nullptr);
+}
+
+TEST(Skeleton, Referential)
+{
+  std::vector<SkeletonPtr> skeletons = getSkeletons();
+
+#ifndef NDEBUG // Debug mode
+  size_t numIterations = 1;
+#else // Release mode
+  size_t numIterations = 20;
+#endif
+
+  for(size_t i=0; i<skeletons.size(); ++i)
+  {
+    SkeletonPtr skeleton = skeletons[i];
+    for(size_t j=0; j<skeleton->getNumTrees(); ++j)
+    {
+      Branch tree(skeleton->getRootBodyNode(j));
+
+      Eigen::VectorXd q = tree.getPositions();
+      Eigen::VectorXd dq = tree.getVelocities();
+      Eigen::VectorXd ddq = tree.getAccelerations();
+
+      for(size_t k=0; k<numIterations; ++k)
+      {
+        for(int r=0; r<q.size(); ++r)
+        {
+          q[r] = math::random(-10, 10);
+          dq[r] = math::random(-10, 10);
+          ddq[r] = math::random(-10, 10);
+        }
+
+        tree.setPositions(q);
+        tree.setVelocities(dq);
+        tree.setAccelerations(ddq);
+
+        EXPECT_TRUE( equals(q, tree.getPositions(), 0.0) );
+        EXPECT_TRUE( equals(dq, tree.getVelocities(), 0.0) );
+        EXPECT_TRUE( equals(ddq, tree.getAccelerations(), 0.0) );
+
+        const Eigen::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
+        const Eigen::MatrixXd& treeMassMatrix = tree.getMassMatrix();
+
+        const Eigen::MatrixXd& skelAugM = skeleton->getAugMassMatrix();
+        const Eigen::MatrixXd& treeAugM = tree.getAugMassMatrix();
+
+        const Eigen::MatrixXd& skelInvM = skeleton->getInvMassMatrix();
+        const Eigen::MatrixXd& treeInvM = tree.getInvMassMatrix();
+
+        const Eigen::MatrixXd& skelInvAugM = skeleton->getInvAugMassMatrix();
+        const Eigen::MatrixXd& treeInvAugM = tree.getInvAugMassMatrix();
+
+        const Eigen::VectorXd& skelCvec = skeleton->getCoriolisForces();
+        const Eigen::VectorXd& treeCvec = tree.getCoriolisForces();
+
+        const Eigen::VectorXd& skelFg = skeleton->getGravityForces();
+        const Eigen::VectorXd& treeFg = tree.getGravityForces();
+
+        const Eigen::VectorXd& skelCg = skeleton->getCoriolisAndGravityForces();
+        const Eigen::VectorXd& treeCg = tree.getCoriolisAndGravityForces();
+
+        const Eigen::VectorXd& skelFext = skeleton->getExternalForces();
+        const Eigen::VectorXd& treeFext = tree.getExternalForces();
+
+        const Eigen::VectorXd& skelFc = skeleton->getConstraintForces();
+        const Eigen::VectorXd& treeFc = tree.getConstraintForces();
+
+        for(size_t r1=0; r1<tree.getNumDofs(); ++r1)
+        {
+          size_t sr1 = tree.getDof(r1)->getIndexInSkeleton();
+          for(size_t r2=0; r2<tree.getNumDofs(); ++r2)
+          {
+            size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
+
+            EXPECT_TRUE( skelMassMatrix(sr1,sr2) == treeMassMatrix(r1,r2) );
+            EXPECT_TRUE( skelAugM(sr1,sr2) == treeAugM(r1,r2) );
+            EXPECT_TRUE( skelInvM(sr1,sr2) == treeInvM(r1,r2) );
+            EXPECT_TRUE( skelInvAugM(sr1,sr2) == treeInvAugM(r1,r2) );
+          }
+
+          EXPECT_TRUE( skelCvec[sr1] == treeCvec[r1] );
+          EXPECT_TRUE( skelFg[sr1]   == treeFg[r1] );
+          EXPECT_TRUE( skelCg[sr1]   == treeCg[r1] );
+          EXPECT_TRUE( skelFext[sr1] == treeFext[r1] );
+          EXPECT_TRUE( skelFext[sr1] == treeFext[r1] );
+          EXPECT_TRUE( skelFc[sr1]   == treeFc[r1] );
+        }
+
+      }
+    }
+  }
 }
 
 int main(int argc, char* argv[])
