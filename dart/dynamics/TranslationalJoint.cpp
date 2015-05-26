@@ -62,10 +62,10 @@ math::Jacobian TranslationalJoint::getLocalJacobian(
 {
   Eigen::Matrix<double, 6, 3> J;
 
+  J.topRows<3>() = Eigen::Matrix3d::Zero();
   J.bottomRows<3>() = mT_ChildBodyToJoint.linear();
 
   // Verification
-  assert(J.topRows<3>() == Eigen::Matrix3d::Zero());
   assert(!math::isNan(J.bottomRows<3>()));
 
   return J;
