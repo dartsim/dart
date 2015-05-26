@@ -580,7 +580,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  // Equations of Motion
+  /// \{ \name Equations of Motion
   //----------------------------------------------------------------------------
 
   /// Get total mass of the skeleton. The total mass is calculated as BodyNodes
@@ -682,10 +682,15 @@ public:
   // Documentation inherited
   double getPotentialEnergy() const override;
 
-  // -- Center of Mass Jacobian ---
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Center of Mass Jacobian
+  //----------------------------------------------------------------------------
 
   /// Get the Skeleton's COM with respect to any Frame (default is World Frame)
-  Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const override;
+  Eigen::Vector3d getCOM(
+      const Frame* _withRespectTo = Frame::World()) const override;
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
   /// World Frame)
@@ -764,6 +769,8 @@ public:
   /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
   DEPRECATED(4.4)
   Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Rendering

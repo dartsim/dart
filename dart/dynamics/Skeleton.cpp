@@ -867,11 +867,10 @@ static bool isValidBodyNode(const Skeleton* _skeleton,
   // The given BodyNode should be in the Skeleton
   if (_bodyNode->getSkeleton().get() != _skeleton)
   {
-    dtwarn << "[Skeleton::" << _fname << "] Attempting to get a Jacobian "
-           << _fname << " for a BodyNode [" << _bodyNode->getName() << "] ("
-           << _bodyNode << ") that is not in this Skeleton ["
-           << _skeleton->getName() << "] (" << _skeleton
-           << "). Returning zero Jacobian.\n";
+    dtwarn << "[Skeleton::" << _fname << "] Attempting to get a Jacobian for a "
+           "BodyNode [" << _bodyNode->getName() << "] (" << _bodyNode
+           << ") that is not in this Skeleton [" << _skeleton->getName()
+           << "] (" << _skeleton << "). Returning zero Jacobian.\n";
     assert(false);
     return false;
   }
@@ -1021,7 +1020,8 @@ math::AngularJacobian variadicGetAngularJacobian(
   if( !isValidBodyNode(_skel, _bodyNode, "getAngularJacobian") )
     return J;
 
-  const math::AngularJacobian JBodyNode = _bodyNode->getAngularJacobian(args...);
+  const math::AngularJacobian JBodyNode =
+      _bodyNode->getAngularJacobian(args...);
 
   assignJacobian<math::AngularJacobian>(J, _bodyNode, JBodyNode);
 
@@ -1046,9 +1046,9 @@ math::Jacobian variadicGetJacobianSpatialDeriv(
   if( !isValidBodyNode(_skel, _bodyNode, "getJacobianSpatialDeriv") )
     return dJ;
 
-  const math::Jacobian JBodyNode = _bodyNode->getJacobianSpatialDeriv(args...);
+  const math::Jacobian dJBodyNode = _bodyNode->getJacobianSpatialDeriv(args...);
 
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, JBodyNode);
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
 
   return dJ;
 }
@@ -1091,16 +1091,16 @@ template <typename ...Args>
 math::Jacobian variadicGetJacobianClassicDeriv(
     const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
 {
-  math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
+  math::Jacobian dJ = math::Jacobian::Zero(6, _skel->getNumDofs());
 
   if( !isValidBodyNode(_skel, _bodyNode, "getJacobianClassicDeriv") )
-    return J;
+    return dJ;
 
-  const math::Jacobian JBodyNode = _bodyNode->getJacobianClassicDeriv(args...);
+  const math::Jacobian dJBodyNode = _bodyNode->getJacobianClassicDeriv(args...);
 
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
 
-  return J;
+  return dJ;
 }
 
 //==============================================================================
@@ -2087,7 +2087,7 @@ void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateAugMassMatrix() const
 {
-  size_t dof = getNumDofs();
+  size_t dof = mSkelCache.mDofs.size();
   assert(static_cast<size_t>(mSkelCache.mAugM.cols()) == dof
          && static_cast<size_t>(mSkelCache.mAugM.rows()) == dof);
   if(dof == 0)
@@ -2980,7 +2980,7 @@ double Skeleton::getPotentialEnergy() const
 //==============================================================================
 Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 {
-  Eigen::Vector3d com(0.0, 0.0, 0.0);
+  Eigen::Vector3d com = Eigen::Vector3d::Zero();
 
   const size_t numBodies = getNumBodyNodes();
   for (size_t i = 0; i < numBodies; ++i)
@@ -2994,7 +2994,6 @@ Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 }
 
 //==============================================================================
-
 // Templated function for computing different kinds of COM properties, like
 // velocities and accelerations
 template <
@@ -3039,7 +3038,8 @@ Eigen::Vector6d Skeleton::getCOMSpatialAcceleration(const Frame* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
   return getCOMPropertyTemplate<Eigen::Vector6d,
-      &BodyNode::getCOMSpatialAcceleration>(this, _relativeTo, _inCoordinatesOf);
+      &BodyNode::getCOMSpatialAcceleration>(
+        this, _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -3051,7 +3051,6 @@ Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
 }
 
 //==============================================================================
-
 // Templated function for computing different kinds of COM Jacobians and their
 // derivatives
 template <

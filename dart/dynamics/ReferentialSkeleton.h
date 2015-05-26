@@ -117,10 +117,10 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const DegreeOfFreedom* _dof, bool _warning=true) const override;
+  size_t getIndexOf(const DegreeOfFreedom* _dof,
+                    bool _warning=true) const override;
 
   /// \}
-
 
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians
@@ -220,6 +220,103 @@ public:
 
   /// \}
 
+  //----------------------------------------------------------------------------
+  /// \{ \name Equations of Motion
+  //----------------------------------------------------------------------------
+
+  /// Get the total mass of all BodyNodes in this ReferentialSkeleton. For
+  /// ReferentialSkeleton::getMass(), the total mass is computed upon request,
+  /// so this is a linear-time O(N) operation. The Skeleton::getMass() version,
+  /// however, is constant-time.
+  double getMass() const override;
+
+  // Documentation inherited
+  const Eigen::MatrixXd& getMassMatrix() const override;
+
+  // Documentation inherited
+  const Eigen::MatrixXd& getAugMassMatrix() const override;
+
+  // Documentation inherited
+  const Eigen::MatrixXd& getInvMassMatrix() const override;
+
+  // Documentation inherited
+  const Eigen::MatrixXd& getInvAugMassMatrix() const override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getCoriolisForces() const override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getGravityForces() const override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getExternalForces() const override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getConstraintForces() const override;
+
+  // Documentation inherited
+  void clearExternalForces() override;
+
+  // Documentation inherited
+  void clearInternalForces() override;
+
+  // Documentation inherited
+  double getKineticEnergy() const override;
+
+  // Documentation inherited
+  double getPotentialEnergy() const override;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Center of Mass Jacobian
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  Eigen::Vector3d getCOM(
+      const Frame* _withRespectTo = Frame::World()) const override;
+
+  // Documentation inherited
+  Eigen::Vector6d getCOMSpatialVelocity(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  Eigen::Vector3d getCOMLinearVelocity(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  Eigen::Vector6d getCOMSpatialAcceleration(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  Eigen::Vector3d getCOMLinearAcceleration(
+      const Frame* _relativeTo = Frame::World(),
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  math::Jacobian getCOMJacobian(
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  math::LinearJacobian getCOMLinearJacobian(
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  math::Jacobian getCOMJacobianSpatialDeriv(
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  // Documentation inherited
+  math::LinearJacobian getCOMLinearJacobianDeriv(
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
+
+  /// \}
+
 protected:
 
   /// Default constructor. Protected to avoid blank and useless instantiations
@@ -284,6 +381,33 @@ protected:
   /// Map for keeping track of the indices of BodyNodes, Joints, and
   /// DegreesOfFreedom
   std::unordered_map<const BodyNode*, IndexMap> mIndexMap;
+
+  /// Cache for Mass Matrix
+  mutable Eigen::MatrixXd mM;
+
+  /// Cache for Augmented Mass Matrix
+  mutable Eigen::MatrixXd mAugM;
+
+  /// Cache for inverse Mass Matrix
+  mutable Eigen::MatrixXd mInvM;
+
+  /// Cache for inverse Augmented Mass Matrix
+  mutable Eigen::MatrixXd mInvAugM;
+
+  /// Cache for Coriolis vector
+  mutable Eigen::VectorXd mCvec;
+
+  /// Cache for gravity vector
+  mutable Eigen::VectorXd mG;
+
+  /// Cache for combined Coriolis and gravity vector
+  mutable Eigen::VectorXd mCg;
+
+  /// Cache for external force vector
+  mutable Eigen::VectorXd mFext;
+
+  /// Cache for constraint force vector
+  mutable Eigen::VectorXd mFc;
 };
 
 typedef std::shared_ptr<ReferentialSkeleton> ReferentialSkeletonPtr;

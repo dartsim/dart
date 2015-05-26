@@ -522,11 +522,11 @@ public:
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<DegreeOfFreedom*> getDependentDofs();
+  const std::vector<DegreeOfFreedom*>& getDependentDofs();
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -1374,6 +1374,13 @@ protected:
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
+
+  /// A version of mDependentGenCoordIndices that holds DegreeOfFreedom pointers
+  /// instead of indices
+  std::vector<DegreeOfFreedom*> mDependentDofs;
+
+  /// Same as mDependentDofs, but holds const pointers
+  std::vector<const DegreeOfFreedom*> mConstDependentDofs;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties

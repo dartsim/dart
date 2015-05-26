@@ -834,46 +834,15 @@ const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
 }
 
 //==============================================================================
-template <typename DofType, typename BnType, typename SkelType, typename JType>
-std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
+const std::vector<DegreeOfFreedom*>& BodyNode::getDependentDofs()
 {
-  std::vector<DofType*> dofs;
-  SkelType skel = bn->getSkeleton();
-  if(!skel)
-  {
-    JType* joint = bn->getParentJoint();
-    if(!joint)
-      return dofs;
-
-    size_t nDofs = joint->getNumDofs();
-    dofs.reserve(nDofs);
-    for(size_t i=0; i<nDofs; ++i)
-      dofs.push_back(joint->getDof(i));
-
-    return dofs;
-  }
-
-  const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  size_t nDofs = coords.size();
-  dofs.reserve(nDofs);
-  for(size_t i=0; i<nDofs; ++i)
-    dofs.push_back(skel->getDof(coords[i]));
-
-  return dofs;
+  return mDependentDofs;
 }
 
 //==============================================================================
-std::vector<DegreeOfFreedom*> BodyNode::getDependentDofs()
+const std::vector<const DegreeOfFreedom*>& BodyNode::getDependentDofs() const
 {
-  return getDependentDofsTemplate<
-    DegreeOfFreedom, BodyNode, SkeletonPtr, Joint>(this);
-}
-
-//==============================================================================
-std::vector<const DegreeOfFreedom*> BodyNode::getDependentDofs() const
-{
-  return getDependentDofsTemplate<
-    const DegreeOfFreedom, const BodyNode, ConstSkeletonPtr, const Joint>(this);
+  return mConstDependentDofs;
 }
 
 //==============================================================================
@@ -1482,6 +1451,12 @@ void BodyNode::init(SkeletonPtr _skeleton)
 
   // Sort
   std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
+
+  for(const size_t& index : mDependentGenCoordIndices)
+  {
+    mDependentDofs.push_back(_skeleton->getDof(index));
+    mConstDependentDofs.push_back(_skeleton->getDof(index));
+  }
 
 #ifndef NDEBUG
   // Check whether there is duplicated indices.

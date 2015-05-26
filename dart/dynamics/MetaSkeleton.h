@@ -536,11 +536,16 @@ public:
   /// Get the potential energy of this MetaSkeleton
   virtual double getPotentialEnergy() const = 0;
 
-  // -- Center of Mass Jacobian ---
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Center of Mass Jacobian
+  //----------------------------------------------------------------------------
 
   /// Get the MetaSkeleton's COM with respect to any Frame (default is World
   /// Frame)
-  virtual Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const = 0;
+  virtual Eigen::Vector3d getCOM(
+      const Frame* _withRespectTo = Frame::World()) const = 0;
 
   /// Get the Skeleton's COM spatial velocity in terms of any Frame (default is
   /// World Frame)
