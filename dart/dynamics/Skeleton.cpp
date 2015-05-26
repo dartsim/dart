@@ -1769,10 +1769,15 @@ bool Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
 //==============================================================================
 std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     Joint* _parentJoint, const BodyNode* _bodyNode,
-    std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode) const
+    std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode,
+    bool _recursive) const
 {
   std::pair<Joint*, BodyNode*> root(nullptr, nullptr);
-  std::vector<const BodyNode*> tree = constructBodyNodeTree(_bodyNode);
+  std::vector<const BodyNode*> tree;
+  if(_recursive)
+    tree = constructBodyNodeTree(_bodyNode);
+  else
+    tree.push_back(_bodyNode);
 
   std::map<std::string, BodyNode*> nameMap;
   std::vector<BodyNode*> clones;

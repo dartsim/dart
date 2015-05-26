@@ -857,7 +857,8 @@ protected:
   /// originals intact
   std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
       Joint* _parentJoint, const BodyNode* _bodyNode,
-      std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode) const;
+      std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode,
+      bool _recursive) const;
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact, but alter the top parent Joint to a new type
@@ -865,7 +866,8 @@ protected:
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
       const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
       BodyNode* _parentNode,
-      const typename JointType::Properties& _joint) const;
+      const typename JointType::Properties& _joint,
+      bool _recursive) const;
 
   /// Create a vector representation of a subtree of BodyNodes
   std::vector<const BodyNode*> constructBodyNodeTree(
@@ -1169,11 +1171,12 @@ template <class JointType>
 std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
     const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
     BodyNode* _parentNode,
-    const typename JointType::Properties& _joint) const
+    const typename JointType::Properties& _joint, bool _recursive) const
 {
   JointType* parentJoint = new JointType(_joint);
   std::pair<Joint*, BodyNode*> root =
-      cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode);
+      cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode,
+                        _recursive);
   return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
 }
 

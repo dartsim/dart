@@ -313,6 +313,17 @@ TEST(Skeleton, Restructuring)
                                 last_temporary->getBodyNode(0));
     childBn->changeParentJointType<FreeJoint>();
 
+    // Test the non-recursive copying
+    if(toSkel->getNumBodyNodes() > 1)
+    {
+      SkeletonPtr singleBodyNode =
+          toSkel->getBodyNode(0)->copyAs("single", false);
+      EXPECT_TRUE(singleBodyNode->getNumBodyNodes() == 1);
+
+      std::pair<Joint*, BodyNode*> singlePair =
+          toSkel->getBodyNode(0)->copyTo(nullptr, false);
+      EXPECT_TRUE(singlePair.second->getNumChildBodyNodes() == 0);
+    }
 
     // Check that the mangled Skeletons are all self-consistent
     check_self_consistency(fromSkel);

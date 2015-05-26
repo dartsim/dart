@@ -409,17 +409,20 @@ public:
       const typename JointType::Properties& _joint =
       typename JointType::Properties());
 
-  /// Create clones of this BodyNode and all of its children (recursively) and
-  /// attach the clones to the specified BodyNode. The specified BodyNode can be
-  /// in this Skeleton or a different Skeleton. Passing in nullptr will set the
-  /// copy as a root node of the current Skeleton.
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// _recursive is set to false) and attach the clones to the specified
+  /// BodyNode. The specified BodyNode can be in this Skeleton or a different
+  /// Skeleton. Passing in nullptr will set the copy as a root node of the
+  /// current Skeleton.
   ///
   /// The return value is a pair of pointers to the root of the newly created
   /// BodyNode tree.
-  std::pair<Joint*, BodyNode*> copyTo(BodyNode* _newParent);
+  std::pair<Joint*, BodyNode*> copyTo(BodyNode* _newParent,
+                                      bool _recursive=true);
 
-  /// Create clones of this BodyNode and all of its children (recursively) and
-  /// attach the clones to the specified BodyNode of the specified Skeleton.
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// recursive is set to false) and attach the clones to the specified BodyNode
+  /// of the specified Skeleton.
   ///
   /// The key differences between this function and the copyTo(BodyNode*)
   /// version is that this one allows the copied BodyNode to be const and allows
@@ -428,14 +431,17 @@ public:
   /// The return value is a pair of pointers to the root of the newly created
   /// BodyNode tree.
   std::pair<Joint*, BodyNode*> copyTo(SkeletonPtr _newSkeleton,
-                                      BodyNode* _newParent) const;
+                                      BodyNode* _newParent,
+                                      bool _recursive=true) const;
 
   /// A version of copyTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode.
   template <class JointType>
-  std::pair<JointType*, BodyNode*> copyTo(BodyNode* _newParent,
+  std::pair<JointType*, BodyNode*> copyTo(
+      BodyNode* _newParent,
       const typename JointType::Properties& _joint =
-          typename JointType::Properties());
+          typename JointType::Properties(),
+      bool _recursive=true);
 
   /// A version of copyTo(Skeleton*,BodyNode*) that also changes the Joint type
   /// of the parent Joint of this BodyNode.
@@ -443,18 +449,22 @@ public:
   std::pair<JointType*, BodyNode*> copyTo(
       SkeletonPtr _newSkeleton, BodyNode* _newParent,
       const typename JointType::Properties& _joint =
-          typename JointType::Properties()) const;
+          typename JointType::Properties(),
+      bool _recursive=true) const;
 
   /// Create clones of this BodyNode and all of its children (recursively) and
   /// create a new Skeleton with the specified name to attach them to.
-  SkeletonPtr copyAs(const std::string& _skeletonName) const;
+  SkeletonPtr copyAs(const std::string& _skeletonName,
+                     bool _recursive=true) const;
 
   /// A version of copyAs(const std::string&) that also changes the Joint type
   /// of the root BodyNode.
   template <class JointType>
-  SkeletonPtr copyAs(const std::string& _skeletonName,
+  SkeletonPtr copyAs(
+      const std::string& _skeletonName,
       const typename JointType::Properties& _joint =
-          typename JointType::Properties()) const;
+          typename JointType::Properties(),
+      bool _recursive=true) const;
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
@@ -1567,34 +1577,36 @@ JointType* BodyNode::changeParentJointType(
 template <class JointType>
 std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     BodyNode* _newParent,
-    const typename JointType::Properties& _joint)
+    const typename JointType::Properties& _joint,
+    bool _recursive)
 {
   if(nullptr == _newParent)
     return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, getSkeleton(), nullptr, _joint);
+          this, getSkeleton(), nullptr, _joint, _recursive);
   else
     return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, _newParent->getSkeleton(), _newParent, _joint);
+          this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
 }
 
 //==============================================================================
 template <class JointType>
 std::pair<JointType*, BodyNode*> BodyNode::copyTo(
     SkeletonPtr _newSkeleton, BodyNode* _newParent,
-    const typename JointType::Properties& _joint) const
+    const typename JointType::Properties& _joint,
+    bool _recursive) const
 {
   return getSkeleton()->cloneBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint);
+        this, _newSkeleton, _newParent, _joint, _recursive);
 }
 
 //==============================================================================
 template <class JointType>
 SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
-    const typename JointType::Properties& _joint) const
+    const typename JointType::Properties& _joint, bool _recursive) const
 {
   SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
-  copyTo<JointType>(skel, nullptr, _joint);
+  copyTo<JointType>(skel, nullptr, _joint, _recursive);
   return skel;
 }
 

@@ -684,36 +684,39 @@ SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 }
 
 //==============================================================================
-std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent)
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent,
+                                              bool _recursive)
 {
   if(nullptr == _newParent)
     return getSkeleton()->cloneBodyNodeTree(
-          nullptr, this, getSkeleton(), nullptr);
+          nullptr, this, getSkeleton(), nullptr, _recursive);
   else
     return getSkeleton()->cloneBodyNodeTree(
-          nullptr, this, _newParent->getSkeleton(), _newParent);
+          nullptr, this, _newParent->getSkeleton(), _newParent, _recursive);
 }
 
 //==============================================================================
 std::pair<Joint*, BodyNode*> BodyNode::copyTo(SkeletonPtr _newSkeleton,
-                                              BodyNode* _newParent) const
+                                              BodyNode* _newParent,
+                                              bool _recursive) const
 {
   if(checkSkeletonNodeAgreement(
        this, _newSkeleton, _newParent, "copyTo", "copy"))
   {
     return getSkeleton()->cloneBodyNodeTree(
-          nullptr, this, _newSkeleton, _newParent);
+          nullptr, this, _newSkeleton, _newParent, _recursive);
   }
 
   return std::pair<Joint*, BodyNode*>(nullptr, nullptr);
 }
 
 //==============================================================================
-SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName) const
+SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
+                             bool _recursive) const
 {
   SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
-  copyTo(skel, nullptr);
+  copyTo(skel, nullptr, _recursive);
   return skel;
 }
 
