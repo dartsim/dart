@@ -1453,7 +1453,9 @@ void BodyNode::init(SkeletonPtr _skeleton)
   std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
 
   mDependentDofs.clear();
+  mDependentDofs.reserve(mDependentGenCoordIndices.size());
   mConstDependentDofs.clear();
+  mConstDependentDofs.reserve(mDependentGenCoordIndices.size());
   for(const size_t& index : mDependentGenCoordIndices)
   {
     mDependentDofs.push_back(_skeleton->getDof(index));
