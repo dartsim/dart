@@ -70,6 +70,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis2() const;
 
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
 protected:
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();

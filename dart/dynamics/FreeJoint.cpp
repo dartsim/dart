@@ -58,6 +58,52 @@ FreeJoint::~FreeJoint()
 }
 
 //==============================================================================
+void FreeJoint::setPositions(const Eigen::VectorXd& _positions)
+{
+  mQ.linear() = math::expMapRot(_positions.head<3>());
+  mQ.translation() = _positions.tail<3>();
+
+  MultiDofJoint::setPositions(_positions);
+}
+
+//==============================================================================
+Eigen::VectorXd FreeJoint::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  Eigen::Vector6d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobian(_q0).topLeftCorner<3,3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q0.head<3>());
+  const Eigen::Matrix3d R1  = math::expMapRot( _q1.head<3>());
+
+  dq.head<3>() = Jw.inverse() * math::logMap(R0T * R1);
+  dq.tail<3>() = _q1.tail<3>() - _q0.tail<3>();
+
+  return dq;
+}
+
+//==============================================================================
+math::Jacobian FreeJoint::getLocalJacobian(
+    const Eigen::VectorXd& _positions) const
+{
+  // Jacobian expressed in the Joint frame
+  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
+  J.topLeftCorner<3,3>() = math::expMapJac(-_positions.head<3>());
+
+  // Transform the reference frame to the child BodyNode frame
+  J.leftCols<3>()  = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
+  J.bottomRightCorner<3,3>()
+      = mT_ChildBodyToJoint.linear() * math::expMapRot(-_positions.head<3>());
+
+  // Note that the top right 3x3 block of J is always zero
+  assert((J.topRightCorner<3,3>()) == Eigen::Matrix3d::Zero());
+
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
   mQ.linear()      = mQ.linear() * math::expMapRot(mJacobian.topRows<3>()
@@ -99,17 +145,7 @@ void FreeJoint::updateLocalTransform()
 //==============================================================================
 void FreeJoint::updateLocalJacobian()
 {
-  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-  J.topLeftCorner<3,3>() = math::expMapJac(mPositions.head<3>()).transpose();
-
-  mJacobian.leftCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint, J.leftCols<3>());
-  mJacobian.rightCols<3>()
-      = math::AdTJacFixed(mT_ChildBodyToJoint
-                          * math::expAngular(-mPositions.head<3>()),
-                          J.rightCols<3>());
-
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(mPositions);
 }
 
 //==============================================================================

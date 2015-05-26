@@ -705,6 +705,22 @@ void SingleDofJoint::integrateVelocities(double _dt)
 }
 
 //==============================================================================
+Eigen::VectorXd SingleDofJoint::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  {
+    dterr << "SingleDofJoint::getPositionDifferences: q0's size[" << _q0.size()
+          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::Matrix<double, 1, 1>::Zero();
+  }
+
+  return Eigen::Matrix<double, 1, 1>::Constant(_q1[0] - _q0[0]);
+}
+
+//==============================================================================
 void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 {
   if (_index != 0)
@@ -853,6 +869,14 @@ Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 //==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
+  return mJacobian;
+}
+
+//==============================================================================
+math::Jacobian SingleDofJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
+{
+  // The Jacobian is always constant w.r.t. the generalized coordinates.
   return mJacobian;
 }
 

@@ -57,6 +57,21 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
+math::Jacobian TranslationalJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
+{
+  Eigen::Matrix<double, 6, 3> J;
+
+  J.bottomRows<3>() = mT_ChildBodyToJoint.linear();
+
+  // Verification
+  assert(J.topRows<3>() == Eigen::Matrix3d::Zero());
+  assert(!math::isNan(J.bottomRows<3>()));
+
+  return J;
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
@@ -81,20 +96,7 @@ void TranslationalJoint::updateLocalTransform()
 //==============================================================================
 void TranslationalJoint::updateLocalJacobian()
 {
-  Eigen::Vector6d J0;
-  Eigen::Vector6d J1;
-  Eigen::Vector6d J2;
-
-  J0 << 0, 0, 0, 1, 0, 0;
-  J1 << 0, 0, 0, 0, 1, 0;
-  J2 << 0, 0, 0, 0, 0, 1;
-
-  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
-
-  // Verification
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(mPositions);
 }
 
 //==============================================================================

@@ -58,6 +58,46 @@ BallJoint::~BallJoint()
 }
 
 //==============================================================================
+void BallJoint::setPositions(const Eigen::VectorXd& _positions)
+{
+  mR = math::expMapRot(_positions);
+
+  MultiDofJoint::setPositions(_positions);
+}
+
+//==============================================================================
+Eigen::VectorXd BallJoint::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  Eigen::Vector3d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobian(_q0).topRows<3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q0);
+  const Eigen::Matrix3d R1  = math::expMapRot( _q1);
+
+  dq = Jw.inverse() * math::logMap(R0T * R1);
+
+  return dq;
+}
+
+//==============================================================================
+math::Jacobian BallJoint::getLocalJacobian(
+    const Eigen::VectorXd& _positions) const
+{
+  // Jacobian expressed in the Joint frame
+  Eigen::Matrix<double, 6, 3> J;
+  J.topRows<3>()    = math::expMapJac(-_positions);
+  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  // Transform the reference frame to the child BodyNode frame
+  J = math::AdTJacFixed(mT_ChildBodyToJoint, J);
+
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear() * math::expMapRot(mJacobian.topRows<3>()
@@ -90,13 +130,7 @@ void BallJoint::updateLocalTransform()
 //==============================================================================
 void BallJoint::updateLocalJacobian()
 {
-  Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = math::expMapJac(mPositions).transpose();
-  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
-
-  mJacobian = math::AdTJacFixed(mT_ChildBodyToJoint, J);
-
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(mPositions);
 }
 
 //==============================================================================

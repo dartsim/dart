@@ -258,7 +258,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -266,6 +266,10 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -1385,6 +1389,23 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 {
   mVelocities += mAccelerations * _dt;
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  {
+    dterr << "MultiDofJoint::getPositionDifferences: q0's size[" << _q0.size()
+          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::VectorXd::Zero(getNumDofs());
+  }
+
+  return _q1 - _q0;
 }
 
 //==============================================================================

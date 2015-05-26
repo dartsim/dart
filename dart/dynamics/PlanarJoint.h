@@ -103,6 +103,10 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.

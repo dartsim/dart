@@ -54,6 +54,10 @@ public:
   /// Destructor
   virtual ~TranslationalJoint();
 
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
 protected:
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();

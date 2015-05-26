@@ -85,6 +85,20 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
+math::Jacobian UniversalJoint::getLocalJacobian(
+    const Eigen::VectorXd& _positions) const
+{
+  Eigen::Matrix<double, 6, 2> J;
+  J.col(0) = math::AdTAngular(
+               mT_ChildBodyToJoint
+               * math::expAngular(-mAxis[1] * _positions[1]),
+                                  mAxis[0]);
+  J.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
+  assert(!math::isNan(J));
+  return J;
+}
+
+//==============================================================================
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
@@ -106,12 +120,7 @@ void UniversalJoint::updateLocalTransform()
 //==============================================================================
 void UniversalJoint::updateLocalJacobian()
 {
-  mJacobian.col(0) = math::AdTAngular(
-                       mT_ChildBodyToJoint
-                       * math::expAngular(-mAxis[1] * mPositions[1]),
-                                          mAxis[0]);
-  mJacobian.col(1) = math::AdTAngular(mT_ChildBodyToJoint, mAxis[1]);
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobian(mPositions);
 }
 
 //==============================================================================

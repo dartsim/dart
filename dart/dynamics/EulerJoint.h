@@ -71,6 +71,10 @@ public:
   ///
   AxisOrder getAxisOrder() const;
 
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
 protected:
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

@@ -56,6 +56,17 @@ public:
   /// Destructor
   virtual ~FreeJoint();
 
+  // Documentation inherited
+  void setPositions(const Eigen::VectorXd& _positions) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
 protected:
   // Documentation inherited
   virtual void integratePositions(double _dt);
