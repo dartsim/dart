@@ -63,21 +63,6 @@ PrismaticJoint::Properties::Properties(
 }
 
 //==============================================================================
-PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
-                               const std::string& _name)
-  : SingleDofJoint(_name),
-    mPrismaticP(axis)
-{
-  updateLocalJacobian();
-}
-
-//==============================================================================
-Joint* PrismaticJoint::clone() const
-{
-  return new PrismaticJoint(getPrismaticJointProperties());
-}
-
-//==============================================================================
 PrismaticJoint::~PrismaticJoint()
 {
   // Do nothing
@@ -148,6 +133,12 @@ PrismaticJoint::PrismaticJoint(const Properties& _properties)
 {
   setProperties(_properties);
   updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* PrismaticJoint::clone() const
+{
+  return new PrismaticJoint(getPrismaticJointProperties());
 }
 
 //==============================================================================

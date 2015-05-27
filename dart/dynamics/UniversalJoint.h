@@ -73,12 +73,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-                 const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
-                 const std::string& _name = "Universal joint");
-
   /// Destructor
   virtual ~UniversalJoint();
 

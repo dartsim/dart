@@ -65,17 +65,6 @@ ScrewJoint::Properties::Properties(
 }
 
 //==============================================================================
-ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
-                       double _pitch,
-                       const std::string& _name)
-  : SingleDofJoint(_name),
-    mScrewP(axis, _pitch)
-{
-  updateLocalJacobian();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 ScrewJoint::~ScrewJoint()
 {
   // Do nothing

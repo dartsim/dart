@@ -68,24 +68,6 @@ Joint::Properties::Properties(const std::string& _name,
 }
 
 //==============================================================================
-Joint::Joint(const std::string& _name)
-  : mJointP(Properties(_name)),
-    mChildBodyNode(nullptr),
-    mT(Eigen::Isometry3d::Identity()),
-    mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mSpatialAcceleration(Eigen::Vector6d::Zero()),
-    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
-    mNeedTransformUpdate(true),
-    mNeedSpatialVelocityUpdate(true),
-    mNeedSpatialAccelerationUpdate(true),
-    mNeedPrimaryAccelerationUpdate(true),
-    mIsLocalJacobianDirty(true),
-    mIsLocalJacobianTimeDerivDirty(true)
-{
-  // Do nothing
-}
-
-//==============================================================================
 Joint::~Joint()
 {
   // Do nothing

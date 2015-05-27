@@ -53,14 +53,6 @@ FreeJoint::Properties::Properties(
 }
 
 //==============================================================================
-FreeJoint::FreeJoint(const std::string& _name)
-  : MultiDofJoint(_name),
-    mQ(Eigen::Isometry3d::Identity())
-{
-  updateDegreeOfFreedomNames();
-}
-
-//==============================================================================
 FreeJoint::~FreeJoint()
 {
   // Do nothing

@@ -90,34 +90,6 @@ SingleDofJoint::Properties::Properties(
 }
 
 //==============================================================================
-SingleDofJoint::SingleDofJoint(const std::string& _name)
-  : Joint(_name),
-    mDof(createDofPointer(0)),
-    mCommand(0.0),
-    mPosition(0.0),
-    mPositionDeriv(0.0),
-    mVelocity(0.0),
-    mVelocityDeriv(0.0),
-    mAcceleration(0.0),
-    mAccelerationDeriv(0.0),
-    mForce(0.0),
-    mForceDeriv(0.0),
-    mVelocityChange(0.0),
-    mImpulse(0.0),
-    mConstraintImpulse(0.0),
-    mJacobian(Eigen::Vector6d::Zero()),
-    mJacobianDeriv(Eigen::Vector6d::Zero()),
-    mInvProjArtInertia(0.0),
-    mInvProjArtInertiaImplicit(0.0),
-    mTotalForce(0.0),
-    mTotalImpulse(0.0),
-    mInvM_a(0.0),
-    mInvMassMatrixSegment(0.0)
-{
-  updateDegreeOfFreedomNames();
-}
-
-//==============================================================================
 SingleDofJoint::~SingleDofJoint()
 {
   delete mDof;

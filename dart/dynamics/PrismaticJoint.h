@@ -72,11 +72,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const std::string& _name = "Noname PrismaticJoint");
-
   /// Destructor
   virtual ~PrismaticJoint();
 

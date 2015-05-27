@@ -81,10 +81,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit EulerJoint(const std::string& _name = "EulerJoint");
-
   /// Destructor
   virtual ~EulerJoint();
 

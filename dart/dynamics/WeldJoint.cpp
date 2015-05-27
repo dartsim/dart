@@ -52,13 +52,6 @@ WeldJoint::Properties::Properties(const Joint::Properties& _properties)
 }
 
 //==============================================================================
-WeldJoint::WeldJoint(const std::string& _name)
-  : ZeroDofJoint(_name)
-{
-  // Do nothing
-}
-
-//==============================================================================
 WeldJoint::~WeldJoint()
 {
   // Do nothing

@@ -122,14 +122,6 @@ SoftBodyNode::Properties::Properties(
 }
 
 //==============================================================================
-SoftBodyNode::SoftBodyNode(const std::string& _name)
-  : Entity(Frame::World(), _name, false),
-    BodyNode(_name)
-{
-  mNotifier = new PointMassNotifier(this, "PointMassNotifier");
-}
-
-//==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)

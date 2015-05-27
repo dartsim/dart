@@ -131,16 +131,7 @@ PlanarJoint::Properties::Properties(
   : MultiDofJoint<3>::Properties(_multiDofProperties),
     PlanarJoint::UniqueProperties(_planarProperties)
 {
-
-}
-
-//==============================================================================
-PlanarJoint::PlanarJoint(const std::string& _name)
-  : MultiDofJoint(_name)
-{
-  setXYPlane();
-  updateDegreeOfFreedomNames();
-  updateLocalJacobian();
+  // Do nothing
 }
 
 //==============================================================================

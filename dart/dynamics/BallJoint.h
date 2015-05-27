@@ -58,10 +58,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit BallJoint(const std::string& _name = "BallJoint");
-
   /// Destructor
   virtual ~BallJoint();
 

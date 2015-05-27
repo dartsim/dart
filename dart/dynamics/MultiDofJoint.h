@@ -134,10 +134,6 @@ public:
     virtual ~Properties();
   };
 
-  /// Constructor
-//  DEPRECATED(4.5) // Use MultiDofJoint(const Properties&)
-  MultiDofJoint(const std::string& _name);
-
   /// Destructor
   virtual ~MultiDofJoint();
 
@@ -852,33 +848,6 @@ template <size_t DOF>
 MultiDofJoint<DOF>::Properties::~Properties()
 {
   // Do nothing
-}
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
-  : Joint(_name),
-    mCommands(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositionDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocities(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocitiesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocityChanges(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mConstraintImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
-    mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
-    mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
-    mInvProjArtInertiaImplicit(Eigen::Matrix<double, DOF, DOF>::Zero()),
-    mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
-    mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
-{
-  for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(i);
 }
 
 //==============================================================================

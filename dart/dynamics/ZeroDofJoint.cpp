@@ -52,13 +52,6 @@ ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
 }
 
 //==============================================================================
-ZeroDofJoint::ZeroDofJoint(const std::string& _name)
-  : Joint(_name)
-{
-  // Do nothing
-}
-
-//==============================================================================
 ZeroDofJoint::~ZeroDofJoint()
 {
   // Do nothing

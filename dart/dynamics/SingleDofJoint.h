@@ -125,10 +125,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-//  DEPRECATED(4.5) // Use SingleDofJoint(const Properties&)
-  SingleDofJoint(const std::string& _name);
-
   /// Destructor
   virtual ~SingleDofJoint();
 

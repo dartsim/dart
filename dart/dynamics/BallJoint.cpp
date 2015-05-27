@@ -52,14 +52,6 @@ BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _propertie
 }
 
 //==============================================================================
-BallJoint::BallJoint(const std::string& _name)
-  : MultiDofJoint(_name),
-    mR(Eigen::Isometry3d::Identity())
-{
-  updateDegreeOfFreedomNames();
-}
-
-//==============================================================================
 BallJoint::~BallJoint()
 {
   // Do nothing

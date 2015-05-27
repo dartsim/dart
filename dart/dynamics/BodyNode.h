@@ -137,10 +137,6 @@ public:
         const UniqueProperties& _bodyNodeProperties = UniqueProperties());
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit BodyNode(const std::string& _name = "BodyNode");
-
   /// Destructor
   virtual ~BodyNode();
 

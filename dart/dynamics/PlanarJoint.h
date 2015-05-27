@@ -121,10 +121,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit PlanarJoint(const std::string& _name = "PlanarJoint");
-
   /// Destructor
   virtual ~PlanarJoint();
 

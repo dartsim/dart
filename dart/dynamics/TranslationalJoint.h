@@ -58,10 +58,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
-
   /// Destructor
   virtual ~TranslationalJoint();
 

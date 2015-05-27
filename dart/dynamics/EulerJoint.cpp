@@ -64,14 +64,6 @@ EulerJoint::Properties::Properties(
 }
 
 //==============================================================================
-EulerJoint::EulerJoint(const std::string& _name)
-  : MultiDofJoint(_name)
-{
-  updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 EulerJoint::~EulerJoint()
 {
 }

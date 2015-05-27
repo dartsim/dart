@@ -63,17 +63,6 @@ UniversalJoint::Properties::Properties(
 }
 
 //==============================================================================
-UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1,
-                               const Eigen::Vector3d& _axis2,
-                               const std::string& _name)
-  : MultiDofJoint(_name),
-    mUniversalP(_axis1, _axis2)
-{
-  updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 UniversalJoint::~UniversalJoint()
 {
   // Do nothing

@@ -53,14 +53,6 @@ TranslationalJoint::Properties::Properties(
 }
 
 //==============================================================================
-TranslationalJoint::TranslationalJoint(const std::string& _name)
-  : MultiDofJoint(_name)
-{
-  updateDegreeOfFreedomNames();
-  updateLocalJacobian();
-}
-
-//==============================================================================
 TranslationalJoint::~TranslationalJoint()
 {
   // Do nothing

@@ -61,10 +61,6 @@ public:
     virtual ~Properties() = default;
   };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit FreeJoint(const std::string& _name = "FreeJoint");
-
   /// Destructor
   virtual ~FreeJoint();
 

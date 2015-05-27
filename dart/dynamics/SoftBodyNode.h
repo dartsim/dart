@@ -114,12 +114,6 @@ public:
                                             SoftBodyNode::UniqueProperties());
   };
 
-  //--------------------------------------------------------------------------
-  // Constructor and Desctructor
-  //--------------------------------------------------------------------------
-  /// \brief
-  explicit SoftBodyNode(const std::string& _name = "Unnamed SoftBodyNode");
-
   /// \brief
   virtual ~SoftBodyNode();
 
