@@ -140,13 +140,6 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
   assert(_scale[2] > 0.0);
 
   setMesh(_mesh, _path);
-
-  if (nullptr == mMesh) {
-    return;
-  }
-  _updateBoundingBoxDim();
-  computeVolume();
-  initMeshes();
 }
 
 MeshShape::~MeshShape() {
