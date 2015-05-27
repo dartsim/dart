@@ -552,7 +552,7 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
     else
     {
       shape = dynamics::ShapePtr(new dynamics::MeshShape(
-          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model));
+          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
     }
   }
   // Unknown geometry type
