@@ -386,7 +386,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -394,6 +394,15 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+
+  /// Fixed-size version of getPositionsDifference()
+  virtual Eigen::Matrix<double, DOF, 1> getPositionDifferencesStatic(
+      const Eigen::Matrix<double, DOF, 1>& _q0,
+      const Eigen::Matrix<double, DOF, 1>& _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -450,6 +459,14 @@ protected:
 
   /// Fixed-size version of getLocalJacobian()
   const Eigen::Matrix<double, 6, DOF>& getLocalJacobianStatic() const;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
+  /// Fixed-size version of getLocalJacobian()
+  virtual Eigen::Matrix<double, 6, DOF> getLocalJacobianStatic(
+      const Eigen::Matrix<double, DOF, 1>& _positions) const = 0;
 
   // Documentation inherited
   const math::Jacobian getLocalJacobianTimeDeriv() const override;
@@ -1730,6 +1747,32 @@ void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 
 //==============================================================================
 template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  {
+    dterr << "MultiDofJoint::getPositionsDifference: q0's size[" << _q0.size()
+          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::VectorXd::Zero(getNumDofs());
+  }
+
+  return getPositionDifferencesStatic(_q0, _q1);
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::Matrix<double, DOF, 1> MultiDofJoint<DOF>::getPositionDifferencesStatic(
+    const Eigen::Matrix<double, DOF, 1>& _q0,
+    const Eigen::Matrix<double, DOF, 1>& _q1) const
+{
+  return _q1 - _q0;
+}
+
+//==============================================================================
+template <size_t DOF>
 void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 {
   if (_index >= getNumDofs())
@@ -1922,12 +1965,7 @@ void MultiDofJoint<DOF>::registerDofs()
 template <size_t DOF>
 const math::Jacobian MultiDofJoint<DOF>::getLocalJacobian() const
 {
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
-  return mJacobian;
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================
@@ -1941,6 +1979,14 @@ MultiDofJoint<DOF>::getLocalJacobianStatic() const
     mIsLocalJacobianDirty = false;
   }
   return mJacobian;
+}
+
+//==============================================================================
+template <size_t DOF>
+math::Jacobian MultiDofJoint<DOF>::getLocalJacobian(
+    const Eigen::VectorXd& _positions) const
+{
+  return getLocalJacobianStatic(_positions);
 }
 
 //==============================================================================

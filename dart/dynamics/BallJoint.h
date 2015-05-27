@@ -82,6 +82,14 @@ public:
   /// Convert a BallJoint-style position vector into a rotation matrix
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
+  // Documentation inherited
+  Eigen::Vector3d getPositionDifferencesStatic(
+      const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -89,6 +97,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
   virtual void integratePositions(double _dt);
@@ -106,7 +116,13 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotation matrix
+
+  /// Access mR, which is an auto-updating variable
+  const Eigen::Isometry3d& getR() const;
+
+  /// Rotation matrix dependent on the generalized coordinates
+  ///
+  /// Do not use directly! Use getR() to access this
   mutable Eigen::Isometry3d mR;
 
 public:

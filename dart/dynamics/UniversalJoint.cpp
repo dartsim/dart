@@ -141,6 +141,21 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
+Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
+    const Eigen::Vector2d& _positions) const
+{
+  Eigen::Matrix<double, 6, 2> J;
+  J.col(0) = math::AdTAngular(
+               mJointP.mT_ChildBodyToJoint
+               * math::expAngular(-mUniversalP.mAxis[1] * _positions[1]),
+                                  mUniversalP.mAxis[0]);
+  J.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint,
+                              mUniversalP.mAxis[1]);
+  assert(!math::isNan(J));
+  return J;
+}
+
+//==============================================================================
 UniversalJoint::UniversalJoint(const Properties& _properties)
   : MultiDofJoint<2>(_properties)
 {
@@ -177,14 +192,7 @@ void UniversalJoint::updateLocalTransform() const
 //==============================================================================
 void UniversalJoint::updateLocalJacobian(bool) const
 {
-  mJacobian.col(0) = math::AdTAngular(
-      mJointP.mT_ChildBodyToJoint
-      * math::expAngular(-mUniversalP.mAxis[1] * getPositionsStatic()[1]),
-                         mUniversalP.mAxis[0]);
-
-  mJacobian.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint,
-                                      mUniversalP.mAxis[1]);
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

@@ -158,6 +158,10 @@ public:
 
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -165,6 +169,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

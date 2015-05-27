@@ -810,6 +810,55 @@ void Skeleton::integrateVelocities(double _dt)
 }
 
 //==============================================================================
+Eigen::VectorXd Skeleton::getPositionDifferences(
+    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  {
+    dterr << "Skeleton::getPositionsDifference: q0's size[" << _q0.size()
+          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::VectorXd::Zero(getNumDofs());
+  }
+
+  Eigen::VectorXd dq(getNumDofs());
+
+  for (const auto& bodyNode : mSkelCache.mBodyNodes)
+  {
+    const Joint* joint = bodyNode->getParentJoint();
+    const size_t dof   = joint->getNumDofs();
+
+    if (dof)
+    {
+      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      const Eigen::VectorXd& q0Seg = _q0.segment(index, dof);
+      const Eigen::VectorXd& q1Seg = _q1.segment(index, dof);
+      dq.segment(index, dof) = joint->getPositionDifferences(q0Seg, q1Seg);
+    }
+  }
+
+  return dq;
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getVelocityDifferences(
+    const Eigen::VectorXd& _dq0, const Eigen::VectorXd& _dq1) const
+{
+  if (static_cast<size_t>(_dq0.size()) != getNumDofs()
+      || static_cast<size_t>(_dq1.size()) != getNumDofs())
+  {
+    dterr << "Skeleton::getPositionsDifference: dq0's size[" << _dq0.size()
+          << "] or dq1's size[" << _dq1.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::VectorXd::Zero(getNumDofs());
+  }
+
+  // All the tangent spaces of Joint's configuration spaces are vector spaces.
+  return _dq1 - _dq0;
+}
+
+//==============================================================================
 void Skeleton::computeForwardKinematics(bool _updateTransforms,
                                         bool _updateVels,
                                         bool _updateAccs)

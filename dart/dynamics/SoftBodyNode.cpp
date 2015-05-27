@@ -281,7 +281,7 @@ BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) co
 }
 
 //==============================================================================
-void SoftBodyNode::init(SkeletonPtr _skeleton)
+void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 {
   BodyNode::init(_skeleton);
 

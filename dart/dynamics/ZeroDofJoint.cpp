@@ -431,7 +431,15 @@ void ZeroDofJoint::integratePositions(double _dt)
 //==============================================================================
 void ZeroDofJoint::integrateVelocities(double _dt)
 {
-    // Do nothing
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionDifferences(
+    const Eigen::VectorXd& /*_q0*/,
+    const Eigen::VectorXd& /*_q1*/) const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -516,6 +524,13 @@ Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
 
 //==============================================================================
 const math::Jacobian ZeroDofJoint::getLocalJacobian() const
+{
+  return Eigen::Matrix<double, 6, 0>();
+}
+
+//==============================================================================
+math::Jacobian ZeroDofJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
 {
   return Eigen::Matrix<double, 6, 0>();
 }

@@ -177,6 +177,10 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -184,6 +188,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.

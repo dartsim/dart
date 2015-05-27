@@ -64,6 +64,10 @@ public:
   /// Get the Properties of this TranslationalJoint
   Properties getTranslationalJointProperties() const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -72,6 +76,8 @@ protected:
   // Documentation inherited
   virtual Joint* clone() const override;
 
+  using MultiDofJoint::getLocalJacobianStatic;
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 
@@ -79,7 +85,7 @@ protected:
   virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory=true) const;
+  virtual void updateLocalJacobian(bool _mandatory = true) const;
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const;

@@ -106,6 +106,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis2() const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
+      const Eigen::Vector2d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -113,6 +117,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();

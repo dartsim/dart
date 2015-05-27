@@ -354,7 +354,7 @@ public:
   /// version of the function is that you can make this BodyNode a root node in
   /// a different Skeleton, which is not something that can be done by the other
   /// version.
-  bool moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent);
+  bool moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent);
 
   /// A version of moveTo(BodyNode*) that also changes the Joint type of the
   /// parent Joint of this BodyNode. This function returns the pointer to the
@@ -373,7 +373,7 @@ public:
   /// type of the parent Joint of this BodyNode. This function returns the
   /// pointer to the newly created Joint. The original Joint will be deleted.
   template <class JointType>
-  JointType* moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent,
+  JointType* moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
       const typename JointType::Properties& _joint =
           typename JointType::Properties());
 
@@ -426,7 +426,7 @@ public:
   ///
   /// The return value is a pair of pointers to the root of the newly created
   /// BodyNode tree.
-  std::pair<Joint*, BodyNode*> copyTo(SkeletonPtr _newSkeleton,
+  std::pair<Joint*, BodyNode*> copyTo(const SkeletonPtr& _newSkeleton,
                                       BodyNode* _newParent,
                                       bool _recursive=true) const;
 
@@ -443,7 +443,7 @@ public:
   /// of the parent Joint of this BodyNode.
   template <class JointType>
   std::pair<JointType*, BodyNode*> copyTo(
-      SkeletonPtr _newSkeleton, BodyNode* _newParent,
+      const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
       const typename JointType::Properties& _joint =
           typename JointType::Properties(),
       bool _recursive=true) const;
@@ -1095,7 +1095,7 @@ protected:
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
 
   /// Initialize the vector members with proper sizes.
-  virtual void init(SkeletonPtr _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton);
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
@@ -1543,7 +1543,8 @@ JointType* BodyNode::moveTo(BodyNode* _newParent,
 
 //==============================================================================
 template <class JointType>
-JointType* BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent,
+JointType* BodyNode::moveTo(
+    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
     const typename JointType::Properties& _joint)
 {
   return getSkeleton()->moveBodyNodeTree<JointType>(
@@ -1587,7 +1588,7 @@ std::pair<JointType*, BodyNode*> BodyNode::copyTo(
 //==============================================================================
 template <class JointType>
 std::pair<JointType*, BodyNode*> BodyNode::copyTo(
-    SkeletonPtr _newSkeleton, BodyNode* _newParent,
+    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
     const typename JointType::Properties& _joint,
     bool _recursive) const
 {

@@ -695,6 +695,21 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
       check_offset_computations(targets, followers, T, F, tolerance);
     }
   }
+
+  // Test SimpleFrame::setTransform()
+  for(size_t i=0; i<followers.size(); ++i)
+  {
+    for(size_t j=0; j<followers.size(); ++j)
+    {
+      SimpleFrame* F = followers[i];
+      SimpleFrame* T = followers[j];
+      Eigen::Isometry3d tf;
+      randomize_transform(tf, 1, 2*M_PI);
+      T->setTransform(tf, F);
+      if(i != j)
+        EXPECT_TRUE( equals(T->getTransform(F).matrix(), tf.matrix(), 1e-10));
+    }
+  }
 }
 
 // Test different combinations of using spatial and classical derivative terms

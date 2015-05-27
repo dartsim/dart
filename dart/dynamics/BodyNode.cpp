@@ -619,7 +619,7 @@ bool BodyNode::moveTo(BodyNode* _newParent)
 }
 
 //==============================================================================
-bool BodyNode::moveTo(SkeletonPtr _newSkeleton, BodyNode* _newParent)
+bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 {
   if(checkSkeletonNodeAgreement(
        this, _newSkeleton, _newParent, "moveTo", "move"))
@@ -653,7 +653,7 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent,
 }
 
 //==============================================================================
-std::pair<Joint*, BodyNode*> BodyNode::copyTo(SkeletonPtr _newSkeleton,
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(const SkeletonPtr& _newSkeleton,
                                               BodyNode* _newParent,
                                               bool _recursive) const
 {
@@ -1379,7 +1379,7 @@ BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
 }
 
 //==============================================================================
-void BodyNode::init(SkeletonPtr _skeleton)
+void BodyNode::init(const SkeletonPtr& _skeleton)
 {
   mSkeleton = _skeleton;
   assert(_skeleton);

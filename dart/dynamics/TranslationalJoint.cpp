@@ -59,6 +59,14 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
+Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& /*_positions*/) const
+{
+  // The Jacobian is always constant w.r.t. the generalized coordinates.
+  return getLocalJacobianStatic();
+}
+
+//==============================================================================
 TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
 {
   return getMultiDofJointProperties();
@@ -103,22 +111,13 @@ void TranslationalJoint::updateLocalTransform() const
 //==============================================================================
 void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 {
-  if(_mandatory)
+  if (_mandatory)
   {
-    Eigen::Vector6d J0;
-    Eigen::Vector6d J1;
-    Eigen::Vector6d J2;
-
-    J0 << 0, 0, 0, 1, 0, 0;
-    J1 << 0, 0, 0, 0, 1, 0;
-    J2 << 0, 0, 0, 0, 0, 1;
-
-    mJacobian.col(0) = math::AdT(mJointP.mT_ChildBodyToJoint, J0);
-    mJacobian.col(1) = math::AdT(mJointP.mT_ChildBodyToJoint, J1);
-    mJacobian.col(2) = math::AdT(mJointP.mT_ChildBodyToJoint, J2);
+    mJacobian.bottomRows<3>() = mJointP.mT_ChildBodyToJoint.linear();
 
     // Verification
-    assert(!math::isNan(mJacobian));
+    assert(mJacobian.topRows<3>() == Eigen::Matrix3d::Zero());
+    assert(!math::isNan(mJacobian.bottomRows<3>()));
   }
 }
 

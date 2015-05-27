@@ -266,6 +266,27 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
+Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& _positions) const
+{
+  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
+  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
+  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
+  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
+
+  J.leftCols<2>()
+      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
+                          * math::expAngular(mPlanarP.mRotAxis * -_positions[2]),
+                          J.leftCols<2>());
+  J.col(2) = math::AdTJac(mJointP.mT_ChildBodyToJoint, J.col(2));
+
+  // Verification
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
 PlanarJoint::PlanarJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties)
 {
@@ -333,19 +354,7 @@ void PlanarJoint::updateLocalTransform() const
 //==============================================================================
 void PlanarJoint::updateLocalJacobian(bool) const
 {
-  Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
-  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
-  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
-
-  mJacobian.leftCols<2>()
-      = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
-              * math::expAngular(mPlanarP.mRotAxis * -getPositionsStatic()[2]),
-              J.leftCols<2>());
-  mJacobian.col(2) = math::AdTJac(mJointP.mT_ChildBodyToJoint, J.col(2));
-
-  // Verification
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

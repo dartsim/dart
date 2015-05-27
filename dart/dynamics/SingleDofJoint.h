@@ -375,7 +375,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -383,6 +383,13 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+
+  /// Fixed-size version of getPositionsDifference()
+  double getPositionDifferenceStatic(double _q0, double _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -451,6 +458,10 @@ protected:
 
   /// Fixed-size version of getLocalJacobian()
   const Eigen::Vector6d& getLocalJacobianStatic() const;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited
   const math::Jacobian getLocalJacobianTimeDeriv() const override;
