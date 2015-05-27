@@ -613,7 +613,8 @@ dynamics::ShapePtr SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
     Eigen::Vector3d       scale   = getValueVector3d(meshEle, "scale");
     const aiScene* model = dynamics::MeshShape::loadMesh(_skelPath + uri);
     if (model)
-      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model));
+      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model,
+                                                            _skelPath));
     else
       dterr << "Fail to load model[" << uri << "]." << std::endl;
   }
