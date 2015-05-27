@@ -389,14 +389,17 @@ public:
   void integrateVelocities(double _dt);
 
   /// Return the difference of two generalized positions which are measured in
-  /// the configuration space of this Skeleton.
+  /// the configuration space of this Skeleton. If the configuration space is
+  /// Euclidean space, this function returns _q2 - _q1. Otherwise, it depends on
+  /// the type of the configuration space.
   Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const;
 
   /// Return the difference of two generalized velocities or accelerations which
-  /// are measured in the tangent space at the identity.
+  /// are measured in the tangent space at the identity. Since the tangent
+  /// spaces are vector spaces, this function always returns _dq2 - _dq1.
   Eigen::VectorXd getVelocityDifferences(
-      const Eigen::VectorXd& _dq0, const Eigen::VectorXd& _dq1) const;
+      const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const;
 
   //----------------------------------------------------------------------------
   // State

@@ -386,10 +386,10 @@ public:
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   /// Fixed-size version of getPositionsDifference()
-  double getPositionDifferenceStatic(double _q0, double _q1) const;
+  double getPositionDifferenceStatic(double _q2, double _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction

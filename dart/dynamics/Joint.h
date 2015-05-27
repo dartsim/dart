@@ -482,7 +482,7 @@ public:
   /// Return the difference of two generalized coordinates which are measured in
   /// the configuration space of this Skeleton.
   virtual Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const = 0;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
 
   /// \}
 

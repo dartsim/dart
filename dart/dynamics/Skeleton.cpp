@@ -811,13 +811,13 @@ void Skeleton::integrateVelocities(double _dt)
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getPositionDifferences(
-    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<size_t>(_q0.size()) != getNumDofs()
+  if (static_cast<size_t>(_q2.size()) != getNumDofs()
       || static_cast<size_t>(_q1.size()) != getNumDofs())
   {
-    dterr << "Skeleton::getPositionsDifference: q0's size[" << _q0.size()
-          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+    dterr << "Skeleton::getPositionsDifference: q1's size[" << _q1.size()
+          << "] or q2's size[" << _q2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
     return Eigen::VectorXd::Zero(getNumDofs());
   }
@@ -832,9 +832,9 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
     if (dof)
     {
       size_t index = joint->getDof(0)->getIndexInSkeleton();
-      const Eigen::VectorXd& q0Seg = _q0.segment(index, dof);
+      const Eigen::VectorXd& q2Seg = _q2.segment(index, dof);
       const Eigen::VectorXd& q1Seg = _q1.segment(index, dof);
-      dq.segment(index, dof) = joint->getPositionDifferences(q0Seg, q1Seg);
+      dq.segment(index, dof) = joint->getPositionDifferences(q2Seg, q1Seg);
     }
   }
 
@@ -843,19 +843,19 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 
 //==============================================================================
 Eigen::VectorXd Skeleton::getVelocityDifferences(
-    const Eigen::VectorXd& _dq0, const Eigen::VectorXd& _dq1) const
+    const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const
 {
-  if (static_cast<size_t>(_dq0.size()) != getNumDofs()
+  if (static_cast<size_t>(_dq2.size()) != getNumDofs()
       || static_cast<size_t>(_dq1.size()) != getNumDofs())
   {
-    dterr << "Skeleton::getPositionsDifference: dq0's size[" << _dq0.size()
-          << "] or dq1's size[" << _dq1.size() << "is different with the dof ["
+    dterr << "Skeleton::getPositionsDifference: dq1's size[" << _dq1.size()
+          << "] or dq2's size[" << _dq2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
   // All the tangent spaces of Joint's configuration spaces are vector spaces.
-  return _dq1 - _dq0;
+  return _dq2 - _dq1;
 }
 
 //==============================================================================

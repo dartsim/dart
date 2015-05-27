@@ -436,7 +436,7 @@ void ZeroDofJoint::integrateVelocities(double _dt)
 
 //==============================================================================
 Eigen::VectorXd ZeroDofJoint::getPositionDifferences(
-    const Eigen::VectorXd& /*_q0*/,
+    const Eigen::VectorXd& /*_q2*/,
     const Eigen::VectorXd& /*_q1*/) const
 {
   return Eigen::VectorXd::Zero(0);

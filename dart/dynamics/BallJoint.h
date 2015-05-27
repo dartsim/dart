@@ -88,7 +88,7 @@ public:
 
   // Documentation inherited
   Eigen::Vector3d getPositionDifferencesStatic(
-      const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const override;
+      const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const override;
 
 protected:
 

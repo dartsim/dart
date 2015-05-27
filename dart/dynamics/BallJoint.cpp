@@ -110,15 +110,15 @@ Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
 
 //==============================================================================
 Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
-    const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const
+    const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const
 {
   Eigen::Vector3d dq;
 
-  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q0).topRows<3>();
-  const Eigen::Matrix3d R0T = math::expMapRot(-_q0);
-  const Eigen::Matrix3d R1  = math::expMapRot( _q1);
+  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q1).topRows<3>();
+  const Eigen::Matrix3d R1T = math::expMapRot(-_q1);
+  const Eigen::Matrix3d R2  = math::expMapRot( _q2);
 
-  dq = Jw.inverse() * math::logMap(R0T * R1);
+  dq = Jw.inverse() * math::logMap(R1T * R2);
 
   return dq;
 }

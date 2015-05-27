@@ -741,10 +741,10 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
       skeleton->integrateVelocities(timeStep);
       VectorXd dq2 = skeleton->getVelocities();
 
-      VectorXd dq0FD = skeleton->getPositionDifferences(q0, q1) / timeStep;
-      VectorXd dq1FD = skeleton->getPositionDifferences(q1, q2) / timeStep;
-      VectorXd ddqFD1 = skeleton->getVelocityDifferences(dq0FD, dq1FD) / timeStep;
-      VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq1, dq2) / timeStep;
+      VectorXd dq0FD = skeleton->getPositionDifferences(q1, q0) / timeStep;
+      VectorXd dq1FD = skeleton->getPositionDifferences(q2, q1) / timeStep;
+      VectorXd ddqFD1 = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
+      VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
       EXPECT_TRUE(equals(dq0, dq0FD));
       EXPECT_TRUE(equals(dq1, dq1FD));

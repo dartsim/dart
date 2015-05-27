@@ -397,12 +397,11 @@ public:
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
-  /// Fixed-size version of getPositionsDifference()
+  /// Fixed-size version of getPositionDifferences()
   virtual Eigen::Matrix<double, DOF, 1> getPositionDifferencesStatic(
-      const Eigen::Matrix<double, DOF, 1>& _q0,
-      const Eigen::Matrix<double, DOF, 1>& _q1) const;
+      const Vector& _q2, const Vector& _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -1748,27 +1747,26 @@ void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 //==============================================================================
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
-    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<size_t>(_q0.size()) != getNumDofs()
-      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  if (static_cast<size_t>(_q1.size()) != getNumDofs()
+      || static_cast<size_t>(_q2.size()) != getNumDofs())
   {
-    dterr << "MultiDofJoint::getPositionsDifference: q0's size[" << _q0.size()
-          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+    dterr << "MultiDofJoint::getPositionsDifference: q1's size[" << _q1.size()
+          << "] or q2's size[" << _q2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
-  return getPositionDifferencesStatic(_q0, _q1);
+  return getPositionDifferencesStatic(_q2, _q1);
 }
 
 //==============================================================================
 template <size_t DOF>
 Eigen::Matrix<double, DOF, 1> MultiDofJoint<DOF>::getPositionDifferencesStatic(
-    const Eigen::Matrix<double, DOF, 1>& _q0,
-    const Eigen::Matrix<double, DOF, 1>& _q1) const
+    const Vector& _q2, const Vector& _q1) const
 {
-  return _q1 - _q0;
+  return _q2 - _q1;
 }
 
 //==============================================================================
