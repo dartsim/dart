@@ -706,18 +706,18 @@ void SingleDofJoint::integrateVelocities(double _dt)
 
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getPositionDifferences(
-    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<size_t>(_q0.size()) != getNumDofs()
-      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  if (static_cast<size_t>(_q1.size()) != getNumDofs()
+      || static_cast<size_t>(_q2.size()) != getNumDofs())
   {
-    dterr << "SingleDofJoint::getPositionDifferences: q0's size[" << _q0.size()
-          << "] or q1's size[" << _q1.size() << "is different with the dof ["
+    dterr << "SingleDofJoint::getPositionDifferences: q1's size[" << _q1.size()
+          << "] or q2's size[" << _q2.size() << "is different with the dof ["
           << getNumDofs() << "]." << std::endl;
     return Eigen::Matrix<double, 1, 1>::Zero();
   }
 
-  return Eigen::Matrix<double, 1, 1>::Constant(_q1[0] - _q0[0]);
+  return Eigen::Matrix<double, 1, 1>::Constant(_q2[0] - _q1[0]);
 }
 
 //==============================================================================

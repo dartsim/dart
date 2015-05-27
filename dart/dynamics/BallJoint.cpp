@@ -67,17 +67,13 @@ void BallJoint::setPositions(const Eigen::VectorXd& _positions)
 
 //==============================================================================
 Eigen::VectorXd BallJoint::getPositionDifferences(
-    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  Eigen::Vector3d dq;
+  const Eigen::Matrix3d Jw  = getLocalJacobian(_q1).topRows<3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q1);
+  const Eigen::Matrix3d R1  = math::expMapRot( _q2);
 
-  const Eigen::Matrix3d Jw  = getLocalJacobian(_q0).topRows<3>();
-  const Eigen::Matrix3d R0T = math::expMapRot(-_q0);
-  const Eigen::Matrix3d R1  = math::expMapRot( _q1);
-
-  dq = Jw.inverse() * math::logMap(R0T * R1);
-
-  return dq;
+  return Jw.inverse() * math::logMap(R0T * R1);
 }
 
 //==============================================================================

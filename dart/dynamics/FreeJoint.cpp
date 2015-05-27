@@ -68,16 +68,16 @@ void FreeJoint::setPositions(const Eigen::VectorXd& _positions)
 
 //==============================================================================
 Eigen::VectorXd FreeJoint::getPositionDifferences(
-    const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
   Eigen::Vector6d dq;
 
-  const Eigen::Matrix3d Jw  = getLocalJacobian(_q0).topLeftCorner<3,3>();
-  const Eigen::Matrix3d R0T = math::expMapRot(-_q0.head<3>());
-  const Eigen::Matrix3d R1  = math::expMapRot( _q1.head<3>());
+  const Eigen::Matrix3d Jw  = getLocalJacobian(_q1).topLeftCorner<3,3>();
+  const Eigen::Matrix3d R0T = math::expMapRot(-_q1.head<3>());
+  const Eigen::Matrix3d R1  = math::expMapRot( _q2.head<3>());
 
   dq.head<3>() = Jw.inverse() * math::logMap(R0T * R1);
-  dq.tail<3>() = _q1.tail<3>() - _q0.tail<3>();
+  dq.tail<3>() = _q2.tail<3>() - _q1.tail<3>();
 
   return dq;
 }

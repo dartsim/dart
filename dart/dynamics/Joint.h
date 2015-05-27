@@ -418,8 +418,10 @@ public:
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
 
-  /// Return the difference of two generalized coordinates which are measured in
-  /// the configuration space of this Skeleton.
+  /// Return the difference of two generalized positions which are measured in
+  /// the configuration space of this Skeleton. If the configuration space is
+  /// Euclidean space, this function returns _q2 - _q1. Otherwise, it depends on
+  /// the type of the configuration space.
   virtual Eigen::VectorXd getPositionDifferences(
       const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const = 0;
 

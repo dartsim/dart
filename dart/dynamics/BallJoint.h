@@ -59,7 +59,7 @@ public:
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   // Documentation inherited
   math::Jacobian getLocalJacobian(
