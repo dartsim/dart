@@ -888,10 +888,6 @@ protected:
   /// since the last position or velocity change
   mutable bool mIsLocalJacobianTimeDerivDirty;
 
-  /// Transmitting wrench from parent body to child body expressed in child body
-  DEPRECATED(4.3)
-  Eigen::Vector6d mWrench;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

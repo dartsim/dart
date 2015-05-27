@@ -264,10 +264,6 @@ protected:
   /// Current simulation frame number
   int mFrame;
 
-  /// The integrator
-  DEPRECATED(4.3)
-  integration::Integrator* mIntegrator;
-
   /// Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;
 
