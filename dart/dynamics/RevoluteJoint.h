@@ -95,6 +95,12 @@ public:
   /// Copy the Properties of another RevoluteJoint
   RevoluteJoint& operator=(const RevoluteJoint& _otherJoint);
 
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   ///
   void setAxis(const Eigen::Vector3d& _axis);
 

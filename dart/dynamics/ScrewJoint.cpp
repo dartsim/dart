@@ -117,6 +117,19 @@ ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& ScrewJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& ScrewJoint::getStaticType()
+{
+  static const std::string name = "ScrewJoint";
+  return name;
+}
+
+//==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mScrewP.mAxis = _axis.normalized();

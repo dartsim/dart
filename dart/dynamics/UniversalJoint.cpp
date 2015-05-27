@@ -115,6 +115,19 @@ UniversalJoint& UniversalJoint::operator=(const UniversalJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& UniversalJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& UniversalJoint::getStaticType()
+{
+  static const std::string name = "UniversalJoint";
+  return name;
+}
+
+//==============================================================================
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mUniversalP.mAxis[0] = _axis.normalized();

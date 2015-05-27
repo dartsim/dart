@@ -115,6 +115,19 @@ RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& RevoluteJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& RevoluteJoint::getStaticType()
+{
+  static const std::string name = "RevoluteJoint";
+  return name;
+}
+
+//==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mRevoluteP.mAxis = _axis.normalized();

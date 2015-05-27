@@ -67,6 +67,12 @@ public:
   /// Get the Properties of this FreeJoint
   Properties getFreeJointProperties() const;
 
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a
   /// relative transform of

@@ -65,6 +65,11 @@ public:
   Properties getTranslationalJointProperties() const;
 
   // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 

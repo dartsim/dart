@@ -142,6 +142,12 @@ public:
   /// Same as copy(const PlanarJoint&)
   PlanarJoint& operator=(const PlanarJoint& _otherJoint);
 
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.

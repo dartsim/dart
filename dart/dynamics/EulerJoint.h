@@ -102,6 +102,12 @@ public:
   /// Same as copy(const EulerJoint&)
   EulerJoint& operator=(const EulerJoint& _otherJoint);
 
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   /// Set the axis order
   /// \param[in] _order Axis order
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be

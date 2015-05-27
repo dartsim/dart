@@ -92,6 +92,12 @@ public:
 
   /// Same as copy(const PrismaticJoint&)
   PrismaticJoint& operator=(const PrismaticJoint& _otherJoint);
+  
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

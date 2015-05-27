@@ -87,6 +87,19 @@ Joint* TranslationalJoint::clone() const
 }
 
 //==============================================================================
+const std::string& TranslationalJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& TranslationalJoint::getStaticType()
+{
+  static const std::string name = "TranslationalJoint";
+  return name;
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
