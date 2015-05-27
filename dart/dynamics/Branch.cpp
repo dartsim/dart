@@ -56,7 +56,7 @@ std::vector<BodyNode*> Branch::Criteria::satisfy() const
 Linkage::Criteria Branch::Criteria::convert() const
 {
   Linkage::Criteria criteria;
-  criteria.mStart.mTarget = mStart;
+  criteria.mStart.mNode = mStart;
   criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
 
   return criteria;

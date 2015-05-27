@@ -41,6 +41,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+Chain::Criteria::Criteria(BodyNode* _start, BodyNode* _target)
+  : mStart(_start),
+    mTarget(_target)
+{
+  // Do nothing
+}
+
+//==============================================================================
 std::vector<BodyNode*> Chain::Criteria::satisfy() const
 {
   return convert().satisfy();
@@ -50,7 +58,7 @@ std::vector<BodyNode*> Chain::Criteria::satisfy() const
 Linkage::Criteria Chain::Criteria::convert() const
 {
   Linkage::Criteria criteria;
-  criteria.mStart.mTarget = mStart;
+  criteria.mStart.mNode = mStart;
   criteria.mTargets.push_back(
         Linkage::Criteria::Target(mTarget.lock(),
                                   Linkage::Criteria::NEUTRAL, true));
@@ -67,6 +75,13 @@ Chain::Criteria::operator Linkage::Criteria() const
 //==============================================================================
 Chain::Chain(const Chain::Criteria& _criteria, const std::string& _name)
   : Linkage(_criteria, _name)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
+  : Linkage(Chain::Criteria(_start, _target), _name)
 {
   // Do nothing
 }

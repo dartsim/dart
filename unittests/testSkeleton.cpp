@@ -683,6 +683,173 @@ TEST(Skeleton, Referential)
   }
 }
 
+template <class JointType = RevoluteJoint>
+BodyNode* addBodyNode(BodyNode* bn, const std::string& name)
+{
+  BodyNode* result = bn->createChildJointAndBodyNodePair<JointType>().second;
+  result->setName(name);
+  return result;
+}
+
+SkeletonPtr constructLinkageTestSkeleton()
+{
+  SkeletonPtr skel = Skeleton::create();
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  bn->setName("c1b1");
+  bn = addBodyNode<FreeJoint>(bn, "c1b2");
+
+  BodyNode* c1b3 = addBodyNode(bn, "c1b3");
+  bn = addBodyNode(c1b3, "c2b1");
+  bn = addBodyNode(bn, "c2b2");
+  addBodyNode(bn, "c2b3");
+
+  bn = addBodyNode(c1b3, "c3b1");
+  bn = addBodyNode(bn, "c3b2");
+  BodyNode* c3b3 = addBodyNode(bn, "c3b3");
+  bn = addBodyNode(c3b3, "c4b1");
+  bn = addBodyNode(bn, "c4b2");
+  addBodyNode(bn, "c4b3");
+  addBodyNode(c3b3, "c3b4");
+
+  bn = addBodyNode(c1b3, "c5b1");
+  addBodyNode(bn, "c5b2");
+
+  return skel;
+}
+
+void checkForBodyNodes(
+    size_t& /*count*/,
+    const ReferentialSkeleton& /*refSkel*/,
+    const SkeletonPtr& /*skel*/)
+{
+  // Do nothing
+}
+
+// Variadic function for testing a ReferentialSkeleton for a series of BodyNode
+// names
+template <typename ... Args>
+void checkForBodyNodes(
+    size_t& count,
+    const ReferentialSkeleton& refSkel,
+    const SkeletonPtr& skel,
+    const std::string& name,
+    Args ... args)
+{
+  bool contains = refSkel.getIndexOf(skel->getBodyNode(name)) != INVALID_INDEX;
+  EXPECT_TRUE(contains);
+  if(!contains)
+  {
+    dtwarn << "The ReferentialSkeleton [" << refSkel.getName() << "] does NOT "
+           << "contain the BodyNode [" << name << "] of the Skeleton ["
+           << skel->getName() << "]\n";
+  }
+
+  ++count;
+  checkForBodyNodes(count, refSkel, skel, args...);
+}
+
+template <typename ... Args>
+size_t checkForBodyNodes(
+    const ReferentialSkeleton& refSkel,
+    const SkeletonPtr& skel,
+    bool checkCount,
+    Args ... args)
+{
+  size_t count = 0;
+  checkForBodyNodes(count, refSkel, skel, args...);
+
+  if(checkCount)
+    EXPECT_TRUE(count == refSkel.getNumBodyNodes());
+
+  return count;
+}
+
+TEST(Skeleton, Linkage)
+{
+  // Test a variety of uses of Linkage::Criteria
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  Branch subtree(skel->getBodyNode("c3b3"), "subtree");
+  checkForBodyNodes(subtree, skel, true,
+                    "c3b3", "c3b4", "c4b1", "c4b2", "c4b3");
+
+  Chain midchain(skel->getBodyNode("c1b3"),
+                 skel->getBodyNode("c3b4"), "midchain");
+  checkForBodyNodes(midchain, skel, true, "c1b3", "c3b1", "c3b2", "c3b3");
+
+  Linkage::Criteria criteria;
+  criteria.mStart = skel->getBodyNode("c5b2");
+  criteria.mTargets.push_back(
+        Linkage::Criteria::Target(skel->getBodyNode("c4b3")));
+  Linkage path(criteria, "path");
+  checkForBodyNodes(path, skel, true, "c5b2", "c5b1", "c1b3", "c3b1", "c3b2",
+                                      "c3b3", "c4b1", "c4b2", "c4b3");
+
+  skel->getBodyNode(0)->copyTo(nullptr);
+  criteria.mTargets.clear();
+  criteria.mStart = skel->getBodyNode("c3b1");
+  criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
+  criteria.mTargets.push_back(
+        Linkage::Criteria::Target(skel->getBodyNode("c3b1(1)"),
+                                  Linkage::Criteria::UPSTREAM));
+
+  Linkage combinedTreeBases(criteria, "combinedTreeBases");
+  checkForBodyNodes(combinedTreeBases, skel, true,
+                    "c3b1",    "c1b3",    "c2b1",    "c2b2",    "c2b3",
+                    "c3b1(1)", "c1b3(1)", "c2b1(1)", "c2b2(1)", "c2b3(1)",
+                    "c5b1",    "c5b2",    "c1b2",    "c1b1",
+                    "c5b1(1)", "c5b2(1)", "c1b2(1)", "c1b1(1)");
+
+  SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
+  criteria.mTargets.clear();
+  criteria.mTargets.push_back(
+        Linkage::Criteria::Target(skel2->getBodyNode("c3b1"),
+                                  Linkage::Criteria::UPSTREAM));
+  Linkage combinedSkelBases(criteria, "combinedSkelBases");
+  size_t count = 0;
+  count += checkForBodyNodes(combinedSkelBases, skel, false,
+                             "c3b1", "c1b3", "c2b1", "c2b2", "c2b3",
+                             "c5b1", "c5b2", "c1b2", "c1b1");
+  count += checkForBodyNodes(combinedSkelBases, skel2, false,
+                             "c3b1", "c1b3", "c2b1", "c2b2", "c2b3",
+                             "c5b1", "c5b2", "c1b2", "c1b1");
+  EXPECT_TRUE( count == combinedSkelBases.getNumBodyNodes() );
+
+  Chain downstreamFreeJoint(skel->getBodyNode("c1b1"),
+                            skel->getBodyNode("c1b3"), "downstreamFreeJoint");
+  checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
+
+  Chain upstreamFreeJoint(skel->getBodyNode("c1b3"),
+                          skel->getBodyNode("c1b1"), "upstreamFreeJoint");
+  checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
+
+  criteria.mTargets.clear();
+  criteria.mTargets.push_back(skel->getBodyNode("c4b3"));
+  criteria.mStart = skel->getBodyNode("c1b3");
+  criteria.mTerminals.push_back(skel->getBodyNode("c3b2"));
+  Linkage terminatedLinkage(criteria, "terminatedLinkage");
+  checkForBodyNodes(terminatedLinkage, skel, true,
+                    "c1b3", "c3b1", "c3b2");
+
+  criteria.mStart = skel->getBodyNode("c1b1");
+  criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
+  criteria.mTargets.clear();
+  criteria.mTerminals.clear();
+  criteria.mTerminals.push_back(
+        Linkage::Criteria::Terminal(skel->getBodyNode("c2b1"), false));
+  criteria.mTerminals.push_back(skel->getBodyNode("c3b3"));
+  Linkage terminatedSubtree(criteria, "terminatedSubtree");
+  checkForBodyNodes(terminatedSubtree, skel, true,
+                    "c1b1", "c1b2", "c1b3", "c5b1",
+                    "c5b2", "c3b1", "c3b2", "c3b3");
+
+  criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
+  criteria.mStart.mNode = skel->getBodyNode("c3b1");
+  Linkage terminatedUpstream(criteria, "terminatedUpstream");
+  checkForBodyNodes(terminatedUpstream, skel, true,
+                    "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

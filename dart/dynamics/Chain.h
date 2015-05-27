@@ -53,6 +53,9 @@ public:
 
   struct Criteria
   {
+    /// Constructor for Chain::Criteria
+    Criteria(BodyNode* _start, BodyNode* _target);
+
     /// Return a vector of BodyNodes that form a chain
     std::vector<BodyNode*> satisfy() const;
 
@@ -72,6 +75,10 @@ public:
 
   /// Constructor for the Chain class
   Chain(const Chain::Criteria& _criteria, const std::string& _name = "Chain");
+
+  /// Alternative constructor for the Chain class
+  Chain(BodyNode* _start, BodyNode* _target,
+        const std::string& _name = "Chain");
 
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.

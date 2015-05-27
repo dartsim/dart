@@ -81,8 +81,8 @@ public:
              ExpansionPolicy _policy = NEUTRAL,
              bool _chain = false);
 
-      /// The Linkage will expand from the starting BodyNode up to this target
-      WeakBodyNodePtr mTarget;
+      /// The Linkage will expand from the starting BodyNode up to this node
+      WeakBodyNodePtr mNode;
 
       /// After the target has been reached (if it is reached), the Linkage will
       /// start to follow this expansion policy.
@@ -154,11 +154,12 @@ public:
 
     /// Expand upwards from both BodyNodes to a common root
     std::vector<BodyNode*> climbToCommonRoot(
-        BodyNode* _start, BodyNode* _target) const;
+        BodyNode* _start, BodyNode* _target, bool _chain) const;
 
     /// Crawl through the list and cut it off anywhere that the criteria is
     /// violated
-    void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain) const;
+    void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain,
+                       bool _upstream) const;
 
     /// Hashed set for terminals to allow quick lookup
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
