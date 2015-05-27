@@ -51,13 +51,6 @@ class RenderInterface;
 namespace dart {
 namespace dynamics {
 
-/// struct GenCoordInfo
-struct GenCoordInfo
-{
-  Joint* joint;
-  size_t localIndex;
-} DEPRECATED(4.3);
-
 /// class Skeleton
 class Skeleton : public MetaSkeleton
 {
@@ -322,14 +315,6 @@ public:
   //----------------------------------------------------------------------------
   /// \{ \name Deprecated
   //----------------------------------------------------------------------------
-
-  /// \brief Return _index-th GenCoordInfo
-  /// \warning GenCoordInfo is deprecated so this function is not necessary
-  /// anymore. Please use DegreeOfFreedom by calling getDof(size_t). We will
-  /// keep this function until the next major version up only for backward
-  /// compatibility in minor version ups.
-  DEPRECATED(4.3)
-  GenCoordInfo getGenCoordInfo(size_t _index) const;
 
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.
@@ -1000,12 +985,6 @@ protected:
 
   /// The resource-managing pointer to this Skeleton
   std::weak_ptr<Skeleton> mPtr;
-
-  /// \brief Array of GenCoordInfo objects
-  /// \warning GenCoordInfo is deprecated because the functionality is replaced
-  /// by DegreeOfFreedom.
-  DEPRECATED(4.3)
-  std::vector<GenCoordInfo> mGenCoordInfos;
 
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;

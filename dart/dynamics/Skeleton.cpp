@@ -695,14 +695,6 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
 }
 
 //==============================================================================
-GenCoordInfo Skeleton::getGenCoordInfo(size_t _index) const
-{
-  assert(_index < getNumDofs());
-
-  return mGenCoordInfos[_index];
-}
-
-//==============================================================================
 void Skeleton::setPositionSegment(const std::vector<size_t>& _indices,
                                   const Eigen::VectorXd& _positions)
 {
