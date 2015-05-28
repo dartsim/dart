@@ -938,12 +938,43 @@ bool SoftContactConstraint::isActive() const
 }
 
 //==============================================================================
-dynamics::Skeleton* SoftContactConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr SoftContactConstraint::getRootSkeleton() const
 {
   if (mSoftBodyNode1 || mBodyNode1->isReactive())
-    return mBodyNode1->getSkeleton()->mUnionRootSkeleton;
+    return mBodyNode1->getSkeleton()->mUnionRootSkeleton.lock();
   else
-    return mBodyNode2->getSkeleton()->mUnionRootSkeleton;
+    return mBodyNode2->getSkeleton()->mUnionRootSkeleton.lock();
+}
+
+//==============================================================================
+void SoftContactConstraint::uniteSkeletons()
+{
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
+    return;
+
+  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+    return;
+
+  dynamics::SkeletonPtr unionId1
+      = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
+  dynamics::SkeletonPtr unionId2
+      = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
+
+  if (unionId1 == unionId2)
+    return;
+
+  if (unionId1->mUnionSize < unionId2->mUnionSize)
+  {
+    // Merge root1 --> root2
+    unionId1->mUnionRootSkeleton = unionId2;
+    unionId2->mUnionSize += unionId1->mUnionSize;
+  }
+  else
+  {
+    // Merge root2 --> root1
+    unionId2->mUnionRootSkeleton = unionId1;
+    unionId1->mUnionSize += unionId2->mUnionSize;
+  }
 }
 
 //==============================================================================
@@ -988,37 +1019,6 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
   T.col(0) = tangent;
   T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
   return T;
-}
-
-//==============================================================================
-void SoftContactConstraint::uniteSkeletons()
-{
-  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
-    return;
-
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
-    return;
-
-  dynamics::Skeleton* unionId1
-      = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
-  dynamics::Skeleton* unionId2
-      = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
-
-  if (unionId1 == unionId2)
-    return;
-
-  if (unionId1->mUnionSize < unionId2->mUnionSize)
-  {
-    // Merge root1 --> root2
-    unionId1->mUnionRootSkeleton = unionId2;
-    unionId2->mUnionSize += unionId1->mUnionSize;
-  }
-  else
-  {
-    // Merge root2 --> root1
-    unionId2->mUnionRootSkeleton = unionId1;
-    unionId1->mUnionSize += unionId2->mUnionSize;
-  }
 }
 
 //==============================================================================

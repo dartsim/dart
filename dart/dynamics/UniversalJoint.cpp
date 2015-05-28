@@ -63,17 +63,6 @@ UniversalJoint::Properties::Properties(
 }
 
 //==============================================================================
-UniversalJoint::UniversalJoint(const Eigen::Vector3d& _axis1,
-                               const Eigen::Vector3d& _axis2,
-                               const std::string& _name)
-  : MultiDofJoint(_name),
-    mUniversalP(_axis1, _axis2)
-{
-  updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 UniversalJoint::~UniversalJoint()
 {
   // Do nothing
@@ -126,6 +115,19 @@ UniversalJoint& UniversalJoint::operator=(const UniversalJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& UniversalJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& UniversalJoint::getStaticType()
+{
+  static const std::string name = "UniversalJoint";
+  return name;
+}
+
+//==============================================================================
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mUniversalP.mAxis[0] = _axis.normalized();
@@ -149,6 +151,21 @@ const Eigen::Vector3d& UniversalJoint::getAxis1() const
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
   return mUniversalP.mAxis[1];
+}
+
+//==============================================================================
+Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
+    const Eigen::Vector2d& _positions) const
+{
+  Eigen::Matrix<double, 6, 2> J;
+  J.col(0) = math::AdTAngular(
+               mJointP.mT_ChildBodyToJoint
+               * math::expAngular(-mUniversalP.mAxis[1] * _positions[1]),
+                                  mUniversalP.mAxis[0]);
+  J.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint,
+                              mUniversalP.mAxis[1]);
+  assert(!math::isNan(J));
+  return J;
 }
 
 //==============================================================================
@@ -188,14 +205,7 @@ void UniversalJoint::updateLocalTransform() const
 //==============================================================================
 void UniversalJoint::updateLocalJacobian(bool) const
 {
-  mJacobian.col(0) = math::AdTAngular(
-      mJointP.mT_ChildBodyToJoint
-      * math::expAngular(-mUniversalP.mAxis[1] * getPositionsStatic()[1]),
-                         mUniversalP.mAxis[0]);
-
-  mJacobian.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint,
-                                      mUniversalP.mAxis[1]);
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

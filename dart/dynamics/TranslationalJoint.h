@@ -55,17 +55,23 @@ public:
   {
     Properties(const MultiDofJoint<3>::Properties& _properties =
                                                 MultiDofJoint<3>::Properties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
 
   /// Destructor
   virtual ~TranslationalJoint();
 
   /// Get the Properties of this TranslationalJoint
   Properties getTranslationalJointProperties() const;
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
 
 protected:
 
@@ -75,6 +81,8 @@ protected:
   // Documentation inherited
   virtual Joint* clone() const override;
 
+  using MultiDofJoint::getLocalJacobianStatic;
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
 
@@ -82,7 +90,7 @@ protected:
   virtual void updateLocalTransform() const;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory=true) const;
+  virtual void updateLocalJacobian(bool _mandatory = true) const;
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const;

@@ -51,7 +51,6 @@ public:
   PlaneShape(const Eigen::Vector3d& _normal, double _offset);
 
   /// Constructor
-  DEPRECATED(4.3)
   PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
 
   // Documentation inherited.
@@ -74,6 +73,13 @@ public:
 
   /// Get plane offset
   double getOffset() const;
+
+  /// Set plane normal and offset
+  void setNormalAndOffset(const Eigen::Vector3d& _normal, double _offset);
+
+  /// Set plane normal and point
+  void setNormalAndPoint(const Eigen::Vector3d& _normal,
+                         const Eigen::Vector3d& _point);
 
   /// Compute distance between the plane and the given point
   double computeDistance(const Eigen::Vector3d& _point) const;

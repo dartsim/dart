@@ -114,12 +114,6 @@ public:
                                             SoftBodyNode::UniqueProperties());
   };
 
-  //--------------------------------------------------------------------------
-  // Constructor and Desctructor
-  //--------------------------------------------------------------------------
-  /// \brief
-  explicit SoftBodyNode(const std::string& _name = "Unnamed SoftBodyNode");
-
   /// \brief
   virtual ~SoftBodyNode();
 
@@ -218,7 +212,7 @@ protected:
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(Skeleton* _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton);
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
@@ -229,15 +223,6 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
-
-  /// Tell the Skeleton that an articulated inertia update is needed
-  void notifyArticulatedInertiaUpdate();
-
-  /// Tell the Skeleton that the external forces need to be updated
-  void notifyExternalForcesUpdate();
-
-  /// Tell the Skeleton that the coriolis forces need to be update
-  void notifyCoriolisUpdate();
 
   /// Update articulated inertia if necessary
   void checkArticulatedInertiaUpdate() const;
@@ -304,50 +289,52 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateMassMatrix();
+  virtual void updateMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
-                                      double _timeStep);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+                                      double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateInvMassMatrix();
+  virtual void updateInvMassMatrix() override;
 
   // Documentation inherited.
-  virtual void updateInvAugMassMatrix();
+  virtual void updateInvAugMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col);
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
-                                         double _timeStep);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+                                         double _timeStep) override;
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
 
   // Documentation inherited.
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
-                                           const Eigen::Vector3d& _gravity);
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
+                                           const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void updateCombinedVector();
+  virtual void updateCombinedVector() override;
 
   // Documentation inherited.
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
-                                       const Eigen::Vector3d& _gravity);
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
+                                       const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
 
   /// \}
 
   // Documentation inherited.
-  virtual void clearExternalForces();
+  virtual void clearExternalForces() override;
+
+  virtual void clearInternalForces() override;
 
   //--------------------------------------------------------------------------
   // Rendering
@@ -390,6 +377,11 @@ private:
   ///
   void updateInertiaWithPointMass();
 };
+
+typedef TemplateBodyNodePtr<SoftBodyNode> SoftBodyNodePtr;
+typedef TemplateBodyNodePtr<const SoftBodyNode> ConstSoftBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<SoftBodyNode> WeakSoftBodyNodePtr;
+typedef TemplateWeakBodyNodePtr<const SoftBodyNode> WeakConstSoftBodyNodePtr;
 
 class SoftBodyNodeHelper
 {

@@ -46,7 +46,7 @@
 class Controller
 {
 public:
-  Controller(dart::dynamics::SkeletonPtr _skel,
+  Controller(const dart::dynamics::SkeletonPtr& _skel,
              dart::constraint::ConstraintSolver* _collisionSolver, double _t);
   virtual ~Controller() {}
 

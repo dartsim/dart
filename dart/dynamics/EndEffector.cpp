@@ -164,7 +164,7 @@ const BodyNode* EndEffector::getParentBodyNode() const
 }
 
 //==============================================================================
-Skeleton* EndEffector::getSkeleton()
+std::shared_ptr<Skeleton> EndEffector::getSkeleton()
 {
   if(mParentBodyNode)
     return mParentBodyNode->getSkeleton();
@@ -173,7 +173,7 @@ Skeleton* EndEffector::getSkeleton()
 }
 
 //==============================================================================
-const Skeleton* EndEffector::getSkeleton() const
+std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
 {
   if(mParentBodyNode)
     return mParentBodyNode->getSkeleton();

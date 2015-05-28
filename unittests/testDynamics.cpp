@@ -80,9 +80,13 @@ public:
   // difference.
   void testJacobians(const std::string& _fileName);
 
+  // Compare velocities and accelerations with actual vaules and approximates
+  // using finite differece method.
+  void testFiniteDifferenceGeneralizedCoordinates(const std::string& _fileName);
+
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
-  void testFiniteDifference(const std::string& _fileName);
+  void testFiniteDifferenceBodyNodeAcceleration(const std::string& _fileName);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
@@ -276,14 +280,14 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   using math::LinearJacobian;
   using math::AngularJacobian;
 
-  const Skeleton* skel = bn->getSkeleton();
+  ConstSkeletonPtr skel = bn->getSkeleton();
 
   VectorXd dq  = skel->getVelocities();
   VectorXd ddq = skel->getAccelerations();
 
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dqSeg  = skel->getVelocitySegment(coords);
-  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocities(coords);
+  VectorXd ddqSeg = skel->getAccelerations(coords);
 
   //-- Spatial Jacobian tests --------------------------------------------------
 
@@ -415,14 +419,14 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
   using math::LinearJacobian;
   using math::AngularJacobian;
 
-  const Skeleton* skel = bn->getSkeleton();
+  ConstSkeletonPtr skel = bn->getSkeleton();
 
   VectorXd dq  = skel->getVelocities();
   VectorXd ddq = skel->getAccelerations();
 
   const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  VectorXd dqSeg  = skel->getVelocitySegment(coords);
-  VectorXd ddqSeg = skel->getAccelerationSegment(coords);
+  VectorXd dqSeg  = skel->getVelocities(coords);
+  VectorXd ddqSeg = skel->getAccelerations(coords);
 
   //-- Spatial Jacobian tests --------------------------------------------------
 
@@ -568,9 +572,9 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
 #ifndef NDEBUG  // Debug mode
-  int nTestItr = 10;
+  int nTestItr = 2;
 #else
-  int nTestItr = 1;
+  int nTestItr = 100;
 #endif
   double qLB  = -0.5 * DART_PI;
   double qUB  =  0.5 * DART_PI;
@@ -582,18 +586,38 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
 
   //------------------------------ Tests ---------------------------------------
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nTestItr; ++j)
     {
+      // For the second half of the tests, scramble up the Skeleton
+      if(j > ceil(nTestItr/2))
+      {
+        SkeletonPtr copy = skeleton->clone();
+        size_t maxNode = skeleton->getNumBodyNodes()-1;
+        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+
+        if(bn1 != bn2)
+        {
+          BodyNode* child = bn1->descendsFrom(bn2)? bn1 : bn2;
+          BodyNode* parent = child == bn1? bn2 : bn1;
+
+          child->moveTo(parent);
+        }
+
+        EXPECT_TRUE(skeleton->getNumBodyNodes() == copy->getNumBodyNodes());
+        EXPECT_TRUE(skeleton->getNumDofs() == copy->getNumDofs());
+      }
+
       // Generate a random state
       VectorXd q   = VectorXd(dof);
       VectorXd dq  = VectorXd(dof);
@@ -651,7 +675,109 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::testFiniteDifference(const std::string& _fileName)
+void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
+    const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //----------------------------- Settings -------------------------------------
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 2;
+#else
+  int nRandomItr = 10;
+#endif
+  double qLB   = -0.5 * DART_PI;
+  double qUB   =  0.5 * DART_PI;
+  double dqLB  = -0.3 * DART_PI;
+  double dqUB  =  0.3 * DART_PI;
+  double ddqLB = -0.1 * DART_PI;
+  double ddqUB =  0.1 * DART_PI;
+  Vector3d gravity(0.0, -9.81, 0.0);
+  double timeStep = 1e-3;
+
+  // load skeleton
+  WorldPtr world = SkelParser::readWorld(_fileName);
+  assert(world != NULL);
+  world->setGravity(gravity);
+  world->setTimeStep(timeStep);
+
+  //------------------------------ Tests ---------------------------------------
+  for (size_t i = 0; i < world->getNumSkeletons(); ++i)
+  {
+    SkeletonPtr skeleton = world->getSkeleton(i);
+    assert(skeleton != NULL);
+    int dof = skeleton->getNumDofs();
+
+    for (int j = 0; j < nRandomItr; ++j)
+    {
+      // Generate a random state and ddq
+      VectorXd q0   = VectorXd(dof);
+      VectorXd dq0  = VectorXd(dof);
+      VectorXd ddq0 = VectorXd(dof);
+      for (int k = 0; k < dof; ++k)
+      {
+        q0[k]   = math::random(qLB,   qUB);
+        dq0[k]  = math::random(dqLB,  dqUB);
+        ddq0[k] = math::random(ddqLB, ddqUB);
+      }
+
+      skeleton->setPositions(q0);
+      skeleton->setVelocities(dq0);
+      skeleton->setAccelerations(ddq0);
+
+      skeleton->integratePositions(timeStep);
+      VectorXd q1 = skeleton->getPositions();
+      skeleton->integrateVelocities(timeStep);
+      VectorXd dq1 = skeleton->getVelocities();
+
+      skeleton->integratePositions(timeStep);
+      VectorXd q2 = skeleton->getPositions();
+      skeleton->integrateVelocities(timeStep);
+      VectorXd dq2 = skeleton->getVelocities();
+
+      VectorXd dq0FD = skeleton->getPositionDifferences(q1, q0) / timeStep;
+      VectorXd dq1FD = skeleton->getPositionDifferences(q2, q1) / timeStep;
+      VectorXd ddqFD1 = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
+      VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
+
+      EXPECT_TRUE(equals(dq0, dq0FD));
+      EXPECT_TRUE(equals(dq1, dq1FD));
+      EXPECT_TRUE(equals(ddq0, ddqFD1));
+      EXPECT_TRUE(equals(ddq0, ddqFD2));
+
+      if (!equals(dq0FD, dq0))
+      {
+        std::cout << "dq0  : " << dq0.transpose() << std::endl;
+        std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
+      }
+      if (!equals(dq1, dq1FD))
+      {
+        std::cout << "dq1  : " << dq1.transpose() << std::endl;
+        std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
+      }
+      if (!equals(ddq0, ddqFD1))
+      {
+        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
+        std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
+      }
+      if (!equals(ddq0, ddqFD2))
+      {
+        std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
+        std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
+      }
+    }
+  }
+}
+
+//==============================================================================
+void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
+    const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
@@ -701,10 +827,6 @@ void DynamicsTest::testFiniteDifference(const std::string& _fileName)
         q[k]   = math::random(qLB,   qUB);
         dq[k]  = math::random(dqLB,  dqUB);
         ddq[k] = math::random(ddqLB, ddqUB);
-
-//        q[k]   = 0.0;
-//        dq[k]  = 0.0;
-//        ddq[k] = 0.0;
       }
 
       VectorXd qNext  =  q +  dq * timeStep;
@@ -825,7 +947,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 5;
+  size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 100;
 #endif
@@ -971,7 +1093,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       VectorXd oldDdq     = skel->getAccelerations();
       // TODO(JS): Save external forces of body nodes
 
-      skel->resetForces();
+      skel->clearInternalForces();
       skel->clearExternalForces();
       skel->setAccelerations(VectorXd::Zero(dof));
 
@@ -1098,7 +1220,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  size_t nRandomItr = 10;
+  size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 100;
 #endif
@@ -1123,22 +1245,42 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
-    dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
+    dynamics::SkeletonPtr skeleton = myWorld->getSkeleton(i);
 
-    size_t dof = skel->getNumDofs();
+    size_t dof = skeleton->getNumDofs();
     if (dof == 0)
     {
-      dtmsg << "Skeleton [" << skel->getName() << "] is skipped since it has "
-            << "0 DOF." << endl;
+      dtmsg << "Skeleton [" << skeleton->getName() << "] is skipped since it "
+            << "has 0 DOF." << endl;
       continue;
     }
 
     for (size_t j = 0; j < nRandomItr; ++j)
     {
-      // Random joint stiffness and damping coefficient
-      for (size_t k = 0; k < skel->getNumBodyNodes(); ++k)
+      // For the second half of the tests, scramble up the Skeleton
+      if(j > ceil(nRandomItr/2))
       {
-        BodyNode* body     = skel->getBodyNode(k);
+        SkeletonPtr copy = skeleton->clone();
+        size_t maxNode = skeleton->getNumBodyNodes()-1;
+        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+
+        if(bn1 != bn2)
+        {
+          BodyNode* child = bn1->descendsFrom(bn2)? bn1 : bn2;
+          BodyNode* parent = child == bn1? bn2 : bn1;
+
+          child->moveTo(parent);
+        }
+
+        EXPECT_TRUE(skeleton->getNumBodyNodes() == copy->getNumBodyNodes());
+        EXPECT_TRUE(skeleton->getNumDofs() == copy->getNumDofs());
+      }
+
+      // Random joint stiffness and damping coefficient
+      for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
+      {
+        BodyNode* body     = skeleton->getBodyNode(k);
         Joint*    joint    = body->getParentJoint();
         int       localDof = joint->getNumDofs();
 
@@ -1167,16 +1309,16 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
         dq[k]  = math::random(lb, ub);
         ddq[k] = math::random(lb, ub);
       }
-      skel->setPositions(q);
-      skel->setVelocities(dq);
-      skel->setAccelerations(ddq);
+      skeleton->setPositions(q);
+      skeleton->setVelocities(dq);
+      skeleton->setAccelerations(ddq);
 
       randomizeRefFrames();
 
-      compareCOMJacobianToFk(skel, Frame::World(), 1e-6);
+      compareCOMJacobianToFk(skeleton, Frame::World(), 1e-6);
 
       for(size_t r=0; r<refFrames.size(); ++r)
-        compareCOMJacobianToFk(skel, refFrames[r], 1e-6);
+        compareCOMJacobianToFk(skeleton, refFrames[r], 1e-6);
     }
   }
 }
@@ -1233,11 +1375,11 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
-#ifndef BUILD_TYPE_DEBUG
+#ifndef NDEBUG // Debug mode
   size_t nRandomItr = 2;
 #else
   size_t nRandomItr = 10;
-#endif
+#endif // ------- Debug mode
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
@@ -1448,6 +1590,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   size_t nRandomItr = 100;
 #endif
 
+  double TOLERANCE = 1e-3;
+
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
   double ub =  1.5 * DART_PI;
@@ -1515,8 +1659,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-5));
-      if (!equals(deltaVel1, deltaVel2, 1e-5))
+      EXPECT_TRUE(equals(deltaVel1, deltaVel2, TOLERANCE));
+      if (!equals(deltaVel1, deltaVel2, TOLERANCE))
       {
         cout << "deltaVel1: " << deltaVel1.transpose()  << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
@@ -1546,7 +1690,8 @@ TEST_F(DynamicsTest, testFiniteDifference)
 #ifndef NDEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
-    testFiniteDifference(getList()[i]);
+    testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
+    testFiniteDifferenceBodyNodeAcceleration(getList()[i]);
   }
 }
 
@@ -1630,7 +1775,11 @@ TEST_F(DynamicsTest, HybridDynamics)
 {
   const double tol       = 1e-9;
   const double timeStep  = 1e-3;
+#ifndef NDEBUG // Debug mode
+  const size_t numFrames = 50;  // 0.05 secs
+#else
   const size_t numFrames = 5e+3;  // 5 secs
+#endif // ------- Debug mode
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
@@ -1667,7 +1816,7 @@ TEST_F(DynamicsTest, HybridDynamics)
   Eigen::MatrixXd command = Eigen::MatrixXd::Zero(numFrames, numDofs);
   Eigen::VectorXd amp = Eigen::VectorXd::Zero(numDofs);
   for (size_t i = 0; i < numDofs; ++i)
-    amp[i] = math::random(-2.0, 2.0);
+    amp[i] = math::random(-1.5, 1.5);
   for (size_t i = 0; i < numFrames; ++i)
   {
     for (size_t j = 0; j < numDofs; ++j)

@@ -169,10 +169,10 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Get the Skeleton that this EndEffector belongs to
-  Skeleton* getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton();
 
   /// Get the Skeleton that this EndEffector belongs to
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Get the index of this EndEffector within the Skeleton
   size_t getIndex() const;

@@ -65,6 +65,8 @@ public:
 
     /// Constructor
     UniqueProperties(AxisOrder _axisOrder = AO_XYZ);
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : MultiDofJoint<3>::Properties, EulerJoint::UniqueProperties
@@ -75,11 +77,9 @@ public:
                                                 MultiDofJoint<3>::Properties(),
         const EulerJoint::UniqueProperties& _eulerJointProperties =
                                                 EulerJoint::UniqueProperties());
-  };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit EulerJoint(const std::string& _name = "EulerJoint");
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~EulerJoint();
@@ -101,6 +101,12 @@ public:
 
   /// Same as copy(const EulerJoint&)
   EulerJoint& operator=(const EulerJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   /// Set the axis order
   /// \param[in] _order Axis order
@@ -158,6 +164,10 @@ public:
 
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -165,6 +175,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

@@ -56,17 +56,20 @@ public:
   struct Properties : ZeroDofJoint::Properties
   {
     Properties(const Joint::Properties& _properties = Joint::Properties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit WeldJoint(const std::string& _name = "WeldJoint");
 
   /// Destructor
   virtual ~WeldJoint();
 
   /// Get the Properties of this WeldJoint
   Properties getWeldJointProperties() const;
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   // Documentation inherited
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;

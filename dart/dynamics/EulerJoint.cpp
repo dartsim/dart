@@ -64,14 +64,6 @@ EulerJoint::Properties::Properties(
 }
 
 //==============================================================================
-EulerJoint::EulerJoint(const std::string& _name)
-  : MultiDofJoint(_name)
-{
-  updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 EulerJoint::~EulerJoint()
 {
 }
@@ -119,6 +111,19 @@ EulerJoint& EulerJoint::operator=(const EulerJoint& _otherJoint)
 {
   copy(_otherJoint);
   return *this;
+}
+
+//==============================================================================
+const std::string& EulerJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& EulerJoint::getStaticType()
+{
+  static const std::string name = "EulerJoint";
+  return name;
 }
 
 //==============================================================================
@@ -174,6 +179,114 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
                                                                            const
 {
   return convertToRotation(_positions, mEulerP.mAxisOrder);
+}
+
+//==============================================================================
+Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& _positions) const
+{
+  Eigen::Matrix<double, 6, 3> J;
+
+  // double q0 = _positions[0];
+  const double q1 = _positions[1];
+  const double q2 = _positions[2];
+
+  // double c0 = cos(q0);
+  double c1 = cos(q1);
+  double c2 = cos(q2);
+
+  // double s0 = sin(q0);
+  double s1 = sin(q1);
+  double s2 = sin(q2);
+
+  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
+
+  switch (mEulerP.mAxisOrder)
+  {
+    case AO_XYZ:
+    {
+      //------------------------------------------------------------------------
+      // S = [    c1*c2, s2,  0
+      //       -(c1*s2), c2,  0
+      //             s1,  0,  1
+      //              0,  0,  0
+      //              0,  0,  0
+      //              0,  0,  0 ];
+      //------------------------------------------------------------------------
+      J0 << c1*c2, -(c1*s2),  s1, 0.0, 0.0, 0.0;
+      J1 <<    s2,       c2, 0.0, 0.0, 0.0, 0.0;
+      J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
+
+#ifndef NDEBUG
+      if (fabs(getPositionsStatic()[1]) == DART_PI * 0.5)
+        std::cout << "Singular configuration in ZYX-euler joint ["
+                  << mJointP.mName << "]. ("
+                  << _positions[0] << ", "
+                  << _positions[1] << ", "
+                  << _positions[2] << ")"
+                  << std::endl;
+#endif
+
+      break;
+    }
+    case AO_ZYX:
+    {
+      //------------------------------------------------------------------------
+      // S = [   -s1,    0,   1
+      //       s2*c1,   c2,   0
+      //       c1*c2,  -s2,   0
+      //           0,    0,   0
+      //           0,    0,   0
+      //           0,    0,   0 ];
+      //------------------------------------------------------------------------
+      J0 << -s1, s2*c1, c1*c2, 0.0, 0.0, 0.0;
+      J1 << 0.0,    c2,   -s2, 0.0, 0.0, 0.0;
+      J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
+
+#ifndef NDEBUG
+      if (fabs(_positions[1]) == DART_PI * 0.5)
+        std::cout << "Singular configuration in ZYX-euler joint ["
+                  << mJointP.mName << "]. ("
+                  << _positions[0] << ", "
+                  << _positions[1] << ", "
+                  << _positions[2] << ")"
+                  << std::endl;
+#endif
+
+      break;
+    }
+    default:
+    {
+      dterr << "Undefined Euler axis order\n";
+      break;
+    }
+  }
+
+  J.col(0) = math::AdT(mJointP.mT_ChildBodyToJoint, J0);
+  J.col(1) = math::AdT(mJointP.mT_ChildBodyToJoint, J1);
+  J.col(2) = math::AdT(mJointP.mT_ChildBodyToJoint, J2);
+
+  assert(!math::isNan(J));
+
+#ifndef NDEBUG
+  Eigen::MatrixXd JTJ = J.transpose() * J;
+  Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
+  //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
+  double det = luJTJ.determinant();
+  if (det < 1e-5)
+  {
+    std::cout << "ill-conditioned Jacobian in joint [" << mJointP.mName << "]."
+              << " The determinant of the Jacobian is (" << det << ")."
+              << std::endl;
+    std::cout << "rank is (" << luJTJ.rank() << ")." << std::endl;
+    std::cout << "det is (" << luJTJ.determinant() << ")." << std::endl;
+    //        std::cout << "mS: \n" << mS << std::endl;
+  }
+#endif
+
+  return J;
 }
 
 //==============================================================================
@@ -233,105 +346,7 @@ void EulerJoint::updateLocalTransform() const
 //==============================================================================
 void EulerJoint::updateLocalJacobian(bool) const
 {
-  // double q0 = mPositions[0];
-  const Eigen::Vector3d& positions = getPositionsStatic();
-  double q1 = positions[1];
-  double q2 = positions[2];
-
-  // double c0 = cos(q0);
-  double c1 = cos(q1);
-  double c2 = cos(q2);
-
-  // double s0 = sin(q0);
-  double s1 = sin(q1);
-  double s2 = sin(q2);
-
-  Eigen::Vector6d J0 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
-  Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
-
-  switch (mEulerP.mAxisOrder)
-  {
-    case AO_XYZ:
-    {
-      //------------------------------------------------------------------------
-      // S = [    c1*c2, s2,  0
-      //       -(c1*s2), c2,  0
-      //             s1,  0,  1
-      //              0,  0,  0
-      //              0,  0,  0
-      //              0,  0,  0 ];
-      //------------------------------------------------------------------------
-      J0 << c1*c2, -(c1*s2),  s1, 0.0, 0.0, 0.0;
-      J1 <<    s2,       c2, 0.0, 0.0, 0.0, 0.0;
-      J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
-
-#ifndef NDEBUG
-      if (fabs(getPositionsStatic()[1]) == DART_PI * 0.5)
-        std::cout << "Singular configuration in ZYX-euler joint ["
-                  << mJointP.mName << "]. ("
-                  << positions[0] << ", "
-                  << positions[1] << ", "
-                  << positions[2] << ")"
-                  << std::endl;
-#endif
-
-      break;
-    }
-    case AO_ZYX:
-    {
-      //------------------------------------------------------------------------
-      // S = [   -s1,    0,   1
-      //       s2*c1,   c2,   0
-      //       c1*c2,  -s2,   0
-      //           0,    0,   0
-      //           0,    0,   0
-      //           0,    0,   0 ];
-      //------------------------------------------------------------------------
-      J0 << -s1, s2*c1, c1*c2, 0.0, 0.0, 0.0;
-      J1 << 0.0,    c2,   -s2, 0.0, 0.0, 0.0;
-      J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
-
-#ifndef NDEBUG
-      if (fabs(positions[1]) == DART_PI * 0.5)
-        std::cout << "Singular configuration in ZYX-euler joint ["
-                  << mJointP.mName << "]. ("
-                  << positions[0] << ", "
-                  << positions[1] << ", "
-                  << positions[2] << ")"
-                  << std::endl;
-#endif
-
-      break;
-    }
-    default:
-    {
-      dterr << "Undefined Euler axis order\n";
-      break;
-    }
-  }
-
-  mJacobian.col(0) = math::AdT(mJointP.mT_ChildBodyToJoint, J0);
-  mJacobian.col(1) = math::AdT(mJointP.mT_ChildBodyToJoint, J1);
-  mJacobian.col(2) = math::AdT(mJointP.mT_ChildBodyToJoint, J2);
-
-  assert(!math::isNan(mJacobian));
-
-#ifndef NDEBUG
-  Eigen::MatrixXd JTJ = mJacobian.transpose() * mJacobian;
-  Eigen::FullPivLU<Eigen::MatrixXd> luJTJ(JTJ);
-  //    Eigen::FullPivLU<Eigen::MatrixXd> luS(mS);
-  double det = luJTJ.determinant();
-  if (det < 1e-5)
-  {
-    std::cout << "ill-conditioned Jacobian in joint [" << mJointP.mName << "]."
-              << " The determinant of the Jacobian is (" << det << ")."
-              << std::endl;
-    std::cout << "rank is (" << luJTJ.rank() << ")." << std::endl;
-    std::cout << "det is (" << luJTJ.determinant() << ")." << std::endl;
-    //        std::cout << "mS: \n" << mS << std::endl;
-  }
-#endif
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

@@ -51,7 +51,7 @@
 
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton
-  dart::dynamics::SkeletonPtr LeftLegSkel(new dart::dynamics::Skeleton);
+  dart::dynamics::SkeletonPtr LeftLegSkel = dart::dynamics::Skeleton::create();
 
   double mass = 1.0;
 

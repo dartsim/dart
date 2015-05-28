@@ -58,6 +58,7 @@ public:
     Eigen::Vector3d mAxis;
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : SingleDofJoint::Properties,
@@ -68,12 +69,8 @@ public:
                                             SingleDofJoint::Properties(),
         const PrismaticJoint::UniqueProperties& _prismaticProperties =
                                             PrismaticJoint::UniqueProperties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const std::string& _name = "Noname PrismaticJoint");
 
   /// Destructor
   virtual ~PrismaticJoint();
@@ -95,6 +92,12 @@ public:
 
   /// Same as copy(const PrismaticJoint&)
   PrismaticJoint& operator=(const PrismaticJoint& _otherJoint);
+  
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

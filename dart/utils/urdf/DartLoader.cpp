@@ -272,7 +272,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
  */
 dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInterface* _model) {
 
-  dynamics::SkeletonPtr skeleton(new dynamics::Skeleton(_model->getName()));
+  dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(_model->getName());
 
   dynamics::BodyNode* rootNode = nullptr;
   const urdf::Link* root = _model->getRoot().get();
@@ -552,7 +552,7 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
     else
     {
       shape = dynamics::ShapePtr(new dynamics::MeshShape(
-          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model));
+          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
     }
   }
   // Unknown geometry type

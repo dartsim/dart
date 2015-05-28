@@ -53,7 +53,7 @@ using namespace simulation;
 TEST(BUILDING, BASIC)
 {
   // Skeletons
-  SkeletonPtr skel1(new Skeleton);
+  SkeletonPtr skel1 = Skeleton::create();
 
   std::pair<RevoluteJoint*, BodyNode*> pair;
   BodyNode* body1, * body2, * body3;

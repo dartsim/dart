@@ -34,8 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace dart {
 namespace dynamics {
@@ -124,6 +125,14 @@ void SimpleFrame::setRelativeTransform(
 {
   mRelativeTf = _newRelTransform;
   notifyTransformUpdate();
+}
+
+//==============================================================================
+void SimpleFrame::setTransform(const Eigen::Isometry3d& _newTransform,
+                               const Frame* _withRespectTo)
+{
+  setRelativeTransform(
+        _withRespectTo->getTransform(getParentFrame()) * _newTransform);
 }
 
 //==============================================================================

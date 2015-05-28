@@ -55,14 +55,17 @@ public:
   {
     Properties(const MultiDofJoint<3>::Properties& _properties =
                                                 MultiDofJoint<3>::Properties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit BallJoint(const std::string& _name = "BallJoint");
 
   /// Destructor
   virtual ~BallJoint();
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;
@@ -85,6 +88,14 @@ public:
   /// Convert a BallJoint-style position vector into a rotation matrix
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
+  // Documentation inherited
+  Eigen::Vector3d getPositionDifferencesStatic(
+      const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -92,6 +103,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
   virtual void integratePositions(double _dt);
@@ -109,7 +122,13 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotation matrix
+
+  /// Access mR, which is an auto-updating variable
+  const Eigen::Isometry3d& getR() const;
+
+  /// Rotation matrix dependent on the generalized coordinates
+  ///
+  /// Do not use directly! Use getR() to access this
   mutable Eigen::Isometry3d mR;
 
 public:

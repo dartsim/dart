@@ -90,34 +90,6 @@ SingleDofJoint::Properties::Properties(
 }
 
 //==============================================================================
-SingleDofJoint::SingleDofJoint(const std::string& _name)
-  : Joint(_name),
-    mDof(createDofPointer(0)),
-    mCommand(0.0),
-    mPosition(0.0),
-    mPositionDeriv(0.0),
-    mVelocity(0.0),
-    mVelocityDeriv(0.0),
-    mAcceleration(0.0),
-    mAccelerationDeriv(0.0),
-    mForce(0.0),
-    mForceDeriv(0.0),
-    mVelocityChange(0.0),
-    mImpulse(0.0),
-    mConstraintImpulse(0.0),
-    mJacobian(Eigen::Vector6d::Zero()),
-    mJacobianDeriv(Eigen::Vector6d::Zero()),
-    mInvProjArtInertia(0.0),
-    mInvProjArtInertiaImplicit(0.0),
-    mTotalForce(0.0),
-    mTotalImpulse(0.0),
-    mInvM_a(0.0),
-    mInvMassMatrixSegment(0.0)
-{
-  updateDegreeOfFreedomNames();
-}
-
-//==============================================================================
 SingleDofJoint::~SingleDofJoint()
 {
   delete mDof;
@@ -180,28 +152,9 @@ SingleDofJoint& SingleDofJoint::operator=(const SingleDofJoint& _otherJoint)
 }
 
 //==============================================================================
-size_t SingleDofJoint::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
 size_t SingleDofJoint::getNumDofs() const
 {
   return 1;
-}
-
-//==============================================================================
-void SingleDofJoint::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
-{
-  if (_index != 0)
-  {
-    dterr << "[SingleDofJoint::setIndexInSkeleton] index[" << _index
-          << "] out of range" << std::endl;
-    return;
-  }
-
-  mDof->mIndexInSkeleton = _indexInSkeleton;
 }
 
 //==============================================================================
@@ -209,8 +162,9 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[SingleDofJoint::getIndexInSkeleton] index (" << _index
+          << ") may only be 0\n";
+    assert(false);
     return 0;
   }
 
@@ -218,11 +172,29 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
+size_t SingleDofJoint::getIndexInTree(size_t _index) const
+{
+  if (_index != 0)
+  {
+    dterr << "[SingleDofJoint::getIndexInTree] index (" << _index
+          << ") may only be 0\n";
+    assert(false);
+    return 0;
+  }
+
+  return mDof->mIndexInTree;
+}
+
+//==============================================================================
 DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 {
   if (0 == _index)
     return mDof;
-  return NULL;
+
+  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
+        << ") of a SingleDofJoint!\n";
+  assert(false);
+  return nullptr;
 }
 
 //==============================================================================
@@ -230,7 +202,11 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
 {
   if (0 == _index)
     return mDof;
-  return NULL;
+
+  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
+        << ") of a SingleDofJoint!\n";
+  assert(false);
+  return nullptr;
 }
 
 //==============================================================================
@@ -251,11 +227,11 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
   if (_name == mSingleDofP.mDofName)
     return mSingleDofP.mDofName;
 
-  if(mSkeleton)
+  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  if(skel)
   {
-    mSkeleton->mNameMgrForDofs.removeName(mSingleDofP.mDofName);
     mSingleDofP.mDofName =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDof);
+        skel->mNameMgrForDofs.changeObjectName(mDof, _name);
   }
   else
     mSingleDofP.mDofName = _name;
@@ -906,6 +882,30 @@ void SingleDofJoint::integrateVelocities(double _dt)
 }
 
 //==============================================================================
+Eigen::VectorXd SingleDofJoint::getPositionDifferences(
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q1.size()) != getNumDofs()
+      || static_cast<size_t>(_q2.size()) != getNumDofs())
+  {
+    dterr << "SingleDofJoint::getPositionsDifference: q1's size[" << _q1.size()
+          << "] or q2's size[" << _q2.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::Matrix<double, 1, 1>::Zero();
+  }
+
+  return Eigen::Matrix<double, 1, 1>::Constant(
+        getPositionDifferenceStatic(_q2[0], _q1[0]));
+}
+
+//==============================================================================
+double SingleDofJoint::getPositionDifferenceStatic(double _q2,
+                                                    double _q1) const
+{
+  return _q2 - _q1;
+}
+
+//==============================================================================
 void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 {
   if (_index != 0)
@@ -1068,8 +1068,10 @@ SingleDofJoint::SingleDofJoint(const Properties& _properties)
 //==============================================================================
 void SingleDofJoint::registerDofs()
 {
-  mSingleDofP.mDofName =
-      mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    mSingleDofP.mDofName =
+        skel->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
 }
 
 //==============================================================================
@@ -1109,12 +1111,7 @@ Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 //==============================================================================
 const math::Jacobian SingleDofJoint::getLocalJacobian() const
 {
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
-  return mJacobian;
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================
@@ -1126,6 +1123,14 @@ const Eigen::Vector6d& SingleDofJoint::getLocalJacobianStatic() const
     mIsLocalJacobianDirty = false;
   }
   return mJacobian;
+}
+
+//==============================================================================
+math::Jacobian SingleDofJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
+{
+  // The Jacobian is always constant w.r.t. the generalized coordinates.
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================
@@ -1893,7 +1898,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -1916,7 +1921,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInSkeleton;
+  size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;

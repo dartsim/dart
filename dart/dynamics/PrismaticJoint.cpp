@@ -63,21 +63,6 @@ PrismaticJoint::Properties::Properties(
 }
 
 //==============================================================================
-PrismaticJoint::PrismaticJoint(const Eigen::Vector3d& axis,
-                               const std::string& _name)
-  : SingleDofJoint(_name),
-    mPrismaticP(axis)
-{
-  updateLocalJacobian();
-}
-
-//==============================================================================
-Joint* PrismaticJoint::clone() const
-{
-  return new PrismaticJoint(getPrismaticJointProperties());
-}
-
-//==============================================================================
 PrismaticJoint::~PrismaticJoint()
 {
   // Do nothing
@@ -129,6 +114,19 @@ PrismaticJoint& PrismaticJoint::operator=(const PrismaticJoint& _otherJoint)
 }
 
 //==============================================================================
+const std::string& PrismaticJoint::getType() const
+{
+    return getStaticType();
+}
+
+//==============================================================================
+const std::string& PrismaticJoint::getStaticType()
+{
+  static const std::string name = "PrismaticJoint";
+  return name;
+}
+
+//==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mPrismaticP.mAxis = _axis.normalized();
@@ -148,6 +146,12 @@ PrismaticJoint::PrismaticJoint(const Properties& _properties)
 {
   setProperties(_properties);
   updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* PrismaticJoint::clone() const
+{
+  return new PrismaticJoint(getPrismaticJointProperties());
 }
 
 //==============================================================================

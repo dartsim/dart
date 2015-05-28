@@ -52,16 +52,22 @@ WeldJoint::Properties::Properties(const Joint::Properties& _properties)
 }
 
 //==============================================================================
-WeldJoint::WeldJoint(const std::string& _name)
-  : ZeroDofJoint(_name)
+WeldJoint::~WeldJoint()
 {
   // Do nothing
 }
 
 //==============================================================================
-WeldJoint::~WeldJoint()
+const std::string& WeldJoint::getType() const
 {
-  // Do nothing
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& WeldJoint::getStaticType()
+{
+  static const std::string name = "WeldJoint";
+  return name;
 }
 
 //==============================================================================

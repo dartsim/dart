@@ -64,16 +64,6 @@ RevoluteJoint::Properties::Properties(
 }
 
 //==============================================================================
-RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
-                             const std::string& _name)
-  : SingleDofJoint(_name),
-    mRevoluteP(axis)
-{
-  updateLocalJacobian();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 RevoluteJoint::~RevoluteJoint()
 {
   // Do nothing
@@ -122,6 +112,19 @@ RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint)
 {
   copy(_otherJoint);
   return *this;
+}
+
+//==============================================================================
+const std::string& RevoluteJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& RevoluteJoint::getStaticType()
+{
+  static const std::string name = "RevoluteJoint";
+  return name;
 }
 
 //==============================================================================

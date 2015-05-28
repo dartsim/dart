@@ -40,10 +40,9 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace renderer {
@@ -146,14 +145,12 @@ public:
                                    Eigen::Isometry3d::Identity(),
                bool _isPositionLimited = false,
                ActuatorType _actuatorType = DefaultActuatorType);
+
+    virtual ~Properties() = default;
   };
 
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
-
-  /// Constructor
-//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit Joint(const std::string& _name = "Joint");
 
   /// Destructor
   virtual ~Joint();
@@ -185,6 +182,9 @@ public:
   /// Get joint name
   const std::string& getName() const;
 
+  /// Gets a string representing the joint type
+  virtual const std::string& getType() const = 0;
+
   /// Set actuator type
   void setActuatorType(ActuatorType _actuatorType);
 
@@ -215,10 +215,10 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
-  Skeleton* getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton();
 
   /// Get the (const) Skeleton that this Joint belongs to.
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
@@ -248,15 +248,21 @@ public:
   /// \sa ActuatorType
   bool isPositionLimited() const;
 
-  /// Set an unique index in skeleton of a generalized coordinate in this joint
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) = 0;
-
-  /// Get an unique index in skeleton of a generalized coordinate in this joint
+  /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
-  /// Get number of generalized coordinates
-  DEPRECATED(4.1)
-  virtual size_t getDof() const = 0;
+  /// Get a unique index in the kinematic tree of a generalized coordinate in
+  /// this Joint
+  virtual size_t getIndexInTree(size_t _index) const = 0;
+
+  /// Get the index of this Joint within its Skeleton
+  size_t getJointIndexInSkeleton() const;
+
+  /// Get the index of this Joint within its tree
+  size_t getJointIndexInTree() const;
+
+  /// Get the index of the tree that this Joint belongs to
+  size_t getTreeIndex() const;
 
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
@@ -290,16 +296,16 @@ public:
   /// Set a single command
   virtual void setCommand(size_t _index, double _command) = 0;
 
-  /// Set a sinlge command
+  /// Get a single command
   virtual double getCommand(size_t _index) const = 0;
 
-  /// Set commands
+  /// Set all commands for this Joint
   virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
 
-  /// Get commands
+  /// Get all commands for this Joint
   virtual Eigen::VectorXd getCommands() const = 0;
 
-  /// Set zero all the positions
+  /// Set all the commands for this Joint to zero
   virtual void resetCommands() = 0;
 
   /// \}
@@ -308,22 +314,22 @@ public:
   /// \{ \name Position
   //----------------------------------------------------------------------------
 
-  /// Set a single position
+  /// Set the position of a single generalized coordinate
   virtual void setPosition(size_t _index, double _position) = 0;
 
-  /// Get a single position
+  /// Get the position of a single generalized coordinate
   virtual double getPosition(size_t _index) const = 0;
 
-  /// Set positions
+  /// Set the positions of all generalized coordinates in this Joint
   virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
 
-  /// Get positions
+  /// Get the positions of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getPositions() const = 0;
 
-  /// Set zero all the positions
+  /// Set the positions of all generalized coordinates in this Joint to zero
   virtual void resetPositions() = 0;
 
-  /// Set lower limit of position
+  /// Set lower limit for position
   virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
   /// Get lower limit for position
@@ -341,31 +347,31 @@ public:
   /// \{ \name Velocity
   //----------------------------------------------------------------------------
 
-  /// Set a single velocity
+  /// Set the velocity of a single generalized coordinate
   virtual void setVelocity(size_t _index, double _velocity) = 0;
 
-  /// Get a single velocity
+  /// Get the velocity of a single generalized coordinate
   virtual double getVelocity(size_t _index) const = 0;
 
-  /// Set velocities
+  /// Set the velocities of all generalized coordinates in this Joint
   virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
 
-  /// Get velocities
+  /// Get the velocities of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getVelocities() const = 0;
 
-  /// Set zero all the velocities
+  /// Set the velocities of all generalized coordinates in this Joint to zero
   virtual void resetVelocities() = 0;
 
-  /// Set lower limit of velocity
+  /// Set lower limit for velocity
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
-  /// Get lower limit of velocity
+  /// Get lower limit for velocity
   virtual double getVelocityLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of velocity
+  /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
 
-  /// Get upper limit of velocity
+  /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -374,31 +380,31 @@ public:
   /// \{ \name Acceleration
   //----------------------------------------------------------------------------
 
-  /// Set a single acceleration
+  /// Set the acceleration of a single generalized coordinate
   virtual void setAcceleration(size_t _index, double _acceleration) = 0;
 
-  /// Get a single acceleration
+  /// Get the acceleration of a single generalized coordinate
   virtual double getAcceleration(size_t _index) const = 0;
 
-  /// Set accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint
   virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
 
-  /// Get accelerations
+  /// Get the accelerations of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getAccelerations() const = 0;
 
-  /// Set zero all the accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint to zero
   virtual void resetAccelerations() = 0;
 
-  /// Set lower limit of acceleration
+  /// Set lower limit for acceleration
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get lower limit of acceleration
+  /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of acceleration
+  /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get upper limit of acceleration
+  /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -407,31 +413,31 @@ public:
   /// \{ \name Force
   //----------------------------------------------------------------------------
 
-  /// Set a single force
+  /// Set the force of a single generalized coordinate
   virtual void setForce(size_t _index, double _force) = 0;
 
-  /// Get a single force
+  /// Get the force of a single generalized coordinate
   virtual double getForce(size_t _index) = 0;
 
-  /// Set forces
+  /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
 
-  /// Get forces
+  /// Get the forces of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getForces() const = 0;
 
-  /// Set zero all the forces
+  /// Set the forces of all generalized coordinates in this Joint to zero
   virtual void resetForces() = 0;
 
-  /// Set lower limit of force
+  /// Set lower limit for force
   virtual void setForceLowerLimit(size_t _index, double _force) = 0;
 
-  /// Get lower limit of force
+  /// Get lower limit for force
   virtual double getForceLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of position
+  /// Set upper limit for force
   virtual void setForceUpperLimit(size_t _index, double _force) = 0;
 
-  /// Get upper limit of position
+  /// Get upper limit for force
   virtual double getForceUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -467,7 +473,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Integration
+  /// \{ \name Integration and finite difference
   //----------------------------------------------------------------------------
 
   /// Integrate positions using Euler method
@@ -475,6 +481,11 @@ public:
 
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
+
+  /// Return the difference of two generalized coordinates which are measured in
+  /// the configuration space of this Skeleton.
+  virtual Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
 
   /// \}
 
@@ -543,6 +554,11 @@ public:
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
   virtual const math::Jacobian getLocalJacobian() const = 0;
+
+  /// Get generalized Jacobian from parent body node to child body node
+  /// w.r.t. local generalized coordinate
+  virtual math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const = 0;
 
   /// Get time derivative of generalized Jacobian from parent body node
   /// to child body node w.r.t. local generalized coordinate
@@ -616,7 +632,7 @@ protected:
   virtual void registerDofs() = 0;
 
   /// Initialize this joint. This function is called by BodyNode::init()
-  virtual void init(Skeleton* _skel);
+  virtual void init(std::shared_ptr<Skeleton> _skel);
 
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _name DegreeOfFreedom's name.
@@ -839,9 +855,6 @@ protected:
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
 
-  /// Skeleton pointer that this joint belongs to
-  Skeleton* mSkeleton;
-
   /// Local transformation
   ///
   /// Do not use directly! Use getLocalTransform() to access this
@@ -888,14 +901,239 @@ protected:
   /// since the last position or velocity change
   mutable bool mIsLocalJacobianTimeDerivDirty;
 
-  /// Transmitting wrench from parent body to child body expressed in child body
-  DEPRECATED(4.3)
-  Eigen::Vector6d mWrench;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+/// TemplateJointPtr is a templated class that enables users to create a
+/// reference-counting JointPtr. Holding onto a JointPtr will ensure that the
+/// child BodyNode (and by extension, Skeleton) corresponding to a Joint does
+/// not get deleted. If the child BodyNode of this Joint replaces its parent
+/// Joint, then this smart pointer will reference the new parent Joint, because
+/// the old one will have been deleted.
+template <class JointT, class BodyNodeT>
+class TemplateJointPtr
+{
+public:
+
+  template<class, class> friend class TemplateJointPtr;
+
+  typedef JointT element_type;
+
+  /// Default constructor
+  TemplateJointPtr() = default;
+
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
+  TemplateJointPtr(JointT* _ptr) { set(_ptr); }
+
+  /// Constructor that takes in a strong JointPtr
+  template <class OtherJointT, class OtherBodyNodeT>
+  TemplateJointPtr(
+      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _jptr)
+  {
+    set(_jptr.get());
+  }
+
+  /// Assignment operator
+  TemplateJointPtr& operator = (JointT* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Assignment operator for JointPtrs
+  template <class OtherJointT, class OtherBodyNodeT>
+  TemplateJointPtr& operator = (
+      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _jptr)
+  {
+    set(_jptr.get());
+    return *this;
+  }
+
+  /// Implicit conversion
+  operator JointT*() const { return get(); }
+
+  /// Dereferencing operator
+  JointT& operator*() const { return *get(); }
+
+  /// Dereferencing operation
+  JointT* operator->() const { return get(); }
+
+  /// Get the raw Joint pointer
+  JointT* get() const
+  {
+    if(nullptr == mBodyNodePtr)
+      return nullptr;
+
+    return mBodyNodePtr->getParentJoint();
+  }
+
+  /// Set the Joint for this JointPtr
+  void set(JointT* _ptr)
+  {
+    if(nullptr == _ptr)
+    {
+      mBodyNodePtr = nullptr;
+      return;
+    }
+
+    mBodyNodePtr = _ptr->getChildBodyNode();
+  }
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Comparison operators
+  //----------------------------------------------------------------------------
+
+  /// Equality
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator == (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return mBodyNodePtr == _rhs.mBodyNodePtr;
+  }
+
+  /// Inequality
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator != (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return !( *this == _rhs );
+  }
+
+  /// Less than
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator < (const TemplateJointPtr<OtherJointT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    return (mBodyNodePtr < _rhs.mBodyNodePtr);
+  }
+
+  /// Greater than
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator > (const TemplateJointPtr<OtherJointT,
+                   OtherBodyNodeT>& _rhs)
+  {
+    return (mBodyNodePtr > _rhs.mBodyNodePtr);
+  }
+
+  /// Less than or equal to
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator <= (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this < _rhs) || (*this == _rhs);
+  }
+
+  /// Greater than or equal to
+  template <class OtherJointT, class OtherBodyNodeT>
+  bool operator >= (const TemplateJointPtr<OtherJointT,
+                    OtherBodyNodeT>& _rhs)
+  {
+    return (*this > _rhs) || (*this == _rhs);
+  }
+
+  /// \}
+
+private:
+  /// Reference-holding pointer to the child BodyNode of this Joint
+  TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+};
+
+typedef TemplateJointPtr<Joint, BodyNode> JointPtr;
+typedef TemplateJointPtr<const Joint, const BodyNode> ConstJointPtr;
+
+/// TemplateWeakJointPtr is a templated class that enables users to create a
+/// non-reference-holding WeakJointPtr. Holding onto a WeakJointPtr will NOT
+/// prevent anything from getting deleted, but you can use lock() to check
+/// whether the Joint still exists. If it does exist, it will return a valid
+/// JointPtr. Otherwise it will return a nullptr JointPtr.
+template <class JointT, class BodyNodeT>
+class TemplateWeakJointPtr
+{
+public:
+
+  template<class, class> friend class TemplateWeakJointPtr;
+
+  /// Default constructor
+  TemplateWeakJointPtr() = default;
+
+  /// Typical constructor. _ptr must be a valid pointer (or a nullptr) when
+  /// passed to this constructor
+  TemplateWeakJointPtr(JointT* _ptr) { set(_ptr); }
+
+  /// Constructor that takes in a WeakJointPtr
+  template <class OtherJointT, class OtherBodyNodeT>
+  TemplateWeakJointPtr(
+      const TemplateWeakJointPtr<OtherJointT, OtherBodyNodeT>& _weakPtr)
+  {
+    set(_weakPtr);
+  }
+
+  /// Constructor that takes in a strong JointPtr
+  template <class OtherJointPtr, class OtherBodyNodeT>
+  TemplateWeakJointPtr(
+      const TemplateJointPtr<OtherJointPtr, OtherBodyNodeT>& _strongPtr)
+  {
+    set(_strongPtr.get());
+  }
+
+  /// Assignment operator for raw Joint pointers
+  TemplateWeakJointPtr& operator = (JointT* _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Assignment operator for WeakJointPtrs
+  template <class OtherJointT, class OtherBodyNodeT>
+  TemplateWeakJointPtr& operator = (
+      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _strongPtr)
+  {
+    set(_strongPtr.get());
+    return *this;
+  }
+
+  /// Locks the Joint reference to ensure that the references Joint is currently
+  /// still available. If the Joint is not available any longer (i.e. has been
+  /// deleted), then this will return a nullptr.
+  TemplateJointPtr<JointT, BodyNodeT> lock() const
+  {
+    TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
+    if(nullptr == bodyNode)
+      return nullptr;
+
+    return TemplateJointPtr<JointT, BodyNodeT>(bodyNode->getParentJoint());
+  }
+
+  /// Set the Joint for this WeakJointPtr
+  void set(JointT* _ptr)
+  {
+    if(nullptr == _ptr)
+    {
+      mWeakBodyNode = nullptr;
+      return;
+    }
+
+    mWeakBodyNode = _ptr->getChildBodyNode();
+  }
+
+  /// Attempt to set the Joint for this WeakJointPtr based on another
+  /// WeakJointPtr
+  template <class OtherJointT, class OtherBodyNodeT>
+  void set(const TemplateWeakJointPtr<OtherJointT, OtherBodyNodeT>& _weakPtr)
+  {
+    mWeakBodyNode = _weakPtr.mWeakBodyNode;
+  }
+
+private:
+  /// Weak poiner to the child BodyNode of this Joint
+  TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
+};
+
+typedef TemplateWeakJointPtr<Joint, BodyNode> WeakJointPtr;
+typedef TemplateWeakJointPtr<const Joint, const BodyNode> WeakConstJointPtr;
 
 }  // namespace dynamics
 }  // namespace dart

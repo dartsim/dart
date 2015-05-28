@@ -59,6 +59,8 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
                      const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : MultiDofJoint<2>::Properties,
@@ -68,13 +70,8 @@ public:
                                             MultiDofJoint<2>::Properties(),
                const UniversalJoint::UniqueProperties& _universalProperties =
                                             UniversalJoint::UniqueProperties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-                 const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
-                 const std::string& _name = "Universal joint");
 
   /// Destructor
   virtual ~UniversalJoint();
@@ -97,6 +94,12 @@ public:
   /// Copy the Properties of another UniversalJoint
   UniversalJoint& operator=(const UniversalJoint& _otherJoint);
 
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   ///
   void setAxis1(const Eigen::Vector3d& _axis);
 
@@ -109,6 +112,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis2() const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
+      const Eigen::Vector2d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -116,6 +123,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
