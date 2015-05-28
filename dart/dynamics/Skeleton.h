@@ -304,17 +304,13 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  // Initialization
-  //----------------------------------------------------------------------------
-  /// Initialize this skeleton for kinematics and dynamics
-  // TODO(MXG): Deprecate this once the public constructors are removed from the
-  // API
-  void init(double _timeStep = 0.001,
-            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
-
-  //----------------------------------------------------------------------------
   /// \{ \name Deprecated
   //----------------------------------------------------------------------------
+
+  /// Initialize this skeleton for kinematics and dynamics
+  DEPRECATED(4.5)
+  void init(double _timeStep = 0.001,
+            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
 
   /// Set the configuration of this skeleton described in generalized
   /// coordinates. The order of input configuration is determined by _id.

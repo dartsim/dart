@@ -547,28 +547,6 @@ size_t BodyNode::getTreeIndex() const
 }
 
 //==============================================================================
-void BodyNode::setParentJoint(Joint* _joint)
-{
-  if (_joint->getChildBodyNode())
-  {
-    assert(_joint->getChildBodyNode() != this);
-  }
-
-  SkeletonPtr skel = getSkeleton();
-  if (skel)
-  {
-    skel->unregisterJoint(mParentJoint);
-    skel->registerJoint(_joint);
-  }
-
-  if (mParentJoint)
-    mParentJoint->mChildBodyNode = nullptr;
-
-  mParentJoint = _joint;
-  mParentJoint->mChildBodyNode = this;
-}
-
-//==============================================================================
 static bool checkSkeletonNodeAgreement(
     const BodyNode* _bodyNode,
     ConstSkeletonPtr _newSkeleton, const BodyNode* _newParent,
