@@ -319,11 +319,6 @@ public:
   /// Return the index of the tree that this BodyNode belongs to
   size_t getTreeIndex() const;
 
-  /// Set _joint as the parent Joint of the BodyNode
-  // TODO(MXG): Remove this along with the public constructors of Joint and
-  // BodyNode
-  void setParentJoint(Joint* _joint);
-
   /// Remove this BodyNode and all of its children (recursively) from their
   /// Skeleton. If a BodyNodePtr that references this BodyNode (or any of its
   /// children) still exists, the subtree will be moved into a new Skeleton
@@ -470,11 +465,6 @@ public:
 
   /// Return the (const) parent BodyNode of this BodyNode
   const BodyNode* getParentBodyNode() const;
-
-  /// Add a child bodynode into the bodynode
-  // TODO(MXG): This should be made protected at the same time that we remove
-  // the public constructor for BodyNode
-  void addChildBodyNode(BodyNode* _body);
 
   /// Create a Joint and BodyNode pair as a child of this BodyNode
   template <class JointType, class NodeType = BodyNode>
@@ -1093,6 +1083,9 @@ protected:
 
   /// Initialize the vector members with proper sizes.
   virtual void init(const SkeletonPtr& _skeleton);
+
+  /// Add a child bodynode into the bodynode
+  void addChildBodyNode(BodyNode* _body);
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

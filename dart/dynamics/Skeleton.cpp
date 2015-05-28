@@ -2753,23 +2753,6 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
     (*it)->updateVelocity();
     (*it)->updatePartialAcceleration();
   }
-
-  // TODO(MXG): All of the following notifications should be unnecessary
-  // Test the code with them removed
-  for (size_t i = 0; i < mTreeCache.size(); ++i)
-  {
-    notifyArticulatedInertiaUpdate(i);
-    SET_FLAG(i, mExternalForces);
-  }
-
-  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
-  {
-    (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsWorldJacobianDirty = true;
-    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
-    (*it)->mIsWorldJacobianClassicDerivDirty = true;
-  }
 }
 
 //==============================================================================
@@ -2809,23 +2792,6 @@ void Skeleton::computeInverseDynamicsRecursionA()
     (*it)->updateVelocity();
     (*it)->updatePartialAcceleration();
     (*it)->updateAccelerationID();
-  }
-
-  // TODO(MXG): All the following notifications should be unnecessary.
-  // Test the code with the notifications removed
-  for (size_t i = 0; i < mTreeCache.size(); ++i)
-  {
-    notifyArticulatedInertiaUpdate(i);
-    SET_FLAG(i, mExternalForces);
-  }
-
-  for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
-  {
-    (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsWorldJacobianDirty = true;
-    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
-    (*it)->mIsWorldJacobianClassicDerivDirty = true;
   }
 }
 

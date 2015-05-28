@@ -305,10 +305,8 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
   _skeleton->setName(mNameMgrForSkeletons.issueNewNameAndAdd(
                        _skeleton->getName(), _skeleton));
 
-  // TODO(MXG): This init should not be needed once the public BodyNode
-  // constructors are removed from DART, but we should probably keep it for now
-  // just in case some users are still building Skeletons in the deprecated way
-  _skeleton->init(mTimeStep, mGravity);
+  _skeleton->setTimeStep(mTimeStep);
+  _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
