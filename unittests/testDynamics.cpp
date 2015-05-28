@@ -1590,6 +1590,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   size_t nRandomItr = 100;
 #endif
 
+  double TOLERANCE = 1e-3;
+
   // Lower and upper bound of configuration for system
   double lb = -1.5 * DART_PI;
   double ub =  1.5 * DART_PI;
@@ -1657,8 +1659,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
       MatrixXd invM = skel->getInvMassMatrix();
       VectorXd deltaVel2 = invM * impulses;
 
-      EXPECT_TRUE(equals(deltaVel1, deltaVel2, 1e-5));
-      if (!equals(deltaVel1, deltaVel2, 1e-5))
+      EXPECT_TRUE(equals(deltaVel1, deltaVel2, TOLERANCE));
+      if (!equals(deltaVel1, deltaVel2, TOLERANCE))
       {
         cout << "deltaVel1: " << deltaVel1.transpose()  << endl;
         cout << "deltaVel2: " << deltaVel2.transpose() << endl;
