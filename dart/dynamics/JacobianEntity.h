@@ -37,17 +37,181 @@
 #ifndef DART_DYNAMICS_JACOBIANENTITY_H_
 #define DART_DYNAMICS_JACOBIANENTITY_H_
 
+#include <memory>
+
+#include "dart/dynamics/Frame.h"
+
 namespace dart {
 namespace dynamics {
+
+class Skeleton;
 
 /// The JacobianEntity class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
-class JacobianEntity
+class JacobianEntity : virtual public Frame
 {
 public:
 
+  //----------------------------------------------------------------------------
+  /// \{ \name Structural Properties
+  //----------------------------------------------------------------------------
 
+  /// Return the Skeleton this JacobianEntity is attached to
+  virtual std::shared_ptr<Skeleton> getSkeleton() = 0;
+
+  /// Return the Skeleton this JacobianEntity is attached to
+  virtual std::shared_ptr<const Skeleton> getSkeleton() const = 0;
+
+  /// The number of the generalized coordinates which affect this JacobianEntity
+  virtual size_t getNumDependentGenCoords() const = 0;
+
+  /// Indices of the generalized coordinates which affect this JacobianEntity
+  virtual const std::vector<size_t>& getDependentGenCoordIndices() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Jacobian Functions
+  //----------------------------------------------------------------------------
+
+  /// Return the generalized Jacobian targeting the origin of this Entity. The
+  /// Jacobian is expressed in the Frame of this Entity
+  virtual const math::Jacobian& getJacobian() const = 0;
+
+  /// A version of getJacobian() that lets you specify a coordinate Frame to
+  /// express the Jacobian in.
+  virtual math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const = 0;
+
+  /// Return the generalized Jacobian targeting an offset within the Frame of
+  /// this Entity.
+  virtual math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const = 0;
+
+  /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
+  /// coordinate Frame to express the Jacobian in.
+  virtual math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
+                                     const Frame* _inCoordinatesOf) const = 0;
+
+  /// Return the generalized Jacobian targeting the origin of this Entity. The
+  /// Jacobian is expressed in the World Frame.
+  virtual const math::Jacobian& getWorldJacobian() const = 0;
+
+  /// Return the generalized Jacobian targeting an offset in this Entity. The
+  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
+  /// expressed in the World Frame.
+  virtual math::Jacobian getWorldJacobian(
+      const Eigen::Vector3d& _offset) const = 0;
+
+  /// Return the linear Jacobian targeting the origin of this BodyNode. You can
+  /// specify a coordinate Frame to express the Jacobian in.
+  virtual math::LinearJacobian getLinearJacobian(
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// Return the generalized Jacobian targeting an offset within the Frame of
+  /// this BodyNode.
+  virtual math::LinearJacobian getLinearJacobian(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// Return the angular Jacobian targeting the origin of this BodyNode. You can
+  /// specify a coordinate Frame to express the Jacobian in.
+  virtual math::AngularJacobian getAngularJacobian(
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// Return the spatial time derivative of the generalized Jacobian targeting
+  /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a spatial time derivative, it should be used with
+  /// spatial vectors. If you are using classical linear and angular
+  /// acceleration vectors, then use getJacobianClassicDeriv(),
+  /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
+  virtual const math::Jacobian& getJacobianSpatialDeriv() const = 0;
+
+  /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
+  /// coordinates of any Frame.
+  ///
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classical linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
+  virtual math::Jacobian getJacobianSpatialDeriv(
+      const Frame* _inCoordinatesOf) const = 0;
+
+  /// Return the spatial time derivative of the generalized Jacobian targeting
+  /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
+  /// this BodyNode's coordinate Frame.
+  ///
+  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
+  /// you are using classic linear and angular vectors, then use
+  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
+  /// getAngularJacobianDeriv() instead.
+  ///
+  /// \sa getJacobianSpatialDeriv()
+  virtual math::Jacobian getJacobianSpatialDeriv(
+      const Eigen::Vector3d& _offset) const = 0;
+
+  /// A version of getJacobianSpatialDeriv(const Eigen::Vector3d&) that allows
+  /// an arbitrary coordinate Frame to be specified.
+  virtual math::Jacobian getJacobianSpatialDeriv(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf) const = 0;
+
+  /// Return the classical time derivative of the generalized Jacobian targeting
+  /// the origin of this BodyNode. The Jacobian is expressed in the World
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  virtual const math::Jacobian& getJacobianClassicDeriv() const = 0;
+
+  /// A version of getJacobianClassicDeriv() that can return the Jacobian in
+  /// coordinates of any Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  virtual math::Jacobian getJacobianClassicDeriv(
+      const Frame* _inCoordinatesOf) const = 0;
+
+  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in the coordinates of this BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear and angular vectors. If you are using spatial vectors,
+  /// use getJacobianSpatialDeriv() instead.
+  virtual math::Jacobian getJacobianClassicDeriv(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// Return the linear Jacobian (classical) time derivative, in terms of any
+  /// coordinate Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  virtual math::LinearJacobian getLinearJacobianDeriv(
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
+  /// an offset within the Frame of this BodyNode. The offset must be expressed
+  /// in coordinates of this BodyNode Frame.
+  ///
+  /// NOTE: Since this is a classical time derivative, it should be used with
+  /// classical linear vectors. If you are using spatial vectors, use
+  /// getJacobianSpatialDeriv() instead.
+  virtual math::LinearJacobian getLinearJacobianDeriv(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// Return the angular Jacobian time derivative, in terms of any coordinate
+  /// Frame.
+  virtual math::AngularJacobian getAngularJacobianDeriv(
+      const Frame* _inCoordinatesOf = Frame::World()) const = 0;
+
+  /// \}
 
 };
 

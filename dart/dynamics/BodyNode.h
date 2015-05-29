@@ -570,17 +570,18 @@ public:
   /// Return the linear Jacobian targeting the origin of this BodyNode. You can
   /// specify a coordinate Frame to express the Jacobian in.
   math::LinearJacobian getLinearJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the generalized Jacobian targeting an offset within the Frame of
   /// this BodyNode.
-  math::LinearJacobian getLinearJacobian(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  math::LinearJacobian getLinearJacobian(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the angular Jacobian targeting the origin of this BodyNode. You can
   /// specify a coordinate Frame to express the Jacobian in.
   math::AngularJacobian getAngularJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
@@ -642,8 +643,9 @@ public:
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
   /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  math::Jacobian getJacobianClassicDeriv(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// Return the linear Jacobian (classical) time derivative, in terms of any
   /// coordinate Frame.
@@ -652,7 +654,7 @@ public:
   /// classical linear vectors. If you are using spatial vectors, use
   /// getJacobianSpatialDeriv() instead.
   math::LinearJacobian getLinearJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const;
 
   /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
   /// an offset within the Frame of this BodyNode. The offset must be expressed
