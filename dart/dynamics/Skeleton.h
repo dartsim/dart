@@ -844,14 +844,17 @@ protected:
   /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
+  /// Register an EndEffector with the Skeleton. Internal use only.
+  bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
+
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);
 
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
-  /// Register an EndEffector with the Skeleton. Internal use only.
-  bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
+  /// Remove an EndEffector from the Skeleton. Internal use only.
+  void unregisterEndEffector(EndEffector* _oldEndEffector);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,

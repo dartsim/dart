@@ -38,6 +38,7 @@
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
 #include "dart/dynamics/FixedFrame.h"
+#include "dart/dynamics/TemplatedJacobianEntity.impl"
 
 namespace dart {
 namespace dynamics {
@@ -45,7 +46,8 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 
-class EndEffector : public FixedFrame
+class EndEffector : public FixedFrame,
+                    public TemplatedJacobianEntity<EndEffector>
 {
 public:
 
@@ -69,55 +71,11 @@ public:
         const UniqueProperties& _effectorProperties = UniqueProperties() );
   };
 
-  /// EndEffector Mode
-  ///
-  /// The EndEffector class exists to provide a convenient interface for
-  /// indicating locations on the BodyNodes of a Skeleton that are designed to
-  /// interact with the environment. The EndEffector class is built to offer
-  /// easy ways of defining kinematics and dynamics constraints for Skeletons.
-  /// Many common real-world EndEffectors have multiple modes of functionality
-  /// or different ways in which they can be used.
-  ///
-  /// Three different types of kinematic constraints will be generated
-  /// automatically when the EndEffector is created and successfully attached
-  /// to its BodyNode: LINKAGE, WHOLEBODY, and SUPPORT. These constraints will
-  /// use iterative Jacobian methods to find solutions. ANALYTICAL mode is
-  /// reserved for analytical inverse kinematics solvers, but it is not
-  /// automatically generated. The CUSTOM mode is reserved for any custome
-  /// kinematics solver that the user wants to provide, and FREE is reserved to
-  /// indicate that there is no active constraint. All of these modes can be
-  /// overriden by user-created kinematics constraint functions.
-  enum Mode
-  {
-    /// There is no active kinematic constraint on the EndEffector
-    FREE = 0,
-
-    /// Use only the longest possible uninterrupted linkage (series of links
-    /// that only have a single child link) for solving inverse kinematics
-    /// constraints
-    LINKAGE,
-
-    /// Use all relevant links, all the way down to the root link, for solving
-    /// inverse kinematics constraints
-    WHOLEBODY,
-
-    /// Identical to the LINKAGE constraint, but the support polygon of this
-    /// EndEffector will be used to contribute to the overall support polygon
-    /// of the Skeleton when solving balance-related constraints.
-    SUPPORT,
-
-    /// Reserved for users to provide an analytical inverse kinematics solver
-    ANALYTICAL,
-
-    /// Reserved for users to provide arbitrary inverse kinematics solvers
-    CUSTOM
-  };
-
   /// Destructor
   virtual ~EndEffector();
 
   //----------------------------------------------------------------------------
-  // Properties
+  /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
@@ -158,9 +116,23 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  //----------------------------------------------------------------------------
-  // Relationships
-  //----------------------------------------------------------------------------
+  // Documentation inherited
+  std::shared_ptr<Skeleton> getSkeleton() override;
+
+  // Documentation inherited
+  std::shared_ptr<const Skeleton> getSkeleton() const override;
+
+  // Documentation inherited
+  size_t getNumDependentGenCoords() const override;
+
+  // Documentation inherited
+  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+
+  // Documentation inherited
+  size_t getNumDependentDofs() const override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
   /// Get the BodyNode that this EndEffector is rigidly attached to
   BodyNode* getParentBodyNode();
@@ -168,14 +140,50 @@ public:
   /// Get the BodyNode that this EndEffector is rigidly attached to
   const BodyNode* getParentBodyNode() const;
 
-  /// Get the Skeleton that this EndEffector belongs to
-  std::shared_ptr<Skeleton> getSkeleton();
-
-  /// Get the Skeleton that this EndEffector belongs to
-  std::shared_ptr<const Skeleton> getSkeleton() const;
-
   /// Get the index of this EndEffector within the Skeleton
-  size_t getIndex() const;
+  size_t getIndexInSkeleton() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Jacobian Functions
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  const math::Jacobian& getJacobian() const override;
+
+  // Prevent the inherited getJacobian functions from being shadowed
+  using TemplatedJacobianEntity<EndEffector>::getJacobian;
+
+  // Documentation inherited
+  const math::Jacobian& getWorldJacobian() const override;
+
+  // Prevent the inherited getWorldJacobian functions from being shadowed
+  using TemplatedJacobianEntity<EndEffector>::getWorldJacobian;
+
+  // Documentation inherited
+  const math::Jacobian& getJacobianSpatialDeriv() const override;
+
+  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
+  using TemplatedJacobianEntity<EndEffector>::getJacobianSpatialDeriv;
+
+  // Documentation inherited
+  const math::Jacobian& getJacobianClassicDeriv() const override;
+
+  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
+  using TemplatedJacobianEntity<EndEffector>::getJacobianClassicDeriv;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Notifications
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  virtual void notifyTransformUpdate() override;
+
+  // Documentation inherited
+  virtual void notifyVelocityUpdate() override;
 
 protected:
 
@@ -186,6 +194,23 @@ protected:
   /// class.
   virtual EndEffector* clone(BodyNode* _parent) const;
 
+  /// Update the Jacobian of this EndEffector. getJacobian() calls this function
+  /// if mIsEffectorJacobianDirty is true.
+  void updateEffectorJacobian() const;
+
+  /// Update the World Jacobian cache.
+  void updateWorldJacobian() const;
+
+  /// Update the spatial time derivative of the end effector Jacobian.
+  /// getJacobianSpatialDeriv() calls this function if
+  /// mIsEffectorJacobianSpatialDerivDirty is true.
+  void updateEffectorJacobianSpatialDeriv() const;
+
+  /// Update the classic time derivative of the end effector Jacobian.
+  /// getJacobianClassicDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void updateWorldJacobianClassicDeriv() const;
+
   /// Properties of this EndEffector
   UniqueProperties mEndEffectorP;
 
@@ -194,6 +219,38 @@ protected:
 
   /// The index of this EndEffector within the Skeleton
   size_t mIndexInSkeleton;
+
+  /// Cached Jacobian of this EndEffector
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
+  mutable math::Jacobian mEffectorJacobian;
+
+  /// Dirty flag for end effector Jacobian
+  mutable bool mIsEffectorJacobianDirty;
+
+  /// Cached World Jacobian of this EndEffector
+  ///
+  /// Do not use directly! Use getWorldJacobian() to access this quantity
+  mutable math::Jacobian mWorldJacobian;
+
+  /// Dirty flag for world Jacobian
+  mutable bool mIsWorldJacobianDirty;
+
+  /// Spatial time derivative of end effector Jacobian
+  ///
+  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
+  mutable math::Jacobian mEffectorJacobianSpatialDeriv;
+
+  /// Dirty flag for spatial time derivative of the end effector Jacobian
+  mutable bool mIsEffectorJacobianSpatialDerivDirty;
+
+  /// Classic time derivative of the end effector Jacobian
+  ///
+  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
+  mutable math::Jacobian mWorldJacobianClassicDeriv;
+
+  /// Dirty flag for the classic time derivative of the Jacobian
+  mutable bool mIsWorldJacobianClassicDerivDirty;
 };
 
 } // namespace dynamics

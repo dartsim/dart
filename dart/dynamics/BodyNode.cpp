@@ -47,6 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Chain.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
@@ -766,6 +767,24 @@ const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
 }
 
 //==============================================================================
+size_t BodyNode::getNumDependentDofs() const
+{
+  return mDependentDofs.size();
+}
+
+//==============================================================================
+DegreeOfFreedom* BodyNode::getDependentDof(size_t _index)
+{
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+}
+
+//==============================================================================
+const DegreeOfFreedom* BodyNode::getDependentDof(size_t _index) const
+{
+  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+}
+
+//==============================================================================
 const std::vector<DegreeOfFreedom*>& BodyNode::getDependentDofs()
 {
   return mDependentDofs;
@@ -775,6 +794,28 @@ const std::vector<DegreeOfFreedom*>& BodyNode::getDependentDofs()
 const std::vector<const DegreeOfFreedom*>& BodyNode::getDependentDofs() const
 {
   return mConstDependentDofs;
+}
+
+//==============================================================================
+const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
+{
+  // TODO(MXG): Consider templating the Criteria for const BodyNodes so that we
+  // don't need a const_cast here. That said, the const_cast isn't hurting
+  // anything, because the Criteria function would work just as well operating
+  // on const BodyNodes.
+  Chain::Criteria criteria(const_cast<BodyNode*>(this), nullptr);
+  std::vector<BodyNode*> bn_chain = criteria.satisfy();
+  std::vector<const DegreeOfFreedom*> dofs;
+  dofs.reserve(getNumDependentGenCoords());
+  for(std::vector<BodyNode*>::reverse_iterator rit = bn_chain.rbegin();
+      rit != bn_chain.rend(); ++rit)
+  {
+    size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
+    for(size_t i=0; i<nDofs; ++i)
+      dofs.push_back( (*rit)->getParentJoint()->getDof(i) );
+  }
+
+  return dofs;
 }
 
 //==============================================================================
@@ -865,95 +906,12 @@ const math::Jacobian& BodyNode::getJacobian() const
 }
 
 //==============================================================================
-math::Jacobian BodyNode::getJacobian(const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobian();
-  else if(_inCoordinatesOf->isWorld())
-    return getWorldJacobian();
-
-  return math::AdRJac(getTransform(_inCoordinatesOf), getJacobian());
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset) const
-{
-  math::Jacobian J = getJacobian();
-  J.bottomRows<3>() += J.topRows<3>().colwise().cross(_offset);
-
-  return J;
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
-                                     const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobian(_offset);
-  else if(_inCoordinatesOf->isWorld())
-    return getWorldJacobian(_offset);
-
-  Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
-  T.translation() = - T.linear() * _offset;
-
-  return math::AdTJac(T, getJacobian());
-}
-
-//==============================================================================
 const math::Jacobian& BodyNode::getWorldJacobian() const
 {
   if(mIsWorldJacobianDirty)
     updateWorldJacobian();
 
   return mWorldJacobian;
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getWorldJacobian(const Eigen::Vector3d& _offset) const
-{
-  math::Jacobian J = getWorldJacobian();
-  J.bottomRows<3>() += J.topRows<3>().colwise().cross(
-                                        getWorldTransform().linear() * _offset);
-
-  return J;
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getLinearJacobian(
-    const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobian().bottomRows<3>();
-  else if(_inCoordinatesOf->isWorld())
-    return getWorldJacobian().bottomRows<3>();
-
-  return getTransform(_inCoordinatesOf).linear() * getJacobian().bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getLinearJacobian(const Eigen::Vector3d& _offset,
-                                            const Frame* _inCoordinatesOf) const
-{
-  const math::Jacobian& J = getJacobian();
-  math::LinearJacobian JLinear;
-  JLinear = J.bottomRows<3>() + J.topRows<3>().colwise().cross(_offset);
-
-  if(this == _inCoordinatesOf)
-    return JLinear;
-
-  return getTransform(_inCoordinatesOf).linear() * JLinear;
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getAngularJacobian(
-                                            const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobian().topRows<3>();
-  else if(_inCoordinatesOf->isWorld())
-    return getWorldJacobian().topRows<3>();
-
-  return getTransform(_inCoordinatesOf).linear() * getJacobian().topRows<3>();
 }
 
 //==============================================================================
@@ -966,114 +924,12 @@ const math::Jacobian& BodyNode::getJacobianSpatialDeriv() const
 }
 
 //==============================================================================
-math::Jacobian BodyNode::getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobianSpatialDeriv();
-
-  return math::AdRJac(getTransform(_inCoordinatesOf), getJacobianSpatialDeriv());
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const
-{
-  math::Jacobian J_d = getJacobianSpatialDeriv();
-  J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(_offset);
-
-  return J_d;
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
-                                            const Frame* _inCoordinatesOf) const
-{
-  if(this == _inCoordinatesOf)
-    return getJacobianSpatialDeriv(_offset);
-
-  Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
-  T.translation() = T.linear() * -_offset;
-
-  return math::AdTJac(T, getJacobianSpatialDeriv());
-}
-
-//==============================================================================
 const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
 {
   if(mIsWorldJacobianClassicDerivDirty)
     updateWorldJacobianClassicDeriv();
 
   return mWorldJacobianClassicDeriv;
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const
-{
-  if(_inCoordinatesOf->isWorld())
-    return getJacobianClassicDeriv();
-
-  return math::AdRInvJac(_inCoordinatesOf->getWorldTransform(),
-                         getJacobianClassicDeriv());
-}
-
-//==============================================================================
-math::Jacobian BodyNode::getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
-                                            const Frame* _inCoordinatesOf) const
-{
-  math::Jacobian J_d = getJacobianClassicDeriv();
-  const math::Jacobian& J = getWorldJacobian();
-  const Eigen::Vector3d& w = getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
-
-  J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(p)
-                         + J.topRows<3>().colwise().cross(w.cross(p));
-
-  if(_inCoordinatesOf->isWorld())
-    return J_d;
-
-  return math::AdRInvJac(_inCoordinatesOf->getWorldTransform(), J_d);
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getLinearJacobianDeriv(
-    const Frame* _inCoordinatesOf) const
-{
-  const math::Jacobian& J_d = getJacobianClassicDeriv();
-  if(_inCoordinatesOf->isWorld())
-    return J_d.bottomRows<3>();
-
-  return _inCoordinatesOf->getWorldTransform().linear().transpose()
-          * J_d.bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getLinearJacobianDeriv(
-    const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
-{
-  const math::Jacobian& J_d = getJacobianClassicDeriv();
-  const math::Jacobian& J = getWorldJacobian();
-  const Eigen::Vector3d& w = getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
-
-  if(_inCoordinatesOf->isWorld())
-    return J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
-           + J.topRows<3>().colwise().cross(w.cross(p));
-
-  return _inCoordinatesOf->getWorldTransform().linear().transpose()
-         * (J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
-            + J.topRows<3>().colwise().cross(w.cross(p)));
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getAngularJacobianDeriv(
-    const Frame* _inCoordinatesOf) const
-{
-  const math::Jacobian& J_d = getJacobianClassicDeriv();
-
-  if(_inCoordinatesOf->isWorld())
-    return J_d.topRows<3>();
-
-  return _inCoordinatesOf->getWorldTransform().linear().transpose()
-         * J_d.topRows<3>();
 }
 
 //==============================================================================

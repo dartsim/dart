@@ -300,7 +300,7 @@ void Linkage::Criteria::expandToTarget(
 {
   BodyNode* target_bn = _target.mNode.lock();
   std::vector<BodyNode*> newBns;
-  newBns.reserve(target_bn->getSkeleton()->getNumBodyNodes());
+  newBns.reserve(_start->getSkeleton()->getNumBodyNodes());
 
   if(target_bn == nullptr || _start->descendsFrom(target_bn))
   {

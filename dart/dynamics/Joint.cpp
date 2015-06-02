@@ -64,7 +64,7 @@ Joint::Properties::Properties(const std::string& _name,
     mIsPositionLimited(_isPositionLimited),
     mActuatorType(_actuatorType)
 {
-
+  // Do nothing
 }
 
 //==============================================================================

@@ -35,6 +35,7 @@
  */
 
 #include "dart/dynamics/InverseKinematics.h"
+#include "DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
@@ -227,7 +228,7 @@ void InverseKinematics::ErrorMethod::clearCache()
 }
 
 //==============================================================================
-InverseKinematics::EulerAngleXYZMethod::EulerAngleXYZMethod(
+InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
     InverseKinematics* _ik)
   : ErrorMethod(_ik, "EulerAngleXYZ"),
     mComputeErrorFromCenter(true)
@@ -236,7 +237,7 @@ InverseKinematics::EulerAngleXYZMethod::EulerAngleXYZMethod(
 }
 
 //==============================================================================
-Eigen::Vector6d InverseKinematics::EulerAngleXYZMethod::computeError()
+Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
 {
   // This is a slightly modified implementation of the Berenson et al Task Space
   // Region method found in "Task Space Regions: A Framework for
@@ -495,7 +496,7 @@ size_t InverseKinematics::getHierarchyLevel() const
 }
 
 //==============================================================================
-void InverseKinematics::useLinkage()
+void InverseKinematics::useChain()
 {
   mDofs.clear();
 
@@ -505,8 +506,7 @@ void InverseKinematics::useLinkage()
     return;
   }
 
-  // TODO(MXG)
-//  useDofs(mEntity->getChainGenCoordIndices());
+  useDofs(mEntity->getChainDofs());
 }
 
 //==============================================================================
@@ -837,7 +837,7 @@ void InverseKinematics::initialize()
   resetProblem();
 
   // The default error method is the one based on Task Space Regions
-  setErrorMethod<EulerAngleXYZMethod>();
+  setErrorMethod<TaskSpaceRegion>();
 
   // The default gradient method is damped least squares Jacobian
   setGradientMethod<JacobianDLS>();
@@ -853,7 +853,7 @@ void InverseKinematics::initialize()
   resetEntityConnection();
 
   // By default, we use the linkage when performing IK
-  useLinkage();
+  useChain();
 
   // Default to the native DART gradient descent solver
   mSolver = std::make_shared<optimizer::GradientDescentSolver>(mProblem);

@@ -266,7 +266,8 @@ const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            Joint* _parentJoint,
                            const Properties& _properties)
-  : Entity(_parentBodyNode, "", false),
+  : Entity(Frame::World(), "", false),
+    Frame(Frame::World(), ""),
     BodyNode(_parentBodyNode, _parentJoint, _properties)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
@@ -274,7 +275,8 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
 }
 
 //==============================================================================
-BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
+                              Joint* _parentJoint) const
 {
   return new SoftBodyNode(_parentBodyNode, _parentJoint,
                           getSoftBodyNodeProperties());

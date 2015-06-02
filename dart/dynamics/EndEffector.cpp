@@ -152,6 +152,42 @@ void EndEffector::resetRelativeTransform()
 }
 
 //==============================================================================
+std::shared_ptr<Skeleton> EndEffector::getSkeleton()
+{
+  return mParentBodyNode->getSkeleton();
+}
+
+//==============================================================================
+std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
+{
+  return mParentBodyNode->getSkeleton();
+}
+
+//==============================================================================
+size_t EndEffector::getNumDependentGenCoords() const
+{
+  return mParentBodyNode->getNumDependentGenCoords();
+}
+
+//==============================================================================
+const std::vector<size_t>& EndEffector::getDependentGenCoordIndices() const
+{
+  return mParentBodyNode->getDependentGenCoordIndices();
+}
+
+//==============================================================================
+size_t EndEffector::getNumDependentDofs() const
+{
+  return mParentBodyNode->getNumDependentDofs();
+}
+
+//==============================================================================
+const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
+{
+  return mParentBodyNode->getChainDofs();
+}
+
+//==============================================================================
 BodyNode* EndEffector::getParentBodyNode()
 {
   return mParentBodyNode;
@@ -164,32 +200,71 @@ const BodyNode* EndEffector::getParentBodyNode() const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> EndEffector::getSkeleton()
-{
-  if(mParentBodyNode)
-    return mParentBodyNode->getSkeleton();
-
-  return nullptr;
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
-{
-  if(mParentBodyNode)
-    return mParentBodyNode->getSkeleton();
-
-  return nullptr;
-}
-
-//==============================================================================
-size_t EndEffector::getIndex() const
+size_t EndEffector::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
 }
 
 //==============================================================================
+const math::Jacobian& EndEffector::getJacobian() const
+{
+  if (mIsEffectorJacobianDirty)
+    updateEffectorJacobian();
+
+  return mEffectorJacobian;
+}
+
+//==============================================================================
+const math::Jacobian& EndEffector::getWorldJacobian() const
+{
+  if(mIsWorldJacobianDirty)
+    updateWorldJacobian();
+
+  return mWorldJacobian;
+}
+
+//==============================================================================
+const math::Jacobian& EndEffector::getJacobianSpatialDeriv() const
+{
+  if(mIsEffectorJacobianSpatialDerivDirty)
+    updateEffectorJacobianSpatialDeriv();
+
+  return mEffectorJacobianSpatialDeriv;
+}
+
+//==============================================================================
+const math::Jacobian& EndEffector::getJacobianClassicDeriv() const
+{
+  if(mIsWorldJacobianClassicDerivDirty)
+    updateWorldJacobianClassicDeriv();
+
+  return mWorldJacobianClassicDeriv;
+}
+
+//==============================================================================
+void EndEffector::notifyTransformUpdate()
+{
+  mIsEffectorJacobianDirty = true;
+  mIsWorldJacobianDirty = true;
+  mIsEffectorJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
+  Frame::notifyTransformUpdate();
+}
+
+//==============================================================================
+void EndEffector::notifyVelocityUpdate()
+{
+  mIsEffectorJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
+  Frame::notifyVelocityUpdate();
+}
+
+//==============================================================================
 EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
   : Entity(nullptr, "", false),
+    Frame(_parent, ""),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
     mParentBodyNode(nullptr),
     mIndexInSkeleton(0)
@@ -204,6 +279,53 @@ EndEffector* EndEffector::clone(BodyNode* _parent) const
   ee->copy(this);
 
   return ee;
+}
+
+//==============================================================================
+void EndEffector::updateEffectorJacobian() const
+{
+  mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
+                                      mParentBodyNode->getJacobian());
+  mIsEffectorJacobianDirty = false;
+}
+
+//==============================================================================
+void EndEffector::updateWorldJacobian() const
+{
+  mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
+
+  mIsWorldJacobianDirty = false;
+}
+
+//==============================================================================
+void EndEffector::updateEffectorJacobianSpatialDeriv() const
+{
+  mEffectorJacobianSpatialDeriv =
+      math::AdInvTJac(getRelativeTransform(),
+                      mParentBodyNode->getJacobianSpatialDeriv());
+
+  mIsEffectorJacobianSpatialDerivDirty = false;
+}
+
+//==============================================================================
+void EndEffector::updateWorldJacobianClassicDeriv() const
+{
+  const math::Jacobian& dJ_parent = mParentBodyNode->getJacobianClassicDeriv();
+  const math::Jacobian& J_parent = mParentBodyNode->getWorldJacobian();
+
+  const Eigen::Vector3d& v_local =
+      getLinearVelocity(mParentBodyNode, Frame::World());
+
+  const Eigen::Vector3d& w_parent = mParentBodyNode->getAngularVelocity();
+  const Eigen::Vector3d& p = (getWorldTransform().translation()
+                  - mParentBodyNode->getWorldTransform().translation()).eval();
+
+  mWorldJacobianClassicDeriv = dJ_parent;
+  mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
+      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
+      + dJ_parent.topRows<3>().colwise().cross(p);
+
+  mIsWorldJacobianClassicDerivDirty = false;
 }
 
 } // namespace dynamics

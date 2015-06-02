@@ -55,6 +55,7 @@
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNodePtr.h"
+#include "dart/dynamics/TemplatedJacobianEntity.impl"
 #include "dart/dynamics/Marker.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
@@ -83,7 +84,7 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode : public Frame
+class BodyNode : public TemplatedJacobianEntity<BodyNode>
 {
 public:
 
@@ -305,10 +306,10 @@ public:
   ConstShapePtr getCollisionShape(size_t _index) const;
 
   /// Return the Skeleton this BodyNode belongs to
-  std::shared_ptr<Skeleton> getSkeleton();
+  std::shared_ptr<Skeleton> getSkeleton() override;
 
   /// Return the (const) Skeleton this BodyNode belongs to
-  std::shared_ptr<const Skeleton> getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const override;
 
   /// Return the index of this BodyNode within its Skeleton
   size_t getIndexInSkeleton() const;
@@ -503,7 +504,7 @@ public:
   bool dependsOn(size_t _genCoordIndex) const;
 
   /// The number of the generalized coordinates by which this node is affected
-  size_t getNumDependentGenCoords() const;
+  size_t getNumDependentGenCoords() const override;
 
   /// Return a generalized coordinate index from the array index
   /// (< getNumDependentDofs)
@@ -511,7 +512,16 @@ public:
 
   /// Return a std::vector of generalized coordinate indices that this BodyNode
   /// depends on.
-  const std::vector<size_t>& getDependentGenCoordIndices() const;
+  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+
+  /// Same as getNumDependentGenCoords()
+  size_t getNumDependentDofs() const override;
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  DegreeOfFreedom* getDependentDof(size_t _index);
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  const DegreeOfFreedom* getDependentDof(size_t _index) const;
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
@@ -520,6 +530,10 @@ public:
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
   const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
+
+  /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
+  /// leading up to this BodyNode from the root of the Skeleton.
+  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -543,45 +557,17 @@ public:
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the Frame of this BodyNode.
-  const math::Jacobian& getJacobian() const;
+  const math::Jacobian& getJacobian() const override;
 
-  /// A version of getJacobian() that lets you specify a coordinate Frame to
-  /// express the Jacobian in.
-  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
-  /// coordinate Frame to express the Jacobian in.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
-                             const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobian functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobian;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the World Frame.
   const math::Jacobian& getWorldJacobian() const;
 
-  /// Return the generalized Jacobian targeting an offset in this BodyNode. The
-  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
-  /// expressed in the World Frame.
-  math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// Return the linear Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::LinearJacobian getLinearJacobian(
-      const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::LinearJacobian getLinearJacobian(
-      const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::AngularJacobian getAngularJacobian(
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getWorldJacobian functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getWorldJacobian;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
@@ -591,33 +577,10 @@ public:
   /// spatial vectors. If you are using classical linear and angular
   /// acceleration vectors, then use getJacobianClassicDeriv(),
   /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
-  const math::Jacobian& getJacobianSpatialDeriv() const;
+  const math::Jacobian& getJacobianSpatialDeriv() const override;
 
-  /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classical linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  math::Jacobian getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// Return the spatial time derivative of the generalized Jacobian targeting
-  /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
-  /// this BodyNode's coordinate Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classic linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  ///
-  /// \sa getJacobianSpatialDeriv()
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobianSpatialDeriv(const Eigen::Vector3d&) that allows
-  /// an arbitrary coordinate Frame to be specified.
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
-                                         const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobianSpatialDeriv;
 
   /// Return the classical time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in the World
@@ -626,51 +589,10 @@ public:
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
   /// use getJacobianSpatialDeriv() instead.
-  const math::Jacobian& getJacobianClassicDeriv() const;
+  const math::Jacobian& getJacobianClassicDeriv() const override;
 
-  /// A version of getJacobianClassicDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in the coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(
-      const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the linear Jacobian (classical) time derivative, in terms of any
-  /// coordinate Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-      const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-                          const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian time derivative, in terms of any coordinate
-  /// Frame.
-  math::AngularJacobian getAngularJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobianClassicDeriv;
 
   //----------------------------------------------------------------------------
   // Deprecated velocity, acceleration, and Jacobian functions
@@ -1270,7 +1192,7 @@ protected:
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial);
 
-  /// Update body Jacobian. getBodyJacobian() calls this function if
+  /// Update body Jacobian. getJacobian() calls this function if
   /// mIsBodyJacobianDirty is true.
   void updateBodyJacobian() const;
 
@@ -1284,7 +1206,7 @@ protected:
   void updateBodyJacobianSpatialDeriv() const;
 
   /// Update classic time derivative of body Jacobian.
-  /// getJacobianClassicTimeDeriv() calls this function if
+  /// getJacobianClassicDeriv() calls this function if
   /// mIsWorldJacobianClassicDerivDirty is true.
   void updateWorldJacobianClassicDeriv() const;
 

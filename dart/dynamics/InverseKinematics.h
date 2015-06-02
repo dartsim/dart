@@ -64,6 +64,8 @@ class InverseKinematics : public common::Subject
 {
 public:
 
+  InverseKinematics(JacobianEntity* _entity);
+
   /// Method is a base class for different InverseKinematics methods
   class ErrorMethod : public common::Subject
   {
@@ -82,7 +84,7 @@ public:
 
     void setBounds(
         const Eigen::Vector6d& _lower =
-            Eigen::Vector6d::Constant(DefaultIKTolerance),
+            Eigen::Vector6d::Constant(-DefaultIKTolerance),
         const Eigen::Vector6d& _upper =
             Eigen::Vector6d::Constant(DefaultIKTolerance));
 
@@ -92,7 +94,7 @@ public:
 
     void setAngularBounds(
         const Eigen::Vector3d& _lower =
-            Eigen::Vector3d::Constant(DefaultIKTolerance),
+            Eigen::Vector3d::Constant(-DefaultIKTolerance),
         const Eigen::Vector3d& _upper =
             Eigen::Vector3d::Constant(DefaultIKTolerance));
 
@@ -103,7 +105,7 @@ public:
 
     void setLinearBounds(
         const Eigen::Vector3d& _lower =
-            Eigen::Vector3d::Constant(DefaultIKTolerance),
+            Eigen::Vector3d::Constant(-DefaultIKTolerance),
         const Eigen::Vector3d& _upper =
             Eigen::Vector3d::Constant(DefaultIKTolerance));
 
@@ -150,13 +152,13 @@ public:
 
   };
 
-  class EulerAngleXYZMethod : public ErrorMethod
+  class TaskSpaceRegion : public ErrorMethod
   {
   public:
 
-    explicit EulerAngleXYZMethod(InverseKinematics* _ik);
+    explicit TaskSpaceRegion(InverseKinematics* _ik);
 
-    virtual ~EulerAngleXYZMethod() = default;
+    virtual ~TaskSpaceRegion() = default;
 
     virtual Eigen::Vector6d computeError() override;
 
@@ -244,9 +246,12 @@ public:
 
   size_t getHierarchyLevel() const;
 
-  void useLinkage();
+  void useChain();
 
   void useWholeBody();
+
+  template <class DegreeOfFreedomT>
+  void useDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
 
   void useDofs(const std::vector<size_t>& _dofs);
 
@@ -331,8 +336,6 @@ public:
 
 protected:
 
-  InverseKinematics(JacobianEntity* _entity);
-
   void initialize();
 
   void resetTargetConnection();
@@ -404,6 +407,18 @@ IKGradientMethod* InverseKinematics::setGradientMethod()
   IKGradientMethod* newMethod = new IKGradientMethod(this);
   mGradientMethod = std::move(std::unique_ptr<IKGradientMethod>(newMethod));
   return newMethod;
+}
+
+//==============================================================================
+template <class DegreeOfFreedomT>
+void InverseKinematics::useDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
+{
+  std::vector<size_t> indices;
+  indices.reserve(_dofs.size());
+  for(const DegreeOfFreedomT* dof : _dofs)
+    indices.push_back(dof->getIndexInSkeleton());
+
+  useDofs(indices);
 }
 
 } // namespace dynamics

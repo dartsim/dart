@@ -1642,6 +1642,31 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
+bool Skeleton::registerEndEffector(BodyNode* _parent,
+                                   EndEffector* _newEndEffector)
+{
+  if(this != _parent->getSkeleton().get())
+    return false;
+
+  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
+                                                mEndEffectors.end(),
+                                                _newEndEffector);
+
+  if(it != mEndEffectors.end())
+  {
+    dtwarn << "[Skeleton::registerEndEffector] Attempting to double-register "
+           << "an EndEffector. This is most likely a bug; please report this!\n";
+    return false;
+  }
+
+  mEndEffectors.push_back(_newEndEffector);
+  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+  addEntryToEndEffectorNameMgr(_newEndEffector);
+
+  return true;
+}
+
+//==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
@@ -1754,31 +1779,6 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = treeDofs[i];
     dof->mIndexInTree = i;
   }
-}
-
-//==============================================================================
-bool Skeleton::registerEndEffector(BodyNode* _parent,
-                                   EndEffector* _newEndEffector)
-{
-  if(this != _parent->getSkeleton().get())
-    return false;
-
-  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
-                                                mEndEffectors.end(),
-                                                _newEndEffector);
-
-  if(it != mEndEffectors.end())
-  {
-    dtwarn << "[Skeleton::registerEndEffector] Attempting to double-register "
-           << "an EndEffector. This is most likely a bug; please report this!\n";
-    return false;
-  }
-
-  mEndEffectors.push_back(_newEndEffector);
-  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
-  addEntryToEndEffectorNameMgr(_newEndEffector);
-
-  return true;
 }
 
 //==============================================================================
@@ -3149,7 +3149,8 @@ Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
 // derivatives
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
-    JacType (BodyNode::*getJacFn)(const Eigen::Vector3d&, const Frame*) const>
+    JacType (TemplatedJacobianEntity<BodyNode>::*getJacFn)(
+        const Eigen::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(const Skeleton* _skel,
                                const Frame* _inCoordinatesOf)
 {

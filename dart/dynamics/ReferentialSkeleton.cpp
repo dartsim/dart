@@ -873,7 +873,8 @@ Eigen::Vector3d ReferentialSkeleton::getCOMLinearAcceleration(
 // derivatives
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
-    JacType (BodyNode::*getJacFn)(const Eigen::Vector3d&, const Frame*) const>
+    JacType (TemplatedJacobianEntity<BodyNode>::*getJacFn)(
+        const Eigen::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(const ReferentialSkeleton* _refSkel,
                                const Frame* _inCoordinatesOf)
 {

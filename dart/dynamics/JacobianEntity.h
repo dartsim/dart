@@ -45,13 +45,23 @@ namespace dart {
 namespace dynamics {
 
 class Skeleton;
+class DegreeOfFreedom;
 
 /// The JacobianEntity class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
-class JacobianEntity : virtual public Frame
+class JacobianEntity : public virtual Frame
 {
 public:
+
+  /// This constructor only exists as a formality, because Entity and Frame
+  /// require it. Since this class is pure abstract and virutally inherits
+  /// Frame, the most derived class needs to call the constructor of Entity and
+  /// Frame anyway.
+  inline JacobianEntity() : Entity(nullptr, "", false), Frame(nullptr, "") { }
+
+  /// Virtual destructor
+  virtual ~JacobianEntity() = default;
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
@@ -67,7 +77,14 @@ public:
   virtual size_t getNumDependentGenCoords() const = 0;
 
   /// Indices of the generalized coordinates which affect this JacobianEntity
-  virtual const std::vector<size_t>& getDependentGenCoordIndices() const;
+  virtual const std::vector<size_t>& getDependentGenCoordIndices() const = 0;
+
+  /// Same as getNumDependentGenCoords()
+  virtual size_t getNumDependentDofs() const = 0;
+
+  /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
+  /// leading up to this JacobianEntity from the root of the Skeleton.
+  virtual const std::vector<const DegreeOfFreedom*> getChainDofs() const = 0;
 
   /// \}
 

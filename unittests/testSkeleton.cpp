@@ -823,6 +823,10 @@ TEST(Skeleton, Linkage)
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
 
+  // Using nullptr as the target should bring us towards the root of the tree
+  Chain upTowardsRoot(skel->getBodyNode("c1b3"), nullptr, "upTowardsRoot");
+  checkForBodyNodes(upTowardsRoot, skel, true, "c1b3", "c1b2");
+
   criteria.mTargets.clear();
   criteria.mTargets.push_back(skel->getBodyNode("c4b3"));
   criteria.mStart = skel->getBodyNode("c1b3");
