@@ -479,14 +479,29 @@ public:
           this, _jointProperties, _bodyProperties);
   }
 
+  /// Return the number of child bodynodes
+  size_t getNumChildBodyNodes() const;
+
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
 
   /// Return the (const) _index-th child BodyNode of this BodyNode
   const BodyNode* getChildBodyNode(size_t _index) const;
 
-  /// Return the number of child bodynodes
-  size_t getNumChildBodyNodes() const;
+  /// Return the number of EndEffectors attached to this BodyNode
+  size_t getNumEndEffectors() const;
+
+  /// Return an EndEffector attached to this BodyNode
+  EndEffector* getEndEffector(size_t _index);
+
+  /// Return an EndEffector attached to this BodyNode
+  const EndEffector* getEndEffector(size_t _index) const;
+
+  /// Create an EndEffector attached to this BodyNode
+  template <class EndEffectorT=EndEffector>
+  EndEffectorT* createEndEffector(
+      const typename EndEffectorT::Properties& _properties =
+          typename EndEffectorT::Properties());
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -990,6 +1005,7 @@ public:
 
   friend class Skeleton;
   friend class Joint;
+  friend class EndEffector;
   friend class SoftBodyNode;
   friend class PointMass;
   template<class> friend class TemplateBodyNodePtr;
@@ -1289,6 +1305,9 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
+  /// List of EndEffectors that are attached to this BodyNode
+  std::vector<EndEffector*> mEndEffectors;
+
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
@@ -1519,6 +1538,15 @@ SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
   skel->setName(_skeletonName);
   copyTo<JointType>(skel, nullptr, _joint, _recursive);
   return skel;
+}
+
+//==============================================================================
+template <class EndEffectorT>
+EndEffectorT* BodyNode::createEndEffector(
+    const typename EndEffectorT::Properties& _properties)
+{
+  EndEffectorT* ee = new EndEffectorT(this, _properties);
+  getSkeleton()->registerEndEffector(ee);
 }
 
 }  // namespace dynamics

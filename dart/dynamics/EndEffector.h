@@ -52,6 +52,7 @@ class EndEffector : public FixedFrame,
 public:
 
   friend class Skeleton;
+  friend class BodyNode;
 
   struct UniqueProperties
   {
@@ -73,6 +74,11 @@ public:
 
   /// Destructor
   virtual ~EndEffector();
+
+  /// Remove this EndEffector from existence. Note that this will affect the
+  /// indexing of all other EndEffectors that share the same BodyNode or
+  /// Skeleton.
+  void remove();
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
@@ -217,8 +223,11 @@ protected:
   /// The BodyNode that this EndEffector is rigidly attached to
   BodyNode* mParentBodyNode;
 
-  /// The index of this EndEffector within the Skeleton
+  /// The index of this EndEffector within its Skeleton
   size_t mIndexInSkeleton;
+
+  /// The index of this EndEffector within its BodyNode
+  size_t mIndexInBodyNode;
 
   /// Cached Jacobian of this EndEffector
   ///

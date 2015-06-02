@@ -845,7 +845,7 @@ protected:
   void registerJoint(Joint* _newJoint);
 
   /// Register an EndEffector with the Skeleton. Internal use only.
-  bool registerEndEffector(BodyNode* _parent, EndEffector* _newEndEffector);
+  void registerEndEffector(EndEffector* _newEndEffector);
 
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);

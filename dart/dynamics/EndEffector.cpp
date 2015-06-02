@@ -67,6 +67,26 @@ EndEffector::~EndEffector()
 }
 
 //==============================================================================
+void EndEffector::remove()
+{
+  size_t index = mIndexInBodyNode;
+  assert(mParentBodyNode->mEndEffectors[index] == this);
+
+  mParentBodyNode->mEndEffectors.erase(
+        mParentBodyNode->mEndEffectors.begin()+index);
+
+  for(size_t i=index; i<mParentBodyNode->mEndEffectors.size(); ++i)
+  {
+    EndEffector* ee = mParentBodyNode->mEndEffectors[i];
+    ee->mIndexInBodyNode = i;
+  }
+
+  getSkeleton()->unregisterEndEffector(this);
+
+  delete this;
+}
+
+//==============================================================================
 void EndEffector::setProperties(const Properties& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
@@ -266,10 +286,14 @@ EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
   : Entity(nullptr, "", false),
     Frame(_parent, ""),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
-    mParentBodyNode(nullptr),
-    mIndexInSkeleton(0)
+    mParentBodyNode(_parent),
+    mIndexInSkeleton(0),
+    mIndexInBodyNode(0)
 {
   setProperties(_properties);
+
+  _parent->mEndEffectors.push_back(this);
+  mIndexInBodyNode = _parent->mEndEffectors.size()-1;
 }
 
 //==============================================================================

@@ -164,7 +164,7 @@ SkeletonPtr Skeleton::clone() const
     // Grab the clone of the original parent
     BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
 
-    skelClone->registerEndEffector(parentClone, originalEE->clone(parentClone));
+    skelClone->registerEndEffector(originalEE->clone(parentClone));
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -1567,6 +1567,9 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   _newBodyNode->init(getPtr());
 
+  for(EndEffector* ee : mEndEffectors)
+    registerEndEffector(ee);
+
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
@@ -1642,34 +1645,37 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-bool Skeleton::registerEndEffector(BodyNode* _parent,
-                                   EndEffector* _newEndEffector)
+void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
 {
-  if(this != _parent->getSkeleton().get())
-    return false;
-
+#ifndef NDEBUG // Debug mode
   std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
                                                 mEndEffectors.end(),
                                                 _newEndEffector);
 
   if(it != mEndEffectors.end())
   {
-    dtwarn << "[Skeleton::registerEndEffector] Attempting to double-register "
-           << "an EndEffector. This is most likely a bug; please report this!\n";
-    return false;
+    dterr << "[Skeleton::registerEndEffector] Attempting to double-register "
+           << "an EndEffector named [" << _newEndEffector->getName() << "] ("
+           << _newEndEffector << ") in the Skeleton named [" << getName()
+           << "] (" << this << "). This is most likely a bug; please report "
+           << "this!\n";
+    assert(false);
+    return;
   }
+#endif // ------- Debug mode
 
   mEndEffectors.push_back(_newEndEffector);
   _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
   addEntryToEndEffectorNameMgr(_newEndEffector);
-
-  return true;
 }
 
 //==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
+
+  for(EndEffector* ee : mEndEffectors)
+    unregisterEndEffector(ee);
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
@@ -1778,6 +1784,20 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
   {
     DegreeOfFreedom* dof = treeDofs[i];
     dof->mIndexInTree = i;
+  }
+}
+
+//==============================================================================
+void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
+{
+  size_t index = _oldEndEffector->getIndexInSkeleton();
+  assert(mEndEffectors[index] == _oldEndEffector);
+  mEndEffectors.erase(mEndEffectors.begin() + index);
+
+  for(size_t i=index; i < mEndEffectors.size(); ++i)
+  {
+    EndEffector* ee = mEndEffectors[i];
+    ee->mIndexInSkeleton = i;
   }
 }
 
