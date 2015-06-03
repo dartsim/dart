@@ -113,7 +113,6 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(0, 2) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     z = atan2(_R(1, 0), _R(1, 1));
     y = DART_PI_HALF;
     x = 0.0;
@@ -121,7 +120,6 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(0, 2) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     z = atan2(_R(1, 0), _R(1, 1));
     y = -DART_PI_HALF;
     x = 0.0;
@@ -140,7 +138,6 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(2, 0) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     x = atan2(_R(0, 1), _R(0, 2));
     y = -DART_PI_HALF;
     z = 0.0;
@@ -148,7 +145,6 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(2, 0) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     x = atan2(_R(0, 1), _R(0, 2));
     y = DART_PI_HALF;
     z = 0.0;
@@ -167,7 +163,6 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(0, 1) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     y = atan2(_R(1, 2), _R(1, 0));
     z = -DART_PI_HALF;
     x = 0.0;
@@ -175,7 +170,6 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(0, 1) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     y = atan2(_R(1, 2), _R(1, 0));
     z = DART_PI_HALF;
     x = 0.0;
@@ -194,7 +188,6 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(1, 0) > (1.0 - DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     x = -atan2(_R(0, 2), _R(0, 1));
     z = DART_PI_HALF;
     y = 0.0;
@@ -202,7 +195,6 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(1, 0) < -(1.0 - DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     x = -atan2(_R(0, 2), _R(0, 1));
     z = -DART_PI_HALF;
     y = 0.0;
@@ -221,7 +213,6 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(2, 1) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     y = atan2(_R(0, 2), _R(0, 0));
     x = DART_PI_HALF;
     z = 0.0;
@@ -229,7 +220,6 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(2, 1) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     y = atan2(_R(0, 2), _R(0, 0));
     x = -DART_PI_HALF;
     z = 0.0;
@@ -248,7 +238,6 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(1, 2) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     z = -atan2(_R(0, 1), _R(0, 0));
     x = -DART_PI_HALF;
     y = 0.0;
@@ -256,7 +245,6 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(1, 2) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     z = -atan2(_R(0, 1), _R(0, 0));
     x = DART_PI_HALF;
     y = 0.0;
@@ -1415,8 +1403,8 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
   if (fabs(_m(0, 0)) > DART_EPSILON
       || fabs(_m(1, 1)) > DART_EPSILON
       || fabs(_m(2, 2)) > DART_EPSILON) {
-    std::cout << "Not skew symmetric matrix" << std::endl;
-    std::cerr << _m << std::endl;
+    dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
+           << _m << "\n";
     return Eigen::Vector3d::Zero();
   }
 #endif

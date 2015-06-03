@@ -184,9 +184,14 @@ public:
 
   void clampToBoundary(Eigen::VectorXd& _x);
 
+  /// Get the number of iterations used in the last attempt to solve the problem
+  size_t getLastNumIterations() const;
+
 protected:
 
   UniqueProperties mGradientP;
+
+  size_t mLastNumIterations;
 
   std::random_device mRD;
   std::mt19937 mMT;

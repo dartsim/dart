@@ -40,14 +40,38 @@
 namespace dart {
 namespace dynamics {
 
+//===============================================================================
+InverseKinematics::InverseKinematics(JacobianEntity* _entity)
+  : mActive(false),
+    mHierarchyLevel(0),
+    mEntity(_entity)
+{
+  initialize();
+}
+
+//==============================================================================
+InverseKinematics::~InverseKinematics()
+{
+  mTargetConnection.disconnect();
+  mEntityConnection.disconnect();
+
+  mOverallObjective->clearCostFunction(true);
+  mOverallObjective->clearGradientFunction();
+  mOverallObjective->clearHessianFunction();
+
+  mConstraint->clearCostFunction(true);
+  mConstraint->clearGradientFunction();
+  mConstraint->clearHessianFunction();
+}
+
 //==============================================================================
 InverseKinematics::ErrorMethod::ErrorMethod(InverseKinematics* _ik,
     const std::string& _methodName)
   : mIK(_ik),
     mMethodName(_methodName),
     mLastError(Eigen::Vector6d::Constant(std::nan(""))),
-    mBounds(Eigen::Vector6d::Constant(DefaultIKTolerance),
-            Eigen::Vector6d::Constant(DefaultIKTolerance)),
+    mBounds(Eigen::Vector6d::Constant(-DefaultIKTolerance),
+            Eigen::Vector6d::Constant( DefaultIKTolerance)),
     mErrorLengthClamp(DefaultIKErrorClamp)
 {
   setAngularErrorWeights();
@@ -276,21 +300,36 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   Eigen::Vector6d error;
   const Eigen::Vector6d& min = this->mBounds.first;
   const Eigen::Vector6d& max = this->mBounds.second;
+  double tolerance = mIK->getSolver()->getTolerance();
   for(int i=0; i<6; ++i)
   {
     if( displacement[i] < min[i] )
     {
-      if(mComputeErrorFromCenter && !std::isinf(max[i]))
-        error[i] = displacement[i] - (min[i]+max[i])/2.0;
+      if(mComputeErrorFromCenter)
+      {
+        if(!std::isinf(max[i]))
+          error[i] = displacement[i] - (min[i]+max[i])/2.0;
+        else
+          error[i] = displacement[i] - (min[i]+tolerance);
+      }
       else
+      {
         error[i] = displacement[i] - min[i];
+      }
     }
     else if( max[i] < displacement[i] )
     {
       if(mComputeErrorFromCenter && !std::isinf(min[i]))
-        error[i] = displacement[i] - (min[i]+max[i])/2.0;
+      {
+        if(!std::isinf(min[i]))
+          error[i] = displacement[i] - (min[i]+max[i])/2.0;
+        else
+          error[i] = displacement[i] - (max[i]-tolerance);
+      }
       else
+      {
         error[i] = displacement[i] - max[i];
+      }
     }
     else
       error[i] = 0.0;
@@ -797,30 +836,6 @@ void InverseKinematics::clearCaches()
 }
 
 //==============================================================================
-InverseKinematics::~InverseKinematics()
-{
-  mTargetConnection.disconnect();
-  mEntityConnection.disconnect();
-
-  mOverallObjective->clearCostFunction(true);
-  mOverallObjective->clearGradientFunction();
-  mOverallObjective->clearHessianFunction();
-
-  mConstraint->clearCostFunction(true);
-  mConstraint->clearGradientFunction();
-  mConstraint->clearHessianFunction();
-}
-
-//===============================================================================
-InverseKinematics::InverseKinematics(JacobianEntity* _entity)
-  : mActive(false),
-    mHierarchyLevel(0),
-    mEntity(_entity)
-{
-  initialize();
-}
-
-//==============================================================================
 void InverseKinematics::initialize()
 {
   // Default to having no objectives
@@ -856,7 +871,10 @@ void InverseKinematics::initialize()
   useChain();
 
   // Default to the native DART gradient descent solver
-  mSolver = std::make_shared<optimizer::GradientDescentSolver>(mProblem);
+  std::shared_ptr<optimizer::GradientDescentSolver> solver =
+      std::make_shared<optimizer::GradientDescentSolver>(mProblem);
+  solver->setStepSize(1.0);
+  mSolver = solver;
 }
 
 //==============================================================================

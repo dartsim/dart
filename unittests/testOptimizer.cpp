@@ -38,11 +38,15 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
+#include "TestHelpers.h"
 #include "dart/config.h"
 #include "dart/common/Console.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/GradientDescentSolver.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/InverseKinematics.h"
 #ifdef HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.h"
 #endif
@@ -56,6 +60,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace dart::optimizer;
+using namespace dart::dynamics;
 
 //==============================================================================
 /// \brief class SampleObjFunc
@@ -211,6 +216,33 @@ TEST(Optimizer, BasicSnopt)
   return;
 }
 #endif
+
+//==============================================================================
+TEST(Optimizer, InverseKinematics)
+{
+  // Very simple test of InverseKinematics module, applied to a FreeJoint to
+  // ensure that the target is reachable
+
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  InverseKinematics ik(skel->getBodyNode(0));
+
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
+  tf.rotate(Eigen::AngleAxisd(M_PI/8, Eigen::Vector3d(0, 1, 0)));
+  ik.getTarget()->setTransform(tf);
+
+  ik.getErrorMethod()->setBounds(Eigen::Vector6d::Constant(-1e-8),
+                                 Eigen::Vector6d::Constant( 1e-8));
+
+  ik.getSolver()->setNumMaxIterations(100);
+
+  EXPECT_TRUE(ik.getSolver()->solve());
+
+  EXPECT_TRUE(equals(ik.getTarget()->getTransform().matrix(),
+                     skel->getBodyNode(0)->getTransform().matrix(), 1e-8));
+}
 
 //==============================================================================
 int main(int argc, char* argv[])

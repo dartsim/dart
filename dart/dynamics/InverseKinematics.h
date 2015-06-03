@@ -56,7 +56,11 @@ namespace dart {
 namespace dynamics {
 
 const double DefaultIKTolerance = 1e-6;
-const double DefaultIKErrorClamp = 0.2;
+const double DefaultIKErrorClamp = 1.0;
+const double DefaultIKGradientComponentClamp = 0.2;
+const double DefaultIKDLSCoefficient = 0.05;
+const double DefaultIKAngularWeight = 0.4;
+const double DefaultIKLinearWeight = 1.0;
 
 /// The inverse kinematics class is templated to operate on either a BodyNode
 /// or an EndEffector
@@ -65,6 +69,8 @@ class InverseKinematics : public common::Subject
 public:
 
   InverseKinematics(JacobianEntity* _entity);
+
+  virtual ~InverseKinematics();
 
   /// ErrorMethod is a base class for different ways of computing the error of
   /// an InverseKinematics module
@@ -87,7 +93,7 @@ public:
         const Eigen::Vector6d& _lower =
             Eigen::Vector6d::Constant(-DefaultIKTolerance),
         const Eigen::Vector6d& _upper =
-            Eigen::Vector6d::Constant(DefaultIKTolerance));
+            Eigen::Vector6d::Constant( DefaultIKTolerance));
 
     void setBounds(const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds);
 
@@ -124,12 +130,14 @@ public:
     const Eigen::Vector6d& getErrorWeights() const;
 
     void setAngularErrorWeights(
-        const Eigen::Vector3d& _weights = Eigen::Vector3d::Constant(0.2));
+        const Eigen::Vector3d& _weights =
+          Eigen::Vector3d::Constant(DefaultIKAngularWeight));
 
     Eigen::Vector3d getAngularErrorWeights() const;
 
     void setLinearErrorWeights(
-        const Eigen::Vector3d& _weights = Eigen::Vector3d::Constant(1.0));
+        const Eigen::Vector3d& _weights =
+          Eigen::Vector3d::Constant(DefaultIKLinearWeight));
 
     Eigen::Vector3d getLinearErrorWeights() const;
 
@@ -185,7 +193,7 @@ public:
 
     void clampGradient(Eigen::VectorXd& _grad) const;
 
-    void setComponentWiseClamp(double _clamp = 0.2);
+    void setComponentWiseClamp(double _clamp = DefaultIKGradientComponentClamp);
 
     double getComponentWiseClamp() const;
 
@@ -216,7 +224,7 @@ public:
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) override;
 
-    void setDampingCoefficient(double _damping = 0.05);
+    void setDampingCoefficient(double _damping = DefaultIKDLSCoefficient);
 
     double getDampingCoefficient() const;
 
@@ -333,10 +341,9 @@ public:
 
   void clearCaches();
 
-  virtual ~InverseKinematics();
-
 protected:
 
+  /// Gets called during construction
   void initialize();
 
   void resetTargetConnection();

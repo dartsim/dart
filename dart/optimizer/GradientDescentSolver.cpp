@@ -122,12 +122,15 @@ bool GradientDescentSolver::solve()
   Eigen::VectorXd grad(x.size());
   std::vector<bool> ineqViolated(problem->getNumIneqConstraints());
 
+  mLastNumIterations = 0;
   size_t attemptCount = 0;
   do
   {
     size_t stepCount = 0;
     do
     {
+      ++mLastNumIterations;
+
       Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
 
       // Perturb the configuration if we have reached an iteration where we are
@@ -443,6 +446,12 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     else if( mProperties.mProblem->getUpperBounds()[i] < _x[i] )
       _x[i] = mProperties.mProblem->getUpperBounds()[i];
   }
+}
+
+//==============================================================================
+size_t GradientDescentSolver::getLastNumIterations() const
+{
+  return mLastNumIterations;
 }
 
 } // namespace optimizer
