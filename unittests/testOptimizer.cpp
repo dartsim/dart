@@ -162,14 +162,14 @@ TEST(Optimizer, BasicNlopt)
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
 
-  NloptSolver solver(prob, NLOPT_LD_MMA);
-  solver.solve();
+  NloptSolver solver(prob, nlopt::LD_MMA);
+  EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
   Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), prob->getDimension());
+  EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }

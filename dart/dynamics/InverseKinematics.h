@@ -319,6 +319,8 @@ public:
 
   void resetProblem(bool _clearSeeds=false);
 
+  /// Set the Solver that should be used by this IK module, and set it up with
+  /// the Problem configured by this IK module
   void setSolver(std::shared_ptr<optimizer::Solver> _newSolver);
 
   const std::shared_ptr<optimizer::Solver>& getSolver();

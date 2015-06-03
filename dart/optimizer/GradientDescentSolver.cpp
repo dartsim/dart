@@ -265,7 +265,7 @@ bool GradientDescentSolver::solve()
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getLastConfiguration() const
+Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const
 {
   return mLastConfig;
 }

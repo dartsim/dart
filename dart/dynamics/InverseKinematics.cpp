@@ -742,6 +742,10 @@ void InverseKinematics::resetProblem(bool _clearSeeds)
 void InverseKinematics::setSolver(std::shared_ptr<optimizer::Solver> _newSolver)
 {
   mSolver = _newSolver;
+  if(nullptr == mSolver)
+    return;
+
+  mSolver->setProblem(getProblem());
 }
 
 //==============================================================================
