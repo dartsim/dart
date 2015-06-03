@@ -40,7 +40,6 @@
 
 #include <string>
 #include <vector>
-#include <atomic>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -83,7 +82,7 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode : public Frame
+class BodyNode : public Frame, public SkeletonRefCountingBase
 {
 public:
 
@@ -306,12 +305,6 @@ public:
 
   /// Return (const) _index-th collision shape
   ConstShapePtr getCollisionShape(size_t _index) const;
-
-  /// Return the Skeleton this BodyNode belongs to
-  std::shared_ptr<Skeleton> getSkeleton();
-
-  /// Return the (const) Skeleton this BodyNode belongs to
-  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Return the index of this BodyNode within its Skeleton
   size_t getIndexInSkeleton() const;
@@ -1080,8 +1073,6 @@ public:
   friend class Joint;
   friend class SoftBodyNode;
   friend class PointMass;
-  template<class> friend class TemplateBodyNodePtr;
-  template<class> friend class TemplateWeakBodyNodePtr;
 
 protected:
 
@@ -1300,20 +1291,6 @@ protected:
 
   /// \}
 
-private:
-
-  //--------------------------------------------------------------------------
-  // Reference counting
-  //--------------------------------------------------------------------------
-
-  /// Atomically increment the reference count for this BodyNode. This should
-  /// only be called by the BodyNodePtr class
-  void incrementReferenceCount() const;
-
-  /// Atomically decrement the reference count for this BodyNode. This should
-  /// only be called by the BodyNodePtr class
-  void decrementReferenceCount() const;
-
 protected:
 
   //--------------------------------------------------------------------------
@@ -1335,25 +1312,6 @@ protected:
   //--------------------------------------------------------------------------
   // Structural Properties
   //--------------------------------------------------------------------------
-
-  /// Weak pointer to the Skeleton this BodyNode belongs to.
-  std::weak_ptr<Skeleton> mSkeleton;
-
-  /// Reference count for the number of BodyNodePtrs that are referring to this
-  /// BodyNode
-  mutable std::atomic<int> mReferenceCount;
-
-  /// If mReferenceCount is zero, then mReferenceSkeleton will hold a nullptr.
-  /// If mReferenceCount is greater than zero, then mReferenceSkeleton will hold
-  /// a shared_ptr to the Skeleton that this BodyNode belongs to. This is to
-  /// keep this BodyNode alive, so long as a BodyNodePtr that references it
-  /// exists.
-  mutable std::shared_ptr<Skeleton> mReferenceSkeleton;
-
-  /// Shared reference to a weak_ptr of this BodyNode's Skeleton, along with a
-  /// mutex to ensure thread safety. This is used by WeakBodyNodePtrs to know
-  /// when this BodyNode has expired.
-  std::shared_ptr<MutexedWeakSkeletonPtr> mLockedSkeleton;
 
   /// Index of this BodyNode in its Skeleton
   size_t mIndexInSkeleton;
@@ -1524,11 +1482,6 @@ public:
 
   /// \}
 };
-
-typedef TemplateBodyNodePtr<BodyNode> BodyNodePtr;
-typedef TemplateBodyNodePtr<const BodyNode> ConstBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<BodyNode> WeakBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<const BodyNode> WeakConstBodyNodePtr;
 
 //==============================================================================
 template <class JointType>

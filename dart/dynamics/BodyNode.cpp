@@ -53,6 +53,42 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
+SkeletonRefCountingBase::SkeletonRefCountingBase()
+  : mReferenceCount(0),
+    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>())
+{
+  // Do nothing
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::incrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
+  if(0 == previous)
+    mReferenceSkeleton = mSkeleton.lock();
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::decrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
+  if(1 == previous)
+    mReferenceSkeleton = nullptr;
+}
+
+//==============================================================================
+std::shared_ptr<Skeleton> SkeletonRefCountingBase::getSkeleton()
+{
+  return mSkeleton.lock();
+}
+
+//==============================================================================
+std::shared_ptr<const Skeleton> SkeletonRefCountingBase::getSkeleton() const
+{
+  return mSkeleton.lock();
+}
+
 /// SKEL_SET_FLAGS : Lock a Skeleton pointer and activate dirty flags of X for
 /// the tree that this BodyNode belongs to, as well as the flag for the Skeleton
 /// overall
@@ -514,18 +550,6 @@ ShapePtr BodyNode::getCollisionShape(size_t _index)
 ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
 {
   return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
-}
-
-//==============================================================================
-std::shared_ptr<Skeleton> BodyNode::getSkeleton()
-{
-  return mSkeleton.lock();
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> BodyNode::getSkeleton() const
-{
-  return mSkeleton.lock();
 }
 
 //==============================================================================
@@ -1333,8 +1357,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
-    mReferenceCount(0),
-    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>()),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mIsBodyJacobianDirty(true),
@@ -2571,22 +2593,6 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
         - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
-}
-
-//==============================================================================
-void BodyNode::incrementReferenceCount() const
-{
-  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
-  if(0 == previous)
-    mReferenceSkeleton = mSkeleton.lock();
-}
-
-//==============================================================================
-void BodyNode::decrementReferenceCount() const
-{
-  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
-  if(1 == previous)
-    mReferenceSkeleton = nullptr;
 }
 
 }  // namespace dynamics
