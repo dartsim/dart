@@ -144,16 +144,10 @@ simulation::WorldPtr DartLoader::parseWorldString(
     dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
     Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
 
-    if(dynamic_cast<dynamics::FreeJoint*>(rootJoint))
-    {
-        Eigen::Vector6d coordinates;
-        coordinates << math::logMap(transform.linear()), transform.translation();
-        rootJoint->setPositions(coordinates);
-    }
+    if (dynamic_cast<dynamics::FreeJoint*>(rootJoint))
+      rootJoint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
     else
-    {
-        rootJoint->setTransformFromParentBodyNode(transform);
-    }
+      rootJoint->setTransformFromParentBodyNode(transform);
 
     world->addSkeleton(skeleton);
   }
