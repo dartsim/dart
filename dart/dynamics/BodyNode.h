@@ -481,14 +481,23 @@ public:
           this, _jointProperties, _bodyProperties);
   }
 
+  /// Return the number of child BodyNodes
+  size_t getNumChildBodyNodes() const;
+
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
 
   /// Return the (const) _index-th child BodyNode of this BodyNode
   const BodyNode* getChildBodyNode(size_t _index) const;
 
-  /// Return the number of child bodynodes
-  size_t getNumChildBodyNodes() const;
+  /// Return the number of child Joints
+  size_t getNumChildJoints() const;
+
+  /// Return the _index-th child Joint of this BodyNode
+  Joint* getChildJoint(size_t _index);
+
+  /// Return the (const) _index-th child Joint of this BodyNode
+  const Joint* getChildJoint(size_t _index) const;
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);

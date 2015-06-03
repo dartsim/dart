@@ -214,7 +214,7 @@ public:
   /// Get the (const) parent BodyNode of this Joint
   const BodyNode* getParentBodyNode() const;
 
-  /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
+  /// Get the Skeleton that this Joint belongs to
   std::shared_ptr<Skeleton> getSkeleton();
 
   /// Get the (const) Skeleton that this Joint belongs to.
@@ -632,6 +632,10 @@ protected:
   virtual void registerDofs() = 0;
 
   /// Initialize this joint. This function is called by BodyNode::init()
+  ///
+  /// Note: This function is being deprecated due to lack of use. If this is
+  /// something you need for a custom Joint type, please inform us on Github.
+  DEPRECATED(5.0)
   virtual void init(std::shared_ptr<Skeleton> _skel);
 
   /// \brief Create a DegreeOfFreedom pointer.

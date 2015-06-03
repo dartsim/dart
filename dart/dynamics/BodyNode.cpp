@@ -699,6 +699,12 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
+size_t BodyNode::getNumChildBodyNodes() const
+{
+  return mChildBodyNodes.size();
+}
+
+//==============================================================================
 BodyNode* BodyNode::getChildBodyNode(size_t _index)
 {
   return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
@@ -711,9 +717,26 @@ const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 }
 
 //==============================================================================
-size_t BodyNode::getNumChildBodyNodes() const
+size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
+}
+
+//==============================================================================
+Joint* BodyNode::getChildJoint(size_t _index)
+{
+  BodyNode* childBodyNode = getChildBodyNode(_index);
+
+  if(childBodyNode)
+    return childBodyNode->getParentJoint();
+  else
+    return nullptr;
+}
+
+//==============================================================================
+const Joint* BodyNode::getChildJoint(size_t _index) const
+{
+  return const_cast<BodyNode*>(this)->getChildJoint(_index);
 }
 
 //==============================================================================
