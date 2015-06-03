@@ -45,7 +45,9 @@ namespace optimizer {
 /// DefaultSolver is a Solver extension which is native to DART (rather than
 /// relying on third-party libraries). It uses randomized gradient descent and
 /// softened constraints (i.e. constraint functions are added into the
-/// objective function and assigned weights) to solve nonlinear problems.
+/// objective function and assigned weights) to solve nonlinear problems. Note
+/// that this is not a good option for Problems with difficult constraint
+/// functions that need to be solved exactly.
 class GradientDescentSolver : public Solver
 {
 public:
