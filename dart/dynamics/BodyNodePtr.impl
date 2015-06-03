@@ -33,8 +33,9 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_DYNAMICS_BODYNODEPTR_H_
-#define DART_DYNAMICS_BODYNODEPTR_H_
+
+#ifndef DART_DYNAMICS_BODYNODEPTR_IMPL_
+#define DART_DYNAMICS_BODYNODEPTR_IMPL_
 
 #include <memory>
 #include <mutex>
@@ -174,16 +175,16 @@ public:
 
     // Get a shared_ptr to each Skeleton before making any modifications to the
     // reference counts
-    std::shared_ptr<const Skeleton> old_skeleton = mPtr == nullptr ? nullptr :
-          reinterpret_cast<const SkeletonRefCountingBase*>(mPtr)->getSkeleton();
+    std::shared_ptr<const Skeleton> old_skeleton = (mPtr == nullptr)? nullptr :
+          static_cast<const SkeletonRefCountingBase*>(mPtr)->getSkeleton();
 
-    std::shared_ptr<const Skeleton> new_skeleton = _ptr == nullptr ? nullptr :
-          reinterpret_cast<const SkeletonRefCountingBase*>(_ptr)->getSkeleton();
+    std::shared_ptr<const Skeleton> new_skeleton = (_ptr == nullptr)? nullptr :
+          static_cast<const SkeletonRefCountingBase*>(_ptr)->getSkeleton();
 
     if(nullptr != mPtr)
     {
       if(nullptr != old_skeleton)
-        reinterpret_cast<const SkeletonRefCountingBase*>(mPtr)->
+        static_cast<const SkeletonRefCountingBase*>(mPtr)->
           decrementReferenceCount();
 
       mPtr = nullptr;
@@ -192,7 +193,7 @@ public:
     if(nullptr != new_skeleton)
     {
       mPtr = _ptr;
-      reinterpret_cast<const SkeletonRefCountingBase*>(_ptr)->
+      static_cast<const SkeletonRefCountingBase*>(_ptr)->
           incrementReferenceCount();
     }
   }
@@ -274,7 +275,7 @@ public:
     if(nullptr == mPtr)
       mLocker = nullptr;
     else
-      mLocker = reinterpret_cast<const SkeletonRefCountingBase*>(_ptr)->
+      mLocker = static_cast<const SkeletonRefCountingBase*>(_ptr)->
           mLockedSkeleton;
   }
 
@@ -333,14 +334,8 @@ private:
   std::shared_ptr<MutexedWeakSkeletonPtr> mLocker;
 };
 
-class BodyNode;
-
-typedef TemplateBodyNodePtr<BodyNode> BodyNodePtr;
-typedef TemplateBodyNodePtr<const BodyNode> ConstBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<BodyNode> WeakBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<const BodyNode> WeakConstBodyNodePtr;
 
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_BODYNODEPTR_H_
+#endif // DART_DYNAMICS_BODYNODEPTR_IMPL_

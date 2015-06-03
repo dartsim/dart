@@ -40,8 +40,7 @@
 #include <unordered_map>
 
 #include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace dynamics {

@@ -45,14 +45,7 @@
 
 #include "dart/collision/CollisionNode.h"
 #include "dart/common/sub_ptr.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-class Skeleton;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace collision {

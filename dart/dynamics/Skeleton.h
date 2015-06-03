@@ -41,6 +41,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace renderer {
@@ -1129,12 +1130,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-//==============================================================================
-typedef std::shared_ptr<Skeleton> SkeletonPtr;
-typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
-typedef std::weak_ptr<Skeleton> WeakSkeletonPtr;
-typedef std::weak_ptr<const Skeleton> WeakConstSkeletonPtr;
 
 //==============================================================================
 template <class JointType>

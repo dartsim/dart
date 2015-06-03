@@ -35,6 +35,7 @@
  */
 
 #include "dart/dynamics/ReferentialSkeleton.h"
+#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
