@@ -103,7 +103,7 @@ public:
     UniqueProperties(
         double _stepMultiplier = 0.1,
         size_t _maxAttempts = 1,
-        size_t _perturbationStep = 100,
+        size_t _perturbationStep = 0,
         double _maxPerturbationFactor = 1.0,
         double _maxRandomizationStep = 1e10,
         double _defaultConstraintWeight = 1.0,
@@ -129,6 +129,9 @@ public:
 
   // Documentation inherited
   virtual bool solve() override;
+
+  // Documentation inherited
+  const Eigen::VectorXd& getLastConfiguration() const override;
 
   // Documentation inherited
   virtual std::string getType() const override;
@@ -186,6 +189,8 @@ protected:
   std::random_device mRD;
   std::mt19937 mMT;
   std::uniform_real_distribution<double> mDistribution;
+
+  Eigen::VectorXd mLastConfig;
 };
 
 } // namespace optimizer

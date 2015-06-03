@@ -42,6 +42,7 @@
 #include "dart/common/Console.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
+#include "dart/optimizer/GradientDescentSolver.h"
 #ifdef HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.h"
 #endif
@@ -68,14 +69,14 @@ public:
   virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  virtual double eval(const Eigen::VectorXd& _x) override
   {
     return std::sqrt(_x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad)
+  virtual void evalGradient(const Eigen::VectorXd& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -93,14 +94,14 @@ public:
   virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  virtual double eval(const Eigen::VectorXd& _x) override
   {
     return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad)
+  virtual void evalGradient(const Eigen::VectorXd& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
     _grad[1] = -1.0;
@@ -113,6 +114,29 @@ private:
   /// \brief Data
   double mB;
 };
+
+//==============================================================================
+TEST(Optimizer, GradientDescent)
+{
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
+
+  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  FunctionPtr obj = std::make_shared<SampleObjFunc>();
+  prob->setObjective(obj);
+
+  GradientDescentSolver solver(prob);
+  EXPECT_TRUE(solver.solve());
+
+  double minF = prob->getOptimumValue();
+  Eigen::VectorXd optX = prob->getOptimalSolution();
+
+  EXPECT_NEAR(minF, 0, 1e-6);
+  EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
+  EXPECT_NEAR(optX[0], 1.234, 0.0);
+  EXPECT_NEAR(optX[1], 0.0, solver.getTolerance());
+}
 
 //==============================================================================
 #ifdef HAVE_NLOPT

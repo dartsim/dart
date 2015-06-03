@@ -66,7 +66,8 @@ public:
 
   InverseKinematics(JacobianEntity* _entity);
 
-  /// Method is a base class for different InverseKinematics methods
+  /// ErrorMethod is a base class for different ways of computing the error of
+  /// an InverseKinematics module
   class ErrorMethod : public common::Subject
   {
   public:
@@ -96,7 +97,7 @@ public:
         const Eigen::Vector3d& _lower =
             Eigen::Vector3d::Constant(-DefaultIKTolerance),
         const Eigen::Vector3d& _upper =
-            Eigen::Vector3d::Constant(DefaultIKTolerance));
+            Eigen::Vector3d::Constant( DefaultIKTolerance));
 
     void setAngularBounds(
         const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds);
@@ -107,7 +108,7 @@ public:
         const Eigen::Vector3d& _lower =
             Eigen::Vector3d::Constant(-DefaultIKTolerance),
         const Eigen::Vector3d& _upper =
-            Eigen::Vector3d::Constant(DefaultIKTolerance));
+            Eigen::Vector3d::Constant( DefaultIKTolerance));
 
     void setLinearBounds(
         const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds);
