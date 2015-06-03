@@ -40,7 +40,7 @@
 
 #include <map>
 #include <sstream>
-#include <assert.h>
+#include <cassert>
 #include "dart/common/Console.h"
 
 namespace dart {
