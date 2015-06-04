@@ -413,7 +413,7 @@ SkeletonPtr DegreeOfFreedom::getSkeleton()
 }
 
 //==============================================================================
-std::shared_ptr<const Skeleton> DegreeOfFreedom::getSkeleton() const
+ConstSkeletonPtr DegreeOfFreedom::getSkeleton() const
 {
   return mJoint->getSkeleton();
 }

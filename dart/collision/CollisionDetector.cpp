@@ -59,7 +59,7 @@ CollisionDetector::~CollisionDetector() {
 }
 
 //==============================================================================
-void CollisionDetector::addSkeleton(dynamics::SkeletonPtr _skeleton)
+void CollisionDetector::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");
@@ -78,7 +78,7 @@ void CollisionDetector::addSkeleton(dynamics::SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void CollisionDetector::removeSkeleton(dynamics::SkeletonPtr _skeleton)
+void CollisionDetector::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");

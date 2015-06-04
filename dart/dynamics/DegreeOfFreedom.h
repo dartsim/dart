@@ -42,6 +42,7 @@
 #include <Eigen/Core>
 
 #include "dart/common/Subject.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace dynamics {
@@ -279,10 +280,10 @@ public:
   const Joint* getJoint() const;
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  std::shared_ptr<Skeleton> getSkeleton();
+  SkeletonPtr getSkeleton();
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  std::shared_ptr<const Skeleton> getSkeleton() const;
+  ConstSkeletonPtr getSkeleton() const;
 
   /// Get the BodyNode downstream of this DegreeOfFreedom
   BodyNode* getChildBodyNode();

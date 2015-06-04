@@ -106,10 +106,10 @@ public:
   virtual ~CollisionDetector();
 
   /// \brief Add skeleton
-  virtual void addSkeleton(dynamics::SkeletonPtr _skeleton);
+  virtual void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// \brief Remove skeleton
-  virtual void removeSkeleton(dynamics::SkeletonPtr _skeleton);
+  virtual void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// \brief Remove all skeletons
   virtual void removeAllSkeletons();

@@ -986,7 +986,8 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(_name == dofName)
     return dofName;
 
-  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  const SkeletonPtr& skel = mChildBodyNode?
+        mChildBodyNode->getSkeleton() : nullptr;
   if(skel)
   {
     dofName =
@@ -1951,7 +1952,7 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
 template <size_t DOF>
 void MultiDofJoint<DOF>::registerDofs()
 {
-  SkeletonPtr skel = mChildBodyNode->getSkeleton();
+  const SkeletonPtr& skel = mChildBodyNode->getSkeleton();
   for (size_t i = 0; i < DOF; ++i)
   {
     mMultiDofP.mDofNames[i] =

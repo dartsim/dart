@@ -124,7 +124,8 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
     return mJointP.mName;
   }
 
-  SkeletonPtr skel = mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
+  const SkeletonPtr& skel = mChildBodyNode?
+        mChildBodyNode->getSkeleton() : nullptr;
   if (skel)
   {
     skel->mNameMgrForJoints.removeName(mJointP.mName);
@@ -215,7 +216,7 @@ const BodyNode* Joint::getParentBodyNode() const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> Joint::getSkeleton()
+SkeletonPtr Joint::getSkeleton()
 {
   return mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
 }
@@ -358,7 +359,7 @@ Joint::Joint(const Properties& _properties)
 }
 
 //==============================================================================
-void Joint::init(std::shared_ptr<Skeleton>)
+void Joint::init(const SkeletonPtr&)
 {
   // Currently unused
 }

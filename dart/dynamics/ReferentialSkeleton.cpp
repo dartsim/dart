@@ -48,7 +48,7 @@ const std::string& ReferentialSkeleton::setName(const std::string& _name)
   const std::string oldName = mName;
   mName = _name;
 
-  MetaSkeletonPtr me = mPtr.lock();
+  const MetaSkeletonPtr& me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mName);
 
   return mName;
@@ -641,7 +641,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
   {
     const DegreeOfFreedom* dof_i = dofs[i];
     const size_t tree_i = dof_i->getTreeIndex();
-    const ConstSkeletonPtr skel_i = dof_i->getSkeleton();
+    const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
     const size_t index_i = dof_i->getIndexInTree();
     const Eigen::MatrixXd& treeMatrix = (skel_i.get()->*getMatrix)(tree_i);
@@ -652,7 +652,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
     {
       const DegreeOfFreedom* dof_j = dofs[j];
       const size_t tree_j = dof_j->getTreeIndex();
-      const ConstSkeletonPtr skel_j = dof_j->getSkeleton();
+      const ConstSkeletonPtr& skel_j = dof_j->getSkeleton();
 
       // If the DegreesOfFreedom are in the same tree within the same
       // Skeleton, then set their entries in the referential matrix.
@@ -710,7 +710,7 @@ const Eigen::VectorXd& setVectorFromSkeletonData(
   {
     const DegreeOfFreedom* dof_i = dofs[i];
     const size_t tree_i = dof_i->getTreeIndex();
-    const ConstSkeletonPtr skel_i = dof_i->getSkeleton();
+    const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
     const size_t index_i = dof_i->getIndexInTree();
     const Eigen::VectorXd& treeVector = (skel_i.get()->*getVector)(tree_i);

@@ -955,9 +955,9 @@ void SoftContactConstraint::uniteSkeletons()
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     return;
 
-  dynamics::SkeletonPtr unionId1
+  const dynamics::SkeletonPtr& unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
-  dynamics::SkeletonPtr unionId2
+  const dynamics::SkeletonPtr& unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)

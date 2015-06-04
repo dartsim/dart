@@ -413,9 +413,6 @@ protected:
   mutable Eigen::VectorXd mFc;
 };
 
-typedef std::shared_ptr<ReferentialSkeleton> ReferentialSkeletonPtr;
-typedef std::shared_ptr<const ReferentialSkeleton> ConstReferentialSkeletonPtr;
-
 } // namespace dynamics
 } // namespace dart
 

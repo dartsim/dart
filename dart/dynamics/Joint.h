@@ -45,6 +45,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace renderer {
@@ -217,7 +218,7 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Get the Skeleton that this Joint belongs to
-  std::shared_ptr<Skeleton> getSkeleton();
+  SkeletonPtr getSkeleton();
 
   /// Get the (const) Skeleton that this Joint belongs to.
   std::shared_ptr<const Skeleton> getSkeleton() const;
@@ -638,7 +639,7 @@ protected:
   /// Note: This function is being deprecated due to lack of use. If this is
   /// something you need for a custom Joint type, please inform us on Github.
   DEPRECATED(5.0)
-  virtual void init(std::shared_ptr<Skeleton> _skel);
+  virtual void init(const SkeletonPtr& _skel);
 
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _name DegreeOfFreedom's name.

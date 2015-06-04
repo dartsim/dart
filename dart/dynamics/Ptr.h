@@ -51,54 +51,66 @@
 namespace dart {
 namespace dynamics {
 
+// -- Standard shared/weak pointers --
+// Define a typedef for const and non-const version of shared_ptr and weak_ptr
+// for the class X
+#define DART_DYNAMICS_MAKE_SHARED_WEAK( X )                 \
+  typedef std::shared_ptr< X >      X ## Ptr;               \
+  typedef std::shared_ptr< const X > Const ## X ## Ptr;     \
+  typedef std::weak_ptr< X >        Weak ## X ## Ptr;       \
+  typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
+
 // Skeleton smart pointers
 class Skeleton;
-typedef std::shared_ptr<Skeleton>       SkeletonPtr;
-typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
-typedef std::weak_ptr<Skeleton>         WeakSkeletonPtr;
-typedef std::weak_ptr<const Skeleton>   WeakConstSkeletonPtr;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Skeleton)
+// These pointers will take the form of:
+// std::shared_ptr<Skeleton>        --> SkeletonPtr
+// std::shared_ptr<const Skeleton>  --> ConstSkeletonPtr
+// std::weak_ptr<Skeleton>          --> WeakSkeletonPtr
+// std::weak_ptr<const Skeleton>    --> WeakConstSkeletonPtr
 
 // MetaSkeleton smart pointers
 class MetaSkeleton;
-typedef std::shared_ptr<MetaSkeleton>       MetaSkeletonPtr;
-typedef std::shared_ptr<const MetaSkeleton> ConstMetaSkeletonPtr;
-typedef std::weak_ptr<MetaSkeleton>         WeakMetaSkeletonptr;
-typedef std::weak_ptr<const MetaSkeleton>   WeakConstMetaSkeletonPtr;
+DART_DYNAMICS_MAKE_SHARED_WEAK(MetaSkeleton)
 
-// BodyNode smart pointers
-class BodyNode;
-typedef TemplateBodyNodePtr<BodyNode>           BodyNodePtr;
-typedef TemplateBodyNodePtr<const BodyNode>     ConstBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<BodyNode>       WeakBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<const BodyNode> WeakConstBodyNodePtr;
-
-// SoftBodyNode smart pointers
-class SoftBodyNode;
-typedef TemplateBodyNodePtr<SoftBodyNode>           SoftBodyNodePtr;
-typedef TemplateBodyNodePtr<const SoftBodyNode>     ConstSoftBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<SoftBodyNode>       WeakSoftBodyNodePtr;
-typedef TemplateWeakBodyNodePtr<const SoftBodyNode> WeakConstSoftBodyNodePtr;
-
-// Joint smart pointers
-class Joint;
-typedef TemplateJointPtr<Joint, BodyNode>                 JointPtr;
-typedef TemplateJointPtr<const Joint, const BodyNode>     ConstJointPtr;
-typedef TemplateWeakJointPtr<Joint, BodyNode>             WeakJointPtr;
-typedef TemplateWeakJointPtr<const Joint, const BodyNode> WeakConstJointPtr;
-
-// DegreeOfFreedom smart pointers
-class DegreeOfFreedom;
-typedef TemplateDegreeOfFreedomPtr<DegreeOfFreedom, BodyNode>                 DegreeOfFreedomPtr;
-typedef TemplateDegreeOfFreedomPtr<const DegreeOfFreedom, const BodyNode>     ConstDegreeOfFreedomPtr;
-typedef TemplateWeakDegreeOfFreedomPtr<DegreeOfFreedom, BodyNode>             WeakDegreeOfFreedomPtr;
-typedef TemplateWeakDegreeOfFreedomPtr<const DegreeOfFreedom, const BodyNode> WeakConstDegreeOfFreedomPtr;
+// ReferentialSkeleton smart pointers
+class ReferentialSkeleton;
+DART_DYNAMICS_MAKE_SHARED_WEAK(ReferentialSkeleton)
 
 // Shape smart pointers
 class Shape;
-typedef std::shared_ptr<Shape>       ShapePtr;
-typedef std::shared_ptr<const Shape> ConstShapePtr;
-typedef std::weak_ptr<Shape>         WeakShapePtr;
-typedef std::weak_ptr<const Shape>   WeakConstShapePtr;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Shape)
+
+// -- Custom BodyNode smart pointers --
+#define DART_DYNAMICS_MAKE_BODYNODEPTR( X )                         \
+  typedef TemplateBodyNodePtr< X >          X ## Ptr;               \
+  typedef TemplateBodyNodePtr< const X >     Const ## X ## Ptr;     \
+  typedef TemplateWeakBodyNodePtr< X >      Weak ## X ## Ptr;       \
+  typedef TemplateWeakBodyNodePtr< const X > WeakConst ## X ## Ptr;
+
+// BodyNode smart pointers
+class BodyNode;
+DART_DYNAMICS_MAKE_BODYNODEPTR(BodyNode)
+
+// SoftBodyNode smart pointers
+class SoftBodyNode;
+DART_DYNAMICS_MAKE_BODYNODEPTR(SoftBodyNode)
+
+// -- BodyNode dependent smart pointers --
+#define DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR( X )                                          \
+  typedef Template ## X ## Ptr < X , BodyNode >                   X ## Ptr;               \
+  typedef Template ## X ## Ptr < const X , const BodyNode >       Const ## X ## Ptr;      \
+  typedef TemplateWeak ## X ## Ptr < X , BodyNode >               Weak ## X ## Ptr;       \
+  typedef TemplateWeak ## X ## Ptr < const X , const BodyNode >   WeakConst ## X ## Ptr;
+
+
+// Joint smart pointers
+class Joint;
+DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(Joint)
+
+// DegreeOfFreedom smart pointers
+class DegreeOfFreedom;
+DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(DegreeOfFreedom)
 
 } // namespace dynamics
 } // namespace dart

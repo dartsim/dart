@@ -78,13 +78,13 @@ void SkeletonRefCountingBase::decrementReferenceCount() const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> SkeletonRefCountingBase::getSkeleton()
+SkeletonPtr SkeletonRefCountingBase::getSkeleton()
 {
   return mSkeleton.lock();
 }
 
 //==============================================================================
-std::shared_ptr<const Skeleton> SkeletonRefCountingBase::getSkeleton() const
+ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 {
   return mSkeleton.lock();
 }
@@ -227,7 +227,7 @@ const std::string& BodyNode::setName(const std::string& _name)
     return mEntityP.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     skel->mNameMgrForBodyNodes.removeName(mEntityP.mName);
@@ -295,7 +295,7 @@ void BodyNode::setMass(double _mass)
   mBodyP.mInertia.setMass(_mass);
 
   notifyArticulatedInertiaUpdate();
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
 }
@@ -341,7 +341,7 @@ void BodyNode::setInertia(const Inertia& _inertia)
   mBodyP.mInertia = _inertia;
 
   notifyArticulatedInertiaUpdate();
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
 }
@@ -355,7 +355,7 @@ const Inertia& BodyNode::getInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if( skel && CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -365,7 +365,7 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if( skel && CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -573,7 +573,7 @@ size_t BodyNode::getTreeIndex() const
 //==============================================================================
 static bool checkSkeletonNodeAgreement(
     const BodyNode* _bodyNode,
-    ConstSkeletonPtr _newSkeleton, const BodyNode* _newParent,
+    const ConstSkeletonPtr& _newSkeleton, const BodyNode* _newParent,
     const std::string& _function,
     const std::string& _operation)
 {
@@ -636,7 +636,8 @@ bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 //==============================================================================
 SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   moveTo(skel, nullptr);
   return skel;
@@ -673,7 +674,8 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(const SkeletonPtr& _newSkeleton,
 SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
                              bool _recursive) const
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   copyTo(skel, nullptr, _recursive);
   return skel;
@@ -767,7 +769,7 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->addEntryToMarkerNameMgr(_marker);
 }
@@ -1541,7 +1543,7 @@ void BodyNode::notifyTransformUpdate()
 
   mNeedTransformUpdate = true;
 
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     SET_FLAGS(mCoriolisForces);
@@ -1572,7 +1574,7 @@ void BodyNode::notifyVelocityUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     SET_FLAGS(mCoriolisForces);
@@ -1607,7 +1609,7 @@ void BodyNode::notifyAccelerationUpdate()
 //==============================================================================
 void BodyNode::notifyArticulatedInertiaUpdate()
 {
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->notifyArticulatedInertiaUpdate(mTreeIndex);
 }
@@ -2072,7 +2074,7 @@ bool BodyNode::isImpulseReponsible() const
 //==============================================================================
 bool BodyNode::isReactive() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if (skel && skel->isMobile() && getNumDependentGenCoords() > 0)
   {
     // Check if all the ancestor joints are motion prescribed.
