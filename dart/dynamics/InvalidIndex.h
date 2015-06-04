@@ -42,11 +42,9 @@
 namespace dart {
 namespace dynamics {
 
-enum {
-  INVALID_INDEX = static_cast<size_t>(-1)
-};
+constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
 
 } // dynamics
 } // dart
 
-#endif // INVALIDINDEX_H
+#endif // DART_DYNAMICS_INVALIDINDEX_H_
