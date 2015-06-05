@@ -238,6 +238,9 @@ TEST(Optimizer, InverseKinematics)
 
   ik.getSolver()->setNumMaxIterations(100);
 
+  EXPECT_FALSE(equals(ik.getTarget()->getTransform().matrix(),
+                      skel->getBodyNode(0)->getTransform().matrix(), 1e-1));
+
   EXPECT_TRUE(ik.getSolver()->solve());
 
   EXPECT_TRUE(equals(ik.getTarget()->getTransform().matrix(),
