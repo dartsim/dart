@@ -42,7 +42,11 @@
 namespace dart {
 namespace dynamics {
 
+#if defined(_MSC_VER)
+const size_t INVALID_INDEX = static_cast<size_t>(-1);
+#else
 constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
+#endif
 
 } // dynamics
 } // dart
