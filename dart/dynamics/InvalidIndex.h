@@ -34,76 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Branch.h"
-#include "dart/dynamics/BodyNode.h"
+#ifndef DART_DYNAMICS_INVALIDINDEX_H_
+#define DART_DYNAMICS_INVALIDINDEX_H_
+
+#include <cstddef>
 
 namespace dart {
 namespace dynamics {
 
-//==============================================================================
-Branch::Criteria::Criteria(BodyNode* _start)
-  : mStart(_start)
-{
-  // Do nothing
-}
+constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
 
-//==============================================================================
-std::vector<BodyNode*> Branch::Criteria::satisfy() const
-{
-  return convert().satisfy();
-}
+} // dynamics
+} // dart
 
-//==============================================================================
-Linkage::Criteria Branch::Criteria::convert() const
-{
-  Linkage::Criteria criteria;
-  criteria.mStart.mNode = mStart;
-  criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
-
-  return criteria;
-}
-
-//==============================================================================
-Branch::Criteria::operator Linkage::Criteria() const
-{
-  return convert();
-}
-
-//==============================================================================
-Branch::Branch(const Branch::Criteria& _criteria, const std::string& _name)
-  : Linkage(_criteria, _name)
-{
-  update();
-}
-
-//==============================================================================
-bool Branch::isStillBranch() const
-{
-  if(!isAssembled())
-    return false;
-
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
-  {
-    BodyNode* bn = mBodyNodes[i];
-    if(bn->getNumChildBodyNodes() != mNumChildNodes[i])
-      return false;
-  }
-
-  return true;
-}
-
-//==============================================================================
-void Branch::update()
-{
-  Linkage::update();
-
-  mNumChildNodes.clear();
-  mNumChildNodes.reserve(mBodyNodes.size());
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
-  {
-    mNumChildNodes.push_back(mBodyNodes[i]->getNumChildBodyNodes());
-  }
-}
-
-} // namespace dynamics
-} // namespace dart
+#endif // DART_DYNAMICS_INVALIDINDEX_H_

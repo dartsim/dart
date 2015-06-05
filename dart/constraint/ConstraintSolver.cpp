@@ -76,7 +76,7 @@ ConstraintSolver::~ConstraintSolver()
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeleton(SkeletonPtr _skeleton)
+void ConstraintSolver::addSkeleton(const SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -123,7 +123,8 @@ void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& _skeletons)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeleton(SkeletonPtr _skeleton)
+void ConstraintSolver::removeSkeleton(
+    const SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -143,7 +144,8 @@ void ConstraintSolver::removeSkeleton(SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeletons(const std::vector<SkeletonPtr>& _skeletons)
+void ConstraintSolver::removeSkeletons(
+    const std::vector<SkeletonPtr>& _skeletons)
 {
   size_t numRemovedSkeletons = 0;
 
@@ -272,7 +274,7 @@ void ConstraintSolver::solve()
 }
 
 //==============================================================================
-bool ConstraintSolver::containSkeleton(const SkeletonPtr _skeleton) const
+bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 {
   assert(_skeleton != NULL && "Not allowed to insert null pointer skeleton.");
 
@@ -287,7 +289,7 @@ bool ConstraintSolver::containSkeleton(const SkeletonPtr _skeleton) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddSkeleton(SkeletonPtr _skeleton)
+bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& _skeleton)
 {
   if (!containSkeleton(_skeleton))
   {

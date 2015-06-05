@@ -41,6 +41,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace renderer {
@@ -97,16 +98,16 @@ public:
   //----------------------------------------------------------------------------
 
   /// Create a new Skeleton inside of a shared_ptr
-  static std::shared_ptr<Skeleton> create(const std::string& _name="Skeleton");
+  static SkeletonPtr create(const std::string& _name="Skeleton");
 
   /// Create a new Skeleton inside of a shared_ptr
-  static std::shared_ptr<Skeleton> create(const Properties& _properties);
+  static SkeletonPtr create(const Properties& _properties);
 
   /// Get the shared_ptr that manages this Skeleton
-  std::shared_ptr<Skeleton> getPtr();
+  SkeletonPtr getPtr();
 
   /// Get the shared_ptr that manages this Skeleton
-  std::shared_ptr<const Skeleton> getPtr() const;
+  ConstSkeletonPtr getPtr() const;
 
   /// Destructor
   virtual ~Skeleton();
@@ -115,7 +116,7 @@ public:
   ///
   /// Note: the state of the Skeleton will NOT be cloned, only the structure and
   /// properties will be [TODO(MXG): copy the state as well]
-  std::shared_ptr<Skeleton> clone() const;
+  SkeletonPtr clone() const;
 
   /// \}
 
@@ -836,7 +837,7 @@ protected:
   Skeleton(const Properties& _properties);
 
   /// Setup this Skeleton with its shared_ptr
-  void setPtr(std::shared_ptr<Skeleton> _ptr);
+  void setPtr(const SkeletonPtr& _ptr);
 
   /// Register a BodyNode with the Skeleton. Internal use only.
   void registerBodyNode(BodyNode* _newBodyNode);
@@ -858,7 +859,7 @@ protected:
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                        std::shared_ptr<Skeleton> _newSkeleton,
+                        SkeletonPtr _newSkeleton,
                         BodyNode* _parentNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton while
@@ -867,22 +868,26 @@ protected:
   /// Returns a nullptr if the move failed for any reason.
   template <class JointType>
   JointType* moveBodyNodeTree(
-      BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+      BodyNode* _bodyNode,
+      const SkeletonPtr& _newSkeleton,
       BodyNode* _parentNode,
       const typename JointType::Properties& _joint);
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact
   std::pair<Joint*, BodyNode*> cloneBodyNodeTree(
-      Joint* _parentJoint, const BodyNode* _bodyNode,
-      std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode,
+      Joint* _parentJoint,
+      const BodyNode* _bodyNode,
+      const SkeletonPtr& _newSkeleton,
+      BodyNode* _parentNode,
       bool _recursive) const;
 
   /// Copy a subtree of BodyNodes onto another Skeleton while leaving the
   /// originals intact, but alter the top parent Joint to a new type
   template <class JointType>
   std::pair<JointType*, BodyNode*> cloneBodyNodeTree(
-      const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+      const BodyNode* _bodyNode,
+      const SkeletonPtr& _newSkeleton,
       BodyNode* _parentNode,
       const typename JointType::Properties& _joint,
       bool _recursive) const;
@@ -1164,15 +1169,10 @@ public:
 };
 
 //==============================================================================
-typedef std::shared_ptr<Skeleton> SkeletonPtr;
-typedef std::shared_ptr<const Skeleton> ConstSkeletonPtr;
-typedef std::weak_ptr<Skeleton> WeakSkeletonPtr;
-typedef std::weak_ptr<const Skeleton> WeakConstSkeletonPtr;
-
-//==============================================================================
 template <class JointType>
 JointType* Skeleton::moveBodyNodeTree(
-    BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+    BodyNode* _bodyNode,
+    const SkeletonPtr& _newSkeleton,
     BodyNode* _parentNode,
     const typename JointType::Properties& _joint)
 {
@@ -1190,7 +1190,8 @@ JointType* Skeleton::moveBodyNodeTree(
 //==============================================================================
 template <class JointType>
 std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
-    const BodyNode* _bodyNode, std::shared_ptr<Skeleton> _newSkeleton,
+    const BodyNode* _bodyNode,
+    const SkeletonPtr& _newSkeleton,
     BodyNode* _parentNode,
     const typename JointType::Properties& _joint, bool _recursive) const
 {

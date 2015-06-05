@@ -295,7 +295,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
   assert(_index < mDim && "Invalid Index.");
 
   size_t localIndex = 0;
-  dynamics::SkeletonPtr skeleton = mJoint->getSkeleton();
+  const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
   size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)

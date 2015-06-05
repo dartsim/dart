@@ -40,7 +40,7 @@
 #include <cstddef>
 
 #include "dart/common/Deprecated.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 

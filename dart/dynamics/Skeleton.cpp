@@ -81,27 +81,27 @@ Skeleton::Properties::Properties(
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> Skeleton::create(const std::string& _name)
+SkeletonPtr Skeleton::create(const std::string& _name)
 {
   return create(Properties(_name));
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> Skeleton::create(const Properties& _properties)
+SkeletonPtr Skeleton::create(const Properties& _properties)
 {
-  std::shared_ptr<Skeleton> skel(new Skeleton(_properties));
+  SkeletonPtr skel(new Skeleton(_properties));
   skel->setPtr(skel);
   return skel;
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> Skeleton::getPtr()
+SkeletonPtr Skeleton::getPtr()
 {
   return mPtr.lock();
 }
 
 //==============================================================================
-std::shared_ptr<const Skeleton> Skeleton::getPtr() const
+ConstSkeletonPtr Skeleton::getPtr() const
 {
   return mPtr.lock();
 }
@@ -1512,7 +1512,7 @@ Skeleton::Skeleton(const Properties& _properties)
 }
 
 //==============================================================================
-void Skeleton::setPtr(std::shared_ptr<Skeleton> _ptr)
+void Skeleton::setPtr(const SkeletonPtr& _ptr)
 {
   mPtr = _ptr;
   resetUnion();
@@ -1803,7 +1803,7 @@ void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
 
 //==============================================================================
 bool Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
-                                std::shared_ptr<Skeleton> _newSkeleton,
+                                SkeletonPtr _newSkeleton,
                                 BodyNode* _parentNode)
 {
   if(nullptr == _bodyNode)
@@ -1912,7 +1912,7 @@ bool Skeleton::moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
 //==============================================================================
 std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     Joint* _parentJoint, const BodyNode* _bodyNode,
-    std::shared_ptr<Skeleton> _newSkeleton, BodyNode* _parentNode,
+    const SkeletonPtr& _newSkeleton, BodyNode* _parentNode,
     bool _recursive) const
 {
   std::pair<Joint*, BodyNode*> root(nullptr, nullptr);

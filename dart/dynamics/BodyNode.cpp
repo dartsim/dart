@@ -54,6 +54,42 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
+SkeletonRefCountingBase::SkeletonRefCountingBase()
+  : mReferenceCount(0),
+    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>())
+{
+  // Do nothing
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::incrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
+  if(0 == previous)
+    mReferenceSkeleton = mSkeleton.lock();
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::decrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
+  if(1 == previous)
+    mReferenceSkeleton = nullptr;
+}
+
+//==============================================================================
+SkeletonPtr SkeletonRefCountingBase::getSkeleton()
+{
+  return mSkeleton.lock();
+}
+
+//==============================================================================
+ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
+{
+  return mSkeleton.lock();
+}
+
 /// SKEL_SET_FLAGS : Lock a Skeleton pointer and activate dirty flags of X for
 /// the tree that this BodyNode belongs to, as well as the flag for the Skeleton
 /// overall
@@ -192,7 +228,7 @@ const std::string& BodyNode::setName(const std::string& _name)
     return mEntityP.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     skel->mNameMgrForBodyNodes.removeName(mEntityP.mName);
@@ -254,7 +290,7 @@ void BodyNode::setMass(double _mass)
   mBodyP.mInertia.setMass(_mass);
 
   notifyArticulatedInertiaUpdate();
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
 }
@@ -300,7 +336,7 @@ void BodyNode::setInertia(const Inertia& _inertia)
   mBodyP.mInertia = _inertia;
 
   notifyArticulatedInertiaUpdate();
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
 }
@@ -314,7 +350,7 @@ const Inertia& BodyNode::getInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if( skel && CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -324,7 +360,7 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if( skel && CHECK_FLAG(mArticulatedInertia) )
     skel->updateArticulatedInertia(mTreeIndex);
 
@@ -512,18 +548,6 @@ ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> BodyNode::getSkeleton()
-{
-  return mSkeleton.lock();
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> BodyNode::getSkeleton() const
-{
-  return mSkeleton.lock();
-}
-
-//==============================================================================
 size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
@@ -544,7 +568,7 @@ size_t BodyNode::getTreeIndex() const
 //==============================================================================
 static bool checkSkeletonNodeAgreement(
     const BodyNode* _bodyNode,
-    ConstSkeletonPtr _newSkeleton, const BodyNode* _newParent,
+    const ConstSkeletonPtr& _newSkeleton, const BodyNode* _newParent,
     const std::string& _function,
     const std::string& _operation)
 {
@@ -607,7 +631,8 @@ bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 //==============================================================================
 SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   moveTo(skel, nullptr);
   return skel;
@@ -644,10 +669,23 @@ std::pair<Joint*, BodyNode*> BodyNode::copyTo(const SkeletonPtr& _newSkeleton,
 SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
                              bool _recursive) const
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
   skel->setName(_skeletonName);
   copyTo(skel, nullptr, _recursive);
   return skel;
+}
+
+//==============================================================================
+SkeletonPtr BodyNode::getSkeleton()
+{
+  return SkeletonRefCountingBase::getSkeleton();
+}
+
+//==============================================================================
+ConstSkeletonPtr BodyNode::getSkeleton() const
+{
+  return SkeletonRefCountingBase::getSkeleton();
 }
 
 //==============================================================================
@@ -730,10 +768,27 @@ const EndEffector* BodyNode::getEndEffector(size_t _index) const
 }
 
 //==============================================================================
+Joint* BodyNode::getChildJoint(size_t _index)
+{
+  BodyNode* childBodyNode = getChildBodyNode(_index);
+
+  if(childBodyNode)
+    return childBodyNode->getParentJoint();
+  else
+    return nullptr;
+}
+
+//==============================================================================
+const Joint* BodyNode::getChildJoint(size_t _index) const
+{
+  return const_cast<BodyNode*>(this)->getChildJoint(_index);
+}
+
+//==============================================================================
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->addEntryToMarkerNameMgr(_marker);
 }
@@ -1178,8 +1233,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World(), ""),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
-    mReferenceCount(0),
-    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>()),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mIsBodyJacobianDirty(true),
@@ -1364,7 +1417,7 @@ void BodyNode::notifyTransformUpdate()
 
   mNeedTransformUpdate = true;
 
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     SET_FLAGS(mCoriolisForces);
@@ -1395,7 +1448,7 @@ void BodyNode::notifyVelocityUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
     SET_FLAGS(mCoriolisForces);
@@ -1430,7 +1483,7 @@ void BodyNode::notifyAccelerationUpdate()
 //==============================================================================
 void BodyNode::notifyArticulatedInertiaUpdate()
 {
-  SkeletonPtr skel = getSkeleton();
+  const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->notifyArticulatedInertiaUpdate(mTreeIndex);
 }
@@ -1895,7 +1948,7 @@ bool BodyNode::isImpulseReponsible() const
 //==============================================================================
 bool BodyNode::isReactive() const
 {
-  ConstSkeletonPtr skel = getSkeleton();
+  const ConstSkeletonPtr& skel = getSkeleton();
   if (skel && skel->isMobile() && getNumDependentGenCoords() > 0)
   {
     // Check if all the ancestor joints are motion prescribed.
@@ -2416,22 +2469,6 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
         - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
-}
-
-//==============================================================================
-void BodyNode::incrementReferenceCount() const
-{
-  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
-  if(0 == previous)
-    mReferenceSkeleton = mSkeleton.lock();
-}
-
-//==============================================================================
-void BodyNode::decrementReferenceCount() const
-{
-  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
-  if(1 == previous)
-    mReferenceSkeleton = nullptr;
 }
 
 }  // namespace dynamics

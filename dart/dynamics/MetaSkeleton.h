@@ -46,13 +46,10 @@
 #include "dart/common/Subject.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Frame.h"
+#include "dart/dynamics/InvalidIndex.h"
 
 namespace dart {
 namespace dynamics {
-
-enum {
-  INVALID_INDEX = static_cast<size_t>(-1)
-};
 
 class BodyNode;
 class SoftBodyNode;
@@ -618,9 +615,6 @@ public:
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
 };
-
-typedef std::shared_ptr<MetaSkeleton> MetaSkeletonPtr;
-typedef std::shared_ptr<const MetaSkeleton> ConstMetaSkeletonPtr;
 
 } // namespace dynamics
 } // namespace dart

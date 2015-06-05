@@ -551,8 +551,8 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
   assert(isActive());
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
-  dynamics::SkeletonPtr skel1 = mBodyNode1->getSkeleton();
-  dynamics::SkeletonPtr skel2 = mBodyNode2->getSkeleton();
+  const dynamics::SkeletonPtr& skel1 = mBodyNode1->getSkeleton();
+  const dynamics::SkeletonPtr& skel2 = mBodyNode2->getSkeleton();
 
   // Self collision case
   if (skel1 == skel2)
@@ -836,9 +836,9 @@ void ContactConstraint::uniteSkeletons()
   if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
     return;
 
-  dynamics::SkeletonPtr unionId1
+  const dynamics::SkeletonPtr& unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
-  dynamics::SkeletonPtr unionId2
+  const dynamics::SkeletonPtr& unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
   if (unionId1 == unionId2)

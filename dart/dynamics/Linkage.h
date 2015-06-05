@@ -44,7 +44,7 @@ namespace dart {
 namespace dynamics {
 
 /// A Linkage is a ReferentialSkeleton with the special property that all the
-/// BodyNodes included in it form a contiguous graph. This propery is only
+/// BodyNodes included in it form a contiguous graph. This property is only
 /// guaranteed during construction of the Linkage. After the Linkage has been
 /// constructed, a user might alter how the BodyNodes in a Linkage are
 /// assembled. The function Linkage::isAssembled() can be used to check whether

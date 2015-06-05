@@ -40,6 +40,7 @@
 
 #include <map>
 #include <sstream>
+#include <cassert>
 #include "dart/common/Console.h"
 
 namespace dart {
@@ -138,7 +139,7 @@ public:
   }
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, T _obj)
+  std::string issueNewNameAndAdd(const std::string& _name, const T& _obj)
   {
     const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
     const std::string& newName = issueNewName(checkEmpty);
@@ -148,7 +149,7 @@ public:
   }
 
   /// Add an object to the map
-  bool addName(const std::string& _name, T _obj)
+  bool addName(const std::string& _name, const T& _obj)
   {
     if (_name.empty())
     {
@@ -167,12 +168,16 @@ public:
     mMap.insert(std::pair<std::string, T>(_name, _obj));
     mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
 
+    assert(mReverseMap.size() == mMap.size());
+
     return true;
   }
 
   /// Remove an object from the Manager based on its name
   bool removeName(const std::string& _name)
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<std::string, T>::iterator it = mMap.find(_name);
 
     if (it == mMap.end())
@@ -190,8 +195,10 @@ public:
   }
 
   /// Remove an object from the Manager based on reverse lookup
-  bool removeObject(T _obj)
+  bool removeObject(const T& _obj)
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
 
     if (rit == mReverseMap.end())
@@ -208,7 +215,7 @@ public:
 
   /// Remove _name using the forward lookup and _obj using the reverse lookup.
   /// This will allow you to add _obj under the name _name without any conflicts
-  void removeEntries(const std::string& _name, T _obj)
+  void removeEntries(const std::string& _name, const T& _obj)
   {
     removeObject(_obj);
     removeName(_name, false);
@@ -228,7 +235,7 @@ public:
   }
 
   /// Return true if the object is contained
-  bool hasObject(T _obj) const
+  bool hasObject(const T& _obj) const
   {
     return (mReverseMap.find(_obj) != mReverseMap.end());
   }
@@ -257,8 +264,10 @@ public:
 
   /// Use a reverse lookup to get the name that the manager has _obj listed
   /// under. Returns an empty string if it is not in the list.
-  std::string getName(T _obj) const
+  std::string getName(const T& _obj) const
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<T, std::string>::const_iterator result =
         mReverseMap.find(_obj);
 
@@ -275,8 +284,10 @@ public:
   /// If the object is held, its new name is returned (which might
   /// be different than _newName if there was a duplicate naming conflict). If
   /// the object is not held, an empty string will be returned.
-  std::string changeObjectName(T _obj, const std::string& _newName)
+  std::string changeObjectName(const T& _obj, const std::string& _newName)
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
     if(rit == mReverseMap.end())
       return _newName;

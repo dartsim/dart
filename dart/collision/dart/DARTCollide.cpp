@@ -42,6 +42,7 @@
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace collision {
@@ -1352,8 +1353,6 @@ int collide(dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
       break;
   }
 }
-
-
 
 } // namespace collision
 } // namespace dart

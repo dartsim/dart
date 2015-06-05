@@ -33,16 +33,78 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_DYNAMICS_BODYNODEPTR_H_
-#define DART_DYNAMICS_BODYNODEPTR_H_
+
+#ifndef DART_DYNAMICS_BODYNODEPTR_IMPL_
+#define DART_DYNAMICS_BODYNODEPTR_IMPL_
 
 #include <memory>
 #include <mutex>
-
-#include "dart/dynamics/Skeleton.h"
+#include <atomic>
 
 namespace dart{
 namespace dynamics {
+
+class Skeleton;
+
+//==============================================================================
+struct MutexedWeakSkeletonPtr
+{
+  std::mutex mMutex;
+  std::weak_ptr<const Skeleton> mSkeleton;
+};
+
+//==============================================================================
+class SkeletonRefCountingBase
+{
+public:
+  template<class> friend class TemplateBodyNodePtr;
+  template<class> friend class TemplateWeakBodyNodePtr;
+
+  /// Return the Skeleton this BodyNode belongs to
+  std::shared_ptr<Skeleton> getSkeleton();
+
+  /// Return the (const) Skeleton this BodyNode belongs to
+  std::shared_ptr<const Skeleton> getSkeleton() const;
+
+private:
+
+  //--------------------------------------------------------------------------
+  // Reference counting
+  //--------------------------------------------------------------------------
+
+  /// Atomically increment the reference count for this BodyNode. This should
+  /// only be called by the BodyNodePtr class
+  void incrementReferenceCount() const;
+
+  /// Atomically decrement the reference count for this BodyNode. This should
+  /// only be called by the BodyNodePtr class
+  void decrementReferenceCount() const;
+
+protected:
+
+  /// Default Constructor
+  SkeletonRefCountingBase();
+
+  /// Weak pointer to the Skeleton this BodyNode belongs to.
+  std::weak_ptr<Skeleton> mSkeleton;
+
+  /// Reference count for the number of BodyNodePtrs that are referring to this
+  /// BodyNode
+  mutable std::atomic<int> mReferenceCount;
+
+  /// If mReferenceCount is zero, then mReferenceSkeleton will hold a nullptr.
+  /// If mReferenceCount is greater than zero, then mReferenceSkeleton will hold
+  /// a shared_ptr to the Skeleton that this BodyNode belongs to. This is to
+  /// keep this BodyNode alive, so long as a BodyNodePtr that references it
+  /// exists.
+  mutable std::shared_ptr<Skeleton> mReferenceSkeleton;
+
+  /// Shared reference to a weak_ptr of this BodyNode's Skeleton, along with a
+  /// mutex to ensure thread safety. This is used by WeakBodyNodePtrs to know
+  /// when this BodyNode has expired.
+  std::shared_ptr<MutexedWeakSkeletonPtr> mLockedSkeleton;
+
+};
 
 /// TemplateBodyNodePtr is a templated class that enables users to create a
 /// reference-counting BodyNodePtr. Holding onto a BodyNodePtr will ensure that
@@ -113,16 +175,17 @@ public:
 
     // Get a shared_ptr to each Skeleton before making any modifications to the
     // reference counts
-    ConstSkeletonPtr old_skeleton = mPtr == nullptr ?
-          nullptr : mPtr->getSkeleton();
+    std::shared_ptr<const Skeleton> old_skeleton = (mPtr == nullptr)? nullptr :
+          static_cast<const SkeletonRefCountingBase*>(mPtr)->getSkeleton();
 
-    ConstSkeletonPtr new_skeleton = _ptr == nullptr ?
-          nullptr : _ptr->getSkeleton();
+    std::shared_ptr<const Skeleton> new_skeleton = (_ptr == nullptr)? nullptr :
+          static_cast<const SkeletonRefCountingBase*>(_ptr)->getSkeleton();
 
     if(nullptr != mPtr)
     {
       if(nullptr != old_skeleton)
-        mPtr->decrementReferenceCount();
+        static_cast<const SkeletonRefCountingBase*>(mPtr)->
+          decrementReferenceCount();
 
       mPtr = nullptr;
     }
@@ -130,20 +193,14 @@ public:
     if(nullptr != new_skeleton)
     {
       mPtr = _ptr;
-      _ptr->incrementReferenceCount();
+      static_cast<const SkeletonRefCountingBase*>(_ptr)->
+          incrementReferenceCount();
     }
   }
 
 private:
   /// Raw pointer for the BodyNode that this BodyNodePtr references
   BodyNodeT* mPtr;
-};
-
-//==============================================================================
-struct MutexedWeakSkeletonPtr
-{
-  std::mutex mMutex;
-  std::weak_ptr<const Skeleton> mSkeleton;
 };
 
 /// TemplateWeakBodyNodePtr is a templated class that enables users to create a
@@ -203,7 +260,7 @@ public:
     // the Skeleton's reference count remains up while we create the strong
     // BodyNodePtr that we're going to return.
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
-    ConstSkeletonPtr skeleton = mLocker->mSkeleton.lock();
+    std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
     if(nullptr == skeleton)
       return nullptr;
 
@@ -218,7 +275,8 @@ public:
     if(nullptr == mPtr)
       mLocker = nullptr;
     else
-      mLocker = _ptr->mLockedSkeleton;
+      mLocker = static_cast<const SkeletonRefCountingBase*>(_ptr)->
+          mLockedSkeleton;
   }
 
   /// Attempt to set the BodyNode for this WeakBodyNodePtr based on another
@@ -233,7 +291,8 @@ public:
     }
 
     std::lock_guard<std::mutex> lock(_weakPtr.mLocker->mMutex);
-    ConstSkeletonPtr skeleton = _weakPtr.mLocker->mSkeleton.lock();
+    std::shared_ptr<const Skeleton> skeleton =
+        _weakPtr.mLocker->mSkeleton.lock();
     if(nullptr == skeleton)
     {
       set(nullptr);
@@ -259,7 +318,7 @@ public:
     // It is okay for 'lock' to go "unused", because it is managed by RAII after
     // it has been initialized
     std::lock_guard<std::mutex> lock(mLocker->mMutex);
-    ConstSkeletonPtr skeleton = mLocker->mSkeleton.lock();
+    std::shared_ptr<const Skeleton> skeleton = mLocker->mSkeleton.lock();
     if(nullptr == skeleton)
       return true;
 
@@ -275,7 +334,8 @@ private:
   std::shared_ptr<MutexedWeakSkeletonPtr> mLocker;
 };
 
+
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_BODYNODEPTR_H_
+#endif // DART_DYNAMICS_BODYNODEPTR_IMPL_

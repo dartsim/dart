@@ -45,14 +45,7 @@
 
 #include "dart/collision/CollisionNode.h"
 #include "dart/common/sub_ptr.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-class Skeleton;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace collision {
@@ -113,10 +106,10 @@ public:
   virtual ~CollisionDetector();
 
   /// \brief Add skeleton
-  virtual void addSkeleton(dynamics::SkeletonPtr _skeleton);
+  virtual void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// \brief Remove skeleton
-  virtual void removeSkeleton(dynamics::SkeletonPtr _skeleton);
+  virtual void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// \brief Remove all skeletons
   virtual void removeAllSkeletons();
