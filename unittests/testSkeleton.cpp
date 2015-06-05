@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
+#include "dart/common/sub_ptr.h"
 #include "dart/math/Geometry.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/dynamics/BodyNode.h"

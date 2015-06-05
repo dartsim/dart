@@ -72,8 +72,8 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 SoftContactConstraint::SoftContactConstraint(
     const collision::Contact& _contact)
   : ConstraintBase(),
-    mBodyNode1(_contact.bodyNode1),
-    mBodyNode2(_contact.bodyNode2),
+    mBodyNode1(_contact.bodyNode1.lock()),
+    mBodyNode2(_contact.bodyNode2.lock()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(NULL),
@@ -94,8 +94,8 @@ SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
-    mBodyNode1(_contact.bodyNode1),
-    mBodyNode2(_contact.bodyNode2),
+    mBodyNode1(_contact.bodyNode1.lock()),
+    mBodyNode2(_contact.bodyNode2.lock()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(NULL),

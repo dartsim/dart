@@ -545,8 +545,8 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
-  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.get())
-      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.get()))
+  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.lock().get())
+      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.lock().get()))
     return true;
 
   return false;

@@ -46,7 +46,6 @@
 
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
-#include "dart/common/sub_ptr.h"
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 
