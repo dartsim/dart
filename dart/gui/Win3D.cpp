@@ -176,7 +176,7 @@ void Win3D::render() {
 
   mTrackBall.applyGLRotation();
 
-  // Drwa origin indicator
+  // Draw world origin indicator
   if (!mCapture)
   {
     glEnable(GL_DEPTH_TEST);
@@ -210,7 +210,7 @@ void Win3D::render() {
   initLights();
   draw();
 
-  // Trackball indicator
+  // Draw trackball indicator
   if (mRotate && !mCapture)
     mTrackBall.draw(mWinWidth, mWinHeight);
 
