@@ -96,6 +96,10 @@ void Win3D::keyboard(unsigned char _key, int _x, int _y) {
     case 'c':
     case 'C':  // screen capture
       mCapture = !mCapture;
+      if (mCapture)
+        glEnable(GL_MULTISAMPLE);
+      else
+        glDisable(GL_MULTISAMPLE);
       break;
     case 27:  // ESC
       exit(0);
@@ -159,13 +163,6 @@ void Win3D::drag(int _x, int _y) {
 }
 
 void Win3D::render() {
-  if (mCapture) {
-    capturing();
-    glutSwapBuffers();
-    screenshot();
-    return;
-  }
-
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(mPersp,
@@ -179,39 +176,48 @@ void Win3D::render() {
 
   mTrackBall.applyGLRotation();
 
-  glEnable(GL_DEPTH_TEST);
-  glDisable(GL_TEXTURE_2D);
-  glDisable(GL_LIGHTING);
-  glLineWidth(2.0);
-  if (mRotate || mTranslate || mZooming) {
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glBegin(GL_LINES);
-    glVertex3f(-0.1f, 0.0f, -0.0f);
-    glVertex3f(0.15f, 0.0f, -0.0f);
-    glEnd();
+  // Drwa origin indicator
+  if (!mCapture)
+  {
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0);
+    if (mRotate || mTranslate || mZooming) {
+      glColor3f(1.0f, 0.0f, 0.0f);
+      glBegin(GL_LINES);
+      glVertex3f(-0.1f, 0.0f, -0.0f);
+      glVertex3f(0.15f, 0.0f, -0.0f);
+      glEnd();
 
-    glColor3f(0.0f, 1.0f, 0.0f);
-    glBegin(GL_LINES);
-    glVertex3f(0.0f, -0.1f, 0.0f);
-    glVertex3f(0.0f, 0.15f, 0.0f);
-    glEnd();
+      glColor3f(0.0f, 1.0f, 0.0f);
+      glBegin(GL_LINES);
+      glVertex3f(0.0f, -0.1f, 0.0f);
+      glVertex3f(0.0f, 0.15f, 0.0f);
+      glEnd();
 
-    glColor3f(0.0f, 0.0f, 1.0f);
-    glBegin(GL_LINES);
-    glVertex3f(0.0f, 0.0f, -0.1f);
-    glVertex3f(0.0f, 0.0f, 0.15f);
-    glEnd();
+      glColor3f(0.0f, 0.0f, 1.0f);
+      glBegin(GL_LINES);
+      glVertex3f(0.0f, 0.0f, -0.1f);
+      glVertex3f(0.0f, 0.0f, 0.15f);
+      glEnd();
+    }
   }
+
   glScalef(mZoom, mZoom, mZoom);
   glTranslatef(mTrans[0]*0.001, mTrans[1]*0.001, mTrans[2]*0.001);
 
   initLights();
   draw();
 
-  if (mRotate)
+  // Trackball indicator
+  if (mRotate && !mCapture)
     mTrackBall.draw(mWinWidth, mWinHeight);
 
   glutSwapBuffers();
+
+  if (mCapture)
+    screenshot();
 }
 
 void Win3D::initGL() {
@@ -261,6 +267,7 @@ void Win3D::initLights() {
   glEnable(GL_NORMALIZE);
 }
 
+// Remove once deprecated function, capturing(), is removed
 void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
                 GLdouble nearPlane, GLdouble farPlane,
                 GLdouble pixdx, GLdouble pixdy, GLdouble eyedx, GLdouble eyedy,
@@ -285,6 +292,7 @@ void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
   glTranslatef(-eyedx, -eyedy, 0.0);
 }
 
+// Remove once deprecated function, capturing(), is removed
 void accPerspective(GLdouble fovy, GLdouble aspect,
                     GLdouble nearPlane, GLdouble farPlane,
                     GLdouble pixdx, GLdouble pixdy,
