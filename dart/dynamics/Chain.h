@@ -73,16 +73,26 @@ public:
     operator Linkage::Criteria() const;
   };
 
+  /// Create a Chain given some Chain::Criteria
+  static ChainPtr create(const Chain::Criteria& _criteria,
+                         const std::string& _name = "Chain");
+
+  /// Create a Chain given a start and a target BodyNode
+  static ChainPtr create(BodyNode* _start, BodyNode* _target,
+                         const std::string& _name = "Chain");
+
+  /// Returns false if this Chain has been broken, or some new Branching has
+  /// been added.
+  bool isStillChain() const;
+
+protected:
+
   /// Constructor for the Chain class
   Chain(const Chain::Criteria& _criteria, const std::string& _name = "Chain");
 
   /// Alternative constructor for the Chain class
   Chain(BodyNode* _start, BodyNode* _target,
         const std::string& _name = "Chain");
-
-  /// Returns false if this Chain has been broken, or some new Branching has
-  /// been added.
-  bool isStillChain() const;
 
 };
 

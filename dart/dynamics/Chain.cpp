@@ -73,17 +73,21 @@ Chain::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-Chain::Chain(const Chain::Criteria& _criteria, const std::string& _name)
-  : Linkage(_criteria, _name)
+ChainPtr Chain::create(const Chain::Criteria& _criteria,
+                       const std::string& _name)
 {
-  // Do nothing
+  ChainPtr chain = Chain::create(_criteria, _name);
+  chain->mPtr = chain;
+  return chain;
 }
 
 //==============================================================================
-Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
-  : Linkage(Chain::Criteria(_start, _target), _name)
+ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
+                       const std::string& _name)
 {
-  // Do nothing
+  ChainPtr chain = Chain::create(_start, _target, _name);
+  chain->mPtr = chain;
+  return chain;
 }
 
 //==============================================================================
@@ -112,6 +116,20 @@ bool Chain::isStillChain() const
   }
 
   return true;
+}
+
+//==============================================================================
+Chain::Chain(const Chain::Criteria& _criteria, const std::string& _name)
+  : Linkage(_criteria, _name)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
+  : Linkage(Chain::Criteria(_start, _target), _name)
+{
+  // Do nothing
 }
 
 } // namespace dynamics

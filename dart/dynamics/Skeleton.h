@@ -110,6 +110,9 @@ public:
   /// Destructor
   virtual ~Skeleton();
 
+  /// Remove copy operator
+  Skeleton& operator=(const Skeleton& _other) = delete;
+
   /// Create an identical clone of this Skeleton.
   ///
   /// Note: the state of the Skeleton will NOT be cloned, only the structure and

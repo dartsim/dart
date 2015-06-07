@@ -165,9 +165,9 @@ public:
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;
   };
 
-  /// Constructor for the Linkage class. satisfyCriteria() will be called during
-  /// construction.
-  Linkage(const Criteria& _criteria, const std::string& _name = "Linkage");
+  /// Create a Linkage with the given Criteria
+  static LinkagePtr create(const Criteria& _criteria,
+                           const std::string& _name = "Linkage");
 
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way
@@ -180,6 +180,10 @@ public:
   void satisfyCriteria();
 
 protected:
+
+  /// Constructor for the Linkage class. satisfyCriteria() will be called during
+  /// construction.
+  Linkage(const Criteria& _criteria, const std::string& _name = "Linkage");
 
   /// Update any metadata needed by the Linkage or its derived classes
   virtual void update();

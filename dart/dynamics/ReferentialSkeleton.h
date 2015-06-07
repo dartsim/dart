@@ -51,6 +51,10 @@ class ReferentialSkeleton : public MetaSkeleton
 {
 public:
 
+  /// Remove copy operator
+  /// TODO(MXG): Consider allowing this
+  ReferentialSkeleton& operator=(const ReferentialSkeleton& _other) = delete;
+
   /// Default destructor
   virtual ~ReferentialSkeleton() = default;
 

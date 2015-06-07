@@ -429,11 +429,11 @@ void Linkage::Criteria::trimBodyNodes(std::vector<BodyNode *>& _bns,
 }
 
 //==============================================================================
-Linkage::Linkage(const Criteria& _criteria, const std::string& _name)
-  : mCriteria(_criteria)
+LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 {
-  setName(_name);
-  satisfyCriteria();
+  LinkagePtr linkage(new Linkage(_criteria, _name));
+  linkage->mPtr = linkage;
+  return linkage;
 }
 
 //==============================================================================
@@ -472,6 +472,14 @@ void Linkage::satisfyCriteria()
   }
 
   update();
+}
+
+//==============================================================================
+Linkage::Linkage(const Criteria& _criteria, const std::string& _name)
+  : mCriteria(_criteria)
+{
+  setName(_name);
+  satisfyCriteria();
 }
 
 //==============================================================================

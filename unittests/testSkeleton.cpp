@@ -575,27 +575,27 @@ TEST(Skeleton, Referential)
     SkeletonPtr skeleton = skeletons[i];
     for(size_t j=0; j<skeleton->getNumTrees(); ++j)
     {
-      Branch tree(skeleton->getRootBodyNode(j));
+      BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
 
       const std::vector<BodyNode*>& skelBns = skeleton->getTreeBodyNodes(j);
-      EXPECT_TRUE(tree.getNumBodyNodes() == skelBns.size());
+      EXPECT_TRUE(tree->getNumBodyNodes() == skelBns.size());
       for(BodyNode* bn : skelBns)
       {
-        EXPECT_FALSE(tree.getIndexOf(bn) == INVALID_INDEX);
-        EXPECT_TRUE(tree.getBodyNode(tree.getIndexOf(bn)) == bn);
+        EXPECT_FALSE(tree->getIndexOf(bn) == INVALID_INDEX);
+        EXPECT_TRUE(tree->getBodyNode(tree->getIndexOf(bn)) == bn);
       }
 
       const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
-      EXPECT_TRUE(tree.getNumDofs() == skelDofs.size());
+      EXPECT_TRUE(tree->getNumDofs() == skelDofs.size());
       for(DegreeOfFreedom* dof : skelDofs)
       {
-        EXPECT_FALSE(tree.getIndexOf(dof) == INVALID_INDEX);
-        EXPECT_TRUE(tree.getDof(tree.getIndexOf(dof)) == dof);
+        EXPECT_FALSE(tree->getIndexOf(dof) == INVALID_INDEX);
+        EXPECT_TRUE(tree->getDof(tree->getIndexOf(dof)) == dof);
       }
 
-      Eigen::VectorXd q = tree.getPositions();
-      Eigen::VectorXd dq = tree.getVelocities();
-      Eigen::VectorXd ddq = tree.getAccelerations();
+      Eigen::VectorXd q = tree->getPositions();
+      Eigen::VectorXd dq = tree->getVelocities();
+      Eigen::VectorXd ddq = tree->getAccelerations();
 
       for(size_t k=0; k<numIterations; ++k)
       {
@@ -606,48 +606,48 @@ TEST(Skeleton, Referential)
           ddq[r] = math::random(-10, 10);
         }
 
-        tree.setPositions(q);
-        tree.setVelocities(dq);
-        tree.setAccelerations(ddq);
+        tree->setPositions(q);
+        tree->setVelocities(dq);
+        tree->setAccelerations(ddq);
 
-        EXPECT_TRUE( equals(q, tree.getPositions(), 0.0) );
-        EXPECT_TRUE( equals(dq, tree.getVelocities(), 0.0) );
-        EXPECT_TRUE( equals(ddq, tree.getAccelerations(), 0.0) );
+        EXPECT_TRUE( equals(q, tree->getPositions(), 0.0) );
+        EXPECT_TRUE( equals(dq, tree->getVelocities(), 0.0) );
+        EXPECT_TRUE( equals(ddq, tree->getAccelerations(), 0.0) );
 
         const Eigen::MatrixXd& skelMassMatrix = skeleton->getMassMatrix();
-        const Eigen::MatrixXd& treeMassMatrix = tree.getMassMatrix();
+        const Eigen::MatrixXd& treeMassMatrix = tree->getMassMatrix();
 
         const Eigen::MatrixXd& skelAugM = skeleton->getAugMassMatrix();
-        const Eigen::MatrixXd& treeAugM = tree.getAugMassMatrix();
+        const Eigen::MatrixXd& treeAugM = tree->getAugMassMatrix();
 
         const Eigen::MatrixXd& skelInvM = skeleton->getInvMassMatrix();
-        const Eigen::MatrixXd& treeInvM = tree.getInvMassMatrix();
+        const Eigen::MatrixXd& treeInvM = tree->getInvMassMatrix();
 
         const Eigen::MatrixXd& skelInvAugM = skeleton->getInvAugMassMatrix();
-        const Eigen::MatrixXd& treeInvAugM = tree.getInvAugMassMatrix();
+        const Eigen::MatrixXd& treeInvAugM = tree->getInvAugMassMatrix();
 
         const Eigen::VectorXd& skelCvec = skeleton->getCoriolisForces();
-        const Eigen::VectorXd& treeCvec = tree.getCoriolisForces();
+        const Eigen::VectorXd& treeCvec = tree->getCoriolisForces();
 
         const Eigen::VectorXd& skelFg = skeleton->getGravityForces();
-        const Eigen::VectorXd& treeFg = tree.getGravityForces();
+        const Eigen::VectorXd& treeFg = tree->getGravityForces();
 
         const Eigen::VectorXd& skelCg = skeleton->getCoriolisAndGravityForces();
-        const Eigen::VectorXd& treeCg = tree.getCoriolisAndGravityForces();
+        const Eigen::VectorXd& treeCg = tree->getCoriolisAndGravityForces();
 
         const Eigen::VectorXd& skelFext = skeleton->getExternalForces();
-        const Eigen::VectorXd& treeFext = tree.getExternalForces();
+        const Eigen::VectorXd& treeFext = tree->getExternalForces();
 
         const Eigen::VectorXd& skelFc = skeleton->getConstraintForces();
-        const Eigen::VectorXd& treeFc = tree.getConstraintForces();
+        const Eigen::VectorXd& treeFc = tree->getConstraintForces();
 
-        const size_t nDofs = tree.getNumDofs();
+        const size_t nDofs = tree->getNumDofs();
         for(size_t r1=0; r1<nDofs; ++r1)
         {
-          const size_t sr1 = tree.getDof(r1)->getIndexInSkeleton();
+          const size_t sr1 = tree->getDof(r1)->getIndexInSkeleton();
           for(size_t r2=0; r2<nDofs; ++r2)
           {
-            const size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
+            const size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
 
             EXPECT_TRUE( skelMassMatrix(sr1,sr2) == treeMassMatrix(r1,r2) );
             EXPECT_TRUE( skelAugM(sr1,sr2) == treeAugM(r1,r2) );
@@ -663,16 +663,16 @@ TEST(Skeleton, Referential)
           EXPECT_TRUE( skelFc[sr1]   == treeFc[r1] );
         }
 
-        const size_t numBodyNodes = tree.getNumBodyNodes();
+        const size_t numBodyNodes = tree->getNumBodyNodes();
         for(size_t m=0; m<numBodyNodes; ++m)
         {
-          const BodyNode* bn = tree.getBodyNode(m);
-          const Eigen::MatrixXd Jtree = tree.getJacobian(bn);
+          const BodyNode* bn = tree->getBodyNode(m);
+          const Eigen::MatrixXd Jtree = tree->getJacobian(bn);
           const Eigen::MatrixXd Jskel = skeleton->getJacobian(bn);
 
           for(size_t r2=0; r2<nDofs; ++r2)
           {
-            const size_t sr2 = tree.getDof(r2)->getIndexInSkeleton();
+            const size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
             for(size_t r1=0; r1<6; ++r1)
             {
               EXPECT_TRUE( Jtree(r1,r2) == Jskel(r1, sr2) );
@@ -720,7 +720,7 @@ SkeletonPtr constructLinkageTestSkeleton()
 
 void checkForBodyNodes(
     size_t& /*count*/,
-    const ReferentialSkeleton& /*refSkel*/,
+    const ReferentialSkeletonPtr& /*refSkel*/,
     const SkeletonPtr& /*skel*/)
 {
   // Do nothing
@@ -731,16 +731,16 @@ void checkForBodyNodes(
 template <typename ... Args>
 void checkForBodyNodes(
     size_t& count,
-    const ReferentialSkeleton& refSkel,
+    const ReferentialSkeletonPtr& refSkel,
     const SkeletonPtr& skel,
     const std::string& name,
     Args ... args)
 {
-  bool contains = refSkel.getIndexOf(skel->getBodyNode(name)) != INVALID_INDEX;
+  bool contains = refSkel->getIndexOf(skel->getBodyNode(name)) != INVALID_INDEX;
   EXPECT_TRUE(contains);
   if(!contains)
   {
-    dtwarn << "The ReferentialSkeleton [" << refSkel.getName() << "] does NOT "
+    dtwarn << "The ReferentialSkeleton [" << refSkel->getName() << "] does NOT "
            << "contain the BodyNode [" << name << "] of the Skeleton ["
            << skel->getName() << "]\n";
   }
@@ -751,7 +751,7 @@ void checkForBodyNodes(
 
 template <typename ... Args>
 size_t checkForBodyNodes(
-    const ReferentialSkeleton& refSkel,
+    const ReferentialSkeletonPtr& refSkel,
     const SkeletonPtr& skel,
     bool checkCount,
     Args ... args)
@@ -760,7 +760,7 @@ size_t checkForBodyNodes(
   checkForBodyNodes(count, refSkel, skel, args...);
 
   if(checkCount)
-    EXPECT_TRUE(count == refSkel.getNumBodyNodes());
+    EXPECT_TRUE(count == refSkel->getNumBodyNodes());
 
   return count;
 }
@@ -770,11 +770,11 @@ TEST(Skeleton, Linkage)
   // Test a variety of uses of Linkage::Criteria
   SkeletonPtr skel = constructLinkageTestSkeleton();
 
-  Branch subtree(skel->getBodyNode("c3b3"), "subtree");
+  BranchPtr subtree = Branch::create(skel->getBodyNode("c3b3"), "subtree");
   checkForBodyNodes(subtree, skel, true,
                     "c3b3", "c3b4", "c4b1", "c4b2", "c4b3");
 
-  Chain midchain(skel->getBodyNode("c1b3"),
+  ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
                  skel->getBodyNode("c3b4"), "midchain");
   checkForBodyNodes(midchain, skel, true, "c1b3", "c3b1", "c3b2", "c3b3");
 
@@ -782,7 +782,7 @@ TEST(Skeleton, Linkage)
   criteria.mStart = skel->getBodyNode("c5b2");
   criteria.mTargets.push_back(
         Linkage::Criteria::Target(skel->getBodyNode("c4b3")));
-  Linkage path(criteria, "path");
+  LinkagePtr path = Linkage::create(criteria, "path");
   checkForBodyNodes(path, skel, true, "c5b2", "c5b1", "c1b3", "c3b1", "c3b2",
                                       "c3b3", "c4b1", "c4b2", "c4b3");
 
@@ -794,7 +794,7 @@ TEST(Skeleton, Linkage)
         Linkage::Criteria::Target(skel->getBodyNode("c3b1(1)"),
                                   Linkage::Criteria::UPSTREAM));
 
-  Linkage combinedTreeBases(criteria, "combinedTreeBases");
+  LinkagePtr combinedTreeBases = Linkage::create(criteria, "combinedTreeBases");
   checkForBodyNodes(combinedTreeBases, skel, true,
                     "c3b1",    "c1b3",    "c2b1",    "c2b2",    "c2b3",
                     "c3b1(1)", "c1b3(1)", "c2b1(1)", "c2b2(1)", "c2b3(1)",
@@ -806,7 +806,7 @@ TEST(Skeleton, Linkage)
   criteria.mTargets.push_back(
         Linkage::Criteria::Target(skel2->getBodyNode("c3b1"),
                                   Linkage::Criteria::UPSTREAM));
-  Linkage combinedSkelBases(criteria, "combinedSkelBases");
+  LinkagePtr combinedSkelBases = Linkage::create(criteria, "combinedSkelBases");
   size_t count = 0;
   count += checkForBodyNodes(combinedSkelBases, skel, false,
                              "c3b1", "c1b3", "c2b1", "c2b2", "c2b3",
@@ -814,13 +814,13 @@ TEST(Skeleton, Linkage)
   count += checkForBodyNodes(combinedSkelBases, skel2, false,
                              "c3b1", "c1b3", "c2b1", "c2b2", "c2b3",
                              "c5b1", "c5b2", "c1b2", "c1b1");
-  EXPECT_TRUE( count == combinedSkelBases.getNumBodyNodes() );
+  EXPECT_TRUE( count == combinedSkelBases->getNumBodyNodes() );
 
-  Chain downstreamFreeJoint(skel->getBodyNode("c1b1"),
+  ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
                             skel->getBodyNode("c1b3"), "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
 
-  Chain upstreamFreeJoint(skel->getBodyNode("c1b3"),
+  ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
 
@@ -828,7 +828,7 @@ TEST(Skeleton, Linkage)
   criteria.mTargets.push_back(skel->getBodyNode("c4b3"));
   criteria.mStart = skel->getBodyNode("c1b3");
   criteria.mTerminals.push_back(skel->getBodyNode("c3b2"));
-  Linkage terminatedLinkage(criteria, "terminatedLinkage");
+  LinkagePtr terminatedLinkage = Linkage::create(criteria, "terminatedLinkage");
   checkForBodyNodes(terminatedLinkage, skel, true,
                     "c1b3", "c3b1", "c3b2");
 
@@ -839,14 +839,14 @@ TEST(Skeleton, Linkage)
   criteria.mTerminals.push_back(
         Linkage::Criteria::Terminal(skel->getBodyNode("c2b1"), false));
   criteria.mTerminals.push_back(skel->getBodyNode("c3b3"));
-  Linkage terminatedSubtree(criteria, "terminatedSubtree");
+  LinkagePtr terminatedSubtree = Linkage::create(criteria, "terminatedSubtree");
   checkForBodyNodes(terminatedSubtree, skel, true,
                     "c1b1", "c1b2", "c1b3", "c5b1",
                     "c5b2", "c3b1", "c3b2", "c3b3");
 
   criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
   criteria.mStart.mNode = skel->getBodyNode("c3b1");
-  Linkage terminatedUpstream(criteria, "terminatedUpstream");
+  LinkagePtr terminatedUpstream = Linkage::create(criteria, "terminatedUpstream");
   checkForBodyNodes(terminatedUpstream, skel, true,
                     "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
 }
