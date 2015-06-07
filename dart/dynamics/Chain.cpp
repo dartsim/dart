@@ -76,7 +76,7 @@ Chain::Criteria::operator Linkage::Criteria() const
 ChainPtr Chain::create(const Chain::Criteria& _criteria,
                        const std::string& _name)
 {
-  ChainPtr chain = Chain::create(_criteria, _name);
+  ChainPtr chain(new Chain(_criteria, _name));
   chain->mPtr = chain;
   return chain;
 }
@@ -85,7 +85,7 @@ ChainPtr Chain::create(const Chain::Criteria& _criteria,
 ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
                        const std::string& _name)
 {
-  ChainPtr chain = Chain::create(_start, _target, _name);
+  ChainPtr chain(new Chain(_start, _target, _name));
   chain->mPtr = chain;
   return chain;
 }
