@@ -52,6 +52,15 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
+  dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(1);
+  dart::dynamics::SkeletonPtr clone = skel->clone();
+  clone->init();
+
+  // create controller
+  Controller* myController = new Controller(myWorld->getSkeleton(1),
+                                            myWorld->getTimeStep());
+  dart::dynamics::MetaSkeletonPtr group = myController->getSkel();
+
   std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);
   genCoordIds.push_back(6);   // left hip
@@ -63,12 +72,9 @@ int main(int argc, char* argv[]) {
   genCoordIds.push_back(13);  // lower back
   Eigen::VectorXd initConfig(8);
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  myWorld->getSkeleton(1)->setPositions(genCoordIds, initConfig);
-  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
+  group->setPositions(genCoordIds, initConfig);
 
-  // create controller
-  Controller* myController = new Controller(myWorld->getSkeleton(1),
-                                            myWorld->getTimeStep());
+  myController->resetDesiredDofs();
 
   // create a window and link it to the world
   MyWindow window;
