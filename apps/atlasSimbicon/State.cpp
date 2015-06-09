@@ -51,6 +51,43 @@ using namespace dart::dynamics;
 using namespace dart::constraint;
 
 //==============================================================================
+void createIndexing(std::vector<size_t>&)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename ...Args>
+void createIndexing(std::vector<size_t>& _indexing, size_t _name,
+                    Args... args)
+{
+  _indexing.push_back(_name);
+  createIndexing(_indexing, args...);
+}
+
+//==============================================================================
+static std::vector<size_t> createIndexing()
+{
+  // This app was made with dof indices hardcoded, but some internal DART
+  // development have changed the underlying indexing for the robot, so this
+  // map converts the old indexing into the new indexing as a temporary (or
+  // maybe permanent) workaround.
+
+  std::vector<size_t> indexing;
+  //                        0   1   2   3   4   5   6
+  createIndexing(indexing,  0,  1,  2,  3,  4,  5,  6,
+  //                        7   8   9  10  11  12  13
+                           14, 26,  7, 15, 27,  8, 16,
+  //                       14  15  16  17  18  19  20
+                           28,  9, 21, 17, 29, 10, 22,
+  //                       21  22  23  24  25  26  27
+                           18, 30, 11, 23, 19, 31, 12,
+  //                       28  29  30  31  32
+                           24, 13, 25, 20, 32);
+  return indexing;
+}
+
+//==============================================================================
 State::State(SkeletonPtr _skeleton, const std::string& _name)
   : mName(_name),
     mSkeleton(_skeleton),
@@ -62,7 +99,8 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
     mDesiredGlobalSwingLegAngleOnSagital(0.0),
     mDesiredGlobalSwingLegAngleOnCoronal(0.0),
     mDesiredGlobalPelvisAngleOnSagital(0.0),
-    mDesiredGlobalPelvisAngleOnCoronal(0.0)
+    mDesiredGlobalPelvisAngleOnCoronal(0.0),
+    mDofMapping(createIndexing())
 {
   int dof = mSkeleton->getNumDofs();
 
@@ -145,8 +183,8 @@ void State::computeControlForce(double _timestep)
   assert(mNextState != NULL && "Next state should be set.");
 
   int dof = mSkeleton->getNumDofs();
-  VectorXd q = mSkeleton->getPositions();
-  VectorXd dq = mSkeleton->getVelocities();
+  VectorXd q = mSkeleton->getPositions(mDofMapping);
+  VectorXd dq = mSkeleton->getVelocities(mDofMapping);
 
   // Compute relative joint angles from desired global angles of the pelvis and
   // the swing leg
@@ -197,7 +235,7 @@ void State::computeControlForce(double _timestep)
   _updateTorqueForStanceLeg();
 
   // Apply control torque to the skeleton
-  mSkeleton->setForces(mTorque);
+  mSkeleton->setForces(mDofMapping, mTorque);
 
   mElapsedTime += _timestep;
   mFrame++;

@@ -70,10 +70,12 @@ Branch::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-Branch::Branch(const Branch::Criteria& _criteria, const std::string& _name)
-  : Linkage(_criteria, _name)
+BranchPtr Branch::create(const Branch::Criteria& _criteria,
+                         const std::string& _name)
 {
-  update();
+  BranchPtr branch(new Branch(_criteria, _name));
+  branch->mPtr = branch;
+  return branch;
 }
 
 //==============================================================================
@@ -90,6 +92,13 @@ bool Branch::isStillBranch() const
   }
 
   return true;
+}
+
+//==============================================================================
+Branch::Branch(const Branch::Criteria& _criteria, const std::string& _name)
+  : Linkage(_criteria, _name)
+{
+  update();
 }
 
 //==============================================================================

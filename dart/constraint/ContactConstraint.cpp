@@ -92,8 +92,8 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
   mContacts.push_back(&_contact);
 
   // TODO(JS):
-  mBodyNode1 = _contact.bodyNode1;
-  mBodyNode2 = _contact.bodyNode2;
+  mBodyNode1 = _contact.bodyNode1.lock();
+  mBodyNode2 = _contact.bodyNode2.lock();
 
   //----------------------------------------------
   // Bounce

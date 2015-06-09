@@ -77,6 +77,18 @@ DART_DYNAMICS_MAKE_SHARED_WEAK(MetaSkeleton)
 class ReferentialSkeleton;
 DART_DYNAMICS_MAKE_SHARED_WEAK(ReferentialSkeleton)
 
+class Group;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Group)
+
+class Linkage;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Linkage)
+
+class Branch;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Branch)
+
+class Chain;
+DART_DYNAMICS_MAKE_SHARED_WEAK(Chain)
+
 // Shape smart pointers
 class Shape;
 DART_DYNAMICS_MAKE_SHARED_WEAK(Shape)

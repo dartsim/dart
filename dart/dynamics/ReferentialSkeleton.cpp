@@ -103,6 +103,8 @@ static std::vector<T2>& convertVector(const std::vector<T1>& t1_vec,
 //==============================================================================
 const std::vector<BodyNode*>& ReferentialSkeleton::getBodyNodes()
 {
+  // TODO(MXG): This might not be necessary, since there should never be a
+  // discrepancy between the raw BodyNodes and the BodyNodePtrs
   return convertVector<BodyNodePtr, BodyNode*>(
         mBodyNodes, mRawBodyNodes);
 }
@@ -224,6 +226,9 @@ const DegreeOfFreedom* ReferentialSkeleton::getDof(size_t _idx) const
 //==============================================================================
 const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
 {
+  // We want to refill the raw DegreeOfFreedom vector, because the pointers will
+  // change any time a BodyNode's parent Joint gets changed, and we have no way
+  // of knowing when that might happen.
   return convertVector<DegreeOfFreedomPtr, DegreeOfFreedom*>(
         mDofs, mRawDofs);
 }
@@ -231,6 +236,9 @@ const std::vector<DegreeOfFreedom*>& ReferentialSkeleton::getDofs()
 //==============================================================================
 std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
 {
+  // We want to refill the raw DegreeOfFreedom vector, because the pointers will
+  // change any time a BodyNode's parent Joint gets changed, and we have no way
+  // of knowing when that might happen.
   return convertVector<DegreeOfFreedomPtr, const DegreeOfFreedom*>(
         mDofs, mRawConstDofs);
 }
@@ -1112,6 +1120,8 @@ void ReferentialSkeleton::updateCaches()
   mRawConstDofs.clear();
   mRawConstDofs.reserve(mDofs.size());
 
+  // TODO(MXG): This shouldn't actually be necessary, because this always gets
+  // refilled whenever getDofs() is called.
   for(const DegreeOfFreedomPtr& dof : mDofs)
   {
     mRawDofs.push_back(dof);

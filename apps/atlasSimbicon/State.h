@@ -297,6 +297,10 @@ protected:
   /// \brief Joint map
   std::map<const std::string, int> mJointMap;
 
+  /// \brief Maps the dofs from the indexing expected by the controller to the
+  /// Skeleton's actual indexing
+  std::vector<size_t> mDofMapping;
+
 private:
   /// \brief Build joint map
   void _buildJointMap();

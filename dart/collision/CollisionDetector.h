@@ -44,7 +44,6 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionNode.h"
-#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Ptr.h"
 
 namespace dart {
@@ -68,10 +67,10 @@ struct Contact {
   Eigen::Vector3d force;
 
   /// First colliding body node
-  sub_ptr<dynamics::BodyNode> bodyNode1;
+  dynamics::WeakBodyNodePtr bodyNode1;
 
   /// Second colliding body node
-  sub_ptr<dynamics::BodyNode> bodyNode2;
+  dynamics::WeakBodyNodePtr bodyNode2;
 
   /// First colliding shape of the first body node
   dynamics::ShapePtr shape1;

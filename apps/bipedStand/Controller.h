@@ -53,15 +53,16 @@ public:
   Eigen::VectorXd getTorques();
   double getTorque(int _index);
   void setDesiredDof(int _index, double _val);
-  void computeTorques(const Eigen::VectorXd& _dof,
-                      const Eigen::VectorXd& _dofVel);
-  dart::dynamics::SkeletonPtr getSkel();
+  void resetDesiredDofs();
+  void computeTorques();
+  dart::dynamics::MetaSkeletonPtr getSkel();
   Eigen::VectorXd getDesiredDofs();
   Eigen::MatrixXd getKp();
   Eigen::MatrixXd getKd();
 
 protected:
-  dart::dynamics::SkeletonPtr mSkel;
+  dart::dynamics::MetaSkeletonPtr mSkel;
+  dart::dynamics::BodyNodePtr mLeftHeel;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;

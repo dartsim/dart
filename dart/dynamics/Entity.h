@@ -43,7 +43,6 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
-#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
