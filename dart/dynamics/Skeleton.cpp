@@ -205,7 +205,6 @@ void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
   mTimeStep = _timeStep;
-  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
@@ -218,8 +217,6 @@ double Skeleton::getTimeStep() const
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
   mGravity = _gravity;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
 }
 
 //==============================================================================
@@ -343,13 +340,6 @@ SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
 const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
   return mNameMgrForSoftBodyNodes.getObject(_name);
-}
-
-//==============================================================================
-size_t Skeleton::getNumJoints() const
-{
-  // The number of joints and body nodes are identical
-  return getNumBodyNodes();
 }
 
 //==============================================================================
@@ -479,7 +469,7 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   }
 
   // Compute transformations, velocities, and partial accelerations
-//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
+  computeForwardDynamicsRecursionPartA();
 
   // Set dimension of dynamics quantities
   size_t dof = getNumDofs();
@@ -657,20 +647,8 @@ Eigen::VectorXd Skeleton::getPositionSegment(
 void Skeleton::setPositionSegment(const std::vector<size_t>& _id,
                                   const Eigen::VectorXd& _positions)
 {
-  assert((int)_id.size() == _positions.size());
-  if((int)_id.size() != _positions.size())
-  {
-    dterr << "[Skeleton::setPositionSegment] Mismatch between _id size ("
-          << _id.size() << ") and _positions size (" << _positions.size()
-          << "). Positions will NOT be set!\n";
-    return;
-  }
-
   for (size_t i = 0; i < _id.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_id[i]);
-    dof->setPosition(_positions[i]);
-  }
+    mDofs[_id[i]]->setPosition(_positions[i]);
 }
 
 //==============================================================================
@@ -745,26 +723,6 @@ void Skeleton::setVelocities(const Eigen::VectorXd& _velocities)
 }
 
 //==============================================================================
-void Skeleton::setVelocitySegment(const std::vector<size_t>& _id,
-                                  const Eigen::VectorXd& _velocities)
-{
-  assert((int)_id.size() == _velocities.size());
-  if((int)_id.size() != _velocities.size())
-  {
-    dterr << "[Skeleton::setVelocitySegment] Mismatch between _id size ("
-          << _id.size() << ") and _velocity size (" << _velocities.size()
-          << "). Velocities will NOT be set!\n";
-    return;
-  }
-
-  for (size_t i=0; i<_id.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_id[i]);
-    dof->setVelocity(_velocities[i]);
-  }
-}
-
-//==============================================================================
 Eigen::VectorXd Skeleton::getVelocities() const
 {
   Eigen::VectorXd dq(getNumDofs());
@@ -779,20 +737,6 @@ Eigen::VectorXd Skeleton::getVelocities() const
       size_t index = joint->getDof(0)->getIndexInSkeleton();
       dq.segment(index, dof) = joint->getVelocities();
     }
-  }
-
-  return dq;
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getVelocitySegment(const std::vector<size_t>& _id) const
-{
-  Eigen::VectorXd dq(_id.size());
-
-  for(size_t i=0; i<_id.size(); ++i)
-  {
-    const DegreeOfFreedom* dof = getDof(_id[i]);
-    dq[i] = dof->getVelocity();
   }
 
   return dq;
@@ -870,26 +814,6 @@ void Skeleton::setAccelerations(const Eigen::VectorXd& _accelerations)
 }
 
 //==============================================================================
-void Skeleton::setAccelerationSegment(const std::vector<size_t>& _id,
-                                      const Eigen::VectorXd& _accelerations)
-{
-  assert((int)_id.size() == _accelerations.size());
-  if((int)_id.size() != _accelerations.size())
-  {
-    dterr << "[Skeleton::setAccelerationSegment] Mismatch between _id size ("
-          << _id.size() << ") and _acceleration size (" << _accelerations.size()
-          << "). Accelerations will NOT be set!\n";
-    return;
-  }
-
-  for (size_t i=0; i<_id.size(); ++i)
-  {
-    DegreeOfFreedom* dof = getDof(_id[i]);
-    dof->setAcceleration(_accelerations[i]);
-  }
-}
-
-//==============================================================================
 Eigen::VectorXd Skeleton::getAccelerations() const
 {
   Eigen::VectorXd ddq(getNumDofs());
@@ -904,20 +828,6 @@ Eigen::VectorXd Skeleton::getAccelerations() const
       size_t index = joint->getDof(0)->getIndexInSkeleton();
       ddq.segment(index, dof) = joint->getAccelerations();
     }
-  }
-
-  return ddq;
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getAccelerationSegment(const std::vector<size_t>& _id) const
-{
-  Eigen::VectorXd ddq(_id.size());
-
-  for (size_t i=0; i<_id.size(); ++i)
-  {
-    const DegreeOfFreedom* dof = getDof(_id[i]);
-    ddq[i] = dof->getAcceleration();
   }
 
   return ddq;
@@ -1191,6 +1101,24 @@ void Skeleton::computeForwardKinematics(bool _updateTransforms,
       (*it)->updateAccelerationID();
     }
   }
+
+  mIsArticulatedInertiaDirty = true;
+  mIsMassMatrixDirty = true;
+  mIsAugMassMatrixDirty = true;
+  mIsInvMassMatrixDirty = true;
+  mIsInvAugMassMatrixDirty = true;
+  mIsCoriolisForcesDirty = true;
+  mIsGravityForcesDirty = true;
+  mIsCoriolisAndGravityForcesDirty = true;
+  mIsExternalForcesDirty = true;
+//  mIsDampingForceVectorDirty = true;
+
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->mIsBodyJacobianDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
+  }
 }
 
 //==============================================================================
@@ -1332,7 +1260,8 @@ const Eigen::VectorXd& Skeleton::getConstraintForceVector()
 }
 
 //==============================================================================
-void Skeleton::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
+void Skeleton::draw(renderer::RenderInterface* _ri,
+                    const Eigen::Vector4d& _color,
                     bool _useDefaultColor) const
 {
   getRootBodyNode()->draw(_ri, _color, _useDefaultColor);
@@ -1379,34 +1308,6 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeName(dof->getName());
   }
-}
-
-//==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate()
-{
-  if(mIsArticulatedInertiaDirty)
-    return;
-
-  mIsArticulatedInertiaDirty = true;
-  mIsMassMatrixDirty = true;
-  mIsAugMassMatrixDirty = true;
-  mIsInvMassMatrixDirty = true;
-  mIsInvAugMassMatrixDirty = true;
-  mIsCoriolisForcesDirty = true;
-  mIsGravityForcesDirty = true;
-  mIsCoriolisAndGravityForcesDirty = true;
-}
-
-//==============================================================================
-void Skeleton::updateArticulatedInertia() const
-{
-  for (std::vector<BodyNode*>::const_reverse_iterator it = mBodyNodes.rbegin();
-       it != mBodyNodes.rend(); ++it)
-  {
-    (*it)->updateArtInertia(mTimeStep);
-  }
-
-  mIsArticulatedInertiaDirty = false;
 }
 
 //==============================================================================
@@ -1531,9 +1432,16 @@ void Skeleton::updateInvMassMatrix()
   // Backup the origianl internal force
   Eigen::VectorXd originalInternalForce = getForces();
 
-  // Note: we do not need to update articulated inertias here, because they will
-  // be updated when BodyNode::updateInvMassMatrix() calls
-  // BodyNode::getArticulatedInertia()
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (std::vector<BodyNode*>::reverse_iterator it = mBodyNodes.rbegin();
+         it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArtInertia(mTimeStep);
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
 
   int dof = getNumDofs();
   Eigen::VectorXd e = Eigen::VectorXd::Zero(dof);
@@ -1804,7 +1712,7 @@ void Skeleton::updateExternalForces()
 void Skeleton::computeForwardDynamics()
 {
   //
-//  computeForwardDynamicsRecursionPartA(); // No longer needed with auto-update
+  computeForwardDynamicsRecursionPartA();
 
   //
   computeForwardDynamicsRecursionPartB();
@@ -1838,20 +1746,30 @@ void Skeleton::computeForwardDynamicsRecursionPartA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsWorldJacobianDirty = true;
-    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
-    (*it)->mIsWorldJacobianClassicDerivDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
   }
 }
 
 //==============================================================================
 void Skeleton::computeForwardDynamicsRecursionPartB()
 {
-  // Note: Articulated Inertias will be updated automatically when
-  // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
+  // Backward recursion
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArtInertia(mTimeStep);
+      (*it)->updateBiasForce(mGravity, mTimeStep);
+    }
+    // TODO: Replace with std::make_reverse_iterator when we migrate to C++14
 
-  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    (*it)->updateBiasForce(mGravity, mTimeStep);
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+      (*it)->updateBiasForce(mGravity, mTimeStep);
+  }
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
@@ -1866,6 +1784,9 @@ void Skeleton::computeForwardDynamicsRecursionPartB()
 void Skeleton::computeInverseDynamics(bool _withExternalForces,
                                       bool _withDampingForces)
 {
+  //
+  computeInverseDynamicsRecursionA();
+
   //
   computeInverseDynamicsRecursionB(_withExternalForces, _withDampingForces);
 }
@@ -1897,9 +1818,7 @@ void Skeleton::computeInverseDynamicsRecursionA()
        it != mBodyNodes.end(); ++it)
   {
     (*it)->mIsBodyJacobianDirty = true;
-    (*it)->mIsWorldJacobianDirty = true;
-    (*it)->mIsBodyJacobianSpatialDerivDirty = true;
-    (*it)->mIsWorldJacobianClassicDerivDirty = true;
+    (*it)->mIsBodyJacobianDerivDirty = true;
   }
 }
 
@@ -2098,13 +2017,22 @@ void Skeleton::computeImpulseForwardDynamics()
   if (!isMobile() || getNumDofs() == 0)
     return;
 
-  // Note: we do not need to update articulated inertias here, because they will
-  // be updated when BodyNode::updateBiasImpulse() calls
-  // BodyNode::getArticulatedInertia()
-
   // Backward recursion
-  for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
-    (*it)->updateBiasImpulse();
+  if (mIsArticulatedInertiaDirty)
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+    {
+      (*it)->updateArtInertia(mTimeStep);
+      (*it)->updateBiasImpulse();
+    }
+
+    mIsArticulatedInertiaDirty = false;
+  }
+  else
+  {
+    for (auto it = mBodyNodes.rbegin(); it != mBodyNodes.rend(); ++it)
+      (*it)->updateBiasImpulse();
+  }
 
   // Forward recursion
   for (auto& bodyNode : mBodyNodes)
@@ -2123,175 +2051,123 @@ void Skeleton::setConstraintForceVector(const Eigen::VectorXd& _Fc)
 }
 
 //==============================================================================
-Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
+Eigen::Vector3d Skeleton::getWorldCOM()
 {
+  // COM
   Eigen::Vector3d com(0.0, 0.0, 0.0);
 
-  const size_t numBodies = getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
+  // Compute sum of each body's COM multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++)
   {
-    const BodyNode* bodyNode = getBodyNode(i);
-    com += bodyNode->getMass() * bodyNode->getCOM(_withRespectTo);
+    BodyNode* bodyNode = getBodyNode(i);
+    com += bodyNode->getMass() * bodyNode->getWorldCOM();
   }
 
+  // Divide the sum by the total mass
   assert(mTotalMass != 0.0);
   return com / mTotalMass;
 }
 
 //==============================================================================
-
-// Templated function for computing different kinds of COM properties, like
-// velocities and accelerations
-template <
-    typename PropertyType,
-    PropertyType (BodyNode::*getPropertyFn)(const Frame*, const Frame*) const>
-PropertyType getCOMPropertyTemplate(const Skeleton* _skel,
-                                    const Frame* _relativeTo,
-                                    const Frame* _inCoordinatesOf)
-{
-  PropertyType result(PropertyType::Zero());
-
-  const size_t numBodies = _skel->getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
-  {
-    const BodyNode* bodyNode = _skel->getBodyNode(i);
-    result += bodyNode->getMass()
-              * (bodyNode->*getPropertyFn)(_relativeTo, _inCoordinatesOf);
-  }
-
-  assert(_skel->getMass() != 0.0);
-  return result / _skel->getMass();
-}
-
-//==============================================================================
-Eigen::Vector6d Skeleton::getCOMSpatialVelocity(const Frame* _relativeTo,
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMPropertyTemplate<Eigen::Vector6d,
-      &BodyNode::getCOMSpatialVelocity>(this, _relativeTo, _inCoordinatesOf);
-}
-
-//==============================================================================
-Eigen::Vector3d Skeleton::getCOMLinearVelocity(const Frame* _relativeTo,
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMPropertyTemplate<Eigen::Vector3d,
-      &BodyNode::getCOMLinearVelocity>(this, _relativeTo, _inCoordinatesOf);
-}
-
-//==============================================================================
-Eigen::Vector6d Skeleton::getCOMSpatialAcceleration(const Frame* _relativeTo,
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMPropertyTemplate<Eigen::Vector6d,
-      &BodyNode::getCOMSpatialAcceleration>(this, _relativeTo, _inCoordinatesOf);
-}
-
-//==============================================================================
-Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMPropertyTemplate<Eigen::Vector3d,
-      &BodyNode::getCOMLinearAcceleration>(this, _relativeTo, _inCoordinatesOf);
-}
-
-//==============================================================================
-
-// Templated function for computing different kinds of COM Jacobians and their
-// derivatives
-template <
-    typename JacType, // JacType is the type of Jacobian we're computing
-    JacType (BodyNode::*getJacFn)(const Eigen::Vector3d&, const Frame*) const>
-JacType getCOMJacobianTemplate(const Skeleton* _skel,
-                               const Frame* _inCoordinatesOf)
-{
-  // Initialize the Jacobian to zero
-  JacType J = JacType::Zero(JacType::RowsAtCompileTime, _skel->getNumDofs());
-
-  // Iterate through each of the Skeleton's BodyNodes
-  const size_t numBodies = _skel->getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
-  {
-    const BodyNode* bn = _skel->getBodyNode(i);
-
-    // (bn->*getJacFn) is a function pointer to the function that gives us the
-    // kind of Jacobian we want from the BodyNodes. Calling it will give us the
-    // relevant Jacobian for this BodyNode
-    JacType bnJ = bn->getMass() * (bn->*getJacFn)(bn->getLocalCOM(),
-                                                  _inCoordinatesOf);
-
-    // For each column in the Jacobian of this BodyNode, we add it to the
-    // appropriate column of the overall BodyNode
-    for (size_t j=0, end=bn->getNumDependentGenCoords(); j < end; ++j)
-    {
-      size_t idx = bn->getDependentGenCoordIndex(j);
-      J.col(idx) += bnJ.col(j);
-    }
-  }
-
-  assert(_skel->getMass() != 0.0);
-  return J / _skel->getMass();
-}
-
-//==============================================================================
-math::Jacobian Skeleton::getCOMJacobian(const Frame* _inCoordinatesOf) const
-{
-  return getCOMJacobianTemplate<math::Jacobian, &BodyNode::getJacobian>(
-        this, _inCoordinatesOf);
-}
-
-//==============================================================================
-math::LinearJacobian Skeleton::getCOMLinearJacobian(
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMJacobianTemplate<math::LinearJacobian,
-           &BodyNode::getLinearJacobian>(this, _inCoordinatesOf);
-}
-
-//==============================================================================
-math::Jacobian Skeleton::getCOMJacobianSpatialDeriv(
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMJacobianTemplate<math::Jacobian,
-      &BodyNode::getJacobianSpatialDeriv>(this, _inCoordinatesOf);
-}
-
-//==============================================================================
-math::LinearJacobian Skeleton::getCOMLinearJacobianDeriv(
-    const Frame* _inCoordinatesOf) const
-{
-  return getCOMJacobianTemplate<math::LinearJacobian,
-      &BodyNode::getLinearJacobianDeriv>(this, _inCoordinatesOf);
-}
-
-//==============================================================================
-Eigen::Vector3d Skeleton::getWorldCOM()
-{
-  return getCOM(Frame::World());
-}
-
-//==============================================================================
 Eigen::Vector3d Skeleton::getWorldCOMVelocity()
 {
-  return getCOMLinearVelocity();
+  // Velocity of COM
+  Eigen::Vector3d comVel(0.0, 0.0, 0.0);
+
+  // Compute sum of each body's COM velocities multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++)
+  {
+    BodyNode* bodyNode = getBodyNode(i);
+    comVel += bodyNode->getMass() * bodyNode->getWorldCOMVelocity();
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comVel / mTotalMass;
 }
 
 //==============================================================================
 Eigen::Vector3d Skeleton::getWorldCOMAcceleration()
 {
-  return getCOMLinearAcceleration();
+  // Acceleration of COM
+  Eigen::Vector3d comAcc(0.0, 0.0, 0.0);
+
+  // Compute sum of each body's COM accelerations multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++) {
+    BodyNode* bodyNode = getBodyNode(i);
+    comAcc += bodyNode->getMass() * bodyNode->getWorldCOMAcceleration();
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return comAcc / mTotalMass;
 }
 
 //==============================================================================
 Eigen::MatrixXd Skeleton::getWorldCOMJacobian()
 {
-  return getCOMLinearJacobian();
+  // Jacobian of COM
+  Eigen::MatrixXd J = Eigen::MatrixXd::Zero(3, getNumDofs());
+
+  // Compute sum of each body's Jacobian of COM accelerations multiplied by
+  // body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++)
+  {
+    // BodyNode iterator
+    BodyNode* bodyNode = getBodyNode(i);
+
+    // Compute weighted Jacobian
+    Eigen::MatrixXd localJ
+        = bodyNode->getMass()
+          * bodyNode->getWorldLinearJacobian(bodyNode->getLocalCOM());
+
+    // Assign the weighted Jacobian to total Jacobian
+    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
+    {
+      int idx = bodyNode->getDependentGenCoordIndex(j);
+      J.col(idx) += localJ.col(j);
+    }
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return J / mTotalMass;
 }
 
 //==============================================================================
 Eigen::MatrixXd Skeleton::getWorldCOMJacobianTimeDeriv()
 {
-  return getCOMLinearJacobianDeriv();
+  // Jacobian time derivative of COM
+  Eigen::MatrixXd dJ = Eigen::MatrixXd::Zero(3, getNumDofs());
+
+  // Compute sum of each body's Jacobian time derivative of COM accelerations
+  // multiplied by body's mass
+  const int nNodes = getNumBodyNodes();
+  for (int i = 0; i < nNodes; i++)
+  {
+    // BodyNode iterator
+    BodyNode* bodyNode = getBodyNode(i);
+
+    // Compute weighted Jacobian time derivative
+    Eigen::MatrixXd localJ
+        = bodyNode->getMass()
+          * bodyNode->getWorldLinearJacobianDeriv(bodyNode->getLocalCOM());
+
+    // Assign the weighted Jacobian to total Jacobian time derivative
+    for (size_t j = 0; j < bodyNode->getNumDependentGenCoords(); ++j)
+    {
+      int idx = bodyNode->getDependentGenCoordIndex(j);
+      dJ.col(idx) += localJ.col(j);
+    }
+  }
+
+  // Divide the sum by the total mass
+  assert(mTotalMass != 0.0);
+  return dJ / mTotalMass;
 }
 
 //==============================================================================

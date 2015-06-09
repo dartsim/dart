@@ -150,9 +150,9 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[1] = mOldX[1];
   _lcp->x[2] = mOldX[2];
 
-  Eigen::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getSpatialVelocity();
+  Eigen::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getBodyVelocity();
   if (mBodyNode2)
-    negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
+    negativeVel += mJacobian2 * mBodyNode2->getBodyVelocity();
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 

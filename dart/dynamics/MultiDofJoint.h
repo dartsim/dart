@@ -74,16 +74,16 @@ public:
   virtual size_t getDof() const;
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(size_t index) override;
+  virtual DegreeOfFreedom* getDof(size_t index);
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _index) const override;
+  virtual const DegreeOfFreedom* getDof(size_t _index) const;
 
   // Documentation inherited
-  size_t getNumDofs() const override;
+  virtual size_t getNumDofs() const;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
 
   // Documentation inherited
   virtual size_t getIndexInSkeleton(size_t _index) const;
@@ -112,152 +112,124 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setPosition(size_t _index, double _position) override;
+  virtual void setPosition(size_t _index, double _position);
 
   // Documentation inherited
-  double getPosition(size_t _index) const override;
+  virtual double getPosition(size_t _index) const;
 
   // Documentation inherited
-  void setPositions(const Eigen::VectorXd& _positions) override;
+  virtual void setPositions(const Eigen::VectorXd& _positions);
 
   // Documentation inherited
-  Eigen::VectorXd getPositions() const override;
+  virtual Eigen::VectorXd getPositions() const;
 
   // Documentation inherited
-  void resetPositions() override;
+  virtual void resetPositions();
 
   // Documentation inherited
-  void setPositionLowerLimit(size_t _index, double _position) override;
+  virtual void setPositionLowerLimit(size_t _index, double _position);
 
   // Documentation inherited
-  double getPositionLowerLimit(size_t _index) const override;
+  virtual double getPositionLowerLimit(size_t _index) const;
 
   // Documentation inherited
-  void setPositionUpperLimit(size_t _index, double _position) override;
+  virtual void setPositionUpperLimit(size_t _index, double _position);
 
   // Documentation inherited
-  double getPositionUpperLimit(size_t _index) const override;
+  virtual double getPositionUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocity(size_t _index, double _velocity) override;
+  virtual void setVelocity(size_t _index, double _velocity);
 
   // Documentation inherited
-  double getVelocity(size_t _index) const override;
+  virtual double getVelocity(size_t _index) const;
 
   // Documentation inherited
-  void setVelocities(const Eigen::VectorXd& _velocities) override;
+  virtual void setVelocities(const Eigen::VectorXd& _velocities);
 
   // Documentation inherited
-  Eigen::VectorXd getVelocities() const override;
+  virtual Eigen::VectorXd getVelocities() const;
 
   // Documentation inherited
-  void resetVelocities() override;
+  virtual void resetVelocities();
 
   // Documentation inherited
-  void setVelocityLowerLimit(size_t _index, double _velocity) override;
+  virtual void setVelocityLowerLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  double getVelocityLowerLimit(size_t _index) const override;
+  virtual double getVelocityLowerLimit(size_t _index) const;
 
   // Documentation inherited
-  void setVelocityUpperLimit(size_t _index, double _velocity) override;
+  virtual void setVelocityUpperLimit(size_t _index, double _velocity);
 
   // Documentation inherited
-  double getVelocityUpperLimit(size_t _index) const override;
+  virtual double getVelocityUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setAcceleration(size_t _index, double _acceleration) override;
+  virtual void setAcceleration(size_t _index, double _acceleration);
 
   // Documentation inherited
-  double getAcceleration(size_t _index) const override;
+  virtual double getAcceleration(size_t _index) const;
 
   // Documentation inherited
-  void setAccelerations(const Eigen::VectorXd& _accelerations) override;
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
 
   // Documentation inherited
-  Eigen::VectorXd getAccelerations() const override;
+  virtual Eigen::VectorXd getAccelerations() const;
 
   // Documentation inherited
-  void resetAccelerations() override;
+  virtual void resetAccelerations();
 
   // Documentation inherited
-  void setAccelerationLowerLimit(size_t _index, double _acceleration) override;
+  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  double getAccelerationLowerLimit(size_t _index) const override;
+  virtual double getAccelerationLowerLimit(size_t _index) const;
 
   // Documentation inherited
-  void setAccelerationUpperLimit(size_t _index, double _acceleration) override;
+  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration);
 
   // Documentation inherited
-  double getAccelerationUpperLimit(size_t _index) const override;
-
-  //----------------------------------------------------------------------------
-  // Fixed-size mutators and accessors
-  //----------------------------------------------------------------------------
-
-  // Note: The fixed-size versions of these functions exist to make it easier
-  // to comply with the auto-updating design. Use these functions to avoid
-  // accessing mPosition directly, that way it is easier to ensure that the
-  // auto-updating design assumptions are being satisfied when reviewing the
-  // code.
-
-  /// Fixed-size version of setPositions()
-  void setPositionsStatic(const Eigen::Matrix<double, DOF, 1>& _positions);
-
-  /// Fixed-size version of getPositions()
-  const Eigen::Matrix<double, DOF, 1>& getPositionsStatic() const;
-
-  /// Fixed-size version of setVelocities()
-  void setVelocitiesStatic(const Eigen::Matrix<double, DOF, 1>& _velocities);
-
-  /// Fixed-size version of getVelocities()
-  const Eigen::Matrix<double, DOF, 1>& getVelocitiesStatic() const;
-
-  /// Fixed-size version of setAccelerations()
-  void setAccelerationsStatic(const Eigen::Matrix<double, DOF, 1>& _accels);
-
-  /// Fixed-size version of getAccelerations()
-  const Eigen::Matrix<double, DOF, 1>& getAccelerationsStatic() const;
+  virtual double getAccelerationUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setForce(size_t _index, double _force) override;
+  virtual void setForce(size_t _index, double _force);
 
   // Documentation inherited
-  double getForce(size_t _index) override;
+  virtual double getForce(size_t _index);
 
   // Documentation inherited
-  void setForces(const Eigen::VectorXd& _forces) override;
+  virtual void setForces(const Eigen::VectorXd& _forces);
 
   // Documentation inherited
-  Eigen::VectorXd getForces() const override;
+  virtual Eigen::VectorXd getForces() const;
 
   // Documentation inherited
-  void resetForces() override;
+  virtual void resetForces();
 
   // Documentation inherited
-  void setForceLowerLimit(size_t _index, double _force) override;
+  virtual void setForceLowerLimit(size_t _index, double _force);
 
   // Documentation inherited
-  double getForceLowerLimit(size_t _index) const override;
+  virtual double getForceLowerLimit(size_t _index) const;
 
   // Documentation inherited
-  void setForceUpperLimit(size_t _index, double _force) override;
+  virtual void setForceUpperLimit(size_t _index, double _force);
 
   // Documentation inherited
-  double getForceUpperLimit(size_t _index) const override;
+  virtual double getForceUpperLimit(size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Velocity change
@@ -339,38 +311,16 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
-
-  /// Fixed-size version of getLocalJacobian()
-  const Eigen::Matrix<double, 6, DOF>& getLocalJacobianStatic() const;
+  virtual const math::Jacobian getLocalJacobian() const override;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
-
-  /// Fixed-size version of getLocalJacobianTimeDeriv()
-  const Eigen::Matrix<double, 6, DOF>& getLocalJacobianTimeDerivStatic() const;
-
-  /// Get the inverse of the projected articulated inertia
-  const Eigen::Matrix<double, DOF, DOF>& getInvProjArtInertia() const;
-
-  /// Get the inverse of projected articulated inertia for implicit joint
-  /// damping and spring forces
-  const Eigen::Matrix<double, DOF, DOF>& getInvProjArtInertiaImplicit() const;
+  virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   // Documentation inherited
-  void updateLocalSpatialVelocity() const override;
+  virtual void addVelocityTo(Eigen::Vector6d& _vel) override;
 
   // Documentation inherited
-  void updateLocalSpatialAcceleration() const override;
-
-  // Documentation inherited
-  void updateLocalPrimaryAcceleration() const override;
-
-  // Documentation inherited
-  void addVelocityTo(Eigen::Vector6d& _vel) override;
-
-  // Documentation inherited
-  void setPartialAccelerationTo(
+  virtual void setPartialAccelerationTo(
       Eigen::Vector6d& _partialAcceleration,
       const Eigen::Vector6d& _childVelocity) override;
 
@@ -386,49 +336,49 @@ protected:
       const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  void addChildArtInertiaImplicitTo(
+  virtual void addChildArtInertiaImplicitTo(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia) override;
 
   // Documentation inherited
-  void updateInvProjArtInertia(
+  virtual void updateInvProjArtInertia(
       const Eigen::Matrix6d& _artInertia) override;
 
   // Documentation inherited
-  void updateInvProjArtInertiaImplicit(
+  virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia, double _timeStep) override;
 
   // Documentation inherited
-  void addChildBiasForceTo(
+  virtual void addChildBiasForceTo(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasForce,
       const Eigen::Vector6d& _childPartialAcc) override;
 
   // Documentation inherited
-  void addChildBiasImpulseTo(
+  virtual void addChildBiasImpulseTo(
       Eigen::Vector6d& _parentBiasImpulse,
       const Eigen::Matrix6d& _childArtInertia,
       const Eigen::Vector6d& _childBiasImpulse) override;
 
   // Documentation inherited
-  void updateTotalForce(const Eigen::Vector6d& _bodyForce,
+  virtual void updateTotalForce(const Eigen::Vector6d& _bodyForce,
                                 double _timeStep) override;
 
   // Documentation inherited
-  void updateTotalImpulse(
+  virtual void updateTotalImpulse(
       const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  void resetTotalImpulses() override;
+  virtual void resetTotalImpulses() override;
 
   // Documentation inherited
-  void updateAcceleration(
+  virtual void updateAcceleration(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  void updateVelocityChange(
+  virtual void updateVelocityChange(
       const Eigen::Matrix6d& _artInertia,
       const Eigen::Vector6d& _velocityChange) override;
 
@@ -460,39 +410,39 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void addChildBiasForceForInvMassMatrix(
+  virtual void addChildBiasForceForInvMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) override;
+      const Eigen::Vector6d& _childBiasForce);
 
   // Documentation inherited
-  void addChildBiasForceForInvAugMassMatrix(
+  virtual void addChildBiasForceForInvAugMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce) override;
+      const Eigen::Vector6d& _childBiasForce);
 
   // Documentation inherited
-  void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce) override;
+  virtual void updateTotalForceForInvMassMatrix(
+      const Eigen::Vector6d& _bodyForce);
 
   // Documentation inherited
-  void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+  virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                const size_t _col,
                                const Eigen::Matrix6d& _artInertia,
-                               const Eigen::Vector6d& _spatialAcc) override;
+                               const Eigen::Vector6d& _spatialAcc);
 
   // Documentation inherited
-  void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                  const size_t _col,
-                                  const Eigen::Matrix6d& _artInertia,
-                                  const Eigen::Vector6d& _spatialAcc) override;
+  virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
+                                          const size_t _col,
+                                          const Eigen::Matrix6d& _artInertia,
+                                          const Eigen::Vector6d& _spatialAcc);
 
   // Documentation inherited
-  void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) override;
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
 
   // Documentation inherited
-  Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial) override;
+  virtual Eigen::VectorXd getSpatialToGeneralized(
+      const Eigen::Vector6d& _spatial);
 
   /// \}
 
@@ -602,27 +552,17 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Spatial Jacobian expressed in the child body frame
-  ///
-  /// Do not use directly! Use getLocalJacobianStatic() to access this quantity
-  mutable Eigen::Matrix<double, 6, DOF> mJacobian;
+  Eigen::Matrix<double, 6, DOF> mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
-  ///
-  /// Do not use directly! Use getLocalJacobianTimeDerivStatic() to access this
-  /// quantity
-  mutable Eigen::Matrix<double, 6, DOF> mJacobianDeriv;
+  Eigen::Matrix<double, 6, DOF> mJacobianDeriv;
 
   /// Inverse of projected articulated inertia
-  ///
-  /// Do not use directly! Use getInvProjArtInertia() to get this quantity
-  mutable Eigen::Matrix<double, DOF, DOF> mInvProjArtInertia;
+  Eigen::Matrix<double, DOF, DOF> mInvProjArtInertia;
 
   /// Inverse of projected articulated inertia for implicit joint damping and
   /// spring forces
-  ///
-  /// Do not use directly! Use getInvProjArtInertiaImplicit() to access this
-  /// quantity
-  mutable Eigen::Matrix<double, DOF, DOF> mInvProjArtInertiaImplicit;
+  Eigen::Matrix<double, DOF, DOF> mInvProjArtInertiaImplicit;
 
   /// Total force projected on joint space
   Eigen::Matrix<double, DOF, 1> mTotalForce;
@@ -905,9 +845,7 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
     return;
   }
 
-  // Note: It would not make much sense to use setPositionsStatic() here
   mPositions[_index] = _position;
-  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -920,7 +858,7 @@ double MultiDofJoint<DOF>::getPosition(size_t _index) const
     return 0.0;
   }
 
-  return getPositionsStatic()[_index];
+  return mPositions[_index];
 }
 
 //==============================================================================
@@ -934,21 +872,21 @@ void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& _positions)
     return;
   }
 
-  setPositionsStatic(_positions);
+  mPositions = _positions;
 }
 
 //==============================================================================
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getPositions() const
 {
-  return getPositionsStatic();
+  return mPositions;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetPositions()
 {
-  setPositionsStatic(Eigen::Matrix<double, DOF, 1>::Zero());
+  mPositions.setZero();
 }
 
 //==============================================================================
@@ -1017,9 +955,7 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
     return;
   }
 
-  // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
-  notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -1032,7 +968,7 @@ double MultiDofJoint<DOF>::getVelocity(size_t _index) const
     return 0.0;
   }
 
-  return getVelocitiesStatic()[_index];
+  return mVelocities[_index];
 }
 
 //==============================================================================
@@ -1046,21 +982,21 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
     return;
   }
 
-  setVelocitiesStatic(_velocities);
+  mVelocities = _velocities;
 }
 
 //==============================================================================
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getVelocities() const
 {
-  return getVelocitiesStatic();
+  return mVelocities;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetVelocities()
 {
-  setVelocitiesStatic(Eigen::Matrix<double, DOF, 1>::Zero());
+  mVelocities.setZero();
 }
 
 //==============================================================================
@@ -1130,13 +1066,11 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
     return;
   }
 
-  // Note: It would not make much sense to use setAccelerationsStatic() here
   mAccelerations[_index] = _acceleration;
-  notifyAccelerationUpdate();
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mCommands[_index] = getAccelerationsStatic()[_index];
+    mCommands[_index] = mAccelerations[_index];
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1152,7 +1086,7 @@ double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
     return 0.0;
   }
 
-  return getAccelerationsStatic()[_index];
+  return mAccelerations[_index];
 }
 
 //==============================================================================
@@ -1166,11 +1100,11 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
     return;
   }
 
-  setAccelerationsStatic(_accelerations);
+  mAccelerations = _accelerations;
 
 #if DART_MAJOR_VERSION == 4
   if (mActuatorType == ACCELERATION)
-    mCommands = getAccelerationsStatic();
+    mCommands = mAccelerations;
 #endif
   // TODO: Remove at DART 5.0.
 }
@@ -1179,14 +1113,14 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getAccelerations() const
 {
-  return getAccelerationsStatic();
+  return mAccelerations;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetAccelerations()
 {
-  setAccelerationsStatic(Eigen::Matrix<double, DOF, 1>::Zero());
+  mAccelerations.setZero();
 }
 
 //==============================================================================
@@ -1245,57 +1179,6 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
   }
 
   return mAccelerationUpperLimits[_index];
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _positions)
-{
-  mPositions = _positions;
-  notifyPositionUpdate();
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
-MultiDofJoint<DOF>::getPositionsStatic() const
-{
-  return mPositions;
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocitiesStatic(
-    const Eigen::Matrix<double, DOF, 1>& _velocities)
-{
-  mVelocities = _velocities;
-  notifyVelocityUpdate();
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
-MultiDofJoint<DOF>::getVelocitiesStatic() const
-{
-  return mVelocities;
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerationsStatic(
-    const Eigen::Matrix<double, DOF, 1>& _accels)
-{
-  mAccelerations = _accels;
-  notifyAccelerationUpdate();
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, DOF, 1>&
-MultiDofJoint<DOF>::getAccelerationsStatic() const
-{
-  return mAccelerations;
 }
 
 //==============================================================================
@@ -1494,14 +1377,14 @@ void MultiDofJoint<DOF>::resetConstraintImpulses()
 template <size_t DOF>
 void MultiDofJoint<DOF>::integratePositions(double _dt)
 {
-  setPositionsStatic(getPositionsStatic() + getVelocitiesStatic() * _dt);
+  mPositions += mVelocities * _dt;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 {
-  setVelocitiesStatic(getVelocitiesStatic() + getAccelerationsStatic() * _dt);
+  mVelocities += mAccelerations * _dt;
 }
 
 //==============================================================================
@@ -1638,7 +1521,7 @@ template <size_t DOF>
 double MultiDofJoint<DOF>::getPotentialEnergy() const
 {
   // Spring energy
-  Eigen::VectorXd displacement = getPositionsStatic() - mRestPosition;
+  Eigen::VectorXd displacement = mPositions - mRestPosition;
   double pe
       = 0.5 * displacement.dot(mSpringStiffness.asDiagonal() * displacement);
 
@@ -1650,31 +1533,13 @@ template <size_t DOF>
 Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
-  return mChildBodyNode->getBodyForce() - getLocalJacobianStatic() * mForces;
+  return mChildBodyNode->getBodyForce() - mJacobian * mForces;
 }
 
 //==============================================================================
 template <size_t DOF>
 const math::Jacobian MultiDofJoint<DOF>::getLocalJacobian() const
 {
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
-  return mJacobian;
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, 6, DOF>&
-MultiDofJoint<DOF>::getLocalJacobianStatic() const
-{
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
   return mJacobian;
 }
 
@@ -1682,65 +1547,7 @@ MultiDofJoint<DOF>::getLocalJacobianStatic() const
 template <size_t DOF>
 const math::Jacobian MultiDofJoint<DOF>::getLocalJacobianTimeDeriv() const
 {
-  if(mIsLocalJacobianTimeDerivDirty)
-  {
-    updateLocalJacobianTimeDeriv();
-    mIsLocalJacobianTimeDerivDirty = false;
-  }
   return mJacobianDeriv;
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, 6, DOF>&
-MultiDofJoint<DOF>::getLocalJacobianTimeDerivStatic() const
-{
-  if(mIsLocalJacobianTimeDerivDirty)
-  {
-    updateLocalJacobianTimeDeriv();
-    mIsLocalJacobianTimeDerivDirty = false;
-  }
-  return mJacobianDeriv;
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, DOF, DOF>&
-MultiDofJoint<DOF>::getInvProjArtInertia() const
-{
-  Joint::updateArticulatedInertia();
-  return mInvProjArtInertia;
-}
-
-//==============================================================================
-template <size_t DOF>
-const Eigen::Matrix<double, DOF, DOF>&
-MultiDofJoint<DOF>::getInvProjArtInertiaImplicit() const
-{
-  Joint::updateArticulatedInertia();
-  return mInvProjArtInertiaImplicit;
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::updateLocalSpatialVelocity() const
-{
-  mSpatialVelocity = getLocalJacobianStatic() * getVelocitiesStatic();
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::updateLocalSpatialAcceleration() const
-{
-  mSpatialAcceleration = getLocalPrimaryAcceleration()
-                    + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
-}
-
-//==============================================================================
-template <size_t DOF>
-void MultiDofJoint<DOF>::updateLocalPrimaryAcceleration() const
-{
-  mPrimaryAcceleration = getLocalJacobianStatic() * getAccelerationsStatic();
 }
 
 //==============================================================================
@@ -1748,7 +1555,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::addVelocityTo(Eigen::Vector6d& _vel)
 {
   // Add joint velocity to _vel
-  _vel.noalias() += getLocalJacobianStatic() * getVelocitiesStatic();
+  _vel.noalias() += mJacobian * mVelocities;
 
   // Verification
   assert(!math::isNan(_vel));
@@ -1761,9 +1568,9 @@ void MultiDofJoint<DOF>::setPartialAccelerationTo(
     const Eigen::Vector6d& _childVelocity)
 {
   // ad(V, S * dq) + dS * dq
-  _partialAcceleration = math::ad(_childVelocity,
-                      getLocalJacobianStatic() * getVelocitiesStatic())
-                    + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
+  _partialAcceleration = math::ad(_childVelocity, mJacobian * mVelocities)
+                         + mJacobianDeriv * mVelocities;
+
   // Verification
   assert(!math::isNan(_partialAcceleration));
 }
@@ -1773,7 +1580,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::addAccelerationTo(Eigen::Vector6d& _acc)
 {
   // Add joint acceleration to _acc
-  _acc.noalias() += getLocalJacobianStatic() * getAccelerationsStatic();
+  _acc.noalias() += mJacobian * mAccelerations;
 
   // Verification
   assert(!math::isNan(_acc));
@@ -1784,7 +1591,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 {
   // Add joint velocity change to _velocityChange
-  _velocityChange.noalias() += getLocalJacobianStatic() * mVelocityChanges;
+  _velocityChange.noalias() += mJacobian * mVelocityChanges;
 
   // Verification
   assert(!math::isNan(_velocityChange));
@@ -1823,14 +1630,14 @@ void MultiDofJoint<DOF>::addChildArtInertiaToDynamic(
     const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
-  Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * getLocalJacobianStatic();
+  Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * mJacobian;
   Eigen::Matrix6d PI = _childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
+  _parentArtInertia += math::transformInertia(mT.inverse(), PI);
 }
 
 //==============================================================================
@@ -1841,8 +1648,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
-                                              _childArtInertia);
+  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
 }
 
 //==============================================================================
@@ -1878,14 +1684,14 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitToDynamic(
     const Eigen::Matrix6d& _childArtInertia)
 {
   // Child body's articulated inertia
-  Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * getLocalJacobianStatic();
+  Eigen::Matrix<double, 6, DOF> AIS = _childArtInertia * mJacobian;
   Eigen::Matrix6d PI = _childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
   assert(!math::isNan(PI));
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
+  _parentArtInertia += math::transformInertia(mT.inverse(), PI);
 }
 
 //==============================================================================
@@ -1896,8 +1702,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
-                                              _childArtInertia);
+  _parentArtInertia += math::transformInertia(mT.inverse(), _childArtInertia);
 }
 
 //==============================================================================
@@ -1929,9 +1734,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaDynamic(
     const Eigen::Matrix6d& _artInertia)
 {
   // Projected articulated inertia
-  const Eigen::Matrix<double, 6, DOF>& Jacobian = getLocalJacobianStatic();
   const Eigen::Matrix<double, DOF, DOF> projAI
-      = Jacobian.transpose() * _artInertia * Jacobian;
+      = mJacobian.transpose() * _artInertia * mJacobian;
 
   // Inversion of projected articulated inertia
   //mInvProjArtInertia = projAI.inverse();
@@ -1981,9 +1785,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitDynamic(
     double _timeStep)
 {
   // Projected articulated inertia
-  const Eigen::Matrix<double, 6, DOF>& Jacobian = getLocalJacobianStatic();
   Eigen::Matrix<double, DOF, DOF> projAI
-      = Jacobian.transpose() * _artInertia * Jacobian;
+      = mJacobian.transpose() * _artInertia * mJacobian;
 
   // Add additional inertia for implicit damping and spring force
   for (size_t i = 0; i < DOF; ++i)
@@ -2055,20 +1858,19 @@ void MultiDofJoint<DOF>::addChildBiasForceToDynamic(
       = _childBiasForce
         + _childArtInertia
           * (_childPartialAcc
-             + getLocalJacobianStatic()*getInvProjArtInertiaImplicit()
-               *mTotalForce);
+             + mJacobian*mInvProjArtInertiaImplicit*mTotalForce);
 
   //    Eigen::Vector6d beta
   //        = _childBiasForce;
   //    beta.noalias() += _childArtInertia * _childPartialAcc;
-  //    beta.noalias() += _childArtInertia *  mJacobian * getInvProjArtInertiaImplicit() * mTotalForce;
+  //    beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertiaImplicit * mTotalForce;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(mT, beta);
 }
 
 //==============================================================================
@@ -2082,20 +1884,19 @@ void MultiDofJoint<DOF>::addChildBiasForceToKinematic(
   // Compute beta
   const Eigen::Vector6d beta
       = _childBiasForce
-        + _childArtInertia*(_childPartialAcc
-                            + getLocalJacobianStatic()*getAccelerationsStatic());
+        + _childArtInertia*(_childPartialAcc + mJacobian*mAccelerations);
 
   //    Eigen::Vector6d beta
   //        = _childBiasForce;
   //    beta.noalias() += _childArtInertia * _childPartialAcc;
-  //    beta.noalias() += _childArtInertia *  mJacobian * getInvProjArtInertiaImplicit() * mTotalForce;
+  //    beta.noalias() += _childArtInertia *  mJacobian * mInvProjArtInertiaImplicit * mTotalForce;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(mT, beta);
 }
 
 //==============================================================================
@@ -2137,15 +1938,14 @@ void MultiDofJoint<DOF>::addChildBiasImpulseToDynamic(
   // Compute beta
   const Eigen::Vector6d beta
       = _childBiasImpulse
-        + _childArtInertia*getLocalJacobianStatic()
-          *getInvProjArtInertia()*mTotalImpulse;
+        + _childArtInertia*mJacobian*mInvProjArtInertia*mTotalImpulse;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasImpulse += math::dAdInvT(mT, beta);
 }
 
 //==============================================================================
@@ -2157,7 +1957,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseToKinematic(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(mT, _childBiasImpulse);
 }
 
 //==============================================================================
@@ -2180,16 +1980,16 @@ void MultiDofJoint<DOF>::updateTotalForce(
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      setAccelerationsStatic(mCommands);
+      mAccelerations = mCommands;
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case VELOCITY:
-      setAccelerationsStatic( (mCommands - getVelocitiesStatic()) / _timeStep );
+      mAccelerations = (mCommands - mVelocities) / _timeStep;
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case LOCKED:
-      setVelocitiesStatic(Eigen::Matrix<double, DOF, 1>::Zero());
-      setAccelerationsStatic(Eigen::Matrix<double, DOF, 1>::Zero());
+      mVelocities.setZero();
+      mAccelerations.setZero();
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     default:
@@ -2207,16 +2007,15 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
   // Spring force
   const Eigen::Matrix<double, DOF, 1> springForce
       = (-mSpringStiffness).asDiagonal()
-        *(getPositionsStatic() - mRestPosition
-          + getVelocitiesStatic()*_timeStep);
+        *(mPositions - mRestPosition + mVelocities*_timeStep);
 
   // Damping force
   const Eigen::Matrix<double, DOF, 1> dampingForce
-      = (-mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+      = (-mDampingCoefficient).asDiagonal()*mVelocities;
 
   //
   mTotalForce = mForces + springForce + dampingForce;
-  mTotalForce.noalias() -= getLocalJacobianStatic().transpose()*_bodyForce;
+  mTotalForce.noalias() -= mJacobian.transpose()*_bodyForce;
 }
 
 //==============================================================================
@@ -2258,7 +2057,7 @@ void MultiDofJoint<DOF>::updateTotalImpulseDynamic(
 {
   //
   mTotalImpulse = mConstraintImpulses;
-  mTotalImpulse.noalias() -= getLocalJacobianStatic().transpose()*_bodyImpulse;
+  mTotalImpulse.noalias() -= mJacobian.transpose()*_bodyImpulse;
 }
 
 //==============================================================================
@@ -2307,12 +2106,13 @@ void MultiDofJoint<DOF>::updateAccelerationDynamic(
     const Eigen::Vector6d& _spatialAcc)
 {
   //
-  setAccelerationsStatic( getInvProjArtInertiaImplicit()
-        * (mTotalForce - getLocalJacobianStatic().transpose()
-           *_artInertia*math::AdInvT(getLocalTransform(), _spatialAcc)) );
+  mAccelerations
+      = mInvProjArtInertiaImplicit
+      * (mTotalForce - mJacobian.transpose()
+         *_artInertia*math::AdInvT(mT, _spatialAcc));
 
   // Verification
-  assert(!math::isNan(getAccelerationsStatic()));
+  assert(!math::isNan(mAccelerations));
 }
 
 //==============================================================================
@@ -2356,9 +2156,9 @@ void MultiDofJoint<DOF>::updateVelocityChangeDynamic(
 {
   //
   mVelocityChanges
-      = getInvProjArtInertia()
-      * (mTotalImpulse - getLocalJacobianStatic().transpose()
-         *_artInertia*math::AdInvT(getLocalTransform(), _velocityChange));
+      = mInvProjArtInertia
+      * (mTotalImpulse - mJacobian.transpose()
+         *_artInertia*math::AdInvT(mT, _velocityChange));
 
   // Verification
   assert(!math::isNan(mVelocityChanges));
@@ -2380,13 +2180,13 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
                                        bool _withDampingForces,
                                        bool _withSpringForces)
 {
-  mForces = getLocalJacobianStatic().transpose()*_bodyForce;
+  mForces = mJacobian.transpose()*_bodyForce;
 
   // Damping force
   if (_withDampingForces)
   {
     const Eigen::Matrix<double, DOF, 1> dampingForces
-        = (-mDampingCoefficient).asDiagonal()*getVelocitiesStatic();
+        = (-mDampingCoefficient).asDiagonal()*mVelocities;
     mForces -= dampingForces;
   }
 
@@ -2395,8 +2195,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   {
     const Eigen::Matrix<double, DOF, 1> springForces
         = (-mSpringStiffness).asDiagonal()
-          *(getPositionsStatic() - mRestPosition
-            + getVelocitiesStatic()*_timeStep);
+          *(mPositions - mRestPosition + mVelocities*_timeStep);
     mForces -= springForces;
   }
 }
@@ -2430,7 +2229,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 {
-  mImpulses = getLocalJacobianStatic().transpose()*_bodyImpulse;
+  mImpulses = mJacobian.transpose()*_bodyImpulse;
 }
 
 //==============================================================================
@@ -2482,11 +2281,9 @@ void MultiDofJoint<DOF>::updateConstrainedTermsDynamic(double _timeStep)
 {
   const double invTimeStep = 1.0 / _timeStep;
 
-  setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
-  setAccelerationsStatic(getAccelerationsStatic()
-                         + mVelocityChanges*invTimeStep);
+  mVelocities += mVelocityChanges;
+  mAccelerations.noalias() += mVelocityChanges*invTimeStep;
   mForces.noalias() += mImpulses*invTimeStep;
-  // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
 //==============================================================================
@@ -2506,15 +2303,15 @@ void MultiDofJoint<DOF>::addChildBiasForceForInvMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
-  beta.noalias() += _childArtInertia * getLocalJacobianStatic()
-                    * getInvProjArtInertia() * mInvM_a;
+  beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertia
+      * mInvM_a;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(mT, beta);
 }
 
 //==============================================================================
@@ -2526,15 +2323,15 @@ void MultiDofJoint<DOF>::addChildBiasForceForInvAugMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = _childBiasForce;
-  beta.noalias() += _childArtInertia * getLocalJacobianStatic()
-                    * getInvProjArtInertiaImplicit() * mInvM_a;
+  beta.noalias() += _childArtInertia * mJacobian * mInvProjArtInertiaImplicit
+      * mInvM_a;
 
   // Verification
   assert(!math::isNan(beta));
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(mT, beta);
 }
 
 //==============================================================================
@@ -2544,7 +2341,7 @@ void MultiDofJoint<DOF>::updateTotalForceForInvMassMatrix(
 {
   // Compute alpha
   mInvM_a = mForces;
-  mInvM_a.noalias() -= getLocalJacobianStatic().transpose() * _bodyForce;
+  mInvM_a.noalias() -= mJacobian.transpose() * _bodyForce;
 }
 
 //==============================================================================
@@ -2557,9 +2354,9 @@ void MultiDofJoint<DOF>::getInvMassMatrixSegment(
 {
   //
   mInvMassMatrixSegment
-      = getInvProjArtInertia()
-      * (mInvM_a - getLocalJacobianStatic().transpose()
-         * _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc));
+      = mInvProjArtInertia
+      * (mInvM_a - mJacobian.transpose()
+         * _artInertia * math::AdInvT(mT, _spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -2581,9 +2378,9 @@ void MultiDofJoint<DOF>::getInvAugMassMatrixSegment(
 {
   //
   mInvMassMatrixSegment
-      = getInvProjArtInertiaImplicit()
-      * (mInvM_a - getLocalJacobianStatic().transpose()
-         * _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc));
+      = mInvProjArtInertiaImplicit
+      * (mInvM_a - mJacobian.transpose()
+         * _artInertia * math::AdInvT(mT, _spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -2600,7 +2397,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc)
 {
   //
-  _acc += getLocalJacobianStatic() * mInvMassMatrixSegment;
+  _acc += mJacobian * mInvMassMatrixSegment;
 }
 
 //==============================================================================
@@ -2608,7 +2405,7 @@ template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getSpatialToGeneralized(
     const Eigen::Vector6d& _spatial)
 {
-  return getLocalJacobianStatic().transpose() * _spatial;
+  return mJacobian.transpose() * _spatial;
 }
 
 }  // namespace dynamics

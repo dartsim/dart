@@ -49,7 +49,6 @@ TranslationalJoint::TranslationalJoint(const std::string& _name)
   : MultiDofJoint(_name)
 {
   updateDegreeOfFreedomNames();
-  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -69,10 +68,10 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalTransform() const
+void TranslationalJoint::updateLocalTransform()
 {
   mT = mT_ParentBodyToJoint
-       * Eigen::Translation3d(getPositionsStatic())
+       * Eigen::Translation3d(mPositions)
        * mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -80,29 +79,26 @@ void TranslationalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
+void TranslationalJoint::updateLocalJacobian()
 {
-  if(_mandatory)
-  {
-    Eigen::Vector6d J0;
-    Eigen::Vector6d J1;
-    Eigen::Vector6d J2;
+  Eigen::Vector6d J0;
+  Eigen::Vector6d J1;
+  Eigen::Vector6d J2;
 
-    J0 << 0, 0, 0, 1, 0, 0;
-    J1 << 0, 0, 0, 0, 1, 0;
-    J2 << 0, 0, 0, 0, 0, 1;
+  J0 << 0, 0, 0, 1, 0, 0;
+  J1 << 0, 0, 0, 0, 1, 0;
+  J2 << 0, 0, 0, 0, 0, 1;
 
-    mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
-    mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
-    mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
+  mJacobian.col(0) = math::AdT(mT_ChildBodyToJoint, J0);
+  mJacobian.col(1) = math::AdT(mT_ChildBodyToJoint, J1);
+  mJacobian.col(2) = math::AdT(mT_ChildBodyToJoint, J2);
 
-    // Verification
-    assert(!math::isNan(mJacobian));
-  }
+  // Verification
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobianTimeDeriv() const
+void TranslationalJoint::updateLocalJacobianTimeDeriv()
 {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));

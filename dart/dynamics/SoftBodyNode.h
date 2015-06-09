@@ -52,7 +52,6 @@ namespace dart {
 namespace dynamics {
 
 class PointMass;
-class PointMassNotifier;
 class SoftMeshShape;
 
 /// SoftBodyNode represent a soft body that has one deformable skin
@@ -63,8 +62,6 @@ class SoftBodyNode : public BodyNode
 {
 public:
   friend class Skeleton;
-  friend class PointMass;
-  friend class PointMassNotifier;
 
   //--------------------------------------------------------------------------
   // Constructor and Desctructor
@@ -74,12 +71,6 @@ public:
 
   /// \brief
   virtual ~SoftBodyNode();
-
-  /// Get the update notifier for the PointMasses of this SoftBodyNode
-  PointMassNotifier* getNotifier();
-
-  /// Get the update notifier for the PointMasses of this SoftBodyNode
-  const PointMassNotifier* getNotifier() const;
 
   /// \brief Get mass.
   double getMass() const;
@@ -149,18 +140,6 @@ protected:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Tell the Skeleton that an articulated inertia update is needed
-  void notifyArticulatedInertiaUpdate();
-
-  /// Tell the Skeleton that the external forces need to be updated
-  void notifyExternalForcesUpdate();
-
-  /// Tell the Skeleton that the coriolis forces need to be update
-  void notifyCoriolisUpdate();
-
-  /// Update articulated inertia if necessary
-  void checkArticulatedInertiaUpdate() const;
-
   // Documentation inherited.
   virtual void updateTransform() override;
 
@@ -168,10 +147,10 @@ protected:
   virtual void updateVelocity() override;
 
   // Documentation inherited.
-  virtual void updatePartialAcceleration() const override;
+  virtual void updatePartialAcceleration() override;
 
   // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep) const override;
+  virtual void updateArtInertia(double _timeStep) override;
 
   // Documentation inherited.
   virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
@@ -280,9 +259,6 @@ protected:
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;
 
-  /// An Entity which tracks when the point masses need to be updated
-  PointMassNotifier* mNotifier;
-
   // TODO(JS): Let's remove this because this is rendering part
   /// \brief Tri-mesh indexes for rendering.
   std::vector<Eigen::Vector3i> mFaces;
@@ -315,11 +291,11 @@ protected:
 
 private:
   /// \brief
-  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const;
+  void _addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi);
 
   /// \brief
   void _addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
-                                  double _ImplicitPi) const;
+                                  double _ImplicitPi);
 
   ///
   void updateInertiaWithPointMass();

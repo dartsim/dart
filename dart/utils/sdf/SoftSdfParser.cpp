@@ -276,7 +276,7 @@ dynamics::Skeleton* SoftSdfParser::readSkeleton(
       dynamics::FreeJoint* newFreeJoint = new dynamics::FreeJoint;
 
       newFreeJoint->setTransformFromParentBodyNode(
-            sdfBodyNodes[i].initTransform);
+            bodyNode->getTransform());
       newFreeJoint->setTransformFromChildBodyNode(
             Eigen::Isometry3d::Identity());
 

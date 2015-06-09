@@ -53,8 +53,6 @@ ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
     mAxis(axis.normalized()),
     mPitch(_pitch)
 {
-  updateLocalJacobian();
-  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -66,7 +64,6 @@ ScrewJoint::~ScrewJoint()
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mAxis = _axis.normalized();
-  notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -79,7 +76,6 @@ const Eigen::Vector3d& ScrewJoint::getAxis() const
 void ScrewJoint::setPitch(double _pitch)
 {
   mPitch = _pitch;
-  updateLocalJacobian();
 }
 
 //==============================================================================
@@ -89,32 +85,29 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalTransform() const
+void ScrewJoint::updateLocalTransform()
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = mAxis;
   S.tail<3>() = mAxis*mPitch/DART_2PI;
   mT = mT_ParentBodyToJoint
-       * math::expMap(S * getPositionStatic())
+       * math::expMap(S * mPosition)
        * mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalJacobian(bool _mandatory) const
+void ScrewJoint::updateLocalJacobian()
 {
-  if(_mandatory)
-  {
-    Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = mAxis;
-    S.tail<3>() = mAxis*mPitch/DART_2PI;
-    mJacobian = math::AdT(mT_ChildBodyToJoint, S);
-    assert(!math::isNan(mJacobian));
-  }
+  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  S.head<3>() = mAxis;
+  S.tail<3>() = mAxis*mPitch/DART_2PI;
+  mJacobian = math::AdT(mT_ChildBodyToJoint, S);
+  assert(!math::isNan(mJacobian));
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalJacobianTimeDeriv() const
+void ScrewJoint::updateLocalJacobianTimeDeriv()
 {
   // Time derivative of screw joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

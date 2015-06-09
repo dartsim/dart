@@ -75,9 +75,6 @@ public:
   virtual void drawSkels();
 
   /// \brief
-  virtual void drawEntities();
-
-  /// \brief
   virtual void displayTimer(int _val);
 
   /// \brief

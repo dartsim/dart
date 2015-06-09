@@ -72,39 +72,19 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-void WeldJoint::updateLocalTransform() const
+void WeldJoint::updateLocalTransform()
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialVelocity() const
-{
-  // Do nothing
-  // Should we have mSpatialVelocity.setZero() here instead?
-}
-
-//==============================================================================
-void WeldJoint::updateLocalSpatialAcceleration() const
-{
-  // Do nothing
-  // Should we have mSpatialAcceleration.setZero() here instead?
-}
-
-//==============================================================================
-void WeldJoint::updateLocalPrimaryAcceleration() const
+void WeldJoint::updateLocalJacobian()
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobian(bool) const
-{
-  // Do nothing
-}
-
-//==============================================================================
-void WeldJoint::updateLocalJacobianTimeDeriv() const
+void WeldJoint::updateLocalJacobianTimeDeriv()
 {
   // Do nothing
 }

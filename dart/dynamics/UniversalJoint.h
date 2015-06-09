@@ -75,13 +75,13 @@ protected:
   virtual void updateDegreeOfFreedomNames();
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform();
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const;
+  virtual void updateLocalJacobian();
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv();
 
 protected:
   /// Rotational axis.

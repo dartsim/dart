@@ -39,7 +39,6 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/dynamics/Entity.h"
 #include "dart/common/Deprecated.h"
 
 namespace dart {
@@ -53,8 +52,6 @@ namespace dynamics {
 
 class EllipsoidShape;
 class SoftBodyNode;
-
-class PointMassNotifier;
 
 ///
 class PointMass
@@ -76,18 +73,6 @@ public:
 
   ///
   double getMass() const;
-
-  ///
-  double getPsi() const;
-
-  ///
-  double getImplicitPsi() const;
-
-  ///
-  double getPi() const;
-
-  ///
-  double getImplicitPi() const;
 
   ///
   void addConnectedPointMass(PointMass* _pointMass);
@@ -174,9 +159,6 @@ public:
 
   // Documentation inherited
   const Eigen::Vector3d& getAccelerations() const;
-
-  /// Get the Eta term of this PointMass
-  const Eigen::Vector3d& getPartialAccelerations() const;
 
   // Documentation inherited
   void resetAccelerations();
@@ -326,17 +308,17 @@ protected:
   //----------------------------------------------------------------------------
 
   /// \brief Update transformation.
-  void updateTransform() const;
+  void updateTransform();
 
   /// \brief Update body velocity.
-  void updateVelocity() const;
+  void updateVelocity();
 
   /// \brief Update partial body acceleration due to parent joint's velocity.
-  void updatePartialAcceleration() const;
+  void updatePartialAcceleration();
 
   /// \brief Update articulated body inertia. Forward dynamics routine.
   /// \param[in] _timeStep Rquired for implicit joint stiffness and damping.
-  void updateArtInertiaFD(double _timeStep) const;
+  void updateArtInertiaFD(double _timeStep);
 
   /// \brief Update bias force associated with the articulated body inertia.
   /// Forward dynamics routine.
@@ -349,7 +331,7 @@ protected:
   void updateBiasImpulseFD();
 
   /// \brief Update body acceleration with the partial body acceleration.
-  void updateAccelerationID() const;
+  void updateAccelerationID();
 
   /// \brief Update body acceleration. Forward dynamics routine.
   void updateAccelerationFD();
@@ -598,19 +580,19 @@ protected:
   double mMass;
 
   /// Current position viewed in world frame.
-  mutable Eigen::Vector3d mW;
+  Eigen::Vector3d mW;
 
   /// Current position viewed in parent soft body node frame.
-  mutable Eigen::Vector3d mX;
+  Eigen::Vector3d mX;
 
   /// Resting postion viewed in parent soft body node frame.
   Eigen::Vector3d mX0;
 
   /// Current velocity viewed in parent soft body node frame.
-  mutable Eigen::Vector3d mV;
+  Eigen::Vector3d mV;
 
-  /// Partial Acceleration of this PointMass
-  mutable Eigen::Vector3d mEta;
+  ///
+  Eigen::Vector3d mEta;
 
   ///
   Eigen::Vector3d mAlpha;
@@ -619,22 +601,22 @@ protected:
   Eigen::Vector3d mBeta;
 
   /// Current acceleration viewed in parent body node frame.
-  mutable Eigen::Vector3d mA;
+  Eigen::Vector3d mA;
 
   ///
   Eigen::Vector3d mF;
 
   ///
-  mutable double mPsi;
+  double mPsi;
 
   ///
-  mutable double mImplicitPsi;
+  double mImplicitPsi;
 
   ///
-  mutable double mPi;
+  double mPi;
 
   ///
-  mutable double mImplicitPi;
+  double mImplicitPi;
 
   /// Bias force
   Eigen::Vector3d mB;
@@ -671,8 +653,6 @@ protected:
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector3d mImpF;
 
-  PointMassNotifier* mNotifier;
-
 private:
   EllipsoidShape* mShape;
 
@@ -686,31 +666,6 @@ public:
 //  PointMass* pm1;
 //  PointMass* pm2;
 //};
-
-class PointMassNotifier : public Entity
-{
-public:
-
-  PointMassNotifier(SoftBodyNode* _parentSoftBody, const std::string& _name);
-
-  bool needsPartialAccelerationUpdate() const;
-
-  void clearTransformNotice();
-  void clearVelocityNotice();
-  void clearPartialAccelerationNotice();
-  void clearAccelerationNotice();
-
-  void notifyTransformUpdate();
-  void notifyVelocityUpdate();
-  void notifyAccelerationUpdate();
-
-protected:
-
-  bool mNeedPartialAccelerationUpdate;
-
-  SoftBodyNode* mParentSoftBodyNode;
-
-};
 
 }  // namespace dynamics
 }  // namespace dart

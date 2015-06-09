@@ -57,10 +57,10 @@ public:
   virtual ~WeldJoint();
 
   // Documentation inherited
-  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
+  virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
 
   // Documentation inherited
-  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
+  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
 
 protected:
   //----------------------------------------------------------------------------
@@ -68,22 +68,13 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform();
 
   // Documentation inherited
-  virtual void updateLocalSpatialVelocity() const;
+  virtual void updateLocalJacobian();
 
   // Documentation inherited
-  virtual void updateLocalSpatialAcceleration() const;
-
-  // Documentation inherited
-  virtual void updateLocalPrimaryAcceleration() const;
-
-  // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const;
-
-  // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv();
 
 public:
   // To get byte-aligned Eigen vectors

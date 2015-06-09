@@ -104,7 +104,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setPosition(size_t, double);
+  virtual void setPosition(size_t _index, double _position);
 
   // Documentation inherited
   virtual double getPosition(size_t _index) const;

@@ -72,17 +72,16 @@ double testForwardKinematicSpeed(dart::dynamics::Skeleton* skel,
                           std::min(dof->getPositionUpperLimit(), 1.0)) );
     }
 
+    skel->computeForwardKinematics(position, velocity, acceleration);
+
     for(size_t i=0; i<skel->getNumBodyNodes(); ++i)
     {
       if(position)
-        skel->getBodyNode(i)->getWorldTransform();
+        skel->getBodyNode(i)->getTransform();
       if(velocity)
-      {
-        skel->getBodyNode(i)->getSpatialVelocity();
-        skel->getBodyNode(i)->getPartialAcceleration();
-      }
+        skel->getBodyNode(i)->getBodyVelocity();
       if(acceleration)
-        skel->getBodyNode(i)->getSpatialAcceleration();
+        skel->getBodyNode(i)->getBodyAcceleration();
     }
   }
 
