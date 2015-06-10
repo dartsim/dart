@@ -115,23 +115,28 @@ bool GradientDescentSolver::solve()
   size_t dim = problem->getDimension();
 
   Eigen::VectorXd x = problem->getInitialGuess();
+  assert(x.size() == static_cast<int>(dim));
+
   Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
   Eigen::VectorXd grad(x.size());
   std::vector<bool> ineqViolated(problem->getNumIneqConstraints());
 
+  mLastNumIterations = 0;
   size_t attemptCount = 0;
   do
   {
     size_t stepCount = 0;
     do
     {
+      ++mLastNumIterations;
+
       Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
 
       // Perturb the configuration if we have reached an iteration where we are
       // supposed to perturb it.
-      if(mGradientP.mPerturbationStep > 0
-         && (stepCount+1)%mGradientP.mPerturbationStep == 0)
+      if(mGradientP.mPerturbationStep > 0 && stepCount > 0
+         && stepCount%mGradientP.mPerturbationStep == 0)
       {
         dx = x; // Seed the configuration randomizer with the current configuration
         randomizeConfiguration(dx);
@@ -142,7 +147,7 @@ bool GradientDescentSolver::solve()
         x += scale*(dx-x);
       }
 
-      // Check if the constraints are satsified
+      // Check if the equality constraints are satsified
       satisfied = true;
       for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
       {
@@ -154,6 +159,7 @@ bool GradientDescentSolver::solve()
         }
       }
 
+      // Check if the inequality constraints are satisfied
       for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
       {
         double ineqCost = problem->getIneqConstraint(i)->eval(xMap);
@@ -177,9 +183,13 @@ bool GradientDescentSolver::solve()
         // already satisfied, the way we do for inequality constraints? It might
         // save some operations.
         problem->getEqConstraint(i)->evalGradient(xMap, gradMap);
+
+        // Get the user-specified weight if available, otherwise use the default
+        // weight value
         double weight = mGradientP.mEqConstraintWeights.size() > i?
               mGradientP.mEqConstraintWeights[i] :
               mGradientP.mDefaultConstraintWeight;
+
         dx += weight * grad;
       }
 
@@ -188,9 +198,13 @@ bool GradientDescentSolver::solve()
         if(ineqViolated[i])
         {
           problem->getIneqConstraint(i)->evalGradient(xMap, gradMap);
+
+          // Get the user-specified weight if available, otherwise use the
+          // default weight value
           double weight = mGradientP.mIneqConstraintWeights.size() > i?
                 mGradientP.mIneqConstraintWeights[i] :
                 mGradientP.mDefaultConstraintWeight;
+
           dx += weight * grad;
         }
       }
@@ -209,10 +223,15 @@ bool GradientDescentSolver::solve()
       if(mProperties.mIterationsPerPrint > 0 &&
          stepCount%mProperties.mIterationsPerPrint == 0)
       {
+        // TODO(MXG): Allow the user to specify the stream for the output
         std::cout << "[GradientDescentSolver] Progress (attempt #"
                   << attemptCount << " | iteration #" << stepCount << ")\n"
-                  << "cost: " << problem->getObjective()->eval(x) <<  " | x: "
-                  << x.transpose() << std::endl;
+                  << "cost: " << problem->getObjective()->eval(x) << " | "
+                  << (minimized? "minimized | " : "not minimized | ")
+                  << (satisfied? "constraints satisfied | "
+                               : "constraints unsatisfied | ")
+                  << "x: " << x.transpose() << "\n"
+                  << "grad: " << dx.transpose() << std::endl;
       }
 
       if(stepCount > mProperties.mNumMaxIterations)
@@ -239,7 +258,20 @@ bool GradientDescentSolver::solve()
 
   } while(!minimized || !satisfied);
 
+  mLastConfig = x;
+  if(minimized && satisfied)
+  {
+    problem->setOptimalSolution(x);
+    problem->setOptimumValue(problem->getObjective()->eval(x));
+  }
+
   return minimized && satisfied;
+}
+
+//==============================================================================
+Eigen::VectorXd GradientDescentSolver::getLastConfiguration() const
+{
+  return mLastConfig;
 }
 
 //==============================================================================
@@ -401,11 +433,15 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 
   if( _x.size() != static_cast<int>(mProperties.mProblem->getDimension()) )
   {
-    dtwarn << "[GradientDescentSolver::clampToBoundary] Mismatch between "
-           << "configuration size [" << _x.size() << "] and the dimension of "
-           << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
+    dterr << "[GradientDescentSolver::clampToBoundary] Mismatch between "
+          << "configuration size [" << _x.size() << "] and the dimension of "
+          << "the Problem [" << mProperties.mProblem->getDimension() << "]\n";
+    assert(false);
     return;
   }
+
+  assert(mProperties.mProblem->getLowerBounds().size() == _x.size());
+  assert(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
   for(int i=0; i<_x.size(); ++i)
   {
@@ -414,6 +450,12 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     else if( mProperties.mProblem->getUpperBounds()[i] < _x[i] )
       _x[i] = mProperties.mProblem->getUpperBounds()[i];
   }
+}
+
+//==============================================================================
+size_t GradientDescentSolver::getLastNumIterations() const
+{
+  return mLastNumIterations;
 }
 
 } // namespace optimizer

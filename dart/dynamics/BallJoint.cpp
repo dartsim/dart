@@ -52,17 +52,22 @@ BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _propertie
 }
 
 //==============================================================================
-BallJoint::BallJoint(const std::string& _name)
-  : MultiDofJoint(_name),
-    mR(Eigen::Isometry3d::Identity())
-{
-  updateDegreeOfFreedomNames();
-}
-
-//==============================================================================
 BallJoint::~BallJoint()
 {
   // Do nothing
+}
+
+//==============================================================================
+const std::string& BallJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BallJoint::getStaticType()
+{
+  static const std::string name = "BallJoint";
+  return name;
 }
 
 //==============================================================================
@@ -100,13 +105,48 @@ Joint* BallJoint::clone() const
 }
 
 //==============================================================================
+Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
+    const Eigen::Vector3d& _positions) const
+{
+  // Jacobian expressed in the Joint frame
+  Eigen::Matrix<double, 6, 3> J;
+  J.topRows<3>()    = math::expMapJac(-_positions);
+  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
+
+  // Transform the reference frame to the child BodyNode frame
+  J = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, J);
+
+  assert(!math::isNan(J));
+
+  return J;
+}
+
+//==============================================================================
+Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
+    const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const
+{
+  Eigen::Vector3d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q1).topRows<3>();
+  const Eigen::Matrix3d R1T = math::expMapRot(-_q1);
+  const Eigen::Matrix3d R2  = math::expMapRot( _q2);
+
+  dq = Jw.inverse() * math::logMap(R1T * R2);
+
+  return dq;
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear()
+  const Eigen::Isometry3d& R = getR();
+  Eigen::Isometry3d Rnext(Eigen::Isometry3d::Identity());
+
+  Rnext.linear() = R.linear()
       * convertToRotation(getLocalJacobianStatic().topRows<3>()
                           * getVelocitiesStatic() * _dt);
 
-  setPositionsStatic(convertToPositions(mR.linear()));
+  setPositionsStatic(convertToPositions(Rnext.linear()));
 }
 
 //==============================================================================
@@ -134,13 +174,7 @@ void BallJoint::updateLocalTransform() const
 //==============================================================================
 void BallJoint::updateLocalJacobian(bool) const
 {
-  Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = math::expMapJac(getPositionsStatic()).transpose();
-  J.bottomRows<3>() = Eigen::Matrix3d::Zero();
-
-  mJacobian = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, J);
-
-  assert(!math::isNan(mJacobian));
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
@@ -154,6 +188,18 @@ void BallJoint::updateLocalJacobianTimeDeriv() const
   mJacobianDeriv = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, dJ);
 
   assert(!math::isNan(mJacobianDeriv));
+}
+
+//==============================================================================
+const Eigen::Isometry3d& BallJoint::getR() const
+{
+  if(mNeedTransformUpdate)
+  {
+    updateLocalTransform();
+    mNeedTransformUpdate = false;
+  }
+
+  return mR;
 }
 
 }  // namespace dynamics

@@ -138,7 +138,7 @@ public:
 
       for(size_t e=0; e<effectors.size(); ++e)
       {
-        qs[e] = mRobot->getPositionSegment(dofs[e]);
+        qs[e] = mRobot->getPositions(dofs[e]);
         const Jacobian& J = effectors[e]->getWorldJacobian();
         inv_J[e] = J.transpose()*(J*J.transpose()
                                 + 0.0025*Eigen::Matrix6d::Identity()).inverse();
@@ -197,7 +197,7 @@ int main()
 {
   WorldPtr world(new World);
 
-  SkeletonPtr ground(new Skeleton("ground"));
+  SkeletonPtr ground = Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0,0,-0.95);
   WeldJoint::Properties joint;
@@ -217,7 +217,7 @@ int main()
 
 //  BodyNode* larm = atlas->getBodyNode("l_uarm");
   BodyNode* larm = atlas->getBodyNode("l_larm");
-  larm->moveTo(atlas.get(), atlas->getBodyNode("r_hand"));
+  larm->moveTo(atlas, atlas->getBodyNode("r_hand"));
   Joint* Jlarm = larm->getParentJoint();
 //  std::pair<Joint*, BodyNode*> copy = larm->copyTo(
 //        atlas.get(), atlas->getBodyNode("r_hand"));

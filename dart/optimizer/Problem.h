@@ -57,7 +57,7 @@ public:
   explicit Problem(size_t _dim = 0);
 
   /// \brief Destructor
-  virtual ~Problem();
+  virtual ~Problem() = default;
 
   //--------------------------- Problem Setting --------------------------------
   /// \brief Set dimension. Note: Changing the dimension will clear out the

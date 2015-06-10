@@ -52,13 +52,6 @@ ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
 }
 
 //==============================================================================
-ZeroDofJoint::ZeroDofJoint(const std::string& _name)
-  : Joint(_name)
-{
-  // Do nothing
-}
-
-//==============================================================================
 ZeroDofJoint::~ZeroDofJoint()
 {
   // Do nothing
@@ -71,20 +64,20 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
   return nullptr;
 }
 
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 {
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
   return nullptr;
 }
 
@@ -119,17 +112,21 @@ size_t ZeroDofJoint::getNumDofs() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t)
+size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 {
-  dterr << "[ZeroDofJoint::setIndexInSkeleton] index[" << _index
-        << "] out of range" << std::endl;
+  dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
+
+  return 0;
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
+size_t ZeroDofJoint::getIndexInTree(size_t _index) const
 {
-  dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-        << std::endl;
+  dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
 
   return 0;
 }
@@ -434,7 +431,15 @@ void ZeroDofJoint::integratePositions(double _dt)
 //==============================================================================
 void ZeroDofJoint::integrateVelocities(double _dt)
 {
-    // Do nothing
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionDifferences(
+    const Eigen::VectorXd& /*_q2*/,
+    const Eigen::VectorXd& /*_q1*/) const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -519,6 +524,13 @@ Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
 
 //==============================================================================
 const math::Jacobian ZeroDofJoint::getLocalJacobian() const
+{
+  return Eigen::Matrix<double, 6, 0>();
+}
+
+//==============================================================================
+math::Jacobian ZeroDofJoint::getLocalJacobian(
+    const Eigen::VectorXd& /*_positions*/) const
 {
   return Eigen::Matrix<double, 6, 0>();
 }

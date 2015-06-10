@@ -48,21 +48,7 @@
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 #include "dart/math/Geometry.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/dynamics.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/simulation/World.h"
@@ -171,7 +157,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
                                  bool collisionShape = true,
                                  size_t stopAfter = 3)
 {
-  SkeletonPtr robot(new Skeleton);
+  SkeletonPtr robot = Skeleton::create();
 
   Vector3d dimEE = dim1;
 
@@ -256,7 +242,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
 {
   assert(_n > 0);
 
-  SkeletonPtr robot(new Skeleton);
+  SkeletonPtr robot = Skeleton::create();
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
@@ -326,7 +312,7 @@ SkeletonPtr createGround(
     node.mColShapes.push_back(shape);
     node.mInertia.setMass(mass);
 
-    SkeletonPtr skeleton(new Skeleton);
+    SkeletonPtr skeleton = Skeleton::create();
     skeleton->createJointAndBodyNodePair<WeldJoint>(nullptr, joint, node);
 
     return skeleton;
@@ -344,7 +330,7 @@ SkeletonPtr createObject(
   BodyNode::Properties node(std::string("link1"));
   node.mInertia.setMass(mass);
 
-  SkeletonPtr skeleton(new Skeleton);
+  SkeletonPtr skeleton = Skeleton::create();
   skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, node);
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();

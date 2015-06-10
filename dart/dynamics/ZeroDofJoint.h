@@ -55,11 +55,8 @@ public:
   struct Properties : Joint::Properties
   {
     Properties(const Joint::Properties& _properties = Joint::Properties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  ZeroDofJoint(const std::string& _name);
 
   /// Destructor
   virtual ~ZeroDofJoint();
@@ -70,10 +67,6 @@ public:
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
   //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
 
   // Documentation inherited
   virtual DegreeOfFreedom* getDof(size_t) override;
@@ -96,10 +89,10 @@ public:
   virtual size_t getNumDofs() const override;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t) override;
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const override;
+  virtual size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -271,7 +264,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -279,6 +272,10 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -335,6 +332,10 @@ protected:
 
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobian() const override;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited
   virtual const math::Jacobian getLocalJacobianTimeDeriv() const override;

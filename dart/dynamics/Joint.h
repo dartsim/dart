@@ -40,10 +40,12 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
+#include "dart/common/Deprecated.h"
+#include "dart/math/MathTypes.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 namespace renderer {
@@ -146,14 +148,12 @@ public:
                                    Eigen::Isometry3d::Identity(),
                bool _isPositionLimited = false,
                ActuatorType _actuatorType = DefaultActuatorType);
+
+    virtual ~Properties() = default;
   };
 
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
-
-  /// Constructor
-//  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit Joint(const std::string& _name = "Joint");
 
   /// Destructor
   virtual ~Joint();
@@ -185,6 +185,9 @@ public:
   /// Get joint name
   const std::string& getName() const;
 
+  /// Gets a string representing the joint type
+  virtual const std::string& getType() const = 0;
+
   /// Set actuator type
   void setActuatorType(ActuatorType _actuatorType);
 
@@ -214,11 +217,11 @@ public:
   /// Get the (const) parent BodyNode of this Joint
   const BodyNode* getParentBodyNode() const;
 
-  /// Get the Skeleton that this Joint belongs to. The skeleton set by init().
-  Skeleton* getSkeleton();
+  /// Get the Skeleton that this Joint belongs to
+  SkeletonPtr getSkeleton();
 
   /// Get the (const) Skeleton that this Joint belongs to.
-  const Skeleton* getSkeleton() const;
+  std::shared_ptr<const Skeleton> getSkeleton() const;
 
   /// Set transformation from parent body node to this joint
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T);
@@ -248,18 +251,21 @@ public:
   /// \sa ActuatorType
   bool isPositionLimited() const;
 
-  /// Set an unique index in skeleton of a generalized coordinate in this joint
-  virtual void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) = 0;
-
-  /// Get an unique index in skeleton of a generalized coordinate in this joint
+  /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
 
-  /// Get the index of this Joint within its Skeleton
-  size_t getJointIndex() const;
+  /// Get a unique index in the kinematic tree of a generalized coordinate in
+  /// this Joint
+  virtual size_t getIndexInTree(size_t _index) const = 0;
 
-  /// Get number of generalized coordinates
-  DEPRECATED(4.1)
-  virtual size_t getDof() const = 0;
+  /// Get the index of this Joint within its Skeleton
+  size_t getJointIndexInSkeleton() const;
+
+  /// Get the index of this Joint within its tree
+  size_t getJointIndexInTree() const;
+
+  /// Get the index of the tree that this Joint belongs to
+  size_t getTreeIndex() const;
 
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
@@ -293,16 +299,16 @@ public:
   /// Set a single command
   virtual void setCommand(size_t _index, double _command) = 0;
 
-  /// Set a sinlge command
+  /// Get a single command
   virtual double getCommand(size_t _index) const = 0;
 
-  /// Set commands
+  /// Set all commands for this Joint
   virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
 
-  /// Get commands
+  /// Get all commands for this Joint
   virtual Eigen::VectorXd getCommands() const = 0;
 
-  /// Set zero all the positions
+  /// Set all the commands for this Joint to zero
   virtual void resetCommands() = 0;
 
   /// \}
@@ -311,22 +317,22 @@ public:
   /// \{ \name Position
   //----------------------------------------------------------------------------
 
-  /// Set a single position
+  /// Set the position of a single generalized coordinate
   virtual void setPosition(size_t _index, double _position) = 0;
 
-  /// Get a single position
+  /// Get the position of a single generalized coordinate
   virtual double getPosition(size_t _index) const = 0;
 
-  /// Set positions
+  /// Set the positions of all generalized coordinates in this Joint
   virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
 
-  /// Get positions
+  /// Get the positions of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getPositions() const = 0;
 
-  /// Set zero all the positions
+  /// Set the positions of all generalized coordinates in this Joint to zero
   virtual void resetPositions() = 0;
 
-  /// Set lower limit of position
+  /// Set lower limit for position
   virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
   /// Get lower limit for position
@@ -344,31 +350,31 @@ public:
   /// \{ \name Velocity
   //----------------------------------------------------------------------------
 
-  /// Set a single velocity
+  /// Set the velocity of a single generalized coordinate
   virtual void setVelocity(size_t _index, double _velocity) = 0;
 
-  /// Get a single velocity
+  /// Get the velocity of a single generalized coordinate
   virtual double getVelocity(size_t _index) const = 0;
 
-  /// Set velocities
+  /// Set the velocities of all generalized coordinates in this Joint
   virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
 
-  /// Get velocities
+  /// Get the velocities of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getVelocities() const = 0;
 
-  /// Set zero all the velocities
+  /// Set the velocities of all generalized coordinates in this Joint to zero
   virtual void resetVelocities() = 0;
 
-  /// Set lower limit of velocity
+  /// Set lower limit for velocity
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
-  /// Get lower limit of velocity
+  /// Get lower limit for velocity
   virtual double getVelocityLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of velocity
+  /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
 
-  /// Get upper limit of velocity
+  /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -377,31 +383,31 @@ public:
   /// \{ \name Acceleration
   //----------------------------------------------------------------------------
 
-  /// Set a single acceleration
+  /// Set the acceleration of a single generalized coordinate
   virtual void setAcceleration(size_t _index, double _acceleration) = 0;
 
-  /// Get a single acceleration
+  /// Get the acceleration of a single generalized coordinate
   virtual double getAcceleration(size_t _index) const = 0;
 
-  /// Set accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint
   virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
 
-  /// Get accelerations
+  /// Get the accelerations of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getAccelerations() const = 0;
 
-  /// Set zero all the accelerations
+  /// Set the accelerations of all generalized coordinates in this Joint to zero
   virtual void resetAccelerations() = 0;
 
-  /// Set lower limit of acceleration
+  /// Set lower limit for acceleration
   virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get lower limit of acceleration
+  /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of acceleration
+  /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
 
-  /// Get upper limit of acceleration
+  /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -410,31 +416,31 @@ public:
   /// \{ \name Force
   //----------------------------------------------------------------------------
 
-  /// Set a single force
+  /// Set the force of a single generalized coordinate
   virtual void setForce(size_t _index, double _force) = 0;
 
-  /// Get a single force
+  /// Get the force of a single generalized coordinate
   virtual double getForce(size_t _index) = 0;
 
-  /// Set forces
+  /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
 
-  /// Get forces
+  /// Get the forces of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getForces() const = 0;
 
-  /// Set zero all the forces
+  /// Set the forces of all generalized coordinates in this Joint to zero
   virtual void resetForces() = 0;
 
-  /// Set lower limit of force
+  /// Set lower limit for force
   virtual void setForceLowerLimit(size_t _index, double _force) = 0;
 
-  /// Get lower limit of force
+  /// Get lower limit for force
   virtual double getForceLowerLimit(size_t _index) const = 0;
 
-  /// Set upper limit of position
+  /// Set upper limit for force
   virtual void setForceUpperLimit(size_t _index, double _force) = 0;
 
-  /// Get upper limit of position
+  /// Get upper limit for force
   virtual double getForceUpperLimit(size_t _index) const = 0;
 
   /// \}
@@ -470,7 +476,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Integration
+  /// \{ \name Integration and finite difference
   //----------------------------------------------------------------------------
 
   /// Integrate positions using Euler method
@@ -478,6 +484,11 @@ public:
 
   /// Integrate velocities using Euler method
   virtual void integrateVelocities(double _dt) = 0;
+
+  /// Return the difference of two generalized coordinates which are measured in
+  /// the configuration space of this Skeleton.
+  virtual Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const = 0;
 
   /// \}
 
@@ -546,6 +557,11 @@ public:
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
   virtual const math::Jacobian getLocalJacobian() const = 0;
+
+  /// Get generalized Jacobian from parent body node to child body node
+  /// w.r.t. local generalized coordinate
+  virtual math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const = 0;
 
   /// Get time derivative of generalized Jacobian from parent body node
   /// to child body node w.r.t. local generalized coordinate
@@ -619,7 +635,11 @@ protected:
   virtual void registerDofs() = 0;
 
   /// Initialize this joint. This function is called by BodyNode::init()
-  virtual void init(Skeleton* _skel);
+  ///
+  /// Note: This function is being deprecated due to lack of use. If this is
+  /// something you need for a custom Joint type, please inform us on Github.
+  DEPRECATED(5.0)
+  virtual void init(const SkeletonPtr& _skel);
 
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _name DegreeOfFreedom's name.
@@ -842,9 +862,6 @@ protected:
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
 
-  /// Skeleton pointer that this joint belongs to
-  Skeleton* mSkeleton;
-
   /// Local transformation
   ///
   /// Do not use directly! Use getLocalTransform() to access this
@@ -890,10 +907,6 @@ protected:
   /// True iff this joint's local Jacobian time derivative has not been updated
   /// since the last position or velocity change
   mutable bool mIsLocalJacobianTimeDerivDirty;
-
-  /// Transmitting wrench from parent body to child body expressed in child body
-  DEPRECATED(4.3)
-  Eigen::Vector6d mWrench;
 
 public:
   // To get byte-aligned Eigen vectors

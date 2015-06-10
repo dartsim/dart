@@ -79,8 +79,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 {
   int numTests = 1;
 
-  Skeleton skeleton;
-  Joint* joint = skeleton.createJointAndBodyNodePair<JointType>(
+  SkeletonPtr skeleton = Skeleton::create();
+  Joint* joint = skeleton->createJointAndBodyNodePair<JointType>(
         nullptr, _properties).first;
   joint->setTransformFromChildBodyNode(math::expMap(Eigen::Vector6d::Random()));
   joint->setTransformFromParentBodyNode(math::expMap(Eigen::Vector6d::Random()));
@@ -103,9 +103,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
     }
 
-    skeleton.setPositions(q);
-    skeleton.setVelocities(dq);
-    skeleton.computeForwardKinematics(true, true, false);
+    skeleton->setPositions(q);
+    skeleton->setVelocities(dq);
 
     if (dof == 0)
       return;
@@ -129,14 +128,12 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
-      skeleton.computeForwardKinematics(true, false, false);
       Eigen::Isometry3d T_a = joint->getLocalTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      skeleton.computeForwardKinematics(true, false, false);
       Eigen::Isometry3d T_b = joint->getLocalTransform();
 
       //
@@ -208,8 +205,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     for (int i = 0; i < dof; ++i)
       q(i) = random(posMin, posMax);
 
-    skeleton.setPositions(q);
-    skeleton.computeForwardKinematics(true, false, false);
+    skeleton->setPositions(q);
 
     if (joint->getNumDofs() == 0)
       return;
@@ -317,7 +313,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
   double simTime = 2.0;
+#endif // ------- Debug mode
   double timeStep = myWorld->getTimeStep();
   int nSteps = simTime / timeStep;
 
@@ -394,8 +394,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   double simTime = 0.2;
 #else
   double simTime = 2.0;
-#endif
-
+#endif // ------- Debug mode
   double timeStep = myWorld->getTimeStep();
   int nSteps = simTime / timeStep;
 
@@ -522,7 +521,7 @@ Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
 //==============================================================================
 TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
 {
-  SkeletonPtr skel(new Skeleton);
+  SkeletonPtr skel = Skeleton::create();
 
   std::pair<Joint*, BodyNode*> pair;
 

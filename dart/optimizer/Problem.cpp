@@ -66,15 +66,12 @@ Problem::Problem(size_t _dim)
 }
 
 //==============================================================================
-Problem::~Problem()
-{
-}
-
-//==============================================================================
 void Problem::setDimension(size_t _dim)
 {
   if(_dim != mDimension)
   {
+    mDimension = _dim;
+
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
 
     mLowerBounds = Eigen::VectorXd::Constant(
@@ -85,8 +82,6 @@ void Problem::setDimension(size_t _dim)
 
     mOptimalSolution = Eigen::VectorXd::Zero(mDimension);
     clearAllSeeds();
-
-    mDimension = _dim;
   }
 }
 
@@ -102,12 +97,12 @@ void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
   assert(static_cast<size_t>(_initGuess.size()) == mDimension
          && "Invalid size.");
 
-  if(_initGuess.size() == static_cast<int>(mDimension))
+  if(_initGuess.size() != static_cast<int>(mDimension))
   {
-    dtwarn << "[Problem::setInitialGuess] Attempting to set the initial guess "
+    dterr  << "[Problem::setInitialGuess] Attempting to set the initial guess "
            << "of a Problem of dimension [" << mDimension << "] to a vector of "
-           << "dimension [" << _initGuess << "]. This initial guess will not "
-           << "be used!\n";
+           << "dimension [" << _initGuess.size() << "]. This initial guess "
+           << "will not be used!\n";
     return;
   }
 

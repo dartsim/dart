@@ -47,7 +47,7 @@
 #include <list>
 #include <Eigen/Core>
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Ptr.h"
 #include "dart/simulation/World.h"
 
 namespace flann {

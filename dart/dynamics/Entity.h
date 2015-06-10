@@ -43,7 +43,6 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
-#include "dart/common/sub_ptr.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -159,8 +158,10 @@ public:
   /// Get the parent (reference) frame of this Entity
   const Frame* getParentFrame() const;
 
-  /// True iff this Entity depends on (i.e. kinematically descends from)
-  /// _someFrame. If _someFrame is NULL, this returns false.
+  /// True if and only if this Entity depends on (i.e. kinematically descends
+  /// from) _someFrame. If _someFrame is nullptr, this returns true in order to
+  /// accommodate BodyNodes which always have a nullptr BodyNode as the parent
+  /// of a root BodyNode.
   bool descendsFrom(const Frame* _someFrame) const;
 
   /// True iff this Entity is also a Frame.

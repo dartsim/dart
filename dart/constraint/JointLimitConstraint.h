@@ -121,7 +121,7 @@ protected:
   virtual void applyImpulse(double* _lambda);
 
   // Documentation inherited
-  virtual dynamics::Skeleton* getRootSkeleton() const;
+  virtual dynamics::SkeletonPtr getRootSkeleton() const;
 
   // Documentation inherited
   virtual bool isActive() const;

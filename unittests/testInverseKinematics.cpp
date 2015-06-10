@@ -49,7 +49,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
                                            Vector3d dim2, TypeOfDOF type2,
                                            bool finished = true)
 {
-  SkeletonPtr robot(new Skeleton);
+  SkeletonPtr robot = Skeleton::create();
 
   // Create the first link
   BodyNode::Properties node(std::string("link1"));

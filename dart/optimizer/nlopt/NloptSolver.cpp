@@ -34,10 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memory>
+
 #include "dart/optimizer/nlopt/NloptSolver.h"
 
 #include <Eigen/Dense>
 
+#include "dart/common/Console.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 
@@ -45,96 +48,190 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-NloptSolver::NloptSolver(std::shared_ptr<Problem> _problem,
-                         nlopt_algorithm _alg)
-  : Solver(_problem),
+NloptSolver::NloptSolver(const Solver::Properties& _properties,
+                         nlopt::algorithm _alg)
+  : Solver(_properties),
+    mOpt(nullptr),
+    mAlg(_alg),
     mMinF(0.0)
 {
-  assert(_problem);
-  assert(_problem->getObjective());
-
-  // Problem dimension
-  int dim = _problem->getDimension();
-
-  // Create nlopt object
-  mOpt = nlopt_create(_alg, dim);
-
-  // Set relative tolerance on function value
-  nlopt_set_ftol_rel(mOpt, 1e-8);
-
-  // Set initial guess for x
-  mX = mProperties.mProblem->getInitialGuess();
-
-  // Set tolerance for x
-  nlopt_set_xtol_rel(mOpt, 1e-9);
-
-  // Set lower/upper bounds
-  nlopt_set_lower_bounds(mOpt, mProperties.mProblem->getLowerBounds().data());
-  nlopt_set_upper_bounds(mOpt, mProperties.mProblem->getUpperBounds().data());
-
-  // Set objective function
-  FunctionPtr obj = mProperties.mProblem->getObjective();
-  nlopt_set_min_objective(mOpt, NloptSolver::_nlopt_func, obj.get());
-
-  // Add equality constraint functions
-  for (size_t i = 0; i < mProperties.mProblem->getNumEqConstraints(); ++i)
-  {
-    FunctionPtr fn = mProperties.mProblem->getEqConstraint(i);
-    nlopt_add_equality_constraint(
-          mOpt, NloptSolver::_nlopt_func, fn.get(), 1e-8);
-  }
-
-  // Add inequality constraint functions
-  for (size_t i = 0; i < mProperties.mProblem->getNumIneqConstraints(); ++i)
-  {
-    FunctionPtr fn = mProperties.mProblem->getIneqConstraint(i);
-    nlopt_add_inequality_constraint(
-          mOpt, NloptSolver::_nlopt_func, fn.get(), 1e-8);
-  }
+  // Do nothing
 }
 
 //==============================================================================
-NloptSolver::~NloptSolver()
+NloptSolver::NloptSolver(std::shared_ptr<Problem> _problem,
+                         nlopt::algorithm _alg)
+  : Solver(_problem),
+    mOpt(nullptr),
+    mAlg(_alg),
+    mMinF(0.0)
 {
-  nlopt_destroy(mOpt);
+  // Do nothing
 }
 
 //==============================================================================
-void NloptSolver::setNumMaxEvaluations(size_t _numVal)
+static std::vector<double> convertToStd(const Eigen::VectorXd& v)
 {
-  nlopt_set_maxeval(mOpt, _numVal);
+  return std::vector<double>(v.data(), v.data() + v.size());
 }
 
 //==============================================================================
-size_t NloptSolver::getNumEvaluationMax() const
+static Eigen::VectorXd convertToEigen(const std::vector<double>& _v)
 {
-  return nlopt_get_maxeval(mOpt);
+  Eigen::VectorXd result(_v.size());
+  for(size_t i=0; i<_v.size(); ++i)
+    result[i] = _v[i];
+
+  return result;
 }
 
 //==============================================================================
 bool NloptSolver::solve()
 {
-  // Optimize
-  nlopt_result result = nlopt_optimize(mOpt, mX.data(), &mMinF);
+  // Allocate a new nlopt::opt structure if needed
+  size_t dimension = mProperties.mProblem->getDimension();
+  if(nullptr == mOpt
+     || mOpt->get_dimension() != dimension
+     || mOpt->get_algorithm() != mAlg)
+  {
+    mOpt = std::unique_ptr<nlopt::opt>(new nlopt::opt(mAlg, dimension));
+  }
+  else
+  {
+    mOpt->remove_equality_constraints();
+    mOpt->remove_inequality_constraints();
+  }
 
-  // Negative result means failure. For the detail, see nlopt.hpp
-  if (result < 0)
+  const std::shared_ptr<Problem>& problem = mProperties.mProblem;
+
+  mOpt->set_maxeval(mProperties.mNumMaxIterations);
+  mOpt->set_xtol_rel(mProperties.mTolerance);
+  mOpt->set_lower_bounds(convertToStd(problem->getLowerBounds()));
+  mOpt->set_upper_bounds(convertToStd(problem->getUpperBounds()));
+
+  // Set up the nlopt::opt
+  mOpt->set_min_objective(NloptSolver::_nlopt_func,
+                          problem->getObjective().get());
+
+  for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
+  {
+    FunctionPtr fn = problem->getEqConstraint(i);
+    try
+    {
+      mOpt->add_equality_constraint(NloptSolver::_nlopt_func, fn.get(),
+                                    mProperties.mTolerance);
+    }
+    catch(const std::invalid_argument& e)
+    {
+      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
+            << "] while adding an equality constraint to an Nlopt solver. "
+            << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
+            << "] (" << mAlg << ") supports equality constraints!\n";
+      assert(false);
+    }
+    catch(const std::exception& e)
+    {
+      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
+            << "] while adding an equality constraint to the Nlopt solver. "
+            << "This might be a bug in DART; please report this!\n";
+      assert(false);
+    }
+  }
+
+  for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
+  {
+    FunctionPtr fn = problem->getIneqConstraint(i);
+    try
+    {
+      mOpt->add_inequality_constraint(NloptSolver::_nlopt_func, fn.get(),
+                                      mProperties.mTolerance);
+    }
+    catch(const std::invalid_argument& e)
+    {
+      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
+            << "] while adding an inequality constraint to an Nlopt solver. "
+            << "Check whether your algorithm [" << nlopt::algorithm_name(mAlg)
+            << "] (" << mAlg << ") supports inequality constraints!\n";
+      assert(false);
+    }
+    catch(const std::exception& e)
+    {
+      dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
+            << "] while adding an inequality constraint to the Nlopt solver. "
+            << "This might be a bug in DART; please report this!\n";
+      assert(false);
+    }
+  }
+
+  // Optimize
+  mX = convertToStd(problem->getInitialGuess());
+  nlopt::result result = mOpt->optimize(mX, mMinF);
+
+  // If the result is not in this range, then it failed
+  if ( !(nlopt::SUCCESS <= result && result <= nlopt::XTOL_REACHED) )
     return false;
 
   // Store optimal and optimum values
-  mProperties.mProblem->setOptimumValue(mMinF);
-  Eigen::VectorXd minX = Eigen::VectorXd::Zero(getProblem()->getDimension());
-  for (size_t i = 0; i < getProblem()->getDimension(); ++i)
-    minX[i] = mX[i];
-  getProblem()->setOptimalSolution(minX);
+  problem->setOptimumValue(mMinF);
+  problem->setOptimalSolution(convertToEigen(mX));
 
   return true;
+}
+
+//==============================================================================
+Eigen::VectorXd NloptSolver::getLastConfiguration() const
+{
+  return convertToEigen(mX);
 }
 
 //==============================================================================
 std::string NloptSolver::getType() const
 {
   return "NloptSolver";
+}
+
+//==============================================================================
+std::shared_ptr<Solver> NloptSolver::clone() const
+{
+  return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm());
+}
+
+//==============================================================================
+void NloptSolver::copy(const NloptSolver& _other)
+{
+  setProperties(_other.getSolverProperties());
+  setAlgorithm(_other.getAlgorithm());
+}
+
+//==============================================================================
+NloptSolver& NloptSolver::operator=(const NloptSolver& _other)
+{
+  copy(_other);
+  return *this;
+}
+
+//==============================================================================
+void NloptSolver::setAlgorithm(nlopt::algorithm _alg)
+{
+  mAlg = _alg;
+}
+
+//==============================================================================
+nlopt::algorithm NloptSolver::getAlgorithm() const
+{
+  return mAlg;
+}
+
+//==============================================================================
+void NloptSolver::setNumMaxEvaluations(size_t _numVal)
+{
+  setNumMaxIterations(_numVal);
+}
+
+//==============================================================================
+size_t NloptSolver::getNumEvaluationMax() const
+{
+  return getNumMaxIterations();
 }
 
 //==============================================================================

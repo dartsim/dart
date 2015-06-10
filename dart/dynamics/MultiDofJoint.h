@@ -121,6 +121,8 @@ public:
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -128,11 +130,9 @@ public:
     Properties(
         const Joint::Properties& _jointProperties = Joint::Properties(),
         const UniqueProperties& _multiDofProperties = UniqueProperties());
-  };
 
-  /// Constructor
-//  DEPRECATED(4.5) // Use MultiDofJoint(const Properties&)
-  MultiDofJoint(const std::string& _name);
+    virtual ~Properties();
+  };
 
   /// Destructor
   virtual ~MultiDofJoint();
@@ -160,10 +160,6 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
-
-  // Documentation inherited
   DegreeOfFreedom* getDof(size_t index) override;
 
   // Documentation inherited
@@ -187,10 +183,10 @@ public:
   const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
+  virtual size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -390,7 +386,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -398,6 +394,14 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
+
+  /// Fixed-size version of getPositionDifferences()
+  virtual Eigen::Matrix<double, DOF, 1> getPositionDifferencesStatic(
+      const Vector& _q2, const Vector& _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -454,6 +458,14 @@ protected:
 
   /// Fixed-size version of getLocalJacobian()
   const Eigen::Matrix<double, 6, DOF>& getLocalJacobianStatic() const;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
+  /// Fixed-size version of getLocalJacobian()
+  virtual Eigen::Matrix<double, 6, DOF> getLocalJacobianStatic(
+      const Eigen::Matrix<double, DOF, 1>& _positions) const = 0;
 
   // Documentation inherited
   const math::Jacobian getLocalJacobianTimeDeriv() const override;
@@ -849,29 +861,9 @@ MultiDofJoint<DOF>::Properties::Properties(
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJoint<DOF>::MultiDofJoint(const std::string& _name)
-  : Joint(_name),
-    mCommands(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositions(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mPositionDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocities(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocitiesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerations(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mAccelerationsDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForces(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mForcesDeriv(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mVelocityChanges(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mConstraintImpulses(Eigen::Matrix<double, DOF, 1>::Constant(0.0)),
-    mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
-    mJacobianDeriv(Eigen::Matrix<double, 6, DOF>::Zero()),
-    mInvProjArtInertia(Eigen::Matrix<double, DOF, DOF>::Zero()),
-    mInvProjArtInertiaImplicit(Eigen::Matrix<double, DOF, DOF>::Zero()),
-    mTotalForce(Eigen::Matrix<double, DOF, 1>::Zero()),
-    mTotalImpulse(Eigen::Matrix<double, DOF, 1>::Zero())
+MultiDofJoint<DOF>::Properties::~Properties()
 {
-  for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(i);
+  // Do nothing
 }
 
 //==============================================================================
@@ -951,17 +943,14 @@ MultiDofJoint<DOF>& MultiDofJoint<DOF>::operator=(
 
 //==============================================================================
 template <size_t DOF>
-size_t MultiDofJoint<DOF>::getDof() const
-{
-  return getNumDofs();
-}
-
-//==============================================================================
-template <size_t DOF>
 DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
 {
   if (_index < DOF)
     return mDofs[_index];
+
+  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
+        << "). The index must be less than (" << DOF << ")!\n";
+  assert(false);
   return nullptr;
 }
 
@@ -971,6 +960,10 @@ const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
 {
   if (_index < DOF)
     return mDofs[_index];
+
+  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
+        << "). The index must be less than (" << DOF << ")!\n";
+  assert(false);
   return nullptr;
 }
 
@@ -993,11 +986,12 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(_name == dofName)
     return dofName;
 
-  if(mSkeleton)
+  const SkeletonPtr& skel = mChildBodyNode?
+        mChildBodyNode->getSkeleton() : nullptr;
+  if(skel)
   {
-    mSkeleton->mNameMgrForDofs.removeName(dofName);
     dofName =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(_name, mDofs[_index]);
+        skel->mNameMgrForDofs.changeObjectName(mDofs[_index], _name);
   }
   else
     dofName = _name;
@@ -1042,9 +1036,9 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
 {
   if(DOF <= _index)
   {
-    dtwarn << "[MultiDofJoint::getDofName] Requested name of DOF index "
-           << _index << ", but that is out of bounds (max " << DOF-1 << "). "
-           << "Returning name of DOF 0\n";
+    dterr << "[MultiDofJoint::getDofName] Requested name of DOF index "
+          << _index << ", but that is out of bounds (max " << DOF-1 << "). "
+          << "Returning name of DOF 0\n";
     return mMultiDofP.mDofNames[0];
   }
 
@@ -1060,31 +1054,32 @@ size_t MultiDofJoint<DOF>::getNumDofs() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setIndexInSkeleton(size_t _index,
-                                            size_t _indexInSkeleton)
-{
-  if (_index >= getNumDofs())
-  {
-    dterr << "[MultiDofJoint::setIndexInSkeleton] index[" << _index
-          << "] out of range" << std::endl;
-    return;
-  }
-
-  mDofs[_index]->mIndexInSkeleton = _indexInSkeleton;
-}
-
-//==============================================================================
-template <size_t DOF>
 size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[MultiDofJoint::getIndexInSkeleton] index (" << _index
+          << ") out of range. Must be less than " << getNumDofs() << "!\n";
+    assert(false);
     return 0;
   }
 
   return mDofs[_index]->mIndexInSkeleton;
+}
+
+//==============================================================================
+template <size_t DOF>
+size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    dterr << "[MultiDofJoint::getIndexInTree] index (" << _index
+          << ") out of range. Must be less than " << getNumDofs() << "!\n";
+    assert(false);
+    return 0;
+  }
+
+  return mDofs[_index]->mIndexInTree;
 }
 
 //==============================================================================
@@ -1761,6 +1756,31 @@ void MultiDofJoint<DOF>::integrateVelocities(double _dt)
 
 //==============================================================================
 template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
+    const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
+{
+  if (static_cast<size_t>(_q1.size()) != getNumDofs()
+      || static_cast<size_t>(_q2.size()) != getNumDofs())
+  {
+    dterr << "MultiDofJoint::getPositionsDifference: q1's size[" << _q1.size()
+          << "] or q2's size[" << _q2.size() << "is different with the dof ["
+          << getNumDofs() << "]." << std::endl;
+    return Eigen::VectorXd::Zero(getNumDofs());
+  }
+
+  return getPositionDifferencesStatic(_q2, _q1);
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::Matrix<double, DOF, 1> MultiDofJoint<DOF>::getPositionDifferencesStatic(
+    const Vector& _q2, const Vector& _q1) const
+{
+  return _q2 - _q1;
+}
+
+//==============================================================================
+template <size_t DOF>
 void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 {
   if (_index >= getNumDofs())
@@ -1941,22 +1961,19 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
 template <size_t DOF>
 void MultiDofJoint<DOF>::registerDofs()
 {
+  const SkeletonPtr& skel = mChildBodyNode->getSkeleton();
   for (size_t i = 0; i < DOF; ++i)
+  {
     mMultiDofP.mDofNames[i] =
-        mSkeleton->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
-                                                      mDofs[i]);
+        skel->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(), mDofs[i]);
+  }
 }
 
 //==============================================================================
 template <size_t DOF>
 const math::Jacobian MultiDofJoint<DOF>::getLocalJacobian() const
 {
-  if(mIsLocalJacobianDirty)
-  {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
-  }
-  return mJacobian;
+  return getLocalJacobianStatic();
 }
 
 //==============================================================================
@@ -1970,6 +1987,14 @@ MultiDofJoint<DOF>::getLocalJacobianStatic() const
     mIsLocalJacobianDirty = false;
   }
   return mJacobian;
+}
+
+//==============================================================================
+template <size_t DOF>
+math::Jacobian MultiDofJoint<DOF>::getLocalJacobian(
+    const Eigen::VectorXd& _positions) const
+{
+  return getLocalJacobianStatic(_positions);
 }
 
 //==============================================================================
@@ -2859,7 +2884,7 @@ void MultiDofJoint<DOF>::getInvMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDofs[0]->mIndexInSkeleton;
+  size_t iStart = mDofs[0]->mIndexInTree;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;
@@ -2883,7 +2908,7 @@ void MultiDofJoint<DOF>::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDofs[0]->mIndexInSkeleton;
+  size_t iStart = mDofs[0]->mIndexInTree;
 
   // Assign
   _invMassMat.block<DOF, 1>(iStart, _col) = mInvMassMatrixSegment;

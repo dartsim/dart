@@ -40,6 +40,7 @@
 
 #include <map>
 #include <sstream>
+#include <cassert>
 #include "dart/common/Console.h"
 
 namespace dart {
@@ -68,8 +69,10 @@ class NameManager
 {
 public:
   /// Constructor
-  NameManager(const std::string& _defaultName = "default")
-    : mDefaultName(_defaultName),
+  NameManager(const std::string& _managerName = "default",
+              const std::string& _defaultName = "default")
+    : mManagerName(_managerName),
+      mDefaultName(_defaultName),
       mNameBeforeNumber(true),
       mPrefix(""), mInfix("("), mAffix(")") {}
 
@@ -128,14 +131,15 @@ public:
       newName = ss.str();
     } while (hasName(newName));
 
-    dtwarn << "The name '" << _name << "' is a duplicate, "
-           << "so it has been renamed to '" << newName << "'\n";
+    dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
+          << _name << "] is a duplicate, so it has been renamed to ["
+          << newName << "]\n";
 
     return newName;
   }
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, T _obj)
+  std::string issueNewNameAndAdd(const std::string& _name, const T& _obj)
   {
     const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
     const std::string& newName = issueNewName(checkEmpty);
@@ -145,29 +149,35 @@ public:
   }
 
   /// Add an object to the map
-  bool addName(const std::string& _name, T _obj)
+  bool addName(const std::string& _name, const T& _obj)
   {
     if (_name.empty())
     {
-      dtwarn << "Empty name is not allowed.\n";
+      dtwarn << "[NameManager::addName] (" << mManagerName
+             << ") Empty name is not allowed!\n";
       return false;
     }
 
     if (hasName(_name))
     {
-      dtwarn << "Name [" << _name << "] already exist.\n";
+      dtwarn << "[NameManager::addName] (" << mManagerName << ") The name ["
+             << _name << "] already exists!\n";
       return false;
     }
 
     mMap.insert(std::pair<std::string, T>(_name, _obj));
     mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
 
+    assert(mReverseMap.size() == mMap.size());
+
     return true;
   }
 
-  /// Remove an object from the map based on its name
+  /// Remove an object from the Manager based on its name
   bool removeName(const std::string& _name)
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<std::string, T>::iterator it = mMap.find(_name);
 
     if (it == mMap.end())
@@ -176,16 +186,46 @@ public:
     typename std::map<T, std::string>::iterator rit =
         mReverseMap.find(it->second);
 
-    mReverseMap.erase(rit);
+    if (rit != mReverseMap.end())
+      mReverseMap.erase(rit);
+
     mMap.erase(it);
 
     return true;
+  }
+
+  /// Remove an object from the Manager based on reverse lookup
+  bool removeObject(const T& _obj)
+  {
+    assert(mReverseMap.size() == mMap.size());
+
+    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
+
+    if (rit == mReverseMap.end())
+      return false;
+
+    typename std::map<std::string, T>::iterator it = mMap.find(rit->second);
+    if (it != mMap.end())
+      mMap.erase(it);
+
+    mReverseMap.erase(rit);
+
+    return true;
+  }
+
+  /// Remove _name using the forward lookup and _obj using the reverse lookup.
+  /// This will allow you to add _obj under the name _name without any conflicts
+  void removeEntries(const std::string& _name, const T& _obj)
+  {
+    removeObject(_obj);
+    removeName(_name, false);
   }
 
   /// Clear all the objects
   void clear()
   {
     mMap.clear();
+    mReverseMap.clear();
   }
 
   /// Return true if the name is contained
@@ -195,7 +235,7 @@ public:
   }
 
   /// Return true if the object is contained
-  bool hasObject(T _obj) const
+  bool hasObject(const T& _obj) const
   {
     return (mReverseMap.find(_obj) != mReverseMap.end());
   }
@@ -210,7 +250,7 @@ public:
   /// \param[in] _name
   ///   Name of the requested object
   /// \return
-  ///   The object if it exists, or NULL if it does not exist
+  ///   The object if it exists, or nullptr if it does not exist
   T getObject(const std::string& _name) const
   {
     typename std::map<std::string, T>::const_iterator result =
@@ -222,6 +262,21 @@ public:
       return nullptr;
   }
 
+  /// Use a reverse lookup to get the name that the manager has _obj listed
+  /// under. Returns an empty string if it is not in the list.
+  std::string getName(const T& _obj) const
+  {
+    assert(mReverseMap.size() == mMap.size());
+
+    typename std::map<T, std::string>::const_iterator result =
+        mReverseMap.find(_obj);
+
+    if (result != mReverseMap.end())
+      return result->second;
+    else
+      return "";
+  }
+
   /// Change the name of a currently held object. This will do nothing if the
   /// object is already using _newName or if the object is not held by this
   /// NameManager.
@@ -229,11 +284,13 @@ public:
   /// If the object is held, its new name is returned (which might
   /// be different than _newName if there was a duplicate naming conflict). If
   /// the object is not held, an empty string will be returned.
-  std::string changeObjectName(T _obj, const std::string& _newName)
+  std::string changeObjectName(const T& _obj, const std::string& _newName)
   {
+    assert(mReverseMap.size() == mMap.size());
+
     typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
     if(rit == mReverseMap.end())
-      return "";
+      return _newName;
 
     if(rit->second == _newName)
       return rit->second;
@@ -256,7 +313,22 @@ public:
     return mDefaultName;
   }
 
+  /// Set the name of this NameManager so that it can be printed in error reports
+  void setManagerName(const std::string& _managerName)
+  {
+    mManagerName = _managerName;
+  }
+
+  /// Get the name of this NameManager
+  const std::string& getManagerName() const
+  {
+    return mManagerName;
+  }
+
 protected:
+  /// Name of this NameManager. This is used to report errors.
+  std::string mManagerName;
+
   /// Map of objects that have been added to the NameManager
   std::map<std::string, T> mMap;
 

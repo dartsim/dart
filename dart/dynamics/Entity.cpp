@@ -95,7 +95,7 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 //==============================================================================
 Entity::~Entity()
 {
-  changeParentFrame(NULL);
+  changeParentFrame(nullptr);
 }
 
 //==============================================================================
@@ -265,8 +265,8 @@ const Frame* Entity::getParentFrame() const
 //==============================================================================
 bool Entity::descendsFrom(const Frame *_someFrame) const
 {
-  if(NULL == _someFrame)
-    return false;
+  if(nullptr == _someFrame)
+    return true;
 
   if(this == _someFrame)
     return true;

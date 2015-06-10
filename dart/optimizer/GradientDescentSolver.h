@@ -45,7 +45,9 @@ namespace optimizer {
 /// DefaultSolver is a Solver extension which is native to DART (rather than
 /// relying on third-party libraries). It uses randomized gradient descent and
 /// softened constraints (i.e. constraint functions are added into the
-/// objective function and assigned weights) to solve nonlinear problems.
+/// objective function and assigned weights) to solve nonlinear problems. Note
+/// that this is not a good option for Problems with difficult constraint
+/// functions that need to be solved exactly.
 class GradientDescentSolver : public Solver
 {
 public:
@@ -103,7 +105,7 @@ public:
     UniqueProperties(
         double _stepMultiplier = 0.1,
         size_t _maxAttempts = 1,
-        size_t _perturbationStep = 100,
+        size_t _perturbationStep = 0,
         double _maxPerturbationFactor = 1.0,
         double _maxRandomizationStep = 1e10,
         double _defaultConstraintWeight = 1.0,
@@ -129,6 +131,9 @@ public:
 
   // Documentation inherited
   virtual bool solve() override;
+
+  // Documentation inherited
+  Eigen::VectorXd getLastConfiguration() const override;
 
   // Documentation inherited
   virtual std::string getType() const override;
@@ -179,13 +184,20 @@ public:
 
   void clampToBoundary(Eigen::VectorXd& _x);
 
+  /// Get the number of iterations used in the last attempt to solve the problem
+  size_t getLastNumIterations() const;
+
 protected:
 
   UniqueProperties mGradientP;
 
+  size_t mLastNumIterations;
+
   std::random_device mRD;
   std::mt19937 mMT;
   std::uniform_real_distribution<double> mDistribution;
+
+  Eigen::VectorXd mLastConfig;
 };
 
 } // namespace optimizer

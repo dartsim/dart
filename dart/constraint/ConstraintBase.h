@@ -40,6 +40,7 @@
 #include <cstddef>
 
 #include "dart/common/Deprecated.h"
+#include "dart/dynamics/Ptr.h"
 
 namespace dart {
 
@@ -106,16 +107,16 @@ public:
   virtual bool isActive() const = 0;
 
   ///
-  virtual dynamics::Skeleton* getRootSkeleton() const = 0;
+  virtual dynamics::SkeletonPtr getRootSkeleton() const = 0;
 
   ///
   virtual void uniteSkeletons() {}
 
   ///
-  static dynamics::Skeleton* compressPath(dynamics::Skeleton* _skeleton);
+  static dynamics::SkeletonPtr compressPath(dynamics::SkeletonPtr _skeleton);
 
   ///
-  static dynamics::Skeleton* getRootSkeleton(dynamics::Skeleton* _skeleton);
+  static dynamics::SkeletonPtr getRootSkeleton(dynamics::SkeletonPtr _skeleton);
 
   //----------------------------------------------------------------------------
   // Friendship

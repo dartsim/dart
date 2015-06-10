@@ -1002,7 +1002,7 @@ void PointMass::updateConstrainedTermsFD(double _timeStep)
 }
 
 //==============================================================================
-void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
+void PointMass::aggregateMassMatrix(MatrixXd& _MCol, int _col)
 {
 //  // Assign
 //  // We assume that the three generalized coordinates are in a row.
@@ -1012,7 +1012,7 @@ void PointMass::aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col)
 }
 
 //==============================================================================
-void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
+void PointMass::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, int _col,
                                        double _timeStep)
 {
 //  // Assign
@@ -1039,7 +1039,7 @@ void PointMass::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
+void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd& _MInvCol, int _col)
 {
 //  // Assign
 //  // We assume that the three generalized coordinates are in a row.
@@ -1051,7 +1051,7 @@ void PointMass::aggregateInvMassMatrix(Eigen::MatrixXd* _MInvCol, int _col)
 }
 
 //==============================================================================
-void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
+void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd& _MInvCol, int _col,
                                           double _timeStep)
 {
 //  // Assign
@@ -1065,7 +1065,7 @@ void PointMass::aggregateInvAugMassMatrix(Eigen::MatrixXd* _MInvCol, int _col,
 }
 
 //==============================================================================
-void PointMass::aggregateGravityForceVector(Eigen::VectorXd* _g,
+void PointMass::aggregateGravityForceVector(VectorXd& _g,
                                             const Eigen::Vector3d& _gravity)
 {
 //  mG_F = mMass * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
@@ -1086,7 +1086,7 @@ void PointMass::updateCombinedVector()
 }
 
 //==============================================================================
-void PointMass::aggregateCombinedVector(Eigen::VectorXd* _Cg,
+void PointMass::aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                         const Eigen::Vector3d& _gravity)
 {
 //  mCg_F.noalias() = mMass * mCg_dV;
@@ -1102,7 +1102,7 @@ void PointMass::aggregateCombinedVector(Eigen::VectorXd* _Cg,
 }
 
 //==============================================================================
-void PointMass::aggregateExternalForces(Eigen::VectorXd* _Fext)
+void PointMass::aggregateExternalForces(VectorXd& /*_Fext*/)
 {
 //  int iStart = mIndexInSkeleton[0];
 //  _Fext->segment<3>(iStart) = mFext;

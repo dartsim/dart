@@ -48,9 +48,9 @@ Shape::Shape(ShapeType _type)
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0, 1.0),
     mTransform(Eigen::Isometry3d::Identity()),
-    mType(_type),
     mVariance(STATIC),
-    mHidden(false)
+    mHidden(false),
+    mType(_type)
 {
 }
 

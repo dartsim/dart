@@ -120,6 +120,22 @@ double PlaneShape::getOffset() const
 }
 
 //==============================================================================
+void PlaneShape::setNormalAndOffset(const Eigen::Vector3d& _normal,
+                                    double _offset)
+{
+  setNormal(_normal);
+  setOffset(_offset);
+}
+
+//==============================================================================
+void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
+                                   const Eigen::Vector3d& _point)
+{
+  setNormal(_normal);
+  setOffset(mNormal.dot(_point));
+}
+
+//==============================================================================
 double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
 {
   return std::fabs(computeSignedDistance(_point));

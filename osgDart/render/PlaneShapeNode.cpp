@@ -192,7 +192,7 @@ void PlaneShapeDrawable::refresh(bool firstTime)
      || firstTime)
   {
     const Eigen::Vector3d& n = mPlaneShape->getNormal();
-    const Eigen::Vector3d& p = mPlaneShape->getPoint();
+    const Eigen::Vector3d& p = mPlaneShape->getOffset()*n;
     osg::ref_ptr<osg::InfinitePlane> osg_shape = new osg::InfinitePlane;
     static_cast<osg::Plane&>(*osg_shape) =
         osg::Plane(eigToOsgVec3(n), eigToOsgVec3(p));

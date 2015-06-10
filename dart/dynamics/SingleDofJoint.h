@@ -112,6 +112,8 @@ public:
                      double _coulombFriction = 0.0,
                      bool _preserveDofName = false,
                      std::string _dofName = "");
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -119,11 +121,9 @@ public:
     Properties(
         const Joint::Properties& _jointProperties = Joint::Properties(),
         const UniqueProperties& _singleDofProperties = UniqueProperties());
-  };
 
-  /// Constructor
-//  DEPRECATED(4.5) // Use SingleDofJoint(const Properties&)
-  SingleDofJoint(const std::string& _name);
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -145,10 +145,6 @@ public:
 
   /// Same as copy(const SingleDofJoint&)
   SingleDofJoint& operator=(const SingleDofJoint& _otherJoint);
-
-  // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
 
   // Documentation inherited
   DegreeOfFreedom* getDof(size_t _index) override;
@@ -174,10 +170,10 @@ public:
   size_t getNumDofs() const override;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  size_t getIndexInSkeleton(size_t _index) const override;
+  size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -379,7 +375,7 @@ public:
   virtual void resetConstraintImpulses();
 
   //----------------------------------------------------------------------------
-  // Integration
+  // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -387,6 +383,13 @@ public:
 
   // Documentation inherited
   virtual void integrateVelocities(double _dt);
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
+
+  /// Fixed-size version of getPositionsDifference()
+  double getPositionDifferenceStatic(double _q2, double _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -455,6 +458,10 @@ protected:
 
   /// Fixed-size version of getLocalJacobian()
   const Eigen::Vector6d& getLocalJacobianStatic() const;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited
   const math::Jacobian getLocalJacobianTimeDeriv() const override;

@@ -76,13 +76,13 @@ public:
   virtual ~ConstraintSolver();
 
   /// Add single skeleton
-  void addSkeleton(dynamics::SkeletonPtr _skeleton);
+  void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Add mutiple skeletons
   void addSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
 
   /// Remove single skeleton
-  void removeSkeleton(dynamics::SkeletonPtr _skeleton);
+  void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Remove multiple skeletons
   void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
@@ -119,10 +119,10 @@ public:
 
 private:
   /// Check if the skeleton is contained in this solver
-  bool containSkeleton(const dynamics::SkeletonPtr _skeleton) const;
+  bool containSkeleton(const dynamics::ConstSkeletonPtr& _skeleton) const;
 
   /// Add skeleton if the constraint is not contained in this solver
-  bool checkAndAddSkeleton(dynamics::SkeletonPtr _skeleton);
+  bool checkAndAddSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Check if the constraint is contained in this solver
   bool containConstraint(const ConstraintBase* _constraint) const;

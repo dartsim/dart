@@ -38,10 +38,15 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
+#include "TestHelpers.h"
 #include "dart/config.h"
 #include "dart/common/Console.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
+#include "dart/optimizer/GradientDescentSolver.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/InverseKinematics.h"
 #ifdef HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.h"
 #endif
@@ -55,6 +60,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace dart::optimizer;
+using namespace dart::dynamics;
 
 //==============================================================================
 /// \brief class SampleObjFunc
@@ -68,14 +74,14 @@ public:
   virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  virtual double eval(const Eigen::VectorXd& _x) override
   {
     return std::sqrt(_x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad)
+  virtual void evalGradient(const Eigen::VectorXd& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -93,14 +99,14 @@ public:
   virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x)
+  virtual double eval(const Eigen::VectorXd& _x) override
   {
     return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad)
+  virtual void evalGradient(const Eigen::VectorXd& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
     _grad[1] = -1.0;
@@ -113,6 +119,29 @@ private:
   /// \brief Data
   double mB;
 };
+
+//==============================================================================
+TEST(Optimizer, GradientDescent)
+{
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
+
+  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  FunctionPtr obj = std::make_shared<SampleObjFunc>();
+  prob->setObjective(obj);
+
+  GradientDescentSolver solver(prob);
+  EXPECT_TRUE(solver.solve());
+
+  double minF = prob->getOptimumValue();
+  Eigen::VectorXd optX = prob->getOptimalSolution();
+
+  EXPECT_NEAR(minF, 0, 1e-6);
+  EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
+  EXPECT_NEAR(optX[0], 1.234, 0.0);
+  EXPECT_NEAR(optX[1], 0.0, solver.getTolerance());
+}
 
 //==============================================================================
 #ifdef HAVE_NLOPT
@@ -133,14 +162,14 @@ TEST(Optimizer, BasicNlopt)
   prob->addIneqConstraint(const1);
   prob->addIneqConstraint(const2);
 
-  NloptSolver solver(prob, NLOPT_LD_MMA);
-  solver.solve();
+  NloptSolver solver(prob, nlopt::LD_MMA);
+  EXPECT_TRUE(solver.solve());
 
   double minF = prob->getOptimumValue();
   Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), prob->getDimension());
+  EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
@@ -187,6 +216,36 @@ TEST(Optimizer, BasicSnopt)
   return;
 }
 #endif
+
+//==============================================================================
+TEST(Optimizer, InverseKinematics)
+{
+  // Very simple test of InverseKinematics module, applied to a FreeJoint to
+  // ensure that the target is reachable
+
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  InverseKinematics ik(skel->getBodyNode(0));
+
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);
+  tf.rotate(Eigen::AngleAxisd(M_PI/8, Eigen::Vector3d(0, 1, 0)));
+  ik.getTarget()->setTransform(tf);
+
+  ik.getErrorMethod()->setBounds(Eigen::Vector6d::Constant(-1e-8),
+                                 Eigen::Vector6d::Constant( 1e-8));
+
+  ik.getSolver()->setNumMaxIterations(100);
+
+  EXPECT_FALSE(equals(ik.getTarget()->getTransform().matrix(),
+                      skel->getBodyNode(0)->getTransform().matrix(), 1e-1));
+
+  EXPECT_TRUE(ik.getSolver()->solve());
+
+  EXPECT_TRUE(equals(ik.getTarget()->getTransform().matrix(),
+                     skel->getBodyNode(0)->getTransform().matrix(), 1e-8));
+}
 
 //==============================================================================
 int main(int argc, char* argv[])

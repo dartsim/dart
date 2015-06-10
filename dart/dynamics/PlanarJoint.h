@@ -95,6 +95,8 @@ public:
     UniqueProperties(const Eigen::Vector3d& _transAxis1,
                      const Eigen::Vector3d& _transAxis2);
 
+    virtual ~UniqueProperties() = default;
+
     /// Set plane type as XY-plane
     void setXYPlane();
 
@@ -115,11 +117,9 @@ public:
                                               MultiDofJoint<3>::Properties(),
                const PlanarJoint::UniqueProperties& _planarProperties =
                                               PlanarJoint::UniqueProperties());
-  };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit PlanarJoint(const std::string& _name = "PlanarJoint");
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~PlanarJoint();
@@ -141,6 +141,12 @@ public:
 
   /// Same as copy(const PlanarJoint&)
   PlanarJoint& operator=(const PlanarJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
@@ -177,6 +183,10 @@ public:
   /// Return second translational axis
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
+  // Documentation inherited
+  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+      const Eigen::Vector3d& _positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -184,6 +194,8 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  using MultiDofJoint::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.

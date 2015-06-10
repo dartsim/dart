@@ -76,7 +76,7 @@ ConstraintSolver::~ConstraintSolver()
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeleton(SkeletonPtr _skeleton)
+void ConstraintSolver::addSkeleton(const SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -123,7 +123,8 @@ void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& _skeletons)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeleton(SkeletonPtr _skeleton)
+void ConstraintSolver::removeSkeleton(
+    const SkeletonPtr& _skeleton)
 {
   assert(_skeleton != NULL
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
@@ -143,7 +144,8 @@ void ConstraintSolver::removeSkeleton(SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeletons(const std::vector<SkeletonPtr>& _skeletons)
+void ConstraintSolver::removeSkeletons(
+    const std::vector<SkeletonPtr>& _skeletons)
 {
   size_t numRemovedSkeletons = 0;
 
@@ -272,7 +274,7 @@ void ConstraintSolver::solve()
 }
 
 //==============================================================================
-bool ConstraintSolver::containSkeleton(const SkeletonPtr _skeleton) const
+bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 {
   assert(_skeleton != NULL && "Not allowed to insert null pointer skeleton.");
 
@@ -287,7 +289,7 @@ bool ConstraintSolver::containSkeleton(const SkeletonPtr _skeleton) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddSkeleton(SkeletonPtr _skeleton)
+bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& _skeleton)
 {
   if (!containSkeleton(_skeleton))
   {
@@ -490,7 +492,7 @@ void ConstraintSolver::buildConstrainedGroups()
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
+    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
 
     for (std::vector<ConstrainedGroup>::const_iterator itConstGroup
          = mConstrainedGroups.begin();
@@ -516,7 +518,7 @@ void ConstraintSolver::buildConstrainedGroups()
   for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
-    dynamics::Skeleton* skel = (*it)->getRootSkeleton();
+    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
     mConstrainedGroups[skel->mUnionIndex].addConstraint(*it);
   }
 
@@ -543,8 +545,8 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
-  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.get())
-      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.get()))
+  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.lock().get())
+      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.lock().get()))
     return true;
 
   return false;

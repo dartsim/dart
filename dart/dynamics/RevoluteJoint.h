@@ -58,6 +58,8 @@ public:
     Eigen::Vector3d mAxis;
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : SingleDofJoint::Properties,
@@ -68,12 +70,9 @@ public:
                                             SingleDofJoint::Properties(),
         const RevoluteJoint::UniqueProperties& _revoluteProperties =
                                             RevoluteJoint::UniqueProperties());
-  };
 
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                const std::string& _name = "Noname RevoluteJoint");
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~RevoluteJoint();
@@ -95,6 +94,12 @@ public:
 
   /// Copy the Properties of another RevoluteJoint
   RevoluteJoint& operator=(const RevoluteJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

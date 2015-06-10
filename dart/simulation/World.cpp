@@ -57,12 +57,12 @@ namespace simulation {
 //==============================================================================
 World::World(const std::string& _name)
   : mName(_name),
-    mNameMgrForSkeletons("skeleton"),
+    mNameMgrForSkeletons("World::Skeleton | " + _name, "skeleton"),
+    mNameMgrForFrames("World::SimpleFrame | " + _name, "frame"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
-    mIntegrator(nullptr),
     mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
@@ -77,6 +77,9 @@ World::~World()
   delete mRecording;
 
   for(common::Connection& connection : mNameConnectionsForSkeletons)
+    connection.disconnect();
+
+  for(common::Connection& connection : mNameConnectionsForFrames)
     connection.disconnect();
 }
 
@@ -179,7 +182,7 @@ void World::step(bool _resetCommand)
 
     if (_resetCommand)
     {
-      skel->resetForces();
+      skel->clearInternalForces();
       skel->clearExternalForces();
 //    skel->clearConstraintImpulses();
       skel->resetCommands();
@@ -218,6 +221,11 @@ const std::string& World::setName(const std::string& _newName)
   mName = _newName;
 
   mNameChangedSignal.raise(oldName, mName);
+
+  mNameMgrForSkeletons.setManagerName(
+        "World::Skeleton | " + mName);
+  mNameMgrForFrames.setManagerName(
+        "World::SimpleFrame | " + mName);
 
   return mName;
 }
@@ -287,20 +295,18 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
-  mSkeletonToShared[_skeleton.get()] = _skeleton;
+  mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
-        [=](const dynamics::Skeleton* skel,
+        [=](dynamics::ConstMetaSkeletonPtr skel,
             const std::string&, const std::string&)
         { this->handleSkeletonNameChange(skel); } ));
 
   _skeleton->setName(mNameMgrForSkeletons.issueNewNameAndAdd(
                        _skeleton->getName(), _skeleton));
 
-  // TODO(MXG): This init should not be needed once the public BodyNode
-  // constructors are removed from DART, but we should probably keep it for now
-  // just in case some users are still building Skeletons in the deprecated way
-  _skeleton->init(mTimeStep, mGravity);
+  _skeleton->setTimeStep(mTimeStep);
+  _skeleton->setGravity(mGravity);
 
   mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
   mConstraintSolver->addSkeleton(_skeleton);
@@ -363,7 +369,7 @@ void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
   mNameMgrForSkeletons.removeName(_skeleton->getName());
 
   // Remove from the pointer map
-  mSkeletonToShared.erase(_skeleton.get());
+  mMapForSkeletons.erase(_skeleton);
 }
 
 //==============================================================================
@@ -526,22 +532,30 @@ Recording* World::getRecording()
 }
 
 //==============================================================================
-void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
+void World::handleSkeletonNameChange(
+    dynamics::ConstMetaSkeletonPtr _skeleton)
 {
   if(nullptr == _skeleton)
+  {
+    dterr << "[World::handleSkeletonNameChange] Received a name change "
+          << "callback for a nullptr Skeleton. This is most likely a bug. "
+          << "Please report this!\n";
+    assert(false);
     return;
+  }
 
   // Get the new name of the Skeleton
   const std::string& newName = _skeleton->getName();
 
   // Find the shared version of the Skeleton
-  std::map<const dynamics::Skeleton*, dynamics::SkeletonPtr>::iterator it =
-      mSkeletonToShared.find(_skeleton);
-  if( it == mSkeletonToShared.end() )
+  std::map<dynamics::ConstMetaSkeletonPtr, dynamics::SkeletonPtr>::iterator it =
+      mMapForSkeletons.find(_skeleton);
+  if( it == mMapForSkeletons.end() )
   {
     dterr << "[World::handleSkeletonNameChange] Could not find Skeleton named ["
           << _skeleton->getName() << "] in the shared_ptr map of World ["
           << getName() <<"]. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
   }
   dynamics::SkeletonPtr sharedSkel = it->second;
@@ -556,6 +570,15 @@ void World::handleSkeletonNameChange(const dynamics::Skeleton* _skeleton)
   {
     sharedSkel->setName(issuedName);
   }
+  else if(issuedName.empty())
+  {
+    dterr << "[World::handleSkeletonNameChange] Skeleton named ["
+          << sharedSkel->getName() << "] (" << sharedSkel << ") does not exist "
+          << "in the NameManager of World [" << getName() << "]. This is most "
+          << "likely a bug. Please report this!\n";
+    assert(false);
+    return;
+  }
 }
 
 //==============================================================================
@@ -566,7 +589,12 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
       dynamic_cast<const dynamics::SimpleFrame*>(_entity);
 
   if(nullptr == frame)
+  {
+    dterr << "[World::handleFrameNameChange] Received a callback for a nullptr "
+          << "enity. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
+  }
 
   // Get the new name of the Frame
   const std::string& newName = frame->getName();
@@ -579,6 +607,7 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
     dterr << "[World::handleFrameNameChange] Could not find SimpleFrame named ["
           << frame->getName() << "] in the shared_ptr map of World ["
           << getName() << "]. This is most likely a bug. Please report this!\n";
+    assert(false);
     return;
   }
   dynamics::SimpleFramePtr sharedFrame = it->second;
@@ -589,6 +618,15 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
   if( (!issuedName.empty()) && (newName != issuedName) )
   {
     sharedFrame->setName(issuedName);
+  }
+  else if(issuedName.empty())
+  {
+    dterr << "[World::handleFrameNameChange] SimpleFrame named ["
+          << frame->getName() << "] (" << frame << ") does not exist in the "
+          << "NameManager of World [" << getName() << "]. This is most likely "
+          << "a bug. Please report this!\n";
+    assert(false);
+    return;
   }
 }
 

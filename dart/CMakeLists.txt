@@ -69,6 +69,11 @@ endif()
 dart_add_library(dart-core ${dart_core_hdrs} ${dart_core_srcs})
 target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
 
+# TODO(MXG): Remove this by moving NloptSolver into its own library
+if(NLOPT_FOUND)
+  target_link_libraries(dart-core ${NLOPT_LIBRARIES})
+endif()
+
 # Library: dart
 if(NOT BUILD_CORE_ONLY)
   dart_add_library(dart ${dart_hdrs} ${dart_srcs})

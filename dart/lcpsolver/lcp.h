@@ -52,7 +52,7 @@ to be implemented. the first `nub' variables are assumed to have findex < 0.
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
+#include <cassert>
 
 #include "dart/lcpsolver/odeconfig.h"
 #include "dart/lcpsolver/common.h"

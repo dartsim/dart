@@ -88,7 +88,8 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
                          const Eigen::Vector3d& _size,
                          double _mass)
 {
-  dart::dynamics::SkeletonPtr newCubeSkeleton(new dart::dynamics::Skeleton());
+  dart::dynamics::SkeletonPtr newCubeSkeleton =
+      dart::dynamics::Skeleton::create();
 
   dart::dynamics::BodyNode::Properties body;
   body.mName = "cube_link";

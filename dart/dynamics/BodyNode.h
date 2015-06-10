@@ -46,14 +46,15 @@
 
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
-#include "dart/common/sub_ptr.h"
+#include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/InverseKinematics.h"
+#include "dart/dynamics/TemplatedJacobianEntity.impl"
 #include "dart/dynamics/Marker.h"
+#include "dart/dynamics/Ptr.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -81,7 +82,9 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode : public Frame
+class BodyNode :
+    public SkeletonRefCountingBase,
+    public TemplatedJacobianEntity<BodyNode>
 {
 public:
 
@@ -89,6 +92,9 @@ public:
       = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
 
   using ColShapeRemovedSignal = ColShapeAddedSignal;
+
+  using StructuralChangeSignal
+      = common::Signal<void(const BodyNode*)>;
 
   struct UniqueProperties
   {
@@ -131,10 +137,6 @@ public:
         const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
         const UniqueProperties& _bodyNodeProperties = UniqueProperties());
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  explicit BodyNode(const std::string& _name = "BodyNode");
 
   /// Destructor
   virtual ~BodyNode();
@@ -285,10 +287,6 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Remove this BodyNode and all of its children (recursively) from their
-  /// Skeleton and <b>deletes</b> all of them.
-  void remove();
-
   /// Add a collision Shape into the BodyNode
   void addCollisionShape(ShapePtr _shape);
 
@@ -307,45 +305,83 @@ public:
   /// Return (const) _index-th collision shape
   ConstShapePtr getCollisionShape(size_t _index) const;
 
-  /// Return the Skeleton this BodyNode belongs to
-  Skeleton* getSkeleton();
-
-  /// Return the (const) Skeleton this BodyNode belongs to
-  const Skeleton* getSkeleton() const;
-
   /// Return the index of this BodyNode within its Skeleton
-  size_t getIndex() const;
+  size_t getIndexInSkeleton() const;
 
-  /// Set _joint as the parent Joint of the BodyNode
-  // TODO(MXG): Remove this along with the public constructors of Joint and
-  // BodyNode
-  void setParentJoint(Joint* _joint);
+  /// Return the index of this BodyNode within its tree
+  size_t getIndexInTree() const;
+
+  /// Return the index of the tree that this BodyNode belongs to
+  size_t getTreeIndex() const;
 
   /// Remove this BodyNode and all of its children (recursively) from their
-  /// current Skeleton, and transfer them to a new Skeleton with a new parent
-  /// BodyNode. The pointers of all the BodyNodes and Joints will be preserved.
-  /// Use nullptr for _newParent to make this BodyNode a root node in the new
-  /// Skeleton.
+  /// Skeleton. If a BodyNodePtr that references this BodyNode (or any of its
+  /// children) still exists, the subtree will be moved into a new Skeleton
+  /// with the given name. If the returned SkeletonPtr goes unused and no
+  /// relevant BodyNodePtrs are held anywhere, then this BodyNode and all its
+  /// children will be deleted.
   ///
-  /// This function can be used to change the parent BodyNode while keeping the
-  /// Skeleton the same.
+  /// Note that this function is actually the same as split(), but given a
+  /// different name for semantic reasons.
+  SkeletonPtr remove(const std::string& _name = "temporary");
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// current parent BodyNode, and move them to another parent BodyNode. The new
+  /// parent BodyNode can either be in a new Skeleton or the current one. If you
+  /// pass in a nullptr, this BodyNode will become a new root BodyNode for its
+  /// current Skeleton.
   ///
   /// Using this function will result in changes to the indexing of
   /// (potentially) all BodyNodes and Joints in the current Skeleton, even if
   /// the BodyNodes are kept within the same Skeleton.
-  void moveTo(Skeleton* _newSkeleton, BodyNode* _newParent);
+  bool moveTo(BodyNode* _newParent);
 
-  /// A version of moveTo(Skeleton*,BodyNode*) that also changes the Joint type
-  /// of the parent Joint of this BodyNode. This function returns the pointer to
-  /// the newly created Joint. The original parent Joint will be deleted.
+  /// This is a version of moveTo(BodyNode*) that allows you to explicitly move
+  /// this BodyNode into a different Skeleton. The key difference for this
+  /// version of the function is that you can make this BodyNode a root node in
+  /// a different Skeleton, which is not something that can be done by the other
+  /// version.
+  bool moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent);
+
+  /// A version of moveTo(BodyNode*) that also changes the Joint type of the
+  /// parent Joint of this BodyNode. This function returns the pointer to the
+  /// newly created Joint. The original parent Joint will be deleted.
   ///
   /// This function can be used to change the Joint type of the parent Joint of
   /// this BodyNode, but note that the indexing of the BodyNodes and Joints in
   /// this Skeleton will still be changed, even if only the Joint type is
   /// changed.
   template <class JointType>
-  JointType* moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
-      const typename JointType::Properties& _joint = JointType::Properties());
+  JointType* moveTo(BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
+
+  /// A version of moveTo(SkeletonPtr, BodyNode*) that also changes the Joint
+  /// type of the parent Joint of this BodyNode. This function returns the
+  /// pointer to the newly created Joint. The original Joint will be deleted.
+  template <class JointType>
+  JointType* moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties());
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// current Skeleton and move them into a newly created Skeleton. The newly
+  /// created Skeleton will have the same Skeleton::Properties as the current
+  /// Skeleton, except it will use the specified name. The return value is a
+  /// shared_ptr to the newly created Skeleton.
+  ///
+  /// Note that the parent Joint of this BodyNode will remain the same. If you
+  /// want to change the Joint type of this BodyNode's parent Joint (for
+  /// example, make it a FreeJoint), then use the templated split<JointType>()
+  /// function.
+  SkeletonPtr split(const std::string& _skeletonName);
+
+  /// A version of split(const std::string&) that also changes the Joint type of
+  /// the parent Joint of this BodyNode.
+  template <class JointType>
+  SkeletonPtr split(const std::string& _skeletonName,
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
 
   /// Change the Joint type of this BodyNode's parent Joint.
   ///
@@ -353,17 +389,71 @@ public:
   /// BodyNodes and Joints in the Skeleton.
   template <class JointType>
   JointType* changeParentJointType(
-      const typename JointType::Properties& _joint = JointType::Properties());
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
 
-  /// Create clones of this BodyNode and all of its children (recursively) from
-  /// and attach the clones to the specified BodyNode of the specified Skeleton.
-  std::pair<Joint*,BodyNode*> copyTo(Skeleton* _newSkeleton,
-                                     BodyNode* _newParent);
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// _recursive is set to false) and attach the clones to the specified
+  /// BodyNode. The specified BodyNode can be in this Skeleton or a different
+  /// Skeleton. Passing in nullptr will set the copy as a root node of the
+  /// current Skeleton.
+  ///
+  /// The return value is a pair of pointers to the root of the newly created
+  /// BodyNode tree.
+  std::pair<Joint*, BodyNode*> copyTo(BodyNode* _newParent,
+                                      bool _recursive=true);
 
-  /// A version of copyTo(Skeleton*,BodyNode*) which
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// recursive is set to false) and attach the clones to the specified BodyNode
+  /// of the specified Skeleton.
+  ///
+  /// The key differences between this function and the copyTo(BodyNode*)
+  /// version is that this one allows the copied BodyNode to be const and allows
+  /// you to copy it as a root node of another Skeleton.
+  ///
+  /// The return value is a pair of pointers to the root of the newly created
+  /// BodyNode tree.
+  std::pair<Joint*, BodyNode*> copyTo(const SkeletonPtr& _newSkeleton,
+                                      BodyNode* _newParent,
+                                      bool _recursive=true) const;
+
+  /// A version of copyTo(BodyNode*) that also changes the Joint type of the
+  /// parent Joint of this BodyNode.
   template <class JointType>
-  JointType* copyTo(Skeleton *_newSkeleton, BodyNode *_newParent,
-      const typename JointType::Properties& _joint = JointType::Properties());
+  std::pair<JointType*, BodyNode*> copyTo(
+      BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true);
+
+  /// A version of copyTo(Skeleton*,BodyNode*) that also changes the Joint type
+  /// of the parent Joint of this BodyNode.
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> copyTo(
+      const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true) const;
+
+  /// Create clones of this BodyNode and all of its children (recursively) and
+  /// create a new Skeleton with the specified name to attach them to.
+  SkeletonPtr copyAs(const std::string& _skeletonName,
+                     bool _recursive=true) const;
+
+  /// A version of copyAs(const std::string&) that also changes the Joint type
+  /// of the root BodyNode.
+  template <class JointType>
+  SkeletonPtr copyAs(
+      const std::string& _skeletonName,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true) const;
+
+  // Documentation inherited
+  SkeletonPtr getSkeleton() override;
+
+  // Documentation inherited
+  ConstSkeletonPtr getSkeleton() const override;
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
@@ -377,21 +467,20 @@ public:
   /// Return the (const) parent BodyNode of this BodyNode
   const BodyNode* getParentBodyNode() const;
 
-  /// Add a child bodynode into the bodynode
-  // TODO(MXG): This should be made protected at the same time that we remove
-  // the public constructor for BodyNode
-  void addChildBodyNode(BodyNode* _body);
-
+  /// Create a Joint and BodyNode pair as a child of this BodyNode
   template <class JointType, class NodeType = BodyNode>
   std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
       const typename JointType::Properties& _jointProperties =
-                                              typename JointType::Properties(),
+          typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties =
-                                              typename NodeType::Properties())
+          typename NodeType::Properties())
   {
-    return mSkeleton->createJointAndBodyNodePair<JointType, NodeType>(
+    return getSkeleton()->createJointAndBodyNodePair<JointType, NodeType>(
           this, _jointProperties, _bodyProperties);
   }
+
+  /// Return the number of child BodyNodes
+  size_t getNumChildBodyNodes() const;
 
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
@@ -399,8 +488,29 @@ public:
   /// Return the (const) _index-th child BodyNode of this BodyNode
   const BodyNode* getChildBodyNode(size_t _index) const;
 
-  /// Return the number of child bodynodes
-  size_t getNumChildBodyNodes() const;
+  /// Return the number of child Joints
+  size_t getNumChildJoints() const;
+
+  /// Return the _index-th child Joint of this BodyNode
+  Joint* getChildJoint(size_t _index);
+
+  /// Return the (const) _index-th child Joint of this BodyNode
+  const Joint* getChildJoint(size_t _index) const;
+
+  /// Return the number of EndEffectors attached to this BodyNode
+  size_t getNumEndEffectors() const;
+
+  /// Return an EndEffector attached to this BodyNode
+  EndEffector* getEndEffector(size_t _index);
+
+  /// Return an EndEffector attached to this BodyNode
+  const EndEffector* getEndEffector(size_t _index) const;
+
+  /// Create an EndEffector attached to this BodyNode
+  template <class EndEffectorT=EndEffector>
+  EndEffectorT* createEndEffector(
+      const typename EndEffectorT::Properties& _properties =
+          typename EndEffectorT::Properties());
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -418,7 +528,7 @@ public:
   bool dependsOn(size_t _genCoordIndex) const;
 
   /// The number of the generalized coordinates by which this node is affected
-  size_t getNumDependentGenCoords() const;
+  size_t getNumDependentGenCoords() const override;
 
   /// Return a generalized coordinate index from the array index
   /// (< getNumDependentDofs)
@@ -426,30 +536,28 @@ public:
 
   /// Return a std::vector of generalized coordinate indices that this BodyNode
   /// depends on.
-  const std::vector<size_t>& getDependentGenCoordIndices() const;
+  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+
+  /// Same as getNumDependentGenCoords()
+  size_t getNumDependentDofs() const override;
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  DegreeOfFreedom* getDependentDof(size_t _index);
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  const DegreeOfFreedom* getDependentDof(size_t _index) const;
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<DegreeOfFreedom*> getDependentDofs();
+  const std::vector<DegreeOfFreedom*>& getDependentDofs();
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
 
-  /// Returns a std::vector of generalized coordinate indices of the linkage
-  /// that leads up to this BodyNode. In this context, a linkage refers to the
-  /// longest unbranching chain of BodyNodes that leads up to this BodyNode.
-  ///
-  /// Note that we will always attempt to get at least one degree of freedom in
-  /// this linkage vector, even if we have to ignore some branching.
-  std::vector<size_t> getLinkageGenCoordIndices() const;
-
-  /// A version of getLinkageGenCoordIndices() that returns DegreeOfFreedom
-  /// pointers instead of index values.
-  std::vector<DegreeOfFreedom*> getLinkageDofs();
-
-  /// const version of getLinkageDofs()
-  std::vector<const DegreeOfFreedom*> getLinkageDofs() const;
+  /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
+  /// leading up to this BodyNode from the root of the Skeleton.
+  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -473,44 +581,17 @@ public:
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the Frame of this BodyNode.
-  const math::Jacobian& getJacobian() const;
+  const math::Jacobian& getJacobian() const override;
 
-  /// A version of getJacobian() that lets you specify a coordinate Frame to
-  /// express the Jacobian in.
-  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
-  /// coordinate Frame to express the Jacobian in.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
-                             const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobian functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobian;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the World Frame.
   const math::Jacobian& getWorldJacobian() const;
 
-  /// Return the generalized Jacobian targeting an offset in this BodyNode. The
-  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
-  /// expressed in the World Frame.
-  math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// Return the linear Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::LinearJacobian getLinearJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::LinearJacobian getLinearJacobian(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::AngularJacobian getAngularJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getWorldJacobian functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getWorldJacobian;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
@@ -520,33 +601,10 @@ public:
   /// spatial vectors. If you are using classical linear and angular
   /// acceleration vectors, then use getJacobianClassicDeriv(),
   /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
-  const math::Jacobian& getJacobianSpatialDeriv() const;
+  const math::Jacobian& getJacobianSpatialDeriv() const override;
 
-  /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classical linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  math::Jacobian getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// Return the spatial time derivative of the generalized Jacobian targeting
-  /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
-  /// this BodyNode's coordinate Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classic linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  ///
-  /// \sa getJacobianSpatialDeriv()
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobianSpatialDeriv(const Eigen::Vector3d&) that allows
-  /// an arbitrary coordinate Frame to be specified.
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
-                                         const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobianSpatialDeriv;
 
   /// Return the classical time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in the World
@@ -555,50 +613,10 @@ public:
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
   /// use getJacobianSpatialDeriv() instead.
-  const math::Jacobian& getJacobianClassicDeriv() const;
+  const math::Jacobian& getJacobianClassicDeriv() const override;
 
-  /// A version of getJacobianClassicDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in the coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the linear Jacobian (classical) time derivative, in terms of any
-  /// coordinate Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-                          const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian time derivative, in terms of any coordinate
-  /// Frame.
-  math::AngularJacobian getAngularJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
+  using TemplatedJacobianEntity<BodyNode>::getJacobianClassicDeriv;
 
   //----------------------------------------------------------------------------
   // Deprecated velocity, acceleration, and Jacobian functions
@@ -888,6 +906,11 @@ public:
   /// Called by Skeleton::clearExternalForces.
   virtual void clearExternalForces();
 
+  /// Clear out the generalized forces of the parent Joint and any other forces
+  /// related to this BodyNode that are internal to the Skeleton. For example,
+  /// the point mass forces for SoftBodyNodes.
+  virtual void clearInternalForces();
+
   ///
   const Eigen::Vector6d& getExternalForceLocal() const;
 
@@ -913,8 +936,7 @@ public:
   /// Return true if the body can react to force or constraint impulse.
   ///
   /// A body node is reactive if the skeleton is mobile and the number of
-  /// dependent generalized coordinates is non zero. BodyNode::init() should be
-  /// called first to update the number of dependent generalized coordinates.
+  /// dependent generalized coordinates is non zero.
   bool isReactive() const;
 
   /// Set constraint impulse
@@ -954,14 +976,18 @@ public:
   Eigen::Vector3d getAngularMomentum(
       const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
 
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   // Rendering
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
 
   /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  //----------------------------------------------------------------------------
+  // Notifications
+  //----------------------------------------------------------------------------
 
   // Documentation inherited
   void notifyTransformUpdate() override;
@@ -972,12 +998,23 @@ public:
   // Documentation inherited
   void notifyAccelerationUpdate() override;
 
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void notifyArticulatedInertiaUpdate();
+
+  /// Tell the Skeleton that the external forces need to be updated
+  void notifyExternalForcesUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void notifyCoriolisUpdate();
+
   //----------------------------------------------------------------------------
   // Friendship
   //----------------------------------------------------------------------------
 
   friend class Skeleton;
   friend class Joint;
+  friend class EndEffector;
   friend class SoftBodyNode;
   friend class PointMass;
 
@@ -992,7 +1029,10 @@ protected:
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
 
   /// Initialize the vector members with proper sizes.
-  virtual void init(Skeleton* _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton);
+
+  /// Add a child bodynode into the bodynode
+  void addChildBodyNode(BodyNode* _body);
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
@@ -1144,38 +1184,58 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                       double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
                                          double _timeStep);
 
   ///
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
 
   ///
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity);
 
   ///
   virtual void updateCombinedVector();
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized coordinates
   /// recursively
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   ///
-  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial);
 
+  /// Update body Jacobian. getJacobian() calls this function if
+  /// mIsBodyJacobianDirty is true.
+  void updateBodyJacobian() const;
+
+  /// Update the World Jacobian. The commonality of using the World Jacobian
+  /// makes it worth caching.
+  void updateWorldJacobian() const;
+
+  /// Update spatial time derivative of body Jacobian.
+  /// getJacobianSpatialTimeDeriv() calls this function if
+  /// mIsBodyJacobianSpatialDerivDirty is true.
+  void updateBodyJacobianSpatialDeriv() const;
+
+  /// Update classic time derivative of body Jacobian.
+  /// getJacobianClassicDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void updateWorldJacobianClassicDeriv() const;
+
   /// \}
+
+protected:
 
   //--------------------------------------------------------------------------
   // General properties
@@ -1190,21 +1250,21 @@ protected:
   /// BodyNode-specific properties
   UniqueProperties mBodyP;
 
-  /// InverseKinematics module for this BodyNode
-  InverseKinematics<BodyNode> mIK;
-
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------
-  // Structual Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
-
-  /// Pointer to the model this body node belongs to.
-  Skeleton* mSkeleton;
 
   /// Index of this BodyNode in its Skeleton
   size_t mIndexInSkeleton;
+
+  /// Index of this BodyNode in its Tree
+  size_t mIndexInTree;
+
+  /// Index of this BodyNode's tree
+  size_t mTreeIndex;
 
   /// Parent joint
   Joint* mParentJoint;
@@ -1219,11 +1279,21 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
+  /// List of EndEffectors that are attached to this BodyNode
+  std::vector<EndEffector*> mEndEffectors;
+
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
+
+  /// A version of mDependentGenCoordIndices that holds DegreeOfFreedom pointers
+  /// instead of indices
+  std::vector<DegreeOfFreedom*> mDependentDofs;
+
+  /// Same as mDependentDofs, but holds const pointers
+  std::vector<const DegreeOfFreedom*> mConstDependentDofs;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties
@@ -1330,29 +1400,14 @@ protected:
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector6d mImpF;
 
-  /// Update body Jacobian. getBodyJacobian() calls this function if
-  /// mIsBodyJacobianDirty is true.
-  void _updateBodyJacobian() const;
-
-  /// Update the World Jacobian. The commonality of using the World Jacobian
-  /// makes it worth caching.
-  void _updateWorldJacobian() const;
-
-  /// Update spatial time derivative of body Jacobian.
-  /// getJacobianSpatialTimeDeriv() calls this function if
-  /// mIsBodyJacobianSpatialDerivDirty is true.
-  void _updateBodyJacobianSpatialDeriv() const;
-
-  /// Update classic time derivative of body Jacobian.
-  /// getJacobianClassicTimeDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void _updateWorldJacobianClassicDeriv() const;
-
   /// Collision shape added signal
   ColShapeAddedSignal mColShapeAddedSignal;
 
   /// Collision shape removed signal
   ColShapeRemovedSignal mColShapeRemovedSignal;
+
+  /// Structural change signal
+  StructuralChangeSignal mStructuralChangeSignal;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -1368,12 +1423,30 @@ public:
   /// Slot register for collision shape removed signal
   common::SlotRegister<ColShapeRemovedSignal> onColShapeRemoved;
 
+  /// Raised when (1) parent BodyNode is changed, (2) moved between Skeletons,
+  /// (3) parent Joint is changed
+  mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
+
   /// \}
 };
 
 //==============================================================================
 template <class JointType>
-JointType* BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+JointType* BodyNode::moveTo(BodyNode* _newParent,
+    const typename JointType::Properties& _joint)
+{
+  if(nullptr == _newParent)
+    return getSkeleton()->moveBodyNodeTree<JointType>(
+          this, getSkeleton(), nullptr, _joint);
+  else
+    return getSkeleton()->moveBodyNodeTree<JointType>(
+          this, _newParent->getSkeleton(), _newParent, _joint);
+}
+
+//==============================================================================
+template <class JointType>
+JointType* BodyNode::moveTo(
+    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
     const typename JointType::Properties& _joint)
 {
   return getSkeleton()->moveBodyNodeTree<JointType>(
@@ -1382,19 +1455,67 @@ JointType* BodyNode::moveTo(Skeleton* _newSkeleton, BodyNode* _newParent,
 
 //==============================================================================
 template <class JointType>
-JointType* BodyNode::changeParentJointType(
-    const typename JointType::Properties& _joint)
+SkeletonPtr BodyNode::split(const std::string& _skeletonName,
+      const typename JointType::Properties& _joint)
 {
-  return moveTo<JointType>(getSkeleton(), getParentBodyNode(), _joint);
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  skel->setName(_skeletonName);
+  moveTo<JointType>(skel, nullptr, _joint);
+  return skel;
 }
 
 //==============================================================================
 template <class JointType>
-JointType* BodyNode::copyTo(Skeleton* _newSkeleton, BodyNode* _newParent,
+JointType* BodyNode::changeParentJointType(
     const typename JointType::Properties& _joint)
 {
+  return moveTo<JointType>(getParentBodyNode(), _joint);
+}
+
+//==============================================================================
+template <class JointType>
+std::pair<JointType*, BodyNode*> BodyNode::copyTo(
+    BodyNode* _newParent,
+    const typename JointType::Properties& _joint,
+    bool _recursive)
+{
+  if(nullptr == _newParent)
+    return getSkeleton()->cloneBodyNodeTree<JointType>(
+          this, getSkeleton(), nullptr, _joint, _recursive);
+  else
+    return getSkeleton()->cloneBodyNodeTree<JointType>(
+          this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
+}
+
+//==============================================================================
+template <class JointType>
+std::pair<JointType*, BodyNode*> BodyNode::copyTo(
+    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+    const typename JointType::Properties& _joint,
+    bool _recursive) const
+{
   return getSkeleton()->cloneBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint);
+        this, _newSkeleton, _newParent, _joint, _recursive);
+}
+
+//==============================================================================
+template <class JointType>
+SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
+    const typename JointType::Properties& _joint, bool _recursive) const
+{
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  skel->setName(_skeletonName);
+  copyTo<JointType>(skel, nullptr, _joint, _recursive);
+  return skel;
+}
+
+//==============================================================================
+template <class EndEffectorT>
+EndEffectorT* BodyNode::createEndEffector(
+    const typename EndEffectorT::Properties& _properties)
+{
+  EndEffectorT* ee = new EndEffectorT(this, _properties);
+  getSkeleton()->registerEndEffector(ee);
 }
 
 }  // namespace dynamics

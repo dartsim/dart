@@ -51,7 +51,8 @@ namespace dynamics {
 class MeshShape : public Shape {
 public:
   /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh);
+  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
+            const std::string &path = std::string());
 
   /// \brief Destructor.
   virtual ~MeshShape();
@@ -69,7 +70,10 @@ public:
   virtual void setAlpha(double _alpha) override;
 
   /// \brief
-  void setMesh(const aiScene* _mesh);
+  void setMesh(const aiScene* _mesh, const std::string &path = std::string());
+
+  /// \brief Path to the mesh on disk; an empty string if unavailable.
+  const std::string &getMeshPath() const;
 
   /// \brief
   void setScale(const Eigen::Vector3d& _scale);
@@ -105,6 +109,9 @@ private:
 protected:
   /// \brief
   const aiScene* mMesh;
+
+  /// \brief
+  std::string mMeshPath;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;

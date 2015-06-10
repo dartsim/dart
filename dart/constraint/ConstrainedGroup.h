@@ -38,6 +38,7 @@
 #define DART_CONSTRAINT_CONSTRAINEDGROUP_H_
 
 #include <vector>
+#include <memory>
 #include <Eigen/Dense>
 
 namespace dart {
@@ -107,7 +108,7 @@ private:
   std::vector<ConstraintBase*> mConstraints;
 
   ///
-  dynamics::Skeleton* mRootSkeleton;
+  std::shared_ptr<dynamics::Skeleton> mRootSkeleton;
 };
 
 }  // namespace constraint

@@ -63,6 +63,7 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
                      double _pitch = 0.1);
+    virtual ~UniqueProperties() = default;
   };
 
   struct Properties : SingleDofJoint::Properties,
@@ -73,13 +74,8 @@ public:
                                               SingleDofJoint::Properties(),
         const ScrewJoint::UniqueProperties& _screwProperties =
                                               ScrewJoint::UniqueProperties());
+    virtual ~Properties() = default;
   };
-
-  /// Constructor
-  DEPRECATED(4.5) // Use Skeleton::createJointAndBodyNodePair()
-  ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-             double _pitch = 0.1,
-             const std::string& _name = "ScrewJoint");
 
   /// Destructor
   virtual ~ScrewJoint();
@@ -101,6 +97,12 @@ public:
 
   /// Copy the Properties of another ScrewJoint
   ScrewJoint& operator=(const ScrewJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

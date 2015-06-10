@@ -65,17 +65,6 @@ ScrewJoint::Properties::Properties(
 }
 
 //==============================================================================
-ScrewJoint::ScrewJoint(const Eigen::Vector3d& axis,
-                       double _pitch,
-                       const std::string& _name)
-  : SingleDofJoint(_name),
-    mScrewP(axis, _pitch)
-{
-  updateLocalJacobian();
-  notifyPositionUpdate();
-}
-
-//==============================================================================
 ScrewJoint::~ScrewJoint()
 {
   // Do nothing
@@ -125,6 +114,19 @@ ScrewJoint& ScrewJoint::operator=(const ScrewJoint& _otherJoint)
 {
   copy(_otherJoint);
   return *this;
+}
+
+//==============================================================================
+const std::string& ScrewJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& ScrewJoint::getStaticType()
+{
+  static const std::string name = "ScrewJoint";
+  return name;
 }
 
 //==============================================================================
