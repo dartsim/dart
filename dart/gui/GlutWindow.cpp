@@ -80,8 +80,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mWinWidth = _w;
   mWinHeight = _h;
 
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL
-                      | GLUT_ACCUM);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
   glutInitWindowPosition(150, 100);
   glutInitWindowSize(_w, _h);
   mWinIDs.push_back(glutCreateWindow(_name));
@@ -99,6 +98,8 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mRI->initialize();
   // glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
   // glutTimerFunc(mDisplayTimeout, runTimer, 0);
+
+  glDisable(GL_MULTISAMPLE);
 }
 
 void GlutWindow::reshape(int _w, int _h) {
