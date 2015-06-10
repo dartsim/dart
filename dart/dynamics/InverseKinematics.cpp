@@ -374,6 +374,7 @@ void InverseKinematics::GradientMethod::computeGradient(
           << "\nSkeleton name: " << mIK->getEntity()->getSkeleton()->getName()
           << "\nBody name: " << mIK->getEntity()->getName()
           << "\nMethod name: " << mMethodName << "\n";
+    assert(false);
     mLastGradient.resize(_q.size());
     mLastGradient.setZero();
     _grad = mLastGradient;
