@@ -37,149 +37,51 @@
 #ifndef DART_COMMON_SIGNAL_H_
 #define DART_COMMON_SIGNAL_H_
 
-#include <algorithm>
 #include <functional>
 #include <memory>
 #include <set>
-#include <utility>
-#include <vector>
+
+#include "dart/common/detail/ConnectionBody.h"
 
 namespace dart {
 namespace common {
-
-namespace signal {
-namespace detail {
-
-/// class ConnectionBodyBase
-class ConnectionBodyBase
-{
-public:
-  /// Constructor
-  ConnectionBodyBase() : mIsConnected(true) {}
-
-  /// Destructor
-  virtual ~ConnectionBodyBase() {}
-
-  /// Disconnect
-  void disconnect() { mIsConnected = false; }
-
-  /// Get true if this connection body is connected to the signal
-  bool isConnected() const { return mIsConnected; }
-
-protected:
-  /// Connection flag
-  bool mIsConnected;
-};
-
-/// class ConnectionBody
-template <typename SlotType>
-class ConnectionBody : public ConnectionBodyBase
-{
-public:
-  /// Constructor given slot
-  ConnectionBody(const SlotType& _slot) : ConnectionBodyBase(), mSlot(_slot) {}
-
-  /// Move constructor given slot
-  ConnectionBody(SlotType&& _slot)
-    : ConnectionBodyBase(), mSlot(std::forward<SlotType>(_slot)) {}
-
-  /// Destructor
-  virtual ~ConnectionBody() {}
-
-  /// Get slot
-  const SlotType& getSlot() { return mSlot; }
-
-private:
-  /// Slot
-  SlotType mSlot;
-};
-
-/// DefaultCombiner -- return the last result
-template <typename T>
-struct DefaultCombiner
-{
-  typedef T result_type;
-
-  template <typename InputIterator>
-  static T process(InputIterator first, InputIterator last)
-  {
-    // If there are no slots to call, just return the
-    // default-constructed value
-    if (first == last)
-      return T();
-
-    return *(--last);
-  }
-};
-
-}  // namespace detail
-}  // namespace signal
 
 /// class Connection
 class Connection
 {
 public:
   /// Default constructor
-  Connection() {}
+  Connection();
 
   /// Copy constructor
-  Connection(const Connection& _other)
-    : mWeakConnectionBody(_other.mWeakConnectionBody) {}
+  Connection(const Connection& _other);
 
   /// Move constructor
-  Connection(Connection&& _other)
-    : mWeakConnectionBody(std::move(_other.mWeakConnectionBody)) {}
+  Connection(Connection&& _other);
 
   /// Assignment operator
-  Connection& operator=(const Connection& _other)
-  {
-    mWeakConnectionBody = _other.mWeakConnectionBody;
-    return *this;
-  }
+  Connection& operator=(const Connection& _other);
 
   /// Move assignment operator
-  Connection& operator=(Connection&& _other)
-  {
-    mWeakConnectionBody = std::move(_other.mWeakConnectionBody);
-    return *this;
-  }
+  Connection& operator=(Connection&& _other);
 
+  /// Destructor
+  virtual ~Connection();
+
+  /// Get true if the slot is connected
+  bool isConnected() const;
+
+  /// Disconnect the connection
+  void disconnect() const;
+
+protected:
   /// Constructor given connection body
   Connection(
-      const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody)
-    : mWeakConnectionBody(_connectionBody) {}
+      const std::weak_ptr<signal::detail::ConnectionBodyBase>& _connectionBody);
 
   /// Move constructor given connection body
   Connection(
-      std::weak_ptr<signal::detail::ConnectionBodyBase>&& _connectionBody)
-    : mWeakConnectionBody(std::move(_connectionBody)) {}
-
-  /// Destructor
-  virtual ~Connection() {}
-
-  /// Get true if the slot is connected
-  bool isConnected() const
-  {
-    std::shared_ptr<signal::detail::ConnectionBodyBase>
-        connectionBody(mWeakConnectionBody.lock());
-
-    if (nullptr == connectionBody)
-      return false;
-
-    return connectionBody->isConnected();
-  }
-
-  /// Disconnect the connection
-  void disconnect() const
-  {
-    std::shared_ptr<signal::detail::ConnectionBodyBase>
-        connectionBody(mWeakConnectionBody.lock());
-
-    if (nullptr == connectionBody)
-      return;
-
-    connectionBody->disconnect();
-  }
+      std::weak_ptr<signal::detail::ConnectionBodyBase>&& _connectionBody);
 
 private:
   /// Weak pointer to connection body in the signal
@@ -191,13 +93,13 @@ class ScopedConnection : public Connection
 {
 public:
   /// Default constructor
-  ScopedConnection(const Connection& _other) : Connection(_other) {}
+  ScopedConnection(const Connection& _other);
 
   /// Move constructor
-  ScopedConnection(Connection&& _other) : Connection(std::move(_other)) {}
+  ScopedConnection(Connection&& _other);
 
   /// Destructor
-  virtual ~ScopedConnection() { disconnect(); }
+  virtual ~ScopedConnection();
 };
 
 template <typename _Signature,
@@ -219,94 +121,36 @@ public:
                std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
 
   /// Constructor
-  Signal() {}
+  Signal();
 
   /// Destructor
-  virtual ~Signal() { disconnectAll(); }
+  virtual ~Signal();
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot)
-  {
-    auto newConnectionBody = std::make_shared<ConnectionBodyType>(_slot);
-    mConnectionBodies.insert(newConnectionBody);
-
-    return Connection(std::move(newConnectionBody));
-  }
+  Connection connect(const SlotType& _slot);
 
   /// Connect a slot to the signal
-  Connection connect(SlotType&& _slot)
-  {
-    auto newConnectionBody
-        = std::make_shared<ConnectionBodyType>(std::forward<SlotType>(_slot));
-    mConnectionBodies.insert(newConnectionBody);
-
-    return Connection(std::move(newConnectionBody));
-  }
+  Connection connect(SlotType&& _slot);
 
   /// Disconnect given connection
-  void disconnect(const Connection& _connection) const
-  {
-    _connection.disconnect();
-  }
+  void disconnect(const Connection& _connection) const;
 
   /// Disconnect all the connections
-  void disconnectAll() { mConnectionBodies.clear(); }
+  void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections()
-  {
-    // Counts all the connected conection bodies
-    for (const auto& connectionBody : mConnectionBodies)
-    {
-      if (!connectionBody->isConnected())
-        mConnectionBodies.erase(connectionBody);
-    }
-  }
+  void clenaupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const
-  {
-    size_t numConnections = 0;
-
-    // Counts all the connected conection bodies
-    for (const auto& connectionBody : mConnectionBodies)
-    {
-      if (connectionBody->isConnected())
-        ++numConnections;
-    }
-
-    return numConnections;
-  }
+  size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>
-  ResultType raise(ArgTypes&&... _args)
-  {
-    std::vector<ResultType> res(mConnectionBodies.size());
-    auto resIt = res.begin();
-
-    for (auto itr = mConnectionBodies.begin(); itr != mConnectionBodies.end(); )
-    {
-      if ((*itr)->isConnected())
-      {
-        *(resIt++) = (*itr)->getSlot()(std::forward<ArgTypes>(_args)...);
-        ++itr;
-      }
-      else
-      {
-        mConnectionBodies.erase(itr++);
-      }
-    }
-
-    return Combiner<ResultType>::process(res.begin(), resIt);
-  }
+  ResultType raise(ArgTypes&&... _args);
 
   /// Raise the signal
   template <typename... ArgTypes>
-  ResultType operator()(ArgTypes&&... _args)
-  {
-    return raise(std::forward<ArgTypes>(_args)...);
-  }
+  ResultType operator()(ArgTypes&&... _args);
 
 private:
   /// Connection set
@@ -327,89 +171,36 @@ public:
                std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
 
   /// Constructor
-  Signal() {}
+  Signal();
 
   /// Destructor
-  virtual ~Signal() { disconnectAll(); }
+  virtual ~Signal();
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot)
-  {
-    auto newConnectionBody = std::make_shared<ConnectionBodyType>(_slot);
-    mConnectionBodies.insert(newConnectionBody);
-
-    return Connection(std::move(newConnectionBody));
-  }
+  Connection connect(const SlotType& _slot);
 
   /// Connect a slot to the signal
-  Connection connect(SlotType&& _slot)
-  {
-    auto newConnectionBody
-        = std::make_shared<ConnectionBodyType>(std::forward<SlotType>(_slot));
-    mConnectionBodies.insert(newConnectionBody);
-
-    return Connection(std::move(newConnectionBody));
-  }
+  Connection connect(SlotType&& _slot);
 
   /// Disconnect given connection
-  void disconnect(const Connection& _connection) const
-  {
-    _connection.disconnect();
-  }
+  void disconnect(const Connection& _connection) const;
 
   /// Disconnect all the connections
-  void disconnectAll() { mConnectionBodies.clear(); }
+  void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections()
-  {
-    // Counts all the connected conection bodies
-    for (const auto& connectionBody : mConnectionBodies)
-    {
-      if (!connectionBody->isConnected())
-        mConnectionBodies.erase(connectionBody);
-    }
-  }
+  void clenaupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const
-  {
-    size_t numConnections = 0;
-
-    // Counts all the connected conection bodies
-    for (const auto& connectionBody : mConnectionBodies)
-    {
-      if (connectionBody->isConnected())
-        ++numConnections;
-    }
-
-    return numConnections;
-  }
+  size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>
-  void raise(ArgTypes&&... _args)
-  {
-    for (auto itr = mConnectionBodies.begin(); itr != mConnectionBodies.end(); )
-    {
-      if ((*itr)->isConnected())
-      {
-        (*itr)->getSlot()(std::forward<ArgTypes>(_args)...);
-        ++itr;
-      }
-      else
-      {
-        mConnectionBodies.erase(itr++);
-      }
-    }
-  }
+  void raise(ArgTypes&&... _args);
 
   /// Raise the signal
   template <typename... ArgTypes>
-  void operator()(ArgTypes&&... _args)
-  {
-    raise(std::forward<ArgTypes>(_args)...);
-  }
+  void operator()(ArgTypes&&... _args);
 
 private:
   /// Connection set
@@ -427,10 +218,10 @@ public:
   using SignalType = typename T::SignalType;
 
   /// Constructor given signal
-  SlotRegister(typename T::SignalType& _signal) : mSignal(_signal) {}
+  SlotRegister(typename T::SignalType& _signal);
 
   /// Connect a slot to the signal
-  Connection connect(const SlotType& _slot) { return mSignal.connect(_slot); }
+  Connection connect(const SlotType& _slot);
 
 private:
   /// Signal
@@ -439,6 +230,8 @@ private:
 
 }  // namespace common
 }  // namespace dart
+
+#include "dart/common/detail/Signal.h"
 
 #endif  // DART_COMMON_SIGNAL_H_
 

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sumit Jain <sumit@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,32 +34,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-
-#include <iostream>
+#include "dart/common/detail/ConnectionBody.h"
 
 namespace dart {
 namespace common {
 
-std::ostream& colorMsg(const std::string& _msg, int _color)
+namespace signal {
+namespace detail {
+
+//==============================================================================
+ConnectionBodyBase::ConnectionBodyBase()
+  : mIsConnected(true)
 {
-  std::cout << "\033[1;" << _color << "m" << _msg << "\033[0m ";
-  return std::cout;
+  // Do nothing
 }
 
-std::ostream& colorErr(const std::string& _msg,
-                       const std::string& _file,
-                       unsigned int       _line,
-                       int                _color)
+//==============================================================================
+ConnectionBodyBase::~ConnectionBodyBase()
 {
-  int index = _file.find_last_of("/") + 1;
-
-  std::cerr << "\033[1;" << _color << "m" << _msg << " [" <<
-               _file.substr(index , _file.size() - index) <<
-               ":" << _line << "]\033[0m ";
-
-  return std::cerr;
+  // Do nothing
 }
+
+//==============================================================================
+void ConnectionBodyBase::disconnect()
+{
+  mIsConnected = false;
+}
+
+//==============================================================================
+bool ConnectionBodyBase::isConnected() const
+{
+  return mIsConnected;
+}
+
+}  // namespace detail
+}  // namespace signal
 
 }  // namespace common
 }  // namespace dart
+
+
