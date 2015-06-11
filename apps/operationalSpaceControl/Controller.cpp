@@ -35,7 +35,6 @@
  */
 
 #include "apps/operationalSpaceControl/Controller.h"
-#include "dart/math/MathTypes.h"
 
 //==============================================================================
 Controller::Controller(dart::dynamics::SkeletonPtr _robot,

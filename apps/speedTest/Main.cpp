@@ -38,14 +38,7 @@
 #include <chrono>
 #include <numeric>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/math/Helpers.h"
-#include "dart/config.h"
+#include "dart/dart.h"
 
 double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
                                  bool position=true,
