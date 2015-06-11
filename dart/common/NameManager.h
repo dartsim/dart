@@ -39,6 +39,7 @@
 #define DART_COMMON_NAMEMANAGER_H_
 
 #include <map>
+#include <string>
 
 namespace dart {
 namespace common {

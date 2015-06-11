@@ -74,6 +74,9 @@ public:
   /// Disconnect the connection
   void disconnect() const;
 
+  template <typename _Signature, template<class> class Combiner>
+  friend class Signal;
+
 protected:
   /// Constructor given connection body
   Connection(
