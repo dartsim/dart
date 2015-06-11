@@ -49,7 +49,6 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
 using namespace std;

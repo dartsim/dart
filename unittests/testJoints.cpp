@@ -54,7 +54,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
 using namespace dart;
