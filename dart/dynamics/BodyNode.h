@@ -157,10 +157,10 @@ public:
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name);
+  const std::string& setName(const std::string& _name) override;
 
   /// Return the name of the bodynode
-  const std::string& getName() const;
+  const std::string& getName() const override;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
@@ -506,10 +506,10 @@ public:
 
   /// Get the transform of this BodyNode with respect to its parent BodyNode,
   /// which is also its parent Frame.
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   // Documentation inherited
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
@@ -824,10 +824,10 @@ protected:
 
   /// Separate generic child Entities from child BodyNodes for more efficient
   /// update notices
-  void processNewEntity(Entity* _newChildEntity);
+  void processNewEntity(Entity* _newChildEntity) override;
 
   /// Remove this Entity from mChildBodyNodes or mNonBodyNodeEntities
-  void processRemovedEntity(Entity* _oldChildEntity);
+  void processRemovedEntity(Entity* _oldChildEntity) override;
 
   /// Update transformation
   virtual void updateTransform();

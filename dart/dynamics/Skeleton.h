@@ -131,10 +131,10 @@ public:
   const Properties& getSkeletonProperties() const;
 
   /// Set name.
-  const std::string& setName(const std::string& _name);
+  const std::string& setName(const std::string& _name) override;
 
   /// Get name.
-  const std::string& getName() const;
+  const std::string& getName() const override;
 
   /// Enable self collision check
   void enableSelfCollision(bool _enableAdjecentBodies = false);
