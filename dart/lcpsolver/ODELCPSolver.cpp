@@ -200,7 +200,7 @@ bool ODELCPSolver::checkIfSolution(const Eigen::MatrixXd& _A,
   for (int i = 0; i < n; ++i) {
     if (w(i) < -threshold || _x(i) < -threshold)
       return false;
-    if (abs(w(i) * _x(i)) > threshold)
+    if (std::abs(w(i) * _x(i)) > threshold)
       return false;
   }
   return true;

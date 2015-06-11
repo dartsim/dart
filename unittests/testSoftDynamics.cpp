@@ -74,7 +74,7 @@ bool equals(const DenseBase<MATRIX>& A, const DenseBase<MATRIX>& B,
     {
       if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
         return false;
-      else if (fabs(A(i,j) - B(i,j)) > tol)
+      else if (std::abs(A(i,j) - B(i,j)) > tol)
         return false;
     }
   }

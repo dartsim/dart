@@ -141,11 +141,11 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::fabs(ct->normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::fabs(ct->normal.dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
 //      if (D.col(0).dot(D.col(1)) > 0.0)
 //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
-      assert(fabs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
 //      std::cout << "D: " << std::endl << D << std::endl;
 

@@ -1402,19 +1402,19 @@ Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
 
 bool verifyRotation(const Eigen::Matrix3d& _T) {
   return !isNan(_T)
-      && fabs(_T.determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.determinant() - 1.0) <= DART_EPSILON;
 }
 
 bool verifyTransform(const Eigen::Isometry3d& _T) {
   return !isNan(_T.matrix().topRows<3>())
-      && fabs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
 #ifndef NDEBUG
-  if (fabs(_m(0, 0)) > DART_EPSILON
-      || fabs(_m(1, 1)) > DART_EPSILON
-      || fabs(_m(2, 2)) > DART_EPSILON) {
+  if (std::abs(_m(0, 0)) > DART_EPSILON
+      || std::abs(_m(1, 1)) > DART_EPSILON
+      || std::abs(_m(2, 2)) > DART_EPSILON) {
     std::cout << "Not skew symmetric matrix" << std::endl;
     std::cerr << _m << std::endl;
     return Eigen::Vector3d::Zero();

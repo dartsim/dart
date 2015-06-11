@@ -470,7 +470,7 @@ double PathFollowingTrajectory::getMinMaxPathAcceleration(double pathPos, double
 	for(unsigned int i = 0; i < n; i++) {
 		if(configDeriv[i] != 0.0) {
 			maxPathAcceleration = min(maxPathAcceleration,
-				maxAcceleration[i]/abs(configDeriv[i]) - factor * configDeriv2[i] * pathVel*pathVel / configDeriv[i]);
+        maxAcceleration[i]/std::abs(configDeriv[i]) - factor * configDeriv2[i] * pathVel*pathVel / configDeriv[i]);
 		}
 	}
 	return factor * maxPathAcceleration;
@@ -491,14 +491,14 @@ double PathFollowingTrajectory::getAccelerationMaxPathVelocity(double pathPos) {
 					double A_ij = configDeriv2[i] / configDeriv[i] - configDeriv2[j] / configDeriv[j];
 					if(A_ij != 0.0) {
 						maxPathVelocity = min(maxPathVelocity,
-							sqrt((maxAcceleration[i] / abs(configDeriv[i]) + maxAcceleration[j] / abs(configDeriv[j]))
-							/ abs(A_ij)));
+              sqrt((maxAcceleration[i] / std::abs(configDeriv[i]) + maxAcceleration[j] / std::abs(configDeriv[j]))
+              / std::abs(A_ij)));
 					}
 				}
 			}
 		}
 		else if(configDeriv2[i] != 0.0) {
-			maxPathVelocity = min(maxPathVelocity, sqrt(maxAcceleration[i] / abs(configDeriv2[i])));
+      maxPathVelocity = min(maxPathVelocity, sqrt(maxAcceleration[i] / std::abs(configDeriv2[i])));
 		}
 	}
 	return maxPathVelocity;
@@ -509,7 +509,7 @@ double PathFollowingTrajectory::getVelocityMaxPathVelocity(double pathPos) {
 	const VectorXd tangent = path.getTangent(pathPos);
 	double maxPathVelocity = numeric_limits<double>::max();
 	for(unsigned int i = 0; i < n; i++) {
-		maxPathVelocity = min(maxPathVelocity, maxVelocity[i] / abs(tangent[i]));
+    maxPathVelocity = min(maxPathVelocity, maxVelocity[i] / std::abs(tangent[i]));
 	}
 	return maxPathVelocity;
 }
@@ -523,14 +523,14 @@ double PathFollowingTrajectory::getVelocityMaxPathVelocityDeriv(double pathPos) 
 	double maxPathVelocity = numeric_limits<double>::max();
   unsigned int activeConstraint = 0;
 	for(unsigned int i = 0; i < n; i++) {
-		const double thisMaxPathVelocity = maxVelocity[i] / abs(tangent[i]);
+    const double thisMaxPathVelocity = maxVelocity[i] / std::abs(tangent[i]);
 		if(thisMaxPathVelocity < maxPathVelocity) {
 			maxPathVelocity = thisMaxPathVelocity;
 			activeConstraint = i;
 		}
 	}
 	return - (maxVelocity[activeConstraint] * path.getCurvature(pathPos)[activeConstraint])
-		/ (tangent[activeConstraint] * abs(tangent[activeConstraint]));
+    / (tangent[activeConstraint] * std::abs(tangent[activeConstraint]));
 }
 
 bool PathFollowingTrajectory::isValid() const {
@@ -611,8 +611,8 @@ double PathFollowingTrajectory::getMaxAccelerationError() {
 		VectorXd acceleration = path.getTangent(pathPos) * pathAcceleration + path.getCurvature(pathPos) * pathVel * pathVel;
 		
 		for(int i = 0; i < acceleration.size(); i++) {
-			if(abs(acceleration[i]) > maxAcceleration[i]) {
-				maxAccelerationError = max(maxAccelerationError, abs(acceleration[i]) / maxAcceleration[i]);
+      if(std::abs(acceleration[i]) > maxAcceleration[i]) {
+        maxAccelerationError = max(maxAccelerationError, std::abs(acceleration[i]) / maxAcceleration[i]);
 			}
 		}
 	}

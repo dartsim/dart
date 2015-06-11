@@ -198,7 +198,7 @@ bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A)
   {
     for (size_t j = 0; j < _n; ++j)
     {
-      if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
         for (size_t k = 0; k < _n; ++k)
@@ -229,7 +229,7 @@ bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A,
   {
     for (size_t j = _begin; j <= _end; ++j)
     {
-      if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
         for (size_t k = 0; k < _n; ++k)

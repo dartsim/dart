@@ -3693,9 +3693,9 @@ are only needed to make the paeth calculation correct.
 */
 static unsigned char paethPredictor(short a, short b, short c)
 {
-  short pa = abs(b - c);
-  short pb = abs(a - c);
-  short pc = abs(a + b - c - c);
+  short pa = std::abs(b - c);
+  short pb = std::abs(a - c);
+  short pc = std::abs(a + b - c - c);
 
   if(pc < pa && pc < pb) return (unsigned char)c;
   else if(pb < pa) return (unsigned char)b;

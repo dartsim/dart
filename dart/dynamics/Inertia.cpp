@@ -221,7 +221,7 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
   {
     for(int j=i+1; j<3; ++j)
     {
-      if(fabs(_moment(i,j) - _moment(j,i)) > _tolerance)
+      if(std::abs(_moment(i,j) - _moment(j,i)) > _tolerance)
       {
         valid = false;
         if(_printWarnings)
@@ -264,7 +264,7 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   {
     for(size_t j=i+1; j<3; ++j)
     {
-      if(fabs(_spatial(i,j) - _spatial(j,i)) > _tolerance)
+      if(std::abs(_spatial(i,j) - _spatial(j,i)) > _tolerance)
       {
         valid = false;
         dtwarn << "[Inertia::verifySpatialTensor] Values for entries (" << i
@@ -331,7 +331,7 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
         size_t i2 = k==0? j+3 : j;
         size_t j2 = k==0? i : i+3;
 
-        if(fabs(_spatial(i1,j1) + _spatial(i2,j2)) > _tolerance)
+        if(std::abs(_spatial(i1,j1) + _spatial(i2,j2)) > _tolerance)
         {
           valid = false;
           if(_printWarnings)
@@ -359,7 +359,7 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
       size_t i2 = i+3;
       size_t j2 = j;
 
-      if(fabs(_spatial(i1,j1) - _spatial(i2,j2)) > _tolerance)
+      if(std::abs(_spatial(i1,j1) - _spatial(i2,j2)) > _tolerance)
       {
         valid = false;
         if(_printWarnings)

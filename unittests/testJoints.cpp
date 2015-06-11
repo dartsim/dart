@@ -435,8 +435,8 @@ void testJointCoulombFrictionForce(double _timeStep)
     double jointVel0 = joint0->getVelocity(0);
     double jointVel1 = joint1->getVelocity(0);
 
-    EXPECT_GE(std::fabs(jointVel0), 0.0);
-    EXPECT_GE(std::fabs(jointVel1), 0.0);
+    EXPECT_GE(std::abs(jointVel0), 0.0);
+    EXPECT_GE(std::abs(jointVel1), 0.0);
   }
 
   // Spend 20 sec waiting the joints to stop
@@ -484,7 +484,7 @@ Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
   Eigen::Matrix<double,N,1> v;
   for(size_t i=0; i<N; ++i)
-    v[i] = math::random(-fabs(limit), fabs(limit));
+    v[i] = math::random(-std::abs(limit), std::abs(limit));
   return v;
 }
 

@@ -125,7 +125,7 @@ void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
 //==============================================================================
 double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
 {
-  return std::fabs(computeSignedDistance(_point));
+  return std::abs(computeSignedDistance(_point));
 }
 
 //==============================================================================

@@ -130,7 +130,7 @@ public:
 		//debug
 		double dotStart = startDirection.dot((intersection - getConfig(0.0)).normalized());
 		double dotEnd = endDirection.dot((getConfig(length) - intersection).normalized());
-		if(abs(dotStart - 1.0) > 0.0001 || abs(dotEnd - 1.0) > 0.0001) {
+    if(std::abs(dotStart - 1.0) > 0.0001 || std::abs(dotEnd - 1.0) > 0.0001) {
 			std::cout << "Error\n";
 		}
 	}
@@ -205,9 +205,9 @@ Path::Path(const list<VectorXd> &path, double maxDeviation) :
 
 			//debug
 			if(((endConfig - *config1).norm() > 0.000001 && (*config2 - endConfig).norm() > 0.000001
-				&& abs((endConfig - *config1).normalized().dot((*config2 - endConfig).normalized()) - 1.0) > 0.000001)
+        && std::abs((endConfig - *config1).normalized().dot((*config2 - endConfig).normalized()) - 1.0) > 0.000001)
 				|| ((startConfig - *config2).norm() > 0.000001 && (*config3 - startConfig).norm() > 0.000001
-				&& abs((startConfig - *config2).normalized().dot((*config3 - startConfig).normalized()) - 1.0) > 0.000001)) {
+        && std::abs((startConfig - *config2).normalized().dot((*config3 - startConfig).normalized()) - 1.0) > 0.000001)) {
 					cout << "error" << endl;
 			}
 		}

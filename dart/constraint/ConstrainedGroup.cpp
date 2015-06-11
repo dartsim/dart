@@ -36,6 +36,7 @@
 
 #include "dart/constraint/ConstrainedGroup.h"
 
+#include <iostream>
 #include <vector>
 
 #include "dart/common/Console.h"
