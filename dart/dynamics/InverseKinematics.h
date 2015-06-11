@@ -327,6 +327,23 @@ public:
 
   std::shared_ptr<const optimizer::Solver> getSolver() const;
 
+  /// Inverse kinematics can be performed on any point within the body frame.
+  /// The default point is the origin of the body frame. Use this function to
+  /// change the point that will be used. _offset must represent the offset from
+  /// the body origin of the desired point, expressed in coordinates of the body
+  /// frame.
+  void setOffset(const Eigen::Vector3d& _offset = Eigen::Vector3d::Zero());
+
+  /// Get the offset from the origin of the body frame that will be used when
+  /// performing inverse kinematics. The offset will be expressed in the
+  /// coordinates of the body frame.
+  const Eigen::Vector3d& getOffset() const;
+
+  /// This returns false if the offset for the inverse kinematics is a zero
+  /// vector. Otherwise, it returns true. Use setOffset() to set the offset and
+  /// getOffset() to get the offset.
+  bool hasOffset() const;
+
   void setTarget(std::shared_ptr<SimpleFrame> _newTarget);
 
   std::shared_ptr<SimpleFrame> getTarget();
@@ -391,45 +408,18 @@ protected:
   /// The solver that this IK module will use for iterative methods
   std::shared_ptr<optimizer::Solver> mSolver;
 
+  Eigen::Vector3d mOffset;
+
+  bool mHasOffset;
 
   std::shared_ptr<SimpleFrame> mTarget;
 
-
   sub_ptr<JacobianEntity> mEntity;
-
 
   mutable math::Jacobian mJacobian;
 };
 
-//==============================================================================
-template <class IKErrorMethod>
-IKErrorMethod* InverseKinematics::setErrorMethod()
-{
-  IKErrorMethod* newMethod = new IKErrorMethod(this);
-  mErrorMethod = std::move(std::unique_ptr<IKErrorMethod>(newMethod));
-  return newMethod;
-}
-
-//==============================================================================
-template <class IKGradientMethod>
-IKGradientMethod* InverseKinematics::setGradientMethod()
-{
-  IKGradientMethod* newMethod = new IKGradientMethod(this);
-  mGradientMethod = std::move(std::unique_ptr<IKGradientMethod>(newMethod));
-  return newMethod;
-}
-
-//==============================================================================
-template <class DegreeOfFreedomT>
-void InverseKinematics::useDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
-{
-  std::vector<size_t> indices;
-  indices.reserve(_dofs.size());
-  for(const DegreeOfFreedomT* dof : _dofs)
-    indices.push_back(dof->getIndexInSkeleton());
-
-  useDofs(indices);
-}
+#include "dart/dynamics/detail/InverseKinematics.h"
 
 } // namespace dynamics
 } // namespace dart

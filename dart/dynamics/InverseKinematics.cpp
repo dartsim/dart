@@ -44,7 +44,10 @@ namespace dynamics {
 InverseKinematics::InverseKinematics(JacobianEntity* _entity)
   : mActive(false),
     mHierarchyLevel(0),
+    mOffset(Eigen::Vector3d::Zero()),
+    mHasOffset(false),
     mEntity(_entity)
+
 {
   initialize();
 }
@@ -291,6 +294,9 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   // frame of the target
 
   Eigen::Vector3d p_error = actualTf.translation() - targetTf.translation();
+  if(mIK->hasOffset())
+    p_error += actualTf.linear()*mIK->getOffset();
+
   Eigen::Matrix3d R_error = actualTf.linear() * targetTf.linear().transpose();
 
   Eigen::Vector6d displacement;
@@ -756,6 +762,30 @@ const std::shared_ptr<optimizer::Solver>& InverseKinematics::getSolver()
 }
 
 //==============================================================================
+void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
+{
+  if(Eigen::Vector3d::Zero() == _offset)
+    mHasOffset = false;
+  else
+    mHasOffset = true;
+
+  clearCaches();
+  mOffset = _offset;
+}
+
+//==============================================================================
+const Eigen::Vector3d& InverseKinematics::getOffset() const
+{
+  return mOffset;
+}
+
+//==============================================================================
+bool InverseKinematics::hasOffset() const
+{
+  return mHasOffset;
+}
+
+//==============================================================================
 std::shared_ptr<const optimizer::Solver> InverseKinematics::getSolver() const
 {
   return mSolver;
@@ -802,8 +832,12 @@ const JacobianEntity* InverseKinematics::getEntity() const
 //==============================================================================
 const math::Jacobian& InverseKinematics::computeJacobian() const
 {
-  const math::Jacobian& fullJacobian =
-      this->getEntity()->getWorldJacobian();
+  // TODO(MXG): Test whether we can safely use a const reference here instead of
+  // just a regular const
+  const math::Jacobian fullJacobian = hasOffset()?
+        getEntity()->getWorldJacobian(mOffset) :
+        this->getEntity()->getWorldJacobian();
+
   mJacobian.resize(6, this->getDofs().size());
 
   for(int i=0; i< static_cast<int>(this->getDofMap().size()); ++i)
