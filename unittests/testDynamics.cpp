@@ -1638,7 +1638,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
           joint->setPosition(l, random(lbRP, ubRP));
         }
       }
-//      skel->computeForwardKinematics();
 //      skel->setPositions(VectorXd::Zero(dof));
 
       // TODO(JS): Just clear what should be
@@ -1801,7 +1800,6 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Initialize the skeleton with the zero initial states
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  skel->computeForwardKinematics(true, true, true);
   EXPECT_TRUE(equals(skel->getPositions(), q0));
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
@@ -1843,7 +1841,6 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Restore the skeleton to the initial state
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  skel->computeForwardKinematics(true, true, true);
   EXPECT_TRUE(equals(skel->getPositions(), q0));
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 

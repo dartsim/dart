@@ -412,15 +412,6 @@ public:
   Eigen::VectorXd getState() const;
 
   //----------------------------------------------------------------------------
-  // Kinematics algorithms
-  //----------------------------------------------------------------------------
-
-  /// Compute forward kinematics
-  void computeForwardKinematics(bool _updateTransforms = true,
-                                bool _updateVels = true,
-                                bool _updateAccs = true);
-
-  //----------------------------------------------------------------------------
   // Dynamics algorithms
   //----------------------------------------------------------------------------
 

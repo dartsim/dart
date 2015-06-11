@@ -316,7 +316,6 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
       softSkel->setState(x);
-      softSkel->computeForwardKinematics(true, true, false);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices

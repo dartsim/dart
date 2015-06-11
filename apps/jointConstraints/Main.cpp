@@ -68,7 +68,6 @@ int main(int argc, char* argv[])
   Eigen::VectorXd initConfig(9);
   initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   myWorld->getSkeleton(1)->setPositions(genCoordIds, initConfig);
-  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
   // create controller
   Controller* myController = new Controller(myWorld->getSkeleton(1),

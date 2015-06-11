@@ -859,40 +859,6 @@ Eigen::VectorXd Skeleton::getVelocityDifferences(
 }
 
 //==============================================================================
-void Skeleton::computeForwardKinematics(bool _updateTransforms,
-                                        bool _updateVels,
-                                        bool _updateAccs)
-{
-  if (_updateTransforms)
-  {
-    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
-         it != mSkelCache.mBodyNodes.end(); ++it)
-    {
-      (*it)->updateTransform();
-    }
-  }
-
-  if (_updateVels)
-  {
-    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
-         it != mSkelCache.mBodyNodes.end(); ++it)
-    {
-      (*it)->updateVelocity();
-      (*it)->updatePartialAcceleration();
-    }
-  }
-
-  if (_updateAccs)
-  {
-    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
-         it != mSkelCache.mBodyNodes.end(); ++it)
-    {
-      (*it)->updateAccelerationID();
-    }
-  }
-}
-
-//==============================================================================
 static bool isValidBodyNode(const Skeleton* _skeleton,
                             const BodyNode* _bodyNode,
                             const std::string& _fname)

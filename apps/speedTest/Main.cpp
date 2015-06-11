@@ -130,7 +130,6 @@ double testDynamicsSpeed(dart::simulation::WorldPtr world,
     skel->resetPositions();
     skel->resetVelocities();
     skel->resetAccelerations();
-    skel->computeForwardKinematics();
   }
 
   std::chrono::time_point<std::chrono::system_clock> start, end;

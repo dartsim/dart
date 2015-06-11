@@ -66,7 +66,6 @@ int main(int argc, char* argv[])
   initPose[26] = 3.14159 * 0.4;
   initPose[29] = 3.14159 * 0.4;
   myWorld->getSkeleton(0)->setPositions(initPose);
-  myWorld->getSkeleton(0)->computeForwardKinematics(true, true, false);
 
   // create a ball joint constraint
   BodyNode* bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");

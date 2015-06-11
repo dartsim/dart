@@ -578,8 +578,6 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     Eigen::Isometry3d actual_balljoint_tf = BallJoint::convertToTransform(
           balljoint->getPositions());
 
-    skel->computeForwardKinematics(true, false, false);
-
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;

@@ -62,7 +62,6 @@ int main(int argc, char* argv[])
   Eigen::VectorXd initConfig(8);
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
   skel->setPositions(genCoordIds, initConfig);
-  skel->computeForwardKinematics(true, true, false);
 
   dart::dynamics::Joint* joint0 = skel->getJoint(0);
   joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
