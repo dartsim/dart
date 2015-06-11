@@ -44,7 +44,7 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Ptr.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {

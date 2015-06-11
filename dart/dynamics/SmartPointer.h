@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -103,6 +102,11 @@ DART_DYNAMICS_MAKE_SHARED_WEAK(Shape)
 // BodyNode smart pointers
 class BodyNode;
 DART_DYNAMICS_MAKE_BODYNODEPTR(BodyNode)
+// These pointers will take the form of:
+// TemplateBodyNodePtr<BodyNode>            --> BodyNodePtr
+// TemplateBodyNodePtr<const BodyNode>      --> ConstBodyNodePtr
+// TemplateWeakBodyNodePtr<BodyNode>        --> WeakBodyNodePtr
+// TemplateWeakBodyNodePtr<const BodyNode>  --> WeakConstBodyNodePtr
 
 // SoftBodyNode smart pointers
 class SoftBodyNode;
@@ -119,10 +123,20 @@ DART_DYNAMICS_MAKE_BODYNODEPTR(SoftBodyNode)
 // Joint smart pointers
 class Joint;
 DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(Joint)
+// These pointers will take the form of:
+// TemplateJointPtr<Joint>            --> JointPtr
+// TemplateJointPtr<const Joint>      --> ConstJointPtr
+// TemplateWeakJointPtr<Joint>        --> WeakJointPtr
+// TemplateWeakJointPtr<const Joint>  --> WeakConstJointPtr
 
 // DegreeOfFreedom smart pointers
 class DegreeOfFreedom;
 DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(DegreeOfFreedom)
+// These pointers will take the form of:
+// TemplateDegreeOfFreedomPtr<DegreeOfFreedom>            --> DegreeOfFreedomPtr
+// TemplateDegreeOfFreedomPtr<const DegreeOfFreedom>      --> ConstDegreeOfFreedomPtr
+// TemplateWeakDegreeOfFreedomPtr<DegreeOfFreedom>        --> WeakDegreeOfFreedomPtr
+// TemplateWeakDegreeOfFreedomPtr<const DegreeOfFreedom>  --> WeakConstDegreeOfFreedomPtr
 
 } // namespace dynamics
 } // namespace dart

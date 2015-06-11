@@ -44,7 +44,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/math/MathTypes.h"
-#include "dart/dynamics/Ptr.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace renderer {

@@ -52,7 +52,7 @@
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
-#include "dart/dynamics/Ptr.h"
+#include "dart/dynamics/SmartPointer.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
