@@ -31,6 +31,3 @@ install(
 #install(TARGETS dart_lcpsolver EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_lcpsolver EXPORT DARTTargets DESTINATION lib)
 
-# Deprecated LCPSolver.h
-dt_issue_303("LCPSolver" "ODELCPSolver")
-
