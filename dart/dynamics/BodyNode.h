@@ -467,11 +467,7 @@ public:
       const typename JointType::Properties& _jointProperties =
           typename JointType::Properties(),
       const typename NodeType::Properties& _bodyProperties =
-          typename NodeType::Properties())
-  {
-    return getSkeleton()->createJointAndBodyNodePair<JointType, NodeType>(
-          this, _jointProperties, _bodyProperties);
-  }
+          typename NodeType::Properties());
 
   /// Return the number of child BodyNodes
   size_t getNumChildBodyNodes() const;
@@ -1482,84 +1478,7 @@ public:
   /// \}
 };
 
-//==============================================================================
-template <class JointType>
-JointType* BodyNode::moveTo(BodyNode* _newParent,
-    const typename JointType::Properties& _joint)
-{
-  if(nullptr == _newParent)
-    return getSkeleton()->moveBodyNodeTree<JointType>(
-          this, getSkeleton(), nullptr, _joint);
-  else
-    return getSkeleton()->moveBodyNodeTree<JointType>(
-          this, _newParent->getSkeleton(), _newParent, _joint);
-}
-
-//==============================================================================
-template <class JointType>
-JointType* BodyNode::moveTo(
-    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
-    const typename JointType::Properties& _joint)
-{
-  return getSkeleton()->moveBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint);
-}
-
-//==============================================================================
-template <class JointType>
-SkeletonPtr BodyNode::split(const std::string& _skeletonName,
-      const typename JointType::Properties& _joint)
-{
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
-  skel->setName(_skeletonName);
-  moveTo<JointType>(skel, nullptr, _joint);
-  return skel;
-}
-
-//==============================================================================
-template <class JointType>
-JointType* BodyNode::changeParentJointType(
-    const typename JointType::Properties& _joint)
-{
-  return moveTo<JointType>(getParentBodyNode(), _joint);
-}
-
-//==============================================================================
-template <class JointType>
-std::pair<JointType*, BodyNode*> BodyNode::copyTo(
-    BodyNode* _newParent,
-    const typename JointType::Properties& _joint,
-    bool _recursive)
-{
-  if(nullptr == _newParent)
-    return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, getSkeleton(), nullptr, _joint, _recursive);
-  else
-    return getSkeleton()->cloneBodyNodeTree<JointType>(
-          this, _newParent->getSkeleton(), _newParent, _joint, _recursive);
-}
-
-//==============================================================================
-template <class JointType>
-std::pair<JointType*, BodyNode*> BodyNode::copyTo(
-    const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
-    const typename JointType::Properties& _joint,
-    bool _recursive) const
-{
-  return getSkeleton()->cloneBodyNodeTree<JointType>(
-        this, _newSkeleton, _newParent, _joint, _recursive);
-}
-
-//==============================================================================
-template <class JointType>
-SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
-    const typename JointType::Properties& _joint, bool _recursive) const
-{
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
-  skel->setName(_skeletonName);
-  copyTo<JointType>(skel, nullptr, _joint, _recursive);
-  return skel;
-}
+#include "dart/dynamics/detail/BodyNode.h"
 
 }  // namespace dynamics
 }  // namespace dart

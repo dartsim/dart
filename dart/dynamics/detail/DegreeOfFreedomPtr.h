@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DEGREEOFFREEDOMPTR_IMPL_
-#define DART_DYNAMICS_DEGREEOFFREEDOMPTR_IMPL_
+#ifndef DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_
+#define DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_
 
-#include "dart/dynamics/BodyNodePtr.impl"
+#include "dart/dynamics/detail/BodyNodePtr.h"
 #include "dart/dynamics/InvalidIndex.h"
 
 namespace dart {
@@ -327,4 +327,4 @@ private:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DEGREEOFFREEDOMPTR_IMPL_
+#endif // DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_

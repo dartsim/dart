@@ -1138,53 +1138,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-//==============================================================================
-template <class JointType>
-JointType* Skeleton::moveBodyNodeTree(
-    BodyNode* _bodyNode,
-    const SkeletonPtr& _newSkeleton,
-    BodyNode* _parentNode,
-    const typename JointType::Properties& _joint)
-{
-  JointType* parentJoint = new JointType(_joint);
-
-  if(moveBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode))
-    return parentJoint;
-
-  // If the move failed, we should delete the Joint that we created and return
-  // a nullptr.
-  delete parentJoint;
-  return nullptr;
-}
-
-//==============================================================================
-template <class JointType>
-std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
-    const BodyNode* _bodyNode,
-    const SkeletonPtr& _newSkeleton,
-    BodyNode* _parentNode,
-    const typename JointType::Properties& _joint, bool _recursive) const
-{
-  JointType* parentJoint = new JointType(_joint);
-  std::pair<Joint*, BodyNode*> root =
-      cloneBodyNodeTree(parentJoint, _bodyNode, _newSkeleton, _parentNode,
-                        _recursive);
-  return std::pair<JointType*, BodyNode*>(parentJoint, root.second);
-}
-
-//==============================================================================
-template <class JointType, class NodeType>
-std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
-    BodyNode* _parent,
-    const typename JointType::Properties& _jointProperties,
-    const typename NodeType::Properties& _bodyProperties)
-{
-  JointType* joint = new JointType(_jointProperties);
-  NodeType* node = new NodeType(_parent, joint, _bodyProperties);
-  registerBodyNode(node);
-
-  return std::pair<JointType*, NodeType*>(joint, node);
-}
+#include "dart/dynamics/detail/Skeleton.h"
 
 }  // namespace dynamics
 }  // namespace dart
