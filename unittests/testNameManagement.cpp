@@ -291,9 +291,9 @@ TEST(NameManagement, WorldSimpleFrames)
   dart::dynamics::SimpleFramePtr frame2(
         new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
 
-  world1->addFrame(frame0);
-  world1->addFrame(frame1);
-  world1->addFrame(frame2);
+  world1->addSimpleFrame(frame0);
+  world1->addSimpleFrame(frame1);
+  world1->addSimpleFrame(frame2);
 
   EXPECT_TRUE(frame0->getName() == "Frame");
   EXPECT_TRUE(frame1->getName() == "Frame(1)");
@@ -309,18 +309,18 @@ TEST(NameManagement, WorldSimpleFrames)
   frame2->setName("OtherName");
   EXPECT_TRUE(frame2->getName() == "OtherName(1)");
 
-  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
-  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+  EXPECT_TRUE( frame0 == world1->getSimpleFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getSimpleFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getSimpleFrame(frame2->getName()) );
 
   dart::simulation::WorldPtr world2(new dart::simulation::World);
   world2->setName("world2");
 
   dart::dynamics::SimpleFramePtr frame3(
         new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
-  world2->addFrame(frame3);
-  world2->addFrame(frame2);
-  world2->addFrame(frame1);
+  world2->addSimpleFrame(frame3);
+  world2->addSimpleFrame(frame2);
+  world2->addSimpleFrame(frame1);
 
   EXPECT_TRUE(frame3->getName() == "OtherName");
   EXPECT_TRUE(frame1->getName() == "OtherName(2)");
@@ -332,15 +332,15 @@ TEST(NameManagement, WorldSimpleFrames)
   EXPECT_TRUE(frame3->getName() == "Frame(1)");
   EXPECT_TRUE(frame1->getName() == "Frame(1)(1)");
 
-  EXPECT_TRUE( frame0 == world1->getFrame(frame0->getName()) );
-  EXPECT_TRUE( frame1 == world1->getFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world1->getFrame(frame2->getName()) );
+  EXPECT_TRUE( frame0 == world1->getSimpleFrame(frame0->getName()) );
+  EXPECT_TRUE( frame1 == world1->getSimpleFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world1->getSimpleFrame(frame2->getName()) );
 
-  EXPECT_TRUE( frame3 == world2->getFrame(frame3->getName()) );
-  EXPECT_TRUE( frame1 == world2->getFrame(frame1->getName()) );
-  EXPECT_TRUE( frame2 == world2->getFrame(frame2->getName()) );
+  EXPECT_TRUE( frame3 == world2->getSimpleFrame(frame3->getName()) );
+  EXPECT_TRUE( frame1 == world2->getSimpleFrame(frame1->getName()) );
+  EXPECT_TRUE( frame2 == world2->getSimpleFrame(frame2->getName()) );
 
-  world2->removeFrame(frame1);
+  world2->removeSimpleFrame(frame1);
 
   frame1->setName("Frame");
   EXPECT_TRUE(frame1->getName() == "Frame(1)");

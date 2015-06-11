@@ -58,7 +58,7 @@ namespace simulation {
 World::World(const std::string& _name)
   : mName(_name),
     mNameMgrForSkeletons("World::Skeleton | " + _name, "skeleton"),
-    mNameMgrForFrames("World::SimpleFrame | " + _name, "frame"),
+    mNameMgrForSimpleFrames("World::SimpleFrame | " + _name, "frame"),
     mGravity(0.0, 0.0, -9.81),
     mTimeStep(0.001),
     mTime(0.0),
@@ -79,7 +79,7 @@ World::~World()
   for(common::Connection& connection : mNameConnectionsForSkeletons)
     connection.disconnect();
 
-  for(common::Connection& connection : mNameConnectionsForFrames)
+  for(common::Connection& connection : mNameConnectionsForSimpleFrames)
     connection.disconnect();
 }
 
@@ -98,24 +98,24 @@ WorldPtr World::clone() const
   }
 
   // Clone and add each SimpleFrame
-  for(size_t i=0; i<mFrames.size(); ++i)
+  for(size_t i=0; i<mSimpleFrames.size(); ++i)
   {
-    worldClone->addFrame(mFrames[i]->clone(mFrames[i]->getParentFrame()));
+    worldClone->addSimpleFrame(mSimpleFrames[i]->clone(mSimpleFrames[i]->getParentFrame()));
   }
 
   // For each newly cloned SimpleFrame, try to make its parent Frame be one of
   // the new clones if there is a match. This is meant to minimize any possible
   // interdependencies between the kinematics of different worlds.
-  for(size_t i=0; i<worldClone->getNumFrames(); ++i)
+  for(size_t i=0; i<worldClone->getNumSimpleFrames(); ++i)
   {
     dynamics::Frame* current_parent =
-        worldClone->getFrame(i)->getParentFrame();
+        worldClone->getSimpleFrame(i)->getParentFrame();
 
     dynamics::SimpleFramePtr parent_candidate =
-        worldClone->getFrame(current_parent->getName());
+        worldClone->getSimpleFrame(current_parent->getName());
 
     if(parent_candidate)
-      worldClone->getFrame(i)->setParentFrame(parent_candidate.get());
+      worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
   }
 
   return worldClone;
@@ -224,7 +224,7 @@ const std::string& World::setName(const std::string& _newName)
 
   mNameMgrForSkeletons.setManagerName(
         "World::Skeleton | " + mName);
-  mNameMgrForFrames.setManagerName(
+  mNameMgrForSimpleFrames.setManagerName(
         "World::SimpleFrame | " + mName);
 
   return mName;
@@ -393,28 +393,28 @@ int World::getIndex(int _index) const
 }
 
 //==============================================================================
-dynamics::SimpleFramePtr World::getFrame(size_t _index) const
+dynamics::SimpleFramePtr World::getSimpleFrame(size_t _index) const
 {
-  if(_index < mFrames.size())
-    return mFrames[_index];
+  if(_index < mSimpleFrames.size())
+    return mSimpleFrames[_index];
 
   return nullptr;
 }
 
 //==============================================================================
-dynamics::SimpleFramePtr World::getFrame(const std::string& _name) const
+dynamics::SimpleFramePtr World::getSimpleFrame(const std::string& _name) const
 {
-  return mNameMgrForFrames.getObject(_name);
+  return mNameMgrForSimpleFrames.getObject(_name);
 }
 
 //==============================================================================
-size_t World::getNumFrames() const
+size_t World::getNumSimpleFrames() const
 {
-  return mFrames.size();
+  return mSimpleFrames.size();
 }
 
 //==============================================================================
-std::string World::addFrame(dynamics::SimpleFramePtr _frame)
+std::string World::addSimpleFrame(dynamics::SimpleFramePtr _frame)
 {
   assert(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
@@ -424,68 +424,68 @@ std::string World::addFrame(dynamics::SimpleFramePtr _frame)
     return "";
   }
 
-  if( find(mFrames.begin(), mFrames.end(), _frame) != mFrames.end() )
+  if( find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame) != mSimpleFrames.end() )
   {
     dtwarn << "[World::addFrame] SimpleFrame named [" << _frame->getName()
            << "] is already in the world.\n";
     return _frame->getName();
   }
 
-  mFrames.push_back(_frame);
-  mFrameToShared[_frame.get()] = _frame;
+  mSimpleFrames.push_back(_frame);
+  mSimpleFrameToShared[_frame.get()] = _frame;
 
-  mNameConnectionsForFrames.push_back(_frame->onNameChanged.connect(
+  mNameConnectionsForSimpleFrames.push_back(_frame->onNameChanged.connect(
         [=](const dynamics::Entity* _entity,
             const std::string&, const std::string&)
-        { this->handleFrameNameChange(_entity); } ));
+        { this->handleSimpleFrameNameChange(_entity); } ));
 
-  _frame->setName(mNameMgrForFrames.issueNewNameAndAdd(
+  _frame->setName(mNameMgrForSimpleFrames.issueNewNameAndAdd(
                      _frame->getName(), _frame));
 
   return _frame->getName();
 }
 
 //==============================================================================
-void World::removeFrame(dynamics::SimpleFramePtr _frame)
+void World::removeSimpleFrame(dynamics::SimpleFramePtr _frame)
 {
   assert(_frame != nullptr && "Attempted to remove nullptr SimpleFrame from world");
 
   std::vector<dynamics::SimpleFramePtr>::iterator it =
-      find(mFrames.begin(), mFrames.end(), _frame);
+      find(mSimpleFrames.begin(), mSimpleFrames.end(), _frame);
 
-  if(it == mFrames.end())
+  if(it == mSimpleFrames.end())
   {
     dtwarn << "[World::removeFrame] Frame named [" << _frame->getName()
            << "] is not in the world.\n";
     return;
   }
 
-  size_t index = it - mFrames.begin();
+  size_t index = it - mSimpleFrames.begin();
 
   // Remove the frame
-  mFrames.erase(mFrames.begin()+index);
+  mSimpleFrames.erase(mSimpleFrames.begin()+index);
 
   // Disconnect the name change monitor
-  mNameConnectionsForFrames[index].disconnect();
-  mNameConnectionsForFrames.erase(mNameConnectionsForFrames.begin()+index);
+  mNameConnectionsForSimpleFrames[index].disconnect();
+  mNameConnectionsForSimpleFrames.erase(mNameConnectionsForSimpleFrames.begin()+index);
 
   // Remove from NameManager
-  mNameMgrForFrames.removeName(_frame->getName());
+  mNameMgrForSimpleFrames.removeName(_frame->getName());
 
   // Remove from the pointer map
-  mFrameToShared.erase(_frame.get());
+  mSimpleFrameToShared.erase(_frame.get());
 }
 
 //==============================================================================
-std::set<dynamics::SimpleFramePtr> World::removeAllFrames()
+std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 {
   std::set<dynamics::SimpleFramePtr> ptrs;
-  for(std::vector<dynamics::SimpleFramePtr>::iterator it=mFrames.begin(),
-      end=mFrames.end(); it != end; ++it)
+  for(std::vector<dynamics::SimpleFramePtr>::iterator it=mSimpleFrames.begin(),
+      end=mSimpleFrames.end(); it != end; ++it)
     ptrs.insert(*it);
 
-  while(getNumFrames() > 0)
-    removeFrame(getFrame(0));
+  while(getNumSimpleFrames() > 0)
+    removeSimpleFrame(getSimpleFrame(0));
 
   return ptrs;
 }
@@ -582,7 +582,7 @@ void World::handleSkeletonNameChange(
 }
 
 //==============================================================================
-void World::handleFrameNameChange(const dynamics::Entity* _entity)
+void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 {
   // Check that this is actually a SimpleFrame
   const dynamics::SimpleFrame* frame =
@@ -601,8 +601,8 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
 
   // Find the shared version of the Frame
   std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr>::iterator it
-      = mFrameToShared.find(frame);
-  if( it == mFrameToShared.end() )
+      = mSimpleFrameToShared.find(frame);
+  if( it == mSimpleFrameToShared.end() )
   {
     dterr << "[World::handleFrameNameChange] Could not find SimpleFrame named ["
           << frame->getName() << "] in the shared_ptr map of World ["
@@ -612,7 +612,7 @@ void World::handleFrameNameChange(const dynamics::Entity* _entity)
   }
   dynamics::SimpleFramePtr sharedFrame = it->second;
 
-  std::string issuedName = mNameMgrForFrames.changeObjectName(
+  std::string issuedName = mNameMgrForSimpleFrames.changeObjectName(
         sharedFrame, newName);
 
   if( (!issuedName.empty()) && (newName != issuedName) )

@@ -150,23 +150,23 @@ public:
   int getIndex(int _index) const;
 
   /// Get the indexed Entity
-  dynamics::SimpleFramePtr getFrame(size_t _index) const;
+  dynamics::SimpleFramePtr getSimpleFrame(size_t _index) const;
 
   /// Find an Entity by name
-  dynamics::SimpleFramePtr getFrame(const std::string& _name) const;
+  dynamics::SimpleFramePtr getSimpleFrame(const std::string& _name) const;
 
   /// Get the number of Entities
-  size_t getNumFrames() const;
+  size_t getNumSimpleFrames() const;
 
   /// Add an Entity to this world
-  std::string addFrame(dynamics::SimpleFramePtr _frame);
+  std::string addSimpleFrame(dynamics::SimpleFramePtr _frame);
 
   /// Remove a SimpleFrame from this world
-  void removeFrame(dynamics::SimpleFramePtr _frame);
+  void removeSimpleFrame(dynamics::SimpleFramePtr _frame);
 
   /// Remove all SimpleFrames in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
-  std::set<dynamics::SimpleFramePtr> removeAllFrames();
+  std::set<dynamics::SimpleFramePtr> removeAllSimpleFrames();
 
   //--------------------------------------------------------------------------
   // Kinematics
@@ -194,6 +194,9 @@ public:
   double getTime() const;
 
   /// Get the number of simulated frames
+  ///
+  /// TODO(MXG): I think the name of this function is much too similar to
+  /// getSimpleFrame()
   int getSimFrames() const;
 
   //--------------------------------------------------------------------------
@@ -215,7 +218,7 @@ protected:
   void handleSkeletonNameChange(dynamics::ConstMetaSkeletonPtr _skeleton);
 
   /// Register when a SimpleFrame's name is changed
-  void handleFrameNameChange(const dynamics::Entity* _entity);
+  void handleSimpleFrameNameChange(const dynamics::Entity* _entity);
 
   /// Name of this World
   std::string mName;
@@ -234,17 +237,17 @@ protected:
   dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
-  std::vector<dynamics::SimpleFramePtr> mFrames;
+  std::vector<dynamics::SimpleFramePtr> mSimpleFrames;
 
   /// Connections for noticing changes in Frame names
   /// TODO(MXG): Consider putting this functionality into NameManager
-  std::vector<common::Connection> mNameConnectionsForFrames;
+  std::vector<common::Connection> mNameConnectionsForSimpleFrames;
 
   /// Map from raw SimpleFrame pointers to their shared_ptrs
-  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mFrameToShared;
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mSimpleFrameToShared;
 
   /// NameManager for keeping track of Entities
-  dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForFrames;
+  dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///
