@@ -74,7 +74,7 @@ public:
     targets.push_back(
         std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "l_target",
                                   effectors.back()->getWorldTransform(), 0.3));
-    mWorld->addFrame(targets.back());
+    mWorld->addSimpleFrame(targets.back());
 
 
     effectors.push_back(mRobot->getBodyNode("r_hand"));
@@ -83,7 +83,7 @@ public:
     targets.push_back(
         std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "r_target",
                                   effectors.back()->getWorldTransform(), 0.3));
-    mWorld->addFrame(targets.back());
+    mWorld->addSimpleFrame(targets.back());
 
 
     effectors.push_back(mRobot->getBodyNode("l_foot"));

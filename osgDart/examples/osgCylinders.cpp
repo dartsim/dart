@@ -143,8 +143,8 @@ int main()
   shape4->setLocalTransform(tf.inverse());
   cyl4.addVisualizationShape(shape4);
 
-  myWorld->addFrame(cyl1);
-  myWorld->addFrame(F);
+  myWorld->addSimpleFrame(cyl1);
+  myWorld->addSimpleFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
   node->F = F;

@@ -207,8 +207,8 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
       mContacts.push_back(contactPair);
 
       // Set these two bodies are in colliding
-      contactPair.bodyNode1->setColliding(true);
-      contactPair.bodyNode2->setColliding(true);
+      contactPair.bodyNode1.lock()->setColliding(true);
+      contactPair.bodyNode2.lock()->setColliding(true);
     }
   }
 

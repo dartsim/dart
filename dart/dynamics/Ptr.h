@@ -38,9 +38,9 @@
 #ifndef DART_DYNAMICS_PTR_H_
 #define DART_DYNAMICS_PTR_H_
 
-#include "dart/dynamics/BodyNodePtr.impl"
-#include "dart/dynamics/JointPtr.impl"
-#include "dart/dynamics/DegreeOfFreedomPtr.impl"
+#include "dart/dynamics/detail/BodyNodePtr.h"
+#include "dart/dynamics/detail/JointPtr.h"
+#include "dart/dynamics/detail/DegreeOfFreedomPtr.h"
 
 // This file is a lightweight means of providing the smart pointers which are
 // commonly used within the dart::dynamics namespace. It is 'lightweight' in the

@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 
   // Note: Adding a Frame to the world will also cause all Entities that descend
   // from that Frame to be rendered.
-  myWorld->addFrame(F1);
+  myWorld->addSimpleFrame(F1);
 
   SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
   A->addVisualizationShape(std::shared_ptr<Shape>(
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
   A3.addVisualizationShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
 
-  myWorld->addFrame(A);
+  myWorld->addSimpleFrame(A);
 
   SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
   arrow->addVisualizationShape(
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
                          Eigen::Vector3d(0.1, 0.0, 0.0),
                          ArrowShape::Properties(0.002, 1.8),
                          Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
-  myWorld->addFrame(arrow);
+  myWorld->addSimpleFrame(arrow);
 
   // CAREFUL: For a Frame that gets added to the world to be
   // rendered correctly, it must be a child of the World Frame

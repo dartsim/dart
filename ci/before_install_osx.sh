@@ -5,6 +5,7 @@ brew install git
 # brew install cmake   # installed cmake-3.0.2
 brew install assimp
 brew install fcl
+brew install bullet
 brew install flann     # 1.8.14
 # brew install boost   # installed boost-1.55.2
 brew install eigen     # 3.2.2

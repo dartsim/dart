@@ -145,8 +145,8 @@ int main()
   shape4->setLocalTransform(tf.inverse());
   ellipsoid4.addVisualizationShape(shape4);
 
-  myWorld->addFrame(ellipsoid1);
-  myWorld->addFrame(F);
+  myWorld->addSimpleFrame(ellipsoid1);
+  myWorld->addSimpleFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
   node->F = F;

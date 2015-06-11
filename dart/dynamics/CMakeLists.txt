@@ -1,8 +1,9 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
+file(GLOB detail "detail/*.h")
 
-set(dart_dynamics_hdrs ${hdrs} PARENT_SCOPE)
+set(dart_dynamics_hdrs "${hdrs};${detail}" PARENT_SCOPE)
 set(dart_dynamics_srcs ${srcs} PARENT_SCOPE)
 
 # Library
@@ -33,6 +34,12 @@ install(
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
+
+install(
+  FILES ${detail}
+  DESTINATION include/dart/dynamics/detail
+  COMPONENT headers
+)
+
 #install(TARGETS dart_dynamics EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_dynamics EXPORT DARTTargets DESTINATION lib)
-

@@ -148,8 +148,8 @@ int main()
   shape4->setLocalTransform(tf.inverse());
   box4.addVisualizationShape(shape4);
 
-  myWorld->addFrame(box1);
-  myWorld->addFrame(F);
+  myWorld->addSimpleFrame(box1);
+  myWorld->addSimpleFrame(F);
 
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(myWorld);
   node->F = F;

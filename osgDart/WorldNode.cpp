@@ -225,8 +225,8 @@ void WorldNode::refreshCustomFrames()
   if(!mWorld)
     return;
 
-  for(size_t i=0, end=mWorld->getNumFrames(); i<end; ++i)
-    refreshBaseFrameNode(mWorld->getFrame(i).get());
+  for(size_t i=0, end=mWorld->getNumSimpleFrames(); i<end; ++i)
+    refreshBaseFrameNode(mWorld->getSimpleFrame(i).get());
 }
 
 //==============================================================================

@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JOINTPTR_IMPL_
-#define DART_DYNAMICS_JOINTPTR_IMPL_
+#ifndef DART_DYNAMICS_DETAIL_JOINTPTR_H_
+#define DART_DYNAMICS_DETAIL_JOINTPTR_H_
 
-#include "dart/dynamics/BodyNodePtr.impl"
+#include "dart/dynamics/detail/BodyNodePtr.h"
 
 namespace dart {
 namespace dynamics {
@@ -268,4 +268,4 @@ private:
 } // namespace dart
 } // namespace dynamics
 
-#endif // DART_DYNAMICS_JOINTPTR_IMPL_
+#endif // DART_DYNAMICS_DETAIL_JOINTPTR_H_

@@ -79,7 +79,7 @@ public:
     ShapePtr ball(new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
     ball->setColor(Eigen::Vector3d(0.9,0,0));
     mTarget->addVisualizationShape(ball);
-    mWorld->addFrame(mTarget);
+    mWorld->addSimpleFrame(mTarget);
 
     mOffset = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
   }

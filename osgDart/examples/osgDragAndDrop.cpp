@@ -49,13 +49,13 @@ int main()
   tf.translation() = Eigen::Vector3d(4,-4,0);
   osgDart::InteractiveFramePtr frame(new osgDart::InteractiveFrame(
           Frame::World(), "interactive frame", tf, 2.0));
-  world->addFrame(frame);
+  world->addSimpleFrame(frame);
 
   tf.translation() = Eigen::Vector3d(-4,4,0);
   SimpleFramePtr draggable(new SimpleFrame(frame.get(), "draggable", tf));
   draggable->addVisualizationShape(
         std::make_shared<BoxShape>(Eigen::Vector3d(1,1,1)));
-  world->addFrame(draggable);
+  world->addSimpleFrame(draggable);
 
   tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
   SimpleFramePtr x_marker(new SimpleFrame(Frame::World(), "X", tf));
@@ -63,7 +63,7 @@ int main()
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   x_shape->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
   x_marker->addVisualizationShape(x_shape);
-  world->addFrame(x_marker);
+  world->addSimpleFrame(x_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 8.0, 0.0);
   SimpleFramePtr y_marker(new SimpleFrame(Frame::World(), "Y", tf));
@@ -71,7 +71,7 @@ int main()
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   y_shape->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
   y_marker->addVisualizationShape(y_shape);
-  world->addFrame(y_marker);
+  world->addSimpleFrame(y_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 8.0);
   SimpleFramePtr z_marker(new SimpleFrame(Frame::World(), "Z", tf));
@@ -79,7 +79,7 @@ int main()
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   z_shape->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
   z_marker->addVisualizationShape(z_shape);
-  world->addFrame(z_marker);
+  world->addSimpleFrame(z_marker);
 
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
