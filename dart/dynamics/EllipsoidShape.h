@@ -38,7 +38,6 @@
 #ifndef DART_DYNAMICS_ELLIPSOIDSHAPE_H_
 #define DART_DYNAMICS_ELLIPSOIDSHAPE_H_
 
-#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -51,11 +50,6 @@ public:
 
   /// \brief Destructor.
   virtual ~EllipsoidShape();
-
-  /// \brief Set size of this box.
-  /// \warning Don't use me any more
-  DEPRECATED(4.0)
-  void setDim(const Eigen::Vector3d& _size);
 
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);

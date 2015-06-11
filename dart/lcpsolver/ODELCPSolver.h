@@ -38,7 +38,6 @@
 #define DART_LCPSOLVER_ODELCPSOLVER_H_
 
 #include <Eigen/Dense>
-#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace lcpsolver {
@@ -81,9 +80,6 @@ private:
                        const Eigen::VectorXd& _b,
                        const Eigen::VectorXd& _x);
 };
-
-DEPRECATED(4.3)
-typedef ODELCPSolver LCPSolver;
 
 }  // namespace lcpsolver
 }  // namespace dart

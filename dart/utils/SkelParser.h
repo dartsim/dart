@@ -45,7 +45,6 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"

@@ -95,18 +95,6 @@ const Eigen::Vector3d& PlaneShape::getNormal() const
 }
 
 //==============================================================================
-void PlaneShape::setPoint(const Eigen::Vector3d& _point)
-{
-  mOffset = mNormal.dot(_point);
-}
-
-//==============================================================================
-Eigen::Vector3d PlaneShape::getPoint() const
-{
-  return mNormal * mOffset;
-}
-
-//==============================================================================
 void PlaneShape::setOffset(double _offset)
 {
   mOffset = _offset;

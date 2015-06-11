@@ -70,27 +70,6 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
-    const collision::Contact& _contact)
-  : ConstraintBase(),
-    mBodyNode1(_contact.bodyNode1.lock()),
-    mBodyNode2(_contact.bodyNode2.lock()),
-    mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
-    mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
-    mPointMass1(NULL),
-    mPointMass2(NULL),
-    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    mIsFrictionOn(true),
-    mAppliedImpulseIndex(-1),
-    mIsBounceOn(false),
-    mActive(false)
-{
-  dterr << "This constructor is deprecated. Please don't use me anymore."
-        << std::endl;
-}
-
-//==============================================================================
-SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),

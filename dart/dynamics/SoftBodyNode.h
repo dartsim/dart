@@ -125,7 +125,7 @@ public:
 
   /// Remove any unwarranted SoftBodyShapes
   /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
-  /// are implemented
+  /// are implemented. Please see #394.
   void removeSoftBodyShapes();
 
 

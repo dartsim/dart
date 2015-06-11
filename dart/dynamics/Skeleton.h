@@ -38,7 +38,6 @@
 #ifndef DART_DYNAMICS_SKELETON_H_
 #define DART_DYNAMICS_SKELETON_H_
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/Ptr.h"
@@ -188,10 +187,6 @@ public:
     const typename NodeType::Properties& _bodyProperties =
                                               typename NodeType::Properties());
 
-  /// Add a body node
-  DEPRECATED(4.5)
-  void addBodyNode(BodyNode* _body);
-
   // Documentation inherited
   size_t getNumBodyNodes() const override;
 
@@ -308,77 +303,6 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Deprecated
-  //----------------------------------------------------------------------------
-
-  /// Initialize this skeleton for kinematics and dynamics
-  DEPRECATED(4.5)
-  void init(double _timeStep = 0.001,
-            const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81));
-
-  /// Set the configuration of this skeleton described in generalized
-  /// coordinates. The order of input configuration is determined by _id.
-  ///
-  /// DEPRECATED: Use setPositionSegment(const std::vector<size_t>&,
-  /// const Eigen::VectorXd&) instead
-  DEPRECATED(4.5)
-  void setPositionSegment(const std::vector<size_t>& _indices,
-                          const Eigen::VectorXd& _positions);
-
-  /// Get the configuration of this skeleton described in generalized
-  /// coordinates. The returned order of configuration is determined by _id.
-  ///
-  /// DEPRECATED: Use getPositions(const std::vector<size_t>&) instead
-  DEPRECATED(4.5)
-  Eigen::VectorXd getPositionSegment(const std::vector<size_t>& _indices) const;
-
-  /// Set the generalized velocities of a segment of this Skeleton. The order of
-  /// input is determined by _id
-  ///
-  /// DEPRECATED: Use setVelocities(const std::vector<size_t>&,
-  /// const Eigen::VectorXd&) instead
-  DEPRECATED(4.5)
-  void setVelocitySegment(const std::vector<size_t>& _indices,
-                          const Eigen::VectorXd& _velocities);
-
-  /// Get the generalized velocities of a segment of this Skeleton. The returned
-  /// order of the velocities is determined by _id.
-  ///
-  /// DEPRECATED: use getVelocities(const std::vector<size_t>&) instead
-  DEPRECATED(4.5)
-  Eigen::VectorXd getVelocitySegment(const std::vector<size_t>& _id) const;
-
-  /// Set the generalized accelerations of a segment of this Skeleton. The order
-  /// of input is determined by _id
-  ///
-  /// DEPRECATED: Use setAccelerations(const std::vector<size_t>&,
-  /// const Eigen::VectorXd&) instead
-  DEPRECATED(4.5)
-  void setAccelerationSegment(const std::vector<size_t>& _id,
-                              const Eigen::VectorXd& _accelerations);
-
-  /// Get the generalized accelerations of a segment of this Skeleton. The
-  /// returned order of the accelerations is determined by _id
-  ///
-  /// DEPRECATED: Use getAccelerations(const std::vector<size_t>&) instead
-  DEPRECATED(4.5)
-  Eigen::VectorXd getAccelerationSegment(const std::vector<size_t>& _indices) const;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  // Constraint impulse
-  //----------------------------------------------------------------------------
-
-  ///
-  DEPRECATED(4.2)
-  void setConstraintImpulses(const Eigen::VectorXd& _impulses);
-
-  ///
-  DEPRECATED(4.2)
-  Eigen::VectorXd getConstraintImpulses() const;
-
-  //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
@@ -420,7 +344,8 @@ public:
 
   /// Compute inverse dynamics
   void computeInverseDynamics(bool _withExternalForces = false,
-                              bool _withDampingForces = false);
+                              bool _withDampingForces = false,
+                              bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
   // Impulse-based dynamics algorithms
@@ -429,10 +354,6 @@ public:
   /// Clear constraint impulses: (a) spatial constraints on BodyNode and
   /// (b) generalized constraints on Joint
   void clearConstraintImpulses();
-
-  /// Set constraint force vector.
-  DEPRECATED(4.2)
-  void setConstraintForceVector(const Eigen::VectorXd& _Fc);
 
   /// Update bias impulses
   void updateBiasImpulse(BodyNode* _bodyNode);
@@ -601,21 +522,11 @@ public:
   // Documentation inherited
   const Eigen::MatrixXd& getInvAugMassMatrix() const override;
 
-  /// Get Coriolis force vector of the skeleton.
-  /// \remarks Please use getCoriolisForces() instead.
-  DEPRECATED(4.2)
-  const Eigen::VectorXd& getCoriolisForceVector() const;
-
   /// Get the Coriolis force vector of a tree in this Skeleton
   const Eigen::VectorXd& getCoriolisForces(size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getCoriolisForces() const override;
-
-  /// Get gravity force vector of the skeleton.
-  /// \remarks Please use getGravityForces() instead.
-  DEPRECATED(4.2)
-  const Eigen::VectorXd& getGravityForceVector() const;
 
   /// Get the gravity forces for a tree in this Skeleton
   const Eigen::VectorXd& getGravityForces(size_t _treeIdx) const;
@@ -623,21 +534,11 @@ public:
   // Documentation inherited
   const Eigen::VectorXd& getGravityForces() const override;
 
-  /// Get combined vector of Coriolis force and gravity force of the skeleton.
-  /// \remarks Please use getCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2)
-  const Eigen::VectorXd& getCombinedVector() const;
-
   /// Get the combined vector of Coriolis force and gravity force of a tree
   const Eigen::VectorXd& getCoriolisAndGravityForces(size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
-
-  /// Get external force vector of the skeleton.
-  /// \remarks Please use getExternalForces() instead.
-  DEPRECATED(4.2)
-  const Eigen::VectorXd& getExternalForceVector() const;
 
   /// Get the external force vector of a tree in the Skeleton
   const Eigen::VectorXd& getExternalForces(size_t _treeIdx) const;
@@ -647,11 +548,6 @@ public:
 
   /// Get damping force of the skeleton.
 //  const Eigen::VectorXd& getDampingForceVector();
-
-  /// Get constraint force vector.
-  /// \remarks Please use getConstraintForces() instead.
-  DEPRECATED(4.2)
-  const Eigen::VectorXd& getConstraintForceVector();
 
   /// Get constraint force vector for a tree
   const Eigen::VectorXd& getConstraintForces(size_t _treeIdx) const;
@@ -733,32 +629,6 @@ public:
   math::LinearJacobian getCOMLinearJacobianDeriv(
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
-  /// Get skeleton's COM w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOM() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOM();
-
-  /// Get skeleton's COM velocity w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOMLinearVelocity() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMVelocity();
-
-  /// Get skeleton's COM acceleration w.r.t. world frame.
-  ///
-  /// Deprecated in 4.4. Please use getCOMAcceleration() instead
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMAcceleration();
-
-  /// Get skeleton's COM Jacobian w.r.t. world frame.
-  DEPRECATED(4.4)
-  Eigen::MatrixXd getWorldCOMJacobian();
-
-  /// Get skeleton's COM Jacobian time derivative w.r.t. world frame.
-  DEPRECATED(4.4)
-  Eigen::MatrixXd getWorldCOMJacobianTimeDeriv();
-
   /// \}
 
   //----------------------------------------------------------------------------
@@ -774,27 +644,6 @@ public:
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
-
-public:
-  /// Compute recursion part A of forward dynamics
-  ///
-  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
-  DEPRECATED(4.4)
-  void computeForwardDynamicsRecursionPartA();
-
-  /// Compute recursion part B of forward dynamics
-  void computeForwardDynamicsRecursionPartB();
-
-  /// Compute recursion part A of inverse dynamics
-  ///
-  /// Deprecated as of 4.4. Auto-updating makes this function irrelevant
-  DEPRECATED(4.4)
-  void computeInverseDynamicsRecursionA();
-
-  /// Compute recursion part B of inverse dynamics
-  void computeInverseDynamicsRecursionB(bool _withExternalForces = false,
-                                        bool _withDampingForces = false,
-                                        bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -917,21 +766,11 @@ protected:
   /// Update inverse of augmented mass matrix of the skeleton.
   void updateInvAugMassMatrix() const;
 
-  /// Update Coriolis force vector of the skeleton.
-  /// \remarks Please use updateCoriolisForces() instead.
-  DEPRECATED(4.2)
-  virtual void updateCoriolisForceVector();
-
   /// Update Coriolis force vector for a tree in the Skeleton
   void updateCoriolisForces(size_t _treeIdx) const;
 
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces() const;
-
-  /// Update gravity force vector of the skeleton.
-  /// \remarks Please use updateGravityForces() instead.
-  DEPRECATED(4.2)
-  virtual void updateGravityForceVector();
 
   /// Update the gravity force vector of a tree
   void updateGravityForces(size_t _treeIdx) const;
@@ -939,21 +778,11 @@ protected:
   /// Update gravity force vector of the skeleton.
   void updateGravityForces() const;
 
-  /// Update combined vector of the skeleton.
-  /// \remarks Please use updateCoriolisAndGravityForces() instead.
-  DEPRECATED(4.2)
-  virtual void updateCombinedVector();
-
   /// Update the combined vector for a tree in this Skeleton
   void updateCoriolisAndGravityForces(size_t _treeIdx) const;
 
   /// Update combined vector of the skeleton.
   void updateCoriolisAndGravityForces() const;
-
-  /// update external force vector to generalized forces.
-  /// \remarks Please use updateExternalForces() instead.
-  DEPRECATED(4.2)
-  virtual void updateExternalForceVector();
 
   /// Update external force vector to generalized forces for a tree
   void updateExternalForces(size_t _treeIdx) const;

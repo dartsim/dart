@@ -39,7 +39,6 @@
 
 #include <cstddef>
 
-#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Ptr.h"
 
 namespace dart {
@@ -136,9 +135,6 @@ protected:
   /// Dimension of constraint
   size_t mDim;
 };
-
-DEPRECATED(4.3)
-typedef ConstraintBase Constraint;
 
 } // namespace constraint
 } // namespace dart

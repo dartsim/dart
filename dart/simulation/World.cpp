@@ -159,7 +159,7 @@ void World::step(bool _resetCommand)
     if (!skel->isMobile())
       continue;
 
-    skel->computeForwardDynamicsRecursionPartB();
+    skel->computeForwardDynamics();
     skel->integrateVelocities(mTimeStep);
   }
 

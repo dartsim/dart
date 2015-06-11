@@ -39,7 +39,6 @@
 
 #include "dart/constraint/ConstraintBase.h"
 
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -62,10 +61,6 @@ namespace constraint {
 class SoftContactConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
-  DEPRECATED(4.2)
-  explicit SoftContactConstraint(const collision::Contact& _contact);
-
   /// Constructor
   SoftContactConstraint(collision::Contact& _contact, double _timeStep);
 

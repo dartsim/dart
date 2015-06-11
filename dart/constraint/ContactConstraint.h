@@ -39,7 +39,6 @@
 
 #include "dart/constraint/ConstraintBase.h"
 
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -56,13 +55,6 @@ namespace constraint {
 class ContactConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
-  ///
-  /// Do not use me anymore. This constructor is not possible to store contact
-  /// force in _contact
-  DEPRECATED(4.2)
-  explicit ContactConstraint(const collision::Contact& _contact);
-
   /// Constructor
   ContactConstraint(collision::Contact& _contact, double _timeStep);
 

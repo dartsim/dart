@@ -53,7 +53,6 @@
 #include <Eigen/Dense>
 // Local Headers
 #include "dart/common/Console.h"
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -237,21 +236,6 @@ template<int N>
 Eigen::Matrix<double, N, 1> randomVector(double _limit)
 {
   return randomVector<N>(-fabs(_limit), fabs(_limit));
-}
-
-DEPRECATED(4.3)
-inline int castUIntToInt(size_t _x)
-{
-//  if (_x <= INT_MAX)
-//    return static_cast<int>(_x);
-
-//  if (_x >= INT_MIN)
-//    return static_cast<int>(_x - INT_MIN) + INT_MIN;
-
-//  dterr << "x is out of range." << std::endl;
-
-//  throw _x; // Or whatever else you like
-  return static_cast<int>(_x);
 }
 
 }  // namespace math

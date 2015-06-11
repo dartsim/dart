@@ -460,24 +460,6 @@ void PointMass::integrateVelocities(double _dt)
 }
 
 //==============================================================================
-void PointMass::updateVelocityWithVelocityChange()
-{
-  setVelocities( getVelocities() + mVelocityChanges );
-}
-
-//==============================================================================
-void PointMass::updateAccelerationWithVelocityChange(double _timeStep)
-{
-  setAccelerations( getAccelerations() + mVelocityChanges / _timeStep );
-}
-
-//==============================================================================
-void PointMass::updateForceWithImpulse(double _timeStep)
-{
-  mForces.noalias() += mConstraintImpulses / _timeStep;
-}
-
-//==============================================================================
 void PointMass::addExtForce(const Eigen::Vector3d& _force, bool _isForceLocal)
 {
   if (_isForceLocal)
@@ -715,12 +697,6 @@ void PointMass::updatePartialAcceleration() const
 }
 
 //==============================================================================
-void PointMass::updateAcceleration()
-{
-  updateAccelerationID();
-}
-
-//==============================================================================
 void PointMass::updateAccelerationID() const
 {
   // dv = dw(parent) x mX + dv(parent) + eata + ddq
@@ -728,13 +704,6 @@ void PointMass::updateAccelerationID() const
   mA = a_parent.head<3>().cross(getLocalPosition()) + a_parent.tail<3>()
        + getPartialAccelerations() + getAccelerations();
   assert(!math::isNan(mA));
-}
-
-//==============================================================================
-void PointMass::updateBodyForce(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces)
-{
-  updateTransmittedForceID(_gravity, _withExternalForces);
 }
 
 //==============================================================================
@@ -751,12 +720,6 @@ void PointMass::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                    * _gravity);
   }
   assert(!math::isNan(mF));
-}
-
-//==============================================================================
-void PointMass::updateArticulatedInertia(double _dt)
-{
-  updateArtInertiaFD(_dt);
 }
 
 //==============================================================================
@@ -782,12 +745,6 @@ void PointMass::updateArtInertiaFD(double _timeStep) const
   mImplicitPi = getMass() - getMass() * getMass() * mImplicitPsi;
   assert(!math::isNan(mPi));
   assert(!math::isNan(mImplicitPi));
-}
-
-//==============================================================================
-void PointMass::updateGeneralizedForce(bool /*_withDampingForces*/)
-{
-  updateJointForceID(false, false, false);
 }
 
 //==============================================================================
@@ -840,12 +797,6 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
 }
 
 //==============================================================================
-void PointMass::updateJointAndBodyAcceleration()
-{
-  updateAccelerationFD();
-}
-
-//==============================================================================
 void PointMass::updateAccelerationFD()
 {
   // ddq = imp_psi*(alpha - m*(dw(parent) x mX + dv(parent))
@@ -882,12 +833,6 @@ void PointMass::updateMassMatrix()
 }
 
 //==============================================================================
-void PointMass::updateBiasImpulse()
-{
-  updateBiasImpulseFD();
-}
-
-//==============================================================================
 void PointMass::updateBiasImpulseFD()
 {
   mImpB = -mConstraintImpulses;
@@ -900,12 +845,6 @@ void PointMass::updateBiasImpulseFD()
   // Cache data: beta
   mImpBeta.setZero();
   assert(!math::isNan(mImpBeta));
-}
-
-//==============================================================================
-void PointMass::updateJointVelocityChange()
-{
-  updateVelocityChangeFD();
 }
 
 //==============================================================================
@@ -934,20 +873,6 @@ void PointMass::updateVelocityChangeFD()
   assert(!math::isNan(mDelV));
 }
 
-//==============================================================================
-void PointMass::updateBodyVelocityChange()
-{
-  mDelV = mParentSoftBodyNode->getBodyVelocityChange().head<3>().cross(getLocalPosition())
-          + mParentSoftBodyNode->getBodyVelocityChange().tail<3>()
-          + mVelocityChanges;
-  assert(!math::isNan(mDelV));
-}
-
-//==============================================================================
-void PointMass::updateBodyImpForceFwdDyn()
-{
-  updateTransmittedImpulse();
-}
 
 //==============================================================================
 void PointMass::updateTransmittedImpulse()
@@ -955,30 +880,6 @@ void PointMass::updateTransmittedImpulse()
   mImpF = mImpB;
   mImpF.noalias() += getMass() * mDelV;
   assert(!math::isNan(mImpF));
-}
-
-//==============================================================================
-void PointMass::updateConstrainedJointAndBodyAcceleration(double _timeStep)
-{
-//  // 1. dq = dq + del_dq
-//  updateVelocityWithVelocityChange();
-
-//  // 2. ddq = ddq + del_dq / dt
-//  updateAccelerationWithVelocityChange(_timeStep);
-
-//  // 3. tau = tau + imp / dt
-//  updateForceWithImpulse(_timeStep);
-}
-
-//==============================================================================
-void PointMass::updateConstrainedTransmittedForce(double _timeStep)
-{
-  ///
-//  mA += mDelV / _timeStep;
-  setAccelerations( getAccelerations() + mDelV / _timeStep );
-
-  ///
-  mF += _timeStep * mImpF;
 }
 
 //==============================================================================

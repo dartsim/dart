@@ -65,19 +65,6 @@ double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double ContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
-ContactConstraint::ContactConstraint(const collision::Contact& _contact)
-  : ConstraintBase(),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    mIsFrictionOn(true),
-    mAppliedImpulseIndex(-1),
-    mIsBounceOn(false),
-    mActive(false)
-{
-  dterr << "This constructor is deprecated. Please don't use me anymore."
-        << std::endl;
-}
-
-//==============================================================================
 ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
   : ConstraintBase(),
