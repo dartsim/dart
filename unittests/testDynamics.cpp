@@ -700,6 +700,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   double ddqUB =  0.1 * DART_PI;
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1e-3;
+  double TOLERANCE = 5e-4;
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
@@ -746,27 +747,27 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
       VectorXd ddqFD1 = skeleton->getVelocityDifferences(dq1FD, dq0FD) / timeStep;
       VectorXd ddqFD2 = skeleton->getVelocityDifferences(dq2, dq1) / timeStep;
 
-      EXPECT_TRUE(equals(dq0, dq0FD));
-      EXPECT_TRUE(equals(dq1, dq1FD));
-      EXPECT_TRUE(equals(ddq0, ddqFD1));
-      EXPECT_TRUE(equals(ddq0, ddqFD2));
+      EXPECT_TRUE(equals(dq0, dq0FD, TOLERANCE));
+      EXPECT_TRUE(equals(dq1, dq1FD, TOLERANCE));
+      EXPECT_TRUE(equals(ddq0, ddqFD1, TOLERANCE));
+      EXPECT_TRUE(equals(ddq0, ddqFD2, TOLERANCE));
 
-      if (!equals(dq0FD, dq0))
+      if (!equals(dq0FD, dq0, TOLERANCE))
       {
         std::cout << "dq0  : " << dq0.transpose() << std::endl;
         std::cout << "dq0FD: " << dq0FD.transpose() << std::endl;
       }
-      if (!equals(dq1, dq1FD))
+      if (!equals(dq1, dq1FD, TOLERANCE))
       {
         std::cout << "dq1  : " << dq1.transpose() << std::endl;
         std::cout << "dq1FD: " << dq1FD.transpose() << std::endl;
       }
-      if (!equals(ddq0, ddqFD1))
+      if (!equals(ddq0, ddqFD1, TOLERANCE))
       {
         std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
         std::cout << "ddqFD1: " << ddqFD1.transpose() << std::endl;
       }
-      if (!equals(ddq0, ddqFD2))
+      if (!equals(ddq0, ddqFD2, TOLERANCE))
       {
         std::cout << "ddq0  : " << ddq0.transpose() << std::endl;
         std::cout << "ddqFD2: " << ddqFD2.transpose() << std::endl;
