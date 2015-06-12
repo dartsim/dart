@@ -789,7 +789,7 @@ size_t BodyNode::getNumDependentGenCoords() const
 //==============================================================================
 size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 {
-  assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
+  assert(_arrayIndex < mDependentGenCoordIndices.size());
 
   return mDependentGenCoordIndices[_arrayIndex];
 }

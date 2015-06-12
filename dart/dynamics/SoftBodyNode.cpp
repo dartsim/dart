@@ -409,8 +409,8 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 void SoftBodyNode::connectPointMasses(size_t _idx1, size_t _idx2)
 {
   assert(_idx1 != _idx2);
-  assert(0 <= _idx1 && _idx1 < mPointMasses.size());
-  assert(0 <= _idx2 && _idx2 < mPointMasses.size());
+  assert(_idx1 < mPointMasses.size());
+  assert(_idx2 < mPointMasses.size());
   mPointMasses[_idx1]->addConnectedPointMass(mPointMasses[_idx2]);
   mPointMasses[_idx2]->addConnectedPointMass(mPointMasses[_idx1]);
 }
@@ -424,7 +424,7 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 //==============================================================================
 const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 {
-  assert(0 <= _idx && _idx < mSoftP.mFaces.size());
+  assert(_idx < mSoftP.mFaces.size());
   return mSoftP.mFaces[_idx];
 }
 

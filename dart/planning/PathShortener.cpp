@@ -58,7 +58,7 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 		list<VectorXd> intermediatePoints;
 		if(localPlanner(intermediatePoints, node1Iter, node2Iter)) {
 			list<VectorXd>::iterator node1NextIter = node1Iter;
-			node1NextIter++;
+      ++node1NextIter;
 			path.erase(node1NextIter, node2Iter);
 			path.splice(node2Iter, intermediatePoints);
 		}

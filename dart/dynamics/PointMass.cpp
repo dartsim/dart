@@ -203,7 +203,7 @@ size_t PointMass::getNumConnectedPointMasses() const
 //==============================================================================
 PointMass* PointMass::getConnectedPointMass(size_t _idx)
 {
-  assert(0 <= _idx && _idx < getNumConnectedPointMasses());
+  assert(_idx < getNumConnectedPointMasses());
 
   return mParentSoftBodyNode->mPointMasses[
       mParentSoftBodyNode->mSoftP.mPointProps[mIndex].

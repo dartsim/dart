@@ -59,6 +59,9 @@ Timer::Timer(const std::string& _name)
   mTimer.start.QuadPart = 0;
   mTimer.stop.QuadPart = 0;
   QueryPerformanceFrequency(&mFrequency);
+#else
+  mStartedTime = 0.0;
+  mStoppedTime = 0.0;
 #endif
 }
 

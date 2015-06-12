@@ -268,7 +268,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial *mtl)
     float c[4];
 
     GLenum fill_mode;
-    int ret1, ret2;
+    int ret1;
     aiColor4D diffuse;
     aiColor4D specular;
     aiColor4D ambient;
@@ -302,7 +302,7 @@ void OpenGLRenderInterface::applyMaterial(const struct aiMaterial *mtl)
     ret1 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
     if(ret1 == AI_SUCCESS) {
         max = 1;
-        ret2 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
+        const int ret2 = aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &strength, &max);
         if(ret2 == AI_SUCCESS)
             glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess * strength);
         else

@@ -48,7 +48,7 @@ class PathSegment
 {
 public:
 	PathSegment(double length = 0.0) :
-		length(length)
+    position(0.0), length(length)
 	{
 	}
 	

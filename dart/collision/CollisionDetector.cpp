@@ -259,7 +259,7 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
 }
 
 //==============================================================================
-bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr _skeleton)
+bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   for (std::vector<dynamics::SkeletonPtr>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -316,8 +316,9 @@ void CollisionDetector::setPairCollidable(const CollisionNode* _node1,
   mCollidablePairs[index1][index2] = _val;
 }
 
-bool CollisionDetector::isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
-                                         const dynamics::BodyNode* _bodyNode2)
+bool CollisionDetector::isAdjacentBodies(
+    const dynamics::BodyNode* _bodyNode1,
+    const dynamics::BodyNode* _bodyNode2) const
 {
   if ((_bodyNode1->getParentBodyNode() == _bodyNode2)
       || (_bodyNode2->getParentBodyNode() == _bodyNode1))

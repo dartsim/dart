@@ -139,8 +139,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 //==============================================================================
 void Controller::changeStateMachine(size_t _idx, double _currentTime)
 {
-  assert(0 <= _idx && _idx <= mStateMachines.size()
-         && "Invalid index of StateMachine.");
+  assert(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
   changeStateMachine(mStateMachines[_idx], _currentTime);
 }
@@ -827,9 +826,9 @@ BodyNode* Controller::_getRightFoot() const
 }
 
 //==============================================================================
-bool Controller::_containStateMachine(StateMachine* _stateMachine)
+bool Controller::_containStateMachine(const StateMachine* _stateMachine) const
 {
-  for (vector<StateMachine*>::iterator it = mStateMachines.begin();
+  for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end(); ++it)
   {
     if (*it == _stateMachine)
@@ -840,17 +839,17 @@ bool Controller::_containStateMachine(StateMachine* _stateMachine)
 }
 
 //==============================================================================
-bool Controller::_containStateMachine(const string& _name)
+bool Controller::_containStateMachine(const string& _name) const
 {
   return _containStateMachine(_findStateMachine(_name));
 }
 
 //==============================================================================
-StateMachine* Controller::_findStateMachine(const string& _name)
+StateMachine* Controller::_findStateMachine(const string& _name) const
 {
   StateMachine* stateMachine = NULL;
 
-  for (vector<StateMachine*>::iterator it = mStateMachines.begin();
+  for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end(); ++it)
   {
     if ((*it)->getName() == _name)

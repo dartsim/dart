@@ -1149,7 +1149,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 }
 
 //==============================================================================
-void compareCOMJacobianToFk(const SkeletonPtr skel,
+void compareCOMJacobianToFk(const SkeletonPtr& skel,
                             const Frame* refFrame,
                             double tolerance)
 {

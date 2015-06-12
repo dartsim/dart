@@ -273,17 +273,16 @@ Eigen::Isometry3d State::getCOMFrame() const
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
   // Y-axis
-  Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
 
   // X-axis
-  Eigen::Vector3d xAxis = mPelvis->getTransform().linear().col(0);
   Eigen::Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
-  double mag = yAxis.dot(pelvisXAxis);
+  const double mag = yAxis.dot(pelvisXAxis);
   pelvisXAxis -= mag * yAxis;
-  xAxis = pelvisXAxis.normalized();
+  const Eigen::Vector3d xAxis = pelvisXAxis.normalized();
 
   // Z-axis
-  Eigen::Vector3d zAxis = xAxis.cross(yAxis);
+  const Eigen::Vector3d zAxis = xAxis.cross(yAxis);
 
   T.translation() = getCOM();
 

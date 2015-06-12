@@ -447,6 +447,7 @@ DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
                                  size_t _indexInJoint)
   : mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
+    mIndexInTree(0),
     mJoint(_joint)
 {
   // Do nothing

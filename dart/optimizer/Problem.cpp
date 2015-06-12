@@ -49,7 +49,9 @@ namespace optimizer {
 
 //==============================================================================
 Problem::Problem(size_t _dim)
-  : mDimension(_dim)
+  : mDimension(_dim),
+    mObjective(nullptr),
+    mOptimumValue(0.0)
 {
   mInitialGuess = Eigen::VectorXd::Zero(mDimension);
   mLowerBounds = Eigen::VectorXd::Constant(mDimension, -HUGE_VAL);
@@ -136,13 +138,13 @@ void Problem::addIneqConstraint(Function* _ineqConst)
 }
 
 //==============================================================================
-size_t Problem::getNumEqConstraints()
+size_t Problem::getNumEqConstraints() const
 {
   return mEqConstraints.size();
 }
 
 //==============================================================================
-size_t Problem::getNumIneqConstraints()
+size_t Problem::getNumIneqConstraints() const
 {
   return mIneqConstraints.size();
 }

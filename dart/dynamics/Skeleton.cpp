@@ -634,7 +634,6 @@ void Skeleton::setState(const Eigen::VectorXd& _state)
   assert(_state.size() % 2 == 0);
 
   size_t index = 0;
-  size_t dof = 0;
   size_t halfSize = _state.size() / 2;
   Joint* joint;
 
@@ -642,7 +641,7 @@ void Skeleton::setState(const Eigen::VectorXd& _state)
   {
     joint = mSkelCache.mBodyNodes[i]->getParentJoint();
 
-    dof = joint->getNumDofs();
+    const size_t dof = joint->getNumDofs();
 
     if (dof)
     {

@@ -179,7 +179,7 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 //==============================================================================
 void WeldJointConstraint::applyUnitImpulse(size_t _index)
 {
-  assert(0 <= _index && _index < mDim && "Invalid Index.");
+  assert(_index < mDim && "Invalid Index.");
   assert(isActive());
 
   if (mBodyNode2)

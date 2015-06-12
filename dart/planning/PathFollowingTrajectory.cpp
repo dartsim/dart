@@ -100,11 +100,11 @@ PathFollowingTrajectory::PathFollowingTrajectory(const Path &path, const VectorX
     list<TrajectoryStep>::iterator previous = trajectory.begin();
     list<TrajectoryStep>::iterator it = previous;
 	it->time = 0.0;
-	it++;
+  ++it;
 	while(it != trajectory.end()) {
 		it->time = previous->time + (it->pathPos - previous->pathPos) / ((it->pathVel + previous->pathVel) / 2.0);
 		previous = it;
-		it++;
+    ++it;
 	}
 
 	// debug
@@ -248,8 +248,8 @@ bool PathFollowingTrajectory::integrateForward(list<TrajectoryStep> &trajectory,
       // int test = 48;
 		}
 
-        while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
-			nextDiscontinuity++;
+    while(nextDiscontinuity != switchingPoints.end() && (nextDiscontinuity->first <= pathPos || !nextDiscontinuity->second)) {
+      ++nextDiscontinuity;
 		}
 
 		double oldPathPos = pathPos;
@@ -355,7 +355,7 @@ void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory
 		}
 
 		while(before != startTrajectory.rend() && before->pathPos > pathPos) {
-			before++;
+      ++before;
 		}
 
 		bool error = false;
@@ -411,10 +411,10 @@ void PathFollowingTrajectory::integrateBackward(list<TrajectoryStep> &trajectory
 
 		if(error) {
 			ofstream file("trajectory.txt");
-			for(list<TrajectoryStep>::iterator it = startTrajectory.begin(); it != startTrajectory.end(); it++) {
+      for(list<TrajectoryStep>::iterator it = startTrajectory.begin(); it != startTrajectory.end(); ++it) {
 				file << it->pathPos << "  " << it->pathVel << endl;
 			}
-			for(list<TrajectoryStep>::iterator it = trajectory.begin(); it != trajectory.end(); it++) {
+      for(list<TrajectoryStep>::iterator it = trajectory.begin(); it != trajectory.end(); ++it) {
 				file << it->pathPos << "  " << it->pathVel << endl;
 			}
 			file.close();
@@ -431,7 +431,7 @@ inline double PathFollowingTrajectory::getSlope(const TrajectoryStep &point1, co
 
 inline double PathFollowingTrajectory::getSlope(list<TrajectoryStep>::const_iterator lineEnd) {
 	list<TrajectoryStep>::const_iterator lineStart = lineEnd;
-	lineStart--;
+  --lineStart;
 	return getSlope(*lineStart, *lineEnd);
 }
 
@@ -544,7 +544,7 @@ double PathFollowingTrajectory::getDuration() const {
 list<PathFollowingTrajectory::TrajectoryStep>::const_iterator PathFollowingTrajectory::getTrajectorySegment(double time) const {
 	if(time >= trajectory.back().time) {
 		list<TrajectoryStep>::const_iterator last = trajectory.end();
-		last--;
+    --last;
 		return last;
 	}
 	else {
@@ -552,7 +552,7 @@ list<PathFollowingTrajectory::TrajectoryStep>::const_iterator PathFollowingTraje
 			cachedTrajectorySegment = trajectory.begin();
 		}
 		while(time >= cachedTrajectorySegment->time) {
-			cachedTrajectorySegment++;
+      ++cachedTrajectorySegment;
 		}
 		cachedTime = time;
 		return cachedTrajectorySegment;
@@ -562,7 +562,7 @@ list<PathFollowingTrajectory::TrajectoryStep>::const_iterator PathFollowingTraje
 VectorXd PathFollowingTrajectory::getPosition(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
-	previous--;
+  --previous;
 	
 	//const double pathPos = previous->pathPos + (time - previous->time) * (previous->pathVel + it->pathVel) / 2.0;
 	
@@ -578,7 +578,7 @@ VectorXd PathFollowingTrajectory::getPosition(double time) const {
 VectorXd PathFollowingTrajectory::getVelocity(double time) const {
 	list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 	list<TrajectoryStep>::const_iterator previous = it;
-	previous--;
+  --previous;
 	
 	//const double pathPos = previous->pathPos + (time - previous->time) * (previous->pathVel + it->pathVel) / 2.0;
 	
@@ -598,7 +598,7 @@ double PathFollowingTrajectory::getMaxAccelerationError() {
 	for(double time = 0.0; time < getDuration(); time += 0.000001) {
 		list<TrajectoryStep>::const_iterator it = getTrajectorySegment(time);
 		list<TrajectoryStep>::const_iterator previous = it;
-		previous--;
+    --previous;
 
 		double timeStep = it->time - previous->time;
 		const double pathAcceleration = (it->pathPos - previous->pathPos - timeStep * previous->pathVel) / (timeStep * timeStep);

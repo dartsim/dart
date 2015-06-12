@@ -142,7 +142,6 @@ bool toBool(const std::string& _str)
               << "Retuning false."
               << std::endl;
         return false;
-        assert(0);
     }
 }
 

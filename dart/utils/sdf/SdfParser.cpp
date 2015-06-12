@@ -169,8 +169,7 @@ simulation::WorldPtr SdfParser::readWorld(
   //--------------------------------------------------------------------------
   // Name attribute
   std::string name = getAttribute(_worldElement, "name");
-  // World don't have name.
-  //newWorld->setName(name);
+  newWorld->setName(name);
 
   //--------------------------------------------------------------------------
   // Load physics

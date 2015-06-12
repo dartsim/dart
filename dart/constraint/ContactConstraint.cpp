@@ -534,7 +534,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
 //==============================================================================
 void ContactConstraint::applyUnitImpulse(size_t _idx)
 {
-  assert(0 <= _idx && _idx < mDim && "Invalid Index.");
+  assert(_idx < mDim && "Invalid Index.");
   assert(isActive());
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 

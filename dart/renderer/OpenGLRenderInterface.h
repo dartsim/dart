@@ -54,7 +54,7 @@ namespace renderer {
 class OpenGLRenderInterface : public RenderInterface {
 
 public:
-    OpenGLRenderInterface() {}
+    OpenGLRenderInterface() : mViewportX(0.0), mViewportY(0.0), mViewportWidth(0.0), mViewportHeight(0.0) {}
     virtual ~OpenGLRenderInterface(){}
 
     virtual void initialize() override;

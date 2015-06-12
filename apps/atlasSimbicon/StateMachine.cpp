@@ -180,15 +180,15 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
 //==============================================================================
 void StateMachine::transiteTo(size_t _idx, double _currentTime)
 {
-  assert(0 <= _idx && _idx <= mStates.size() && "Invalid index of State.");
+  assert(_idx <= mStates.size() && "Invalid index of State.");
 
   transiteTo(mStates[_idx], _currentTime);
 }
 
 //==============================================================================
-bool StateMachine::_containState(State* _state)
+bool StateMachine::_containState(const State* _state) const
 {
-  for (vector<State*>::iterator it = mStates.begin();
+  for (vector<State*>::const_iterator it = mStates.begin();
        it != mStates.end(); ++it)
   {
     if (*it == _state)
@@ -199,17 +199,17 @@ bool StateMachine::_containState(State* _state)
 }
 
 //==============================================================================
-bool StateMachine::_containState(const string& _name)
+bool StateMachine::_containState(const string& _name) const
 {
   return _containState(_findState(_name));
 }
 
 //==============================================================================
-State* StateMachine::_findState(const string& _name)
+State* StateMachine::_findState(const string& _name) const
 {
   State* state = NULL;
 
-  for (vector<State*>::iterator it = mStates.begin();
+  for (vector<State*>::const_iterator it = mStates.begin();
        it != mStates.end(); ++it)
   {
     if ((*it)->getName() == _name)

@@ -139,7 +139,7 @@ RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx) {
 
 	// Add the intermediate nodes and the final new node to the tree
 	list <VectorXd>::iterator it = intermediatePoints.begin();
-	for(; it != intermediatePoints.end(); it++) 
+  for(; it != intermediatePoints.end(); ++it)
 		NNidx = addNode(*it, NNidx);
 	addNode(qnew, NNidx);
 	return STEP_PROGRESS;

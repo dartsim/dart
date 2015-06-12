@@ -87,13 +87,19 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
 
     //get the header
     if (!fread(buf, C3D_REC_SIZE, 1, file))
+    {
+        fclose(file);
         return false;
+    }
     memcpy(&hdr, buf, sizeof(hdr));
 
     //get number format
     if (hdr.rec_start > 2) {
         if (!fread(buf, C3D_REC_SIZE, 1, file))
+        {
+            fclose(file);
             return false;
+        }
         memcpy(&param, buf, sizeof(param));
         if (param.ftype == 84)
             bDecFmt = false;
@@ -118,6 +124,7 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
     //eat parameter records
     for (int i = 3; i < hdr.rec_start; i++) {
         if (!fread(buf, C3D_REC_SIZE, 1, file)) {
+            fclose(file);
             return false;
         }
     }
@@ -135,7 +142,10 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
         _pointData[i].resize(numMarkers);
         for (int j = 0; j < numMarkers; j++) {
             if (!fread(buf, iRecSize, 1, file))
+            {
+                fclose(file);
                 return false;
+            }
             if (c3dScale < 0) {
                 memcpy(&frame, buf, sizeof(frame));
                 if(bDecFmt){
@@ -162,9 +172,9 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
     }
     fclose(file);
 
-    const char *pch = strrchr(_fileName, '\\');  //clip leading path
-    if (pch)
-        _fileName = pch + 1;
+    //const char *pch = strrchr(_fileName, '\\');  //clip leading path
+    //if (pch)
+    //    _fileName = pch + 1;
 
     return true;
 }

@@ -120,13 +120,13 @@ protected:
 
 private:
   /// \brief Check if this state machine contains _state
-  bool _containState(State* _state);
+  bool _containState(const State* _state) const;
 
   /// \brief Check if this state machine contains a state whose name is _name
-  bool _containState(const std::string& _name);
+  bool _containState(const std::string& _name) const;
 
   /// \brief Find a state whose name is _name
-  State* _findState(const std::string& _name);
+  State* _findState(const std::string& _name) const;
 };
 
 #endif  // APPS_ATLASROBOT_STATEMACHINE_H_
