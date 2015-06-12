@@ -53,13 +53,13 @@ Controller::Controller(SkeletonPtr _atlasRobot,
                        ConstraintSolver* _collisionSolver)
   : mAtlasRobot(_atlasRobot),
     mConstratinSolver(_collisionSolver),
-    mCurrentStateMachine(NULL),
+    mCurrentStateMachine(nullptr),
     mPelvisHarnessOn(false),
     mLeftFootHarnessOn(false),
     mRightFootHarnessOn(false),
-    mWeldJointConstraintPelvis(NULL),
-    mWeldJointConstraintLeftFoot(NULL),
-    mWeldJointConstraintRightFoot(NULL)
+    mWeldJointConstraintPelvis(nullptr),
+    mWeldJointConstraintLeftFoot(nullptr),
+    mWeldJointConstraintRightFoot(nullptr)
 {
   _buildStateMachines();
   _setJointDamping();
@@ -131,7 +131,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
   // _state should be in mStates
   StateMachine* stateMachine = _findStateMachine(_name);
 
-  assert(stateMachine != NULL && "Invaild state machine.");
+  assert(stateMachine != nullptr && "Invaild state machine.");
 
   changeStateMachine(stateMachine, _currentTime);
 }
@@ -210,7 +210,7 @@ void Controller::printDebugInfo() const
               << joint->getName()
               << " (" << joint->getNumDofs() << ")"
               << std::endl;
-    if (parentBody != NULL)
+    if (parentBody != nullptr)
     {
       std::cout << "    Parent body: " << parentBody->getName() << std::endl;
     }
@@ -847,7 +847,7 @@ bool Controller::_containStateMachine(const string& _name) const
 //==============================================================================
 StateMachine* Controller::_findStateMachine(const string& _name) const
 {
-  StateMachine* stateMachine = NULL;
+  StateMachine* stateMachine = nullptr;
 
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end(); ++it)

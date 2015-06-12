@@ -54,7 +54,7 @@ public:
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet
-  void draw(renderer::RenderInterface* _ri = NULL,
+  void draw(renderer::RenderInterface* _ri = nullptr,
             const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
             bool _default = true) const;
 

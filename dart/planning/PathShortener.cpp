@@ -31,7 +31,7 @@ PathShortener::~PathShortener()
 void PathShortener::shortenPath(list<VectorXd> &path)
 {
 	printf("--> Start Brute Force Shortener \n"); 
-	srand(time(NULL));
+  srand(time(nullptr));
 
   VectorXd savedDofs = robot->getPositions(dofs);
 

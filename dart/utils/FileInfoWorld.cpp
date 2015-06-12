@@ -46,7 +46,7 @@ namespace utils {
 
 //==============================================================================
 FileInfoWorld::FileInfoWorld()
-  : mRecord(NULL)
+  : mRecord(nullptr)
 {
   std::strcpy(mFileName, "");
 }

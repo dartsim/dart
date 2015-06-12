@@ -237,8 +237,8 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
     dynamics::BodyNode* body  = _skel->getBodyNode(i);
     dynamics::Joint*    joint = body->getParentJoint();
 
-    EXPECT_TRUE(body  != NULL);
-    EXPECT_TRUE(joint != NULL);
+    EXPECT_TRUE(body  != nullptr);
+    EXPECT_TRUE(joint != nullptr);
 
     int dof = joint->getNumDofs();
 
@@ -702,7 +702,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
@@ -710,7 +710,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
@@ -804,7 +804,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
@@ -812,7 +812,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
@@ -1783,11 +1783,11 @@ TEST_F(DynamicsTest, HybridDynamics)
   WorldPtr world = utils::SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
   SkeletonPtr skel = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel != NULL);
+  EXPECT_TRUE(skel != nullptr);
   EXPECT_NEAR(skel->getTimeStep(), timeStep, tol);
 
   const size_t numDofs = skel->getNumDofs();

@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/fullbody1.skel");
-  assert(myWorld != NULL);
+  assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 

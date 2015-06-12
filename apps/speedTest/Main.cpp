@@ -114,7 +114,7 @@ void runKinematicsTest(std::vector<double>& results,
 double testDynamicsSpeed(dart::simulation::WorldPtr world,
                          size_t numIterations = 10000)
 {
-  if(NULL==world)
+  if(nullptr==world)
     return 0;
 
   for(size_t i=0; i<world->getNumSkeletons(); ++i)

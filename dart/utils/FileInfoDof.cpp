@@ -81,7 +81,7 @@ bool FileInfoDof::loadFile(const char* _fName)
   inFile >> buffer;
   inFile >> nDof;
 
-  if (mSkel == NULL || mSkel->getNumDofs() != nDof)
+  if (mSkel == nullptr || mSkel->getNumDofs() != nDof)
     return false;
 
   mDofs.resize(mNumFrames);

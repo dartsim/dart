@@ -79,7 +79,7 @@ public:
   virtual ~Marker();
 
   /// \brief
-  void draw(renderer::RenderInterface* _ri = NULL, bool _offset = true,
+  void draw(renderer::RenderInterface* _ri = nullptr, bool _offset = true,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Identity(),
             bool _useDefaultColor = true) const;
 

@@ -39,7 +39,7 @@
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
-  mController = NULL;
+  mController = nullptr;
   mImpulseDuration = 0;
 }
 

@@ -277,7 +277,7 @@ size_t World::getNumSkeletons() const
 //==============================================================================
 std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 {
-  assert(_skeleton != nullptr && "Attempted to add NULL skeleton to world.");
+  assert(_skeleton != nullptr && "Attempted to add nullptr skeleton to world.");
 
   if(nullptr == _skeleton)
   {

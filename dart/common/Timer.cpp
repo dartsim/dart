@@ -87,7 +87,7 @@ void Timer::start()
 #if WIN32
   QueryPerformanceCounter(&mTimer.start);
 #else
-  gettimeofday(&mTimeVal, NULL);
+  gettimeofday(&mTimeVal, nullptr);
   mStartedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
 #endif
 }
@@ -102,7 +102,7 @@ void Timer::stop()
   time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
-  gettimeofday(&mTimeVal, NULL);
+  gettimeofday(&mTimeVal, nullptr);
   mStoppedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
   mLastElapsedTime = mStoppedTime - mStartedTime;
 #endif
@@ -119,7 +119,7 @@ double Timer::getElapsedTime()
   time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
-  gettimeofday(&mTimeVal, NULL);
+  gettimeofday(&mTimeVal, nullptr);
   mLastElapsedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6)
                      - mStartedTime;
 #endif
@@ -176,7 +176,7 @@ double Timer::getWallTime()
 #else
   // Initialize the lastUpdateTime with the current time in seconds
   timeval timeVal;
-  gettimeofday(&timeVal, NULL);
+  gettimeofday(&timeVal, nullptr);
   return timeVal.tv_sec + timeVal.tv_usec / 1.0e+6;
 #endif
 }

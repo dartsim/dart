@@ -363,20 +363,20 @@ void testJointCoulombFrictionForce(double _timeStep)
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_friction_test.skel");
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
   myWorld->setTimeStep(_timeStep);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
-  EXPECT_TRUE(pendulum != NULL);
+  EXPECT_TRUE(pendulum != nullptr);
   pendulum->disableSelfCollision();
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
 
-  EXPECT_TRUE(joint0 != NULL);
-  EXPECT_TRUE(joint1 != NULL);
+  EXPECT_TRUE(joint0 != nullptr);
+  EXPECT_TRUE(joint1 != nullptr);
 
   double frictionForce  = 5.0;
 

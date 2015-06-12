@@ -688,7 +688,7 @@ const BodyNode* BodyNode::getParentBodyNode() const
 //==============================================================================
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
-  assert(_body != NULL);
+  assert(_body != nullptr);
 
   if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
      mChildBodyNodes.end())
@@ -1494,7 +1494,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   for (const auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != NULL);
+    assert(childJoint != nullptr);
 
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         childBodyNode->getBodyForce());
@@ -1670,7 +1670,7 @@ void BodyNode::updateJointForceID(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces)
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateForceID(mF, _timeStep,
                               _withDampingForces, _withSpringForces);
 }
@@ -1680,7 +1680,7 @@ void BodyNode::updateJointForceFD(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces)
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateForceFD(mF, _timeStep,
                               _withDampingForces, _withSpringForces);
 }
@@ -1688,7 +1688,7 @@ void BodyNode::updateJointForceFD(double _timeStep,
 //==============================================================================
 void BodyNode::updateJointImpulseFD()
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateImpulseFD(mF);
 }
 
@@ -1831,7 +1831,7 @@ bool BodyNode::isReactive() const
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
-    while (body != NULL)
+    while (body != nullptr)
     {
       if (body->mParentJoint->isDynamic())
         return true;
@@ -2178,7 +2178,7 @@ void BodyNode::updateBodyJacobian() const
   //          n: number of dependent coordinates
   //--------------------------------------------------------------------------
 
-  if(NULL == mParentJoint)
+  if(nullptr == mParentJoint)
     return;
 
   const size_t localDof     = mParentJoint->getNumDofs();
@@ -2278,7 +2278,7 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
   // w: Total angular velocity of this Frame
   // p: Offset from origin of parent Frame
 
-  if(NULL == mParentJoint)
+  if(nullptr == mParentJoint)
     return;
 
   const size_t numLocalDOFs = mParentJoint->getNumDofs();

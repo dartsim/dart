@@ -291,14 +291,14 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 //  //----------------------------------------------------------------------------
 //  // Visualization shape
 //  //----------------------------------------------------------------------------
-//  assert(mSoftVisualShape == NULL);
+//  assert(mSoftVisualShape == nullptr);
 //  mSoftVisualShape = new SoftMeshShape(this);
 //  BodyNode::addVisualizationShape(mSoftVisualShape);
 
 //  //----------------------------------------------------------------------------
 //  // Collision shape
 //  //----------------------------------------------------------------------------
-//  assert(mSoftCollShape == NULL);
+//  assert(mSoftCollShape == nullptr);
 //  mSoftCollShape = new SoftMeshShape(this);
 //  BodyNode::addCollisionShape(mSoftCollShape);
 }
@@ -530,7 +530,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   for (const auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != NULL);
+    assert(childJoint != nullptr);
 
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         childBodyNode->getBodyForce());
@@ -1140,7 +1140,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
                         bool _useDefaultColor,
                         int _depth) const
 {
-  if (_ri == NULL)
+  if (_ri == nullptr)
     return;
 
   _ri->pushMatrix();
@@ -2494,7 +2494,7 @@ void SoftBodyNodeHelper::setSinglePointMass(SoftBodyNode* _softBodyNode,
                                         double _edgeStiffness,
                                         double _dampingCoeff)
 {
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeSinglePointMassProperties(
                                  _totalMass,
                                  _vertexStiffness,
@@ -2672,7 +2672,7 @@ void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
                                       double                 _edgeStiffness,
                                       double                 _dampingCoeff)
 {
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeEllipsoidProperties(_size,
                                                        _nSlices,
                                                        _nStacks,

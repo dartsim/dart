@@ -510,7 +510,7 @@ protected:
 
   //---------------------------- Rendering -------------------------------------
   ///
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
+  virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true) const;
 

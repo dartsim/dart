@@ -175,10 +175,10 @@ TEST(NameManagement, Skeleton)
   EXPECT_FALSE(joint2->getName() == joint3->getName());
   EXPECT_FALSE(joint3->getName() == joint1->getName());
 
-  // Make sure that the Skeleton gives back NULL for non existent names
-  EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
-  EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
-  EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
+  // Make sure that the Skeleton gives back nullptr for non existent names
+  EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == nullptr);
+  EXPECT_TRUE(skel->getJoint("nonexistent_name") == nullptr);
+  EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == nullptr);
 }
 
 //==============================================================================

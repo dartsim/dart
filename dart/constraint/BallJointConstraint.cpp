@@ -242,7 +242,7 @@ void BallJointConstraint::applyUnitImpulse(size_t _index)
 //==============================================================================
 void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
    _vel[i] = 0.0;
@@ -282,7 +282,7 @@ void BallJointConstraint::excite()
   if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
 
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (mBodyNode2->isReactive())
@@ -295,7 +295,7 @@ void BallJointConstraint::unexcite()
   if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
 
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (mBodyNode2->isReactive())
@@ -347,7 +347,7 @@ dynamics::SkeletonPtr BallJointConstraint::getRootSkeleton() const
 //==============================================================================
 void BallJointConstraint::uniteSkeletons()
 {
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())

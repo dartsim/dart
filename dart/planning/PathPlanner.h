@@ -43,7 +43,7 @@ public:
 public:
 
   /// The default constructor
-  PathPlanner() : world(NULL) {}
+  PathPlanner() : world(nullptr) {}
 
   /// The desired constructor - you should use this one.
   PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,

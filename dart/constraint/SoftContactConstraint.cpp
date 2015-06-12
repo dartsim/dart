@@ -77,8 +77,8 @@ SoftContactConstraint::SoftContactConstraint(
     mBodyNode2(_contact.bodyNode2.lock()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
-    mPointMass1(NULL),
-    mPointMass2(NULL),
+    mPointMass1(nullptr),
+    mPointMass2(nullptr),
     mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
@@ -658,7 +658,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 //==============================================================================
 void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -880,7 +880,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 void SoftContactConstraint::getRelVelocity(double* _vel)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -1007,7 +1007,7 @@ static PointMassT selectCollidingPointMassT(
     const Eigen::Vector3d& _point,
     int _faceId)
 {
-  PointMassT pointMass = NULL;
+  PointMassT pointMass = nullptr;
 
   const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
 

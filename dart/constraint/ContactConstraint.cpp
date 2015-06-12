@@ -601,7 +601,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
 //==============================================================================
 void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -737,7 +737,7 @@ void ContactConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 void ContactConstraint::getRelVelocity(double* _relVel)
 {
-  assert(_relVel != NULL && "Null pointer is not allowed.");
+  assert(_relVel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {

@@ -52,7 +52,7 @@ using namespace dart::constraint;
 TerminalCondition::TerminalCondition(State* _state)
   : mState(_state)
 {
-  assert(_state != NULL);
+  assert(_state != nullptr);
 }
 
 //==============================================================================
@@ -89,8 +89,8 @@ BodyContactCondition::BodyContactCondition(State* _state, BodyNode* _body)
   : TerminalCondition(_state),
     mBodyNode(_body)
 {
-  assert(_state != NULL);
-  assert(_body != NULL);
+  assert(_state != nullptr);
+  assert(_body != nullptr);
 }
 
 //==============================================================================

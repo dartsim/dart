@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
     = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
-  assert(myWorld != NULL);
+  assert(myWorld != nullptr);
     
   // create and initialize the world
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

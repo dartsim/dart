@@ -347,7 +347,7 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
         glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT);  // for applyMaterial()
         applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
-        if(mesh->mNormals == NULL) {
+        if(mesh->mNormals == nullptr) {
             glDisable(GL_LIGHTING);
         } else {
             glEnable(GL_LIGHTING);
@@ -368,9 +368,9 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
 
             for (i = 0; i < face->mNumIndices; i++) {
                 int index = face->mIndices[i];
-                if(mesh->mColors[0] != NULL)
+                if(mesh->mColors[0] != nullptr)
                     glColor4fv((GLfloat*)&mesh->mColors[0][index]);
-                if(mesh->mNormals != NULL)
+                if(mesh->mNormals != nullptr)
                     glNormal3fv(&mesh->mNormals[index].x);
                 glVertex3fv(&mesh->mVertices[index].x);
             }

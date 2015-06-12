@@ -127,7 +127,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mNotifier(_softBodyNode->mNotifier),
     mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01)))
 {
-  assert(mParentSoftBodyNode != NULL);
+  assert(mParentSoftBodyNode != nullptr);
   mNotifier->notifyTransformUpdate();
 }
 
@@ -187,7 +187,7 @@ double PointMass::getImplicitPi() const
 //==============================================================================
 void PointMass::addConnectedPointMass(PointMass* _pointMass)
 {
-  assert(_pointMass != NULL);
+  assert(_pointMass != nullptr);
 
   mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
       mConnectedPointMassIndices.push_back(_pointMass->mIndex);
@@ -561,7 +561,7 @@ const Eigen::Vector3d& PointMass::getWorldPosition() const
 //==============================================================================
 Eigen::Matrix<double, 3, Eigen::Dynamic> PointMass::getBodyJacobian()
 {
-  assert(mParentSoftBodyNode != NULL);
+  assert(mParentSoftBodyNode != nullptr);
 
   int dof = mParentSoftBodyNode->getNumDependentGenCoords();
   int totalDof = mParentSoftBodyNode->getNumDependentGenCoords() + 3;
@@ -1014,7 +1014,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
                      const Eigen::Vector4d& _color,
                      bool _useDefaultColor) const
 {
-  if (_ri == NULL)
+  if (_ri == nullptr)
     return;
 
   _ri->pushMatrix();

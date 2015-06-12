@@ -113,7 +113,7 @@ const Eigen::VectorXd& Problem::getUpperBounds() const
 //==============================================================================
 void Problem::setObjective(Function* _obj)
 {
-  assert(_obj && "NULL pointer is not allowed.");
+  assert(_obj && "nullptr pointer is not allowed.");
   mObjective = _obj;
 }
 

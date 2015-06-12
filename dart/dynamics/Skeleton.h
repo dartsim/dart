@@ -636,12 +636,12 @@ public:
   //----------------------------------------------------------------------------
 
   /// Draw this skeleton
-  void draw(renderer::RenderInterface* _ri = NULL,
+  void draw(renderer::RenderInterface* _ri = nullptr,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
             bool _useDefaultColor = true) const;
 
   /// Draw markers in this skeleton
-  void drawMarkers(renderer::RenderInterface* _ri = NULL,
+  void drawMarkers(renderer::RenderInterface* _ri = nullptr,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
 

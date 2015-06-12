@@ -256,7 +256,7 @@ void WeldJointConstraint::applyUnitImpulse(size_t _index)
 //==============================================================================
 void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
   assert(isActive());
 
   Eigen::Vector6d velChange = Eigen::Vector6d::Zero();
@@ -291,7 +291,7 @@ void WeldJointConstraint::excite()
   if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
 
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (mBodyNode2->isReactive())
@@ -304,7 +304,7 @@ void WeldJointConstraint::unexcite()
   if (mBodyNode1->isReactive())
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
 
-  if (mBodyNode2 == NULL)
+  if (mBodyNode2 == nullptr)
     return;
 
   if (mBodyNode2->isReactive())

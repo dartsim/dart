@@ -66,7 +66,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs,
   index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configuration to the flann structure
-	srand(time(NULL));
+  srand(time(nullptr));
 	addNode(root, -1);
 }
 
@@ -80,7 +80,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs, con
 	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configurations to the flann structure
-	srand(time(NULL));
+  srand(time(nullptr));
   for(size_t i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}

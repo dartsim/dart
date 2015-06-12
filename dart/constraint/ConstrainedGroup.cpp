@@ -59,7 +59,7 @@ ConstrainedGroup::~ConstrainedGroup()
 //==============================================================================
 void ConstrainedGroup::addConstraint(ConstraintBase* _constraint)
 {
-  assert(_constraint != NULL && "Null constraint pointer is now allowed.");
+  assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == false
          && "Don't try to add same constraint multiple times into Community.");
   assert(_constraint->isActive());
@@ -83,7 +83,7 @@ ConstraintBase* ConstrainedGroup::getConstraint(size_t _index) const
 //==============================================================================
 void ConstrainedGroup::removeConstraint(ConstraintBase* _constraint)
 {
-  assert(_constraint != NULL && "Null constraint pointer is now allowed.");
+  assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == true
          && "Don't try to remove a constraint not contained in Community.");
 
