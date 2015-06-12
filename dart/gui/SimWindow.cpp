@@ -47,7 +47,6 @@
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/LoadGlut.h"

@@ -60,9 +60,6 @@ class BodyNode;
 class Joint;
 class Skeleton;
 }  // namespace dynamics
-namespace constraint {
-class OldConstraintDynamics;
-}  // namespace constraint
 }  // namespace dart
 
 class TerminalCondition;

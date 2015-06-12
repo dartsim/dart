@@ -142,12 +142,10 @@ protected:
 
   ///
   static SkelBodyNode readBodyNode(tinyxml2::XMLElement* _bodyElement,
-      dynamics::SkeletonPtr _skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///
   static SkelBodyNode readSoftBodyNode(tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::SkeletonPtr _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///
