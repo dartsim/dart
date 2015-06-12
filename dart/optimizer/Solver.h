@@ -105,11 +105,6 @@ public:
   /// Solve optimization problem
   virtual bool solve() = 0;
 
-  /// Get the last configuration that this solver arrived at before quitting.
-  /// If the problem was solved, then this will be the solution; otherwise, this
-  /// will be wherever the solver left off.
-  virtual Eigen::VectorXd getLastConfiguration() const = 0;
-
   /// Get the type (implementation) of this Solver
   virtual std::string getType() const = 0;
 

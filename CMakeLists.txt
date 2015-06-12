@@ -253,7 +253,7 @@ else()
 endif()
 
 # IPOPT
-#find_package(IPOPT 3.11.4 QUIET)
+find_package(IPOPT 3.11.4 QUIET)
 if(IPOPT_FOUND)
   message(STATUS "Looking for IPOPT - ${IPOPT_VERSION} found")
   set(HAVE_IPOPT TRUE)

@@ -133,7 +133,7 @@ public:
   virtual bool solve() override;
 
   // Documentation inherited
-  Eigen::VectorXd getLastConfiguration() const override;
+  Eigen::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
   virtual std::string getType() const override;

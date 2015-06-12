@@ -45,6 +45,14 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
+IpoptSolver::IpoptSolver(const Solver::Properties& _properties)
+  : Solver(_properties)
+{
+  mNlp = new DartTNLP(_properties.mProblem);
+  mIpoptApp = IpoptApplicationFactory();
+}
+
+//==============================================================================
 IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   : Solver(_problem)
 {
@@ -57,7 +65,11 @@ IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   // using the factory, since this allows us to compile this with an Ipopt
   // Windows DLL.
   mIpoptApp = IpoptApplicationFactory();
+}
 
+//==============================================================================
+bool IpoptSolver::solve()
+{
   // Change some options
   // Note: The following choices are only examples, they might not be
   //       suitable for your optimization problem.
@@ -66,19 +78,10 @@ IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   mIpoptApp->Options()->SetStringValue("output_file", "ipopt.out");
 
   // Intialize the IpoptApplication and process the options
-  Ipopt::ApplicationReturnStatus status = mIpoptApp->Initialize();
-  if (status != Ipopt::Solve_Succeeded)
+  Ipopt::ApplicationReturnStatus init_status = mIpoptApp->Initialize();
+  if (init_status != Ipopt::Solve_Succeeded)
     dterr << "Error during ipopt initialization.\n";
-}
 
-//==============================================================================
-IpoptSolver::~IpoptSolver()
-{
-}
-
-//==============================================================================
-bool IpoptSolver::solve()
-{
   // Ask Ipopt to solve the problem
   Ipopt::ApplicationReturnStatus status = mIpoptApp->OptimizeTNLP(mNlp);
 
@@ -92,6 +95,35 @@ bool IpoptSolver::solve()
 std::string IpoptSolver::getType() const
 {
   return "IpoptSolver";
+}
+
+//==============================================================================
+std::shared_ptr<Solver> IpoptSolver::clone() const
+{
+  std::shared_ptr<IpoptSolver> newSolver(
+        new IpoptSolver(getSolverProperties(), mIpoptApp->clone()));
+
+  return newSolver;
+}
+
+//==============================================================================
+const Ipopt::SmartPtr<Ipopt::IpoptApplication>& IpoptSolver::getApplication()
+{
+  return mIpoptApp;
+}
+
+//==============================================================================
+Ipopt::SmartPtr<const Ipopt::IpoptApplication> IpoptSolver::getApplication() const
+{
+  return mIpoptApp;
+}
+
+//==============================================================================
+IpoptSolver::IpoptSolver(const Properties& _properties,
+                         const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app)
+  : Solver(_properties)
+{
+  mIpoptApp = _app;
 }
 
 //==============================================================================

@@ -61,26 +61,45 @@ class DartTNLP;
 class IpoptSolver : public Solver
 {
 public:
-  /// \brief Constructor
+
+  /// Default constructor
+  IpoptSolver(const Solver::Properties& _properties = Solver::Properties());
+
+  /// Alternative Constructor
   explicit IpoptSolver(std::shared_ptr<Problem> _problem);
 
-  /// \brief Destructor
-  virtual ~IpoptSolver();
+  /// Destructor
+  virtual ~IpoptSolver() = default;
 
-  /// \copydoc Solver::solve
+  // Documentation inherited
   virtual bool solve();
 
+  // Documentation inherited
   virtual std::string getType() const override;
 
+  // Documentation inherited
+  virtual std::shared_ptr<Solver> clone() const override;
+
+  /// Get the application interface for this IpoptSolver
+  const Ipopt::SmartPtr<Ipopt::IpoptApplication>& getApplication();
+
+  /// Get a const application interface for this IpoptSolver
+  Ipopt::SmartPtr<const Ipopt::IpoptApplication> getApplication() const;
+
 private:
-  /// \brief IPOPT nonlinear programming problem
+
+  /// Constructor used during cloning
+  IpoptSolver(const Properties& _properties,
+              const Ipopt::SmartPtr<Ipopt::IpoptApplication>& _app);
+
+  /// IPOPT nonlinear programming problem
   Ipopt::SmartPtr<Ipopt::TNLP> mNlp;
 
-  /// \brief Main application class for making calls to Ipopt
+  /// Main application class for making calls to Ipopt
   Ipopt::SmartPtr<Ipopt::IpoptApplication> mIpoptApp;
 };
 
-/// \brief class DartTNLP
+/// class DartTNLP
 class DartTNLP : public Ipopt::TNLP
 {
 public:
