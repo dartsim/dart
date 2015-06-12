@@ -134,7 +134,9 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
   : Shape(MESH),
     mMesh(_mesh),
     mDisplayList(0),
-    mScale(_scale)
+    mScale(_scale),
+    mColorMode(MATERIAL_COLOR),
+    mColorIndex(0)
 {
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
@@ -195,6 +197,26 @@ void MeshShape::setScale(const Eigen::Vector3d& _scale) {
 
 const Eigen::Vector3d& MeshShape::getScale() const {
   return mScale;
+}
+
+void MeshShape::setColorMode(ColorMode _mode)
+{
+  mColorMode = _mode;
+}
+
+MeshShape::ColorMode MeshShape::getColorMode() const
+{
+  return mColorMode;
+}
+
+void MeshShape::setColorIndex(int _index)
+{
+  mColorIndex = _index;
+}
+
+int MeshShape::getColorIndex() const
+{
+  return mColorIndex;
 }
 
 int MeshShape::getDisplayList() const {

@@ -153,6 +153,21 @@ void MeshShapeNode::refresh()
   extractData(false);
 }
 
+std::ostream& operator<<(std::ostream& str, const aiColor4D& c)
+{
+  str << c[0] << "\t " << c[1] << "\t " << c[2] << "\t " << c[3];
+  return str;
+}
+
+//==============================================================================
+bool checkSpecularSanity(const aiColor4D& c)
+{
+  if(c[0] >= 1.0 && c[1] >= 1.0 && c[2] >= 1.0 && c[3] >= 1.0)
+    return false;
+
+  return true;
+}
+
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
@@ -162,6 +177,7 @@ void MeshShapeNode::extractData(bool firstTime)
   if(firstTime) // extract material properties
   {
     mMaterials.reserve(scene->mNumMaterials);
+    std::cout << "Found " << scene->mNumMaterials << " materials" << std::endl;
 
     for(size_t i=0; i<scene->mNumMaterials; ++i)
     {
@@ -171,24 +187,30 @@ void MeshShapeNode::extractData(bool firstTime)
       aiColor4D c;
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)==AI_SUCCESS)
       {
+        std::cout << "setting ambient to: " << c << std::endl;
         material->setAmbient(osg::Material::FRONT_AND_BACK,
                              osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)==AI_SUCCESS)
       {
+        std::cout << "setting diffuse to: " << c << std::endl;
         material->setDiffuse(osg::Material::FRONT_AND_BACK,
                              osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_SPECULAR, &c)==AI_SUCCESS)
       {
-        material->setSpecular(osg::Material::FRONT_AND_BACK,
-                              osg::Vec4(c.r, c.g, c.b, c.a));
+        // Some files have insane specular vectors like [1.0, 1.0, 1.0, 1.0], so
+        // we weed those out here
+        if(checkSpecularSanity(c))
+          material->setSpecular(osg::Material::FRONT_AND_BACK,
+                                osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)==AI_SUCCESS)
       {
+        std::cout << "setting emission to: " << c << std::endl;
         material->setEmission(osg::Material::FRONT_AND_BACK,
                               osg::Vec4(c.r, c.g, c.b, c.a));
       }
@@ -207,7 +229,6 @@ void MeshShapeNode::extractData(bool firstTime)
       else
       {
         material->setShininess(osg::Material::FRONT_AND_BACK, 0.0f);
-//        material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4()); // <- Why this?
       }
 
       mMaterials.push_back(material);
@@ -543,27 +564,45 @@ void MeshShapeGeometry::extractData(bool firstTime)
   if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    // TODO(MXG): Should we support using the alternative 8 color sets that
-    // assimp allows?
-    if(mAiMesh->mColors[0])
-    {
-      if(mColors->size() != mVertices->size())
-        mColors->resize(mVertices->size());
+    bool isColored = false;
 
-      for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX)
+    {
+      int index = mMeshShape->getColorIndex();
+      if(index >= AI_MAX_NUMBER_OF_COLOR_SETS)
+        index = AI_MAX_NUMBER_OF_COLOR_SETS - 1;
+
+      aiColor4D* colors = nullptr;
+      while(nullptr == colors && index >= 0)
       {
-        const aiColor4D& c = mAiMesh->mColors[0][i];
-        (*mColors)[i] = osg::Vec4(c.r, c.g, c.b, c.a);
+        colors = mAiMesh->mColors[index];
+        --index;
       }
 
-      setColorArray(mColors);
-      setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+      if(colors)
+      {
+        isColored = true;
+        std::cout << "using color index: " << index+1 << std::endl;
+
+        if(mColors->size() != mVertices->size())
+          mColors->resize(mVertices->size());
+
+        for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+        {
+          const aiColor4D& c = colors[i];
+          (*mColors)[i] = osg::Vec4(c.r, c.g, c.b, c.a);
+        }
+
+        setColorArray(mColors);
+        setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+      }
     }
-    // TODO(MXG): Consider setting a default coloring if none is provided
-    // by the mesh
 
     uint unit = 0;
     const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
+    if(aiTexCoords)
+      isColored = true;
+
     while(nullptr != aiTexCoords)
     {
       switch(mAiMesh->mNumUVComponents[unit])
@@ -604,16 +643,33 @@ void MeshShapeGeometry::extractData(bool firstTime)
       } // switch(mAiMesh->mNumUVComponents[unit])
       aiTexCoords = mAiMesh->mTextureCoords[++unit];
     } // while(nullptr != aiTexCoords)
-  }
 
-  if(firstTime) // Set up material
-  {
-    unsigned int matIndex = mAiMesh->mMaterialIndex;
-    if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
-      getOrCreateStateSet()->setAttributeAndModes(
-            mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
+    {
+      unsigned int matIndex = mAiMesh->mMaterialIndex;
+      if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
+      {
+        isColored = true;
+        getOrCreateStateSet()->setAttributeAndModes(
+              mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+      }
+      else
+        getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
+    }
+    else
+      getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
+
+    if(!isColored
+       || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
+    {
+      const Eigen::Vector4d& c = mShape->getRGBA();
+      std::cout << "using shape color" << std::endl;
+
+      mColors->resize(1);
+      (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], c[3]);
+      setColorArray(mColors, osg::Array::BIND_OVERALL);
+    }
   }
-  // TODO(MXG): Investigate wireframe mode
 }
 
 //==============================================================================
