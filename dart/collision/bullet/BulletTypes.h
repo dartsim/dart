@@ -43,8 +43,8 @@
 namespace dart {
 namespace collision {
 
-#if BT_BULLET_VERSION < 283
-/// Dummy structure to suppress unused-variable warning from bullet
+#if !defined(__APPLE__) && BT_BULLET_VERSION < 283
+/// Dummy inline function to suppress unused-variable warning from bullet
 inline int btGetInfinityMask()
 {
   return btInfinityMask;
