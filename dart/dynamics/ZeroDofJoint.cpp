@@ -45,32 +45,64 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ZeroDofJoint::ZeroDofJoint(const std::string& _name)
-  : Joint(_name)
+ZeroDofJoint::Properties::Properties(const Joint::Properties& _properties)
+  : Joint::Properties(_properties)
 {
+  // Do nothing
 }
 
 //==============================================================================
 ZeroDofJoint::~ZeroDofJoint()
 {
+  // Do nothing
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getDof() const
+ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 {
-  return getNumDofs();
+  return getJointProperties();
 }
 
 //==============================================================================
 DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 {
-  return NULL;
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
+  return nullptr;
 }
 
 //==============================================================================
 const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 {
-  return NULL;
+  dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
+        << "ZeroDofJoint. This is not allowed!\n";
+  assert(false);
+  return nullptr;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::setDofName(size_t, const std::string &, bool)
+{
+  return emptyString;
+}
+
+//==============================================================================
+void ZeroDofJoint::preserveDofName(size_t, bool)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool ZeroDofJoint::isDofNamePreserved(size_t) const
+{
+  return false;
+}
+
+//==============================================================================
+const std::string& ZeroDofJoint::getDofName(size_t) const
+{
+  return emptyString;
 }
 
 //==============================================================================
@@ -80,17 +112,21 @@ size_t ZeroDofJoint::getNumDofs() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setIndexInSkeleton(size_t _index, size_t)
+size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 {
-  dterr << "[ZeroDofJoint::setIndexInSkeleton] index[" << _index
-        << "] out of range" << std::endl;
+  dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
+
+  return 0;
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
+size_t ZeroDofJoint::getIndexInTree(size_t _index) const
 {
-  dterr << "getIndexInSkeleton index[" << _index << "] out of range"
-        << std::endl;
+  dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
+        << "called (" << _index << ")!\n";
+  assert(false);
 
   return 0;
 }
@@ -399,8 +435,8 @@ void ZeroDofJoint::integrateVelocities(double _dt)
 }
 
 //==============================================================================
-Eigen::VectorXd ZeroDofJoint::getPositionsDifference(
-    const Eigen::VectorXd& /*_q0*/,
+Eigen::VectorXd ZeroDofJoint::getPositionDifferences(
+    const Eigen::VectorXd& /*_q2*/,
     const Eigen::VectorXd& /*_q1*/) const
 {
   return Eigen::VectorXd::Zero(0);
@@ -458,6 +494,19 @@ double ZeroDofJoint::getCoulombFriction(size_t /*_index*/) const
 double ZeroDofJoint::getPotentialEnergy() const
 {
   return 0.0;
+}
+
+//==============================================================================
+ZeroDofJoint::ZeroDofJoint(const Properties& _properties)
+  : Joint(_properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::registerDofs()
+{
+  // Do nothing
 }
 
 //==============================================================================

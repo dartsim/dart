@@ -51,15 +51,15 @@ using namespace dart::utils;
 int main(int argc, char* argv[])
 {
   // Create empty soft world
-  World* myWorld = new World;
+  WorldPtr myWorld(new World);
 
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
-  Skeleton* ground = urdfLoader.parseSkeleton(
+  SkeletonPtr ground = urdfLoader.parseSkeleton(
         DART_DATA_PATH"sdf/atlas/ground.urdf");
-//  Skeleton* atlas = SoftSdfParser::readSkeleton(
+//  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
 //        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
-  Skeleton* atlas
+  SkeletonPtr atlas
       = SoftSdfParser::readSkeleton(
           DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
@@ -69,6 +69,7 @@ int main(int argc, char* argv[])
   VectorXd q = atlas->getPositions();
   q[0] = -0.5 * DART_PI;
   atlas->setPositions(q);
+
   atlas->computeForwardKinematics(true, true, false);
 
   // Set gravity of the world

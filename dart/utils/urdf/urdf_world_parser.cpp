@@ -59,16 +59,15 @@ bool parsePose(Pose &pose, TiXmlElement* xml);
 /**
  * @function parseWorldURDF
  */
-World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world_path) {
-
-  World* world = new World;
+std::shared_ptr<World> parseWorldURDF(const std::string& _xml_string,
+                                      std::string _root_to_world_path)
+{
   TiXmlDocument xml_doc;
   xml_doc.Parse( _xml_string.c_str() );
   TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
   if( !world_xml )
   {
     dtwarn << "[parseWorldURDF] ERROR: Could not find a <world> element in XML, exiting and not loading! \n";
-    delete world;
     return nullptr;
   }
 
@@ -77,9 +76,10 @@ World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world
   if(!name)
   {
     dtwarn << "[parseWorldURDF] ERROR: World does not have a name tag specified. Exiting and not loading! \n";
-    delete world;
     return nullptr;
   }
+
+  std::shared_ptr<World> world(new World);
   world->name = std::string(name);
   if(debug) std::cout<< "World name: "<< world->name << std::endl;
 
@@ -119,7 +119,6 @@ World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world
       if( includedFiles.find( string_entity_model ) == includedFiles.end() )
       {
         dtwarn << "[parseWorldURDF] ERROR: I cannot find the model you want to use, did you provide the correct name? Exiting and not loading! \n"<<std::endl;
-        delete world;
         return nullptr;
       }
       else
@@ -145,7 +144,6 @@ World* parseWorldURDF(const std::string& _xml_string, std::string _root_to_world
         {
           dtwarn << "[parseWorldURDF] Model in " << fileFullName
                  << " not found. Exiting and not loading!\n";
-          delete world;
           return nullptr;
         }
         else

@@ -38,9 +38,11 @@
 #define DART_DYNAMICS_DEGREEOFFREEDOM_H_
 
 #include <string>
+#include <memory>
 #include <Eigen/Core>
 
 #include "dart/common/Subject.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
@@ -70,7 +72,21 @@ public:
   /// name changes.
   const std::string& setName(const std::string& _name, bool _preserveName=true);
 
-  /// Get the name of this DegreeOfFreedom
+  /// \brief Get the name of this DegreeOfFreedom
+  ///
+  /// DegreeOfFreedom's name will be automatically given by the joint it belongs
+  /// to. Below is the naming policy:
+  ///   - SingleDofJoint \n
+  ///       Same name as the joint it belongs to.
+  ///   - MultiDofJoint \n
+  ///       "[Joint_name]+[affix]" is used. The affix is determined according
+  ///       to the role they play in the joint. For example, suppose there's a
+  ///       TranslationalJoint named "trans_joint". Then the each dof to be
+  ///       named "trans_joint_x", "trans_joint_y", and "trans_joint_z".
+  ///   - ZeroDofJoint \n
+  ///       ZeroDofJoint doesn't have dof.
+  ///
+  /// The default name can be renamed by setName() as well.
   const std::string& getName() const;
 
   /// Prevent Joint::updateDegreeOfFreedomNames() from changing the name of this
@@ -85,8 +101,25 @@ public:
   /// Get this DegreeOfFreedom's index within its Skeleton
   size_t getIndexInSkeleton() const;
 
+  /// Get this DegreeOfFreedom's index within its tree
+  size_t getIndexInTree() const;
+
   /// Get this DegreeOfFreedom's index within its Joint
   size_t getIndexInJoint() const;
+
+  /// Get the index of the tree that this DegreeOfFreedom belongs to
+  size_t getTreeIndex() const;
+
+  // -- Command functions ------------------------------------------------------
+
+  /// Set the command of this DegreeOfFreedom
+  void setCommand(double _command);
+
+  /// Get the command of this DegreeOfFreedom
+  double getCommand() const;
+
+  /// Set the command of this DegreeOfFreedom to zero
+  void resetCommand();
 
   // -- Position functions -----------------------------------------------------
 
@@ -95,6 +128,9 @@ public:
 
   /// Get the position of this DegreeOfFreedom
   double getPosition() const;
+
+  /// Set the position of this DegreeOfFreedom to zero
+  void resetPosition();
 
   /// Set the position limits of this DegreeOfFreedom
   void setPositionLimits(double _lowerLimit, double _upperLimit);
@@ -125,6 +161,9 @@ public:
   /// Get the velocity of this DegreeOfFreedom
   double getVelocity() const;
 
+  /// Set the velocity of this DegreeOfFreedom to zero
+  void resetVelocity();
+
   /// Set the velocity limits of this DegreeOfFreedom
   void setVelocityLimits(double _lowerLimit, double _upperLimit);
 
@@ -153,6 +192,9 @@ public:
 
   /// Get the acceleration of this DegreeOfFreedom
   double getAcceleration() const;
+
+  /// Set the acceleration of this DegreeOfFreedom to zero
+  void resetAcceleration();
 
   /// Set the acceleration limits of this DegreeOfFreedom
   void setAccelerationLimits(double _lowerLimit, double _upperLimit);
@@ -183,6 +225,9 @@ public:
   /// Get the generalized force of this DegreeOfFreedom
   double getForce() const;
 
+  /// Set the generalized force of this DegreeOfFreedom to zero
+  void resetForce();
+
   /// Set the generalized force limits of this DegreeOfFreedom
   void setForceLimits(double _lowerLimit, double _upperLimit);
 
@@ -204,6 +249,28 @@ public:
   /// Get the upper generalized force limit of this DegreeOfFreedom
   double getForceUpperLimit() const;
 
+  // -- Velocity Change --------------------------------------------------------
+
+  /// Set the velocity change of this DegreeOfFreedom
+  void setVelocityChange(double _velocityChange);
+
+  /// Get the velocity change of this DegreeOfFreedom
+  double getVelocityChange() const;
+
+  /// Set the velocity change of this DegreeOfFreedom to zero
+  void resetVelocityChange();
+
+  // -- Constraint Impulse -----------------------------------------------------
+
+  /// Set the constraint impulse of this generalized coordinate
+  void setConstraintImpulse(double _impulse);
+
+  /// Get the constraint impulse of this generalized coordinate
+  double getConstraintImpulse() const;
+
+  /// Set the constraint impulse of this generalized coordinate to zero
+  void resetConstraintImpulse();
+
   // -- Relationships ----------------------------------------------------------
 
   /// Get the Joint that this DegreeOfFreedom belongs to
@@ -213,10 +280,10 @@ public:
   const Joint* getJoint() const;
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  Skeleton* getSkeleton();
+  SkeletonPtr getSkeleton();
 
   /// Get the Skeleton that this DegreeOfFreedom is inside of
-  const Skeleton* getSkeleton() const;
+  ConstSkeletonPtr getSkeleton() const;
 
   /// Get the BodyNode downstream of this DegreeOfFreedom
   BodyNode* getChildBodyNode();
@@ -233,29 +300,7 @@ public:
 protected:
   /// The constructor is protected so that only Joints can create
   /// DegreeOfFreedom classes
-  DegreeOfFreedom(Joint* _joint,
-                  const std::string& _name,
-                  size_t _indexInJoint);
-
-  /// \brief Name of this DegreeOfFreedom
-  ///
-  /// DegreeOfFreedom's name will be automatically given by the joint it belongs
-  /// to. Below is the naming policy:
-  ///   - SingleDofJoint \n
-  ///       Same name as the joint it belongs to.
-  ///   - MultiDofJoint \n
-  ///       "[Joint_name]+[affix]" is used. The affix is determined according
-  ///       to the role they play in the joint. For example, suppose there's a
-  ///       TranslationalJoint named "trans_joint". Then the each dof to be
-  ///       named "trans_joint_x", "trans_joint_y", and "trans_joint_z".
-  ///   - ZeroDofJoint \n
-  ///       ZeroDofJoint doesn't have dof.
-  ///
-  /// The default name can be renamed by setName() as well.
-  std::string mName;
-
-  /// True if DegreeOfFreedom::lockName(bool) is active
-  bool mNamePreserved;
+  DegreeOfFreedom(Joint* _joint, size_t _indexInJoint);
 
   /// \brief Index of this DegreeOfFreedom within its Joint
   ///
@@ -265,6 +310,9 @@ protected:
 
   /// Index of this DegreeOfFreedom within its Skeleton
   size_t mIndexInSkeleton;
+
+  /// Index of this DegreeOfFreedom within its tree
+  size_t mIndexInTree;
 
   /// The joint that this DegreeOfFreedom belongs to
   Joint* mJoint;

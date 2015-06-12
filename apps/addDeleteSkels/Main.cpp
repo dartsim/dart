@@ -43,7 +43,7 @@
 
 int main(int argc, char* argv[]) {
   // create and initialize the world
-  dart::simulation::World *myWorld
+  dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/ground.skel");
   assert(myWorld != NULL);

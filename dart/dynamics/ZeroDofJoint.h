@@ -51,34 +51,48 @@ class Skeleton;
 class ZeroDofJoint : public Joint
 {
 public:
-  /// Constructor
-  ZeroDofJoint(const std::string& _name);
+
+  struct Properties : Joint::Properties
+  {
+    Properties(const Joint::Properties& _properties = Joint::Properties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~ZeroDofJoint();
+
+  /// Get the Properties of this ZeroDofJoint
+  Properties getZeroDofJointProperties() const;
 
   //----------------------------------------------------------------------------
   // Interface for generalized coordinates
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
+  virtual DegreeOfFreedom* getDof(size_t) override;
 
   // Documentation inherited
-  virtual DegreeOfFreedom* getDof(size_t);
+  virtual const DegreeOfFreedom* getDof(size_t) const override;
 
   // Documentation inherited
-  virtual const DegreeOfFreedom* getDof(size_t) const;
+  const std::string& setDofName(size_t, const std::string&, bool ) override;
 
   // Documentation inherited
-  virtual size_t getNumDofs() const;
+  void preserveDofName(size_t, bool) override;
 
   // Documentation inherited
-  virtual void setIndexInSkeleton(size_t _index, size_t);
+  bool isDofNamePreserved(size_t) const override;
+
+  const std::string& getDofName(size_t) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const;
+  virtual size_t getNumDofs() const override;
+
+  // Documentation inherited
+  virtual size_t getIndexInSkeleton(size_t _index) const override;
+
+  // Documentation inherited
+  virtual size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -260,8 +274,8 @@ public:
   virtual void integrateVelocities(double _dt);
 
   // Documentation inherited
-  Eigen::VectorXd getPositionsDifference(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -302,6 +316,12 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  /// Constructor called by inheriting classes
+  ZeroDofJoint(const Properties& _properties);
+
+  // Documentation inherited
+  void registerDofs() override;
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
@@ -452,6 +472,9 @@ protected:
   /// \}
 
 private:
+
+  /// Used by getDofName()
+  const std::string emptyString;
 };
 
 }  // namespace dynamics

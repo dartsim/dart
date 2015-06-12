@@ -41,6 +41,7 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(nullptr, _name, false),
@@ -48,15 +49,74 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
     Frame(_refFrame, _name),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
-    mRelativeAcceleration(Eigen::Vector6d::Zero())
+    mRelativeAcceleration(Eigen::Vector6d::Zero()),
+    mPartialAcceleration(Eigen::Vector6d::Zero())
 {
+  // Do nothing
+}
 
+//==============================================================================
+SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
+  : Entity(nullptr, "", false),
+    Detachable(nullptr, "", false),
+    Frame(_refFrame, ""),
+    mRelativeTf(Eigen::Isometry3d::Identity()),
+    mRelativeVelocity(Eigen::Vector6d::Zero()),
+    mRelativeAcceleration(Eigen::Vector6d::Zero()),
+    mPartialAcceleration(Eigen::Vector6d::Zero())
+{
+  copy(_otherFrame, _refFrame);
 }
 
 //==============================================================================
 SimpleFrame::~SimpleFrame()
 {
+  // Do nothing
+}
 
+//==============================================================================
+SimpleFramePtr SimpleFrame::clone(Frame* _refFrame) const
+{
+  return SimpleFramePtr(new SimpleFrame(*this, _refFrame));
+}
+
+//==============================================================================
+void SimpleFrame::copy(const Frame& _otherFrame, Frame* _refFrame,
+                       bool _copyProperties)
+{
+  if( (this == &_otherFrame) && (_refFrame == getParentFrame()) )
+    return;
+
+  Eigen::Isometry3d relativeTf = _otherFrame.getTransform(_refFrame);
+  Eigen::Vector6d relativeVelocity =
+      _otherFrame.getSpatialVelocity(_refFrame, Frame::World());
+  Eigen::Vector6d relativeAcceleration =
+      _otherFrame.getSpatialAcceleration(_refFrame, Frame::World());
+
+  setParentFrame(_refFrame);
+  setRelativeTransform(relativeTf);
+  setRelativeSpatialVelocity(relativeVelocity, Frame::World());
+  setRelativeSpatialAcceleration(relativeAcceleration, Frame::World());
+
+  if(_copyProperties)
+    setProperties(_otherFrame.getEntityProperties());
+}
+
+//==============================================================================
+void SimpleFrame::copy(const Frame* _otherFrame, Frame* _refFrame,
+                       bool _copyProperties)
+{
+  if(nullptr == _otherFrame)
+    return;
+
+  copy(*_otherFrame, _refFrame, _copyProperties);
+}
+
+//==============================================================================
+SimpleFrame& SimpleFrame::operator=(const SimpleFrame& _otherFrame)
+{
+  copy(_otherFrame, getParentFrame(), false);
+  return *this;
 }
 
 //==============================================================================

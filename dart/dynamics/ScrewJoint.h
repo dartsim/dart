@@ -50,13 +50,59 @@ namespace dynamics {
 class ScrewJoint : public SingleDofJoint
 {
 public:
-  /// Constructor
-  ScrewJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-             double _pitch = 0.1,
-             const std::string& _name = "ScrewJoint");
+
+  friend class Skeleton;
+
+  struct UniqueProperties
+  {
+    /// Rotational axis
+    Eigen::Vector3d mAxis;
+
+    /// Translational pitch
+    double mPitch;
+
+    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
+                     double _pitch = 0.1);
+    virtual ~UniqueProperties() = default;
+  };
+
+  struct Properties : SingleDofJoint::Properties,
+                      ScrewJoint::UniqueProperties
+  {
+    Properties(
+        const SingleDofJoint::Properties& _singleDofProperties =
+                                              SingleDofJoint::Properties(),
+        const ScrewJoint::UniqueProperties& _screwProperties =
+                                              ScrewJoint::UniqueProperties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~ScrewJoint();
+
+  /// Set the Properties of this ScrewJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this ScrewJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this ScrewJoint
+  Properties getScrewJointProperties() const;
+
+  /// Copy the Properties of another ScrewJoint
+  void copy(const ScrewJoint& _otherJoint);
+
+  /// Copy the Properties of another ScrewJoint
+  void copy(const ScrewJoint* _otherJoint);
+
+  /// Copy the Properties of another ScrewJoint
+  ScrewJoint& operator=(const ScrewJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);
@@ -71,6 +117,13 @@ public:
   double getPitch() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  ScrewJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void updateLocalTransform() const;
 
@@ -81,11 +134,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis
-  Eigen::Vector3d mAxis;
 
-  ///
-  double mPitch;
+  /// ScrewJoint Properties
+  UniqueProperties mScrewP;
 
 public:
   // To get byte-aligned Eigen vectors

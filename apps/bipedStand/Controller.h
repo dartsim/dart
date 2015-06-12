@@ -46,22 +46,23 @@
 
 class Controller {
 public:
-  Controller(dart::dynamics::Skeleton* _skel,
+  Controller(dart::dynamics::SkeletonPtr _skel,
              double _t);
   virtual ~Controller();
 
   Eigen::VectorXd getTorques();
   double getTorque(int _index);
   void setDesiredDof(int _index, double _val);
-  void computeTorques(const Eigen::VectorXd& _dof,
-                      const Eigen::VectorXd& _dofVel);
-  dart::dynamics::Skeleton* getSkel();
+  void resetDesiredDofs();
+  void computeTorques();
+  dart::dynamics::MetaSkeletonPtr getSkel();
   Eigen::VectorXd getDesiredDofs();
   Eigen::MatrixXd getKp();
   Eigen::MatrixXd getKd();
 
 protected:
-  dart::dynamics::Skeleton* mSkel;
+  dart::dynamics::MetaSkeletonPtr mSkel;
+  dart::dynamics::BodyNodePtr mLeftHeel;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;

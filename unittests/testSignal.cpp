@@ -79,10 +79,10 @@ TEST(Signal, Basic)
   Connection connection2 = signal2.connect(&foo2);
   Connection connection3 = signal3.connect(&foo3);
 
-  EXPECT_EQ(signal0.getNumConnections(), 1);
-  EXPECT_EQ(signal1.getNumConnections(), 1);
-  EXPECT_EQ(signal2.getNumConnections(), 1);
-  EXPECT_EQ(signal3.getNumConnections(), 1);
+  EXPECT_EQ(static_cast<int>(signal0.getNumConnections()), 1);
+  EXPECT_EQ(static_cast<int>(signal1.getNumConnections()), 1);
+  EXPECT_EQ(static_cast<int>(signal2.getNumConnections()), 1);
+  EXPECT_EQ(static_cast<int>(signal3.getNumConnections()), 1);
 
   EXPECT_TRUE(connection0.isConnected());
   EXPECT_TRUE(connection1.isConnected());
@@ -94,10 +94,10 @@ TEST(Signal, Basic)
   connection2.disconnect();
   connection3.disconnect();
 
-  EXPECT_EQ(signal0.getNumConnections(), 0);
-  EXPECT_EQ(signal1.getNumConnections(), 0);
-  EXPECT_EQ(signal2.getNumConnections(), 0);
-  EXPECT_EQ(signal3.getNumConnections(), 0);
+  EXPECT_EQ(static_cast<int>(signal0.getNumConnections()), 0);
+  EXPECT_EQ(static_cast<int>(signal1.getNumConnections()), 0);
+  EXPECT_EQ(static_cast<int>(signal2.getNumConnections()), 0);
+  EXPECT_EQ(static_cast<int>(signal3.getNumConnections()), 0);
 
   signal0();
 
@@ -125,8 +125,8 @@ TEST(Signal, NonStaticMemberFunction)
   signal2.connect(bind(&Viewer::onSignal2, &viewer, _1, _2));
 
   // The signal should have the maximum number of listeners
-  EXPECT_EQ(signal1.getNumConnections(), 2);
-  EXPECT_EQ(signal2.getNumConnections(), 2);
+  EXPECT_EQ(static_cast<int>(signal1.getNumConnections()), 2);
+  EXPECT_EQ(static_cast<int>(signal2.getNumConnections()), 2);
 
   // Check the number of calls
   callCount1 = 0;
@@ -142,14 +142,14 @@ TEST(Signal, ScopedConnection)
 {
   Signal<void(int)> signal;
   Connection c = signal.connect(foo1);
-  EXPECT_EQ(signal.getNumConnections(), 1);
+  EXPECT_EQ(static_cast<int>(signal.getNumConnections()), 1);
 
   {
     ScopedConnection sc(signal.connect(foo1));
-    EXPECT_EQ(signal.getNumConnections(), 2);
+    EXPECT_EQ(static_cast<int>(signal.getNumConnections()), 2);
   }
 
-  EXPECT_EQ(signal.getNumConnections(), 1);
+  EXPECT_EQ(static_cast<int>(signal.getNumConnections()), 1);
 }
 
 //==============================================================================
@@ -287,7 +287,7 @@ void frameChangecCallback(const Entity* _entity,
 
 //==============================================================================
 void vizShapeAddedCallback(const Entity* _entity,
-                           const Shape* _newShape)
+                           std::shared_ptr<const Shape> _newShape)
 {
   assert(_entity);
 
@@ -321,9 +321,12 @@ TEST(Signal, FrameSignals)
   Connection cv2 = F2.onVizShapeAdded.connect(vizShapeAddedCallback);
   ScopedConnection cv3(F3.onVizShapeAdded.connect(vizShapeAddedCallback));
 
-  F1.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
-  F2.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
-  F3.addVisualizationShape(new BoxShape(Vector3d(0.05, 0.05, 0.02)));
+  F1.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
+  F2.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
+  F3.addVisualizationShape(std::shared_ptr<Shape>(
+                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
 
   F3.setParentFrame(&F1);
 }

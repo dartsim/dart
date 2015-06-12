@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_H_
 #define DART_DYNAMICS_SOFTBODYNODE_H_
 
-#define DART_DEFAULT_VERTEX_STIFFNESS (1.0)
-#define DART_DEFAULT_EDGE_STIFNESS    (1.0)
-#define DART_DEFAULT_DAMPING_COEFF    (0.01)
+const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
+const double DART_DEFAULT_EDGE_STIFNESS    = 1.0;
+const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
 
 #include <string>
 #include <vector>
@@ -47,6 +47,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/PointMass.h"
 
 namespace dart {
 namespace dynamics {
@@ -66,14 +67,79 @@ public:
   friend class PointMass;
   friend class PointMassNotifier;
 
-  //--------------------------------------------------------------------------
-  // Constructor and Desctructor
-  //--------------------------------------------------------------------------
-  /// \brief
-  explicit SoftBodyNode(const std::string& _name = "Unnamed SoftBodyNode");
+  struct UniqueProperties
+  {
+    /// Spring stiffness for vertex deformation restoring spring force of the
+    /// point masses
+    double mKv;
+
+    /// Spring stiffness for edge deformation restoring spring force of the
+    /// point masses
+    double mKe;
+
+    /// Damping coefficient
+    double mDampCoeff;
+
+    /// Array of Properties for PointMasses
+    std::vector<PointMass::Properties> mPointProps;
+
+    // TODO(JS): Let's remove this because this is rendering part
+    /// \brief Tri-mesh indexes for rendering.
+    std::vector<Eigen::Vector3i> mFaces;
+
+    UniqueProperties(
+        double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
+        double _Ke = DART_DEFAULT_EDGE_STIFNESS,
+        double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
+        const std::vector<PointMass::Properties>& _points =
+                                          std::vector<PointMass::Properties>(),
+        const std::vector<Eigen::Vector3i>& _faces =
+                                          std::vector<Eigen::Vector3i>());
+
+    /// Add a PointMass to this Properties struct
+    void addPointMass(const PointMass::Properties& _properties);
+
+    /// Connect two PointMasses together in this Properties struct
+    bool connectPointMasses(size_t i1, size_t i2);
+
+    /// Add a face to this Properties struct
+    void addFace(const Eigen::Vector3i& _newFace);
+  };
+
+  struct Properties : BodyNode::Properties, UniqueProperties
+  {
+    Properties(
+        const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
+        const SoftBodyNode::UniqueProperties& _softProperties =
+                                            SoftBodyNode::UniqueProperties());
+  };
 
   /// \brief
   virtual ~SoftBodyNode();
+
+  /// Set the Properties of this SoftBodyNode
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this SoftBodyNode
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Remove any unwarranted SoftBodyShapes
+  /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
+  /// are implemented
+  void removeSoftBodyShapes();
+
+
+  /// Get the Properties of this SoftBodyNode
+  Properties getSoftBodyNodeProperties() const;
+
+  /// Copy the Properties of another SoftBodyNode
+  void copy(const SoftBodyNode& _otherSoftBodyNode);
+
+  /// Copy the Properties of another SoftBodyNode
+  void copy(const SoftBodyNode* _otherSoftBodyNode);
+
+  /// Copy the Properties of another SoftBodyNode
+  SoftBodyNode& operator=(const SoftBodyNode& _otherSoftBodyNode);
 
   /// Get the update notifier for the PointMasses of this SoftBodyNode
   PointMassNotifier* getNotifier();
@@ -106,7 +172,7 @@ public:
   void removeAllPointMasses();
 
   /// \brief
-  void addPointMass(PointMass* _pointMass);
+  PointMass* addPointMass(const PointMass::Properties& _properties);
 
   /// \brief
   size_t getNumPointMasses() const;
@@ -133,11 +199,20 @@ public:
   virtual void clearConstraintImpulse();
 
 protected:
+
+  /// Constructor called by Skeleton class
+  SoftBodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+               const Properties& _properties);
+
+  /// Create a clone of this SoftBodyNode. This may only be called by the
+  /// Skeleton class.
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const override;
+
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(Skeleton* _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton);
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
@@ -148,15 +223,6 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
-
-  /// Tell the Skeleton that an articulated inertia update is needed
-  void notifyArticulatedInertiaUpdate();
-
-  /// Tell the Skeleton that the external forces need to be updated
-  void notifyExternalForcesUpdate();
-
-  /// Tell the Skeleton that the coriolis forces need to be update
-  void notifyCoriolisUpdate();
 
   /// Update articulated inertia if necessary
   void checkArticulatedInertiaUpdate() const;
@@ -223,50 +289,52 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateMassMatrix();
+  virtual void updateMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, int _col);
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, int _col,
-                                      double _timeStep);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+                                      double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateInvMassMatrix();
+  virtual void updateInvMassMatrix() override;
 
   // Documentation inherited.
-  virtual void updateInvAugMassMatrix();
+  virtual void updateInvAugMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, int _col);
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, int _col,
-                                         double _timeStep);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+                                         double _timeStep) override;
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
 
   // Documentation inherited.
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
-                                           const Eigen::Vector3d& _gravity);
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
+                                           const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void updateCombinedVector();
+  virtual void updateCombinedVector() override;
 
   // Documentation inherited.
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
-                                       const Eigen::Vector3d& _gravity);
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
+                                       const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
 
   /// \}
 
   // Documentation inherited.
-  virtual void clearExternalForces();
+  virtual void clearExternalForces() override;
+
+  virtual void clearInternalForces() override;
 
   //--------------------------------------------------------------------------
   // Rendering
@@ -283,26 +351,11 @@ protected:
   /// An Entity which tracks when the point masses need to be updated
   PointMassNotifier* mNotifier;
 
-  // TODO(JS): Let's remove this because this is rendering part
-  /// \brief Tri-mesh indexes for rendering.
-  std::vector<Eigen::Vector3i> mFaces;
+  /// SoftBodyNode Properties
+  UniqueProperties mSoftP;
 
-  /// \brief Spring stiffness for vertex deformation restoring spring force of
-  ///        the point masses.
-  double mKv;
-
-  /// \brief Spring stiffness for edge deformation restoring spring force of the
-  ///        point masses.
-  double mKe;
-
-  /// \brief
-  double mDampCoeff;
-
-  /// \brief Soft mesh shape for visualization.
-  SoftMeshShape* mSoftVisualShape;
-
-  /// \brief Soft mesh shape for collision.
-  SoftMeshShape* mSoftCollShape;
+  /// \brief Soft mesh shape belonging to this node.
+  std::shared_ptr<SoftMeshShape> mSoftShape;
 
   /// Generalized inertia with point masses
   math::Inertia mI2;
@@ -328,21 +381,35 @@ private:
 class SoftBodyNodeHelper
 {
 public:
-  /// \brief
-  /// This should be called before SoftBodyNode::init() is called
-  static void setSingle(
-      SoftBodyNode*          _softBodyNode,
-      double                 _totalMass,
-      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
+  /// Create a Properties struct for a box-shaped SoftBodyNode with 8
+  /// PointMasses
+  static SoftBodyNode::UniqueProperties makeBoxProperties(
+      const Eigen::Vector3d&   _size,
+      const Eigen::Isometry3d& _localTransform,
+      double                   _totalMass,
+      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
-  static void setBox(
-      SoftBodyNode*            _softBodyNode,
+  static void setBox(SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
-      const Eigen::Isometry3d& _localTransfom,
+      const Eigen::Isometry3d& _localTransform,
+      double                   _totalMass,
+      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
+  /// Create a Properties struct for a box-shaped SoftBodyNode. Specify the
+  /// number of vertices along each axis with _frags. Each component should be
+  /// equal to or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
+  /// not.
+  static SoftBodyNode::UniqueProperties makeBoxProperties(
+      const Eigen::Vector3d&   _size,
+      const Eigen::Isometry3d& _localTransform,
+      const Eigen::Vector3i&   _frags,
       double                   _totalMass,
       double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -354,20 +421,36 @@ public:
   ///   equal or greater than 3. For example, [3 3 3] is allowed but [2 2 2] is
   ///   not.
   // TODO: The component of _frags should allow 2.
-  static void setBox(
-      SoftBodyNode*            _softBodyNode,
+  static void setBox(SoftBodyNode*            _softBodyNode,
       const Eigen::Vector3d&   _size,
-      const Eigen::Isometry3d& _localTransfom,
+      const Eigen::Isometry3d& _localTransform,
       const Eigen::Vector3i&   _frags,
       double                   _totalMass,
       double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
+  /// Create a Properties struct for a SoftBodyNode with a single PointMass
+  static SoftBodyNode::UniqueProperties makeSinglePointMassProperties(
+      double _totalMass,
+      double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
   static void setSinglePointMass(
       SoftBodyNode*          _softBodyNode,
+      double                 _totalMass,
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
+  /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
+  static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
+      const Eigen::Vector3d& _size,
+      size_t                 _nSlices,
+      size_t                 _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -383,6 +466,18 @@ public:
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
+  /// Create a Properties struct for a cylinder-shaped SoftBodyNode
+  static SoftBodyNode::UniqueProperties makeCylinderProperties(
+      double _radius,
+      double _height,
+      size_t _nSlices,
+      size_t _nStacks,
+      size_t _nRings,
+      double _totalMass,
+      double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
   ///
   /// This should be called before SoftBodyNode::init() is called

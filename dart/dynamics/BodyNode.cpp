@@ -50,11 +50,60 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-#define DART_DEFAULT_FRICTION_COEFF 1.0
-#define DART_DEFAULT_RESTITUTION_COEFF 0.0
-
 namespace dart {
 namespace dynamics {
+
+//==============================================================================
+SkeletonRefCountingBase::SkeletonRefCountingBase()
+  : mReferenceCount(0),
+    mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>())
+{
+  // Do nothing
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::incrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_add(&mReferenceCount, 1);
+  if(0 == previous)
+    mReferenceSkeleton = mSkeleton.lock();
+}
+
+//==============================================================================
+void SkeletonRefCountingBase::decrementReferenceCount() const
+{
+  int previous = std::atomic_fetch_sub(&mReferenceCount, 1);
+  if(1 == previous)
+    mReferenceSkeleton = nullptr;
+}
+
+//==============================================================================
+SkeletonPtr SkeletonRefCountingBase::getSkeleton()
+{
+  return mSkeleton.lock();
+}
+
+//==============================================================================
+ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
+{
+  return mSkeleton.lock();
+}
+
+/// SKEL_SET_FLAGS : Lock a Skeleton pointer and activate dirty flags of X for
+/// the tree that this BodyNode belongs to, as well as the flag for the Skeleton
+/// overall
+#define SKEL_SET_FLAGS( X ) { SkeletonPtr skel = getSkeleton(); if(skel) {      \
+                            skel->mTreeCache[mTreeIndex].mDirty. X = true;      \
+                            skel->mSkelCache.mDirty. X = true; } }
+
+/// SET_FLAGS : A version of SKEL_SET_FLAGS that assumes a SkeletonPtr named
+/// 'skel' has already been locked
+#define SET_FLAGS( X ) skel->mTreeCache[mTreeIndex].mDirty. X = true;           \
+                       skel->mSkelCache.mDirty. X = true;
+
+/// CHECK_FLAG : Check if the dirty flag X for the tree of this BodyNode is
+/// active
+#define CHECK_FLAG( X ) skel->mTreeCache[mTreeIndex].mDirty. X
 
 //==============================================================================
 typedef std::set<Entity*> EntityPtrSet;
@@ -67,156 +116,175 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
   if(_index < _vec.size())
     return _vec[_index];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
 size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
-BodyNode::BodyNode(const std::string& _name)
-  : Entity(Frame::World(), _name, false),
-    Frame(Frame::World(), _name),
-    mID(BodyNode::msBodyNodeCount++),
-    mName(_name),
-    mGravityMode(true),
-    mI(Eigen::Matrix6d::Identity()),
-    mCenterOfMass(Eigen::Vector3d::Zero()),
-    mIxx(1.0),
-    mIyy(1.0),
-    mIzz(1.0),
-    mIxy(0.0),
-    mIxz(0.0),
-    mIyz(0.0),
-    mMass(1.0),
-    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
-    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
-    mIsCollidable(true),
-    mIsColliding(false),
-    mSkeleton(NULL),
-    mParentJoint(NULL),
-    mParentBodyNode(NULL),
-    mChildBodyNodes(std::vector<BodyNode*>(0)),
-    mIsBodyJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsBodyJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true),
-    mPartialAcceleration(Eigen::Vector6d::Zero()),
-    mIsPartialAccelerationDirty(true),
-    mF(Eigen::Vector6d::Zero()),
-    mFext(Eigen::Vector6d::Zero()),
-    mFgravity(Eigen::Vector6d::Zero()),
-    mArtInertia(Eigen::Matrix6d::Identity()),
-    mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
-    mBiasForce(Eigen::Vector6d::Zero()),
-    mCg_dV(Eigen::Vector6d::Zero()),
-    mCg_F(Eigen::Vector6d::Zero()),
-    mG_F(Eigen::Vector6d::Zero()),
-    mFext_F(Eigen::Vector6d::Zero()),
-    mM_dV(Eigen::Vector6d::Zero()),
-    mM_F(Eigen::Vector6d::Zero()),
-    mInvM_c(Eigen::Vector6d::Zero()),
-    mInvM_U(Eigen::Vector6d::Zero()),
-    mArbitrarySpatial(Eigen::Vector6d::Zero()),
-    mDelV(Eigen::Vector6d::Zero()),
-    mBiasImpulse(Eigen::Vector6d::Zero()),
-    mConstraintImpulse(Eigen::Vector6d::Zero()),
-    mImpF(Eigen::Vector6d::Zero())
+BodyNode::UniqueProperties::UniqueProperties(
+    const Inertia& _inertia,
+    const std::vector<ShapePtr>& _collisionShapes,
+    bool _isCollidable, double _frictionCoeff,
+    double _restitutionCoeff, bool _gravityMode)
+  : mInertia(_inertia),
+    mColShapes(_collisionShapes),
+    mIsCollidable(_isCollidable),
+    mFrictionCoeff(_frictionCoeff),
+    mRestitutionCoeff(_restitutionCoeff),
+    mGravityMode(_gravityMode)
 {
+  // Do nothing
+}
+
+//==============================================================================
+BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
+                                 const UniqueProperties& _bodyNodeProperties)
+  : Entity::Properties(_entityProperties),
+    UniqueProperties(_bodyNodeProperties)
+{
+  // Do nothing
 }
 
 //==============================================================================
 BodyNode::~BodyNode()
 {
-  // Release shapes for collisions
-  for (std::vector<Shape*>::const_iterator itColShape = mColShapes.begin();
-       itColShape != mColShapes.end(); ++itColShape)
-  {
-    // If the collision shapes are not in the list of visualization shapes
-    if (mVizShapes.end() == std::find(mVizShapes.begin(), mVizShapes.end(),
-                                      *itColShape))
-    {
-      // Delete it
-      delete (*itColShape);
-    }
-  }
-
   // Release markers
   for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
        it != mMarkers.end(); ++it)
   {
     delete (*it);
   }
+}
 
-  // Release parent joint
-  delete mParentJoint;
+//==============================================================================
+void BodyNode::setProperties(const Properties& _properties)
+{
+  Entity::setProperties(static_cast<const Entity::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void BodyNode::setProperties(const UniqueProperties& _properties)
+{
+  setInertia(_properties.mInertia);
+  setGravityMode(_properties.mGravityMode);
+  setFrictionCoeff(_properties.mFrictionCoeff);
+  setRestitutionCoeff(_properties.mRestitutionCoeff);
+
+  removeAllCollisionShapes();
+  for(size_t i=0; i<_properties.mColShapes.size(); ++i)
+    addCollisionShape(_properties.mColShapes[i]);
+
+  mBodyP.mMarkerProperties = _properties.mMarkerProperties;
+  // Remove current markers
+  for(Marker* marker : mMarkers)
+    delete marker;
+
+  // Create new markers
+  mMarkers.clear();
+  for(const Marker::Properties& marker : mBodyP.mMarkerProperties)
+    addMarker(new Marker(marker, this));
+}
+
+//==============================================================================
+BodyNode::Properties BodyNode::getBodyNodeProperties() const
+{
+  return BodyNode::Properties(mEntityP, mBodyP);
+}
+
+//==============================================================================
+void BodyNode::copy(const BodyNode& _otherBodyNode)
+{
+  if(this == &_otherBodyNode)
+    return;
+
+  setProperties(_otherBodyNode.getBodyNodeProperties());
+}
+
+//==============================================================================
+void BodyNode::copy(const BodyNode* _otherBodyNode)
+{
+  if(nullptr == _otherBodyNode)
+    return;
+
+  copy(*_otherBodyNode);
+}
+
+//==============================================================================
+BodyNode& BodyNode::operator=(const BodyNode& _otherBodyNode)
+{
+  copy(_otherBodyNode);
+  return *this;
 }
 
 //==============================================================================
 const std::string& BodyNode::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
-  if(mName == _name)
-    return mName;
+  if(mEntityP.mName == _name)
+    return mEntityP.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
-  if(mSkeleton)
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mNameMgrForBodyNodes.removeName(mName);
+    skel->mNameMgrForBodyNodes.removeName(mEntityP.mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      mSkeleton->mNameMgrForSoftBodyNodes.removeName(mName);
+      skel->mNameMgrForSoftBodyNodes.removeName(mEntityP.mName);
 
-    mName = _name;
-    mSkeleton->addEntryToBodyNodeNameMgr(this);
+    mEntityP.mName = _name;
+    skel->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
-      mSkeleton->addEntryToSoftBodyNodeNameMgr(softnode);
+      skel->addEntryToSoftBodyNodeNameMgr(softnode);
   }
   else
   {
-    mName = _name;
+    mEntityP.mName = _name;
   }
 
   // Return the final name (which might have been altered by the Skeleton's
   // NameManager)
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& BodyNode::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 void BodyNode::setGravityMode(bool _gravityMode)
 {
-  if (mGravityMode == _gravityMode)
+  if (mBodyP.mGravityMode == _gravityMode)
     return;
 
-  mGravityMode = _gravityMode;
+  mBodyP.mGravityMode = _gravityMode;
 
-  if (mSkeleton)
-    mSkeleton->mIsGravityForcesDirty = true;
+  SKEL_SET_FLAGS(mGravityForces);
+  SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 }
 
 //==============================================================================
 bool BodyNode::getGravityMode() const
 {
-  return mGravityMode;
+  return mBodyP.mGravityMode;
 }
 
 //==============================================================================
 bool BodyNode::isCollidable() const
 {
-  return mIsCollidable;
+  return mBodyP.mIsCollidable;
 }
 
 //==============================================================================
 void BodyNode::setCollidable(bool _isCollidable)
 {
-  mIsCollidable = _isCollidable;
+  mBodyP.mIsCollidable = _isCollidable;
 }
 
 //==============================================================================
@@ -224,60 +292,72 @@ void BodyNode::setMass(double _mass)
 {
   assert(_mass >= 0.0 && "Negative mass is not allowable.");
 
-  mMass = _mass;
+  mBodyP.mInertia.setMass(_mass);
 
-  _updateSpatialInertia();
+  notifyArticulatedInertiaUpdate();
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
+    skel->updateTotalMass();
 }
 
 //==============================================================================
 double BodyNode::getMass() const
 {
-  return mMass;
+  return mBodyP.mInertia.getMass();
 }
 
 //==============================================================================
 void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
                                   double _Ixy, double _Ixz, double _Iyz)
 {
-  assert(_Ixx >= 0.0);
-  assert(_Iyy >= 0.0);
-  assert(_Izz >= 0.0);
+  mBodyP.mInertia.setMoment(_Ixx, _Iyy, _Izz,
+                          _Ixy, _Ixz, _Iyz);
 
-  mIxx = _Ixx;
-  mIyy = _Iyy;
-  mIzz = _Izz;
-
-  mIxy = _Ixy;
-  mIxz = _Ixz;
-  mIyz = _Iyz;
-
-  _updateSpatialInertia();
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 void BodyNode::getMomentOfInertia(double& _Ixx, double& _Iyy, double& _Izz,
                                   double& _Ixy, double& _Ixz, double& _Iyz)
 {
-  _Ixx = mIxx;
-  _Iyy = mIyy;
-  _Izz = mIzz;
+  _Ixx = mBodyP.mInertia.getParameter(Inertia::I_XX);
+  _Iyy = mBodyP.mInertia.getParameter(Inertia::I_YY);
+  _Izz = mBodyP.mInertia.getParameter(Inertia::I_ZZ);
 
-  _Ixy = mIxy;
-  _Ixz = mIxz;
-  _Iyz = mIyz;
+  _Ixy = mBodyP.mInertia.getParameter(Inertia::I_XY);
+  _Ixz = mBodyP.mInertia.getParameter(Inertia::I_XZ);
+  _Iyz = mBodyP.mInertia.getParameter(Inertia::I_YZ);
 }
 
 //==============================================================================
 const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
 {
-  return mI;
+  return mBodyP.mInertia.getSpatialTensor();
+}
+
+//==============================================================================
+void BodyNode::setInertia(const Inertia& _inertia)
+{
+  mBodyP.mInertia = _inertia;
+
+  notifyArticulatedInertiaUpdate();
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
+    skel->updateTotalMass();
+}
+
+//==============================================================================
+const Inertia& BodyNode::getInertia() const
+{
+  return mBodyP.mInertia;
 }
 
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertia() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-    mSkeleton->updateArticulatedInertia();
+  const ConstSkeletonPtr& skel = getSkeleton();
+  if( skel && CHECK_FLAG(mArticulatedInertia) )
+    skel->updateArticulatedInertia(mTreeIndex);
 
   return mArtInertia;
 }
@@ -285,8 +365,9 @@ const math::Inertia& BodyNode::getArticulatedInertia() const
 //==============================================================================
 const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-    mSkeleton->updateArticulatedInertia();
+  const ConstSkeletonPtr& skel = getSkeleton();
+  if( skel && CHECK_FLAG(mArticulatedInertia) )
+    skel->updateArticulatedInertia(mTreeIndex);
 
   return mArtInertiaImplicit;
 }
@@ -294,79 +375,81 @@ const math::Inertia& BodyNode::getArticulatedInertiaImplicit() const
 //==============================================================================
 void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
-  mCenterOfMass = _com;
+  mBodyP.mInertia.setLocalCOM(_com);
 
-  _updateSpatialInertia();
+  notifyArticulatedInertiaUpdate();
 }
 
 //==============================================================================
 const Eigen::Vector3d& BodyNode::getLocalCOM() const
 {
-  return mCenterOfMass;
+  return mBodyP.mInertia.getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOM() const
 {
-  return getWorldTransform() * mCenterOfMass;
+  return getWorldTransform() * getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
 {
-  return getSpatialVelocity(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
+  return getSpatialVelocity(getLocalCOM(),
+                            Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
 {
-  return getSpatialAcceleration(mCenterOfMass, Frame::World(), Frame::World()).tail<3>();
+  return getSpatialAcceleration(getLocalCOM(),
+                                Frame::World(), Frame::World()).tail<3>();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOM(const Frame* _withRespectTo) const
 {
-  return getTransform(_withRespectTo) * mCenterOfMass;
+  return getTransform(_withRespectTo) * getLocalCOM();
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOMLinearVelocity(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getLinearVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getLinearVelocity(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialVelocity() const
 {
-  return getSpatialVelocity(mCenterOfMass);
+  return getSpatialVelocity(getLocalCOM());
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialVelocity(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getSpatialVelocity(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getSpatialVelocity(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getCOMLinearAcceleration(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getLinearAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getLinearAcceleration(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialAcceleration() const
 {
-  return getSpatialAcceleration(mCenterOfMass);
+  return getSpatialAcceleration(getLocalCOM());
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(const Frame* _relativeTo,
                                             const Frame* _inCoordinatesOf) const
 {
-  return getSpatialAcceleration(mCenterOfMass, _relativeTo, _inCoordinatesOf);
+  return getSpatialAcceleration(getLocalCOM(), _relativeTo, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -374,13 +457,13 @@ void BodyNode::setFrictionCoeff(double _coeff)
 {
   assert(0.0 <= _coeff
          && "Coefficient of friction should be non-negative value.");
-  mFrictionCoeff = _coeff;
+  mBodyP.mFrictionCoeff = _coeff;
 }
 
 //==============================================================================
 double BodyNode::getFrictionCoeff() const
 {
-  return mFrictionCoeff;
+  return mBodyP.mFrictionCoeff;
 }
 
 //==============================================================================
@@ -388,88 +471,214 @@ void BodyNode::setRestitutionCoeff(double _coeff)
 {
   assert(0.0 <= _coeff && _coeff <= 1.0
          && "Coefficient of restitution should be in range of [0, 1].");
-  mRestitutionCoeff = _coeff;
+  mBodyP.mRestitutionCoeff = _coeff;
 }
 
 //==============================================================================
 double BodyNode::getRestitutionCoeff() const
 {
-  return mRestitutionCoeff;
+  return mBodyP.mRestitutionCoeff;
 }
 
 //==============================================================================
-void BodyNode::addCollisionShape(Shape* _p)
+void BodyNode::addCollisionShape(ShapePtr _shape)
 {
-  if(nullptr == _p)
+  if(nullptr == _shape)
   {
     dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
            << "collision shape\n";
     return;
   }
 
-  if(_p->getShapeType() == Shape::LINE_SEGMENT)
+  if(_shape->getShapeType() == Shape::LINE_SEGMENT)
   {
     dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
            << "type shape as a collision shape. This is not supported.\n";
     return;
   }
 
-  mColShapes.push_back(_p);
+  if(std::find(mBodyP.mColShapes.begin(), mBodyP.mColShapes.end(), _shape)
+     != mBodyP.mColShapes.end())
+  {
+    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a duplicate "
+           << "collision shape.\n";
+    return;
+  }
+
+  mBodyP.mColShapes.push_back(_shape);
+
+  mColShapeAddedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void BodyNode::removeCollisionShape(ShapePtr _shape)
+{
+  if (nullptr == _shape)
+    return;
+
+  mBodyP.mColShapes.erase(std::remove(mBodyP.mColShapes.begin(),
+                                      mBodyP.mColShapes.end(), _shape),
+                          mBodyP.mColShapes.end());
+
+  mColShapeRemovedSignal.raise(this, _shape);
+}
+
+//==============================================================================
+void BodyNode::removeAllCollisionShapes()
+{
+  std::vector<ShapePtr>::iterator it = mBodyP.mColShapes.begin();
+  while (it != mBodyP.mColShapes.end())
+  {
+    removeCollisionShape(*it);
+    it = mBodyP.mColShapes.begin();
+  }
 }
 
 //==============================================================================
 size_t BodyNode::getNumCollisionShapes() const
 {
-  return mColShapes.size();
+  return mBodyP.mColShapes.size();
 }
 
 //==============================================================================
-Shape* BodyNode::getCollisionShape(size_t _index)
+ShapePtr BodyNode::getCollisionShape(size_t _index)
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
 }
 
 //==============================================================================
-const Shape* BodyNode::getCollisionShape(size_t _index) const
+ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mColShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
 }
 
 //==============================================================================
-Skeleton* BodyNode::getSkeleton()
+size_t BodyNode::getIndexInSkeleton() const
 {
-  return mSkeleton;
+  return mIndexInSkeleton;
 }
 
 //==============================================================================
-const Skeleton* BodyNode::getSkeleton() const
+size_t BodyNode::getIndexInTree() const
 {
-  return mSkeleton;
+  return mIndexInTree;
 }
 
 //==============================================================================
-void BodyNode::setParentJoint(Joint* _joint)
+size_t BodyNode::getTreeIndex() const
 {
-  if (_joint->getChildBodyNode())
+  return mTreeIndex;
+}
+
+//==============================================================================
+static bool checkSkeletonNodeAgreement(
+    const BodyNode* _bodyNode,
+    const ConstSkeletonPtr& _newSkeleton, const BodyNode* _newParent,
+    const std::string& _function,
+    const std::string& _operation)
+{
+  if(nullptr == _newSkeleton)
   {
-    assert(_joint->getChildBodyNode() != this);
-    // TODO: How should we handle this scenario? (The Joint that was passed in
-    // already has some other child BodyNode!)
+    dterr << "[BodyNode::" << _function << "] Attempting to " << _operation
+          << " a BodyNode tree starting " << "from [" << _bodyNode->getName()
+          << "] in the Skeleton named [" << _bodyNode->getSkeleton()->getName()
+          << "] into a nullptr Skeleton.\n";
+    return false;
   }
 
-  if (mSkeleton)
+  if(_newParent && _newSkeleton != _newParent->getSkeleton())
   {
-    mSkeleton->unregisterJoint(mParentJoint);
-    mSkeleton->registerJoint(_joint);
+    dterr << "[BodyNode::" << _function << "] Mismatch between the specified "
+          << "Skeleton [" << _newSkeleton->getName() << "] (" << _newSkeleton
+          << ") and the specified new parent BodyNode ["
+          << _newParent->getName() << "] whose actual Skeleton is named ["
+          << _newParent->getSkeleton()->getName() <<  "] ("
+          << _newParent->getSkeleton() << ") while attempting to " << _operation
+          << " the BodyNode [" << _bodyNode->getName() << "] from the "
+          << "Skeleton named [" << _bodyNode->getSkeleton()->getName() << "] ("
+          << _bodyNode->getSkeleton() << ").\n";
+    return false;
   }
 
-  if (mParentJoint)
-    mParentJoint->mChildBodyNode = NULL;
+  return true;
+}
 
-  mParentJoint = _joint;
-  mParentJoint->mChildBodyNode = this;
-  // TODO: Should we delete the original mParentJoint? Seems like the BodyNode
-  // should be responsible for its parent joint
+//==============================================================================
+SkeletonPtr BodyNode::remove(const std::string& _name)
+{
+  return split(_name);
+}
+
+//==============================================================================
+bool BodyNode::moveTo(BodyNode* _newParent)
+{
+  if(nullptr == _newParent)
+    return getSkeleton()->moveBodyNodeTree(
+          getParentJoint(), this, getSkeleton(), nullptr);
+  else
+    return getSkeleton()->moveBodyNodeTree(
+          getParentJoint(), this, _newParent->getSkeleton(), _newParent);
+}
+
+//==============================================================================
+bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
+{
+  if(checkSkeletonNodeAgreement(
+       this, _newSkeleton, _newParent, "moveTo", "move"))
+  {
+    return getSkeleton()->moveBodyNodeTree(
+          getParentJoint(), this, _newSkeleton, _newParent);
+  }
+
+  return false;
+}
+
+//==============================================================================
+SkeletonPtr BodyNode::split(const std::string& _skeletonName)
+{
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
+  skel->setName(_skeletonName);
+  moveTo(skel, nullptr);
+  return skel;
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(BodyNode* _newParent,
+                                              bool _recursive)
+{
+  if(nullptr == _newParent)
+    return getSkeleton()->cloneBodyNodeTree(
+          nullptr, this, getSkeleton(), nullptr, _recursive);
+  else
+    return getSkeleton()->cloneBodyNodeTree(
+          nullptr, this, _newParent->getSkeleton(), _newParent, _recursive);
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> BodyNode::copyTo(const SkeletonPtr& _newSkeleton,
+                                              BodyNode* _newParent,
+                                              bool _recursive) const
+{
+  if(checkSkeletonNodeAgreement(
+       this, _newSkeleton, _newParent, "copyTo", "copy"))
+  {
+    return getSkeleton()->cloneBodyNodeTree(
+          nullptr, this, _newSkeleton, _newParent, _recursive);
+  }
+
+  return std::pair<Joint*, BodyNode*>(nullptr, nullptr);
+}
+
+//==============================================================================
+SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
+                             bool _recursive) const
+{
+  const SkeletonPtr& skel =
+      Skeleton::create(getSkeleton()->getSkeletonProperties());
+  skel->setName(_skeletonName);
+  copyTo(skel, nullptr, _recursive);
+  return skel;
 }
 
 //==============================================================================
@@ -504,7 +713,7 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
      mChildBodyNodes.end())
   {
-    dtwarn << "[BodyNode::addChildBodyNode(~)] Attempting to add a BodyNode '"
+    dtwarn << "[BodyNode::addChildBodyNode] Attempting to add a BodyNode '"
            << _body->getName() << "' as a child BodyNode of '" << getName()
            << "', which is already its parent." << std::endl;
     return;
@@ -513,6 +722,12 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
+}
+
+//==============================================================================
+size_t BodyNode::getNumChildBodyNodes() const
+{
+  return mChildBodyNodes.size();
 }
 
 //==============================================================================
@@ -528,17 +743,35 @@ const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 }
 
 //==============================================================================
-size_t BodyNode::getNumChildBodyNodes() const
+size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
+}
+
+//==============================================================================
+Joint* BodyNode::getChildJoint(size_t _index)
+{
+  BodyNode* childBodyNode = getChildBodyNode(_index);
+
+  if(childBodyNode)
+    return childBodyNode->getParentJoint();
+  else
+    return nullptr;
+}
+
+//==============================================================================
+const Joint* BodyNode::getChildJoint(size_t _index) const
+{
+  return const_cast<BodyNode*>(this)->getChildJoint(_index);
 }
 
 //==============================================================================
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);
-  if(mSkeleton)
-    mSkeleton->addEntryToMarkerNameMgr(_marker);
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
+    skel->addEntryToMarkerNameMgr(_marker);
 }
 
 //==============================================================================
@@ -588,46 +821,15 @@ const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
 }
 
 //==============================================================================
-template <typename DofType, typename BnType, typename SkelType, typename JType>
-std::vector<DofType*> getDependentDofsTemplate(BnType* bn)
+const std::vector<DegreeOfFreedom*>& BodyNode::getDependentDofs()
 {
-  std::vector<DofType*> dofs;
-  SkelType* skel = bn->getSkeleton();
-  if(!skel)
-  {
-    JType* joint = bn->getParentJoint();
-    if(!joint)
-      return dofs;
-
-    size_t nDofs = joint->getNumDofs();
-    dofs.reserve(nDofs);
-    for(size_t i=0; i<nDofs; ++i)
-      dofs.push_back(joint->getDof(i));
-
-    return dofs;
-  }
-
-  const std::vector<size_t>& coords = bn->getDependentGenCoordIndices();
-  size_t nDofs = coords.size();
-  dofs.reserve(nDofs);
-  for(size_t i=0; i<nDofs; ++i)
-    dofs.push_back(skel->getDof(coords[i]));
-
-  return dofs;
+  return mDependentDofs;
 }
 
 //==============================================================================
-std::vector<DegreeOfFreedom*> BodyNode::getDependentDofs()
+const std::vector<const DegreeOfFreedom*>& BodyNode::getDependentDofs() const
 {
-  return getDependentDofsTemplate<
-      DegreeOfFreedom, BodyNode, Skeleton, Joint>(this);
-}
-
-//==============================================================================
-std::vector<const DegreeOfFreedom*> BodyNode::getDependentDofs() const
-{
-  return getDependentDofsTemplate<
-      const DegreeOfFreedom, const BodyNode, const Skeleton, const Joint>(this);
+  return mConstDependentDofs;
 }
 
 //==============================================================================
@@ -712,7 +914,7 @@ const Eigen::Vector6d& BodyNode::getPartialAcceleration() const
 const math::Jacobian& BodyNode::getJacobian() const
 {
   if (mIsBodyJacobianDirty)
-    _updateBodyJacobian();
+    updateBodyJacobian();
 
   return mBodyJacobian;
 }
@@ -756,7 +958,7 @@ math::Jacobian BodyNode::getJacobian(const Eigen::Vector3d& _offset,
 const math::Jacobian& BodyNode::getWorldJacobian() const
 {
   if(mIsWorldJacobianDirty)
-    _updateWorldJacobian();
+    updateWorldJacobian();
 
   return mWorldJacobian;
 }
@@ -813,7 +1015,7 @@ math::AngularJacobian BodyNode::getAngularJacobian(
 const math::Jacobian& BodyNode::getJacobianSpatialDeriv() const
 {
   if(mIsBodyJacobianSpatialDerivDirty)
-    _updateBodyJacobianSpatialDeriv();
+    updateBodyJacobianSpatialDeriv();
 
   return mBodyJacobianSpatialDeriv;
 }
@@ -853,7 +1055,7 @@ math::Jacobian BodyNode::getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
 const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
 {
   if(mIsWorldJacobianClassicDerivDirty)
-    _updateWorldJacobianClassicDeriv();
+    updateWorldJacobianClassicDeriv();
 
   return mWorldJacobianClassicDeriv;
 }
@@ -1101,8 +1303,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
 
   mFext += math::dAdInvT(T, F);
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1126,8 +1327,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
 
   mFext = math::dAdInvT(T, F);
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1138,8 +1338,7 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
@@ -1150,16 +1349,77 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
   else
     mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
 
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
+  SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
-void BodyNode::init(Skeleton* _skeleton)
+BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                   const Properties& _properties)
+  : Entity(Frame::World(), "", false), // Name gets set later by setProperties
+    Frame(Frame::World(), ""),
+    mID(BodyNode::msBodyNodeCount++),
+    mIsColliding(false),
+    mParentJoint(_parentJoint),
+    mParentBodyNode(nullptr),
+    mIsBodyJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true),
+    mPartialAcceleration(Eigen::Vector6d::Zero()),
+    mIsPartialAccelerationDirty(true),
+    mF(Eigen::Vector6d::Zero()),
+    mFext(Eigen::Vector6d::Zero()),
+    mFgravity(Eigen::Vector6d::Zero()),
+    mArtInertia(Eigen::Matrix6d::Identity()),
+    mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
+    mBiasForce(Eigen::Vector6d::Zero()),
+    mCg_dV(Eigen::Vector6d::Zero()),
+    mCg_F(Eigen::Vector6d::Zero()),
+    mG_F(Eigen::Vector6d::Zero()),
+    mFext_F(Eigen::Vector6d::Zero()),
+    mM_dV(Eigen::Vector6d::Zero()),
+    mM_F(Eigen::Vector6d::Zero()),
+    mInvM_c(Eigen::Vector6d::Zero()),
+    mInvM_U(Eigen::Vector6d::Zero()),
+    mArbitrarySpatial(Eigen::Vector6d::Zero()),
+    mDelV(Eigen::Vector6d::Zero()),
+    mBiasImpulse(Eigen::Vector6d::Zero()),
+    mConstraintImpulse(Eigen::Vector6d::Zero()),
+    mImpF(Eigen::Vector6d::Zero()),
+    onColShapeAdded(mColShapeAddedSignal),
+    onColShapeRemoved(mColShapeRemovedSignal),
+    onStructuralChange(mStructuralChangeSignal)
 {
-  assert(_skeleton);
+  mParentJoint->mChildBodyNode = this;
+  setProperties(_properties);
 
+  if(_parentBodyNode)
+    _parentBodyNode->addChildBodyNode(this);
+}
+
+//==============================================================================
+BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+{
+  return new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+}
+
+//==============================================================================
+void BodyNode::init(const SkeletonPtr& _skeleton)
+{
   mSkeleton = _skeleton;
+  assert(_skeleton);
+  if(mReferenceCount > 0)
+  {
+    mReferenceSkeleton = mSkeleton.lock();
+  }
+
+  // Put the scope around this so that 'lock' releases the mutex immediately
+  // after we're done with it
+  {
+    std::lock_guard<std::mutex> lock(mLockedSkeleton->mMutex);
+    mLockedSkeleton->mSkeleton = mSkeleton;
+  }
+
   mParentJoint->init(_skeleton);
 
   //--------------------------------------------------------------------------
@@ -1177,6 +1437,16 @@ void BodyNode::init(Skeleton* _skeleton)
   // Sort
   std::sort(mDependentGenCoordIndices.begin(), mDependentGenCoordIndices.end());
 
+  mDependentDofs.clear();
+  mDependentDofs.reserve(mDependentGenCoordIndices.size());
+  mConstDependentDofs.clear();
+  mConstDependentDofs.reserve(mDependentGenCoordIndices.size());
+  for(const size_t& index : mDependentGenCoordIndices)
+  {
+    mDependentDofs.push_back(_skeleton->getDof(index));
+    mConstDependentDofs.push_back(_skeleton->getDof(index));
+  }
+
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
   size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
@@ -1185,11 +1455,11 @@ void BodyNode::init(Skeleton* _skeleton)
     for (size_t j = i + 1; j < nDepGenCoordIndices; ++j)
     {
       assert(mDependentGenCoordIndices[i] !=
-          mDependentGenCoordIndices[j] &&
-          "Duplicated index is found in mDependentGenCoordIndices.");
+             mDependentGenCoordIndices[j] &&
+             "Duplicated index is found in mDependentGenCoordIndices.");
     }
   }
-#endif
+#endif // NDEBUG
 
   //--------------------------------------------------------------------------
   // Set dimensions of dynamics matrices and vectors.
@@ -1199,6 +1469,7 @@ void BodyNode::init(Skeleton* _skeleton)
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
   mWorldJacobianClassicDeriv.setZero(6, numDepGenCoords);
+  notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -1212,14 +1483,13 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
      mChildBodyNodes.end())
     return;
-  // TODO: Looks redundant
 
   // Check if it's already accounted for in our Non-BodyNode Entities
   if(mNonBodyNodeEntities.find(_newChildEntity) != mNonBodyNodeEntities.end())
   {
-    dtwarn << "[BodyNode::processNewEntity(~)] Attempting to add an Entity '"
-           << _newChildEntity->getName() << "' as a child Entity of '"
-           << getName() << "', which is already its parent." << std::endl;
+    dtwarn << "[BodyNode::processNewEntity] Attempting to add an Entity ["
+           << _newChildEntity->getName() << "] as a child Entity of ["
+           << getName() << "], which is already its parent." << std::endl;
     return;
   }
 
@@ -1273,12 +1543,13 @@ void BodyNode::notifyTransformUpdate()
 
   mNeedTransformUpdate = true;
 
-  if(mSkeleton)
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mIsCoriolisForcesDirty = true;
-    mSkeleton->mIsGravityForcesDirty = true;
-    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
-    mSkeleton->mIsExternalForcesDirty = true;
+    SET_FLAGS(mCoriolisForces);
+    SET_FLAGS(mGravityForces);
+    SET_FLAGS(mCoriolisAndGravityForces);
+    SET_FLAGS(mExternalForces);
   }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
@@ -1303,10 +1574,11 @@ void BodyNode::notifyVelocityUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
-  if(mSkeleton)
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->mIsCoriolisForcesDirty = true;
-    mSkeleton->mIsCoriolisAndGravityForcesDirty = true;
+    SET_FLAGS(mCoriolisForces);
+    SET_FLAGS(mCoriolisAndGravityForces);
   }
 
   // Child BodyNodes and other generic Entities are notified separately to allow
@@ -1332,6 +1604,27 @@ void BodyNode::notifyAccelerationUpdate()
 
   for(Entity* entity : mNonBodyNodeEntities)
     entity->notifyAccelerationUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyArticulatedInertiaUpdate()
+{
+  const SkeletonPtr& skel = getSkeleton();
+  if(skel)
+    skel->notifyArticulatedInertiaUpdate(mTreeIndex);
+}
+
+//==============================================================================
+void BodyNode::notifyExternalForcesUpdate()
+{
+  SKEL_SET_FLAGS(mExternalForces);
+}
+
+//==============================================================================
+void BodyNode::notifyCoriolisUpdate()
+{
+  SKEL_SET_FLAGS(mCoriolisForces);
+  SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -1386,7 +1679,8 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                                         bool _withExternalForces)
 {
   // Gravity force
-  if (mGravityMode == true)
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
+  if (mBodyP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -1432,6 +1726,7 @@ void BodyNode::updateGeneralizedForce(bool _withDampingForces)
 void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   mArtInertia = mI;
   mArtInertiaImplicit = mI;
 
@@ -1463,7 +1758,8 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
                                double _timeStep)
 {
   // Gravity force
-  if (mGravityMode == true)
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
+  if (mBodyP.mGravityMode == true)
     mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
   else
     mFgravity.setZero();
@@ -1651,6 +1947,19 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
 }
 
 //==============================================================================
+void BodyNode::clearExternalForces()
+{
+  mFext.setZero();
+  SKEL_SET_FLAGS(mExternalForces);
+}
+
+//==============================================================================
+void BodyNode::clearInternalForces()
+{
+  mParentJoint->resetForces();
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
   return mFext;
@@ -1730,18 +2039,20 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 double BodyNode::getKineticEnergy() const
 {
   const Eigen::Vector6d& V = getSpatialVelocity();
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   return 0.5 * V.dot(mI * V);
 }
 
 //==============================================================================
 double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 {
-  return -mMass * getWorldTransform().translation().dot(_gravity);
+  return -getMass() * getWorldTransform().translation().dot(_gravity);
 }
 
 //==============================================================================
 Eigen::Vector3d BodyNode::getLinearMomentum() const
 {
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   return (mI * getSpatialVelocity()).tail<3>();
 }
 
@@ -1749,6 +2060,7 @@ Eigen::Vector3d BodyNode::getLinearMomentum() const
 Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   T.translation() = _pivot;
   return math::dAdT(T, mI * getSpatialVelocity()).head<3>();
 }
@@ -1762,7 +2074,8 @@ bool BodyNode::isImpulseReponsible() const
 //==============================================================================
 bool BodyNode::isReactive() const
 {
-  if (mSkeleton->isMobile() && getNumDependentGenCoords() > 0)
+  const ConstSkeletonPtr& skel = getSkeleton();
+  if (skel && skel->isMobile() && getNumDependentGenCoords() > 0)
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
@@ -1809,16 +2122,17 @@ void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
 }
 
 //==============================================================================
-void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd* _C)
+void BodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
 {
   aggregateCombinedVector(_C, Eigen::Vector3d::Zero());
 }
 
 //==============================================================================
-void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
+void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity)
 {
-  if (mGravityMode == true)
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
+  if (mBodyP.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mG_F.setZero();
@@ -1834,8 +2148,8 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd* _g,
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _g->segment(iStart, nGenCoords) = g;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _g.segment(iStart, nGenCoords) = g;
   }
 }
 
@@ -1854,12 +2168,13 @@ void BodyNode::updateCombinedVector()
 }
 
 //==============================================================================
-void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
+void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity)
 {
   // H(i) = I(i) * W(i) -
   //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
-  if (mGravityMode == true)
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
+  if (mBodyP.mGravityMode == true)
     mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mFgravity.setZero();
@@ -1880,13 +2195,13 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd* _Cg,
   {
     Eigen::VectorXd Cg
         = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _Cg->segment(iStart, nGenCoords) = Cg;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _Cg.segment(iStart, nGenCoords) = Cg;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
+void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
   mFext_F = mFext;
 
@@ -1901,13 +2216,13 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd* _Fext)
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _Fext->segment(iStart, nGenCoords) = Fext;
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial)
 {
   //
@@ -1922,8 +2237,8 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
   }
 
   // Project the spatial quantity to generalized coordinates
-  size_t iStart = mParentJoint->getIndexInSkeleton(0);
-  _generalized->segment(iStart, mParentJoint->getNumDofs())
+  size_t iStart = mParentJoint->getIndexInTree(0);
+  _generalized.segment(iStart, mParentJoint->getNumDofs())
       = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
 }
 
@@ -1945,8 +2260,9 @@ void BodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
 {
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
   //
   mM_F.noalias() = mI * mM_dV;
 
@@ -1968,17 +2284,18 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col)
   size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
-    _MCol->block(iStart, _col, dof, 1).noalias() =
+    size_t iStart = mParentJoint->getIndexInTree(0);
+    _MCol.block(iStart, _col, dof, 1).noalias() =
         mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
+void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                       double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
+  const Eigen::Matrix6d& mI = mBodyP.mInertia.getSpatialTensor();
 
   //
   mM_F.noalias() = mI * mM_dV;
@@ -2009,9 +2326,9 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
 
-    size_t iStart = mParentJoint->getIndexInSkeleton(0);
+    size_t iStart = mParentJoint->getIndexInTree(0);
 
-    _MCol->block(iStart, _col, dof, 1).noalias()
+    _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getAccelerations())
           + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
@@ -2061,13 +2378,13 @@ void BodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
+          _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
     mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
@@ -2077,7 +2394,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+          _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -2088,14 +2405,14 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col)
 }
 
 //==============================================================================
-void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
+void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
                                          double /*_timeStep*/)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          _InvMCol, _col, getArticulatedInertiaImplicit(),
           mParentBodyNode->mInvM_U);
 
     //
@@ -2106,7 +2423,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
   {
     //
     mParentJoint->getInvAugMassMatrixSegment(
-          *_InvMCol, _col, getArticulatedInertiaImplicit(),
+          _InvMCol, _col, getArticulatedInertiaImplicit(),
           Eigen::Vector6d::Zero());
 
     //
@@ -2118,7 +2435,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobian() const
+void BodyNode::updateBodyJacobian() const
 {
   //--------------------------------------------------------------------------
   // Jacobian update
@@ -2159,7 +2476,7 @@ void BodyNode::_updateBodyJacobian() const
 }
 
 //==============================================================================
-void BodyNode::_updateWorldJacobian() const
+void BodyNode::updateWorldJacobian() const
 {
   mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
 
@@ -2167,7 +2484,7 @@ void BodyNode::_updateWorldJacobian() const
 }
 
 //==============================================================================
-void BodyNode::_updateBodyJacobianSpatialDeriv() const
+void BodyNode::updateBodyJacobianSpatialDeriv() const
 {
   //--------------------------------------------------------------------------
   // Body Jacobian first spatial derivative update
@@ -2212,7 +2529,7 @@ void BodyNode::_updateBodyJacobianSpatialDeriv() const
 }
 
 //==============================================================================
-void BodyNode::_updateWorldJacobianClassicDeriv() const
+void BodyNode::updateWorldJacobianClassicDeriv() const
 {
   //----------------------------------------------------------------------------
   // World Jacobian first classic deriv update
@@ -2242,7 +2559,8 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
 
   if(mParentBodyNode)
   {
-    const math::Jacobian& dJ_parent = mParentBodyNode->getJacobianClassicDeriv();
+    const math::Jacobian& dJ_parent =
+        mParentBodyNode->getJacobianClassicDeriv();
     const math::Jacobian& J_parent = mParentBodyNode->getWorldJacobian();
 
     const Eigen::Vector3d& v_local = getLinearVelocity(mParentBodyNode,
@@ -2277,66 +2595,6 @@ void BodyNode::_updateWorldJacobianClassicDeriv() const
         - (T.linear()*J_local.bottomRows<3>()).colwise().cross(w);
 
   mIsWorldJacobianClassicDerivDirty = false;
-}
-
-//==============================================================================
-void BodyNode::_updateSpatialInertia()
-{
-  // G = | I - m*[r]*[r]   m*[r] |
-  //     |        -m*[r]     m*I |
-
-  // m*r
-  double mr0 = mMass * mCenterOfMass[0];
-  double mr1 = mMass * mCenterOfMass[1];
-  double mr2 = mMass * mCenterOfMass[2];
-
-  // m*[r]*[r]
-  double mr0r0 = mr0 * mCenterOfMass[0];
-  double mr1r1 = mr1 * mCenterOfMass[1];
-  double mr2r2 = mr2 * mCenterOfMass[2];
-  double mr0r1 = mr0 * mCenterOfMass[1];
-  double mr1r2 = mr1 * mCenterOfMass[2];
-  double mr2r0 = mr2 * mCenterOfMass[0];
-
-  // Top left corner (3x3)
-  mI(0, 0) =  mIxx + mr1r1 + mr2r2;
-  mI(1, 1) =  mIyy + mr2r2 + mr0r0;
-  mI(2, 2) =  mIzz + mr0r0 + mr1r1;
-  mI(0, 1) =  mIxy - mr0r1;
-  mI(0, 2) =  mIxz - mr2r0;
-  mI(1, 2) =  mIyz - mr1r2;
-
-  // Top right corner (3x3)
-  mI(1, 5) = -mr0;
-  mI(0, 5) =  mr1;
-  mI(0, 4) = -mr2;
-  mI(2, 4) =  mr0;
-  mI(2, 3) = -mr1;
-  mI(1, 3) =  mr2;
-  assert(mI(0, 3) == 0.0);
-  assert(mI(1, 4) == 0.0);
-  assert(mI(2, 5) == 0.0);
-
-  // Bottom right corner (3x3)
-  mI(3, 3) =  mMass;
-  mI(4, 4) =  mMass;
-  mI(5, 5) =  mMass;
-  assert(mI(3, 4) == 0.0);
-  assert(mI(3, 5) == 0.0);
-  assert(mI(4, 5) == 0.0);
-
-  mI.triangularView<Eigen::StrictlyLower>() = mI.transpose();
-
-  if(mSkeleton)
-    mSkeleton->notifyArticulatedInertiaUpdate();
-}
-
-//==============================================================================
-void BodyNode::clearExternalForces()
-{
-  mFext.setZero();
-  if(mSkeleton)
-    mSkeleton->mIsExternalForcesDirty = true;
 }
 
 }  // namespace dynamics

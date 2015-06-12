@@ -41,27 +41,27 @@
 int main(int argc, char* argv[])
 {
   // create and initialize the world
-  dart::simulation::World *myWorld
+  dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/fullbody1.skel");
   assert(myWorld != NULL);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::Skeleton* skel  = myWorld->getSkeleton(1);
+  dart::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
 
   std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);
   genCoordIds.push_back(6);   // left hip
-  genCoordIds.push_back(14);  // left knee
-  genCoordIds.push_back(17);  // left ankle
-  genCoordIds.push_back(9);   // right hip
-  genCoordIds.push_back(15);  // right knee
-  genCoordIds.push_back(19);  // right ankle
-  genCoordIds.push_back(13);  // lower back
+  genCoordIds.push_back(9);   // left knee
+  genCoordIds.push_back(10);  // left ankle
+  genCoordIds.push_back(13);  // right hip
+  genCoordIds.push_back(16);  // right knee
+  genCoordIds.push_back(17);  // right ankle
+  genCoordIds.push_back(21);  // lower back
   Eigen::VectorXd initConfig(8);
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  skel->setPositionSegment(genCoordIds, initConfig);
+  skel->setPositions(genCoordIds, initConfig);
   skel->computeForwardKinematics(true, true, false);
 
   dart::dynamics::Joint* joint0 = skel->getJoint(0);

@@ -48,11 +48,27 @@ namespace dynamics {
 class BallJoint : public MultiDofJoint<3>
 {
 public:
-  /// Constructor
-  explicit BallJoint(const std::string& _name = "BallJoint");
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _properties =
+                                                MultiDofJoint<3>::Properties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~BallJoint();
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
+  /// Get the Properties of this BallJoint
+  Properties getBallJointProperties() const;
 
   /// Convert a rotation into a 3D vector that can be used to set the positions
   /// of a BallJoint. The positions returned by this function will result in a
@@ -73,17 +89,20 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
   // Documentation inherited
-  void setPositionsStatic(const Eigen::Vector3d& _positions) override;
-
-  // Documentation inherited
-  Eigen::Vector3d getPositionDifferencesStatic(
-      const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const override;
-
-  // Documentation inherited
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
+  // Documentation inherited
+  Eigen::Vector3d getPositionDifferencesStatic(
+      const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const override;
+
 protected:
+
+  /// Constructor called by Skeleton class
+  BallJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 
@@ -103,7 +122,13 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotation matrix
+
+  /// Access mR, which is an auto-updating variable
+  const Eigen::Isometry3d& getR() const;
+
+  /// Rotation matrix dependent on the generalized coordinates
+  ///
+  /// Do not use directly! Use getR() to access this
   mutable Eigen::Isometry3d mR;
 
 public:

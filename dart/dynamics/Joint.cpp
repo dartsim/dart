@@ -53,81 +53,118 @@ namespace dynamics {
 const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
 
 //==============================================================================
-Joint::Joint(const std::string& _name)
+Joint::Properties::Properties(const std::string& _name,
+                              const Eigen::Isometry3d& _T_ParentBodyToJoint,
+                              const Eigen::Isometry3d& _T_ChildBodyToJoint,
+                              bool _isPositionLimited,
+                              ActuatorType _actuatorType)
   : mName(_name),
-    mActuatorType(FORCE),
-    mChildBodyNode(NULL),
-    mSkeleton(NULL),
-    mT_ParentBodyToJoint(Eigen::Isometry3d::Identity()),
-    mT_ChildBodyToJoint(Eigen::Isometry3d::Identity()),
-    mT(Eigen::Isometry3d::Identity()),
-    mSpatialVelocity(Eigen::Vector6d::Zero()),
-    mSpatialAcceleration(Eigen::Vector6d::Zero()),
-    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
-    mNeedTransformUpdate(true),
-    mNeedSpatialVelocityUpdate(true),
-    mNeedSpatialAccelerationUpdate(true),
-    mNeedPrimaryAccelerationUpdate(true),
-    mIsLocalJacobianDirty(true),
-    mIsLocalJacobianTimeDerivDirty(true),
-    mIsPositionLimited(true)
+    mT_ParentBodyToJoint(_T_ParentBodyToJoint),
+    mT_ChildBodyToJoint(_T_ChildBodyToJoint),
+    mIsPositionLimited(_isPositionLimited),
+    mActuatorType(_actuatorType)
 {
+
 }
 
 //==============================================================================
 Joint::~Joint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+void Joint::setProperties(const Properties& _properties)
+{
+  setName(_properties.mName);
+  setTransformFromParentBodyNode(_properties.mT_ParentBodyToJoint);
+  setTransformFromChildBodyNode(_properties.mT_ChildBodyToJoint);
+  setPositionLimited(_properties.mIsPositionLimited);
+  setActuatorType(_properties.mActuatorType);
+}
+
+//==============================================================================
+const Joint::Properties& Joint::getJointProperties() const
+{
+  return mJointP;
+}
+
+//==============================================================================
+void Joint::copy(const Joint& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getJointProperties());
+}
+
+//==============================================================================
+void Joint::copy(const Joint* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+Joint& Joint::operator=(const Joint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
 }
 
 //==============================================================================
 const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 {
-  if (mName == _name)
+  if (mJointP.mName == _name)
   {
     if (_renameDofs)
       updateDegreeOfFreedomNames();
-    return mName;
+    return mJointP.mName;
   }
 
-  if (mSkeleton)
+  const SkeletonPtr& skel = mChildBodyNode?
+        mChildBodyNode->getSkeleton() : nullptr;
+  if (skel)
   {
-    mSkeleton->mNameMgrForJoints.removeName(mName);
-    mName = _name;
-    mSkeleton->addEntryToJointNameMgr(this);
+    skel->mNameMgrForJoints.removeName(mJointP.mName);
+    mJointP.mName = _name;
+    skel->addEntryToJointNameMgr(this);
   }
   else
   {
-    mName = _name;
+    mJointP.mName = _name;
   }
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
 
-  return mName;
+  return mJointP.mName;
 }
 
 //==============================================================================
 const std::string& Joint::getName() const
 {
-  return mName;
+  return mJointP.mName;
 }
 
 //==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
-  mActuatorType = _actuatorType;
+  mJointP.mActuatorType = _actuatorType;
 }
 
 //==============================================================================
 Joint::ActuatorType Joint::getActuatorType() const
 {
-  return mActuatorType;
+  return mJointP.mActuatorType;
 }
 
 //==============================================================================
 bool Joint::isKinematic() const
 {
-  switch (mActuatorType)
+  switch (mJointP.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -169,7 +206,7 @@ BodyNode* Joint::getParentBodyNode()
   if (mChildBodyNode)
     return mChildBodyNode->getParentBodyNode();
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
@@ -179,15 +216,15 @@ const BodyNode* Joint::getParentBodyNode() const
 }
 
 //==============================================================================
-Skeleton* Joint::getSkeleton()
+SkeletonPtr Joint::getSkeleton()
 {
-  return mSkeleton;
+  return mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
 }
 
 //==============================================================================
-const Skeleton* Joint::getSkeleton() const
+std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 {
-  return mSkeleton;
+  return mChildBodyNode? mChildBodyNode->getSkeleton() : nullptr;
 }
 
 //==============================================================================
@@ -239,37 +276,40 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-//bool Joint::contains(const GenCoord* _genCoord) const {
-//  return find(mGenCoords.begin(), mGenCoords.end(), _genCoord) !=
-//      mGenCoords.end() ? true : false;
-//}
-
-//==============================================================================
-//int Joint::getGenCoordLocalIndex(int _dofSkelIndex) const
-//{
-//  for (unsigned int i = 0; i < mGenCoords.size(); i++)
-//    if (mGenCoords[i]->getIndexInSkeleton() == _dofSkelIndex)
-//      return i;
-//  return -1;
-//}
-
-//==============================================================================
 void Joint::setPositionLimited(bool _isPositionLimited)
 {
-  mIsPositionLimited = _isPositionLimited;
+  mJointP.mIsPositionLimited = _isPositionLimited;
 }
 
 //==============================================================================
 bool Joint::isPositionLimited() const
 {
-  return mIsPositionLimited;
+  return mJointP.mIsPositionLimited;
+}
+
+//==============================================================================
+size_t Joint::getJointIndexInSkeleton() const
+{
+  return mChildBodyNode->getIndexInSkeleton();
+}
+
+//==============================================================================
+size_t Joint::getJointIndexInTree() const
+{
+  return mChildBodyNode->getIndexInTree();
+}
+
+//==============================================================================
+size_t Joint::getTreeIndex() const
+{
+  return mChildBodyNode->getTreeIndex();
 }
 
 //==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
-  mT_ParentBodyToJoint = _T;
+  mJointP.mT_ParentBodyToJoint = _T;
   notifyPositionUpdate();
 }
 
@@ -277,7 +317,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
-  mT_ChildBodyToJoint = _T;
+  mJointP.mT_ChildBodyToJoint = _T;
   updateLocalJacobian();
   notifyPositionUpdate();
 }
@@ -285,13 +325,13 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 //==============================================================================
 const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
 {
-  return mT_ParentBodyToJoint;
+  return mJointP.mT_ParentBodyToJoint;
 }
 
 //==============================================================================
 const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
 {
-  return mT_ChildBodyToJoint;
+  return mJointP.mT_ChildBodyToJoint;
 }
 
 //==============================================================================
@@ -301,23 +341,39 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 }
 
 //==============================================================================
-void Joint::init(Skeleton* _skel)
+Joint::Joint(const Properties& _properties)
+  : mJointP(_properties),
+    mChildBodyNode(nullptr),
+    mT(Eigen::Isometry3d::Identity()),
+    mSpatialVelocity(Eigen::Vector6d::Zero()),
+    mSpatialAcceleration(Eigen::Vector6d::Zero()),
+    mPrimaryAcceleration(Eigen::Vector6d::Zero()),
+    mNeedTransformUpdate(true),
+    mNeedSpatialVelocityUpdate(true),
+    mNeedSpatialAccelerationUpdate(true),
+    mNeedPrimaryAccelerationUpdate(true),
+    mIsLocalJacobianDirty(true),
+    mIsLocalJacobianTimeDerivDirty(true)
 {
-  mSkeleton = _skel;
+  // Do nothing
 }
 
 //==============================================================================
-DegreeOfFreedom* Joint::createDofPointer(const std::string &_name,
-                                         size_t _indexInJoint)
+void Joint::init(const SkeletonPtr&)
 {
-  return new DegreeOfFreedom(this, _name, _indexInJoint);
+  // Currently unused
+}
+
+//==============================================================================
+DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
+{
+  return new DegreeOfFreedom(this, _indexInJoint);
 }
 
 //==============================================================================
 void Joint::updateArticulatedInertia() const
 {
-  if(mSkeleton && mSkeleton->mIsArticulatedInertiaDirty)
-      mSkeleton->updateArticulatedInertia();
+  mChildBodyNode->getArticulatedInertia();
 }
 
 //==============================================================================
@@ -368,10 +424,13 @@ void Joint::notifyPositionUpdate()
   mNeedSpatialVelocityUpdate = true;
   mNeedSpatialAccelerationUpdate = true;
 
-  if(mSkeleton)
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
   {
-    mSkeleton->notifyArticulatedInertiaUpdate();
-    mSkeleton->mIsExternalForcesDirty = true;
+    size_t tree = mChildBodyNode->mTreeIndex;
+    skel->notifyArticulatedInertiaUpdate(tree);
+    skel->mTreeCache[tree].mDirty.mExternalForces = true;
+    skel->mSkelCache.mDirty.mExternalForces = true;
   }
 }
 

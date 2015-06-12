@@ -38,6 +38,8 @@
 #ifndef DART_DYNAMICS_SHAPE_H_
 #define DART_DYNAMICS_SHAPE_H_
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
@@ -173,6 +175,9 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+typedef std::shared_ptr<Shape> ShapePtr;
+typedef std::shared_ptr<const Shape> ConstShapePtr;
 
 }  // namespace dynamics
 }  // namespace dart

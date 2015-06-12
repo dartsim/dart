@@ -48,17 +48,38 @@ namespace dynamics {
 class TranslationalJoint : public MultiDofJoint<3>
 {
 public:
-  /// Constructor
-  explicit TranslationalJoint(const std::string& _name = "TranslationalJoint");
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<3>::Properties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _properties =
+                                                MultiDofJoint<3>::Properties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~TranslationalJoint();
 
+  /// Get the Properties of this TranslationalJoint
+  Properties getTranslationalJointProperties() const;
+
   // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
+
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  TranslationalJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 

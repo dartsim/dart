@@ -36,10 +36,61 @@
  */
 
 #include "apps/bipedStand/Controller.h"
+#include "dart/dynamics/Group.h"
 
-Controller::Controller(dart::dynamics::Skeleton* _skel,
+void createIndexing(std::vector<size_t>&)
+{
+  // Do nothing
+}
+
+template <typename ...Args>
+void createIndexing(std::vector<size_t>& _indexing, size_t _name,
+                    Args... args)
+{
+  _indexing.push_back(_name);
+  createIndexing(_indexing, args...);
+}
+
+static std::vector<size_t> createIndexing()
+{
+  // This app was made with dof indices hardcoded, but some internal DART
+  // development have changed the underlying indexing for the robot, so this
+  // map converts the old indexing into the new indexing as a temporary (or
+  // maybe permanent) workaround.
+
+  std::vector<size_t> indexing;
+  //                        0   1   2   3   4   5   6
+  createIndexing(indexing,  0,  1,  2,  3,  4,  5,  6,
+  //                        7   8   9  10  11  12  13
+                            7,  8, 13, 14, 15, 20, 21,
+  //                       14  15  16  17  18  19  20
+                            9, 16, 22, 10, 11, 17, 18,
+  //                       21  22  23  24  25  26  27
+                           23, 24, 25, 31, 12, 19, 26,
+  //                       28  29  30  31  32  33  34
+                           27, 28, 32, 33, 34, 29, 35,
+  //                       35  36
+                           30, 36);
+  return indexing;
+}
+
+static std::vector<dart::dynamics::DegreeOfFreedom*> getDofs(
+    const dart::dynamics::SkeletonPtr& _skel)
+{
+  std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
+  const std::vector<size_t>& indexing = createIndexing();
+  dofs.reserve(indexing.size());
+
+  for(size_t index : indexing)
+    dofs.push_back(_skel->getDof(index));
+
+  return dofs;
+}
+
+Controller::Controller(dart::dynamics::SkeletonPtr _skel,
                        double _t) {
-  mSkel = _skel;
+  mSkel = dart::dynamics::Group::create("Group", getDofs(_skel));
+  mLeftHeel = _skel->getBodyNode("h_heel_left");
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
@@ -47,11 +98,9 @@ Controller::Controller(dart::dynamics::Skeleton* _skel,
   mKd = Eigen::MatrixXd::Identity(nDof, nDof);
 
   mTorques.resize(nDof);
-  mDesiredDofs.resize(nDof);
-  for (int i = 0; i < nDof; i++) {
-    mTorques[i] = 0.0;
-    mDesiredDofs[i] = mSkel->getPosition(i);
-  }
+  mTorques.setZero();
+
+  resetDesiredDofs();
 
   // using SPD results in simple Kp coefficients
   for (int i = 0; i < 6; i++) {
@@ -81,8 +130,13 @@ void Controller::setDesiredDof(int _index, double _val) {
   mDesiredDofs[_index] = _val;
 }
 
-void Controller::computeTorques(const Eigen::VectorXd& _dof,
-                                const Eigen::VectorXd& _dofVel) {
+void Controller::resetDesiredDofs() {
+  mDesiredDofs = mSkel->getPositions();
+}
+
+void Controller::computeTorques() {
+  Eigen::VectorXd _dof = mSkel->getPositions();
+  Eigen::VectorXd _dofVel = mSkel->getVelocities();
   Eigen::VectorXd constrForces = mSkel->getConstraintForces();
 
   // SPD tracking
@@ -97,7 +151,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
 
   // ankle strategy for sagital plane
   Eigen::Vector3d com = mSkel->getCOM();
-  Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
+  Eigen::Vector3d cop = mLeftHeel->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
   Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
   double offset = com[0] - cop[0];
@@ -128,7 +182,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
   mFrame++;
 }
 
-dart::dynamics::Skeleton*Controller::getSkel() {
+dart::dynamics::MetaSkeletonPtr Controller::getSkel() {
   return mSkel;
 }
 
@@ -143,4 +197,3 @@ Eigen::MatrixXd Controller::getKp() {
 Eigen::MatrixXd Controller::getKd() {
   return mKd;
 }
-

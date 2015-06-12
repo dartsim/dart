@@ -45,6 +45,7 @@
 #include <fcl/BVH/BVH_model.h>
 
 #include "dart/collision/CollisionNode.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
@@ -79,7 +80,7 @@ private:
   std::vector<fcl::CollisionGeometry*> mCollisionGeometries;
 
   /// \brief
-  std::vector<dynamics::Shape*> mShapes;
+  std::vector<dynamics::ShapePtr> mShapes;
 };
 
 /// \brief

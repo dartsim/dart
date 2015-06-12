@@ -47,6 +47,9 @@
 #include <list>
 #include <Eigen/Core>
 
+#include "dart/dynamics/SmartPointer.h"
+#include "dart/simulation/World.h"
+
 namespace flann {
 	template <class A> class L2;
 	template <class A> class Index;
@@ -90,11 +93,11 @@ public:
 public:
 
 	//// Constructor with a single root 
-		RRT(simulation::World* world, dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const Eigen::VectorXd &root,
-			double stepSize = 0.02);
+    RRT(dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs, const Eigen::VectorXd &root,
+      double stepSize = 0.02);
 
 	/// Constructor with multiple roots (so, multiple trees)
-		RRT(simulation::World* world, dynamics::Skeleton* robot, const std::vector<size_t> &dofs,
+    RRT(simulation::WorldPtr world, dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs,
 			const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
 
 	/// Destructor
@@ -143,8 +146,8 @@ public:
 
 protected:
 
-	simulation::World* world;                 ///< The world that the robot is in
-	dynamics::Skeleton* robot;        ///< The ID of the robot for which a plan is generated
+  simulation::WorldPtr world;                 ///< The world that the robot is in
+  dynamics::SkeletonPtr robot;        ///< The ID of the robot for which a plan is generated
 	std::vector<size_t> dofs;                    ///< The dofs of the robot the planner can manipulate
 
 	/// The underlying flann data structure for fast nearest neighbor searches 

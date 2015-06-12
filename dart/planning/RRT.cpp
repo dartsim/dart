@@ -56,7 +56,7 @@ namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs,
+RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs,
   const VectorXd &root, double stepSize) :
   ndim(dofs.size()),
   stepSize(stepSize),
@@ -71,7 +71,7 @@ RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs,
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(World* world, Skeleton* robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
   ndim(dofs.size()),
   stepSize(stepSize),
 	world(world),
@@ -222,7 +222,7 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
-  robot->setPositionSegment(dofs, c);
+  robot->setPositions(dofs, c);
   robot->computeForwardKinematics(true, false, false);
 	return world->checkCollision();
 }

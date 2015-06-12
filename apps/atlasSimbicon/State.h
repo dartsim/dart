@@ -73,7 +73,7 @@ class State
 {
 public:
   /// \brief Constructor
-  explicit State(dart::dynamics::Skeleton* _skeleton, const std::string& _name);
+  explicit State(dart::dynamics::SkeletonPtr _skeleton, const std::string& _name);
 
   /// \brief Destructor
   virtual ~State();
@@ -238,7 +238,7 @@ protected:
   std::string mName;
 
   /// \brief Target skeleton for control
-  dart::dynamics::Skeleton* mSkeleton;
+  dart::dynamics::SkeletonPtr mSkeleton;
 
   /// \brief Next state. Default is myself.
   State* mNextState;
@@ -296,6 +296,10 @@ protected:
 
   /// \brief Joint map
   std::map<const std::string, int> mJointMap;
+
+  /// \brief Maps the dofs from the indexing expected by the controller to the
+  /// Skeleton's actual indexing
+  std::vector<size_t> mDofMapping;
 
 private:
   /// \brief Build joint map

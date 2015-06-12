@@ -46,9 +46,17 @@
 
 #include "dart/config.h"
 #include "dart/common/Deprecated.h"
+#include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 
 #include "dart/dynamics/Frame.h"
+#include "dart/dynamics/Inertia.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Marker.h"
+#include "dart/dynamics/SmartPointer.h"
+
+const double DART_DEFAULT_FRICTION_COEFF = 1.0;
+const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 namespace dart {
 namespace renderer {
@@ -73,14 +81,80 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode : public Frame
+class BodyNode : public Frame, public SkeletonRefCountingBase
 {
 public:
-  /// Constructor
-  explicit BodyNode(const std::string& _name = "BodyNode");
+
+  using ColShapeAddedSignal
+      = common::Signal<void(const BodyNode*, ConstShapePtr _newColShape)>;
+
+  using ColShapeRemovedSignal = ColShapeAddedSignal;
+
+  using StructuralChangeSignal
+      = common::Signal<void(const BodyNode*)>;
+
+  struct UniqueProperties
+  {
+    /// Inertia information for the BodyNode
+    Inertia mInertia;
+
+    /// Array of collision shapes
+    std::vector<ShapePtr> mColShapes;
+
+    /// Indicates whether this node is collidable;
+    bool mIsCollidable;
+
+    /// Coefficient of friction
+    double mFrictionCoeff;
+
+    /// Coefficient of restitution
+    double mRestitutionCoeff;
+
+    /// Gravity will be applied if true
+    bool mGravityMode;
+
+    /// Properties of the Markers belonging to this BodyNode
+    std::vector<Marker::Properties> mMarkerProperties;
+
+    /// Constructor
+    UniqueProperties(
+        const Inertia& _inertia = Inertia(),
+        const std::vector<ShapePtr>& _collisionShapes = std::vector<ShapePtr>(),
+        bool _isCollidable = true,
+        double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
+        double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
+        bool _gravityMode = true);
+  };
+
+  /// Composition of Entity and BodyNode properties
+  struct Properties : Entity::Properties, UniqueProperties
+  {
+    /// Composed constructor
+    Properties(
+        const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
+        const UniqueProperties& _bodyNodeProperties = UniqueProperties());
+  };
 
   /// Destructor
   virtual ~BodyNode();
+
+  /// Set the Properties of this BodyNode
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this BodyNode
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this BodyNode
+  Properties getBodyNodeProperties() const;
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode& _otherBodyNode);
+
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode* _otherBodyNode);
+
+  /// Same as copy(const BodyNode&)
+  BodyNode& operator=(const BodyNode& _otherBodyNode);
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
@@ -124,6 +198,12 @@ public:
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
+
+  /// Set the inertia data for this BodyNode
+  void setInertia(const Inertia& _inertia);
+
+  /// Get the inertia data for this BodyNode
+  const Inertia& getInertia() const;
 
   /// Return the articulated body inertia
   const math::Inertia& getArticulatedInertia() const;
@@ -207,26 +287,167 @@ public:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Add a collision shape into the bodynode
-  void addCollisionShape(Shape* _p);
+  /// Add a collision Shape into the BodyNode
+  void addCollisionShape(ShapePtr _shape);
+
+  /// Remove a collision Shape from this BodyNode
+  void removeCollisionShape(ShapePtr _shape);
+
+  /// Remove all collision Shapes from this BodyNode
+  void removeAllCollisionShapes();
 
   /// Return the number of collision shapes
   size_t getNumCollisionShapes() const;
 
   /// Return _index-th collision shape
-  Shape* getCollisionShape(size_t _index);
+  ShapePtr getCollisionShape(size_t _index);
 
   /// Return (const) _index-th collision shape
-  const Shape* getCollisionShape(size_t _index) const;
+  ConstShapePtr getCollisionShape(size_t _index) const;
 
-  /// Return the Skeleton this BodyNode belongs to
-  Skeleton* getSkeleton();
+  /// Return the index of this BodyNode within its Skeleton
+  size_t getIndexInSkeleton() const;
 
-  /// Return the (const) Skeleton this BodyNode belongs to
-  const Skeleton* getSkeleton() const;
+  /// Return the index of this BodyNode within its tree
+  size_t getIndexInTree() const;
 
-  /// Set _joint as the parent joint of the bodynode
-  void setParentJoint(Joint* _joint);
+  /// Return the index of the tree that this BodyNode belongs to
+  size_t getTreeIndex() const;
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// Skeleton. If a BodyNodePtr that references this BodyNode (or any of its
+  /// children) still exists, the subtree will be moved into a new Skeleton
+  /// with the given name. If the returned SkeletonPtr goes unused and no
+  /// relevant BodyNodePtrs are held anywhere, then this BodyNode and all its
+  /// children will be deleted.
+  ///
+  /// Note that this function is actually the same as split(), but given a
+  /// different name for semantic reasons.
+  SkeletonPtr remove(const std::string& _name = "temporary");
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// current parent BodyNode, and move them to another parent BodyNode. The new
+  /// parent BodyNode can either be in a new Skeleton or the current one. If you
+  /// pass in a nullptr, this BodyNode will become a new root BodyNode for its
+  /// current Skeleton.
+  ///
+  /// Using this function will result in changes to the indexing of
+  /// (potentially) all BodyNodes and Joints in the current Skeleton, even if
+  /// the BodyNodes are kept within the same Skeleton.
+  bool moveTo(BodyNode* _newParent);
+
+  /// This is a version of moveTo(BodyNode*) that allows you to explicitly move
+  /// this BodyNode into a different Skeleton. The key difference for this
+  /// version of the function is that you can make this BodyNode a root node in
+  /// a different Skeleton, which is not something that can be done by the other
+  /// version.
+  bool moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent);
+
+  /// A version of moveTo(BodyNode*) that also changes the Joint type of the
+  /// parent Joint of this BodyNode. This function returns the pointer to the
+  /// newly created Joint. The original parent Joint will be deleted.
+  ///
+  /// This function can be used to change the Joint type of the parent Joint of
+  /// this BodyNode, but note that the indexing of the BodyNodes and Joints in
+  /// this Skeleton will still be changed, even if only the Joint type is
+  /// changed.
+  template <class JointType>
+  JointType* moveTo(BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
+
+  /// A version of moveTo(SkeletonPtr, BodyNode*) that also changes the Joint
+  /// type of the parent Joint of this BodyNode. This function returns the
+  /// pointer to the newly created Joint. The original Joint will be deleted.
+  template <class JointType>
+  JointType* moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties());
+
+  /// Remove this BodyNode and all of its children (recursively) from their
+  /// current Skeleton and move them into a newly created Skeleton. The newly
+  /// created Skeleton will have the same Skeleton::Properties as the current
+  /// Skeleton, except it will use the specified name. The return value is a
+  /// shared_ptr to the newly created Skeleton.
+  ///
+  /// Note that the parent Joint of this BodyNode will remain the same. If you
+  /// want to change the Joint type of this BodyNode's parent Joint (for
+  /// example, make it a FreeJoint), then use the templated split<JointType>()
+  /// function.
+  SkeletonPtr split(const std::string& _skeletonName);
+
+  /// A version of split(const std::string&) that also changes the Joint type of
+  /// the parent Joint of this BodyNode.
+  template <class JointType>
+  SkeletonPtr split(const std::string& _skeletonName,
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
+
+  /// Change the Joint type of this BodyNode's parent Joint.
+  ///
+  /// Note that this function will change the indexing of (potentially) all
+  /// BodyNodes and Joints in the Skeleton.
+  template <class JointType>
+  JointType* changeParentJointType(
+      const typename JointType::Properties& _joint =
+      typename JointType::Properties());
+
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// _recursive is set to false) and attach the clones to the specified
+  /// BodyNode. The specified BodyNode can be in this Skeleton or a different
+  /// Skeleton. Passing in nullptr will set the copy as a root node of the
+  /// current Skeleton.
+  ///
+  /// The return value is a pair of pointers to the root of the newly created
+  /// BodyNode tree.
+  std::pair<Joint*, BodyNode*> copyTo(BodyNode* _newParent,
+                                      bool _recursive=true);
+
+  /// Create clones of this BodyNode and all of its children recursively (unless
+  /// recursive is set to false) and attach the clones to the specified BodyNode
+  /// of the specified Skeleton.
+  ///
+  /// The key differences between this function and the copyTo(BodyNode*)
+  /// version is that this one allows the copied BodyNode to be const and allows
+  /// you to copy it as a root node of another Skeleton.
+  ///
+  /// The return value is a pair of pointers to the root of the newly created
+  /// BodyNode tree.
+  std::pair<Joint*, BodyNode*> copyTo(const SkeletonPtr& _newSkeleton,
+                                      BodyNode* _newParent,
+                                      bool _recursive=true) const;
+
+  /// A version of copyTo(BodyNode*) that also changes the Joint type of the
+  /// parent Joint of this BodyNode.
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> copyTo(
+      BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true);
+
+  /// A version of copyTo(Skeleton*,BodyNode*) that also changes the Joint type
+  /// of the parent Joint of this BodyNode.
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> copyTo(
+      const SkeletonPtr& _newSkeleton, BodyNode* _newParent,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true) const;
+
+  /// Create clones of this BodyNode and all of its children (recursively) and
+  /// create a new Skeleton with the specified name to attach them to.
+  SkeletonPtr copyAs(const std::string& _skeletonName,
+                     bool _recursive=true) const;
+
+  /// A version of copyAs(const std::string&) that also changes the Joint type
+  /// of the root BodyNode.
+  template <class JointType>
+  SkeletonPtr copyAs(
+      const std::string& _skeletonName,
+      const typename JointType::Properties& _joint =
+          typename JointType::Properties(),
+      bool _recursive=true) const;
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
@@ -240,8 +461,16 @@ public:
   /// Return the (const) parent BodyNode of this BodyNode
   const BodyNode* getParentBodyNode() const;
 
-  /// Add a child bodynode into the bodynode
-  void addChildBodyNode(BodyNode* _body);
+  /// Create a Joint and BodyNode pair as a child of this BodyNode
+  template <class JointType, class NodeType = BodyNode>
+  std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
+      const typename JointType::Properties& _jointProperties =
+          typename JointType::Properties(),
+      const typename NodeType::Properties& _bodyProperties =
+          typename NodeType::Properties());
+
+  /// Return the number of child BodyNodes
+  size_t getNumChildBodyNodes() const;
 
   /// Return the _index-th child BodyNode of this BodyNode
   BodyNode* getChildBodyNode(size_t _index);
@@ -249,8 +478,14 @@ public:
   /// Return the (const) _index-th child BodyNode of this BodyNode
   const BodyNode* getChildBodyNode(size_t _index) const;
 
-  /// Return the number of child bodynodes
-  size_t getNumChildBodyNodes() const;
+  /// Return the number of child Joints
+  size_t getNumChildJoints() const;
+
+  /// Return the _index-th child Joint of this BodyNode
+  Joint* getChildJoint(size_t _index);
+
+  /// Return the (const) _index-th child Joint of this BodyNode
+  const Joint* getChildJoint(size_t _index) const;
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -280,11 +515,11 @@ public:
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<DegreeOfFreedom*> getDependentDofs();
+  const std::vector<DegreeOfFreedom*>& getDependentDofs();
 
   /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
   /// depends on.
-  std::vector<const DegreeOfFreedom*> getDependentDofs() const;
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -723,6 +958,11 @@ public:
   /// Called by Skeleton::clearExternalForces.
   virtual void clearExternalForces();
 
+  /// Clear out the generalized forces of the parent Joint and any other forces
+  /// related to this BodyNode that are internal to the Skeleton. For example,
+  /// the point mass forces for SoftBodyNodes.
+  virtual void clearInternalForces();
+
   ///
   const Eigen::Vector6d& getExternalForceLocal() const;
 
@@ -748,8 +988,7 @@ public:
   /// Return true if the body can react to force or constraint impulse.
   ///
   /// A body node is reactive if the skeleton is mobile and the number of
-  /// dependent generalized coordinates is non zero. BodyNode::init() should be
-  /// called first to update the number of dependent generalized coordinates.
+  /// dependent generalized coordinates is non zero.
   bool isReactive() const;
 
   /// Set constraint impulse
@@ -789,14 +1028,18 @@ public:
   Eigen::Vector3d getAngularMomentum(
       const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
 
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   // Rendering
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
 
   /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = NULL,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
+
+  //----------------------------------------------------------------------------
+  // Notifications
+  //----------------------------------------------------------------------------
 
   // Documentation inherited
   void notifyTransformUpdate() override;
@@ -806,6 +1049,16 @@ public:
 
   // Documentation inherited
   void notifyAccelerationUpdate() override;
+
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void notifyArticulatedInertiaUpdate();
+
+  /// Tell the Skeleton that the external forces need to be updated
+  void notifyExternalForcesUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void notifyCoriolisUpdate();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -817,8 +1070,20 @@ public:
   friend class PointMass;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
+           const Properties& _properties);
+
+  /// Create a clone of this BodyNode. This may only be called by the Skeleton
+  /// class.
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+
   /// Initialize the vector members with proper sizes.
-  virtual void init(Skeleton* _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton);
+
+  /// Add a child bodynode into the bodynode
+  void addChildBodyNode(BodyNode* _body);
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
@@ -970,38 +1235,58 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd* _MCol, size_t _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd* _MCol, size_t _col,
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
                                       double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd* _InvMCol, size_t _col,
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
                                          double _timeStep);
 
   ///
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd* _C);
+  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C);
 
   ///
-  virtual void aggregateGravityForceVector(Eigen::VectorXd* _g,
+  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity);
 
   ///
   virtual void updateCombinedVector();
-  virtual void aggregateCombinedVector(Eigen::VectorXd* _Cg,
+  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
                                        const Eigen::Vector3d& _gravity);
 
   /// Aggregate the external forces mFext in the generalized coordinates
   /// recursively
-  virtual void aggregateExternalForces(Eigen::VectorXd* _Fext);
+  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext);
 
   ///
-  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd* _generalized,
+  virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial);
 
+  /// Update body Jacobian. getBodyJacobian() calls this function if
+  /// mIsBodyJacobianDirty is true.
+  void updateBodyJacobian() const;
+
+  /// Update the World Jacobian. The commonality of using the World Jacobian
+  /// makes it worth caching.
+  void updateWorldJacobian() const;
+
+  /// Update spatial time derivative of body Jacobian.
+  /// getJacobianSpatialTimeDeriv() calls this function if
+  /// mIsBodyJacobianSpatialDerivDirty is true.
+  void updateBodyJacobianSpatialDeriv() const;
+
+  /// Update classic time derivative of body Jacobian.
+  /// getJacobianClassicTimeDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void updateWorldJacobianClassicDeriv() const;
+
   /// \}
+
+protected:
 
   //--------------------------------------------------------------------------
   // General properties
@@ -1013,47 +1298,24 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
-  /// Name
-  std::string mName;
-
-  /// If the gravity mode is false, this body node does not being affected by
-  /// gravity.
-  bool mGravityMode;
-
-  /// Generalized inertia.
-  math::Inertia mI;
-
-  /// Generalized inertia at center of mass.
-  Eigen::Vector3d mCenterOfMass;
-  double mIxx;
-  double mIyy;
-  double mIzz;
-  double mIxy;
-  double mIxz;
-  double mIyz;
-  double mMass;
-
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of friction
-  double mRestitutionCoeff;
-
-  /// Array of collision shpaes
-  std::vector<Shape*> mColShapes;
-
-  /// Indicating whether this node is collidable.
-  bool mIsCollidable;
+  /// BodyNode-specific properties
+  UniqueProperties mBodyP;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------
-  // Structual Properties
+  // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Pointer to the model this body node belongs to.
-  Skeleton* mSkeleton;
+  /// Index of this BodyNode in its Skeleton
+  size_t mIndexInSkeleton;
+
+  /// Index of this BodyNode in its Tree
+  size_t mIndexInTree;
+
+  /// Index of this BodyNode's tree
+  size_t mTreeIndex;
 
   /// Parent joint
   Joint* mParentJoint;
@@ -1073,6 +1335,13 @@ protected:
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
+
+  /// A version of mDependentGenCoordIndices that holds DegreeOfFreedom pointers
+  /// instead of indices
+  std::vector<DegreeOfFreedom*> mDependentDofs;
+
+  /// Same as mDependentDofs, but holds const pointers
+  std::vector<const DegreeOfFreedom*> mConstDependentDofs;
 
   //--------------------------------------------------------------------------
   // Dynamical Properties
@@ -1179,32 +1448,37 @@ protected:
   /// Generalized impulsive body force w.r.t. body frame.
   Eigen::Vector6d mImpF;
 
-  /// Update body Jacobian. getBodyJacobian() calls this function if
-  /// mIsBodyJacobianDirty is true.
-  void _updateBodyJacobian() const;
+  /// Collision shape added signal
+  ColShapeAddedSignal mColShapeAddedSignal;
 
-  /// Update the World Jacobian. The commonality of using the World Jacobian
-  /// makes it worth caching.
-  void _updateWorldJacobian() const;
+  /// Collision shape removed signal
+  ColShapeRemovedSignal mColShapeRemovedSignal;
 
-  /// Update spatial time derivative of body Jacobian.
-  /// getJacobianSpatialTimeDeriv() calls this function if
-  /// mIsBodyJacobianSpatialDerivDirty is true.
-  void _updateBodyJacobianSpatialDeriv() const;
-
-  /// Update classic time derivative of body Jacobian.
-  /// getJacobianClassicTimeDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void _updateWorldJacobianClassicDeriv() const;
-
-private:
-  ///
-  void _updateSpatialInertia();
+  /// Structural change signal
+  StructuralChangeSignal mStructuralChangeSignal;
 
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Slot registers
+  //----------------------------------------------------------------------------
+
+  /// Slot register for collision shape added signal
+  common::SlotRegister<ColShapeAddedSignal> onColShapeAdded;
+
+  /// Slot register for collision shape removed signal
+  common::SlotRegister<ColShapeRemovedSignal> onColShapeRemoved;
+
+  /// Raised when (1) parent BodyNode is changed, (2) moved between Skeletons,
+  /// (3) parent Joint is changed
+  mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
+
+  /// \}
 };
+
+#include "dart/dynamics/detail/BodyNode.h"
 
 }  // namespace dynamics
 }  // namespace dart

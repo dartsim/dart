@@ -55,13 +55,38 @@ namespace dynamics {
 class SimpleFrame : public Detachable, public Frame
 {
 public:
+
   /// Constructor
   explicit SimpleFrame(Frame* _refFrame, const std::string& _name,
                        const Eigen::Isometry3d& _relativeTransform =
                                         Eigen::Isometry3d::Identity());
 
+  /// Copy constructor. Note that the parent frame of _otherFrame will not be
+  /// copied as the reference frame for the newly created SimpleFrame.
+  SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame = Frame::World());
+
   /// Destructor
   virtual ~SimpleFrame();
+
+  /// Create a new SimpleFrame with the same world transform, velocity, and
+  /// acceleration as this one. _refFrame will be used as the reference Frame
+  /// of the new SimpleFrame.
+  virtual std::shared_ptr<SimpleFrame> clone(Frame* _refFrame = Frame::World()) const;
+
+  /// Make the world transform, world velocity, and world acceleration of this
+  /// SimpleFrame match another Frame. The _refFrame argument will be the new
+  /// parent Frame of this SimpleFrame. Also copies the Entity Properties if
+  /// _copyProperties is left as true.
+  void copy(const Frame& _otherFrame, Frame* _refFrame = Frame::World(),
+            bool _copyProperties=true);
+
+  /// Same as copy(const Frame&)
+  void copy(const Frame* _otherFrame, Frame* _refFrame = Frame::World(),
+            bool _copyProperties=true);
+
+  /// Same as copy(const Frame&) except the parent frame of this SimpleFrame is
+  /// left the same, and _copyProperties is set to false.
+  SimpleFrame& operator=(const SimpleFrame& _otherFrame);
 
   //--------------------------------------------------------------------------
   // Transform
@@ -155,19 +180,22 @@ public:
       const Eigen::Vector3d& _angularAcceleration = Eigen::Vector3d::Zero());
 
 protected:
-  /// Relative Transform of this Frame
+
+  /// Relative transform of the SimpleFrame
   Eigen::Isometry3d mRelativeTf;
 
-  /// Relative Velocity of this Frame
+  /// Relative spatial velocity of the SimpleFrame
   Eigen::Vector6d mRelativeVelocity;
 
-  /// Relative Acceleration of this Frame
+  /// Relative spatial acceleration of the SimpleFrame
   Eigen::Vector6d mRelativeAcceleration;
 
   /// Partial Acceleration of this Frame
   mutable Eigen::Vector6d mPartialAcceleration;
 
 };
+
+typedef std::shared_ptr<SimpleFrame> SimpleFramePtr;
 
 } // namespace dart
 } // namespace dynamics

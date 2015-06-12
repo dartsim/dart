@@ -50,12 +50,54 @@ namespace dynamics {
 class PrismaticJoint : public SingleDofJoint
 {
 public:
-  /// Constructor
-  PrismaticJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                 const std::string& _name = "Noname PrismaticJoint");
+
+  friend class Skeleton;
+
+  struct UniqueProperties
+  {
+    Eigen::Vector3d mAxis;
+
+    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+    virtual ~UniqueProperties() = default;
+  };
+
+  struct Properties : SingleDofJoint::Properties,
+                      PrismaticJoint::UniqueProperties
+  {
+    Properties(
+        const SingleDofJoint::Properties& _singleDofProperties =
+                                            SingleDofJoint::Properties(),
+        const PrismaticJoint::UniqueProperties& _prismaticProperties =
+                                            PrismaticJoint::UniqueProperties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~PrismaticJoint();
+
+  /// Set the Properties of this PrismaticJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this PrismaticJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this PrismaticJoint
+  Properties getPrismaticJointProperties() const;
+
+  /// Copy the Properties of another PrismaticJoint
+  void copy(const PrismaticJoint& _otherJoint);
+
+  /// Copy the Properties of another PrismaticJoint
+  void copy(const PrismaticJoint* _otherJoint);
+
+  /// Same as copy(const PrismaticJoint&)
+  PrismaticJoint& operator=(const PrismaticJoint& _otherJoint);
+  
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);
@@ -64,6 +106,13 @@ public:
   const Eigen::Vector3d& getAxis() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  PrismaticJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void updateLocalTransform() const;
 
@@ -74,8 +123,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis.
-  Eigen::Vector3d mAxis;
+
+  /// PrismaticJoint Properties
+  UniqueProperties mPrismaticP;
 
 public:
   // To get byte-aligned Eigen vectors

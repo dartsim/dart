@@ -45,14 +45,35 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-WeldJoint::WeldJoint(const std::string& _name)
-  : ZeroDofJoint(_name)
+WeldJoint::Properties::Properties(const Joint::Properties& _properties)
+  : ZeroDofJoint::Properties(_properties)
 {
+  // Do nothing
 }
 
 //==============================================================================
 WeldJoint::~WeldJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+const std::string& WeldJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& WeldJoint::getStaticType()
+{
+  static const std::string name = "WeldJoint";
+  return name;
+}
+
+//==============================================================================
+WeldJoint::Properties WeldJoint::getWeldJointProperties() const
+{
+  return getZeroDofJointProperties();
 }
 
 //==============================================================================
@@ -60,7 +81,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -68,7 +89,20 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = mT_ParentBodyToJoint * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
+}
+
+//==============================================================================
+WeldJoint::WeldJoint(const Properties& _properties)
+  : ZeroDofJoint(_properties)
+{
+  setProperties(_properties);
+}
+
+//==============================================================================
+Joint* WeldJoint::clone() const
+{
+  return new WeldJoint(getWeldJointProperties());
 }
 
 //==============================================================================

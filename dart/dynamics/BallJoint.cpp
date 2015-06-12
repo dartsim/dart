@@ -45,16 +45,35 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BallJoint::BallJoint(const std::string& _name)
-  : MultiDofJoint(_name),
-    mR(Eigen::Isometry3d::Identity())
+BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _properties)
+  : MultiDofJoint<3>::Properties(_properties)
 {
-  updateDegreeOfFreedomNames();
+  // Do nothing
 }
 
 //==============================================================================
 BallJoint::~BallJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+const std::string& BallJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BallJoint::getStaticType()
+{
+  static const std::string name = "BallJoint";
+  return name;
+}
+
+//==============================================================================
+BallJoint::Properties BallJoint::getBallJointProperties() const
+{
+  return getMultiDofJointProperties();
 }
 
 //==============================================================================
@@ -71,26 +90,18 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
-void BallJoint::setPositionsStatic(const Eigen::Vector3d& _positions)
+BallJoint::BallJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties),
+    mR(Eigen::Isometry3d::Identity())
 {
-  mR = convertToRotation(_positions);
-
-  MultiDofJoint::setPositionsStatic(_positions);
+  setProperties(_properties);
+  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================
-Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
-    const Eigen::Vector3d& _q0, const Eigen::Vector3d& _q1) const
+Joint* BallJoint::clone() const
 {
-  Eigen::Vector3d dq;
-
-  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q0).topRows<3>();
-  const Eigen::Matrix3d R0T = math::expMapRot(-_q0);
-  const Eigen::Matrix3d R1  = math::expMapRot( _q1);
-
-  dq = Jw.inverse() * math::logMap(R0T * R1);
-
-  return dq;
+  return new BallJoint(getBallJointProperties());
 }
 
 //==============================================================================
@@ -103,7 +114,7 @@ Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
   J.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
   // Transform the reference frame to the child BodyNode frame
-  J = math::AdTJacFixed(mT_ChildBodyToJoint, J);
+  J = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, J);
 
   assert(!math::isNan(J));
 
@@ -111,24 +122,42 @@ Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
 }
 
 //==============================================================================
+Eigen::Vector3d BallJoint::getPositionDifferencesStatic(
+    const Eigen::Vector3d& _q2, const Eigen::Vector3d& _q1) const
+{
+  Eigen::Vector3d dq;
+
+  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q1).topRows<3>();
+  const Eigen::Matrix3d R1T = math::expMapRot(-_q1);
+  const Eigen::Matrix3d R2  = math::expMapRot( _q2);
+
+  dq = Jw.inverse() * math::logMap(R1T * R2);
+
+  return dq;
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
-  mR.linear() = mR.linear()
+  const Eigen::Isometry3d& R = getR();
+  Eigen::Isometry3d Rnext(Eigen::Isometry3d::Identity());
+
+  Rnext.linear() = R.linear()
       * convertToRotation(getLocalJacobianStatic().topRows<3>()
                           * getVelocitiesStatic() * _dt);
 
-  setPositionsStatic(convertToPositions(mR.linear()));
+  setPositionsStatic(convertToPositions(Rnext.linear()));
 }
 
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mName + "_x", false);
+    mDofs[0]->setName(mJointP.mName + "_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mName + "_y", false);
+    mDofs[1]->setName(mJointP.mName + "_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mName + "_z", false);
+    mDofs[2]->setName(mJointP.mName + "_z", false);
 }
 
 //==============================================================================
@@ -136,7 +165,8 @@ void BallJoint::updateLocalTransform() const
 {
   mR.linear() = convertToRotation(getPositionsStatic());
 
-  mT = mT_ParentBodyToJoint * mR * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint * mR
+      * mJointP.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -144,7 +174,7 @@ void BallJoint::updateLocalTransform() const
 //==============================================================================
 void BallJoint::updateLocalJacobian(bool) const
 {
-  mJacobian = getLocalJacobian(getPositionsStatic());
+  mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
@@ -155,9 +185,21 @@ void BallJoint::updateLocalJacobianTimeDeriv() const
                                           getVelocitiesStatic()).transpose();
   dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
 
-  mJacobianDeriv = math::AdTJacFixed(mT_ChildBodyToJoint, dJ);
+  mJacobianDeriv = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, dJ);
 
   assert(!math::isNan(mJacobianDeriv));
+}
+
+//==============================================================================
+const Eigen::Isometry3d& BallJoint::getR() const
+{
+  if(mNeedTransformUpdate)
+  {
+    updateLocalTransform();
+    mNeedTransformUpdate = false;
+  }
+
+  return mR;
 }
 
 }  // namespace dynamics

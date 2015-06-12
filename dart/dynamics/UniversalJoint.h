@@ -50,13 +50,55 @@ namespace dynamics {
 class UniversalJoint : public MultiDofJoint<2>
 {
 public:
-  /// Constructor
-  UniversalJoint(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-                 const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY(),
-                 const std::string& _name = "Universal joint");
+
+  friend class Skeleton;
+
+  struct UniqueProperties
+  {
+    std::array<Eigen::Vector3d,2> mAxis;
+
+    UniqueProperties(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
+                     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+
+    virtual ~UniqueProperties() = default;
+  };
+
+  struct Properties : MultiDofJoint<2>::Properties,
+                      UniversalJoint::UniqueProperties
+  {
+    Properties(const MultiDofJoint<2>::Properties& _multiDofProperties =
+                                            MultiDofJoint<2>::Properties(),
+               const UniversalJoint::UniqueProperties& _universalProperties =
+                                            UniversalJoint::UniqueProperties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~UniversalJoint();
+
+  /// Set the Properties of this UniversalJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this UniversalJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this UniversalJoint
+  Properties getUniversalJointProperties() const;
+
+  /// Copy the Properties of another UniversalJoint
+  void copy(const UniversalJoint& _otherJoint);
+
+  /// Copy the Properties of another UniversalJoint
+  void copy(const UniversalJoint* _otherJoint);
+
+  /// Copy the Properties of another UniversalJoint
+  UniversalJoint& operator=(const UniversalJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis1(const Eigen::Vector3d& _axis);
@@ -76,6 +118,12 @@ public:
 
 protected:
 
+  /// Constructor called by Skeleton class
+  UniversalJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
@@ -91,8 +139,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis.
-  Eigen::Vector3d mAxis[2];
+
+  /// UniversalJoint Properties
+  UniqueProperties mUniversalP;
 
 public:
   // To get byte-aligned Eigen vectors

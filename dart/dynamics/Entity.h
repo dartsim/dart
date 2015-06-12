@@ -80,15 +80,43 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
   using VizShapeAddedSignal
-      = common::Signal<void(const Entity*, const Shape* _newVisShape)>;
+      = common::Signal<void(const Entity*, ConstShapePtr _newVisShape)>;
 
   using VizShapeRemovedSignal = VizShapeAddedSignal;
+
+  struct Properties
+  {
+    /// Name of the Entity
+    std::string mName;
+
+    /// Visualization shapes for the Entity
+    std::vector<ShapePtr> mVizShapes;
+
+    /// Constructor
+    Properties(const std::string& _name = "",
+               const std::vector<ShapePtr>& _vizShapes=std::vector<ShapePtr>());
+  };
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
   /// Destructor
   virtual ~Entity();
+
+  /// Set the Properties of this Entity
+  void setProperties(const Properties& _properties);
+
+  /// Get the Properties of this Entity
+  const Properties& getEntityProperties() const;
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity& _otherEntity);
+
+  /// Copy the Properties of another Entity
+  void copy(const Entity* _otherEntity);
+
+  /// Same as copy(const Entity&)
+  Entity& operator=(const Entity& _otherEntity);
 
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
@@ -99,10 +127,10 @@ public:
   virtual const std::string& getName() const;
 
   /// Add a visualization Shape for this Entity
-  virtual void addVisualizationShape(Shape* _shape);
+  virtual void addVisualizationShape(ShapePtr _shape);
 
   /// Remove a visualization Shape from this Entity
-  virtual void removeVisualizationShape(Shape* _shape);
+  virtual void removeVisualizationShape(ShapePtr _shape);
 
   /// Remove all visualization Shapes from this Entity
   virtual void removeAllVisualizationShapes();
@@ -111,10 +139,10 @@ public:
   size_t getNumVisualizationShapes() const;
 
   /// Return _index-th visualization shape
-  Shape* getVisualizationShape(size_t _index);
+  ShapePtr getVisualizationShape(size_t _index);
 
   /// Return (const) _index-th visualization shape
-  const Shape* getVisualizationShape(size_t _index) const;
+  ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = NULL,
@@ -163,14 +191,12 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
+
+  /// Properties of this Entity
+  Properties mEntityP;
+
   /// Parent frame of this Entity
   Frame* mParentFrame;
-
-  /// Name of this Entity
-  std::string mName;
-
-  /// Vector of visualization shapes
-  std::vector<Shape*> mVizShapes;
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;
@@ -224,8 +250,6 @@ public:
 
   /// Slot register for acceleration updated signal
   common::SlotRegister<EntitySignal> onAccelerationChanged;
-
-  /// \}
 
 private:
   /// Whether or not this Entity is set to be quiet

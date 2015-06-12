@@ -50,12 +50,56 @@ namespace dynamics {
 class RevoluteJoint : public SingleDofJoint
 {
 public:
-  /// Constructor
-  RevoluteJoint(const Eigen::Vector3d& axis = Eigen::Vector3d(1.0, 0.0, 0.0),
-                const std::string& _name = "Noname RevoluteJoint");
+
+  friend class Skeleton;
+
+  struct UniqueProperties
+  {
+    Eigen::Vector3d mAxis;
+
+    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+
+    virtual ~UniqueProperties() = default;
+  };
+
+  struct Properties : SingleDofJoint::Properties,
+                      RevoluteJoint::UniqueProperties
+  {
+    Properties(
+        const SingleDofJoint::Properties& _singleDofJointProperties=
+                                            SingleDofJoint::Properties(),
+        const RevoluteJoint::UniqueProperties& _revoluteProperties =
+                                            RevoluteJoint::UniqueProperties());
+
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~RevoluteJoint();
+
+  /// Set the Properties of this RevoluteJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this RevoluteJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this RevoluteJoint
+  Properties getRevoluteJointProperties() const;
+
+  /// Copy the Properties of another RevoluteJoint
+  void copy(const RevoluteJoint& _otherJoint);
+
+  /// Copy the Properties of another RevoluteJoint
+  void copy(const RevoluteJoint* _otherJoint);
+
+  /// Copy the Properties of another RevoluteJoint
+  RevoluteJoint& operator=(const RevoluteJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);
@@ -64,6 +108,13 @@ public:
   const Eigen::Vector3d& getAxis() const;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  RevoluteJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   // Documentation inherited
   virtual void updateLocalTransform() const;
 
@@ -74,8 +125,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Rotational axis
-  Eigen::Vector3d mAxis;
+
+  /// RevoluteJoint Properties
+  UniqueProperties mRevoluteP;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -50,11 +50,28 @@ namespace dynamics {
 class FreeJoint : public MultiDofJoint<6>
 {
 public:
-  /// Constructor
-  explicit FreeJoint(const std::string& _name = "FreeJoint");
+
+  friend class Skeleton;
+
+  struct Properties : MultiDofJoint<6>::Properties
+  {
+    Properties(const MultiDofJoint<6>::Properties& _properties =
+                                                MultiDofJoint<6>::Properties());
+
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~FreeJoint();
+
+  /// Get the Properties of this FreeJoint
+  Properties getFreeJointProperties() const;
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a
@@ -68,17 +85,20 @@ public:
   static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
 
   // Documentation inherited
-  void setPositionsStatic(const Eigen::Vector6d& _positions) override;
-
-  // Documentation inherited
   Eigen::Matrix6d getLocalJacobianStatic(
       const Eigen::Vector6d& _positions) const override;
 
   // Documentation inherited
   Eigen::Vector6d getPositionDifferencesStatic(
-      const Eigen::Vector6d& _q0, const Eigen::Vector6d& _q1) const override;
+      const Eigen::Vector6d& _q2, const Eigen::Vector6d& _q1) const override;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  FreeJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 
@@ -98,7 +118,13 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Transformation matrix dependant on generalized coordinates
+
+  /// Access mQ, which is an auto-updating variable
+  const Eigen::Isometry3d& getQ() const;
+
+  /// Transformation matrix dependent on generalized coordinates
+  ///
+  /// Do not use directly! Use getQ() to access this
   mutable Eigen::Isometry3d mQ;
 
 public:

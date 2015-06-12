@@ -52,82 +52,65 @@ using namespace simulation;
 /******************************************************************************/
 TEST(BUILDING, BASIC)
 {
-	//--------------------------------------------------------------------------
-	//
-	//--------------------------------------------------------------------------
-	// Bodies
-    BodyNode* body1 = new BodyNode;
-    BodyNode* body2 = new BodyNode;
-    BodyNode* body3 = new BodyNode;
+  // Skeletons
+  SkeletonPtr skel1 = Skeleton::create();
+
+  std::pair<RevoluteJoint*, BodyNode*> pair;
+  BodyNode* body1, * body2, * body3;
+  RevoluteJoint* joint1, * joint2, * joint3;
+
+  pair = skel1->createJointAndBodyNodePair<RevoluteJoint>(nullptr);
+  joint1 = pair.first;
+  body1 = pair.second;
+
+  pair = body1->createChildJointAndBodyNodePair<RevoluteJoint>();
+  joint2 = pair.first;
+  body2 = pair.second;
+
+  pair = body2->createChildJointAndBodyNodePair<RevoluteJoint>();
+  joint3 = pair.first;
+  body3 = pair.second;
 
 	// Joints
-    RevoluteJoint* joint1 = new RevoluteJoint;
-    RevoluteJoint* joint2 = new RevoluteJoint;
-    RevoluteJoint* joint3 = new RevoluteJoint;
+  joint1->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint1->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  joint1->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-	// Skeletons
-    Skeleton* skel1 = new Skeleton;
+  joint2->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint2->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  joint2->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-	// World
-    World* world = new World;
+  joint3->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint3->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  joint3->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-	//--------------------------------------------------------------------------
-	//
-	//--------------------------------------------------------------------------
-	// Bodies
-    body1->addChildBodyNode(body2);
-    body2->addChildBodyNode(body3);
-
-    body1->setParentJoint(joint1);
-    body2->setParentJoint(joint2);
-    body3->setParentJoint(joint3);
-
-	// Joints
-    joint1->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
-    joint1->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-    joint1->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-
-    joint2->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
-    joint2->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-    joint2->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-
-    joint3->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
-    joint3->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
-    joint3->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-
-	// Skeleton
-    skel1->addBodyNode(body1);
-    skel1->addBodyNode(body2);
-    skel1->addBodyNode(body3);
-
-	// World
-    world->addSkeleton(skel1);
+  // World
+  WorldPtr world(new World);
+  world->addSkeleton(skel1);
 
 	//--------------------------------------------------------------------------
 	//
 	//--------------------------------------------------------------------------
-    EXPECT_TRUE(body1->getParentBodyNode() == NULL);
-    EXPECT_TRUE(body1->getNumChildBodyNodes() == 1);
-    EXPECT_TRUE(body1->getChildBodyNode(0) == body2);
+  EXPECT_TRUE(body1->getParentBodyNode() == nullptr);
+  EXPECT_TRUE(body1->getNumChildBodyNodes() == 1);
+  EXPECT_TRUE(body1->getChildBodyNode(0) == body2);
 
-    EXPECT_TRUE(body2->getParentBodyNode() == body1);
-    EXPECT_TRUE(body2->getNumChildBodyNodes() == 1);
-    EXPECT_TRUE(body2->getChildBodyNode(0) == body3);
+  EXPECT_TRUE(body2->getParentBodyNode() == body1);
+  EXPECT_TRUE(body2->getNumChildBodyNodes() == 1);
+  EXPECT_TRUE(body2->getChildBodyNode(0) == body3);
 
-    EXPECT_TRUE(body3->getParentBodyNode() == body2);
-    EXPECT_TRUE(body3->getNumChildBodyNodes() == 0);
-    //EXPECT_TRUE(body3.getChildBodyNode(0) == NULL);
+  EXPECT_TRUE(body3->getParentBodyNode() == body2);
+  EXPECT_TRUE(body3->getNumChildBodyNodes() == 0);
+//  EXPECT_TRUE(body3->getChildBodyNode(0) == nullptr);
 
-    EXPECT_TRUE(skel1->getNumBodyNodes() == 3);
-    EXPECT_TRUE(skel1->getNumDofs() == 3);
+  EXPECT_TRUE(skel1->getNumBodyNodes() == 3);
+  EXPECT_TRUE(skel1->getNumDofs() == 3);
 
-    EXPECT_TRUE(world->getNumSkeletons() == 1);
+  EXPECT_TRUE(world->getNumSkeletons() == 1);
 
-    int nSteps = 20;
-    for (int i = 0; i < nSteps; ++i)
-        world->step();
-
-    delete world;
+  int nSteps = 20;
+  for (int i = 0; i < nSteps; ++i)
+      world->step();
 }
 
 /******************************************************************************/

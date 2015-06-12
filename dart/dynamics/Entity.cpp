@@ -48,6 +48,15 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
+Entity::Properties::Properties(const std::string& _name,
+                               const std::vector<ShapePtr>& _vizShapes)
+  : mName(_name),
+    mVizShapes(_vizShapes)
+{
+ // Do nothing
+}
+
+//==============================================================================
 template <typename T>
 static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
 {
@@ -55,13 +64,13 @@ static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
   if (_index < _vec.size())
     return _vec[_index];
 
-  return NULL;
+  return nullptr;
 }
 
 //==============================================================================
 Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : mParentFrame(NULL),
-    mName(_name),
+  : mEntityP(_name),
+    mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
@@ -85,55 +94,99 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 //==============================================================================
 Entity::~Entity()
 {
-  changeParentFrame(NULL);
+  changeParentFrame(nullptr);
+}
+
+//==============================================================================
+void Entity::setProperties(const Properties& _properties)
+{
+  // Set name
+  setName(_properties.mName);
+
+  // Set visualization shapes
+  removeAllVisualizationShapes();
+  for(size_t i=0; i<_properties.mVizShapes.size(); ++i)
+    addVisualizationShape(_properties.mVizShapes[i]);
+}
+
+//==============================================================================
+const Entity::Properties& Entity::getEntityProperties() const
+{
+  return mEntityP;
+}
+
+//==============================================================================
+void Entity::copy(const Entity& _otherEntity)
+{
+  if(this == &_otherEntity)
+    return;
+
+  setProperties(_otherEntity.getEntityProperties());
+}
+
+//==============================================================================
+void Entity::copy(const Entity *_otherEntity)
+{
+  if(nullptr == _otherEntity)
+    return;
+
+  copy(*_otherEntity);
+}
+
+//==============================================================================
+Entity& Entity::operator=(const Entity& _otherEntity)
+{
+  copy(_otherEntity);
+  return *this;
 }
 
 //==============================================================================
 const std::string& Entity::setName(const std::string& _name)
 {
-  if (mName == _name)
-    return mName;
+  if (mEntityP.mName == _name)
+    return mEntityP.mName;
 
-  const std::string oldName = mName;
-  mName = _name;
-  mNameChangedSignal.raise(this, oldName, mName);
+  const std::string oldName = mEntityP.mName;
+  mEntityP.mName = _name;
+  mNameChangedSignal.raise(this, oldName, mEntityP.mName);
 
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
 const std::string& Entity::getName() const
 {
-  return mName;
+  return mEntityP.mName;
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(Shape* _shape)
+void Entity::addVisualizationShape(ShapePtr _shape)
 {
   if (nullptr == _shape)
     return;
 
-  if (std::find(mVizShapes.begin(), mVizShapes.end(), _shape)
-      != mVizShapes.end())
+  if (std::find(mEntityP.mVizShapes.begin(), mEntityP.mVizShapes.end(), _shape)
+      != mEntityP.mVizShapes.end())
   {
     dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
-           << "duplicate visualization shape." << std::endl;
+           << "duplicate visualization shape.\n";
     return;
   }
 
-  mVizShapes.push_back(_shape);
+  mEntityP.mVizShapes.push_back(_shape);
 
   mVizShapeAddedSignal.raise(this, _shape);
 }
 
 //==============================================================================
-void Entity::removeVisualizationShape(Shape* _shape)
+void Entity::removeVisualizationShape(ShapePtr _shape)
 {
   if (nullptr == _shape)
     return;
 
-  mVizShapes.erase(std::remove(mVizShapes.begin(), mVizShapes.end(), _shape),
-                   mVizShapes.end());
+  mEntityP.mVizShapes.erase(std::remove(mEntityP.mVizShapes.begin(),
+                                        mEntityP.mVizShapes.end(), _shape),
+                            mEntityP.mVizShapes.end());
 
   mVizShapeRemovedSignal.raise(this, _shape);
 }
@@ -141,28 +194,30 @@ void Entity::removeVisualizationShape(Shape* _shape)
 //==============================================================================
 void Entity::removeAllVisualizationShapes()
 {
-  auto it = mVizShapes.begin();
-
-  while (it != mVizShapes.end())
-    removeVisualizationShape(*(it++));
+  std::vector<ShapePtr>::iterator it = mEntityP.mVizShapes.begin();
+  while (it != mEntityP.mVizShapes.end())
+  {
+    removeVisualizationShape(*it);
+    it = mEntityP.mVizShapes.begin();
+  }
 }
 
 //==============================================================================
 size_t Entity::getNumVisualizationShapes() const
 {
-  return mVizShapes.size();
+  return mEntityP.mVizShapes.size();
 }
 
 //==============================================================================
-Shape* Entity::getVisualizationShape(size_t _index)
+ShapePtr Entity::getVisualizationShape(size_t _index)
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
-const Shape* Entity::getVisualizationShape(size_t _index) const
+ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 {
-  return getVectorObjectIfAvailable<Shape*>(_index, mVizShapes);
+  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
 }
 
 //==============================================================================
@@ -179,10 +234,10 @@ void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
   // This all seems questionable to me.
 
   // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
-  for(size_t i=0; i < mVizShapes.size(); ++i)
+  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
   {
     _ri->pushMatrix();
-    mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
+    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
     _ri->popMatrix();
   }
   // _ri->popName();

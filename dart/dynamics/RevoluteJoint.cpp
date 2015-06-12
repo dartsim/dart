@@ -47,24 +47,90 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-RevoluteJoint::RevoluteJoint(const Eigen::Vector3d& axis,
-                             const std::string& _name)
-  : SingleDofJoint(_name),
-    mAxis(axis.normalized())
+RevoluteJoint::UniqueProperties::UniqueProperties(const Eigen::Vector3d& _axis)
+  : mAxis(_axis.normalized())
 {
-  updateLocalJacobian();
-  notifyPositionUpdate();
+  // Do nothing
+}
+
+//==============================================================================
+RevoluteJoint::Properties::Properties(
+    const SingleDofJoint::Properties& _singleDofJointProperties,
+    const RevoluteJoint::UniqueProperties& _revoluteProperties)
+  : SingleDofJoint::Properties(_singleDofJointProperties),
+    RevoluteJoint::UniqueProperties(_revoluteProperties)
+{
+  // Do nothing
 }
 
 //==============================================================================
 RevoluteJoint::~RevoluteJoint()
 {
+  // Do nothing
+}
+
+//==============================================================================
+void RevoluteJoint::setProperties(const Properties& _properties)
+{
+  SingleDofJoint::setProperties(
+        static_cast<const SingleDofJoint::Properties&>(_properties));
+  setProperties(static_cast<const UniqueProperties&>(_properties));
+}
+
+//==============================================================================
+void RevoluteJoint::setProperties(const UniqueProperties& _properties)
+{
+  setAxis(_properties.mAxis);
+}
+
+//==============================================================================
+RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
+{
+  return Properties(getSingleDofJointProperties(), mRevoluteP);
+}
+
+//==============================================================================
+void RevoluteJoint::copy(const RevoluteJoint& _otherJoint)
+{
+  if(this == &_otherJoint)
+    return;
+
+  setProperties(_otherJoint.getRevoluteJointProperties());
+}
+
+//==============================================================================
+void RevoluteJoint::copy(const RevoluteJoint* _otherJoint)
+{
+  if(nullptr == _otherJoint)
+    return;
+
+  copy(*_otherJoint);
+}
+
+//==============================================================================
+RevoluteJoint& RevoluteJoint::operator=(const RevoluteJoint& _otherJoint)
+{
+  copy(_otherJoint);
+  return *this;
+}
+
+//==============================================================================
+const std::string& RevoluteJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& RevoluteJoint::getStaticType()
+{
+  static const std::string name = "RevoluteJoint";
+  return name;
 }
 
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  mAxis = _axis.normalized();
+  mRevoluteP.mAxis = _axis.normalized();
   updateLocalJacobian();
   notifyPositionUpdate();
 }
@@ -72,15 +138,29 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 //==============================================================================
 const Eigen::Vector3d& RevoluteJoint::getAxis() const
 {
-  return mAxis;
+  return mRevoluteP.mAxis;
+}
+
+//==============================================================================
+RevoluteJoint::RevoluteJoint(const Properties& _properties)
+  : SingleDofJoint(_properties)
+{
+  setProperties(_properties);
+  updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* RevoluteJoint::clone() const
+{
+  return new RevoluteJoint(getRevoluteJointProperties());
 }
 
 //==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint
-       * math::expAngular(mAxis * getPositionStatic())
-       * mT_ChildBodyToJoint.inverse();
+  mT = mJointP.mT_ParentBodyToJoint
+       * math::expAngular(mRevoluteP.mAxis * getPositionStatic())
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -91,7 +171,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mT_ChildBodyToJoint, mAxis);
+    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, mRevoluteP.mAxis);
 
     // Verification
     assert(!math::isNan(mJacobian));

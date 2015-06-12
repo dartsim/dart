@@ -48,21 +48,7 @@
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 #include "dart/math/Geometry.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/dynamics.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/simulation/World.h"
@@ -113,294 +99,202 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
   return true;
 }
 
-/******************************************************************************/
+//==============================================================================
 /// Add an end-effector to the last link of the given robot
-void addEndEffector(Skeleton* robot, BodyNode* parent_node, Vector3d dim)
+void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 {
     // Create the end-effector node with a random dimension
-    BodyNode* node = new BodyNode("ee");
-    WeldJoint* joint = new WeldJoint("eeJoint");
+    BodyNode::Properties node(std::string("ee"));
+    std::shared_ptr<Shape> shape(new BoxShape(Vector3d(0.2, 0.2, 0.2)));
+    node.mVizShapes.push_back(shape);
+    node.mColShapes.push_back(shape);
+
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
+    Joint::Properties joint("eeJoint", T);
+
+    robot->createJointAndBodyNodePair<WeldJoint>(parent_node, joint, node);
+}
+
+//==============================================================================
+std::pair<Joint*, BodyNode*> add1DofJoint(SkeletonPtr skel,
+    BodyNode* parent, const BodyNode::Properties& node,
+    const std::string& name, double val, double min, double max, int type)
+{
+  SingleDofJoint::Properties properties(name);
+  properties.mPositionLowerLimit = min;
+  properties.mPositionUpperLimit = max;
+  std::pair<Joint*, BodyNode*> newComponent;
+  if(DOF_X == type)
+    newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(parent,
+      PrismaticJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)), node);
+  else if(DOF_Y == type)
+    newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(parent,
+      PrismaticJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)), node);
+  else if(DOF_Z == type)
+    newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(parent,
+      PrismaticJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)), node);
+  else if(DOF_YAW == type)
+    newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(parent,
+      RevoluteJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)), node);
+  else if(DOF_PITCH == type)
+    newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(parent,
+      RevoluteJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)), node);
+  else if(DOF_ROLL == type)
+    newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(parent,
+      RevoluteJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)), node);
+
+  newComponent.first->setPosition(0, val);
+  return newComponent;
+}
+
+//==============================================================================
+/// Creates an arbitrary three-link robot consisting of Single-DOF joints
+SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
+                                 Vector3d dim2, TypeOfDOF type2,
+                                 Vector3d dim3, TypeOfDOF type3,
+                                 bool finished = false,
+                                 bool collisionShape = true,
+                                 size_t stopAfter = 3)
+{
+  SkeletonPtr robot = Skeleton::create();
+
+  Vector3d dimEE = dim1;
+
+  // Create the first link
+  BodyNode::Properties node(std::string("link1"));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
+  std::shared_ptr<Shape> shape(new BoxShape(dim1));
+  node.mVizShapes.push_back(shape);
+  if(collisionShape)
+    node.mColShapes.push_back(shape);
+
+  std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
+      robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type1);
+
+  BodyNode* parent_node = pair1.second;
+
+  if(stopAfter > 1)
+  {
+    // Create the second link
+    node = BodyNode::Properties(std::string("link2"));
+    node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
+    shape = std::shared_ptr<Shape>(new BoxShape(dim2));
+    node.mVizShapes.push_back(shape);
+    if (collisionShape)
+        node.mColShapes.push_back(shape);
+
+    std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
+        robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+    Joint* joint = pair2.first;
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
+    joint->setTransformFromParentBodyNode(T);
+
+    parent_node = pair2.second;
+    dimEE = dim2;
+  }
+
+  if(stopAfter > 2)
+  {
+    // Create the third link
+    node = BodyNode::Properties(std::string("link3"));
+    node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
+    shape = std::shared_ptr<Shape>(new BoxShape(dim3));
+    node.mVizShapes.push_back(shape);
+    if (collisionShape)
+        node.mColShapes.push_back(shape);
+    std::pair<Joint*, BodyNode*> pair3 = add1DofJoint(
+          robot, parent_node, node, "joint3", 0.0, -DART_PI, DART_PI, type3);
+
+    Joint* joint = pair3.first;
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+    T.translate(Eigen::Vector3d(0.0, 0.0, dim2(2)));
+    joint->setTransformFromParentBodyNode(T);
+
+    parent_node = pair3.second;
+    dimEE = dim3;
+  }
+
+  // If finished, add an end effector
+  if(finished)
+    addEndEffector(robot, parent_node, dimEE);
+
+  return robot;
+}
+
+//==============================================================================
+/// Creates an arbitrary two-link robot consisting of Single-DOF joints
+SkeletonPtr createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
+                               Vector3d dim2, TypeOfDOF type2,
+                               bool finished = true)
+{
+    return createThreeLinkRobot(dim1, type1, dim2, type2,
+                                Eigen::Vector3d::Zero(), DOF_X,
+                                finished, true, 2);
+}
+
+//==============================================================================
+/// Creates a N link manipulator with the given dimensions where each joint is
+/// the specified type
+SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
+                           bool finished = false)
+{
+  assert(_n > 0);
+
+  SkeletonPtr robot = Skeleton::create();
+  robot->disableSelfCollision();
+
+  // Create the first link, the joint with the ground and its shape
+  BodyNode::Properties node(std::string("link1"));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+  std::shared_ptr<Shape> shape(new BoxShape(dim));
+  node.mVizShapes.push_back(shape);
+  node.mColShapes.push_back(shape);
+
+  std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
+        robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type);
+
+  Joint* joint = pair1.first;
+  joint->setDampingCoefficient(0, 0.01);
+
+  BodyNode* parent_node = pair1.second;
+
+  // Create links iteratively
+  for (int i = 1; i < _n; ++i)
+  {
+    std::ostringstream ssLink;
+    std::ostringstream ssJoint;
+    ssLink << "link" << i;
+    ssJoint << "joint" << i;
+
+    node = BodyNode::Properties(ssLink.str());
+    node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+    shape = std::shared_ptr<Shape>(new BoxShape(dim));
+    node.mVizShapes.push_back(shape);
+    node.mColShapes.push_back(shape);
+
+    std::pair<Joint*, BodyNode*> newPair = add1DofJoint(
+        robot, parent_node, node, ssJoint.str(), 0.0, -DART_PI, DART_PI, type);
+
+    Joint* joint = newPair.first;
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
     joint->setTransformFromParentBodyNode(T);
-    Shape* shape = new BoxShape(Vector3d(0.2, 0.2, 0.2));
-    node->setLocalCOM(Vector3d(0.0, 0.0, 0.0));
-    node->setMass(1.0);
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setParentJoint(joint);
-    parent_node->addChildBodyNode(node);
-    robot->addBodyNode(node);
-}
-
-/******************************************************************************/
-/// Add a DOF to a given joint
-Joint* create1DOFJoint(double val, double min, double max, int type)
-{
-    // Create the transformation based on the type
-    Joint* newJoint = NULL;
-    if(type == DOF_X)
-        newJoint = new PrismaticJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
-    else if(type == DOF_Y)
-        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
-    else if(type == DOF_Z)
-        newJoint = new PrismaticJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
-    else if(type == DOF_YAW)
-        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 0.0, 1.0));
-    else if(type == DOF_PITCH)
-        newJoint = new RevoluteJoint(Eigen::Vector3d(0.0, 1.0, 0.0));
-    else if(type == DOF_ROLL)
-        newJoint = new RevoluteJoint(Eigen::Vector3d(1.0, 0.0, 0.0));
-    // Add the transformation to the joint, set the min/max values and set it to the skeleton
-    newJoint->setPosition(0, val);
-    newJoint->setPositionLowerLimit(0, min);
-    newJoint->setPositionUpperLimit(0, max);
-
-    return newJoint;
-}
-
-/******************************************************************************/
-/// Creates a two link manipulator with the given dimensions where the first
-/// link rotates around z-axis and second rotates around x in the zero
-/// configuration.
-Skeleton* createTwoLinkRobot(Vector3d dim1, TypeOfDOF type1,
-                             Vector3d dim2, TypeOfDOF type2,
-                             bool finished = true)
-{
-    Skeleton* robot = new Skeleton();
-
-    // Create the first link, the joint with the ground and its shape
-    double mass = 1.0;
-    BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type1);
-    joint->setName("joint1");
-    Shape* shape = new BoxShape(dim1);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    robot->addBodyNode(node);
-
-    // Create the second link, the joint with link1 and its shape
-    BodyNode* parent_node = robot->getBodyNode("link1");
-    node = new BodyNode("link2");
-    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type2);
-    joint->setName("joint2");
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBodyNode(T);
-    shape = new BoxShape(dim2);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    parent_node->addChildBodyNode(node);
-    robot->addBodyNode(node);
-
-    // If finished, initialize the skeleton
-    if(finished)
-    {
-        addEndEffector(robot, node, dim2);
-        robot->init();
-    }
-    return robot;
-}
-
-/******************************************************************************/
-/// Creates a two link manipulator with the given dimensions where the first
-/// link rotates around z-axis and second rotates around x in the zero
-/// configuration.
-Skeleton* createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
-                               Vector3d dim2, TypeOfDOF type2,
-                               Vector3d dim3, TypeOfDOF type3,
-                               bool finished = false,
-                               bool collisionShape = true)
-{
-    Skeleton* robot = new Skeleton();
-
-    // Create the first link, the joint with the ground and its shape
-    double mass = 1.0;
-    BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type1);
-    joint->setName("joint1");
-    Shape* shape = new BoxShape(dim1);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
-    node->addVisualizationShape(shape);
-    if (collisionShape)
-        node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    robot->addBodyNode(node);
-
-    // Create the second link, the joint with link1 and its shape
-    BodyNode* parent_node = robot->getBodyNode("link1");
-    node = new BodyNode("link2");
-    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type2);
-    joint->setName("joint2");
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBodyNode(T);
-    shape = new BoxShape(dim2);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
-    node->addVisualizationShape(shape);
-    if (collisionShape)
-        node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    parent_node->addChildBodyNode(node);
-    robot->addBodyNode(node);
-
-    // Create the third link, the joint with link2 and its shape
-    parent_node = robot->getBodyNode("link2");
-    node = new BodyNode("link3");
-    joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type3);
-    joint->setName("joint3");
-    T = Eigen::Isometry3d::Identity();
-    T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
-    joint->setTransformFromParentBodyNode(T);
-    shape = new BoxShape(dim3);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
-    node->addVisualizationShape(shape);
-    if (collisionShape)
-        node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    parent_node->addChildBodyNode(node);
-    robot->addBodyNode(node);
-
-    // If finished, initialize the skeleton
-    if(finished)
-    {
-        addEndEffector(robot, node, dim3);
-        robot->init();
-    }
-    return robot;
-}
-
-/******************************************************************************/
-/// Creates a N link manipulator with the given dimensions where the first link
-/// rotates around z-axis and second rotates around x in the zero configuration.
-Skeleton* createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
-                           bool finished = false)
-{
-    assert(_n > 0);
-
-    Skeleton* robot = new Skeleton();
-    robot->disableSelfCollision();
-    double mass = 1.0;
-
-    // Create the first link, the joint with the ground and its shape
-    BodyNode* parent_node = NULL;
-    BodyNode* node = new BodyNode("link1");
-    Joint* joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type);
-    joint->setName("joint1");
     joint->setDampingCoefficient(0, 0.01);
-    Shape* shape = new BoxShape(dim);
-    node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-    robot->addBodyNode(node);
-    parent_node = node;
 
-    // Create links iteratively
-    for (int i = 1; i < _n; ++i)
-    {
-        std::ostringstream ssLink;
-        std::ostringstream ssJoint;
-        ssLink << "link" << i;
-        ssLink << "joint" << i;
-        node = new BodyNode(ssLink.str());
-        joint = create1DOFJoint(0.0, -DART_PI, DART_PI, type);
-        joint->setName(ssJoint.str());
-        Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-        T.translate(Eigen::Vector3d(0.0, 0.0, dim(2)));
-        joint->setTransformFromParentBodyNode(T);
-        joint->setDampingCoefficient(0, 0.01);
-        shape = new BoxShape(dim);
-        node->setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
-        node->addVisualizationShape(shape);
-        node->addCollisionShape(shape);
-        node->setMass(mass);
-        node->setParentJoint(joint);
-        parent_node->addChildBodyNode(node);
-        robot->addBodyNode(node);
-        parent_node = node;
-    }
+    parent_node = newPair.second;
+  }
 
-    // If finished, initialize the skeleton
-    if(finished)
-    {
-        addEndEffector(robot, node, dim);
-        robot->init();
-    }
-    return robot;
+  // If finished, initialize the skeleton
+  if(finished)
+    addEndEffector(robot, parent_node, dim);
+
+  return robot;
 }
 
-Skeleton* createGround(
-        const Eigen::Vector3d& _size,
-        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
-        const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
-{
-    double mass = 1.0;
-
-//    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-//    T.translation() = _position;
-//    T.linear() = eulerXYZToMatrix(_orientation);
-
-    WeldJoint* joint = new WeldJoint("joint1");
-//    joint->setConfigs(logMap(T));
-
-    Shape* shape = new BoxShape(_size);
-
-    BodyNode* node = new BodyNode("link1");
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-
-    Skeleton* skeleton = new Skeleton();
-    skeleton->addBodyNode(node);
-
-    skeleton->init();
-
-    return skeleton;
-}
-
-Skeleton* createSphere(
-        const double _radius,
-        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
-{
-    double mass = 1.0;
-
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    T.translation() = _position;
-
-    FreeJoint* joint = new FreeJoint("joint1");
-    joint->setPositions(logMap(T));
-
-    EllipsoidShape* ellipShape = new EllipsoidShape(Vector3d(_radius * 2.0,
-                                                             _radius * 2.0,
-                                                             _radius * 2.0));
-
-    BodyNode* node = new BodyNode("link1");
-    node->addVisualizationShape(ellipShape);
-    node->addCollisionShape(ellipShape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-
-    Skeleton* skeleton = new Skeleton();
-    skeleton->addBodyNode(node);
-
-    skeleton->init();
-
-    return skeleton;
-}
-
-Skeleton* createBox(
+//==============================================================================
+SkeletonPtr createGround(
         const Eigen::Vector3d& _size,
         const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
         const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
@@ -410,24 +304,74 @@ Skeleton* createBox(
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translation() = _position;
     T.linear() = eulerXYZToMatrix(_orientation);
+    Joint::Properties joint("joint1", T);
 
-    FreeJoint* joint = new FreeJoint("joint1");
-    joint->setPositions(logMap(T));
+    BodyNode::Properties node(std::string("link"));
+    std::shared_ptr<Shape> shape(new BoxShape(_size));
+    node.mVizShapes.push_back(shape);
+    node.mColShapes.push_back(shape);
+    node.mInertia.setMass(mass);
 
-    Shape* shape = new BoxShape(_size);
-
-    BodyNode* node = new BodyNode("link1");
-    node->addVisualizationShape(shape);
-    node->addCollisionShape(shape);
-    node->setMass(mass);
-    node->setParentJoint(joint);
-
-    Skeleton* skeleton = new Skeleton();
-    skeleton->addBodyNode(node);
-
-    skeleton->init();
+    SkeletonPtr skeleton = Skeleton::create();
+    skeleton->createJointAndBodyNodePair<WeldJoint>(nullptr, joint, node);
 
     return skeleton;
+}
+
+//==============================================================================
+SkeletonPtr createObject(
+    const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
+    const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+{
+  double mass = 1.0;
+
+  MultiDofJoint<6>::Properties joint(std::string("joint1"));
+
+  BodyNode::Properties node(std::string("link1"));
+  node.mInertia.setMass(mass);
+
+  SkeletonPtr skeleton = Skeleton::create();
+  skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr, joint, node);
+
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.translation() = _position;
+  T.linear() = eulerXYZToMatrix(_orientation);
+  skeleton->getJoint(0)->setPositions(FreeJoint::convertToPositions(T));
+
+  return skeleton;
+}
+
+//==============================================================================
+SkeletonPtr createSphere(
+        const double _radius,
+        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero())
+{
+  SkeletonPtr sphere = createObject(_position);
+
+  BodyNode* bn = sphere->getBodyNode(0);
+  std::shared_ptr<EllipsoidShape> ellipShape(
+        new EllipsoidShape(Vector3d(
+                             _radius * 2.0, _radius * 2.0, _radius * 2.0)));
+  bn->addVisualizationShape(ellipShape);
+  bn->addCollisionShape(ellipShape);
+
+  return sphere;
+}
+
+//==============================================================================
+SkeletonPtr createBox(
+        const Eigen::Vector3d& _size,
+        const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
+        const Eigen::Vector3d& _orientation = Eigen::Vector3d::Zero())
+{
+  SkeletonPtr box = createObject(_position, _orientation);
+
+  BodyNode* bn = box->getBodyNode(0);
+  std::shared_ptr<Shape> boxShape(new BoxShape(_size));
+  bn->addVisualizationShape(boxShape);
+  bn->addCollisionShape(boxShape);
+
+  return box;
 }
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

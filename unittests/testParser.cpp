@@ -100,9 +100,9 @@ TEST(Parser, DataStructure)
 //==============================================================================
 TEST(Parser, EmptyWorld)
 {
-  World* world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
+  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), 0);
@@ -112,52 +112,46 @@ TEST(Parser, EmptyWorld)
   EXPECT_EQ(world->getTime(), 0);
   world->step();
   EXPECT_EQ(world->getTime(), world->getTimeStep());
-
-  delete world;
 }
 
 //==============================================================================
 TEST(Parser, SinglePendulum)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/single_pendulum.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(world->getNumSkeletons(), 1);
+  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
 
-  Skeleton* skel1 = world->getSkeleton("single_pendulum");
+  SkeletonPtr skel1 = world->getSkeleton("single_pendulum");
 
-  EXPECT_EQ(skel1->getNumBodyNodes(), 1);
+  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 1);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
 TEST(Parser, SerialChain)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
   EXPECT_EQ(world->getGravity()(0), 0);
   EXPECT_EQ(world->getGravity()(1), -9.81);
   EXPECT_EQ(world->getGravity()(2), 0);
-  EXPECT_EQ(world->getNumSkeletons(), 1);
+  EXPECT_EQ(static_cast<int>(world->getNumSkeletons()), 1);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
-  EXPECT_EQ(skel1->getNumBodyNodes(), 10);
+  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 10);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
@@ -169,22 +163,20 @@ TEST(Parser, RigidAndSoftBodies)
   using namespace simulation;
   using namespace utils;
 
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel1 != NULL);
-  EXPECT_EQ(skel1->getNumBodyNodes(), 2);
-  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1);
-  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel1 != nullptr);
+  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 2);
+  EXPECT_EQ(static_cast<int>(skel1->getNumRigidBodyNodes()), 1);
+  EXPECT_EQ(static_cast<int>(skel1->getNumSoftBodyNodes()), 1);
 
   SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
-  EXPECT_TRUE(sbn->getNumPointMasses() > 0);
+  EXPECT_TRUE(static_cast<int>(sbn->getNumPointMasses()) > 0);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
@@ -196,21 +188,21 @@ TEST(Parser, PlanarJoint)
   using namespace simulation;
   using namespace utils;
 
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/planar_joint.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton1");
-  EXPECT_TRUE(skel1 != NULL);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton1");
+  EXPECT_TRUE(skel1 != nullptr);
 
   BodyNode* body1 = skel1->getBodyNode("link1");
   BodyNode* body2 = skel1->getBodyNode("link2");
   BodyNode* body3 = skel1->getBodyNode("link3");
   BodyNode* body4 = skel1->getBodyNode("link4");
-  EXPECT_TRUE(body1 != NULL);
-  EXPECT_TRUE(body2 != NULL);
-  EXPECT_TRUE(body3 != NULL);
-  EXPECT_TRUE(body4 != NULL);
+  EXPECT_TRUE(body1 != nullptr);
+  EXPECT_TRUE(body2 != nullptr);
+  EXPECT_TRUE(body3 != nullptr);
+  EXPECT_TRUE(body4 != nullptr);
 
   PlanarJoint* planarJoint1
       = dynamic_cast<PlanarJoint*>(body1->getParentJoint());
@@ -220,10 +212,10 @@ TEST(Parser, PlanarJoint)
       = dynamic_cast<PlanarJoint*>(body3->getParentJoint());
   PlanarJoint* planarJoint4
       = dynamic_cast<PlanarJoint*>(body4->getParentJoint());
-  EXPECT_TRUE(planarJoint1 != NULL);
-  EXPECT_TRUE(planarJoint2 != NULL);
-  EXPECT_TRUE(planarJoint3 != NULL);
-  EXPECT_TRUE(planarJoint4 != NULL);
+  EXPECT_TRUE(planarJoint1 != nullptr);
+  EXPECT_TRUE(planarJoint2 != nullptr);
+  EXPECT_TRUE(planarJoint3 != nullptr);
+  EXPECT_TRUE(planarJoint4 != nullptr);
 
   EXPECT_EQ(planarJoint1->getPlaneType(), PlanarJoint::PT_XY);
   EXPECT_EQ(planarJoint2->getPlaneType(), PlanarJoint::PT_YZ);
@@ -301,19 +293,17 @@ TEST(Parser, PlanarJoint)
   EXPECT_EQ(planarJoint4->getPositionUpperLimit(2), +3.0);
 
   world->step();
-
-  delete world;
 }
 
 //==============================================================================
 TEST(SKEL_PARSER, JointActuatorType)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel1 != NULL);
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
+  EXPECT_TRUE(skel1 != nullptr);
 
   // Test for no actuator type attribute being specified
   Joint* joint0 = skel1->getJoint("joint0");
@@ -341,11 +331,11 @@ TEST(SKEL_PARSER, JointActuatorType)
 //==============================================================================
 TEST(Parser, DofAttributes)
 {
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
@@ -418,12 +408,12 @@ TEST(Parser, DofAttributes)
 //==============================================================================
 TEST(Parser, JointDynamicsElements)
 {
-  World* world
+  WorldPtr world
       = SkelParser::readWorld(
           DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
 
-  Skeleton* skel1 = world->getSkeleton("skeleton 1");
+  SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   Joint* joint0 = skel1->getJoint("joint0");
   EXPECT_EQ(joint0->getDampingCoefficient(0), 1.0);

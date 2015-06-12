@@ -54,7 +54,8 @@
 #include "dart/common/NameManager.h"
 #include "dart/common/Subject.h"
 #include "dart/simulation/Recording.h"
-#include "dart/dynamics/Entity.h"
+#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 
@@ -76,19 +77,37 @@ namespace simulation {
 class World : public virtual common::Subject
 {
 public:
+
+  using NameChangedSignal
+      = common::Signal<void(const std::string& _oldName,
+                            const std::string& _newName)>;
+
   //--------------------------------------------------------------------------
   // Constructor and Destructor
   //--------------------------------------------------------------------------
 
   /// Constructor
-  World();
+  World(const std::string& _name = "world");
 
   /// Destructor
   virtual ~World();
 
+  /// Create a clone of this World. All Skeletons and SimpleFrames that are held
+  /// by this World will be copied over.
+  ///
+  /// Note that the states of the Skeletons will not be transferred over to this
+  /// clone [TODO: copy the states as well]
+  std::shared_ptr<World> clone() const;
+
   //--------------------------------------------------------------------------
   // Properties
   //--------------------------------------------------------------------------
+
+  /// Set the name of this World
+  const std::string& setName(const std::string& _newName);
+
+  /// Get the name of this World
+  const std::string& getName() const;
 
   /// Set gravity
   void setGravity(const Eigen::Vector3d& _gravity);
@@ -107,57 +126,47 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the indexed skeleton
-  dynamics::Skeleton* getSkeleton(size_t _index) const;
+  dynamics::SkeletonPtr getSkeleton(size_t _index) const;
 
   /// Find a Skeleton by name
   /// \param[in] The name of the Skeleton you are looking for.
-  /// \return If the skeleton does not exist then return NULL.
-  dynamics::Skeleton* getSkeleton(const std::string& _name) const;
+  /// \return If the skeleton does not exist then return nullptr.
+  dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
   size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
-  std::string addSkeleton(dynamics::Skeleton* _skeleton);
+  std::string addSkeleton(dynamics::SkeletonPtr _skeleton);
 
-  /// Remove a skeleton from this world without deleting it
-  void withdrawSkeleton(dynamics::Skeleton* _skeleton);
+  /// Remove a skeleton from this world
+  void removeSkeleton(dynamics::SkeletonPtr _skeleton);
 
-  /// Remove a skeleton in this world and delete it
-  void removeSkeleton(dynamics::Skeleton* _skeleton);
-
-  /// Remove all skeletons from this world, and get pointers to them
-  std::set<dynamics::Skeleton*> withdrawAllSkeletons();
-
-  /// Remove all the skeletons in this world and delete them
-  void removeAllSkeletons();
+  /// Remove all the skeletons in this world, and return a set of shared
+  /// pointers to them, in case you want to recycle them
+  std::set<dynamics::SkeletonPtr> removeAllSkeletons();
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
 
   /// Get the indexed Entity
-  dynamics::Entity* getEntity(size_t _index) const;
+  dynamics::SimpleFramePtr getSimpleFrame(size_t _index) const;
 
   /// Find an Entity by name
-  dynamics::Entity* getEntity(const std::string& _name) const;
+  dynamics::SimpleFramePtr getSimpleFrame(const std::string& _name) const;
 
   /// Get the number of Entities
-  size_t getNumEntities() const;
+  size_t getNumSimpleFrames() const;
 
   /// Add an Entity to this world
-  std::string addEntity(dynamics::Entity* _entity);
+  std::string addSimpleFrame(dynamics::SimpleFramePtr _frame);
 
-  /// Remove an Entity from this world without deleting it
-  void withdrawEntity(dynamics::Entity* _entity);
+  /// Remove a SimpleFrame from this world
+  void removeSimpleFrame(dynamics::SimpleFramePtr _frame);
 
-  /// Remove an Entity from this world and delete it
-  void removeEntity(dynamics::Entity* _entity);
-
-  /// Remove all Entities from this world, and get pointers to them
-  std::set<dynamics::Entity*> withdrawAllEntities();
-
-  /// Remove all Entities in this world. Note: Does not remove any Skeletons
-  void removeAllEntities();
+  /// Remove all SimpleFrames in this world, and return a set of shared
+  /// pointers to them, in case you want to recycle them
+  std::set<dynamics::SimpleFramePtr> removeAllSimpleFrames();
 
   //--------------------------------------------------------------------------
   // Kinematics
@@ -185,6 +194,9 @@ public:
   double getTime() const;
 
   /// Get the number of simulated frames
+  ///
+  /// TODO(MXG): I think the name of this function is much too similar to
+  /// getSimpleFrame()
   int getSimFrames() const;
 
   //--------------------------------------------------------------------------
@@ -201,17 +213,41 @@ public:
   Recording* getRecording();
 
 protected:
-  /// Skeletones in this world
-  std::vector<dynamics::Skeleton*> mSkeletons;
+
+  /// Register when a Skeleton's name is changed
+  void handleSkeletonNameChange(dynamics::ConstMetaSkeletonPtr _skeleton);
+
+  /// Register when a SimpleFrame's name is changed
+  void handleSimpleFrameNameChange(const dynamics::Entity* _entity);
+
+  /// Name of this World
+  std::string mName;
+
+  /// Skeletons in this world
+  std::vector<dynamics::SkeletonPtr> mSkeletons;
+
+  std::map<dynamics::ConstMetaSkeletonPtr,
+           dynamics::SkeletonPtr> mMapForSkeletons;
+
+  /// Connections for noticing changes in Skeleton names
+  /// TODO(MXG): Consider putting this functionality into NameManager
+  std::vector<common::Connection> mNameConnectionsForSkeletons;
 
   /// NameManager for keeping track of Skeletons
-  dart::common::NameManager<dynamics::Skeleton> mNameMgrForSkeletons;
+  dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
-  std::vector<dynamics::Entity*> mEntities;
+  std::vector<dynamics::SimpleFramePtr> mSimpleFrames;
+
+  /// Connections for noticing changes in Frame names
+  /// TODO(MXG): Consider putting this functionality into NameManager
+  std::vector<common::Connection> mNameConnectionsForSimpleFrames;
+
+  /// Map from raw SimpleFrame pointers to their shared_ptrs
+  std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mSimpleFrameToShared;
 
   /// NameManager for keeping track of Entities
-  dart::common::NameManager<dynamics::Entity> mNameMgrForEntities;
+  dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///
@@ -231,16 +267,26 @@ protected:
   /// Current simulation frame number
   int mFrame;
 
-  /// The integrator
-  DEPRECATED(4.3)
-  integration::Integrator* mIntegrator;
-
   /// Constraint solver
   constraint::ConstraintSolver* mConstraintSolver;
 
   ///
   Recording* mRecording;
+
+  //--------------------------------------------------------------------------
+  // Signals
+  //--------------------------------------------------------------------------
+  NameChangedSignal mNameChangedSignal;
+
+public:
+  //--------------------------------------------------------------------------
+  // Slot registers
+  //--------------------------------------------------------------------------
+  common::SlotRegister<NameChangedSignal> onNameChanged;
+
 };
+
+typedef std::shared_ptr<World> WorldPtr;
 
 }  // namespace simulation
 }  // namespace dart

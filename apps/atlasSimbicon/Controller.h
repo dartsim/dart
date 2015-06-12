@@ -50,7 +50,7 @@ class Controller
 {
 public:
   /// \brief Constructor
-  Controller(dart::dynamics::Skeleton* _atlasRobot,
+  Controller(dart::dynamics::SkeletonPtr _atlasRobot,
              dart::constraint::ConstraintSolver* _collisionSolver);
 
   /// \brief Destructor
@@ -61,7 +61,7 @@ public:
   virtual void update(double _currentTime);
 
   /// \brief
-  dart::dynamics::Skeleton* getAtlasRobot();
+  dart::dynamics::SkeletonPtr getAtlasRobot();
 
   /// \brief Get current state machine
   StateMachine* getCurrentState();
@@ -104,7 +104,7 @@ public:
 
 protected:
   /// \brief Atlas robot skeleton
-  dart::dynamics::Skeleton* mAtlasRobot;
+  dart::dynamics::SkeletonPtr mAtlasRobot;
 
   /// \brief Conllision detector
   dart::constraint::ConstraintSolver* mConstratinSolver;

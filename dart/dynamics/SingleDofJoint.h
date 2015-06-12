@@ -52,24 +52,128 @@ class DegreeOfFreedom;
 class SingleDofJoint : public Joint
 {
 public:
-  /// Constructor
-  SingleDofJoint(const std::string& _name);
+
+  struct UniqueProperties
+  {
+    /// Lower limit of position
+    double mPositionLowerLimit;
+
+    /// Upper limit of position
+    double mPositionUpperLimit;
+
+    /// Lower limit of velocity
+    double mVelocityLowerLimit;
+
+    /// Upper limit of velocity
+    double mVelocityUpperLimit;
+
+    /// Lower limit of acceleration
+    double mAccelerationLowerLimit;
+
+    /// Upper limit of acceleration
+    double mAccelerationUpperLimit;
+
+    /// Lower limit of force
+    double mForceLowerLimit;
+
+    /// Upper limit of force
+    double mForceUpperLimit;
+
+    /// Joint spring stiffness
+    double mSpringStiffness;
+
+    /// Rest position for joint spring
+    double mRestPosition;
+
+    /// Joint damping coefficient
+    double mDampingCoefficient;
+
+    /// Coulomb friction force
+    double mFriction;
+
+    /// True if the name of this Joint's DOF is not allowed to be overwritten
+    bool mPreserveDofName;
+
+    /// The name of the DegreeOfFreedom for this Joint
+    std::string mDofName;
+
+    /// Constructor
+    UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
+                     double _positionUpperLimit =  DART_DBL_INF,
+                     double _velocityLowerLimit = -DART_DBL_INF,
+                     double _velocityUpperLimit =  DART_DBL_INF,
+                     double _accelerationLowerLimit = -DART_DBL_INF,
+                     double _accelerationUpperLimit =  DART_DBL_INF,
+                     double _forceLowerLimit = -DART_DBL_INF,
+                     double _forceUpperLimit =  DART_DBL_INF,
+                     double _springStiffness = 0.0,
+                     double _restPosition = 0.0,
+                     double _dampingCoefficient = 0.0,
+                     double _coulombFriction = 0.0,
+                     bool _preserveDofName = false,
+                     std::string _dofName = "");
+
+    virtual ~UniqueProperties() = default;
+  };
+
+  struct Properties : Joint::Properties, UniqueProperties
+  {
+    Properties(
+        const Joint::Properties& _jointProperties = Joint::Properties(),
+        const UniqueProperties& _singleDofProperties = UniqueProperties());
+
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~SingleDofJoint();
 
+  /// Set the Properties of this SingleDofJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this SingleDofJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this SingleDofJoint
+  Properties getSingleDofJointProperties() const;
+
+  /// Copy the Properties of another SingleDofJoint
+  void copy(const SingleDofJoint& _otherSingleDofJoint);
+
+  /// Copy the Properties of another SingleDofJoint
+  void copy(const SingleDofJoint* _otherSingleDofJoint);
+
+  /// Same as copy(const SingleDofJoint&)
+  SingleDofJoint& operator=(const SingleDofJoint& _otherJoint);
+
   // Documentation inherited
-  DEPRECATED(4.1)
-  virtual size_t getDof() const;
+  DegreeOfFreedom* getDof(size_t _index) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDof(size_t _index) const override;
+
+  // Documentation inherted
+  const std::string& setDofName(size_t _index,
+                                const std::string& _name,
+                                bool _preserveName=true) override;
+
+  // Documentation inherited
+  void preserveDofName(size_t _index, bool _preserve) override;
+
+  // Documentation inherited
+  bool isDofNamePreserved(size_t _index) const override;
+
+  // Documentation inherited
+  const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
   size_t getNumDofs() const override;
 
   // Documentation inherited
-  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton) override;
+  size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  size_t getIndexInSkeleton(size_t _index) const override;
+  size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
@@ -95,12 +199,6 @@ public:
   //----------------------------------------------------------------------------
 
   // TODO(JS): Not to use Eigen::VectorXd
-
-  // Documentation inherited
-  DegreeOfFreedom* getDof(size_t _index) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _index) const override;
 
   // Documentation inherited
   void setPosition(size_t _index, double _position) override;
@@ -287,11 +385,11 @@ public:
   virtual void integrateVelocities(double _dt);
 
   // Documentation inherited
-  Eigen::VectorXd getPositionsDifference(
-      const Eigen::VectorXd& _q0, const Eigen::VectorXd& _q1) const override;
+  Eigen::VectorXd getPositionDifferences(
+      const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const override;
 
   /// Fixed-size version of getPositionsDifference()
-  double getPositionDifferenceStatic(double _q0, double _q1) const;
+  double getPositionDifferenceStatic(double _q2, double _q1) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
@@ -332,6 +430,12 @@ public:
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
+
+  /// Constructor called inheriting classes
+  SingleDofJoint(const Properties& _properties);
+
+  // Documentation inherited
+  void registerDofs() override;
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames();
@@ -506,6 +610,9 @@ protected:
   /// \}
 
 protected:
+
+  UniqueProperties mSingleDofP;
+
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
 
@@ -519,12 +626,6 @@ protected:
   /// Position
   double mPosition;
 
-  /// Lower limit of position
-  double mPositionLowerLimit;
-
-  /// Upper limit of position
-  double mPositionUpperLimit;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mPositionDeriv;
 
@@ -534,12 +635,6 @@ protected:
 
   /// Generalized velocity
   double mVelocity;
-
-  /// Min value allowed.
-  double mVelocityLowerLimit;
-
-  /// Max value allowed.
-  double mVelocityUpperLimit;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mVelocityDeriv;
@@ -551,12 +646,6 @@ protected:
   /// Generalized acceleration
   double mAcceleration;
 
-  /// Min value allowed.
-  double mAccelerationLowerLimit;
-
-  /// upper limit of generalized acceleration
-  double mAccelerationUpperLimit;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mAccelerationDeriv;
 
@@ -566,12 +655,6 @@ protected:
 
   /// Generalized force
   double mForce;
-
-  /// Min value allowed.
-  double mForceLowerLimit;
-
-  /// Max value allowed.
-  double mForceUpperLimit;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   double mForceDeriv;
@@ -588,22 +671,6 @@ protected:
 
   /// Generalized constraint impulse
   double mConstraintImpulse;
-
-  //----------------------------------------------------------------------------
-  // Spring and damper
-  //----------------------------------------------------------------------------
-
-  /// Joint spring stiffness
-  double mSpringStiffness;
-
-  /// Rest joint position for joint spring
-  double mRestPosition;
-
-  /// Joint damping coefficient
-  double mDampingCoefficient;
-
-  /// Coulomb friction force
-  double mFriction;
 
   //----------------------------------------------------------------------------
   // For recursive dynamics algorithms

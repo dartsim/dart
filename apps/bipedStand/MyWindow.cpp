@@ -49,10 +49,8 @@ MyWindow::~MyWindow() {
 void MyWindow::timeStepping() {
   mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(mForce);
 
-  //  mController->setConstrForces(mWorld->getSkeleton(1)->getConstraintForces());
-  mController->computeTorques(mWorld->getSkeleton(1)->getPositions(),
-                              mWorld->getSkeleton(1)->getVelocities());
-  mWorld->getSkeleton(1)->setForces(mController->getTorques());
+  mController->computeTorques();
+  mController->getSkel()->setForces(mController->getTorques());
 
   mWorld->step();
 

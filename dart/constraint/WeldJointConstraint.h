@@ -89,7 +89,7 @@ protected:
   virtual bool isActive() const;
 
   // Documentation inherited
-  virtual dynamics::Skeleton* getRootSkeleton() const;
+  virtual dynamics::SkeletonPtr getRootSkeleton() const;
 
   // Documentation inherited
   virtual void uniteSkeletons();

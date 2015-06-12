@@ -89,8 +89,8 @@ void SimWindow::drawSkels() {
 
 void SimWindow::drawEntities()
 {
-  for (size_t i = 0; i < mWorld->getNumEntities(); ++i)
-    mWorld->getEntity(i)->draw(mRI);
+  for (size_t i = 0; i < mWorld->getNumSimpleFrames(); ++i)
+    mWorld->getSimpleFrame(i)->draw(mRI);
 }
 
 void SimWindow::displayTimer(int _val) {
@@ -227,7 +227,7 @@ void SimWindow::keyboard(unsigned char _key, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void SimWindow::setWorld(simulation::World* _world) {
+void SimWindow::setWorld(simulation::WorldPtr _world) {
   mWorld = _world;
 }
 

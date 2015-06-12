@@ -50,11 +50,26 @@ namespace dynamics {
 class WeldJoint : public ZeroDofJoint
 {
 public:
-  /// Constructor
-  explicit WeldJoint(const std::string& _name = "WeldJoint");
+
+  friend class Skeleton;
+
+  struct Properties : ZeroDofJoint::Properties
+  {
+    Properties(const Joint::Properties& _properties = Joint::Properties());
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~WeldJoint();
+
+  /// Get the Properties of this WeldJoint
+  Properties getWeldJointProperties() const;
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   // Documentation inherited
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
@@ -63,6 +78,13 @@ public:
   virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T) override;
 
 protected:
+
+  /// Constructor called by Skeleton class
+  WeldJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   //----------------------------------------------------------------------------
   // Recursive algorithms
   //----------------------------------------------------------------------------

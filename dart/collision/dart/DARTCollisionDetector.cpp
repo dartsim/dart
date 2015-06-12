@@ -97,8 +97,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
             contactPair = contacts[m];
             contactPair.bodyNode1 = BodyNode1;
             contactPair.bodyNode2 = BodyNode2;
-            assert(contactPair.bodyNode1 != NULL);
-            assert(contactPair.bodyNode2 != NULL);
+            assert(contactPair.bodyNode1.lock() != NULL);
+            assert(contactPair.bodyNode2.lock() != NULL);
 
             mContacts.push_back(contactPair);
           }
@@ -129,8 +129,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
   for (size_t i = 0; i < mContacts.size(); ++i)
   {
     // Set these two bodies are in colliding
-    mContacts[i].bodyNode1->setColliding(true);
-    mContacts[i].bodyNode2->setColliding(true);
+    mContacts[i].bodyNode1.lock()->setColliding(true);
+    mContacts[i].bodyNode2.lock()->setColliding(true);
   }
 
   return !mContacts.empty();

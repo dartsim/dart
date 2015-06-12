@@ -53,6 +53,9 @@ namespace dynamics {
 class PlanarJoint : public MultiDofJoint<3>
 {
 public:
+
+  friend class Skeleton;
+
   /// Plane type
   enum PlaneType
   {
@@ -62,11 +65,88 @@ public:
     PT_ARBITRARY
   };
 
-  /// Constructor
-  explicit PlanarJoint(const std::string& _name = "PlanarJoint");
+  /// Properties that are unique to PlanarJoints. Note that the mPlaneType
+  /// member has greater authority than the mTransAxis1 and mTransAxis2 members.
+  /// When copying properties into a PlanarJoint, it will first defer to
+  /// mPlaneType. If mPlaneType is PT_ARBITRARY, then and only then will it use
+  /// mTransAxis1 and mTransAxis2. mRotAxis has no authority; it will always be
+  /// recomputed from mTransAxis1 and mTransAxis2 when copying it into a
+  /// PlanarJoint
+  struct UniqueProperties
+  {
+    /// Plane type
+    PlaneType mPlaneType;
+
+    /// First translational axis
+    Eigen::Vector3d mTransAxis1;
+
+    /// Second translational axis
+    Eigen::Vector3d mTransAxis2;
+
+    /// Rotational axis
+    Eigen::Vector3d mRotAxis;
+
+    /// Constructor for pre-defined plane types. Defaults to the XY plane if
+    /// PT_ARBITRARY is specified.
+    UniqueProperties(PlaneType _planeType = PT_XY);
+
+    /// Constructor for arbitrary plane types. mPlaneType will be set to
+    /// PT_ARBITRARY
+    UniqueProperties(const Eigen::Vector3d& _transAxis1,
+                     const Eigen::Vector3d& _transAxis2);
+
+    virtual ~UniqueProperties() = default;
+
+    /// Set plane type as XY-plane
+    void setXYPlane();
+
+    /// Set plane type as YZ-plane
+    void setYZPlane();
+
+    /// Set plane type as ZX-plane
+    void setZXPlane();
+
+    /// Set plane type as arbitrary plane with two orthogonal translational axes
+    void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
+                           const Eigen::Vector3d& _transAxis2);
+  };
+
+  struct Properties : MultiDofJoint<3>::Properties, PlanarJoint::UniqueProperties
+  {
+    Properties(const MultiDofJoint<3>::Properties& _multiDofProperties =
+                                              MultiDofJoint<3>::Properties(),
+               const PlanarJoint::UniqueProperties& _planarProperties =
+                                              PlanarJoint::UniqueProperties());
+
+    virtual ~Properties() = default;
+  };
 
   /// Destructor
   virtual ~PlanarJoint();
+
+  /// Set the Properties of this PlanarJoint
+  void setProperties(const Properties& _properties);
+
+  /// Set the Properties of this PlanarJoint
+  void setProperties(const UniqueProperties& _properties);
+
+  /// Get the Properties of this PlanarJoint
+  Properties getPlanarJointProperties() const;
+
+  /// Copy the Properties of another PlanarJoint
+  void copy(const PlanarJoint& _otherJoint);
+
+  /// Copy the Properties of another PlanarJoint
+  void copy(const PlanarJoint* _otherJoint);
+
+  /// Same as copy(const PlanarJoint&)
+  PlanarJoint& operator=(const PlanarJoint& _otherJoint);
+
+  // Documentation inherited
+  virtual const std::string& getType() const override;
+
+  /// Get joint type for this class
+  static const std::string& getStaticType();
 
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
@@ -109,6 +189,12 @@ public:
 
 protected:
 
+  /// Constructor called by Skeleton class
+  PlanarJoint(const Properties& _properties);
+
+  // Documentation inherited
+  virtual Joint* clone() const override;
+
   using MultiDofJoint::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
@@ -125,17 +211,9 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const;
 
 protected:
-  /// Plane type
-  PlaneType mPlaneType;
 
-  /// Rotational axis
-  Eigen::Vector3d mRotAxis;
-
-  /// First translational axis
-  Eigen::Vector3d mTransAxis1;
-
-  /// Second translational axis
-  Eigen::Vector3d mTransAxis2;
+  /// PlanarJoint Properties
+  UniqueProperties mPlanarP;
 
 public:
   // To get byte-aligned Eigen vectors

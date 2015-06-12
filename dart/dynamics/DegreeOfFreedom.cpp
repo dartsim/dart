@@ -45,40 +45,25 @@ namespace dynamics {
 const std::string& DegreeOfFreedom::setName(const std::string& _name,
                                             bool _preserveName)
 {
-  preserveName(_preserveName);
-
-  if (mName == _name)
-    return mName;
-
-  Skeleton* skel = mJoint->getSkeleton();
-  if (skel)
-  {
-    skel->mNameMgrForDofs.removeName(mName);
-    mName = _name;
-    skel->addEntryToDofNameMgr(this);
-  }
-  else
-    mName = _name;
-
-  return mName;
+  return mJoint->setDofName(mIndexInJoint, _name, _preserveName);
 }
 
 //==============================================================================
 const std::string& DegreeOfFreedom::getName() const
 {
-  return mName;
+  return mJoint->getDofName(mIndexInJoint);
 }
 
 //==============================================================================
 void DegreeOfFreedom::preserveName(bool _preserve)
 {
-  mNamePreserved = _preserve;
+  mJoint->preserveDofName(mIndexInJoint, _preserve);
 }
 
 //==============================================================================
 bool DegreeOfFreedom::isNamePreserved() const
 {
-  return mNamePreserved;
+  return mJoint->isDofNamePreserved(mIndexInJoint);
 }
 
 //==============================================================================
@@ -88,9 +73,39 @@ size_t DegreeOfFreedom::getIndexInSkeleton() const
 }
 
 //==============================================================================
+size_t DegreeOfFreedom::getIndexInTree() const
+{
+  return mIndexInTree;
+}
+
+//==============================================================================
 size_t DegreeOfFreedom::getIndexInJoint() const
 {
   return mIndexInJoint;
+}
+
+//==============================================================================
+size_t DegreeOfFreedom::getTreeIndex() const
+{
+  return mJoint->getTreeIndex();
+}
+
+//==============================================================================
+void DegreeOfFreedom::setCommand(double _command)
+{
+  mJoint->setCommand(mIndexInJoint, _command);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getCommand() const
+{
+  return mJoint->getCommand(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetCommand()
+{
+  setCommand(0.0);
 }
 
 //==============================================================================
@@ -103,6 +118,12 @@ void DegreeOfFreedom::setPosition(double _position)
 double DegreeOfFreedom::getPosition() const
 {
   return mJoint->getPosition(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetPosition()
+{
+  setPosition(0.0);
 }
 
 //==============================================================================
@@ -163,6 +184,12 @@ double DegreeOfFreedom::getVelocity() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::resetVelocity()
+{
+  setVelocity(0.0);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setVelocityLimits(double _lowerLimit, double _upperLimit)
 {
   setVelocityLowerLimit(_lowerLimit);
@@ -216,6 +243,12 @@ void DegreeOfFreedom::setAcceleration(double _acceleration)
 double DegreeOfFreedom::getAcceleration() const
 {
   return mJoint->getAcceleration(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetAcceleration()
+{
+  setAcceleration(0.0);
 }
 
 //==============================================================================
@@ -277,6 +310,12 @@ double DegreeOfFreedom::getForce() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::resetForce()
+{
+  setForce(0.0);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setForceLimits(double _lowerLimit, double _upperLimit)
 {
   setForceLowerLimit(_lowerLimit);
@@ -320,6 +359,42 @@ double DegreeOfFreedom::getForceUpperLimit() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::setVelocityChange(double _velocityChange)
+{
+  mJoint->setVelocityChange(mIndexInJoint, _velocityChange);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getVelocityChange() const
+{
+  return mJoint->getVelocityChange(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetVelocityChange()
+{
+  setVelocityChange(0.0);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setConstraintImpulse(double _impulse)
+{
+  mJoint->setConstraintImpulse(mIndexInJoint, _impulse);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getConstraintImpulse() const
+{
+  return mJoint->getConstraintImpulse(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::resetConstraintImpulse()
+{
+  setConstraintImpulse(0.0);
+}
+
+//==============================================================================
 Joint* DegreeOfFreedom::getJoint()
 {
   return mJoint;
@@ -332,13 +407,13 @@ const Joint* DegreeOfFreedom::getJoint() const
 }
 
 //==============================================================================
-Skeleton* DegreeOfFreedom::getSkeleton()
+SkeletonPtr DegreeOfFreedom::getSkeleton()
 {
   return mJoint->getSkeleton();
 }
 
 //==============================================================================
-const Skeleton* DegreeOfFreedom::getSkeleton() const
+ConstSkeletonPtr DegreeOfFreedom::getSkeleton() const
 {
   return mJoint->getSkeleton();
 }
@@ -369,15 +444,12 @@ const BodyNode* DegreeOfFreedom::getParentBodyNode() const
 
 //==============================================================================
 DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
-                                 const std::string& _name,
                                  size_t _indexInJoint)
-  : mName(_name),
-    mNamePreserved(false),
-    mIndexInJoint(_indexInJoint),
+  : mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
     mJoint(_joint)
 {
-
+  // Do nothing
 }
 
 } // namespace dynamics

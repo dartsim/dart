@@ -62,7 +62,7 @@ TEST(FileInfoWorld, Basic)
   bool result = false;
   FileInfoWorld worldFile;
 
-  World* world = SkelParser::readWorld(
+  WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/file_info_world_test.skel");
   EXPECT_TRUE(world != nullptr);
 

@@ -113,8 +113,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
             contactPair.normal(2) = contact.normal[2];
             contactPair.bodyNode1 = findCollisionNode(contact.o1)->getBodyNode();
             contactPair.bodyNode2 = findCollisionNode(contact.o2)->getBodyNode();
-            assert(contactPair.bodyNode1 != NULL);
-            assert(contactPair.bodyNode2 != NULL);
+            assert(contactPair.bodyNode1.lock() != NULL);
+            assert(contactPair.bodyNode2.lock() != NULL);
 //            contactPair.bdID1 =
 //                collisionNodePair.collisionNode1->getBodyNodeID();
 //            contactPair.bdID2 =
@@ -148,8 +148,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
   for (size_t i = 0; i < mContacts.size(); ++i)
   {
     // Set these two bodies are in colliding
-    mContacts[i].bodyNode1->setColliding(true);
-    mContacts[i].bodyNode2->setColliding(true);
+    mContacts[i].bodyNode1.lock()->setColliding(true);
+    mContacts[i].bodyNode2.lock()->setColliding(true);
   }
 
   return !mContacts.empty();

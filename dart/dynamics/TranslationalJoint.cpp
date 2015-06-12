@@ -45,16 +45,17 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-TranslationalJoint::TranslationalJoint(const std::string& _name)
-  : MultiDofJoint(_name)
+TranslationalJoint::Properties::Properties(
+    const MultiDofJoint<3>::Properties& _properties)
+  : MultiDofJoint<3>::Properties(_properties)
 {
-  updateDegreeOfFreedomNames();
-  updateLocalJacobian();
+  // Do nothing
 }
 
 //==============================================================================
 TranslationalJoint::~TranslationalJoint()
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -66,22 +67,55 @@ Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
 }
 
 //==============================================================================
+TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+{
+  return getMultiDofJointProperties();
+}
+
+//==============================================================================
+TranslationalJoint::TranslationalJoint(const Properties& _properties)
+  : MultiDofJoint<3>(_properties)
+{
+  setProperties(_properties);
+  updateDegreeOfFreedomNames();
+}
+
+//==============================================================================
+Joint* TranslationalJoint::clone() const
+{
+  return new TranslationalJoint(getTranslationalJointProperties());
+}
+
+//==============================================================================
+const std::string& TranslationalJoint::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& TranslationalJoint::getStaticType()
+{
+  static const std::string name = "TranslationalJoint";
+  return name;
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mName + "_x", false);
+    mDofs[0]->setName(mJointP.mName + "_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mName + "_y", false);
+    mDofs[1]->setName(mJointP.mName + "_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mName + "_z", false);
+    mDofs[2]->setName(mJointP.mName + "_z", false);
 }
 
 //==============================================================================
 void TranslationalJoint::updateLocalTransform() const
 {
-  mT = mT_ParentBodyToJoint
+  mT = mJointP.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
-       * mT_ChildBodyToJoint.inverse();
+       * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -92,7 +126,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
-    mJacobian.bottomRows<3>() = mT_ChildBodyToJoint.linear();
+    mJacobian.bottomRows<3>() = mJointP.mT_ChildBodyToJoint.linear();
 
     // Verification
     assert(mJacobian.topRows<3>() == Eigen::Matrix3d::Zero());
