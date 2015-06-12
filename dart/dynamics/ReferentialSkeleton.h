@@ -45,8 +45,8 @@
 namespace dart {
 namespace dynamics {
 
-/// ReferentialSkeleton is a base class used to implement Linkage, Disjointment,
-/// and other classes that are used to reference subsections of Skeletons.
+/// ReferentialSkeleton is a base class used to implement Linkage, Group, and
+/// other classes that are used to reference subsections of Skeletons.
 class ReferentialSkeleton : public MetaSkeleton
 {
 public:
