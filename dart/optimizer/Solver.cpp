@@ -74,12 +74,6 @@ Solver::Solver(std::shared_ptr<Problem> _problem)
 }
 
 //==============================================================================
-Solver::~Solver()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void Solver::setProperties(const Properties& _properties)
 {
   setProblem(_properties.mProblem);

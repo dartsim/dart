@@ -103,11 +103,11 @@ private:
 class DartTNLP : public Ipopt::TNLP
 {
 public:
-  /// \brief
-  explicit DartTNLP(std::shared_ptr<Problem> _problem);
+
+  friend class IpoptSolver;
 
   /// \brief
-  virtual ~DartTNLP();
+  virtual ~DartTNLP() = default;
 
   //------------------------- Ipopt::TNLP --------------------------------------
   /// \brief Method to return some info about the nlp
@@ -200,8 +200,12 @@ public:
                                  Ipopt::IpoptCalculatedQuantities* _ip_cq);
 
 private:
+
+  /// \brief
+  explicit DartTNLP(IpoptSolver* _solver);
+
   /// \brief DART optimization problem
-  std::shared_ptr<Problem> mProblem;
+  IpoptSolver* mSolver;
 
   /// \brief Objective value
   Ipopt::Number mObjValue;

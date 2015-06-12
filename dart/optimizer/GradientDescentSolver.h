@@ -37,6 +37,8 @@
 #ifndef DART_OPTIMIZER_GRADIENTDESCENTSOLVER_H_
 #define DART_OPTIMIZER_GRADIENTDESCENTSOLVER_H_
 
+#include <random>
+
 #include "dart/optimizer/Solver.h"
 
 namespace dart {

@@ -100,7 +100,7 @@ public:
   explicit Solver(std::shared_ptr<Problem> _problem);
 
   /// \brief Destructor
-  virtual ~Solver();
+  virtual ~Solver() = default;
 
   /// Solve optimization problem
   virtual bool solve() = 0;
