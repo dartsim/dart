@@ -673,7 +673,6 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
   //----------------------------------------------------------------------------
   assert(_softBodyNodeElement != nullptr);
-  assert(_Skeleton != nullptr);
 
   SkelBodyNode standardBodyNode = readBodyNode(_softBodyNodeElement,
                                                _skeletonFrame);
