@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,70 +34,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#ifndef DART_COLLISION_FCL_FCLTTYPES_H_
+#define DART_COLLISION_FCL_FCLTTYPES_H_
 
-#include <vector>
-
-#include <assimp/scene.h>
 #include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
-
-#include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Shape;
-}  // namespace dynamics
-}  // namespace dart
+#include <fcl/math/vec_3f.h>
+#include <fcl/math/matrix_3f.h>
+#include <fcl/math/transform.h>
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
-
-struct FCLUserData
-{
-  FCLCollisionNode* fclCollNode;
-  dynamics::BodyNode* bodyNode;
-  dynamics::Shape* shape;
-
-  FCLUserData(FCLCollisionNode* fclCollNode,
-              dynamics::BodyNode* bodyNode,
-              dynamics::Shape* shape);
-};
-
-/// FCLCollisionNode
-class FCLCollisionNode : public CollisionNode
+class FCLTypes
 {
 public:
-  /// Constructor
-  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
+  /// Convert FCL vector3 type to Eigen vector3 type
+  static Eigen::Vector3d convertVector3(const fcl::Vec3f& _vec);
 
-  /// Destructor
-  virtual ~FCLCollisionNode();
+  /// Convert Eigen vector3 type to FCL vector3 type
+  static fcl::Vec3f convertVector3(const Eigen::Vector3d& _vec);
 
-  /// Get number of collision objects
-  size_t getNumCollisionObjects() const;
+  /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
+  static fcl::Matrix3f convertMatrix3x3(const Eigen::Matrix3d& _R);
 
-  /// Get FCL collision object given index
-  fcl::CollisionObject* getCollisionObject(size_t _idx) const;
-
-  /// Get FCL transformation of shape given index
-  fcl::Transform3f getFCLTransform(size_t _idx) const;
-
-  /// Update transformation and AABB of all the fcl collision objects.
-  void updateFCLCollisionObjects();
-
-private:
-  /// Array of FCL collision object that continas geometry and transform
-  std::vector<fcl::CollisionObject*> mCollisionObjects;
+  /// Convert FCL transformation type to Eigen transformation type
+  static fcl::Transform3f convertTransform(const Eigen::Isometry3d& _T);
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#endif  // DART_COLLISION_FCL_FCLTTYPES_H_
