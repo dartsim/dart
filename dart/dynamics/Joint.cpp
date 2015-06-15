@@ -130,15 +130,16 @@ const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
   {
     skel->mNameMgrForJoints.removeName(mJointP.mName);
     mJointP.mName = _name;
-    skel->addEntryToJointNameMgr(this);
+
+    skel->addEntryToJointNameMgr(this, _renameDofs);
   }
   else
   {
     mJointP.mName = _name;
-  }
 
-  if (_renameDofs)
-    updateDegreeOfFreedomNames();
+    if (_renameDofs)
+      updateDegreeOfFreedomNames();
+  }
 
   return mJointP.mName;
 }
