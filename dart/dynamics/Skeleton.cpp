@@ -2446,6 +2446,40 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 }
 
 //==============================================================================
+void Skeleton::computeForwardKinematics(bool _updateTransforms,
+                                        bool _updateVels,
+                                        bool _updateAccs)
+{
+  if (_updateTransforms)
+  {
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
+    {
+      (*it)->updateTransform();
+    }
+  }
+
+  if (_updateVels)
+  {
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
+    {
+      (*it)->updateVelocity();
+      (*it)->updatePartialAcceleration();
+    }
+  }
+
+  if (_updateAccs)
+  {
+    for (std::vector<BodyNode*>::iterator it = mSkelCache.mBodyNodes.begin();
+         it != mSkelCache.mBodyNodes.end(); ++it)
+    {
+      (*it)->updateAccelerationID();
+    }
+  }
+}
+
+//==============================================================================
 void Skeleton::computeForwardDynamics()
 {
   // Note: Articulated Inertias will be updated automatically when

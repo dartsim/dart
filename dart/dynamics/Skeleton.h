@@ -336,6 +336,42 @@ public:
   Eigen::VectorXd getState() const;
 
   //----------------------------------------------------------------------------
+  // Kinematics algorithms
+  //----------------------------------------------------------------------------
+
+  /// Compute forward kinematics
+  ///
+  /// In general, this function doesn't need to be called for forward kinematics
+  /// to update. Forward kinematics will always be computed when it's needed and
+  /// will only perform the computations that are necessary for what the user
+  /// requests. This works by performing some bookkeeping internally with dirty
+  /// flags whenever a position, velocity, or acceleration is set, either
+  /// internally or by the user.
+  ///
+  /// On one hand, this results in some overhead due to the extra effort of
+  /// bookkeeping, but on the other hand we have much greater code safety, and
+  /// in some cases performance can be dramatically improved with the auto-
+  /// updating. For example, this function is inefficient when only one portion
+  /// of the BodyNodes needed to be updated rather than the entire Skeleton,
+  /// which is common when performing inverse kinematics on a limb or on some
+  /// subsection of a Skeleton.
+  ///
+  /// This function might be useful in a case where the user wants to perform
+  /// all the forward kinematics computations during a particular time window
+  /// rather than waiting for it to be computed at the exact time that it's
+  /// needed.
+  ///
+  /// One example would be a real time controller. Let's say a controller gets
+  /// encoder data at time t0 but needs to wait until t1 before it receives the
+  /// force-torque sensor data that it needs in order to compute the output for
+  /// an operational space controller. Instead of being idle from t0 to t1, it
+  /// could use that time to compute the forward kinematics by calling this
+  /// function.
+  void computeForwardKinematics(bool _updateTransforms = true,
+                                bool _updateVels = true,
+                                bool _updateAccs = true);
+
+  //----------------------------------------------------------------------------
   // Dynamics algorithms
   //----------------------------------------------------------------------------
 
