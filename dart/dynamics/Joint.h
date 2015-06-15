@@ -43,7 +43,6 @@
 #include <memory>
 
 #include "dart/common/Subject.h"
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -634,13 +633,6 @@ protected:
   /// Called by the Skeleton class
   virtual void registerDofs() = 0;
 
-  /// Initialize this joint. This function is called by BodyNode::init()
-  ///
-  /// Note: This function is being deprecated due to lack of use. If this is
-  /// something you need for a custom Joint type, please inform us on Github.
-  DEPRECATED(5.0)
-  virtual void init(const SkeletonPtr& _skel);
-
   /// \brief Create a DegreeOfFreedom pointer.
   /// \param[in] _name DegreeOfFreedom's name.
   /// \param[in] _indexInJoint DegreeOfFreedom's index within the joint. Note
@@ -787,20 +779,6 @@ protected:
 
   /// Update constrained terms for forward dynamics
   virtual void updateConstrainedTerms(double _timeStep) = 0;
-
-  //- DEPRECATED ---------------------------------------------------------------
-
-  /// updateVelocityWithVelocityChange
-  DEPRECATED(4.3)
-  virtual void updateVelocityWithVelocityChange() {}
-
-  /// updateAccelerationWithVelocityChange
-  DEPRECATED(4.3)
-  virtual void updateAccelerationWithVelocityChange(double _timeStep) {}
-
-  /// updateForceWithImpulse
-  DEPRECATED(4.3)
-  virtual void updateForceWithImpulse(double _timeStep) {}
 
   /// \}
 

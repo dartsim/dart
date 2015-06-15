@@ -70,8 +70,6 @@ int main(int argc, char* argv[])
   q[0] = -0.5 * DART_PI;
   atlas->setPositions(q);
 
-  atlas->computeForwardKinematics(true, true, false);
-
   // Set gravity of the world
   myWorld->setGravity(Vector3d(0.0, -9.81, 0.0));
 

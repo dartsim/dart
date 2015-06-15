@@ -78,7 +78,7 @@ ConstraintSolver::~ConstraintSolver()
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& _skeleton)
 {
-  assert(_skeleton != NULL
+  assert(_skeleton != nullptr
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
   if (containSkeleton(_skeleton) == false)
@@ -126,7 +126,7 @@ void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& _skeletons)
 void ConstraintSolver::removeSkeleton(
     const SkeletonPtr& _skeleton)
 {
-  assert(_skeleton != NULL
+  assert(_skeleton != nullptr
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
   if (containSkeleton(_skeleton))
@@ -276,7 +276,7 @@ void ConstraintSolver::solve()
 //==============================================================================
 bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 {
-  assert(_skeleton != NULL && "Not allowed to insert null pointer skeleton.");
+  assert(_skeleton != nullptr && "Not allowed to insert null pointer skeleton.");
 
   for (std::vector<SkeletonPtr>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)

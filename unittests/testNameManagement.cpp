@@ -125,6 +125,7 @@ TEST(NameManagement, Skeleton)
 
   // Testing whether unique names get accidentally changed by the NameManager
   std::string unique_name = body2->setName("a_unique_name");
+  EXPECT_TRUE(body2->getName() == unique_name);
   EXPECT_TRUE(body2->getName() == "a_unique_name");
   EXPECT_TRUE(skel->getBodyNode("a_unique_name") == body2);
 
@@ -133,6 +134,7 @@ TEST(NameManagement, Skeleton)
   EXPECT_FALSE(body3->getName() == body1->getName());
 
   unique_name = joint3->setName("a_unique_name");
+  EXPECT_TRUE(joint3->getName() == unique_name);
   EXPECT_TRUE(joint3->getName() == "a_unique_name");
   EXPECT_TRUE(skel->getJoint("a_unique_name") == joint3);
 
@@ -173,10 +175,10 @@ TEST(NameManagement, Skeleton)
   EXPECT_FALSE(joint2->getName() == joint3->getName());
   EXPECT_FALSE(joint3->getName() == joint1->getName());
 
-  // Make sure that the Skeleton gives back NULL for non existent names
-  EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == NULL);
-  EXPECT_TRUE(skel->getJoint("nonexistent_name") == NULL);
-  EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == NULL);
+  // Make sure that the Skeleton gives back nullptr for non existent names
+  EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == nullptr);
+  EXPECT_TRUE(skel->getJoint("nonexistent_name") == nullptr);
+  EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == nullptr);
 }
 
 //==============================================================================

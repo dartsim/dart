@@ -47,7 +47,6 @@
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/LoadGlut.h"
@@ -119,7 +118,6 @@ void SimWindow::draw() {
         // size_t start = mWorld->getIndex(i);
         // size_t size = mWorld->getSkeleton(i)->getNumDofs();
         mWorld->getSkeleton(i)->setPositions(mWorld->getRecording()->getConfig(mPlayFrame, i));
-        mWorld->getSkeleton(i)->computeForwardKinematics(true, false, false);
       }
       if (mShowMarkers) {
         // size_t sumDofs = mWorld->getIndex(nSkels);

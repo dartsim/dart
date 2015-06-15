@@ -113,8 +113,8 @@ bool FCLCollisionDetector::detectCollision(bool _checkAllCollisions,
             contactPair.normal(2) = contact.normal[2];
             contactPair.bodyNode1 = findCollisionNode(contact.o1)->getBodyNode();
             contactPair.bodyNode2 = findCollisionNode(contact.o2)->getBodyNode();
-            assert(contactPair.bodyNode1.lock() != NULL);
-            assert(contactPair.bodyNode2.lock() != NULL);
+            assert(contactPair.bodyNode1.lock() != nullptr);
+            assert(contactPair.bodyNode2.lock() != nullptr);
 //            contactPair.bdID1 =
 //                collisionNodePair.collisionNode1->getBodyNodeID();
 //            contactPair.bdID2 =
@@ -174,7 +174,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
         return mCollisionNodes[i];
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace collision

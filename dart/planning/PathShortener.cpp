@@ -31,7 +31,7 @@ PathShortener::~PathShortener()
 void PathShortener::shortenPath(list<VectorXd> &path)
 {
 	printf("--> Start Brute Force Shortener \n"); 
-	srand(time(NULL));
+  srand(time(nullptr));
 
   VectorXd savedDofs = robot->getPositions(dofs);
 
@@ -58,14 +58,13 @@ void PathShortener::shortenPath(list<VectorXd> &path)
 		list<VectorXd> intermediatePoints;
 		if(localPlanner(intermediatePoints, node1Iter, node2Iter)) {
 			list<VectorXd>::iterator node1NextIter = node1Iter;
-			node1NextIter++;
+      ++node1NextIter;
 			path.erase(node1NextIter, node2Iter);
 			path.splice(node2Iter, intermediatePoints);
 		}
 	}
   // TODO(JS): What kinematic values should be updated here?
   robot->setPositions(dofs, savedDofs);
-  robot->computeForwardKinematics(true, true, true);
 
 	printf("End Brute Force Shortener \n");
 }
@@ -94,7 +93,6 @@ bool PathShortener::segmentCollisionFree(list<VectorXd> &intermediatePoints, con
 	list<VectorXd> intermediatePoints1, intermediatePoints2;
   // TODO(JS): What kinematic values should be updated here?
   robot->setPositions(dofs, midpoint);
-  robot->computeForwardKinematics(true, true, true);
 	if(!world->checkCollision() && segmentCollisionFree(intermediatePoints1, config1, midpoint)
 			&& segmentCollisionFree(intermediatePoints2, midpoint, config2))
 	{

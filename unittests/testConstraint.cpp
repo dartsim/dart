@@ -50,7 +50,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/Paths.h"
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test
@@ -123,7 +122,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
 #endif
 
   WorldPtr world(new World);
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(

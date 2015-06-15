@@ -145,7 +145,7 @@ public:
   ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Render this Entity
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
+  virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true, int _depth = 0) const;
 
@@ -156,7 +156,7 @@ public:
   const Frame* getParentFrame() const;
 
   /// True iff this Entity depends on (i.e. kinematically descends from)
-  /// _someFrame. If _someFrame is NULL, this returns false.
+  /// _someFrame. If _someFrame is nullptr, this returns false.
   bool descendsFrom(const Frame* _someFrame) const;
 
   /// Returns true if this Entity is set to be quiet.

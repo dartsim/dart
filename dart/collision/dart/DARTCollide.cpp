@@ -446,9 +446,9 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
   R21 = Inner44(R1+1,R2+0); R22 = Inner44(R1+1,R2+1); R23 = Inner44(R1+1,R2+2);
   R31 = Inner44(R1+2,R2+0); R32 = Inner44(R1+2,R2+1); R33 = Inner44(R1+2,R2+2);
 
-  Q11 = fabs(R11); Q12 = fabs(R12); Q13 = fabs(R13);
-  Q21 = fabs(R21); Q22 = fabs(R22); Q23 = fabs(R23);
-  Q31 = fabs(R31); Q32 = fabs(R32); Q33 = fabs(R33);
+  Q11 = std::abs(R11); Q12 = std::abs(R12); Q13 = std::abs(R13);
+  Q21 = std::abs(R21); Q22 = std::abs(R22); Q23 = std::abs(R23);
+  Q31 = std::abs(R31); Q32 = std::abs(R32); Q33 = std::abs(R33);
 
   // for all 15 possible separating axes:
   //   * see if the axis separates the boxes. if so, return 0.
@@ -461,7 +461,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
   // the normal should be flipped.
 
 #define TST(expr1,expr2,norm,cc) \
-  s2 = fabs(expr1) - (expr2); \
+  s2 = std::abs(expr1) - (expr2); \
   if (s2 > s) { \
   s = s2; \
   normalR = norm; \
@@ -487,7 +487,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
   // normal (n1,n2,n3) is relative to box 1.
 #undef TST
 #define TST(expr1,expr2,n1,n2,n3,cc) \
-  s2 = fabs(expr1) - (expr2); \
+  s2 = std::abs(expr1) - (expr2); \
   l = sqrt ((n1)*(n1) + (n2)*(n2) + (n3)*(n3)); \
   if (l > 0) { \
   s2 /= l; \
@@ -852,8 +852,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
   if ( inside_box )
   {
     // find nearest side from the sphere center
-    double min = halfSize[0] - fabs(p[0]);
-    double tmin = halfSize[1] - fabs(p[1]);
+    double min = halfSize[0] - std::abs(p[0]);
+    double tmin = halfSize[1] - std::abs(p[1]);
     int idx = 0;
 
     if ( tmin < min )
@@ -861,7 +861,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
       min = tmin;
       idx = 1;
     }
-    tmin = halfSize[2] - fabs(p[2]);
+    tmin = halfSize[2] - std::abs(p[2]);
     if ( tmin < min )
     {
       min = tmin;
@@ -904,8 +904,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
   }
   else
   {
-    double min = halfSize[0] - fabs(p[0]);
-    double tmin = halfSize[1] - fabs(p[1]);
+    double min = halfSize[0] - std::abs(p[0]);
+    double tmin = halfSize[1] - std::abs(p[1]);
     int idx = 0;
 
     if ( tmin < min )
@@ -913,7 +913,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
       min = tmin;
       idx = 1;
     }
-    tmin = halfSize[2] - fabs(p[2]);
+    tmin = halfSize[2] - std::abs(p[2]);
     if ( tmin < min )
     {
       min = tmin;
@@ -960,8 +960,8 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
   if ( inside_box )
   {
     // find nearest side from the sphere center
-    double min = size[0] - fabs(p[0]);
-    double tmin = size[1] - fabs(p[1]);
+    double min = size[0] - std::abs(p[0]);
+    double tmin = size[1] - std::abs(p[1]);
     int idx = 0;
 
     if ( tmin < min )
@@ -969,7 +969,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
       min = tmin;
       idx = 1;
     }
-    tmin = size[2] - fabs(p[2]);
+    tmin = size[2] - std::abs(p[2]);
     if ( tmin < min )
     {
       min = tmin;
@@ -1010,8 +1010,8 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     result->push_back(contact);}
   else
   {
-    double min = size[0] - fabs(p[0]);
-    double tmin = size[1] - fabs(p[1]);
+    double min = size[0] - std::abs(p[0]);
+    double tmin = size[1] - std::abs(p[1]);
     int idx = 0;
 
     if ( tmin < min )
@@ -1019,7 +1019,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
       min = tmin;
       idx = 1;
     }
-    tmin = size[2] - fabs(p[2]);
+    tmin = size[2] - std::abs(p[2]);
     if ( tmin < min )
     {
       min = tmin;
@@ -1093,7 +1093,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
 
   double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
 
-  if ( dist < cyl_rad && fabs(center[2]) < half_height + sphere_rad )
+  if ( dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad )
   {
     Contact contact;
     contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sgn(center[2]) * center[2]);
@@ -1107,7 +1107,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
     double penetration = 0.5 * (cyl_rad + sphere_rad - dist);
     if ( penetration > 0.0 )
     {
-      if ( fabs(center[2]) > half_height )
+      if ( std::abs(center[2]) > half_height )
       {
         Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
         point *= cyl_rad;
@@ -1158,7 +1158,7 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
   Ry.normalize();
   if (mag < DART_COLLISION_EPS)
   {
-    if (fabs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
+    if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
       Ry = Eigen::Vector3d::UnitX();
     else
       Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
@@ -1196,9 +1196,9 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
 
   Eigen::Vector3d point;
 
-  if (fabs(depth[found] - depth[(found+1)%4]) < DART_COLLISION_EPS)
+  if (std::abs(depth[found] - depth[(found+1)%4]) < DART_COLLISION_EPS)
     point = T * (0.5 * (c[found] + c[(found+1)%4]));
-  else if (fabs(depth[found] - depth[(found+3)%4]) < DART_COLLISION_EPS)
+  else if (std::abs(depth[found] - depth[(found+3)%4]) < DART_COLLISION_EPS)
     point = T * (0.5 * (c[found] + c[(found+3)%4]));
   else
     point = T * c[found];

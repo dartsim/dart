@@ -66,7 +66,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs,
   index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configuration to the flann structure
-	srand(time(NULL));
+  srand(time(nullptr));
 	addNode(root, -1);
 }
 
@@ -80,7 +80,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs, con
 	index(new flann::Index<flann::L2<double> >(flann::KDTreeSingleIndexParams()))
 {
 	// Reset the random number generator and add the given start configurations to the flann structure
-	srand(time(NULL));
+  srand(time(nullptr));
   for(size_t i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}
@@ -139,7 +139,7 @@ RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx) {
 
 	// Add the intermediate nodes and the final new node to the tree
 	list <VectorXd>::iterator it = intermediatePoints.begin();
-	for(; it != intermediatePoints.end(); it++) 
+  for(; it != intermediatePoints.end(); ++it)
 		NNidx = addNode(*it, NNidx);
 	addNode(qnew, NNidx);
 	return STEP_PROGRESS;
@@ -223,7 +223,6 @@ void RRT::tracePath(int node, std::list<VectorXd> &path, bool reverse) {
 /* ********************************************************************************************* */
 bool RRT::checkCollisions(const VectorXd &c) {
   robot->setPositions(dofs, c);
-  robot->computeForwardKinematics(true, false, false);
 	return world->checkCollision();
 }
 

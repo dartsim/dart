@@ -116,13 +116,13 @@ protected:
   virtual Joint* clone() const override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory=true) const;
+  virtual void updateLocalJacobian(bool _mandatory=true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv() const override;
 
 protected:
 

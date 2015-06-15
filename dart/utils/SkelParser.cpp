@@ -48,7 +48,6 @@
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -72,7 +71,6 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/Paths.h"
 
 namespace dart {
 namespace utils {
@@ -194,9 +192,6 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
   }
 
   dynamics::SkeletonPtr newSkeleton = readSkeleton(skeletonElement);
-
-  // Initialize skeleton to be ready for use
-//  newSkeleton->init(); // No longer needed
 
   return newSkeleton;
 }
@@ -340,7 +335,7 @@ static NextResult getNextJointAndNodePair(
     }
   }
 
-  // Find the child node of this Joint, se we can create them together
+  // Find the child node of this Joint, so we can create them together
   child = bodyNodes.find(joint.childName);
   if(child == bodyNodes.end())
   {
@@ -477,9 +472,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   ElementEnumerator xmlBodies(_skeletonElement, "body");
   while (xmlBodies.next())
   {
-    SkelBodyNode newBodyNode = readSoftBodyNode(xmlBodies.get(),
-                                                newSkeleton,
-                                                skeletonFrame);
+    SkelBodyNode newBodyNode = readSoftBodyNode(xmlBodies.get(), skeletonFrame);
 
     BodyMap::const_iterator it = bodyNodes.find(newBodyNode.properties->mName);
     if(it != bodyNodes.end())
@@ -550,11 +543,9 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 //==============================================================================
 SkelParser::SkelBodyNode SkelParser::readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
-    dynamics::SkeletonPtr _skeleton,
     const Eigen::Isometry3d& _skeletonFrame)
 {
   assert(_bodyNodeElement != nullptr);
-  assert(_skeleton != nullptr);
 
   BodyPropPtr newBodyNode(new dynamics::BodyNode::Properties);
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
@@ -674,7 +665,6 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
 //==============================================================================
 SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    dynamics::SkeletonPtr _Skeleton,
     const Eigen::Isometry3d& _skeletonFrame)
 {
   //---------------------------------- Note ------------------------------------
@@ -683,10 +673,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
   //----------------------------------------------------------------------------
   assert(_softBodyNodeElement != nullptr);
-  assert(_Skeleton != nullptr);
 
   SkelBodyNode standardBodyNode = readBodyNode(_softBodyNodeElement,
-                                               _Skeleton,
                                                _skeletonFrame);
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node

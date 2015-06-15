@@ -49,7 +49,6 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/Paths.h"
 #include "dart/utils/SkelParser.h"
 
 using namespace std;
@@ -75,7 +74,7 @@ bool equals(const DenseBase<MATRIX>& A, const DenseBase<MATRIX>& B,
     {
       if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
         return false;
-      else if (fabs(A(i,j) - B(i,j)) > tol)
+      else if (std::abs(A(i,j) - B(i,j)) > tol)
         return false;
     }
   }
@@ -192,8 +191,8 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
     dynamics::BodyNode* body  = _skel->getBodyNode(i);
     dynamics::Joint*    joint = body->getParentJoint();
 
-    EXPECT_TRUE(body  != NULL);
-    EXPECT_TRUE(joint != NULL);
+    EXPECT_TRUE(body  != nullptr);
+    EXPECT_TRUE(joint != nullptr);
 
     int dof = joint->getNumDofs();
 
@@ -209,7 +208,7 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 //  dynamics::SkeletonPtr softSkel
 //      = dynamic_cast<dynamics::SkeletonPtr>(_skel);
 
-//  if (softSkel != NULL)
+//  if (softSkel != nullptr)
 //  {
 //    for (int i = 0; i < softSkel->getNumSoftBodyNodes(); ++i)
 //    {
@@ -272,7 +271,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
   myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != NULL);
+  EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
   {
@@ -316,7 +315,6 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < x.size(); ++k)
         x[k] = random(lb, ub);
       softSkel->setState(x);
-      softSkel->computeForwardKinematics(true, true, false);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
@@ -396,7 +394,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       vector<double>  oldD(nSoftBodyNodes, 0.0);
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
-        assert(softSkel != NULL);
+        assert(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         oldKv[k] = sbn->getVertexSpringStiffness();
         oldKe[k] = sbn->getEdgeSpringStiffness();
@@ -408,7 +406,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       softSkel->setAccelerations(VectorXd::Zero(dof));
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
-        assert(softSkel != NULL);
+        assert(softSkel != nullptr);
         dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
         sbn->setVertexSpringStiffness(0.0);
         sbn->setEdgeSpringStiffness(0.0);

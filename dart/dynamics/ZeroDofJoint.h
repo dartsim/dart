@@ -99,179 +99,179 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setCommand(size_t _index, double _command);
+  virtual void setCommand(size_t _index, double _command) override;
 
   // Documentation inherited
-  virtual double getCommand(size_t _index) const;
+  virtual double getCommand(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setCommands(const Eigen::VectorXd& _commands);
+  virtual void setCommands(const Eigen::VectorXd& _commands) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getCommands() const;
+  virtual Eigen::VectorXd getCommands() const override;
 
   // Documentation inherited
-  virtual void resetCommands();
+  virtual void resetCommands() override;
 
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setPosition(size_t, double);
+  virtual void setPosition(size_t, double) override;
 
   // Documentation inherited
-  virtual double getPosition(size_t _index) const;
+  virtual double getPosition(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setPositions(const Eigen::VectorXd& _positions);
+  virtual void setPositions(const Eigen::VectorXd& _positions) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getPositions() const;
+  virtual Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
-  virtual void resetPositions();
+  virtual void resetPositions() override;
 
   // Documentation inherited
-  virtual void setPositionLowerLimit(size_t _index, double _position);
+  virtual void setPositionLowerLimit(size_t _index, double _position) override;
 
   // Documentation inherited
-  virtual double getPositionLowerLimit(size_t _index) const;
+  virtual double getPositionLowerLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setPositionUpperLimit(size_t _index, double _position);
+  virtual void setPositionUpperLimit(size_t _index, double _position) override;
 
   // Documentation inherited
-  virtual double getPositionUpperLimit(size_t _index) const;
+  virtual double getPositionUpperLimit(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocity(size_t _index, double _velocity);
+  virtual void setVelocity(size_t _index, double _velocity) override;
 
   // Documentation inherited
-  virtual double getVelocity(size_t _index) const;
+  virtual double getVelocity(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setVelocities(const Eigen::VectorXd& _velocities);
+  virtual void setVelocities(const Eigen::VectorXd& _velocities) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getVelocities() const;
+  virtual Eigen::VectorXd getVelocities() const override;
 
   // Documentation inherited
-  virtual void resetVelocities();
+  virtual void resetVelocities() override;
 
   // Documentation inherited
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity);
+  virtual void setVelocityLowerLimit(size_t _index, double _velocity) override;
 
   // Documentation inherited
-  virtual double getVelocityLowerLimit(size_t _index) const;
+  virtual double getVelocityLowerLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity);
+  virtual void setVelocityUpperLimit(size_t _index, double _velocity) override;
 
   // Documentation inherited
-  virtual double getVelocityUpperLimit(size_t _index) const;
+  virtual double getVelocityUpperLimit(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Acceleration
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setAcceleration(size_t _index, double _acceleration);
+  virtual void setAcceleration(size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  virtual double getAcceleration(size_t _index) const;
+  virtual double getAcceleration(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setAccelerations(const Eigen::VectorXd& _accelerations);
+  virtual void setAccelerations(const Eigen::VectorXd& _accelerations) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getAccelerations() const;
+  virtual Eigen::VectorXd getAccelerations() const override;
 
   // Documentation inherited
-  virtual void resetAccelerations();
+  virtual void resetAccelerations() override;
 
   // Documentation inherited
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration);
+  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  virtual double getAccelerationLowerLimit(size_t _index) const;
+  virtual double getAccelerationLowerLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration);
+  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  virtual double getAccelerationUpperLimit(size_t _index) const;
+  virtual double getAccelerationUpperLimit(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Force
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setForce(size_t _index, double _force);
+  virtual void setForce(size_t _index, double _force) override;
 
   // Documentation inherited
-  virtual double getForce(size_t _index);
+  virtual double getForce(size_t _index) override;
 
   // Documentation inherited
-  virtual void setForces(const Eigen::VectorXd& _forces);
+  virtual void setForces(const Eigen::VectorXd& _forces) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getForces() const;
+  virtual Eigen::VectorXd getForces() const override;
 
   // Documentation inherited
-  virtual void resetForces();
+  virtual void resetForces() override;
 
   // Documentation inherited
-  virtual void setForceLowerLimit(size_t _index, double _force);
+  virtual void setForceLowerLimit(size_t _index, double _force) override;
 
   // Documentation inherited
-  virtual double getForceLowerLimit(size_t _index) const;
+  virtual double getForceLowerLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setForceUpperLimit(size_t _index, double _force);
+  virtual void setForceUpperLimit(size_t _index, double _force) override;
 
   // Documentation inherited
-  virtual double getForceUpperLimit(size_t _index) const;
+  virtual double getForceUpperLimit(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Velocity change
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange);
+  virtual void setVelocityChange(size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index) const;
+  virtual double getVelocityChange(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetVelocityChanges();
+  virtual void resetVelocityChanges() override;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse);
+  virtual void setConstraintImpulse(size_t _index, double _impulse) override;
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index) const;
+  virtual double getConstraintImpulse(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetConstraintImpulses();
+  virtual void resetConstraintImpulses() override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt);
+  virtual void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt);
+  virtual void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
@@ -310,7 +310,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const;
+  virtual double getPotentialEnergy() const override;
 
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
@@ -324,7 +324,7 @@ protected:
   void registerDofs() override;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames();
+  virtual void updateDegreeOfFreedomNames() override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
@@ -438,36 +438,36 @@ protected:
   virtual void addChildBiasForceForInvMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce);
+      const Eigen::Vector6d& _childBiasForce) override;
 
   /// Add child's bias force to parent's one
   virtual void addChildBiasForceForInvAugMassMatrix(
       Eigen::Vector6d& _parentBiasForce,
       const Eigen::Matrix6d& _childArtInertia,
-      const Eigen::Vector6d& _childBiasForce);
+      const Eigen::Vector6d& _childBiasForce) override;
 
   ///
   virtual void updateTotalForceForInvMassMatrix(
-      const Eigen::Vector6d& _bodyForce);
+      const Eigen::Vector6d& _bodyForce) override;
 
   // Documentation inherited
   virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                        const size_t _col,
                                        const Eigen::Matrix6d& _artInertia,
-                                       const Eigen::Vector6d& _spatialAcc);
+                                       const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
   virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
                                           const size_t _col,
                                           const Eigen::Matrix6d& _artInertia,
-                                          const Eigen::Vector6d& _spatialAcc);
+                                          const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
-  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc);
+  virtual void addInvMassMatrixSegmentTo(Eigen::Vector6d& _acc) override;
 
   // Documentation inherited
   virtual Eigen::VectorXd getSpatialToGeneralized(
-      const Eigen::Vector6d& _spatial);
+      const Eigen::Vector6d& _spatial) override;
 
   /// \}
 

@@ -40,7 +40,6 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "dart/dynamics/Entity.h"
-#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace renderer {
@@ -441,65 +440,6 @@ protected:
   /// dynamics routine.
   void updateConstrainedTermsFD(double _timeStep);
 
-  //- DEPRECATED ---------------------------------------------------------------
-
-  /// \warning Please use updateAccelerationID().
-  DEPRECATED(4.3)
-  void updateAcceleration();
-
-  /// \warning Please use updateTransmittedForceID().
-  DEPRECATED(4.3)
-  void updateBodyForce(const Eigen::Vector3d& _gravity,
-                       bool _withExternalForces = false);
-
-  /// \warning Please use updateArtInertiaFD().
-  DEPRECATED(4.3)
-  void updateArticulatedInertia(double _dt);
-
-  /// \warning Please use updateJointForceID().
-  DEPRECATED(4.3)
-  void updateGeneralizedForce(bool _withDampingForces = false);
-
-  /// \warning Please use updateAccelerationFD().
-  DEPRECATED(4.3)
-  void updateJointAndBodyAcceleration();
-
-  /// \brief Update impulsive bias force for impulse-based forward dynamics
-  /// algorithm.
-  /// \warning Please use updateBiasImpulseFD().
-  DEPRECATED(4.3)
-  void updateBiasImpulse();
-
-  /// \brief Update joint velocity change for impulse-based forward dynamics
-  /// algorithm.
-  /// \warning Please use updateVelocityChangeFD().
-  DEPRECATED(4.3)
-  void updateJointVelocityChange();
-
-  /// \brief Update body velocity change for impulse-based forward dynamics
-  /// algorithm.
-  DEPRECATED(4.3)
-  void updateBodyVelocityChange();
-
-  /// \warning Please use updateTransmittedImpulse().
-  DEPRECATED(4.3)
-  void updateBodyImpForceFwdDyn();
-
-  DEPRECATED(4.3)
-  void updateConstrainedJointAndBodyAcceleration(double _timeStep);
-
-  DEPRECATED(4.3)
-  void updateConstrainedTransmittedForce(double _timeStep);
-
-  DEPRECATED(4.3)
-  void updateVelocityWithVelocityChange();
-
-  DEPRECATED(4.3)
-  void updateAccelerationWithVelocityChange(double _timeStep);
-
-  DEPRECATED(4.3)
-  void updateForceWithImpulse(double _timeStep);
-
   /// \}
 
   //----------------------------------------------------------------------------
@@ -570,7 +510,7 @@ protected:
 
   //---------------------------- Rendering -------------------------------------
   ///
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
+  virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true) const;
 

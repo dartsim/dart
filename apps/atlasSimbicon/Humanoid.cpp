@@ -52,12 +52,12 @@ using namespace dart::constraint;
 
 //==============================================================================
 Humanoid::Humanoid(Skeleton* _skeleton)
-  : mSkeleton(NULL),
-    mPelvis(NULL),
-    mLeftThigh(NULL),
-    mRightThigh(NULL),
-    mLeftFoot(NULL),
-    mRightFoot(NULL)
+  : mSkeleton(nullptr),
+    mPelvis(nullptr),
+    mLeftThigh(nullptr),
+    mRightThigh(nullptr),
+    mLeftFoot(nullptr),
+    mRightFoot(nullptr)
 {
 
 }
@@ -120,9 +120,9 @@ AtlasRobot::~AtlasRobot()
   mLeftThigh  = mSkeleton->getBodyNode("l_uleg");
   mRightThigh = mSkeleton->getBodyNode("r_uleg");
 
-  assert(mPelvis     != NULL);
-  assert(mLeftFoot   != NULL);
-  assert(mRightFoot  != NULL);
-  assert(mLeftThigh  != NULL);
-  assert(mRightThigh != NULL);
+  assert(mPelvis     != nullptr);
+  assert(mLeftFoot   != nullptr);
+  assert(mRightFoot  != nullptr);
+  assert(mLeftThigh  != nullptr);
+  assert(mRightThigh != nullptr);
 }

@@ -49,7 +49,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/Timer.h"
 #include "dart/common/NameManager.h"
 #include "dart/common/Subject.h"

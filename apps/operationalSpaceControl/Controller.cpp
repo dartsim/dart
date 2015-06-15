@@ -35,7 +35,6 @@
  */
 
 #include "apps/operationalSpaceControl/Controller.h"
-#include "dart/math/MathTypes.h"
 
 //==============================================================================
 Controller::Controller(dart::dynamics::SkeletonPtr _robot,
@@ -43,8 +42,8 @@ Controller::Controller(dart::dynamics::SkeletonPtr _robot,
   : mRobot(_robot),
     mEndEffector(_endEffector)
 {
-  assert(_robot != NULL);
-  assert(_endEffector != NULL);
+  assert(_robot != nullptr);
+  assert(_endEffector != nullptr);
 
   int dof = mRobot->getNumDofs();
 

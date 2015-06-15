@@ -20,7 +20,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/Paths.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
@@ -162,7 +161,7 @@ simulation::WorldPtr SdfParser::readWorld(
     std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
                                         const std::string&)> skeletonReader)
 {
-  assert(_worldElement != NULL);
+  assert(_worldElement != nullptr);
 
   // Create a world
   simulation::WorldPtr newWorld(new simulation::World);
@@ -170,8 +169,7 @@ simulation::WorldPtr SdfParser::readWorld(
   //--------------------------------------------------------------------------
   // Name attribute
   std::string name = getAttribute(_worldElement, "name");
-  // World don't have name.
-  //newWorld->setName(name);
+  newWorld->setName(name);
 
   //--------------------------------------------------------------------------
   // Load physics
@@ -675,7 +673,7 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
     const BodyMap& _sdfBodyNodes,
     const Eigen::Isometry3d& _skeletonFrame)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   //--------------------------------------------------------------------------
   // Type attribute
@@ -895,7 +893,7 @@ dynamics::PrismaticJoint::Properties SdfParser::readPrismaticJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   dynamics::PrismaticJoint::Properties newPrismaticJoint;
 

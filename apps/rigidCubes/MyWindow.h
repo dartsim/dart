@@ -61,9 +61,6 @@ public:
 private:
   /// \brief
   Eigen::Vector3d mForce;
-
-  /// \brief Number of frames for applying external force
-  int mImpulseDuration;
 };
 
 #endif  // APPS_CUBES_MYWINDOW_H_

@@ -509,22 +509,22 @@ void dMultiply2 (dReal *A, const dReal *B, const dReal *C, int p,int q,int r)
 
 int dFactorCholesky (dReal *A, int n)
 {
-  return _dFactorCholesky (A, n, NULL);
+  return _dFactorCholesky (A, n, nullptr);
 }
 
 void dSolveCholesky (const dReal *L, dReal *b, int n)
 {
-  _dSolveCholesky (L, b, n, NULL);
+  _dSolveCholesky (L, b, n, nullptr);
 }
 
 int dInvertPDMatrix (const dReal *A, dReal *Ainv, int n)
 {
-  return _dInvertPDMatrix (A, Ainv, n, NULL);
+  return _dInvertPDMatrix (A, Ainv, n, nullptr);
 }
 
 int dIsPositiveDefinite (const dReal *A, int n)
 {
-  return _dIsPositiveDefinite (A, n, NULL);
+  return _dIsPositiveDefinite (A, n, nullptr);
 }
 
 // void dFactorLDLT (dReal *A, dReal *d, int n, int nskip);
@@ -543,12 +543,12 @@ void dSolveLDLT (const dReal *L, const dReal *d, dReal *b, int n, int nskip)
 
 void dLDLTAddTL (dReal *L, dReal *d, const dReal *a, int n, int nskip)
 {
-  _dLDLTAddTL (L, d, a, n, nskip, NULL);
+  _dLDLTAddTL (L, d, a, n, nskip, nullptr);
 }
 
 void dLDLTRemove (dReal **A, const int *p, dReal *L, dReal *d, int n1, int n2, int r, int nskip)
 {
-  _dLDLTRemove (A, p, L, d, n1, n2, r, nskip, NULL);
+  _dLDLTRemove (A, p, L, d, n1, n2, r, nskip, nullptr);
 }
 
 void dRemoveRowCol (dReal *A, int n, int nskip, int r)

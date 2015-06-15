@@ -38,14 +38,7 @@
 #include <chrono>
 #include <numeric>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/math/Helpers.h"
-#include "dart/config.h"
+#include "dart/dart.h"
 
 double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
                                  bool position=true,
@@ -121,7 +114,7 @@ void runKinematicsTest(std::vector<double>& results,
 double testDynamicsSpeed(dart::simulation::WorldPtr world,
                          size_t numIterations = 10000)
 {
-  if(NULL==world)
+  if(nullptr==world)
     return 0;
 
   for(size_t i=0; i<world->getNumSkeletons(); ++i)
@@ -130,7 +123,6 @@ double testDynamicsSpeed(dart::simulation::WorldPtr world,
     skel->resetPositions();
     skel->resetVelocities();
     skel->resetAccelerations();
-    skel->computeForwardKinematics();
   }
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
