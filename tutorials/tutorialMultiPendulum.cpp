@@ -40,7 +40,7 @@ constexpr double default_height = 1.0; // m
 constexpr double default_width = 0.2;  // m
 constexpr double default_depth = 0.2;  // m
 
-constexpr double default_torque = 3.0; // N-m
+constexpr double default_torque = 15.0; // N-m
 constexpr int default_countdown = 200; // Number of timesteps for applying force
 
 using namespace dart::dynamics;
@@ -150,6 +150,7 @@ public:
   /// Add a constraint to turn the bottom of the pendulum into a triangle
   void addConstraint()
   {
+    // Get the last body in the pendulum
     BodyNode* tip  = _pendulum->getBodyNode(_pendulum->getNumBodyNodes()-1);
 
     // Weld the last link to the world
@@ -201,6 +202,8 @@ BodyNode* addBody(const SkeletonPtr& pendulum,
   std::shared_ptr<BoxShape> box(new BoxShape(
       Eigen::Vector3d(default_width, default_depth, default_height)));
   box->setColor(dart::Color::Blue());
+
+  // Set the location of the Box
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
   Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_height/2.0);
   box_tf.translation() = center;
@@ -217,19 +220,33 @@ BodyNode* addBody(const SkeletonPtr& pendulum,
 
 int main(int argc, char* argv[])
 {
+  // Create an empty Skeleton with the name "pendulum"
   SkeletonPtr pendulum = Skeleton::create("pendulum");
 
-  // Add each body to the pendulum
+  // Add each body to the last BodyNode in the pendulum
   BodyNode* bn = addBody(pendulum, nullptr, "body1");
   bn = addBody(pendulum, bn, "body2");
   bn = addBody(pendulum, bn, "body3");
   bn = addBody(pendulum, bn, "body4");
   bn = addBody(pendulum, bn, "body5");
 
+  // Set the initial position of the first DegreeOfFreedom so that the pendulum
+  // starts to swing right away
+  pendulum->getDof(0)->setPosition(120*M_PI/180.0);
+
+  // Create a world and add the pendulum to the world
   WorldPtr world(new World);
   world->addSkeleton(pendulum);
 
+  // Create a window for rendering the world and handling user input
   MyWindow window(world);
+
+  // Print instructions
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'1' -> '9': apply torque to a pendulum body" << std::endl;
+  std::cout << "'r': add/remove constraint on the end of the chain" << std::endl;
+
+  // Initialize glut, initialize the window, and begin the glut event loop
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Compound Pendulum Tutorial");
   glutMainLoop();
