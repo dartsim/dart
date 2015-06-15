@@ -49,6 +49,7 @@ else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 option(DART_BUILD_EXAMPLES "Build examples" ON)
+option(DART_BUILD_TUTORIALS "Build tutorials" ON)
 option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 
 #===============================================================================
@@ -452,6 +453,7 @@ message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
 message(STATUS "Build examples   : ${DART_BUILD_EXAMPLES}")
+message(STATUS "Build tutorials  : ${DART_BUILD_TUTORIALS}")
 message(STATUS "Build unit tests : ${DART_BUILD_UNITTESTS}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
@@ -523,6 +525,10 @@ if(NOT BUILD_CORE_ONLY)
   # Examples
   if(DART_BUILD_EXAMPLES)
     add_subdirectory(apps)
+  endif()
+
+  if(DART_BUILD_TUTORIALS)
+    add_subdirectory(tutorials)
   endif()
 
 endif()
