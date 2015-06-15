@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,56 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-
-#include <fcl/collision_object.h>
-#include <fcl/collision_data.h>
-#include <fcl/broadphase/broadphase.h>
-
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/fcl/FCLTypes.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
-
-/// FCLCollisionDetector
-class FCLCollisionDetector : public CollisionDetector
+//==============================================================================
+Eigen::Vector3d FCLTypes::convertVector3(const fcl::Vec3f& _vec)
 {
-public:
-  /// Constructor
-  FCLCollisionDetector();
+  return Eigen::Vector3d(_vec[0], _vec[1], _vec[2]);
+}
 
-  /// Destructor
-  virtual ~FCLCollisionDetector();
+//==============================================================================
+fcl::Vec3f FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
+{
+  return fcl::Vec3f(_vec[0], _vec[1], _vec[2]);
+}
 
-  // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) override;
+//==============================================================================
+fcl::Matrix3f FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+{
+  return fcl::Matrix3f(_R(0, 0), _R(0, 1), _R(0, 2),
+                       _R(1, 0), _R(1, 1), _R(1, 2),
+                       _R(2, 0), _R(2, 1), _R(2, 2));
+}
 
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode)
-  override;
+//==============================================================================
+fcl::Transform3f FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
+{
+  fcl::Transform3f trans;
 
-  /// Get collision node given FCL collision geometry
-  CollisionNode* findCollisionNode(
-      const fcl::CollisionGeometry* _fclCollGeom) const;
+  trans.setTranslation(convertVector3(_T.translation()));
+  trans.setRotation(convertMatrix3x3(_T.linear()));
 
-  /// Get collision node given FCL collision object
-  FCLCollisionNode* findCollisionNode(
-      const fcl::CollisionObject* _fclCollObj) const;
-
-protected:
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints) override;
-
-  /// Broad-phase collision checker of FCL
-  fcl::DynamicAABBTreeCollisionManager* mBroadPhaseAlg;
-};
+  return trans;
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

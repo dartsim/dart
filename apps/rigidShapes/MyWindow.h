@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -20,6 +19,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -35,56 +40,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#ifndef APPS_RIGIDSHAPES_MYWINDOW_H_
+#define APPS_RIGIDSHAPES_MYWINDOW_H_
 
-#include <fcl/collision_object.h>
-#include <fcl/collision_data.h>
-#include <fcl/broadphase/broadphase.h>
+#include "dart/dart.h"
 
-#include "dart/collision/CollisionDetector.h"
-
-namespace dart {
-namespace collision {
-
-class FCLCollisionNode;
-
-/// FCLCollisionDetector
-class FCLCollisionDetector : public CollisionDetector
+/// MyWindow
+class MyWindow : public dart::gui::SimWindow
 {
 public:
   /// Constructor
-  FCLCollisionDetector();
+  MyWindow();
 
   /// Destructor
-  virtual ~FCLCollisionDetector();
+  virtual ~MyWindow();
 
   // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) override;
+  virtual void timeStepping() override;
 
   // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode)
-  override;
+  virtual void keyboard(unsigned char key, int x, int y) override;
 
-  /// Get collision node given FCL collision geometry
-  CollisionNode* findCollisionNode(
-      const fcl::CollisionGeometry* _fclCollGeom) const;
-
-  /// Get collision node given FCL collision object
-  FCLCollisionNode* findCollisionNode(
-      const fcl::CollisionObject* _fclCollObj) const;
-
-protected:
   // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints) override;
+  virtual void drawSkels() override;
 
-  /// Broad-phase collision checker of FCL
-  fcl::DynamicAABBTreeCollisionManager* mBroadPhaseAlg;
+  /// Spawn a box into the world
+  void spawnBox(
+      const Eigen::Isometry3d& _T,
+      const Eigen::Vector3d& _size = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 10);
+
+  /// Spawn a ellipsoid into the world
+  void spawnEllipsoid(
+      const Eigen::Isometry3d& _T,
+      const Eigen::Vector3d& _radii = Eigen::Vector3d(0.1, 0.1, 0.1),
+      double _mass = 10);
+
+  /// Spawn a cylinder into the world
+  void spawnCylinder(
+      const Eigen::Isometry3d& _T,
+      double _radius = 0.05,
+      double _height = 0.10,
+      double _mass = 10);
 };
 
-}  // namespace collision
-}  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#endif  // APPS_RIGIDSHAPES_MYWINDOW_H_

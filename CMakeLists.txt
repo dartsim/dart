@@ -105,6 +105,8 @@ else()
 endif()
 
 # FCL
+# TODO: We need to increate the minimum required fcl version to 0.4.0 for DART
+# 5.0 once fcl 0.4.0 is released.
 find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - ${FCL_VERSION} found")
