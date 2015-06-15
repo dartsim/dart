@@ -408,7 +408,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
       }
       case Shape::MESH:
       {
-        assert(dynamic_cast<MeshShape*>(shape));
+        assert(dynamic_cast<MeshShape*>(shape.get()));
         MeshShape* shapeMesh = static_cast<MeshShape*>(shape.get());
         fclCollGeom.reset(
             createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
@@ -418,9 +418,10 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
 
         break;
       }
+#if 0
       case Shape::SOFT_MESH:
       {
-        assert(dynamic_cast<SoftMeshShape*>(shape));
+        assert(dynamic_cast<SoftMeshShape*>(shape.get()));
         SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape.get());
         fclCollGeom.reset(
             createSoftMesh<fcl::OBBRSS>(
@@ -429,6 +430,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
 
         break;
       }
+#endif
       default:
       {
         dterr << "[FCLCollisionNode::FCLCollisionNode] Attempting to create "
@@ -515,18 +517,18 @@ void FCLCollisionNode::updateFCLCollisionObjects()
       const aiMesh* mesh = softMeshShape->getAssimpMesh();
       softMeshShape->update();
 
-      const boost::shared_ptr<fcl::CollisionGeometry> collGeom
-          = boost::const_pointer_cast<fcl::CollisionGeometry>(
-              fclCollObj->collisionGeometry());
-      boost::shared_ptr<fcl::BVHModel<fcl::OBBRSS>> bvhModel
-          = boost::dynamic_pointer_cast<fcl::BVHModel<fcl::OBBRSS>>(collGeom);
+      fcl::CollisionGeometry* collGeom
+          = const_cast<fcl::CollisionGeometry*>(
+              fclCollObj->getCollisionGeometry());
+      assert(nullptr != dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
+      fcl::BVHModel<fcl::OBBRSS>* bvhModel
+          = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);
 
       bvhModel->beginUpdateModel();
-
-      for (unsigned int j = 0; j < mesh->mNumFaces; j++)
+      for (size_t j = 0; j < mesh->mNumFaces; j++)
       {
         fcl::Vec3f vertices[3];
-        for (unsigned int k = 0; k < 3; k++)
+        for (size_t k = 0; k < 3; k++)
         {
           const aiVector3D& vertex
               = mesh->mVertices[mesh->mFaces[j].mIndices[k]];
@@ -534,7 +536,6 @@ void FCLCollisionNode::updateFCLCollisionObjects()
         }
         bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
       }
-
       bvhModel->endUpdateModel();
     }
   }

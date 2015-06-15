@@ -44,6 +44,8 @@
 #include "dart/dart.h"
 #include "MyWindow.h"
 
+#include <fcl/config.h>
+
 int main(int argc, char* argv[])
 {
   // load a skeleton file
@@ -51,7 +53,10 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/shapes.skel");
   assert(myWorld != NULL);
-
+#ifndef FCL_DART5
+  myWorld->getConstraintSolver()->setCollisionDetector(
+        new dart::collision::FCLMeshCollisionDetector());
+#endif
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);

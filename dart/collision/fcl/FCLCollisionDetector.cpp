@@ -198,8 +198,8 @@ bool FCLCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
     contactPair.triID1 = contact.b1;
     contactPair.triID2 = contact.b2;
     contactPair.penetrationDepth = contact.penetration_depth;
-    assert(contactPair.bodyNode1);
-    assert(contactPair.bodyNode2);
+    assert(contactPair.bodyNode1.lock());
+    assert(contactPair.bodyNode2.lock());
 
     mContacts.push_back(contactPair);
   }
@@ -235,7 +235,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
         static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
     for (size_t j = 0; j < collisionNode->getNumCollisionObjects(); j++)
     {
-      if (collisionNode->getCollisionObject(j)->collisionGeometry().get()
+      if (collisionNode->getCollisionObject(j)->getCollisionGeometry()
           == _fclCollGeom)
         return mCollisionNodes[i];
     }
