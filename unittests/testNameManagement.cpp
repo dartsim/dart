@@ -349,6 +349,40 @@ TEST(NameManagement, WorldSimpleFrames)
 }
 
 //==============================================================================
+TEST(NameManagement, JointDegreeOfFreedom)
+{
+  SkeletonPtr subtree = Skeleton::create("subtree");
+  EulerJoint::Properties jointProperties;
+  jointProperties.mName = "j_bicep_right";
+  JointPtr joint = subtree->createJointAndBodyNodePair<EulerJoint>(
+        nullptr, jointProperties).first;
+  std::string newName = "j_bicep_right_inverse";
+
+  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_x" );
+  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_y" );
+  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_z" );
+
+  joint->setName(newName, false);
+
+  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_x" );
+  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_y" );
+  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_z" );
+
+  joint->setName(newName, true);
+
+  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_right_inverse_x" );
+  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_right_inverse_y" );
+  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_right_inverse_z" );
+
+  newName = "j_bicep_left";
+  joint->setName(newName, true);
+
+  EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_left_x" );
+  EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_left_y" );
+  EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_left_z" );
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

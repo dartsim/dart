@@ -837,7 +837,7 @@ protected:
   const std::string& addEntryToBodyNodeNameMgr(BodyNode* _newNode);
 
   /// Add a Joint to to the Joint NameManager
-  const std::string& addEntryToJointNameMgr(Joint* _newJoint);
+  const std::string& addEntryToJointNameMgr(Joint* _newJoint, bool _updateDofNames=true);
 
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
