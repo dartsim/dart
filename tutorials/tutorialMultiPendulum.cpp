@@ -255,7 +255,7 @@ protected:
   /// Whether a force should be applied in the positive or negative direction
   bool _positiveSign;
 
-  /// True if 1-9 should be used to apply a BodyForce. Otherwise, 1-9 will be
+  /// True if 1-9 should be used to apply a body force. Otherwise, 1-9 will be
   /// used to apply a joint torque.
   bool _bodyForce;
 };
