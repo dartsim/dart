@@ -185,21 +185,21 @@ public:
         break;
 
       case 'q':
-        changeRestPosition( delta_rest_position);
+        changeRestPosition(delta_rest_position);
         break;
       case 'a':
         changeRestPosition(-delta_rest_position);
         break;
 
       case 'w':
-        changeStiffness( delta_stiffness);
+        changeStiffness(delta_stiffness);
         break;
       case 's':
         changeStiffness(-delta_stiffness);
         break;
 
       case 'e':
-        changeDamping( delta_damping);
+        changeDamping(delta_damping);
         break;
       case 'd':
         changeDamping(-delta_damping);
