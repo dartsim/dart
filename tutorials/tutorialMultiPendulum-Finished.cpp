@@ -383,6 +383,6 @@ int main(int argc, char* argv[])
 
   // Initialize glut, initialize the window, and begin the glut event loop
   glutInit(&argc, argv);
-  window.initWindow(640, 480, "Compound Pendulum Tutorial");
+  window.initWindow(640, 480, "Multi-Pendulum Tutorial");
   glutMainLoop();
 }
