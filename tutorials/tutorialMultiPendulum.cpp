@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
@@ -42,6 +41,7 @@ const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
 
 const double default_torque = 15.0; // N-m
+const double default_force =  15.0; // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
@@ -62,8 +62,9 @@ public:
 
   /// Constructor
   MyWindow(WorldPtr world)
-    : _weldConstraint(nullptr),
-      _positiveSign(true)
+    : _ballConstraint(nullptr),
+      _positiveSign(true),
+      _bodyForce(false)
   {
     setWorld(world);
 
@@ -74,6 +75,30 @@ public:
     assert(_pendulum != nullptr);
 
     _forceCountDown.resize(_pendulum->getNumDofs(), 0);
+
+    ArrowShape::Properties arrow_properties;
+    arrow_properties.mRadius = 0.05;
+    _arrow = std::shared_ptr<ArrowShape>(new ArrowShape(
+             Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
+             Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0),
+             arrow_properties, dart::Color::Orange(1.0)));
+  }
+
+  void changeDirection()
+  {
+    _positiveSign = !_positiveSign;
+    if(_positiveSign)
+    {
+      _arrow->setPositions(
+            Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
+            Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0));
+    }
+    else
+    {
+      _arrow->setPositions(
+            Eigen::Vector3d( default_height, 0.0, default_height/2.0),
+            Eigen::Vector3d( default_width/2.0, 0.0, default_height/2.0));
+    }
   }
 
   void applyForce(size_t)
@@ -96,7 +121,7 @@ public:
     // Lesson 4
   }
 
-  /// Add a constraint to turn the bottom of the pendulum into a triangle
+  /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
     // Lesson 5
@@ -105,7 +130,7 @@ public:
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    // Lesson 6
+    // Lesson 5
   }
 
   /// Handle keyboard input
@@ -113,6 +138,10 @@ public:
   {
     switch(key)
     {
+      case '-':
+        changeDirection();
+        break;
+
       case '1':
         applyForce(0);
         break;
@@ -144,10 +173,6 @@ public:
         applyForce(9);
         break;
 
-      case '-':
-        _positiveSign = !_positiveSign;
-        break;
-
       case 'q':
         changeRestPosition( delta_rest_position);
         break;
@@ -171,12 +196,16 @@ public:
 
       case 'r':
       {
-        if(_weldConstraint)
+        if(_ballConstraint)
           removeConstraint();
         else
           addConstraint();
         break;
       }
+
+      case 'f':
+        _bodyForce = !_bodyForce;
+        break;
 
       default:
         SimWindow::keyboard(key, x, y);
@@ -185,7 +214,25 @@ public:
 
   void timeStepping() override
   {
+    // Reset all the shapes to be Blue
     // Lesson 1
+
+    if(_bodyForce)
+    {
+      // Apply body forces based on user input, and color the body shape red
+      for(size_t i = 0; i < _pendulum->getNumBodyNodes(); ++i)
+      {
+        // Lesson 1b
+      }
+    }
+    else
+    {
+      // Apply joint torques based on user input, and color the Joint shape red
+      for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+      {
+        // Lesson 1a
+      }
+    }
 
     // Step the simulation forward
     SimWindow::timeStepping();
@@ -193,17 +240,24 @@ public:
 
 protected:
 
+  /// An arrow shape that we will use to visualize applied forces
+  std::shared_ptr<ArrowShape> _arrow;
+
   /// The pendulum that we will be perturbing
   SkeletonPtr _pendulum;
 
-  /// Pointer to the weld constraint that we will be turning on and off
-  dart::constraint::WeldJointConstraint* _weldConstraint;
+  /// Pointer to the ball constraint that we will be turning on and off
+  dart::constraint::BallJointConstraint* _ballConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> _forceCountDown;
 
   /// Whether a force should be applied in the positive or negative direction
   bool _positiveSign;
+
+  /// True if 1-9 should be used to apply a BodyForce. Otherwise, 1-9 will be
+  /// used to apply a joint torque.
+  bool _bodyForce;
 };
 
 void setGeometry(const BodyNodePtr& bn)
