@@ -1,3 +1,43 @@
+dart (5.0.0) unstable; urgency=low
+
+  * Added some missing API for DegreeOfFreedom
+  * Replaced logMaps with Eigen::AngleAxisd
+  * Improved FCL collision detector
+  * Removed deprecated API and suppressed warnings
+  * Added use of OpenGL's multisample anti-aliasing
+  * Added computation of differences of generalized coordinates
+  * Added deprecated and force-linline definitions for clang
+  * Eradicated memory leaks and maked classes copy-safe and clonable
+  * Improved PlaneShape constructors
+  * Added appveyor options for parallel build and detailed log
+  * Improved robustness and package handling for URDF parsing
+  * Fixed bug in BodyNode::_updateBodyJacobianSpatialDeriv()
+  * Added alpha channel and Color functions
+  * Added Jacobian getters to Skeleton
+  * Added ArrowShape for visualizing arrows
+  * Fixed matrix dimension bug in operationalSpaceControl app
+  * Added build type definitions
+  * Added Signal class
+  * Added LineSegmentShape for visualizing line segments
+  * Fixed segfault in SoftSdfParser
+  * Added subscriptions for destructions and notifications
+  * Added NloptSolver::[get/set]NumMaxEvaluations()
+  * Added support of Eigen::VectorXd in parser
+  * Added Skeleton::getNumJoints()
+  * Fixed bug in DARTCollide for sphere-sphere collision
+  * Fixed naming issues for Skeletons in World
+  * Added PlanarJoint support for URDF loader
+  * Fixed rotation of the inertia reference frame for URDF loader
+  * Fixed bug in loading WorldFile
+  * Added plotting of 2D trajectories
+  * Removed unsupported axis orders of EulerJoint
+  * Added convenience functions to help with setting joint positions
+  * Added Frame class and auto-updating for forward kinematics
+  * Added Travis-CI build test for OSX
+  * Added specification of minimum dependency version
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 15 Jun 2015 23:40:00 -0500
+
 dart (4.3.4) unstable; urgency=low
 
   * Fixed build issue with gtest on Mac
