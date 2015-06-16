@@ -110,7 +110,9 @@ public:
   /// Get the index of the tree that this DegreeOfFreedom belongs to
   size_t getTreeIndex() const;
 
-  // -- Command functions ------------------------------------------------------
+  //----------------------------------------------------------------------------
+  /// \{ \name Command
+  //----------------------------------------------------------------------------
 
   /// Set the command of this DegreeOfFreedom
   void setCommand(double _command);
@@ -121,7 +123,11 @@ public:
   /// Set the command of this DegreeOfFreedom to zero
   void resetCommand();
 
-  // -- Position functions -----------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Position
+  //----------------------------------------------------------------------------
 
   /// Set the position of this DegreeOfFreedom
   void setPosition(double _position);
@@ -153,7 +159,11 @@ public:
   /// Get the upper position limit of this DegreeOfFreedom
   double getPositionUpperLimit() const;
 
-  // -- Velocity functions -----------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Velocity
+  //----------------------------------------------------------------------------
 
   /// Set the velocity of this DegreeOfFreedom
   void setVelocity(double _velocity);
@@ -185,7 +195,11 @@ public:
   /// Get the upper Velocity limit of this DegreeOfFreedom
   double getVelocityUpperLimit() const;
 
-  // -- Acceleration functions -------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Acceleration
+  //----------------------------------------------------------------------------
 
   /// Set the acceleration of this DegreeOfFreedom
   void setAcceleration(double _acceleration);
@@ -217,7 +231,11 @@ public:
   /// Get the upper acceleration limit of this DegreeOfFreedom
   double getAccelerationUpperLimit() const;
 
-  // -- Force functions --------------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Force
+  //----------------------------------------------------------------------------
 
   /// Set the generalized force of this DegreeOfFreedom
   void setForce(double _force);
@@ -249,7 +267,11 @@ public:
   /// Get the upper generalized force limit of this DegreeOfFreedom
   double getForceUpperLimit() const;
 
-  // -- Velocity Change --------------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Velocity change
+  //----------------------------------------------------------------------------
 
   /// Set the velocity change of this DegreeOfFreedom
   void setVelocityChange(double _velocityChange);
@@ -260,7 +282,11 @@ public:
   /// Set the velocity change of this DegreeOfFreedom to zero
   void resetVelocityChange();
 
-  // -- Constraint Impulse -----------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Constraint impulse
+  //----------------------------------------------------------------------------
 
   /// Set the constraint impulse of this generalized coordinate
   void setConstraintImpulse(double _impulse);
@@ -271,7 +297,43 @@ public:
   /// Set the constraint impulse of this generalized coordinate to zero
   void resetConstraintImpulse();
 
-  // -- Relationships ----------------------------------------------------------
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Passive forces - spring, viscous friction, Coulomb friction
+  //----------------------------------------------------------------------------
+
+  /// Set stiffness of the spring force for this generalized coordinate
+  void setSpringStiffness(double _k);
+
+  /// Get stiffness of the spring force for this generalized coordinate
+  double getSpringStiffness() const;
+
+  /// Set rest position for the spring force of this generalized coordinate
+  void setRestPosition(double _q0);
+
+  /// Get rest position for the spring force of this generalized coordinate
+  double getRestPosition() const;
+
+  /// Set coefficient of damping (viscous friction) force for this generalized
+  /// coordinate
+  void setDampingCoefficient(double _coeff);
+
+  /// Get coefficient of damping (viscous friction) force for this generalized
+  /// coordinate
+  double getDampingCoefficient() const;
+
+  /// Set Coulomb friction force for this generalized coordinate
+  void setCoulombFriction(double _friction);
+
+  /// Get Coulomb friction force for this generalized coordinate
+  double getCoulombFriction() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Relationships
+  //----------------------------------------------------------------------------
 
   /// Get the Joint that this DegreeOfFreedom belongs to
   Joint* getJoint();
@@ -296,6 +358,8 @@ public:
 
   /// Get the BodyNode upstream of this DegreeOfFreedom
   const BodyNode* getParentBodyNode() const;
+
+  /// \}
 
 protected:
   /// The constructor is protected so that only Joints can create

@@ -531,33 +531,36 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
   // v = beta*p + gamma*w + 1 / 2*cross(p, w)
   //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
   //--------------------------------------------------------------------------
-  double theta =
-      std::acos(
-        std::max(
-          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
+//  double theta =
+//      std::acos(
+//        std::max(
+//          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
 
-  if (theta > DART_PI - DART_EPSILON) {
-    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
+//  if (theta > DART_PI - DART_EPSILON) {
+//    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
 
-    return Eigen::Vector3d(
-          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta),
-          _R(0, 2) > _R(2, 0) ? theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta),
-          _R(1, 0) > _R(0, 1) ? theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta));
-  } else {
-    double alpha = 0.0;
+//    return Eigen::Vector3d(
+//          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta),
+//          _R(0, 2) > _R(2, 0) ? theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta),
+//          _R(1, 0) > _R(0, 1) ? theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta));
+//  } else {
+//    double alpha = 0.0;
 
-    if (theta > DART_EPSILON)
-      alpha = 0.5*theta / sin(theta);
-    else
-      alpha = 0.5 + DART_1_12*theta*theta;
+//    if (theta > DART_EPSILON)
+//      alpha = 0.5*theta / sin(theta);
+//    else
+//      alpha = 0.5 + DART_1_12*theta*theta;
 
-    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
-                           alpha*(_R(0, 2) - _R(2, 0)),
-                           alpha*(_R(1, 0) - _R(0, 1)));
-  }
+//    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
+//                           alpha*(_R(0, 2) - _R(2, 0)),
+//                           alpha*(_R(1, 0) - _R(0, 1)));
+//  }
+
+  Eigen::AngleAxisd aa(_R);
+  return aa.angle()*aa.axis();
 }
 
 Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
