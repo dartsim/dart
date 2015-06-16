@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 9),
                libtinyxml-dev,
                libtinyxml2-dev,
                liburdfdom-dev
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Section: libs
 Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git
