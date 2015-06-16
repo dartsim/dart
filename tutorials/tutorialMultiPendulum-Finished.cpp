@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
@@ -76,36 +75,73 @@ public:
     _forceCountDown.resize(_pendulum->getNumDofs(), 0);
   }
 
-  void applyForce(size_t)
+  void applyForce(size_t index)
   {
-    // Lesson 1
+    if(index < _forceCountDown.size())
+      _forceCountDown[index] = default_countdown;
   }
 
-  void changeRestPosition(double)
+  void changeRestPosition(double delta)
   {
-    // Lesson 2
+    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    {
+      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      double q0 = dof->getRestPosition() + delta;
+
+      // The system becomes numerically unstable when the rest position exceeds
+      // 90 degrees
+      if(std::abs(q0) > 90.0*M_PI/180.0)
+        q0 = q0>0? 90.0*M_PI/180.0 : -90.0*M_PI/180.0;
+
+      dof->setRestPosition(q0);
+    }
+
+    // Only curl up along one axis in the BallJoint
+    _pendulum->getDof(0)->setRestPosition(0.0);
+    _pendulum->getDof(2)->setRestPosition(0.0);
   }
 
-  void changeStiffness(double)
+  void changeStiffness(double delta)
   {
-    // Lesson 3
+    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    {
+      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      double stiffness = dof->getSpringStiffness() + delta;
+      if(stiffness < 0.0)
+        stiffness = 0.0;
+      dof->setSpringStiffness(stiffness);
+    }
   }
 
-  void changeDamping(double)
+  void changeDamping(double delta)
   {
-    // Lesson 4
+    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    {
+      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      double damping = dof->getDampingCoefficient() + delta;
+      if(damping < 0.0)
+        damping = 0.0;
+      dof->setDampingCoefficient(damping);
+    }
   }
 
   /// Add a constraint to turn the bottom of the pendulum into a triangle
   void addConstraint()
   {
-    // Lesson 5
+    // Get the last body in the pendulum
+    BodyNode* tip  = _pendulum->getBodyNode(_pendulum->getNumBodyNodes()-1);
+
+    // Weld the last link to the world
+    _weldConstraint = new dart::constraint::WeldJointConstraint(tip);
+    mWorld->getConstraintSolver()->addConstraint(_weldConstraint);
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    // Lesson 6
+    mWorld->getConstraintSolver()->removeConstraint(_weldConstraint);
+    delete _weldConstraint;
+    _weldConstraint = nullptr;
   }
 
   /// Handle keyboard input
@@ -185,7 +221,28 @@ public:
 
   void timeStepping() override
   {
-    // Lesson 1
+    // Reset all the shapes to be Blue
+    for(size_t i=0; i<_pendulum->getNumBodyNodes(); ++i)
+    {
+      const ShapePtr& shape =
+          _pendulum->getBodyNode(i)->getVisualizationShape(0);
+
+      shape->setColor(dart::Color::Blue());
+    }
+
+    // Any DOFs with an active countdown are given a joint force and colored red
+    for(size_t i=0; i<_forceCountDown.size(); ++i)
+    {
+      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      const ShapePtr& shape = dof->getChildBodyNode()->getVisualizationShape(0);
+
+      if(_forceCountDown[i] > 0)
+      {
+        dof->setForce(_positiveSign? default_torque : -default_torque);
+        shape->setColor(dart::Color::Red());
+        --_forceCountDown[i];
+      }
+    }
 
     // Step the simulation forward
     SimWindow::timeStepping();
