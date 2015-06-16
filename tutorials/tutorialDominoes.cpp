@@ -36,20 +36,101 @@
 
 #include "dart/dart.h"
 
-constexpr double default_angle = 20.0*M_PI/180.0;
-constexpr double default_distance = 0.01;
-constexpr double default_domino_height = 0.07;
-constexpr double default_domino_width = 0.03;
+const double default_domino_height = 0.07;
+const double default_domino_width = 0.03;
+const double default_domino_depth = default_domino_width/5.0;
+
+const double default_distance = default_domino_height/2.0;
+const double default_angle = 20.0*M_PI/180.0;
+
+const double default_push_force = 8.0; // N
+const int default_push_duration = 200; // # iterations
 
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 class MyWindow : public dart::gui::SimWindow
 {
 public:
 
-  MyWindow(dart::simulation::WorldPtr world)
+  MyWindow(const WorldPtr& world)
+    : _totalAngle(0.0),
+      _hasEverRun(false),
+      _pushCountDown(0)
   {
+    setWorld(world);
+    _firstDomino = world->getSkeleton("domino");
+    _floor = world->getSkeleton("floor");
+  }
 
+  void attemptToCreateDomino(double angle)
+  {
+    const SkeletonPtr& lastDomino = _dominoes.size()>0?
+          _dominoes.back() : _firstDomino;
+
+    // Compute the position for the new domino
+    Eigen::Vector3d dx = default_distance*Eigen::Vector3d(
+          cos(_totalAngle), sin(_totalAngle), 0.0);
+
+    Eigen::Vector6d x = lastDomino->getPositions();
+    x.tail<3>() += dx;
+
+    // Adjust the angle for the new domino
+    x[2] = _totalAngle + angle;
+
+    SkeletonPtr newDomino = _firstDomino->clone();
+    newDomino->setName("domino #" + std::to_string(_dominoes.size()+1));
+    newDomino->setPositions(x);
+
+    mWorld->addSkeleton(newDomino);
+
+    // Compute collisions
+    dart::collision::CollisionDetector* detector =
+        mWorld->getConstraintSolver()->getCollisionDetector();
+    detector->detectCollision(true, true);
+
+    // Look through the collisions to see if any dominoes are penetrating each
+    // other
+    bool dominoCollision = false;
+    size_t collisionCount = detector->getNumContacts();
+    for(size_t i=0; i < collisionCount; ++i)
+    {
+      // If either of the colliding BodyNodes belongs to the floor, then we know
+      // that we have colliding dominoes
+      const dart::collision::Contact& contact = detector->getContact(i);
+      if(   contact.bodyNode1.lock()->getSkeleton() != _floor
+         && contact.bodyNode2.lock()->getSkeleton() != _floor)
+      {
+        dominoCollision = true;
+        break;
+      }
+    }
+
+    if(dominoCollision)
+    {
+      // Remove the new domino, because it is penetrating an existing one
+      mWorld->removeSkeleton(newDomino);
+    }
+    else
+    {
+      // Record the latest domino addition
+      _angles.push_back(angle);
+      _dominoes.push_back(newDomino);
+      _totalAngle += angle;
+    }
+  }
+
+  void deleteLastDomino()
+  {
+    if(_dominoes.size() > 0)
+    {
+      SkeletonPtr lastDomino = _dominoes.back();
+      _dominoes.pop_back();
+      mWorld->removeSkeleton(lastDomino);
+
+      _totalAngle -= _angles.back();
+      _angles.pop_back();
+    }
   }
 
   void keyboard(unsigned char key, int x, int y) override
@@ -60,33 +141,55 @@ public:
       {
         case 'q':
           attemptToCreateDomino( default_angle);
+          break;
         case 'w':
           attemptToCreateDomino(0.0);
+          break;
         case 'e':
           attemptToCreateDomino(-default_angle);
+          break;
         case 'd':
           deleteLastDomino();
+          break;
         case ' ':
           _hasEverRun = true;
+          break;
+      }
+    }
+    else
+    {
+      switch(key)
+      {
+        case 'f':
+          _pushCountDown = default_push_duration;
+          break;
       }
     }
 
     SimWindow::keyboard(key, x, y);
   }
 
-
-  void attemptToCreateDomino(double angle)
+  void timeStepping() override
   {
+    if(_pushCountDown > 0)
+    {
+      _firstDomino->getBodyNode(0)->addExtForce(
+            default_push_force*Eigen::Vector3d::UnitX(),
+            default_domino_height/2.0*Eigen::Vector3d::UnitZ());
 
+      --_pushCountDown;
+    }
+
+    SimWindow::timeStepping();
   }
-
-  void deleteLastDomino()
-  {
-
-  }
-
 
 protected:
+
+  /// Base domino. Used to clone new dominoes.
+  SkeletonPtr _firstDomino;
+
+  /// Floor of the scene
+  SkeletonPtr _floor;
 
   /// History of the dominoes that have been created
   std::vector<SkeletonPtr> _dominoes;
@@ -100,10 +203,80 @@ protected:
   /// Set to true the first time spacebar is pressed
   bool _hasEverRun;
 
+  /// The first domino will be pushed on while the value of this is positive
+  int _pushCountDown;
+
 };
 
+SkeletonPtr createDomino()
+{
+  /// Create a Skeleton with the name "domino"
+  SkeletonPtr domino = Skeleton::create("domino");
+
+  /// Create a body for the domino
+  BodyNodePtr body =
+      domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+
+  std::shared_ptr<BoxShape> box(
+        new BoxShape(Eigen::Vector3d(default_domino_depth,
+                                     default_domino_width,
+                                     default_domino_height)));
+  body->addVisualizationShape(box);
+  body->addCollisionShape(box);
+
+  domino->getDof("Joint_pos_z")->setPosition(default_domino_height/2.0);
+
+  return domino;
+}
+
+SkeletonPtr createFloor()
+{
+  SkeletonPtr floor = Skeleton::create("floor");
+
+  // Give the floor a body
+  BodyNodePtr body =
+      floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+
+  // Give the body a shape
+  double floor_width = 10.0;
+  double floor_height = 0.01;
+  std::shared_ptr<BoxShape> box(
+        new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
+  box->setColor(dart::Color::Black());
+
+  body->addVisualizationShape(box);
+  body->addCollisionShape(box);
+
+  // Put the body into position
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height/2.0);
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  return floor;
+}
 
 int main(int argc, char* argv[])
 {
+  SkeletonPtr domino = createDomino();
+  SkeletonPtr floor = createFloor();
 
+  WorldPtr world(new World);
+  world->addSkeleton(domino);
+  world->addSkeleton(floor);
+
+  MyWindow window(world);
+
+  std::cout << "Before simulation has started, you can create new dominoes:" << std::endl;
+  std::cout << "'w': Create new domino angled forward" << std::endl;
+  std::cout << "'q': Create new domino angled to the left" << std::endl;
+  std::cout << "'e': Create new domino angled to the right" << std::endl;
+  std::cout << "'d': Delete the last domino that was created" << std::endl;
+  std::cout << std::endl;
+  std::cout << "spacebar: Begin simulation (you can no longer create dominoes)" << std::endl;
+  std::cout << "'f': Push the first domino so that it falls over" << std::endl;
+  std::cout << "'v': Turn contact force visualization on/off" << std::endl;
+
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Dominoes");
+  glutMainLoop();
 }
