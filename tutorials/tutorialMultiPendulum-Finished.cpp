@@ -465,6 +465,7 @@ int main(int argc, char* argv[])
   std::cout << "'e': Increase joint damping" << std::endl;
   std::cout << "'d': Decrease joint damping" << std::endl;
   std::cout << "'r': add/remove constraint on the end of the chain" << std::endl;
+  std::cout << "'f': switch between applying joint torques and body forces" << std::endl;
 
   // Initialize glut, initialize the window, and begin the glut event loop
   glutInit(&argc, argv);
