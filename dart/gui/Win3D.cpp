@@ -37,6 +37,8 @@
 
 #include "dart/gui/Win3D.h"
 
+#include <algorithm>
+
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/Jitter.h"
 
@@ -76,9 +78,8 @@ void Win3D::resize(int _w, int _h) {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  int small = _w < _h ? _w : _h;
   mTrackBall.setCenter(Eigen::Vector2d(_w*0.5, _h*0.5));
-  mTrackBall.setRadius(small/2.5);
+  mTrackBall.setRadius(std::min(_w, _h)/2.5);
 
   glutPostRedisplay();
 }
