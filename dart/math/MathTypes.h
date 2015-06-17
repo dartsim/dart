@@ -38,6 +38,8 @@
 #define DART_MATH_MATHTYPES_H_
 
 #include <limits>
+#include <map>
+#include <memory>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -83,7 +85,27 @@ typedef Matrix<double, 6, 6> Matrix6d;
 typedef std::vector<Eigen::Vector3d> EIGEN_V_VEC3D;
 typedef std::vector<std::vector<Eigen::Vector3d > > EIGEN_VV_VEC3D;
 
+template <typename _Tp>
+using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
+
+template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
+using aligned_map = std::map<_Key, _Tp, _Compare,
+    Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
+
+template<typename _Tp, typename... _Args>
+inline std::shared_ptr<_Tp> make_aligned_shared()
+{
+  return std::make_shared<_Tp>();
 }
+
+template<typename _Tp, typename... _Args>
+inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
+{
+  return std::allocate_shared<_Tp>(Eigen::aligned_allocator<_Tp>(),
+                                   std::forward<_Args>(__args)...);
+}
+
+}  // namespace Eigen
 
 namespace dart {
 namespace math {
