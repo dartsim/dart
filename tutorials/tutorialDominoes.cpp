@@ -36,8 +36,8 @@
 
 #include "dart/dart.h"
 
-const double default_domino_height = 0.07;
-const double default_domino_width = 0.03;
+const double default_domino_height = 0.2;
+const double default_domino_width = 0.4*default_domino_height;
 const double default_domino_depth = default_domino_width/5.0;
 
 const double default_distance = default_domino_height/2.0;
@@ -48,6 +48,37 @@ const int default_push_duration = 200; // # iterations
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
+
+class Controller
+{
+public:
+
+  Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
+    : _manipulator(manipulator)
+  {
+    // Create a transform from the center of the domino to the top of the domino
+    Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
+    target_offset.translation() =
+        default_domino_height/2.0 * Eigen::Vector3d::UnitZ();
+
+    // Place the _target SimpleFrame at the top of the domino
+    _target = std::make_shared<SimpleFrame>(
+          domino->getBodyNode(0), "target", target_offset);
+  }
+
+  void computeForces()
+  {
+    if(nullptr == _manipulator)
+      return;
+  }
+
+protected:
+
+  SkeletonPtr _manipulator;
+
+  SimpleFramePtr _target;
+
+};
 
 class MyWindow : public dart::gui::SimWindow
 {
@@ -63,6 +94,8 @@ public:
     _floor = world->getSkeleton("floor");
   }
 
+  // Attempt to create a new domino. If the new domino would be in collision
+  // with anything (other than the floor), then discard it.
   void attemptToCreateDomino(double angle)
   {
     const SkeletonPtr& lastDomino = _dominoes.size()>0?
@@ -120,6 +153,8 @@ public:
     }
   }
 
+  // Delete the last domino that was added to the scene. (Do not delete the
+  // original domino)
   void deleteLastDomino()
   {
     if(_dominoes.size() > 0)
@@ -171,6 +206,8 @@ public:
 
   void timeStepping() override
   {
+    // If the user has pressed the 'f' key, apply a force to the first domino in
+    // order to push it over
     if(_pushCountDown > 0)
     {
       _firstDomino->getBodyNode(0)->addExtForce(
@@ -255,14 +292,31 @@ SkeletonPtr createFloor()
   return floor;
 }
 
+SkeletonPtr createManipulator()
+{
+  // Load the Skeleton from a file
+  dart::utils::DartLoader loader;
+  SkeletonPtr manipulator =
+      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+
+  // Position its base in a reasonable way
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(-0.75, 0.0, 0.0);
+  manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
+
+  return manipulator;
+}
+
 int main(int argc, char* argv[])
 {
   SkeletonPtr domino = createDomino();
   SkeletonPtr floor = createFloor();
+  SkeletonPtr manipulator = createManipulator();
 
   WorldPtr world(new World);
   world->addSkeleton(domino);
   world->addSkeleton(floor);
+  world->addSkeleton(manipulator);
 
   MyWindow window(world);
 
@@ -272,7 +326,7 @@ int main(int argc, char* argv[])
   std::cout << "'e': Create new domino angled to the right" << std::endl;
   std::cout << "'d': Delete the last domino that was created" << std::endl;
   std::cout << std::endl;
-  std::cout << "spacebar: Begin simulation (you can no longer create dominoes)" << std::endl;
+  std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
   std::cout << "'f': Push the first domino so that it falls over" << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
 
