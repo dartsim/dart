@@ -290,6 +290,9 @@ private:
   /// Contains whether or not this is the World Frame
   const bool mAmWorld;
 
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The WorldFrame class is a class that is used internally to create the
@@ -326,6 +329,10 @@ private:
 
   /// This is set to a Zero vector and never changes
   const Eigen::Vector6d mZero;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics
