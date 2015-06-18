@@ -36,15 +36,24 @@
 
 #include "dart/dart.h"
 
-const double default_domino_height = 0.2;
+const double default_domino_height = 0.3;
 const double default_domino_width = 0.4*default_domino_height;
 const double default_domino_depth = default_domino_width/5.0;
 
 const double default_distance = default_domino_height/2.0;
 const double default_angle = 20.0*M_PI/180.0;
 
+const double default_domino_density = 2.6e3; // kg/m^3
+const double default_domino_mass =
+    default_domino_density
+    * default_domino_height
+    * default_domino_width
+    * default_domino_depth;
+
 const double default_push_force = 8.0; // N
 const int default_push_duration = 200; // # iterations
+
+const double default_endeffector_offset = 0.05;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -64,6 +73,11 @@ public:
     // Place the _target SimpleFrame at the top of the domino
     _target = std::make_shared<SimpleFrame>(
           domino->getBodyNode(0), "target", target_offset);
+
+    // Grab the last body in the manipulator, and use it as an end effector
+    _endEffector = _manipulator->getBodyNode(_manipulator->getNumBodyNodes()-1);
+
+    _offset = default_endeffector_offset * Eigen::Vector3d::UnitX();
   }
 
   void computeForces()
@@ -74,10 +88,27 @@ public:
 
 protected:
 
+  /// The manipulator Skeleton that we will be controlling
   SkeletonPtr _manipulator;
 
+  /// The target pose for the controller
   SimpleFramePtr _target;
 
+  /// End effector for the manipulator
+  BodyNodePtr _endEffector;
+
+  /// The offset of the end effector from the body origin of the last BodyNode
+  /// in the manipulator
+  Eigen::Vector3d _offset;
+
+  /// Control gains for the proportional error terms
+  Eigen::Matrix3d _Kp;
+
+  /// Control gains for the derivative error terms
+  Eigen::MatrixXd _Kd;
+
+  /// Joint forces for the manipulator (output of the Controller)
+  Eigen::VectorXd _forces;
 };
 
 class MyWindow : public dart::gui::SimWindow
@@ -247,19 +278,26 @@ protected:
 
 SkeletonPtr createDomino()
 {
-  /// Create a Skeleton with the name "domino"
+  // Create a Skeleton with the name "domino"
   SkeletonPtr domino = Skeleton::create("domino");
 
-  /// Create a body for the domino
+  // Create a body for the domino
   BodyNodePtr body =
       domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
 
+  // Create a shape for the domino
   std::shared_ptr<BoxShape> box(
         new BoxShape(Eigen::Vector3d(default_domino_depth,
                                      default_domino_width,
                                      default_domino_height)));
   body->addVisualizationShape(box);
   body->addCollisionShape(box);
+
+  // Set up inertia for the domino
+  Inertia inertia;
+  inertia.setMass(default_domino_mass);
+  inertia.setMoment(box->computeInertia(default_domino_mass));
+  body->setInertia(inertia);
 
   domino->getDof("Joint_pos_z")->setPosition(default_domino_height/2.0);
 
@@ -301,8 +339,11 @@ SkeletonPtr createManipulator()
 
   // Position its base in a reasonable way
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(-0.75, 0.0, 0.0);
+  tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
+
+  manipulator->getDof(1)->setPosition(140.0*M_PI/180.0);
+  manipulator->getDof(2)->setPosition(-140.0*M_PI/180.0);
 
   return manipulator;
 }
