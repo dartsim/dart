@@ -67,17 +67,22 @@ public:
   Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
     : _manipulator(manipulator)
   {
+    // Grab the last body in the manipulator, and use it as an end effector
+    _endEffector = _manipulator->getBodyNode(_manipulator->getNumBodyNodes()-1);
+
     // Create a transform from the center of the domino to the top of the domino
     Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
     target_offset.translation() =
         default_domino_height/2.0 * Eigen::Vector3d::UnitZ();
 
+    // Rotate the transform so that it matches the orientation of the end
+    // effector
+    target_offset.linear() =
+        _endEffector->getTransform(domino->getBodyNode(0)).linear();
+
     // Place the _target SimpleFrame at the top of the domino
     _target = std::make_shared<SimpleFrame>(Frame::World(), "target");
     _target->setTransform(target_offset, domino->getBodyNode(0));
-
-    // Grab the last body in the manipulator, and use it as an end effector
-    _endEffector = _manipulator->getBodyNode(_manipulator->getNumBodyNodes()-1);
 
     // Compute the body frame offset for the end effector
     _offset = default_endeffector_offset * Eigen::Vector3d::UnitX();
@@ -89,8 +94,9 @@ public:
     _Kp_PD = 200.0;
     _Kd_PD =  20.0;
 
-    _Kp_OS = 5.0;
-    _Kd_OS = 1.0;
+    _Kp_OS_linear = 5.0;
+    _Kp_OS_angular = 5.0;
+    _Kd_OS = 0.01;
   }
 
   /// Compute a stable PD controller that also compensates for gravity and
@@ -130,33 +136,50 @@ public:
     const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
 
     // Compute the Jacobian
-    LinearJacobian J = _endEffector->getLinearJacobian(_offset);
+    Jacobian J = _endEffector->getWorldJacobian(_offset);
     // Compute the pseudo-inverse of the Jacobian
     Eigen::MatrixXd pinv_J = J.transpose() * ( J * J.transpose()
-                              + 0.0025*Eigen::Matrix3d::Identity() ).inverse();
+                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
 
     // Compute the Jacobian time derivative
-    LinearJacobian dJ = _endEffector->getLinearJacobianDeriv(_offset);
+    Jacobian dJ = _endEffector->getJacobianClassicDeriv(_offset);
     // Comptue the pseudo-inverse of the Jacobian time derivative
     Eigen::MatrixXd pinv_dJ = dJ.transpose() * ( dJ * dJ.transpose()
-                              + 0.0025*Eigen::Matrix3d::Identity() ).inverse();
+                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
 
-    // Compute the error
-    Eigen::Vector3d e = _target->getWorldTransform().translation()
-                        - _endEffector->getWorldTransform()*_offset;
+    // Compute the linear error
+    Eigen::Vector6d e;
+    e.tail<3>() = _target->getWorldTransform().translation()
+                - _endEffector->getWorldTransform()*_offset;
+
+    // Compute the angular error
+    Eigen::AngleAxisd aa(_target->getTransform(_endEffector).linear());
+    e.head<3>() = aa.angle() * aa.axis();
 
     // Compute the time derivative of the error
-    Eigen::Vector3d de = - _endEffector->getLinearVelocity(_offset);
+    Eigen::Vector6d de = - _endEffector->getSpatialVelocity(
+          _offset, _target.get(), Frame::World());
 
     // Compute the forces needed to compensate for Coriolis forces and gravity
     const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
 
     // Turn the control gains into matrix form
-    Eigen::Matrix3d Kp = _Kp_OS * Eigen::Matrix3d::Identity();
+    Eigen::Matrix6d Kp = Eigen::Matrix6d::Identity();
+    Kp.diagonal().head<3>() = _Kp_OS_angular*Eigen::Vector3d::Ones();
+    Kp.diagonal().tail<3>() = _Kp_OS_linear*Eigen::Vector3d::Ones();
+
     size_t dofs = _manipulator->getNumDofs();
     Eigen::MatrixXd Kd = _Kd_OS * Eigen::MatrixXd::Identity(dofs, dofs);
 
-    _forces = M * (pinv_J*Kp*de + pinv_dJ*_Kp_OS*e) + Cg + Kd*pinv_J*_Kp_OS*e;
+    // Compute the joint forces needed to exert the desired workspace force
+    Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+    fDesired[3] = default_push_force;
+    Eigen::VectorXd f = J.transpose() * fDesired;
+
+    // Compute the control forces
+    Eigen::VectorXd dq = _manipulator->getVelocities();
+    _forces = M * (pinv_J*Kp*de + pinv_dJ*Kp*e)
+              - Kd*dq + Kd*pinv_J*Kp*e + Cg + f;
 
     _manipulator->setForces(_forces);
   }
@@ -185,9 +208,13 @@ protected:
   /// Control gains for the derivative error terms in the PD controller
   double _Kd_PD;
 
-  /// Control gains for the proportional error terms in the operational space
-  /// controller
-  double _Kp_OS;
+  /// Control gains for the proportional linear error terms in the operational
+  /// space controller
+  double _Kp_OS_linear;
+
+  /// Control gains for the proportional angular error terms in the operational
+  /// space controller
+  double _Kp_OS_angular;
 
   /// Control gains for the derivative error terms in the operational space
   /// controller
