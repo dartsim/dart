@@ -68,23 +68,27 @@ public:
     : _manipulator(manipulator)
   {
     // Grab the current joint angles to use them as desired angles
-    // Lesson 2b
+    _qDesired = _manipulator->getPositions();
 
     // Grab the last body in the manipulator, and use it as an end effector
-    // Lesson 3a
+    _endEffector = _manipulator->getBodyNode(_manipulator->getNumBodyNodes()-1);
 
     // Compute the body frame offset for the end effector
-    // Lesson 3b
+    _offset = default_endeffector_offset * Eigen::Vector3d::UnitX();
 
     // Create a transform from the center of the domino to the top of the domino
-    // Lesson 3c
+    Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
+    target_offset.translation() =
+        default_domino_height/2.0 * Eigen::Vector3d::UnitZ();
 
     // Rotate the transform so that it matches the orientation of the end
     // effector
-    // Lesson 3d
+    target_offset.linear() =
+        _endEffector->getTransform(domino->getBodyNode(0)).linear();
 
     // Place the _target SimpleFrame at the top of the domino
-    // Lesson 3e
+    _target = std::make_shared<SimpleFrame>(Frame::World(), "target");
+    _target->setTransform(target_offset, domino->getBodyNode(0));
 
     // Set PD control gains
     _Kp_PD = 200.0;
@@ -99,15 +103,83 @@ public:
   /// Coriolis forces
   void setPDForces()
   {
-    // Lesson 2a
+    if(nullptr == _manipulator)
+      return;
 
-    // Lesson 2c
+    // Compute the joint forces needed to compensate for Coriolis forces and
+    // gravity
+    const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
+
+    // Compute the joint position error
+    Eigen::VectorXd q = _manipulator->getPositions();
+    Eigen::VectorXd dq = _manipulator->getVelocities();
+    q += dq * _manipulator->getTimeStep();
+
+    Eigen::VectorXd q_err = _qDesired - q;
+
+    // Compute the joint velocity error
+    Eigen::VectorXd dq_err = -dq;
+
+    // Compute the desired joint forces
+    const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
+    _forces = M*(_Kp_PD * q_err + _Kd_PD * dq_err) + Cg;
+
+    _manipulator->setForces(_forces);
   }
 
   /// Compute an operational space controller to push on the first domino
   void setOperationalSpaceForces()
   {
-    // Lesson 3f
+    if(nullptr == _manipulator)
+      return;
+
+    const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
+
+    // Compute the Jacobian
+    Jacobian J = _endEffector->getWorldJacobian(_offset);
+    // Compute the pseudo-inverse of the Jacobian
+    Eigen::MatrixXd pinv_J = J.transpose() * ( J * J.transpose()
+                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
+
+    // Compute the Jacobian time derivative
+    Jacobian dJ = _endEffector->getJacobianClassicDeriv(_offset);
+    // Comptue the pseudo-inverse of the Jacobian time derivative
+    Eigen::MatrixXd pinv_dJ = dJ.transpose() * ( dJ * dJ.transpose()
+                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
+
+    // Compute the linear error
+    Eigen::Vector6d e;
+    e.tail<3>() = _target->getWorldTransform().translation()
+                - _endEffector->getWorldTransform()*_offset;
+
+    // Compute the angular error
+    Eigen::AngleAxisd aa(_target->getTransform(_endEffector).linear());
+    e.head<3>() = aa.angle() * aa.axis();
+
+    // Compute the time derivative of the error
+    Eigen::Vector6d de = - _endEffector->getSpatialVelocity(
+          _offset, _target.get(), Frame::World());
+
+    // Compute the forces needed to compensate for Coriolis forces and gravity
+    const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
+
+    // Turn the control gains into matrix form
+    Eigen::Matrix6d Kp = _Kp_OS*Eigen::Matrix6d::Identity();
+
+    size_t dofs = _manipulator->getNumDofs();
+    Eigen::MatrixXd Kd = _Kd_OS * Eigen::MatrixXd::Identity(dofs, dofs);
+
+    // Compute the joint forces needed to exert the desired workspace force
+    Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+    fDesired[3] = default_push_force;
+    Eigen::VectorXd f = J.transpose() * fDesired;
+
+    // Compute the control forces
+    Eigen::VectorXd dq = _manipulator->getVelocities();
+    _forces = M * (pinv_J*Kp*de + pinv_dJ*Kp*e)
+              - Kd*dq + Kd*pinv_J*Kp*e + Cg + f;
+
+    _manipulator->setForces(_forces);
   }
 
 protected:
@@ -166,21 +238,77 @@ public:
 
   // Attempt to create a new domino. If the new domino would be in collision
   // with anything (other than the floor), then discard it.
-  void attemptToCreateDomino(double)
+  void attemptToCreateDomino(double angle)
   {
+    const SkeletonPtr& lastDomino = _dominoes.size()>0?
+          _dominoes.back() : _firstDomino;
+
+    // Compute the position for the new domino
+    Eigen::Vector3d dx = default_distance*Eigen::Vector3d(
+          cos(_totalAngle), sin(_totalAngle), 0.0);
+
+    Eigen::Vector6d x = lastDomino->getPositions();
+    x.tail<3>() += dx;
+
+    // Adjust the angle for the new domino
+    x[2] = _totalAngle + angle;
+
     // Create the new domino
-    // Lesson 1a
+    SkeletonPtr newDomino = _firstDomino->clone();
+    newDomino->setName("domino #" + std::to_string(_dominoes.size()+1));
+    newDomino->setPositions(x);
+
+    mWorld->addSkeleton(newDomino);
+
+    // Compute collisions
+    dart::collision::CollisionDetector* detector =
+        mWorld->getConstraintSolver()->getCollisionDetector();
+    detector->detectCollision(true, true);
 
     // Look through the collisions to see if any dominoes are penetrating
     // something
-    // Lesson 1b
+    bool dominoCollision = false;
+    size_t collisionCount = detector->getNumContacts();
+    for(size_t i=0; i < collisionCount; ++i)
+    {
+      // If neither of the colliding BodyNodes belongs to the floor, then we
+      // know the new domino is in contact with something it shouldn't be
+      const dart::collision::Contact& contact = detector->getContact(i);
+      if(   contact.bodyNode1.lock()->getSkeleton() != _floor
+         && contact.bodyNode2.lock()->getSkeleton() != _floor)
+      {
+        dominoCollision = true;
+        break;
+      }
+    }
+
+    if(dominoCollision)
+    {
+      // Remove the new domino, because it is penetrating an existing one
+      mWorld->removeSkeleton(newDomino);
+    }
+    else
+    {
+      // Record the latest domino addition
+      _angles.push_back(angle);
+      _dominoes.push_back(newDomino);
+      _totalAngle += angle;
+    }
   }
 
   // Delete the last domino that was added to the scene. (Do not delete the
   // original domino)
   void deleteLastDomino()
   {
-    // Lesson 1c
+    if(_dominoes.size() > 0)
+    {
+      SkeletonPtr lastDomino = _dominoes.back();
+      _dominoes.pop_back();
+      mWorld->removeSkeleton(lastDomino);
+
+      _totalAngle -= _angles.back();
+      _angles.pop_back();
+    }
   }
 
   void keyboard(unsigned char key, int x, int y) override
@@ -229,7 +357,10 @@ public:
     // order to push it over
     if(_forceCountDown > 0)
     {
-      // Lesson 1d
+      _firstDomino->getBodyNode(0)->addExtForce(
+            default_push_force*Eigen::Vector3d::UnitX(),
+            default_domino_height/2.0*Eigen::Vector3d::UnitZ());
+
       --_forceCountDown;
     }
 
