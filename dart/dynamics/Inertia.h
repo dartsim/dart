@@ -123,10 +123,6 @@ public:
   bool verify(bool _printWarnings = true,
               double _tolerance = 1e-8) const;
 
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 protected:
 
   /// Compute the spatial tensor based on the inertial parameters
