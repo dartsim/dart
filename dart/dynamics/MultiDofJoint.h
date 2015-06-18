@@ -108,6 +108,7 @@ public:
     /// The name of the DegreesOfFreedom for this Joint
     std::array<std::string, DOF> mDofNames;
 
+    /// Default constructor
     UniqueProperties(
       const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
       const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
@@ -121,6 +122,11 @@ public:
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
+
+    /// Copy constructor
+    // Note: we only need this because VS2013 lacks full support for std::array
+    // Once std::array is properly supported, this should be removed.
+    UniqueProperties(const UniqueProperties& _other);
 
     virtual ~UniqueProperties() = default;
 
@@ -136,6 +142,10 @@ public:
         const UniqueProperties& _multiDofProperties = UniqueProperties());
 
     virtual ~Properties();
+
+  public:
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// Destructor

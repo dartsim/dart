@@ -66,7 +66,34 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     mFrictions(_coulombFrictions)
 {
   for (size_t i = 0; i < DOF; ++i)
+  {
     mPreserveDofNames[i] = false;
+    mDofNames[i] = std::string();
+  }
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
+    const UniqueProperties& _other)
+  : mPositionLowerLimits(_other.mPositionLowerLimits),
+    mPositionUpperLimits(_other.mPositionUpperLimits),
+    mVelocityLowerLimits(_other.mVelocityLowerLimits),
+    mVelocityUpperLimits(_other.mVelocityUpperLimits),
+    mAccelerationLowerLimits(_other.mAccelerationLowerLimits),
+    mAccelerationUpperLimits(_other.mAccelerationUpperLimits),
+    mForceLowerLimits(_other.mForceLowerLimits),
+    mForceUpperLimits(_other.mForceUpperLimits),
+    mSpringStiffnesses(_other.mSpringStiffnesses),
+    mRestPositions(_other.mRestPositions),
+    mDampingCoefficients(_other.mDampingCoefficients),
+    mFrictions(_other.mFrictions)
+{
+  for (size_t i = 0; i < DOF; ++i)
+  {
+    mPreserveDofNames[i] = _other.mPreserveDofNames[i];
+    mDofNames[i] = _other.mDofNames[i];
+  }
 }
 
 //==============================================================================
