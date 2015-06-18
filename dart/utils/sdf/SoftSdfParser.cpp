@@ -217,7 +217,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   }
 
   SDFBodyNode sdfBodyNode;
-  sdfBodyNode.properties = std::make_shared<dynamics::SoftBodyNode::Properties>(
+  sdfBodyNode.properties =
+      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
         *standardProperties, softProperties);
   sdfBodyNode.initTransform = standardSDF.initTransform;
   sdfBodyNode.type = "soft";
