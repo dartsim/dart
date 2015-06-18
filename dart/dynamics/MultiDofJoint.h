@@ -123,6 +123,10 @@ public:
       const Vector& _coulombFrictions = Vector::Constant(0.0));
 
     virtual ~UniqueProperties() = default;
+
+  public:
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   struct Properties : Joint::Properties, UniqueProperties
