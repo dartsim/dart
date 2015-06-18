@@ -50,13 +50,15 @@ const double default_domino_mass =
     * default_domino_width
     * default_domino_depth;
 
-const double default_push_force = 8.0; // N
-const int default_push_duration = 200; // # iterations
+const double default_push_force = 8.0;  // N
+const int default_force_duration = 200; // # iterations
+const int default_push_duration = 1000;  // # iterations
 
 const double default_endeffector_offset = 0.05;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
+using namespace dart::math;
 
 class Controller
 {
@@ -71,19 +73,92 @@ public:
         default_domino_height/2.0 * Eigen::Vector3d::UnitZ();
 
     // Place the _target SimpleFrame at the top of the domino
-    _target = std::make_shared<SimpleFrame>(
-          domino->getBodyNode(0), "target", target_offset);
+    _target = std::make_shared<SimpleFrame>(Frame::World(), "target");
+    _target->setTransform(target_offset, domino->getBodyNode(0));
 
     // Grab the last body in the manipulator, and use it as an end effector
     _endEffector = _manipulator->getBodyNode(_manipulator->getNumBodyNodes()-1);
 
+    // Compute the body frame offset for the end effector
     _offset = default_endeffector_offset * Eigen::Vector3d::UnitX();
+
+    // Grab the current joint angles to use them as desired angles
+    _qDesired = _manipulator->getPositions();
+
+    // Set control gains
+    _Kp_PD = 200.0;
+    _Kd_PD =  20.0;
+
+    _Kp_OS = 5.0;
+    _Kd_OS = 1.0;
   }
 
-  void computeForces()
+  /// Compute a stable PD controller that also compensates for gravity and
+  /// Coriolis forces
+  void setPDForces()
   {
     if(nullptr == _manipulator)
       return;
+
+    // Compute the joint forces needed to compensate for Coriolis forces and
+    // gravity
+    const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
+
+    // Compute the joint position error
+    Eigen::VectorXd q = _manipulator->getPositions();
+    Eigen::VectorXd dq = _manipulator->getVelocities();
+    q += dq * _manipulator->getTimeStep();
+
+    Eigen::VectorXd q_err = _qDesired - q;
+
+    // Compute the joint velocity error
+    Eigen::VectorXd dq_err = -dq;
+
+    // Compute the desired joint forces
+    const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
+    _forces = M*(_Kp_PD * q_err + _Kd_PD * dq_err) + Cg;
+
+    _manipulator->setForces(_forces);
+  }
+
+  /// Compute an operational space controller to push on the first domino
+  void setOperationalSpaceForces()
+  {
+    if(nullptr == _manipulator)
+      return;
+
+    const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
+
+    // Compute the Jacobian
+    LinearJacobian J = _endEffector->getLinearJacobian(_offset);
+    // Compute the pseudo-inverse of the Jacobian
+    Eigen::MatrixXd pinv_J = J.transpose() * ( J * J.transpose()
+                              + 0.0025*Eigen::Matrix3d::Identity() ).inverse();
+
+    // Compute the Jacobian time derivative
+    LinearJacobian dJ = _endEffector->getLinearJacobianDeriv(_offset);
+    // Comptue the pseudo-inverse of the Jacobian time derivative
+    Eigen::MatrixXd pinv_dJ = dJ.transpose() * ( dJ * dJ.transpose()
+                              + 0.0025*Eigen::Matrix3d::Identity() ).inverse();
+
+    // Compute the error
+    Eigen::Vector3d e = _target->getWorldTransform().translation()
+                        - _endEffector->getWorldTransform()*_offset;
+
+    // Compute the time derivative of the error
+    Eigen::Vector3d de = - _endEffector->getLinearVelocity(_offset);
+
+    // Compute the forces needed to compensate for Coriolis forces and gravity
+    const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
+
+    // Turn the control gains into matrix form
+    Eigen::Matrix3d Kp = _Kp_OS * Eigen::Matrix3d::Identity();
+    size_t dofs = _manipulator->getNumDofs();
+    Eigen::MatrixXd Kd = _Kd_OS * Eigen::MatrixXd::Identity(dofs, dofs);
+
+    _forces = M * (pinv_J*Kp*de + pinv_dJ*_Kp_OS*e) + Cg + Kd*pinv_J*_Kp_OS*e;
+
+    _manipulator->setForces(_forces);
   }
 
 protected:
@@ -97,15 +172,26 @@ protected:
   /// End effector for the manipulator
   BodyNodePtr _endEffector;
 
+  /// Desired joint positions when not applying the operational space controller
+  Eigen::VectorXd _qDesired;
+
   /// The offset of the end effector from the body origin of the last BodyNode
   /// in the manipulator
   Eigen::Vector3d _offset;
 
-  /// Control gains for the proportional error terms
-  Eigen::Matrix3d _Kp;
+  /// Control gains for the proportional error terms in the PD controller
+  double _Kp_PD;
 
-  /// Control gains for the derivative error terms
-  Eigen::MatrixXd _Kd;
+  /// Control gains for the derivative error terms in the PD controller
+  double _Kd_PD;
+
+  /// Control gains for the proportional error terms in the operational space
+  /// controller
+  double _Kp_OS;
+
+  /// Control gains for the derivative error terms in the operational space
+  /// controller
+  double _Kd_OS;
 
   /// Joint forces for the manipulator (output of the Controller)
   Eigen::VectorXd _forces;
@@ -118,11 +204,15 @@ public:
   MyWindow(const WorldPtr& world)
     : _totalAngle(0.0),
       _hasEverRun(false),
+      _forceCountDown(0),
       _pushCountDown(0)
   {
     setWorld(world);
     _firstDomino = world->getSkeleton("domino");
     _floor = world->getSkeleton("floor");
+
+    _controller = std::unique_ptr<Controller>(
+          new Controller(world->getSkeleton("manipulator"), _firstDomino));
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
@@ -227,6 +317,10 @@ public:
       switch(key)
       {
         case 'f':
+          _forceCountDown = default_force_duration;
+          break;
+
+        case 'r':
           _pushCountDown = default_push_duration;
           break;
       }
@@ -239,13 +333,24 @@ public:
   {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if(_pushCountDown > 0)
+    if(_forceCountDown > 0)
     {
       _firstDomino->getBodyNode(0)->addExtForce(
             default_push_force*Eigen::Vector3d::UnitX(),
             default_domino_height/2.0*Eigen::Vector3d::UnitZ());
 
+      --_forceCountDown;
+    }
+
+    if(_pushCountDown > 0)
+    {
+      _controller->setOperationalSpaceForces();
+
       --_pushCountDown;
+    }
+    else
+    {
+      _controller->setPDForces();
     }
 
     SimWindow::timeStepping();
@@ -271,8 +376,15 @@ protected:
   /// Set to true the first time spacebar is pressed
   bool _hasEverRun;
 
-  /// The first domino will be pushed on while the value of this is positive
+  /// The first domino will be pushed by a disembodied force while the value of
+  /// this is greater than zero
+  int _forceCountDown;
+
+  /// The manipulator will attempt to push on the first domino while the value
+  /// of this is greater than zero
   int _pushCountDown;
+
+  std::unique_ptr<Controller> _controller;
 
 };
 
@@ -294,7 +406,7 @@ SkeletonPtr createDomino()
   body->addCollisionShape(box);
 
   // Set up inertia for the domino
-  Inertia inertia;
+  dart::dynamics::Inertia inertia;
   inertia.setMass(default_domino_mass);
   inertia.setMoment(box->computeInertia(default_domino_mass));
   body->setInertia(inertia);
@@ -336,6 +448,7 @@ SkeletonPtr createManipulator()
   dart::utils::DartLoader loader;
   SkeletonPtr manipulator =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+  manipulator->setName("manipulator");
 
   // Position its base in a reasonable way
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -368,7 +481,8 @@ int main(int argc, char* argv[])
   std::cout << "'d': Delete the last domino that was created" << std::endl;
   std::cout << std::endl;
   std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
-  std::cout << "'f': Push the first domino so that it falls over" << std::endl;
+  std::cout << "'f': Push the first domino with a disembodies force so that it falls over" << std::endl;
+  std::cout << "'r': Push the first domino with the manipulator so that it falls over" << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
 
   glutInit(&argc, argv);
