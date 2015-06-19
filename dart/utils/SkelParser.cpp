@@ -541,7 +541,12 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
     order.erase(index->second);
     lookup.erase(index);
     joints.erase(it);
-    it = joints.find(order.begin()->second);
+
+    IndexToJoint::iterator nextJoint = order.begin();
+    if(nextJoint == order.end())
+      break;
+
+    it = joints.find(nextJoint->second);
   }
 
   return newSkeleton;
