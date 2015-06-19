@@ -41,6 +41,7 @@ const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
 
 const double default_torque = 15.0; // N-m
+const double default_force =  15.0; // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
@@ -61,8 +62,9 @@ public:
 
   /// Constructor
   MyWindow(WorldPtr world)
-    : _weldConstraint(nullptr),
-      _positiveSign(true)
+    : _ballConstraint(nullptr),
+      _positiveSign(true),
+      _bodyForce(false)
   {
     setWorld(world);
 
@@ -73,6 +75,30 @@ public:
     assert(_pendulum != nullptr);
 
     _forceCountDown.resize(_pendulum->getNumDofs(), 0);
+
+    ArrowShape::Properties arrow_properties;
+    arrow_properties.mRadius = 0.05;
+    _arrow = std::shared_ptr<ArrowShape>(new ArrowShape(
+             Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
+             Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0),
+             arrow_properties, dart::Color::Orange(1.0)));
+  }
+
+  void changeDirection()
+  {
+    _positiveSign = !_positiveSign;
+    if(_positiveSign)
+    {
+      _arrow->setPositions(
+            Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
+            Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0));
+    }
+    else
+    {
+      _arrow->setPositions(
+            Eigen::Vector3d( default_height, 0.0, default_height/2.0),
+            Eigen::Vector3d( default_width/2.0, 0.0, default_height/2.0));
+    }
   }
 
   void applyForce(size_t index)
@@ -125,23 +151,24 @@ public:
     }
   }
 
-  /// Add a constraint to turn the bottom of the pendulum into a triangle
+  /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
     // Get the last body in the pendulum
     BodyNode* tip  = _pendulum->getBodyNode(_pendulum->getNumBodyNodes()-1);
 
-    // Weld the last link to the world
-    _weldConstraint = new dart::constraint::WeldJointConstraint(tip);
-    mWorld->getConstraintSolver()->addConstraint(_weldConstraint);
+    // Attach the last link to the world
+    _ballConstraint = new dart::constraint::BallJointConstraint(
+          tip, tip->getTransform()*Eigen::Vector3d(0.0, 0.0, default_height));
+    mWorld->getConstraintSolver()->addConstraint(_ballConstraint);
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    mWorld->getConstraintSolver()->removeConstraint(_weldConstraint);
-    delete _weldConstraint;
-    _weldConstraint = nullptr;
+    mWorld->getConstraintSolver()->removeConstraint(_ballConstraint);
+    delete _ballConstraint;
+    _ballConstraint = nullptr;
   }
 
   /// Handle keyboard input
@@ -149,6 +176,10 @@ public:
   {
     switch(key)
     {
+      case '-':
+        changeDirection();
+        break;
+
       case '1':
         applyForce(0);
         break;
@@ -180,10 +211,6 @@ public:
         applyForce(9);
         break;
 
-      case '-':
-        _positiveSign = !_positiveSign;
-        break;
-
       case 'q':
         changeRestPosition(delta_rest_position);
         break;
@@ -207,12 +234,16 @@ public:
 
       case 'r':
       {
-        if(_weldConstraint)
+        if(_ballConstraint)
           removeConstraint();
         else
           addConstraint();
         break;
       }
+
+      case 'f':
+        _bodyForce = !_bodyForce;
+        break;
 
       default:
         SimWindow::keyboard(key, x, y);
@@ -222,25 +253,72 @@ public:
   void timeStepping() override
   {
     // Reset all the shapes to be Blue
-    for(size_t i=0; i<_pendulum->getNumBodyNodes(); ++i)
+    for(size_t i = 0; i < _pendulum->getNumBodyNodes(); ++i)
     {
-      const ShapePtr& shape =
-          _pendulum->getBodyNode(i)->getVisualizationShape(0);
+      BodyNode* bn = _pendulum->getBodyNode(i);
+      for(size_t j = 0; j < 2; ++j)
+      {
+        const ShapePtr& shape = bn->getVisualizationShape(j);
 
-      shape->setColor(dart::Color::Blue());
+        shape->setColor(dart::Color::Blue());
+      }
+
+      // If we have three visualization shapes, that means the arrow is
+      // attached. We should remove it in case this body is no longer
+      // experiencing a force
+      if(bn->getNumVisualizationShapes() == 3)
+      {
+        bn->removeVisualizationShape(_arrow);
+      }
     }
 
-    // Any DOFs with an active countdown are given a joint force and colored red
-    for(size_t i=0; i<_forceCountDown.size(); ++i)
+    if(_bodyForce)
     {
-      DegreeOfFreedom* dof = _pendulum->getDof(i);
-      const ShapePtr& shape = dof->getChildBodyNode()->getVisualizationShape(0);
-
-      if(_forceCountDown[i] > 0)
+      // Apply body forces based on user input, and color the body shape red
+      for(size_t i = 0; i < _pendulum->getNumBodyNodes(); ++i)
       {
-        dof->setForce(_positiveSign? default_torque : -default_torque);
-        shape->setColor(dart::Color::Red());
-        --_forceCountDown[i];
+        if(_forceCountDown[i] > 0)
+        {
+          BodyNode* bn = _pendulum->getBodyNode(i);
+          const ShapePtr& shape = bn->getVisualizationShape(1);
+          shape->setColor(dart::Color::Red());
+
+          if(_positiveSign)
+          {
+            bn->addExtForce(
+                  default_force*Eigen::Vector3d::UnitX(),
+                  Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0),
+                  true, true);
+          }
+          else
+          {
+            bn->addExtForce(
+                  -default_force*Eigen::Vector3d::UnitX(),
+                  Eigen::Vector3d( default_width/2.0, 0.0, default_height/2.0),
+                  true, true);
+          }
+
+          bn->addVisualizationShape(_arrow);
+
+          --_forceCountDown[i];
+        }
+      }
+    }
+    else
+    {
+      // Apply joint torques based on user input, and color the Joint shape red
+      for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+      {
+        if(_forceCountDown[i] > 0)
+        {
+          DegreeOfFreedom* dof = _pendulum->getDof(i);
+          BodyNode* bn = dof->getChildBodyNode();
+          const ShapePtr& shape = bn->getVisualizationShape(0);
+
+          dof->setForce(_positiveSign? default_torque : -default_torque);
+          shape->setColor(dart::Color::Red());
+          --_forceCountDown[i];
+        }
       }
     }
 
@@ -250,17 +328,24 @@ public:
 
 protected:
 
+  /// An arrow shape that we will use to visualize applied forces
+  std::shared_ptr<ArrowShape> _arrow;
+
   /// The pendulum that we will be perturbing
   SkeletonPtr _pendulum;
 
-  /// Pointer to the weld constraint that we will be turning on and off
-  dart::constraint::WeldJointConstraint* _weldConstraint;
+  /// Pointer to the ball constraint that we will be turning on and off
+  dart::constraint::BallJointConstraint* _ballConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> _forceCountDown;
 
   /// Whether a force should be applied in the positive or negative direction
   bool _positiveSign;
+
+  /// True if 1-9 should be used to apply a body force. Otherwise, 1-9 will be
+  /// used to apply a joint torque.
+  bool _bodyForce;
 };
 
 void setGeometry(const BodyNodePtr& bn)
@@ -380,6 +465,7 @@ int main(int argc, char* argv[])
   std::cout << "'e': Increase joint damping" << std::endl;
   std::cout << "'d': Decrease joint damping" << std::endl;
   std::cout << "'r': add/remove constraint on the end of the chain" << std::endl;
+  std::cout << "'f': switch between applying joint torques and body forces" << std::endl;
 
   // Initialize glut, initialize the window, and begin the glut event loop
   glutInit(&argc, argv);
