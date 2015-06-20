@@ -92,6 +92,8 @@ template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
 using aligned_map = std::map<_Key, _Tp, _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
+#if EIGEN_VERSION_AT_LEAST(3,2,1)
+
 /// Aligned allocator that is compatible with c++11
 // Ref: https://bitbucket.org/eigen/eigen/commits/f5b7700
 // TODO: Remove this and use Eigen::aligned_allocator once new version of Eigen
@@ -145,6 +147,18 @@ inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
   return std::allocate_shared<_Tp>(Eigen::aligned_allocator_cpp11<_Tp_nc>(),
                                    std::forward<_Args>(__args)...);
 }
+
+#else
+
+template <typename _Tp, typename... _Args>
+inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
+{
+  typedef typename std::remove_const<_Tp>::type _Tp_nc;
+  return std::allocate_shared<_Tp>(Eigen::aligned_allocator<_Tp_nc>(),
+                                   std::forward<_Args>(__args)...);
+}
+
+#endif
 
 }  // namespace Eigen
 
