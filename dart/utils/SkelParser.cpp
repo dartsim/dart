@@ -516,7 +516,8 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
       // create it
       BodyMap::const_iterator rootNode = bodyNodes.find(it->second.parentName);
       SkelJoint rootJoint;
-      rootJoint.properties = std::make_shared<dynamics::FreeJoint::Properties>(
+      rootJoint.properties =
+          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
             dynamics::Joint::Properties("root", rootNode->second.initTransform));
       rootJoint.type = "free";
 
@@ -769,8 +770,9 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
   SkelBodyNode softBodyNode;
   softBodyNode.properties =
-      std::make_shared<dynamics::SoftBodyNode::Properties>(
-        *standardBodyNode.properties, newSoftBodyNode);
+      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
+          *standardBodyNode.properties, newSoftBodyNode);
+
   softBodyNode.initTransform = standardBodyNode.initTransform;
   softBodyNode.type = "soft";
 
@@ -1448,7 +1450,7 @@ SkelParser::JointPropPtr SkelParser::readWeldJoint(
 {
   assert(_jointElement != nullptr);
 
-  return std::make_shared<dynamics::WeldJoint::Properties>();
+  return Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>();
 }
 
 //==============================================================================
@@ -1504,7 +1506,8 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return std::make_shared<dynamics::RevoluteJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1560,8 +1563,10 @@ SkelParser::JointPropPtr SkelParser::readPrismaticJoint(
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return std::make_shared<dynamics::PrismaticJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
+      properties);
 }
+
 //==============================================================================
 SkelParser::JointPropPtr SkelParser::readScrewJoint(
     tinyxml2::XMLElement* _jointElement,
@@ -1622,7 +1627,8 @@ SkelParser::JointPropPtr SkelParser::readScrewJoint(
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return std::make_shared<dynamics::ScrewJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
+        properties);
 }
 
 //==============================================================================
@@ -1689,7 +1695,8 @@ SkelParser::JointPropPtr SkelParser::readUniversalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
 
-  return std::make_shared<dynamics::UniversalJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1720,7 +1727,8 @@ SkelParser::JointPropPtr SkelParser::readBallJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return std::make_shared<dynamics::BallJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1773,7 +1781,8 @@ SkelParser::JointPropPtr SkelParser::readEulerJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return std::make_shared<dynamics::EulerJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::EulerJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1808,7 +1817,8 @@ SkelParser::JointPropPtr SkelParser::readTranslationalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return std::make_shared<dynamics::TranslationalJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::TranslationalJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1890,7 +1900,8 @@ SkelParser::JointPropPtr SkelParser::readPlanarJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return std::make_shared<dynamics::PlanarJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::PlanarJoint::Properties>(
+      properties);
 }
 
 //==============================================================================
@@ -1921,7 +1932,8 @@ SkelParser::JointPropPtr SkelParser::readFreeJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 6);
 
-  return std::make_shared<dynamics::FreeJoint::Properties>(properties);
+  return Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
+      properties);
 }
 
 }  // namespace utils

@@ -123,6 +123,9 @@ public:
         double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
         double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
         bool _gravityMode = true);
+
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// Composition of Entity and BodyNode properties

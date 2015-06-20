@@ -98,7 +98,7 @@ public:
     virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
     virtual void drawList(GLuint index) override;
     virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const std::vector<Eigen::Vector2i>& _connections) override;
+                                  const Eigen::aligned_vector<Eigen::Vector2i>& _connections) override;
 
     virtual void setPenColor(const Eigen::Vector4d& _col) override;
     virtual void setPenColor(const Eigen::Vector3d& _col) override;

@@ -63,6 +63,7 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
                      double _pitch = 0.1);
+
     virtual ~UniqueProperties() = default;
   };
 
