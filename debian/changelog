@@ -1,5 +1,6 @@
 dart (5.0.0) unstable; urgency=low
 
+  * Fixed aligned memory allocation with Eigen objects
   * Added some missing API for DegreeOfFreedom
   * Replaced logMaps with Eigen::AngleAxisd
   * Improved FCL collision detector

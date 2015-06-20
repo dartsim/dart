@@ -1,5 +1,8 @@
 ### Version 5.0.0 (2015-06-15)
 
+1. Fixed aligned memory allocation with Eigen objects
+    * [Pull request #414](https://github.com/dartsim/dart/pull/414)
+
 1. Added some missing API for DegreeOfFreedom
     * [Pull request #408](https://github.com/dartsim/dart/pull/408)
 
@@ -29,6 +32,7 @@
     * [Pull request #391](https://github.com/dartsim/dart/pull/391)
     * [Pull request #392](https://github.com/dartsim/dart/pull/392)
     * [Pull request #397](https://github.com/dartsim/dart/pull/397)
+    * [Pull request #415](https://github.com/dartsim/dart/pull/415)
     * [Issue #280](https://github.com/dartsim/dart/issues/280)
     * [Issue #339](https://github.com/dartsim/dart/issues/339)
     * [Issue #370](https://github.com/dartsim/dart/issues/370)
