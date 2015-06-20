@@ -4,7 +4,7 @@ Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
                cmake,
                libeigen3-dev,
-               libfcl-dev (>= 0.2.9),
+               libfcl-dev (>= 0.2.7),
                libassimp-dev (>= 3),
                freeglut3-dev,
                libxi-dev,
