@@ -277,7 +277,8 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
       // create it
       BodyMap::const_iterator rootNode = sdfBodyNodes.find(it->second.parentName);
       SDFJoint rootJoint;
-      rootJoint.properties = std::make_shared<dynamics::FreeJoint::Properties>(
+      rootJoint.properties =
+          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
             dynamics::Joint::Properties("root", rootNode->second.initTransform));
       rootJoint.type = "free";
 
@@ -549,7 +550,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
 
   SDFBodyNode sdfBodyNode;
   sdfBodyNode.properties =
-      std::make_shared<dynamics::BodyNode::Properties>(properties);
+      Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(properties);
   sdfBodyNode.initTransform = initTransform;
 
   return sdfBodyNode;
@@ -762,19 +763,24 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
       (childWorld * childToJoint).inverse() * _skeletonFrame;
 
   if (type == std::string("prismatic"))
-    newJoint.properties = std::make_shared<dynamics::PrismaticJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
           readPrismaticJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute"))
-    newJoint.properties = std::make_shared<dynamics::RevoluteJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
           readRevoluteJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("screw"))
-    newJoint.properties = std::make_shared<dynamics::ScrewJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
           readScrewJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute2"))
-    newJoint.properties = std::make_shared<dynamics::UniversalJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
           readUniversalJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("ball"))
-    newJoint.properties = std::make_shared<dynamics::BallJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
           readBallJoint(_jointElement, parentModelFrame, name));
 
   newJoint.type = type;

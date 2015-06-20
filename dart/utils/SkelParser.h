@@ -107,7 +107,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
   // first: BodyNode name | second: BodyNode information
-  typedef std::map<std::string, SkelBodyNode> BodyMap;
+  typedef Eigen::aligned_map<std::string, SkelBodyNode> BodyMap;
 
   typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
   struct SkelJoint

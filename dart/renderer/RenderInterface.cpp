@@ -140,7 +140,8 @@ void RenderInterface::drawList(unsigned int indeX)
 {
 }
 
-void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&, const std::vector<Eigen::Vector2i>&)
+void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&,
+                                       const Eigen::aligned_vector<Eigen::Vector2i>&)
 {
 }
 
