@@ -45,7 +45,7 @@ const double default_force =  15.0; // N
 const int default_countdown = 200;  // Number of timesteps for applying force
 
 const double default_rest_position = 0.0;
-const double delta_rest_position = 10.0*M_PI/180.0;
+const double delta_rest_position = 10.0 * M_PI / 180.0;
 
 const double default_stiffness = 0.0;
 const double delta_stiffness = 10;
@@ -62,76 +62,76 @@ public:
 
   /// Constructor
   MyWindow(WorldPtr world)
-    : _ballConstraint(nullptr),
-      _positiveSign(true),
-      _bodyForce(false)
+    : mBallConstraint(nullptr),
+      mPositiveSign(true),
+      mBodyForce(false)
   {
     setWorld(world);
 
     // Find the Skeleton named "pendulum" within the World
-    _pendulum = world->getSkeleton("pendulum");
+    mPendulum = world->getSkeleton("pendulum");
 
     // Make sure that the pendulum was found in the World
-    assert(_pendulum != nullptr);
+    assert(mPendulum != nullptr);
 
-    _forceCountDown.resize(_pendulum->getNumDofs(), 0);
+    mForceCountDown.resize(mPendulum->getNumDofs(), 0);
 
     ArrowShape::Properties arrow_properties;
     arrow_properties.mRadius = 0.05;
-    _arrow = std::shared_ptr<ArrowShape>(new ArrowShape(
-             Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
-             Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0),
+    mArrow = std::shared_ptr<ArrowShape>(new ArrowShape(
+             Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
+             Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
              arrow_properties, dart::Color::Orange(1.0)));
   }
 
   void changeDirection()
   {
-    _positiveSign = !_positiveSign;
-    if(_positiveSign)
+    mPositiveSign = !mPositiveSign;
+    if(mPositiveSign)
     {
-      _arrow->setPositions(
-            Eigen::Vector3d(-default_height, 0.0, default_height/2.0),
-            Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0));
+      mArrow->setPositions(
+            Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
+            Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0));
     }
     else
     {
-      _arrow->setPositions(
-            Eigen::Vector3d( default_height, 0.0, default_height/2.0),
-            Eigen::Vector3d( default_width/2.0, 0.0, default_height/2.0));
+      mArrow->setPositions(
+            Eigen::Vector3d(default_height, 0.0, default_height / 2.0),
+            Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0));
     }
   }
 
   void applyForce(size_t index)
   {
-    if(index < _forceCountDown.size())
-      _forceCountDown[index] = default_countdown;
+    if(index < mForceCountDown.size())
+      mForceCountDown[index] = default_countdown;
   }
 
   void changeRestPosition(double delta)
   {
-    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
-      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      DegreeOfFreedom* dof = mPendulum->getDof(i);
       double q0 = dof->getRestPosition() + delta;
 
       // The system becomes numerically unstable when the rest position exceeds
       // 90 degrees
-      if(std::abs(q0) > 90.0*M_PI/180.0)
-        q0 = q0>0? 90.0*M_PI/180.0 : -90.0*M_PI/180.0;
+      if(std::abs(q0) > 90.0 * M_PI / 180.0)
+        q0 = q0 > 0 ? 90.0 * M_PI / 180.0 : -90.0 * M_PI / 180.0;
 
       dof->setRestPosition(q0);
     }
 
     // Only curl up along one axis in the BallJoint
-    _pendulum->getDof(0)->setRestPosition(0.0);
-    _pendulum->getDof(2)->setRestPosition(0.0);
+    mPendulum->getDof(0)->setRestPosition(0.0);
+    mPendulum->getDof(2)->setRestPosition(0.0);
   }
 
   void changeStiffness(double delta)
   {
-    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
-      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
       if(stiffness < 0.0)
         stiffness = 0.0;
@@ -141,9 +141,9 @@ public:
 
   void changeDamping(double delta)
   {
-    for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
-      DegreeOfFreedom* dof = _pendulum->getDof(i);
+      DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
       if(damping < 0.0)
         damping = 0.0;
@@ -155,20 +155,20 @@ public:
   void addConstraint()
   {
     // Get the last body in the pendulum
-    BodyNode* tip  = _pendulum->getBodyNode(_pendulum->getNumBodyNodes()-1);
+    BodyNode* tip  = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
 
     // Attach the last link to the world
-    _ballConstraint = new dart::constraint::BallJointConstraint(
-          tip, tip->getTransform()*Eigen::Vector3d(0.0, 0.0, default_height));
-    mWorld->getConstraintSolver()->addConstraint(_ballConstraint);
+    mBallConstraint = new dart::constraint::BallJointConstraint(
+          tip, tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height));
+    mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    mWorld->getConstraintSolver()->removeConstraint(_ballConstraint);
-    delete _ballConstraint;
-    _ballConstraint = nullptr;
+    mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
+    delete mBallConstraint;
+    mBallConstraint = nullptr;
   }
 
   /// Handle keyboard input
@@ -234,7 +234,7 @@ public:
 
       case 'r':
       {
-        if(_ballConstraint)
+        if(mBallConstraint)
           removeConstraint();
         else
           addConstraint();
@@ -242,7 +242,7 @@ public:
       }
 
       case 'f':
-        _bodyForce = !_bodyForce;
+        mBodyForce = !mBodyForce;
         break;
 
       default:
@@ -253,9 +253,9 @@ public:
   void timeStepping() override
   {
     // Reset all the shapes to be Blue
-    for(size_t i = 0; i < _pendulum->getNumBodyNodes(); ++i)
+    for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
-      BodyNode* bn = _pendulum->getBodyNode(i);
+      BodyNode* bn = mPendulum->getBodyNode(i);
       for(size_t j = 0; j < 2; ++j)
       {
         const ShapePtr& shape = bn->getVisualizationShape(j);
@@ -268,56 +268,56 @@ public:
       // experiencing a force
       if(bn->getNumVisualizationShapes() == 3)
       {
-        bn->removeVisualizationShape(_arrow);
+        bn->removeVisualizationShape(mArrow);
       }
     }
 
-    if(_bodyForce)
+    if(mBodyForce)
     {
       // Apply body forces based on user input, and color the body shape red
-      for(size_t i = 0; i < _pendulum->getNumBodyNodes(); ++i)
+      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
       {
-        if(_forceCountDown[i] > 0)
+        if(mForceCountDown[i] > 0)
         {
-          BodyNode* bn = _pendulum->getBodyNode(i);
+          BodyNode* bn = mPendulum->getBodyNode(i);
           const ShapePtr& shape = bn->getVisualizationShape(1);
           shape->setColor(dart::Color::Red());
 
-          if(_positiveSign)
+          if(mPositiveSign)
           {
             bn->addExtForce(
                   default_force*Eigen::Vector3d::UnitX(),
-                  Eigen::Vector3d(-default_width/2.0, 0.0, default_height/2.0),
+                  Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
                   true, true);
           }
           else
           {
             bn->addExtForce(
                   -default_force*Eigen::Vector3d::UnitX(),
-                  Eigen::Vector3d( default_width/2.0, 0.0, default_height/2.0),
+                  Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0),
                   true, true);
           }
 
-          bn->addVisualizationShape(_arrow);
+          bn->addVisualizationShape(mArrow);
 
-          --_forceCountDown[i];
+          --mForceCountDown[i];
         }
       }
     }
     else
     {
       // Apply joint torques based on user input, and color the Joint shape red
-      for(size_t i=0; i<_pendulum->getNumDofs(); ++i)
+      for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
       {
-        if(_forceCountDown[i] > 0)
+        if(mForceCountDown[i] > 0)
         {
-          DegreeOfFreedom* dof = _pendulum->getDof(i);
+          DegreeOfFreedom* dof = mPendulum->getDof(i);
           BodyNode* bn = dof->getChildBodyNode();
           const ShapePtr& shape = bn->getVisualizationShape(0);
 
-          dof->setForce(_positiveSign? default_torque : -default_torque);
+          dof->setForce(mPositiveSign ? default_torque : -default_torque);
           shape->setColor(dart::Color::Red());
-          --_forceCountDown[i];
+          --mForceCountDown[i];
         }
       }
     }
@@ -329,23 +329,23 @@ public:
 protected:
 
   /// An arrow shape that we will use to visualize applied forces
-  std::shared_ptr<ArrowShape> _arrow;
+  std::shared_ptr<ArrowShape> mArrow;
 
   /// The pendulum that we will be perturbing
-  SkeletonPtr _pendulum;
+  SkeletonPtr mPendulum;
 
   /// Pointer to the ball constraint that we will be turning on and off
-  dart::constraint::BallJointConstraint* _ballConstraint;
+  dart::constraint::BallJointConstraint* mBallConstraint;
 
   /// Number of iterations before clearing a force entry
-  std::vector<int> _forceCountDown;
+  std::vector<int> mForceCountDown;
 
   /// Whether a force should be applied in the positive or negative direction
-  bool _positiveSign;
+  bool mPositiveSign;
 
   /// True if 1-9 should be used to apply a body force. Otherwise, 1-9 will be
   /// used to apply a joint torque.
-  bool _bodyForce;
+  bool mBodyForce;
 };
 
 void setGeometry(const BodyNodePtr& bn)
@@ -357,7 +357,7 @@ void setGeometry(const BodyNodePtr& bn)
 
   // Set the location of the Box
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
-  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_height/2.0);
+  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_height / 2.0);
   box_tf.translation() = center;
   box->setLocalTransform(box_tf);
 
@@ -372,7 +372,7 @@ void setGeometry(const BodyNodePtr& bn)
 BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
 {
   BallJoint::Properties properties;
-  properties.mName = name+"_joint";
+  properties.mName = name + "_joint";
   properties.mRestPositions = Eigen::Vector3d::Constant(default_rest_position);
   properties.mSpringStiffnesses = Eigen::Vector3d::Constant(default_stiffness);
   properties.mDampingCoefficients = Eigen::Vector3d::Constant(default_damping);
@@ -398,7 +398,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum,
 {
   // Set up the properties for the Joint
   RevoluteJoint::Properties properties;
-  properties.mName = name+"_joint";
+  properties.mName = name + "_joint";
   properties.mAxis = Eigen::Vector3d::UnitY();
   properties.mT_ParentBodyToJoint.translation() =
       Eigen::Vector3d(0, 0, default_height);
@@ -411,7 +411,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum,
         parent, properties, BodyNode::Properties(name)).second;
 
   // Make a shape for the Joint
-  const double R = default_width/2.0;
+  const double R = default_width / 2.0;
   const double h = default_depth;
   std::shared_ptr<CylinderShape> cyl(
         new CylinderShape(R, h));
@@ -420,7 +420,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum,
   // Line up the cylinder with the Joint axis
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.linear() = dart::math::eulerXYZToMatrix(
-        Eigen::Vector3d(90.0*M_PI/180.0, 0, 0));
+        Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
   cyl->setLocalTransform(tf);
 
   bn->addVisualizationShape(cyl);
@@ -445,7 +445,7 @@ int main(int argc, char* argv[])
 
   // Set the initial position of the first DegreeOfFreedom so that the pendulum
   // starts to swing right away
-  pendulum->getDof(1)->setPosition(120*M_PI/180.0);
+  pendulum->getDof(1)->setPosition(120 * M_PI / 180.0);
 
   // Create a world and add the pendulum to the world
   WorldPtr world(new World);

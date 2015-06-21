@@ -37,11 +37,11 @@
 #include "dart/dart.h"
 
 const double default_domino_height = 0.3;
-const double default_domino_width = 0.4*default_domino_height;
-const double default_domino_depth = default_domino_width/5.0;
+const double default_domino_width = 0.4 * default_domino_height;
+const double default_domino_depth = default_domino_width / 5.0;
 
-const double default_distance = default_domino_height/2.0;
-const double default_angle = 20.0*M_PI/180.0;
+const double default_distance = default_domino_height / 2.0;
+const double default_angle = 20.0 * M_PI / 180.0;
 
 const double default_domino_density = 2.6e3; // kg/m^3
 const double default_domino_mass =
@@ -54,7 +54,7 @@ const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
 const int default_push_duration = 1000;  // # iterations
 
-const double default_endeffector_offset = 0.05;
+const double defaultmEndEffectormOffset = 0.05;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -65,7 +65,7 @@ class Controller
 public:
 
   Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
-    : _manipulator(manipulator)
+    : mManipulator(manipulator)
   {
     // Grab the current joint angles to use them as desired angles
     // Lesson 2b
@@ -83,16 +83,16 @@ public:
     // effector
     // Lesson 3d
 
-    // Place the _target SimpleFrame at the top of the domino
+    // Place the mTarget SimpleFrame at the top of the domino
     // Lesson 3e
 
     // Set PD control gains
-    _Kp_PD = 200.0;
-    _Kd_PD =  20.0;
+    mKpPD = 200.0;
+    mKdPD =  20.0;
 
     // Set operational space control gains
-    _Kp_OS = 5.0;
-    _Kd_OS = 0.01;
+    mKpOS = 5.0;
+    mKdOS = 0.01;
   }
 
   /// Compute a stable PD controller that also compensates for gravity and
@@ -113,37 +113,37 @@ public:
 protected:
 
   /// The manipulator Skeleton that we will be controlling
-  SkeletonPtr _manipulator;
+  SkeletonPtr mManipulator;
 
   /// The target pose for the controller
-  SimpleFramePtr _target;
+  SimpleFramePtr mTarget;
 
   /// End effector for the manipulator
-  BodyNodePtr _endEffector;
+  BodyNodePtr mEndEffector;
 
   /// Desired joint positions when not applying the operational space controller
-  Eigen::VectorXd _qDesired;
+  Eigen::VectorXd mQDesired;
 
   /// The offset of the end effector from the body origin of the last BodyNode
   /// in the manipulator
-  Eigen::Vector3d _offset;
+  Eigen::Vector3d mOffset;
 
   /// Control gains for the proportional error terms in the PD controller
-  double _Kp_PD;
+  double mKpPD;
 
   /// Control gains for the derivative error terms in the PD controller
-  double _Kd_PD;
+  double mKdPD;
 
   /// Control gains for the proportional error terms in the operational
   /// space controller
-  double _Kp_OS;
+  double mKpOS;
 
   /// Control gains for the derivative error terms in the operational space
   /// controller
-  double _Kd_OS;
+  double mKdOS;
 
   /// Joint forces for the manipulator (output of the Controller)
-  Eigen::VectorXd _forces;
+  Eigen::VectorXd mForces;
 };
 
 class MyWindow : public dart::gui::SimWindow
@@ -151,17 +151,17 @@ class MyWindow : public dart::gui::SimWindow
 public:
 
   MyWindow(const WorldPtr& world)
-    : _totalAngle(0.0),
-      _hasEverRun(false),
-      _forceCountDown(0),
-      _pushCountDown(0)
+    : mTotalAngle(0.0),
+      mHasEverRun(false),
+      mForceCountDown(0),
+      mPushCountDown(0)
   {
     setWorld(world);
-    _firstDomino = world->getSkeleton("domino");
-    _floor = world->getSkeleton("floor");
+    mFirstDomino = world->getSkeleton("domino");
+    mFloor = world->getSkeleton("floor");
 
-    _controller = std::unique_ptr<Controller>(
-          new Controller(world->getSkeleton("manipulator"), _firstDomino));
+    mController = std::unique_ptr<Controller>(
+          new Controller(world->getSkeleton("manipulator"), mFirstDomino));
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
@@ -185,7 +185,7 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-    if(!_hasEverRun)
+    if(!mHasEverRun)
     {
       switch(key)
       {
@@ -202,7 +202,7 @@ public:
           deleteLastDomino();
           break;
         case ' ':
-          _hasEverRun = true;
+          mHasEverRun = true;
           break;
       }
     }
@@ -211,11 +211,11 @@ public:
       switch(key)
       {
         case 'f':
-          _forceCountDown = default_force_duration;
+          mForceCountDown = default_force_duration;
           break;
 
         case 'r':
-          _pushCountDown = default_push_duration;
+          mPushCountDown = default_push_duration;
           break;
       }
     }
@@ -227,21 +227,21 @@ public:
   {
     // If the user has pressed the 'f' key, apply a force to the first domino in
     // order to push it over
-    if(_forceCountDown > 0)
+    if(mForceCountDown > 0)
     {
       // Lesson 1d
-      --_forceCountDown;
+      --mForceCountDown;
     }
 
     // Run the controller for the manipulator
-    if(_pushCountDown > 0)
+    if(mPushCountDown > 0)
     {
-      _controller->setOperationalSpaceForces();
-      --_pushCountDown;
+      mController->setOperationalSpaceForces();
+      --mPushCountDown;
     }
     else
     {
-      _controller->setPDForces();
+      mController->setPDForces();
     }
 
     SimWindow::timeStepping();
@@ -250,32 +250,32 @@ public:
 protected:
 
   /// Base domino. Used to clone new dominoes.
-  SkeletonPtr _firstDomino;
+  SkeletonPtr mFirstDomino;
 
   /// Floor of the scene
-  SkeletonPtr _floor;
+  SkeletonPtr mFloor;
 
   /// History of the dominoes that have been created
-  std::vector<SkeletonPtr> _dominoes;
+  std::vector<SkeletonPtr> mDominoes;
 
   /// History of the angles that the user has specified
-  std::vector<double> _angles;
+  std::vector<double> mAngles;
 
   /// Sum of all angles so far
-  double _totalAngle;
+  double mTotalAngle;
 
   /// Set to true the first time spacebar is pressed
-  bool _hasEverRun;
+  bool mHasEverRun;
 
   /// The first domino will be pushed by a disembodied force while the value of
   /// this is greater than zero
-  int _forceCountDown;
+  int mForceCountDown;
 
   /// The manipulator will attempt to push on the first domino while the value
   /// of this is greater than zero
-  int _pushCountDown;
+  int mPushCountDown;
 
-  std::unique_ptr<Controller> _controller;
+  std::unique_ptr<Controller> mController;
 
 };
 
@@ -302,7 +302,7 @@ SkeletonPtr createDomino()
   inertia.setMoment(box->computeInertia(default_domino_mass));
   body->setInertia(inertia);
 
-  domino->getDof("Joint_pos_z")->setPosition(default_domino_height/2.0);
+  domino->getDof("Joint_pos_z")->setPosition(default_domino_height / 2.0);
 
   return domino;
 }
@@ -327,7 +327,7 @@ SkeletonPtr createFloor()
 
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height/2.0);
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
