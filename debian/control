@@ -13,19 +13,19 @@ Build-Depends: debhelper (>= 9),
                libtinyxml-dev,
                libtinyxml2-dev,
                liburdfdom-dev
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Section: libs
 Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git
 Vcs-Browser: https://github.com/dartsim/dart
 
-Package: libdart-core4-dev
+Package: libdart-core5-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: multiarch-support
-Conflicts: libdart-core3-dev
+Conflicts: libdart-core3-dev, libdart-core4-dev
 Depends: ${misc:Depends},
-         libdart-core4.3 (= ${binary:Version}),
+         libdart-core5.0 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
          libfcl-dev
@@ -53,13 +53,13 @@ Description: Dynamic Animation and Robotics Toolkit, core development files
  Multibody dynamic simulation in DART is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
-Package: libdart4-dev
+Package: libdart5-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: multiarch-support
 Depends: ${misc:Depends},
-         libdart-core4-dev,
-         libdart4.3 (= ${binary:Version}),
+         libdart-core5-dev,
+         libdart5.0 (= ${binary:Version}),
          freeglut3-dev,
          libxi-dev,
          libxmu-dev,
@@ -89,7 +89,7 @@ Description: Dynamic Animation and Robotics Toolkit, development files
  software created by the Georgia Tech Graphics Lab.
 
 
-Package: libdart-core4.3
+Package: libdart-core5.0
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
@@ -119,7 +119,7 @@ Description: Dynamic Animation and Robotics Toolkit, core library files
  Multibody dynamic simulation in DART is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
-Package: libdart4.3
+Package: libdart5.0
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
