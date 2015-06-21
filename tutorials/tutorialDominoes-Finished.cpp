@@ -37,11 +37,11 @@
 #include "dart/dart.h"
 
 const double default_domino_height = 0.3;
-const double default_domino_width = 0.4*default_domino_height;
-const double default_domino_depth = default_domino_width/5.0;
+const double default_domino_width = 0.4 * default_domino_height;
+const double default_domino_depth = default_domino_width / 5.0;
 
-const double default_distance = default_domino_height/2.0;
-const double default_angle = 20.0*M_PI/180.0;
+const double default_distance = default_domino_height / 2.0;
+const double default_angle = 20.0 * M_PI / 180.0;
 
 const double default_domino_density = 2.6e3; // kg/m^3
 const double default_domino_mass =
@@ -79,7 +79,7 @@ public:
     // Create a transform from the center of the domino to the top of the domino
     Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
     target_offset.translation() =
-        default_domino_height/2.0 * Eigen::Vector3d::UnitZ();
+        default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
 
     // Rotate the transform so that it matches the orientation of the end
     // effector
@@ -92,7 +92,7 @@ public:
 
     // Set PD control gains
     _Kp_PD = 200.0;
-    _Kd_PD =  20.0;
+    _Kd_PD = 20.0;
 
     // Set operational space control gains
     _Kp_OS = 5.0;
@@ -122,7 +122,7 @@ public:
 
     // Compute the desired joint forces
     const Eigen::MatrixXd& M = _manipulator->getMassMatrix();
-    _forces = M*(_Kp_PD * q_err + _Kd_PD * dq_err) + Cg;
+    _forces = M * (_Kp_PD * q_err + _Kd_PD * dq_err) + Cg;
 
     _manipulator->setForces(_forces);
   }
@@ -138,33 +138,33 @@ public:
     // Compute the Jacobian
     Jacobian J = _endEffector->getWorldJacobian(_offset);
     // Compute the pseudo-inverse of the Jacobian
-    Eigen::MatrixXd pinv_J = J.transpose() * ( J * J.transpose()
-                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
+    Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
+                              + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
     // Compute the Jacobian time derivative
     Jacobian dJ = _endEffector->getJacobianClassicDeriv(_offset);
     // Comptue the pseudo-inverse of the Jacobian time derivative
-    Eigen::MatrixXd pinv_dJ = dJ.transpose() * ( dJ * dJ.transpose()
-                              + 0.0025*Eigen::Matrix6d::Identity() ).inverse();
+    Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
+                              + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
     // Compute the linear error
     Eigen::Vector6d e;
     e.tail<3>() = _target->getWorldTransform().translation()
-                - _endEffector->getWorldTransform()*_offset;
+                - _endEffector->getWorldTransform() * _offset;
 
     // Compute the angular error
     Eigen::AngleAxisd aa(_target->getTransform(_endEffector).linear());
     e.head<3>() = aa.angle() * aa.axis();
 
     // Compute the time derivative of the error
-    Eigen::Vector6d de = - _endEffector->getSpatialVelocity(
+    Eigen::Vector6d de = -_endEffector->getSpatialVelocity(
           _offset, _target.get(), Frame::World());
 
     // Compute the forces needed to compensate for Coriolis forces and gravity
     const Eigen::VectorXd& Cg = _manipulator->getCoriolisAndGravityForces();
 
     // Turn the control gains into matrix form
-    Eigen::Matrix6d Kp = _Kp_OS*Eigen::Matrix6d::Identity();
+    Eigen::Matrix6d Kp = _Kp_OS * Eigen::Matrix6d::Identity();
 
     size_t dofs = _manipulator->getNumDofs();
     Eigen::MatrixXd Kd = _Kd_OS * Eigen::MatrixXd::Identity(dofs, dofs);
@@ -176,8 +176,8 @@ public:
 
     // Compute the control forces
     Eigen::VectorXd dq = _manipulator->getVelocities();
-    _forces = M * (pinv_J*Kp*de + pinv_dJ*Kp*e)
-              - Kd*dq + Kd*pinv_J*Kp*e + Cg + f;
+    _forces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e)
+              - Kd * dq + Kd * pinv_J * Kp * e + Cg + f;
 
     _manipulator->setForces(_forces);
   }
@@ -240,11 +240,11 @@ public:
   // with anything (other than the floor), then discard it.
   void attemptToCreateDomino(double angle)
   {
-    const SkeletonPtr& lastDomino = _dominoes.size()>0?
+    const SkeletonPtr& lastDomino = _dominoes.size() > 0 ?
           _dominoes.back() : _firstDomino;
 
     // Compute the position for the new domino
-    Eigen::Vector3d dx = default_distance*Eigen::Vector3d(
+    Eigen::Vector3d dx = default_distance * Eigen::Vector3d(
           cos(_totalAngle), sin(_totalAngle), 0.0);
 
     Eigen::Vector6d x = lastDomino->getPositions();
@@ -255,7 +255,7 @@ public:
 
     // Create the new domino
     SkeletonPtr newDomino = _firstDomino->clone();
-    newDomino->setName("domino #" + std::to_string(_dominoes.size()+1));
+    newDomino->setName("domino #" + std::to_string(_dominoes.size() + 1));
     newDomino->setPositions(x);
 
     mWorld->addSkeleton(newDomino);
@@ -269,12 +269,12 @@ public:
     // something
     bool dominoCollision = false;
     size_t collisionCount = detector->getNumContacts();
-    for(size_t i=0; i < collisionCount; ++i)
+    for(size_t i = 0; i < collisionCount; ++i)
     {
       // If neither of the colliding BodyNodes belongs to the floor, then we
       // know the new domino is in contact with something it shouldn't be
       const dart::collision::Contact& contact = detector->getContact(i);
-      if(   contact.bodyNode1.lock()->getSkeleton() != _floor
+      if(contact.bodyNode1.lock()->getSkeleton() != _floor
          && contact.bodyNode2.lock()->getSkeleton() != _floor)
       {
         dominoCollision = true;
@@ -318,7 +318,7 @@ public:
       switch(key)
       {
         case 'q':
-          attemptToCreateDomino( default_angle);
+          attemptToCreateDomino(default_angle);
           break;
         case 'w':
           attemptToCreateDomino(0.0);
@@ -358,8 +358,8 @@ public:
     if(_forceCountDown > 0)
     {
       _firstDomino->getBodyNode(0)->addExtForce(
-            default_push_force*Eigen::Vector3d::UnitX(),
-            default_domino_height/2.0*Eigen::Vector3d::UnitZ());
+            default_push_force * Eigen::Vector3d::UnitX(),
+            default_domino_height / 2.0 * Eigen::Vector3d::UnitZ());
 
       --_forceCountDown;
     }
@@ -433,7 +433,7 @@ SkeletonPtr createDomino()
   inertia.setMoment(box->computeInertia(default_domino_mass));
   body->setInertia(inertia);
 
-  domino->getDof("Joint_pos_z")->setPosition(default_domino_height/2.0);
+  domino->getDof("Joint_pos_z")->setPosition(default_domino_height / 2.0);
 
   return domino;
 }
@@ -458,7 +458,7 @@ SkeletonPtr createFloor()
 
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height/2.0);
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height / 2.0);
   body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
@@ -478,8 +478,8 @@ SkeletonPtr createManipulator()
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
   // Get it into a useful configuration
-  manipulator->getDof(1)->setPosition( 140.0*M_PI/180.0);
-  manipulator->getDof(2)->setPosition(-140.0*M_PI/180.0);
+  manipulator->getDof(1)->setPosition(140.0 * M_PI / 180.0);
+  manipulator->getDof(2)->setPosition(-140.0 * M_PI / 180.0);
 
   return manipulator;
 }
