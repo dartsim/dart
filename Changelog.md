@@ -1,3 +1,139 @@
+### Version 5.0.0 (2015-06-15)
+
+1. Fixed aligned memory allocation with Eigen objects
+    * [Pull request #414](https://github.com/dartsim/dart/pull/414)
+
+1. Added some missing API for DegreeOfFreedom
+    * [Pull request #408](https://github.com/dartsim/dart/pull/408)
+
+1. Replaced logMaps with Eigen::AngleAxisd
+    * [Pull request #407](https://github.com/dartsim/dart/pull/407)
+
+1. Improved FCL collision detector
+    * [Pull request #405](https://github.com/dartsim/dart/pull/405)
+
+1. Removed deprecated API and suppressed warnings
+    * [Pull request #404](https://github.com/dartsim/dart/pull/404)
+
+1. Added use of OpenGL's multisample anti-aliasing
+    * [Pull request #402](https://github.com/dartsim/dart/pull/402)
+
+1. Added computation of differences of generalized coordinates
+    * [Pull request #389](https://github.com/dartsim/dart/pull/389)
+    * [Issue #290](https://github.com/dartsim/dart/issues/290)
+
+1. Added deprecated and force-linline definitions for clang
+    * [Pull request #384](https://github.com/dartsim/dart/pull/384)
+    * [Issue #379](https://github.com/dartsim/dart/issues/379)
+
+1. Eradicated memory leaks and maked classes copy-safe and clonable
+    * [Pull request #369](https://github.com/dartsim/dart/pull/369)
+    * [Pull request #390](https://github.com/dartsim/dart/pull/390)
+    * [Pull request #391](https://github.com/dartsim/dart/pull/391)
+    * [Pull request #392](https://github.com/dartsim/dart/pull/392)
+    * [Pull request #397](https://github.com/dartsim/dart/pull/397)
+    * [Pull request #415](https://github.com/dartsim/dart/pull/415)
+    * [Issue #280](https://github.com/dartsim/dart/issues/280)
+    * [Issue #339](https://github.com/dartsim/dart/issues/339)
+    * [Issue #370](https://github.com/dartsim/dart/issues/370)
+    * [Issue #383](https://github.com/dartsim/dart/issues/383)
+
+1. Improved PlaneShape constructors
+    * [Pull request #366](https://github.com/dartsim/dart/pull/366)
+    * [Pull request #377](https://github.com/dartsim/dart/pull/377)
+    * [Issue #373](https://github.com/dartsim/dart/issues/373)
+
+1. Added appveyor options for parallel build and detailed log
+    * [Pull request #365](https://github.com/dartsim/dart/pull/365)
+
+1. Improved robustness and package handling for URDF parsing
+    * [Pull request #364](https://github.com/dartsim/dart/pull/364)
+
+1. Fixed bug in BodyNode::_updateBodyJacobianSpatialDeriv()
+    * [Pull request #363](https://github.com/dartsim/dart/pull/363)
+
+1. Added alpha channel and Color functions
+    * [Pull request #359](https://github.com/dartsim/dart/pull/359)
+    * [Issue #358](https://github.com/dartsim/dart/issues/358)
+
+1. Added Jacobian getters to Skeleton
+    * [Pull request #357](https://github.com/dartsim/dart/pull/357)
+
+1. Added ArrowShape for visualizing arrows
+    * [Pull request #356](https://github.com/dartsim/dart/pull/356)
+
+1. Fixed matrix dimension bug in operationalSpaceControl app
+    * [Pull request #354](https://github.com/dartsim/dart/pull/354)
+
+1. Added build type definitions
+    * [Pull request #353](https://github.com/dartsim/dart/pull/353)
+
+1. Added Signal class
+    * [Pull request #350](https://github.com/dartsim/dart/pull/350)
+
+1. Added LineSegmentShape for visualizing line segments
+    * [Pull request #349](https://github.com/dartsim/dart/pull/349)
+    * [Issue #346](https://github.com/dartsim/dart/issues/346)
+
+1. Fixed segfault in SoftSdfParser
+    * [Pull request #345](https://github.com/dartsim/dart/pull/345)
+
+1. Added subscriptions for destructions and notifications
+    * [Pull request #343](https://github.com/dartsim/dart/pull/343)
+
+1. Added NloptSolver::[get/set]NumMaxEvaluations()
+    * [Pull request #342](https://github.com/dartsim/dart/pull/342)
+
+1. Added support of Eigen::VectorXd in parser
+    * [Pull request #341](https://github.com/dartsim/dart/pull/341)
+
+1. Added Skeleton::getNumJoints()
+    * [Pull request #335](https://github.com/dartsim/dart/pull/335)
+
+1. Fixed bug in DARTCollide for sphere-sphere collision
+    * [Pull request #332](https://github.com/dartsim/dart/pull/332)
+
+1. Fixed naming issues for Skeletons in World
+    * [Pull request #331](https://github.com/dartsim/dart/pull/331)
+    * [Issue #330](https://github.com/dartsim/dart/issues/330)
+
+1. Added PlanarJoint support for URDF loader
+    * [Pull request #326](https://github.com/dartsim/dart/pull/326)
+
+1. Fixed rotation of the inertia reference frame for URDF loader
+    * [Pull request #326](https://github.com/dartsim/dart/pull/326)
+    * [Issue #47](https://github.com/dartsim/dart/issues/47)
+
+1. Fixed bug in loading WorldFile
+    * [Pull request #325](https://github.com/dartsim/dart/pull/325)
+
+1. Added plotting of 2D trajectories
+    * [Pull request #324](https://github.com/dartsim/dart/pull/324)
+
+1. Removed unsupported axis orders of EulerJoint
+    * [Pull request #323](https://github.com/dartsim/dart/pull/323)
+    * [Issue #321](https://github.com/dartsim/dart/issues/321)
+
+1. Added convenience functions to help with setting joint positions
+    * [Pull request #322](https://github.com/dartsim/dart/pull/322)
+    * [Pull request #338](https://github.com/dartsim/dart/pull/338)
+
+1. Added Frame class and auto-updating for forward kinematics
+    * [Pull request #319](https://github.com/dartsim/dart/pull/319)
+    * [Pull request #344](https://github.com/dartsim/dart/pull/344)
+    * [Pull request #367](https://github.com/dartsim/dart/pull/367)
+    * [Pull request #380](https://github.com/dartsim/dart/pull/380)
+    * [Issue #289](https://github.com/dartsim/dart/issues/289)
+    * [Issue #294](https://github.com/dartsim/dart/issues/294)
+    * [Issue #305](https://github.com/dartsim/dart/issues/305)
+
+1. Added Travis-CI build test for OSX
+    * [Pull request #313](https://github.com/dartsim/dart/pull/313)
+    * [Issue #258](https://github.com/dartsim/dart/issues/258)
+
+1. Added specification of minimum dependency version
+    * [Pull request #306](https://github.com/dartsim/dart/pull/306)
+
 ### Version 4.3.4 (2015-01-24)
 
 1. Fixed build issue with gtest on Mac
@@ -39,6 +175,9 @@
     * [Pull request #272](https://github.com/dartsim/dart/pull/272)
 1. Fixed const-correctneess of member functions
     * [Pull request #277](https://github.com/dartsim/dart/pull/277)
+1. Added handling use of 'package:/' in URDF
+    * [Pull request #273](https://github.com/dartsim/dart/pull/273)
+    * [Issue #271](https://github.com/dartsim/dart/issues/271)
 
 ### Version 4.2.1 (2015-01-07)
 

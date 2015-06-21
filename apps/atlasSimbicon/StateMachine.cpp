@@ -51,7 +51,7 @@ using namespace dart::constraint;
 //==============================================================================
 StateMachine::StateMachine(const std::string& _name)
   : mName(_name),
-    mCurrentState(NULL),
+    mCurrentState(nullptr),
     mBeginTime(0.0),
     mEndTime(0.0),
     mFrame(0),
@@ -85,7 +85,7 @@ const std::string& StateMachine::getName() const
 //==============================================================================
 void StateMachine::addState(State* _state)
 {
-  assert(_state != NULL && "Invalid state");
+  assert(_state != nullptr && "Invalid state");
   assert(!_containState(_state) && "_state shouldn't be in mStates");
 
   mStates.push_back(_state);
@@ -94,7 +94,7 @@ void StateMachine::addState(State* _state)
 //==============================================================================
 void StateMachine::setInitialState(State* _state)
 {
-  assert(_state != NULL);
+  assert(_state != nullptr);
   assert(_containState(_state));
 
   mCurrentState = _state;
@@ -113,7 +113,7 @@ void StateMachine::begin(double _currentTime)
 //==============================================================================
 void StateMachine::computeControlForce(double _dt)
 {
-  assert(mCurrentState != NULL && "Invaild current state.");
+  assert(mCurrentState != nullptr && "Invaild current state.");
 
   // Check transition is needed from current state
   if (mCurrentState->isTerminalConditionSatisfied())
@@ -172,7 +172,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
   // _state should be in mStates
   State* state = _findState(_stateName);
 
-  assert(state != NULL && "Invaild state.");
+  assert(state != nullptr && "Invaild state.");
 
   transiteTo(state, _currentTime);
 }
@@ -180,15 +180,15 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
 //==============================================================================
 void StateMachine::transiteTo(size_t _idx, double _currentTime)
 {
-  assert(0 <= _idx && _idx <= mStates.size() && "Invalid index of State.");
+  assert(_idx <= mStates.size() && "Invalid index of State.");
 
   transiteTo(mStates[_idx], _currentTime);
 }
 
 //==============================================================================
-bool StateMachine::_containState(State* _state)
+bool StateMachine::_containState(const State* _state) const
 {
-  for (vector<State*>::iterator it = mStates.begin();
+  for (vector<State*>::const_iterator it = mStates.begin();
        it != mStates.end(); ++it)
   {
     if (*it == _state)
@@ -199,17 +199,17 @@ bool StateMachine::_containState(State* _state)
 }
 
 //==============================================================================
-bool StateMachine::_containState(const string& _name)
+bool StateMachine::_containState(const string& _name) const
 {
   return _containState(_findState(_name));
 }
 
 //==============================================================================
-State* StateMachine::_findState(const string& _name)
+State* StateMachine::_findState(const string& _name) const
 {
-  State* state = NULL;
+  State* state = nullptr;
 
-  for (vector<State*>::iterator it = mStates.begin();
+  for (vector<State*>::const_iterator it = mStates.begin();
        it != mStates.end(); ++it)
   {
     if ((*it)->getName() == _name)

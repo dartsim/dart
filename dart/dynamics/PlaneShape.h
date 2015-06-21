@@ -37,7 +37,6 @@
 #ifndef DART_DYNAMICS_PLANESHAPE_H_
 #define DART_DYNAMICS_PLANESHAPE_H_
 
-#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -55,7 +54,7 @@ public:
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet
-  void draw(renderer::RenderInterface* _ri = NULL,
+  void draw(renderer::RenderInterface* _ri = nullptr,
             const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
             bool _default = true) const;
 
@@ -86,12 +85,6 @@ public:
 
   /// Compute signed distance between the plane and the given point
   double computeSignedDistance(const Eigen::Vector3d& _point) const;
-
-  DEPRECATED(4.3)
-  void setPoint(const Eigen::Vector3d& _point);
-
-  DEPRECATED(4.3)
-  Eigen::Vector3d getPoint() const;
 
 private:
   // Documentation inherited.

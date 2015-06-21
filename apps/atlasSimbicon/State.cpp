@@ -127,14 +127,14 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   mRightFoot  = mSkeleton->getBodyNode("r_foot");
   mLeftThigh  = mSkeleton->getBodyNode("l_uleg");
   mRightThigh = mSkeleton->getBodyNode("r_uleg");
-  mStanceFoot = NULL;
+  mStanceFoot = nullptr;
 
-  assert(mPelvis     != NULL);
-  assert(mLeftFoot   != NULL);
-  assert(mRightFoot  != NULL);
-  assert(mLeftThigh  != NULL);
-  assert(mRightThigh != NULL);
-//  assert(mStanceFoot != NULL);
+  assert(mPelvis     != nullptr);
+  assert(mLeftFoot   != nullptr);
+  assert(mRightFoot  != nullptr);
+  assert(mLeftThigh  != nullptr);
+  assert(mRightThigh != nullptr);
+//  assert(mStanceFoot != nullptr);
 }
 
 //==============================================================================
@@ -164,7 +164,7 @@ void State::setNextState(State* _nextState)
 //==============================================================================
 void State::setTerminalCondition(TerminalCondition* _condition)
 {
-  assert(_condition != NULL);
+  assert(_condition != nullptr);
 
   mTerminalCondition = _condition;
 }
@@ -180,7 +180,7 @@ void State::begin(double _currentTime)
 //==============================================================================
 void State::computeControlForce(double _timestep)
 {
-  assert(mNextState != NULL && "Next state should be set.");
+  assert(mNextState != nullptr && "Next state should be set.");
 
   int dof = mSkeleton->getNumDofs();
   VectorXd q = mSkeleton->getPositions(mDofMapping);
@@ -244,7 +244,7 @@ void State::computeControlForce(double _timestep)
 //==============================================================================
 bool State::isTerminalConditionSatisfied() const
 {
-  assert(mTerminalCondition != NULL && "Invalid terminal condition.");
+  assert(mTerminalCondition != nullptr && "Invalid terminal condition.");
 
   return mTerminalCondition->isSatisfied();
 }
@@ -273,17 +273,16 @@ Eigen::Isometry3d State::getCOMFrame() const
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
   // Y-axis
-  Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
 
   // X-axis
-  Eigen::Vector3d xAxis = mPelvis->getTransform().linear().col(0);
   Eigen::Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
-  double mag = yAxis.dot(pelvisXAxis);
+  const double mag = yAxis.dot(pelvisXAxis);
   pelvisXAxis -= mag * yAxis;
-  xAxis = pelvisXAxis.normalized();
+  const Eigen::Vector3d xAxis = pelvisXAxis.normalized();
 
   // Z-axis
-  Eigen::Vector3d zAxis = xAxis.cross(yAxis);
+  const Eigen::Vector3d zAxis = xAxis.cross(yAxis);
 
   T.translation() = getCOM();
 
@@ -333,7 +332,7 @@ double State::getCoronalCOMVelocity()
 //==============================================================================
 Eigen::Vector3d State::getStanceAnklePosition() const
 {
-  if (mStanceFoot == NULL)
+  if (mStanceFoot == nullptr)
     return getCOM();
   else
     return _getJointPosition(mStanceFoot);
@@ -590,7 +589,7 @@ void State::setDesiredJointPosition(const string& _jointName, double _val)
   // TODO(JS)
   NOT_YET(State::setDesiredJointPosition());
 
-  assert(mSkeleton->getJoint(_jointName) != NULL);
+  assert(mSkeleton->getJoint(_jointName) != nullptr);
 
   mDesiredJointPositions[mJointMap[_jointName]] = _val;
 }
@@ -610,7 +609,7 @@ double State::getDesiredJointPosition(const string& _jointName) const
   // TODO(JS)
   NOT_YET(State::getDesiredJointPosition());
 
-  assert(mSkeleton->getJoint(_jointName) != NULL);
+  assert(mSkeleton->getJoint(_jointName) != nullptr);
 
   return mDesiredJointPositions[mJointMap.at(_jointName)];
 }
@@ -668,7 +667,7 @@ double State::getProportionalGain(const string& _jointName) const
   // TODO(JS)
   NOT_YET(State::getProportionalGain());
 
-  assert(mSkeleton->getJoint(_jointName) != NULL);
+  assert(mSkeleton->getJoint(_jointName) != nullptr);
 
   return mKp[mJointMap.at(_jointName)];
 }

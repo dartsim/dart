@@ -130,7 +130,7 @@ public:
 		//debug
 		double dotStart = startDirection.dot((intersection - getConfig(0.0)).normalized());
 		double dotEnd = endDirection.dot((getConfig(length) - intersection).normalized());
-		if(abs(dotStart - 1.0) > 0.0001 || abs(dotEnd - 1.0) > 0.0001) {
+    if(std::abs(dotStart - 1.0) > 0.0001 || std::abs(dotEnd - 1.0) > 0.0001) {
 			std::cout << "Error\n";
 		}
 	}
@@ -187,12 +187,12 @@ Path::Path(const list<VectorXd> &path, double maxDeviation) :
 		return;
 	list<VectorXd>::const_iterator config1 = path.begin();
 	list<VectorXd>::const_iterator config2 = config1;
-	config2++;
+  ++config2;
 	list<VectorXd>::const_iterator config3;
 	VectorXd startConfig = *config1;
 	while(config2 != path.end()) {
 		config3 = config2;
-		config3++;
+    ++config3;
 		if(maxDeviation > 0.0 && config3 != path.end()) {
 			CircularPathSegment* blendSegment = new CircularPathSegment(0.5 * (*config1 + *config2), *config2, 0.5 * (*config2 + *config3), maxDeviation);
 			VectorXd endConfig = blendSegment->getConfig(0.0);
@@ -205,9 +205,9 @@ Path::Path(const list<VectorXd> &path, double maxDeviation) :
 
 			//debug
 			if(((endConfig - *config1).norm() > 0.000001 && (*config2 - endConfig).norm() > 0.000001
-				&& abs((endConfig - *config1).normalized().dot((*config2 - endConfig).normalized()) - 1.0) > 0.000001)
+        && std::abs((endConfig - *config1).normalized().dot((*config2 - endConfig).normalized()) - 1.0) > 0.000001)
 				|| ((startConfig - *config2).norm() > 0.000001 && (*config3 - startConfig).norm() > 0.000001
-				&& abs((startConfig - *config2).normalized().dot((*config3 - startConfig).normalized()) - 1.0) > 0.000001)) {
+        && std::abs((startConfig - *config2).normalized().dot((*config3 - startConfig).normalized()) - 1.0) > 0.000001)) {
 					cout << "error" << endl;
 			}
 		}
@@ -216,14 +216,14 @@ Path::Path(const list<VectorXd> &path, double maxDeviation) :
 			startConfig = *config2;
 		}
 		config1 = config2;
-		config2++;
+    ++config2;
 	}
 
 	// create list of switching point candidates, calculate total path length and absolute positions of path segments
-	for(list<PathSegment*>::iterator segment = pathSegments.begin(); segment != pathSegments.end(); segment++) {
+  for(list<PathSegment*>::iterator segment = pathSegments.begin(); segment != pathSegments.end(); ++segment) {
 		(*segment)->position = length;
 		list<double> localSwitchingPoints = (*segment)->getSwitchingPoints();
-		for(list<double>::const_iterator point = localSwitchingPoints.begin(); point != localSwitchingPoints.end(); point++) {
+    for(list<double>::const_iterator point = localSwitchingPoints.begin(); point != localSwitchingPoints.end(); ++point) {
 			switchingPoints.push_back(make_pair(length + *point, false));
 		}
 		length += (*segment)->getLength();
@@ -236,13 +236,13 @@ Path::Path(const Path &path) :
 	length(path.length),
 	switchingPoints(path.switchingPoints)
 {
-	for(list<PathSegment*>::const_iterator it = path.pathSegments.begin(); it != path.pathSegments.end(); it++) {
+  for(list<PathSegment*>::const_iterator it = path.pathSegments.begin(); it != path.pathSegments.end(); ++it) {
 		pathSegments.push_back((*it)->clone());
 	}
 }
 
 Path::~Path() {
-	for(list<PathSegment*>::iterator it = pathSegments.begin(); it != pathSegments.end(); it++) {
+  for(list<PathSegment*>::iterator it = pathSegments.begin(); it != pathSegments.end(); ++it) {
 		delete *it;
 	}
 }
@@ -254,10 +254,10 @@ double Path::getLength() const {
 PathSegment* Path::getPathSegment(double &s) const {
 	list<PathSegment*>::const_iterator it = pathSegments.begin();
 	list<PathSegment*>::const_iterator next = it;
-	next++;
+  ++next;
 	while(next != pathSegments.end() && s >= (*next)->position) {
 		it = next;
-		next++;
+    ++next;
 	}
 	s -= (*it)->position;
 	return *it;
@@ -281,7 +281,7 @@ VectorXd Path::getCurvature(double s) const {
 double Path::getNextSwitchingPoint(double s, bool &discontinuity) const {
 	list<pair<double, bool> >::const_iterator it = switchingPoints.begin();
 	while(it != switchingPoints.end() && it->first <= s) {
-		it++;
+    ++it;
 	}
 	if(it == switchingPoints.end()) {
 		discontinuity = true;

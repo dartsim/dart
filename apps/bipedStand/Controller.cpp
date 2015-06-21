@@ -36,7 +36,6 @@
  */
 
 #include "apps/bipedStand/Controller.h"
-#include "dart/dynamics/Group.h"
 
 void createIndexing(std::vector<size_t>&)
 {

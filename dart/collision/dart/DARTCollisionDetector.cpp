@@ -97,8 +97,8 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
             contactPair = contacts[m];
             contactPair.bodyNode1 = BodyNode1;
             contactPair.bodyNode2 = BodyNode2;
-            assert(contactPair.bodyNode1.lock() != NULL);
-            assert(contactPair.bodyNode2.lock() != NULL);
+            assert(contactPair.bodyNode1.lock() != nullptr);
+            assert(contactPair.bodyNode2.lock() != nullptr);
 
             mContacts.push_back(contactPair);
           }

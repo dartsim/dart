@@ -50,7 +50,6 @@
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/Paths.h"
 
 using namespace Eigen;
 using namespace dart;
@@ -238,8 +237,8 @@ MatrixXd DynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
     dynamics::BodyNode* body  = _skel->getBodyNode(i);
     dynamics::Joint*    joint = body->getParentJoint();
 
-    EXPECT_TRUE(body  != NULL);
-    EXPECT_TRUE(joint != NULL);
+    EXPECT_TRUE(body  != nullptr);
+    EXPECT_TRUE(joint != nullptr);
 
     int dof = joint->getNumDofs();
 
@@ -704,7 +703,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
@@ -712,7 +711,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
@@ -806,7 +805,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 
   // load skeleton
   WorldPtr world = SkelParser::readWorld(_fileName);
-  assert(world != NULL);
+  assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
 
@@ -814,7 +813,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   for (size_t i = 0; i < world->getNumSkeletons(); ++i)
   {
     SkeletonPtr skeleton = world->getSkeleton(i);
-    assert(skeleton != NULL);
+    assert(skeleton != nullptr);
     int dof = skeleton->getNumDofs();
 
     for (int j = 0; j < nRandomItr; ++j)
@@ -1151,7 +1150,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 }
 
 //==============================================================================
-void compareCOMJacobianToFk(const SkeletonPtr skel,
+void compareCOMJacobianToFk(const SkeletonPtr& skel,
                             const Frame* refFrame,
                             double tolerance)
 {
@@ -1639,7 +1638,6 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
           joint->setPosition(l, random(lbRP, ubRP));
         }
       }
-//      skel->computeForwardKinematics();
 //      skel->setPositions(VectorXd::Zero(dof));
 
       // TODO(JS): Just clear what should be
@@ -1786,11 +1784,11 @@ TEST_F(DynamicsTest, HybridDynamics)
   WorldPtr world = utils::SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
   SkeletonPtr skel = world->getSkeleton("skeleton 1");
-  EXPECT_TRUE(skel != NULL);
+  EXPECT_TRUE(skel != nullptr);
   EXPECT_NEAR(skel->getTimeStep(), timeStep, tol);
 
   const size_t numDofs = skel->getNumDofs();
@@ -1802,7 +1800,6 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Initialize the skeleton with the zero initial states
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  skel->computeForwardKinematics(true, true, true);
   EXPECT_TRUE(equals(skel->getPositions(), q0));
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 
@@ -1844,7 +1841,6 @@ TEST_F(DynamicsTest, HybridDynamics)
   // Restore the skeleton to the initial state
   skel->setPositions(q0);
   skel->setVelocities(dq0);
-  skel->computeForwardKinematics(true, true, true);
   EXPECT_TRUE(equals(skel->getPositions(), q0));
   EXPECT_TRUE(equals(skel->getVelocities(), dq0));
 

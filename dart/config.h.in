@@ -10,8 +10,10 @@
 #define DART_VERSION "@DART_VERSION@"
 #define DART_DESCRIPTION "@DART_PKG_DESC@"
 
-#cmakedefine BUILD_TYPE_RELEASE 1
 #cmakedefine BUILD_TYPE_DEBUG 1
+#cmakedefine BUILD_TYPE_RELEASE 1
+#cmakedefine BUILD_TYPE_RELWITHDEBINFO 1
+#cmakedefine BUILD_TYPE_MINSIZEREL 1
 
 #cmakedefine HAVE_NLOPT 1
 #cmakedefine HAVE_IPOPT 1

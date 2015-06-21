@@ -360,12 +360,6 @@ Joint::Joint(const Properties& _properties)
 }
 
 //==============================================================================
-void Joint::init(const SkeletonPtr&)
-{
-  // Currently unused
-}
-
-//==============================================================================
 DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _indexInJoint);

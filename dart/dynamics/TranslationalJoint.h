@@ -54,7 +54,8 @@ public:
   struct Properties : MultiDofJoint<3>::Properties
   {
     Properties(const MultiDofJoint<3>::Properties& _properties =
-                                                MultiDofJoint<3>::Properties());
+        MultiDofJoint<3>::Properties());
+
     virtual ~Properties() = default;
   };
 
@@ -84,16 +85,16 @@ protected:
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames();
+  virtual void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory = true) const;
+  virtual void updateLocalJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

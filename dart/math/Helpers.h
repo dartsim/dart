@@ -53,7 +53,6 @@
 #include <Eigen/Dense>
 // Local Headers
 #include "dart/common/Console.h"
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -87,7 +86,7 @@ inline double Tsinc(double _theta) {
 }
 
 inline bool isZero(double _theta) {
-  return (fabs(_theta) < DART_EPSILON);
+  return (std::abs(_theta) < DART_EPSILON);
 }
 
 inline double asinh(double _X) {
@@ -127,7 +126,7 @@ inline double round2(double _x) {
 }
 
 inline bool isEqual(double _x, double _y) {
-  return (std::fabs(_x - _y) < DART_EPSILON);
+  return (std::abs(_x - _y) < DART_EPSILON);
 }
 
 // check if it is an integer
@@ -187,7 +186,7 @@ inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6) {
 
   for (size_t i = 0; i < rows; ++i) {
     for (size_t j = i + 1; j < cols; ++j) {
-      if (std::fabs(_m(i, j) - _m(j, i)) > _tol) {
+      if (std::abs(_m(i, j) - _m(j, i)) > _tol) {
         std::cout << "A: " << std::endl;
         for (size_t k = 0; k < rows; ++k) {
           for (size_t l = 0; l < cols; ++l)
@@ -236,22 +235,7 @@ Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 template<int N>
 Eigen::Matrix<double, N, 1> randomVector(double _limit)
 {
-  return randomVector<N>(-fabs(_limit), fabs(_limit));
-}
-
-DEPRECATED(4.3)
-inline int castUIntToInt(size_t _x)
-{
-//  if (_x <= INT_MAX)
-//    return static_cast<int>(_x);
-
-//  if (_x >= INT_MIN)
-//    return static_cast<int>(_x - INT_MIN) + INT_MIN;
-
-//  dterr << "x is out of range." << std::endl;
-
-//  throw _x; // Or whatever else you like
-  return static_cast<int>(_x);
+  return randomVector<N>(-std::abs(_limit), std::abs(_limit));
 }
 
 }  // namespace math

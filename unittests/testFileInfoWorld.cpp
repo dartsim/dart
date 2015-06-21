@@ -85,6 +85,7 @@ TEST(FileInfoWorld, Basic)
 
   // Load the file
   result = worldFile.loadFile(fileName.c_str());
+  EXPECT_TRUE(result);
   recording2 = worldFile.getRecording();
   EXPECT_TRUE(recording2 != nullptr);
 

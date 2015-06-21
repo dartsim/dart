@@ -39,7 +39,6 @@
 
 #include "dart/constraint/ConstraintBase.h"
 
-#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -56,13 +55,6 @@ namespace constraint {
 class ContactConstraint : public ConstraintBase
 {
 public:
-  /// Constructor
-  ///
-  /// Do not use me anymore. This constructor is not possible to store contact
-  /// force in _contact
-  DEPRECATED(4.2)
-  explicit ContactConstraint(const collision::Contact& _contact);
-
   /// Constructor
   ContactConstraint(collision::Contact& _contact, double _timeStep);
 
@@ -180,10 +172,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians1;
+  Eigen::aligned_vector<Eigen::Vector6d> mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  std::vector<Eigen::Vector6d, Eigen::aligned_allocator<Eigen::Vector6d> > mJacobians2;
+  Eigen::aligned_vector<Eigen::Vector6d> mJacobians2;
 
   ///
   bool mIsFrictionOn;

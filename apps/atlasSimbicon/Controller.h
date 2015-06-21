@@ -126,14 +126,14 @@ protected:
 
 private:
   /// \brief Check if this controller contains _stateMachine
-  bool _containStateMachine(StateMachine* _stateMachine);
+  bool _containStateMachine(const StateMachine* _stateMachine) const;
 
   /// \brief Check if this controller contains a state machine whose name is
   ///        _name
-  bool _containStateMachine(const std::string& _name);
+  bool _containStateMachine(const std::string& _name) const;
 
   /// \brief Find a state machine whose name is _name
-  StateMachine* _findStateMachine(const std::string& _name);
+  StateMachine* _findStateMachine(const std::string& _name) const;
 
   /// \brief Build state machines
   void _buildStateMachines();

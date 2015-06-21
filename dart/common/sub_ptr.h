@@ -51,64 +51,46 @@ class sub_ptr : public Observer
 {
 public:
   /// Default constructor
-  sub_ptr() : mSubject(nullptr) { }
+  sub_ptr();
 
   /// Alternative constructor. _ptr must be a valid pointer when passed to this
   /// constructor.
-  sub_ptr(T* _ptr) : mSubject(nullptr) { set(_ptr); }
+  sub_ptr(T* _ptr);
 
   /// Change the Subject of this sub_ptr
-  sub_ptr& operator = (const sub_ptr& _sp)
-  {
-    set(_sp.get());
-    return *this;
-  }
+  sub_ptr& operator = (const sub_ptr& _sp);
 
   /// Change the Subject of this sub_ptr
-  sub_ptr& operator = (T* _ptr)
-  {
-    set(_ptr);
-    return *this;
-  }
+  sub_ptr& operator = (T* _ptr);
 
   /// Implicit conversion to pointer type
-  operator T*() const { return mSubject; }
+  operator T*() const;
 
   /// Dereferencing operator
-  T& operator*() const { return *mSubject; }
+  T& operator*() const;
 
   /// Dereferencing operation
-  T* operator->() const { return mSubject; }
+  T* operator->() const;
 
   /// Get the Subject of this sub_ptr
-  T* get() const { return mSubject; }
+  T* get() const;
 
   /// Set the subject of this sub_ptr
-  void set(T* _ptr)
-  {
-    if(mSubject == _ptr)
-      return;
-
-    removeSubject(mSubject);
-    mSubject = _ptr;
-    addSubject(mSubject);
-  }
+  void set(T* _ptr);
 
   /// True if and only if this sub_ptr still points to a valid Subject
-  bool valid() { return mSubject != nullptr; }
+  bool valid();
 
 protected:
 
   virtual void handleDestructionNotification(
-      const Subject* _subject) override
-  {
-    if(_subject == mSubject)
-      mSubject = nullptr;
-  }
+      const Subject* _subject) override;
 
   /// Store the Subject pointer
   T* mSubject;
 };
+
+#include "dart/common/detail/sub_ptr.h"
 
 } // namespace common
 

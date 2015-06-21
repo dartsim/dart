@@ -291,14 +291,14 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 //  //----------------------------------------------------------------------------
 //  // Visualization shape
 //  //----------------------------------------------------------------------------
-//  assert(mSoftVisualShape == NULL);
+//  assert(mSoftVisualShape == nullptr);
 //  mSoftVisualShape = new SoftMeshShape(this);
 //  BodyNode::addVisualizationShape(mSoftVisualShape);
 
 //  //----------------------------------------------------------------------------
 //  // Collision shape
 //  //----------------------------------------------------------------------------
-//  assert(mSoftCollShape == NULL);
+//  assert(mSoftCollShape == nullptr);
 //  mSoftCollShape = new SoftMeshShape(this);
 //  BodyNode::addCollisionShape(mSoftCollShape);
 }
@@ -409,8 +409,8 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 void SoftBodyNode::connectPointMasses(size_t _idx1, size_t _idx2)
 {
   assert(_idx1 != _idx2);
-  assert(0 <= _idx1 && _idx1 < mPointMasses.size());
-  assert(0 <= _idx2 && _idx2 < mPointMasses.size());
+  assert(_idx1 < mPointMasses.size());
+  assert(_idx2 < mPointMasses.size());
   mPointMasses[_idx1]->addConnectedPointMass(mPointMasses[_idx2]);
   mPointMasses[_idx2]->addConnectedPointMass(mPointMasses[_idx1]);
 }
@@ -424,7 +424,7 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 //==============================================================================
 const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 {
-  assert(0 <= _idx && _idx < mSoftP.mFaces.size());
+  assert(_idx < mSoftP.mFaces.size());
   return mSoftP.mFaces[_idx];
 }
 
@@ -530,7 +530,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   for (const auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != NULL);
+    assert(childJoint != nullptr);
 
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         childBodyNode->getBodyForce());
@@ -1140,7 +1140,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
                         bool _useDefaultColor,
                         int _depth) const
 {
-  if (_ri == NULL)
+  if (_ri == nullptr)
     return;
 
   _ri->pushMatrix();
@@ -2494,7 +2494,7 @@ void SoftBodyNodeHelper::setSinglePointMass(SoftBodyNode* _softBodyNode,
                                         double _edgeStiffness,
                                         double _dampingCoeff)
 {
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeSinglePointMassProperties(
                                  _totalMass,
                                  _vertexStiffness,
@@ -2672,7 +2672,7 @@ void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
                                       double                 _edgeStiffness,
                                       double                 _dampingCoeff)
 {
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   _softBodyNode->setProperties(makeEllipsoidProperties(_size,
                                                        _nSlices,
                                                        _nStacks,

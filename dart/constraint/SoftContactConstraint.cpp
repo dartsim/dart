@@ -70,27 +70,6 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
-    const collision::Contact& _contact)
-  : ConstraintBase(),
-    mBodyNode1(_contact.bodyNode1.lock()),
-    mBodyNode2(_contact.bodyNode2.lock()),
-    mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
-    mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
-    mPointMass1(NULL),
-    mPointMass2(NULL),
-    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    mIsFrictionOn(true),
-    mAppliedImpulseIndex(-1),
-    mIsBounceOn(false),
-    mActive(false)
-{
-  dterr << "This constructor is deprecated. Please don't use me anymore."
-        << std::endl;
-}
-
-//==============================================================================
-SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
@@ -98,8 +77,8 @@ SoftContactConstraint::SoftContactConstraint(
     mBodyNode2(_contact.bodyNode2.lock()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
-    mPointMass1(NULL),
-    mPointMass2(NULL),
+    mPointMass1(nullptr),
+    mPointMass2(nullptr),
     mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
@@ -199,11 +178,11 @@ SoftContactConstraint::SoftContactConstraint(
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::fabs(ct->normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::fabs(ct->normal.dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
 //      if (D.col(0).dot(D.col(1)) > 0.0)
 //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
-      assert(fabs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
 //      std::cout << "D: " << std::endl << D << std::endl;
 
@@ -594,7 +573,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 //==============================================================================
 void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 {
-  assert(0 <= _idx && _idx < mDim && "Invalid Index.");
+  assert(_idx < mDim && "Invalid Index.");
   assert(isActive());
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
@@ -679,7 +658,7 @@ void SoftContactConstraint::applyUnitImpulse(size_t _idx)
 //==============================================================================
 void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -901,7 +880,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 void SoftContactConstraint::getRelVelocity(double* _vel)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -1028,7 +1007,7 @@ static PointMassT selectCollidingPointMassT(
     const Eigen::Vector3d& _point,
     int _faceId)
 {
-  PointMassT pointMass = NULL;
+  PointMassT pointMass = nullptr;
 
   const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
 

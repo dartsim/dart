@@ -39,7 +39,7 @@
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
-  mController = NULL;
+  mController = nullptr;
   mImpulseDuration = 0;
 }
 
@@ -151,14 +151,12 @@ void MyWindow::plotCOMX() {
   for (int i = 0; i < nFrame; i++) {
     Eigen::VectorXd pose = mWorld->getRecording()->getConfig(i, 1);
     mWorld->getSkeleton(1)->setPositions(pose);
-    mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);    
     data[i] = mWorld->getSkeleton(1)->getCOM()[0];
   }
   if (nFrame != 0)
   {
     Eigen::VectorXd pose = mWorld->getRecording()->getConfig(mPlayFrame, 1);
     mWorld->getSkeleton(1)->setPositions(pose);
-    mWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
   }
 
   plot(data);

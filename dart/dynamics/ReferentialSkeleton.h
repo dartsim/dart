@@ -45,8 +45,8 @@
 namespace dart {
 namespace dynamics {
 
-/// ReferentialSkeleton is a base class used to implement Linkage, Disjointment,
-/// and other classes that are used to reference subsections of Skeletons.
+/// ReferentialSkeleton is a base class used to implement Linkage, Group, and
+/// other classes that are used to reference subsections of Skeletons.
 class ReferentialSkeleton : public MetaSkeleton
 {
 public:
@@ -130,96 +130,98 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  math::Jacobian getJacobian(const BodyNode *_bodyNode) const;
+  math::Jacobian getJacobian(const BodyNode *_bodyNode) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const;
+  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const override;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobian(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const;
+  math::Jacobian getJacobianSpatialDeriv(
+      const BodyNode* _bodyNode) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
-      const Eigen::Vector3d& _localOffset) const;
+      const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const;
+  math::Jacobian getJacobianClassicDeriv(
+      const BodyNode* _bodyNode) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf) const;
+      const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const BodyNode* _bodyNode,
       const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobianDeriv(
       const BodyNode* _bodyNode,
-      const Frame* _inCoordinatesOf = Frame::World()) const;
+      const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// \}
 

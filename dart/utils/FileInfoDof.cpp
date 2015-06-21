@@ -51,6 +51,7 @@ namespace utils {
 FileInfoDof::FileInfoDof(dynamics::Skeleton* _skel, double _fps)
   : mSkel(_skel), mFPS(_fps), mNumFrames(0)
 {
+  std::strcpy(mFileName, "");
 }
 
 //==============================================================================
@@ -80,7 +81,7 @@ bool FileInfoDof::loadFile(const char* _fName)
   inFile >> buffer;
   inFile >> nDof;
 
-  if (mSkel == NULL || mSkel->getNumDofs() != nDof)
+  if (mSkel == nullptr || mSkel->getNumDofs() != nDof)
     return false;
 
   mDofs.resize(mNumFrames);
@@ -166,7 +167,7 @@ void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
 //==============================================================================
 double FileInfoDof::getDofAt(size_t _frame, size_t _id) const
 {
-  assert(_frame>=0 && _frame<mNumFrames); return mDofs.at(_frame)[_id];
+  assert(_frame<mNumFrames); return mDofs.at(_frame)[_id];
 }
 
 //==============================================================================
