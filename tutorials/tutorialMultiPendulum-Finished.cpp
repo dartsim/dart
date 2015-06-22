@@ -286,14 +286,14 @@ public:
           if(mPositiveSign)
           {
             bn->addExtForce(
-                  default_force*Eigen::Vector3d::UnitX(),
+                  default_force * Eigen::Vector3d::UnitX(),
                   Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
                   true, true);
           }
           else
           {
             bn->addExtForce(
-                  -default_force*Eigen::Vector3d::UnitX(),
+                  -default_force * Eigen::Vector3d::UnitX(),
                   Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0),
                   true, true);
           }
@@ -456,6 +456,7 @@ int main(int argc, char* argv[])
 
   // Print instructions
   std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': replay simulation" << std::endl;
   std::cout << "'1' -> '9': apply torque to a pendulum body" << std::endl;
   std::cout << "'-': Change sign of applied joint torques" << std::endl;
   std::cout << "'q': Increase joint rest positions" << std::endl;

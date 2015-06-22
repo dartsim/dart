@@ -368,6 +368,7 @@ int main(int argc, char* argv[])
 
   // Print instructions
   std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': replay simulation" << std::endl;
   std::cout << "'1' -> '9': apply torque to a pendulum body" << std::endl;
   std::cout << "'-': Change sign of applied joint torques" << std::endl;
   std::cout << "'q': Increase joint rest positions" << std::endl;

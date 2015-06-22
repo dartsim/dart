@@ -373,6 +373,7 @@ int main(int argc, char* argv[])
   std::cout << "'d': Delete the last domino that was created" << std::endl;
   std::cout << std::endl;
   std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
+  std::cout << "'p': replay simulation" << std::endl;
   std::cout << "'f': Push the first domino with a disembodies force so that it falls over" << std::endl;
   std::cout << "'r': Push the first domino with the manipulator so that it falls over" << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
