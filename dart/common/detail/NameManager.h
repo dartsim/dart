@@ -242,7 +242,13 @@ T NameManager<T>::getObject(const std::string& _name) const
   if (result != mMap.end())
     return result->second;
   else
+  {
+    dterr << "[NameManager::getObject] (" << mManagerName
+          << ") Could not find an object with the name [" << _name << "]\n";
+    assert(false);
+
     return nullptr;
+  }
 }
 
 //==============================================================================
