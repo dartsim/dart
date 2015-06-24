@@ -53,18 +53,24 @@ void MyWindow::timeStepping() {
 
   size_t dof = vehicle->getNumDofs();
 
-  Eigen::VectorXd q   = vehicle->getPositions();
-  Eigen::VectorXd dq  = vehicle->getVelocities();
-  Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
-
-  tau[ 6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
-  tau[ 8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
-  tau[ 7] = -mD * (dq[ 7] - mBackWheelVelocity);
-  tau[ 9] = -mD * (dq[ 9] - mBackWheelVelocity);
-  tau[10] = -mD * (dq[10] - mBackWheelVelocity);
-  tau[11] = -mD * (dq[11] - mBackWheelVelocity);
-
-  vehicle->setForces(tau);
+  vehicle->setCommand(7,  10);
+  vehicle->setCommand(9, 10);
+  vehicle->setCommand(10,  10);
+  vehicle->setCommand(11,  10);
+  
+  
+//  Eigen::VectorXd q   = vehicle->getPositions();
+//  Eigen::VectorXd dq  = vehicle->getVelocities();
+//  Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
+//
+//  tau[ 6] = -mK * (q[6] - mSteeringWheelAngle) - mD * dq[6];
+//  tau[ 8] = -mK * (q[8] - mSteeringWheelAngle) - mD * dq[8];
+//  tau[ 7] = -mD * (dq[ 7] - mBackWheelVelocity);
+//  tau[ 9] = -mD * (dq[ 9] - mBackWheelVelocity);
+//  tau[10] = -mD * (dq[10] - mBackWheelVelocity);
+//  tau[11] = -mD * (dq[11] - mBackWheelVelocity);
+//
+//  vehicle->setForces(tau);
 
   mWorld->step();
 }

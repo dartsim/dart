@@ -139,13 +139,13 @@ public:
     Jacobian J = mEndEffector->getWorldJacobian(mOffset);
     // Compute the pseudo-inverse of the Jacobian
     Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                              + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+                            + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
     // Compute the Jacobian time derivative
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
     // Comptue the pseudo-inverse of the Jacobian time derivative
     Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
-                              + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+                            + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
     // Compute the linear error
     Eigen::Vector6d e;
@@ -233,7 +233,7 @@ public:
     mFloor = world->getSkeleton("floor");
 
     mController = std::unique_ptr<Controller>(
-          new Controller(world->getSkeleton("manipulator"), mFirstDomino));
+        new Controller(world->getSkeleton("manipulator"), mFirstDomino));
   }
 
   // Attempt to create a new domino. If the new domino would be in collision
