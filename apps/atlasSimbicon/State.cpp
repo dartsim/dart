@@ -664,7 +664,7 @@ void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
 {
-  assert(0 <= _idx && _idx <= mCoronalCd.size() && "Invalid index.");
+  assert(0 <= _index && _index <= mCoronalCd.size() && "Invalid index.");
 
   mCoronalCd[_index] = _val;
 }
