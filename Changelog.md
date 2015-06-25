@@ -1,3 +1,8 @@
+### Version 5.0.1 (2015-XX-XX)
+
+1. Improved app indexing for bipedStand and atlasSimbicon
+    * [Pull request #417](https://github.com/dartsim/dart/pull/417)
+
 ### Version 5.0.0 (2015-06-15)
 
 1. Fixed aligned memory allocation with Eigen objects
