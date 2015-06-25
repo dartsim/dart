@@ -473,7 +473,8 @@ int main(int argc, char* argv[])
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': replay simulation" << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
-  std::cout << "'[' and ']': replay one frame backward and forward" << std::endl;
+  std::cout <<
+      "'[' and ']': replay one frame backward and forward" << std::endl;
  
   // Initialize glut, initialize the window, and begin the glut event loop
   glutInit(&argc, argv);
