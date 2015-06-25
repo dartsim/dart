@@ -95,9 +95,6 @@ public:
   double getElapsedTime() const;
 
   //----------------------- Setting Desired Position ---------------------------
-  /// \brief Set desired joint position whose index is _idx
-  void setDesiredJointPosition(int _idx, double _val);
-
   /// \brief Set desired joint position whose name is _jointName
   void setDesiredJointPosition(const std::string& _jointName, double _val);
 
@@ -144,16 +141,16 @@ public:
   // double getDerivativeGain(const std::string& _jointName) const;
 
   /// \brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackSagitalCOMDistance(int _idx, double _val);
+  void setFeedbackSagitalCOMDistance(size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackSagitalCOMVelocity(int _idx, double _val);
+  void setFeedbackSagitalCOMVelocity(size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackCoronalCOMDistance(int _idx, double _val);
+  void setFeedbackCoronalCOMDistance(size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackCoronalCOMVelocity(int _idx, double _val);
+  void setFeedbackCoronalCOMVelocity(size_t _index, double _val);
 
   /// \brief Set stance foot to left foot
   void setStanceFootToLeftFoot();
@@ -294,14 +291,7 @@ protected:
   /// \brief Joint map
   std::map<const std::string, int> mJointMap;
 
-  /// \brief Maps the dofs from the indexing expected by the controller to the
-  /// Skeleton's actual indexing
-  std::vector<size_t> mDofMapping;
-
 private:
-  /// \brief Build joint map
-  void _buildJointMap();
-
   /// \brief Get the parent joint's position of _bodyNode
   Eigen::Vector3d _getJointPosition(dart::dynamics::BodyNode* _bodyNode) const;
 
@@ -329,6 +319,18 @@ private:
 
   /// \brief Right foot body node
   dart::dynamics::BodyNode* mRightFoot;
+
+  /// \brief Index for coronal left hip
+  size_t mCoronalLeftHip;
+
+  /// \brief Index for coronal right hip
+  size_t mCoronalRightHip;
+
+  /// \brief Index for sagital left hip
+  size_t mSagitalLeftHip;
+
+  /// \brief Index for sagital right hip
+  size_t mSagitalRightHip;
 
   /// \brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;
