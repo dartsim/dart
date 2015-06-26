@@ -11,3 +11,10 @@ theme: readthedocs
 docs_dir: docs/readthedocs
 site_dir: docs/readthedocs/site
 
+pages:
+- Home: 'index.md'
+- Tutorials:
+    - 'Introduction': 'tutorials/introduction.md'
+    - 'Pendulum': 'tutorials/multi-pendulum.md'
+    - 'Manipulator': 'tutorials/dominoes.md'
+    - 'Biped': 'tutorials/biped.md'
