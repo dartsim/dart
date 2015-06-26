@@ -276,12 +276,48 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setCommand]: index[" << _index << "] out of range"
-          << std::endl;
+    dterr << "[SingleDofJoint::setCommand]: index[" << _index
+          << "] out of range" << std::endl;
     return;
   }
 
-  mCommand = _command;
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommand = math::clip(_command,
+                            mSingleDofP.mForceLowerLimit,
+                            mSingleDofP.mForceUpperLimit);
+      break;
+    case PASSIVE:
+      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
+             << "PASSIVE joint." << std::endl;
+      mCommand = _command;
+      break;
+    case SERVO:
+      mCommand = math::clip(_command,
+                            mSingleDofP.mVelocityLowerLimit,
+                            mSingleDofP.mVelocityUpperLimit);
+      break;
+    case ACCELERATION:
+      mCommand = math::clip(_command,
+                            mSingleDofP.mAccelerationLowerLimit,
+                            mSingleDofP.mAccelerationUpperLimit);
+      break;
+    case VELOCITY:
+      mCommand = math::clip(_command,
+                            mSingleDofP.mVelocityLowerLimit,
+                            mSingleDofP.mVelocityUpperLimit);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
+             << "LOCKED joint." << std::endl;
+      mCommand = _command;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -308,7 +344,43 @@ void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
     return;
   }
 
-  mCommand = _commands[0];
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommand = math::clip(_commands[0],
+                            mSingleDofP.mForceLowerLimit,
+                            mSingleDofP.mForceUpperLimit);
+      break;
+    case PASSIVE:
+      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
+             << "PASSIVE joint." << std::endl;
+      mCommand = _commands[0];
+      break;
+    case SERVO:
+      mCommand = math::clip(_commands[0],
+                            mSingleDofP.mVelocityLowerLimit,
+                            mSingleDofP.mVelocityUpperLimit);
+      break;
+    case ACCELERATION:
+      mCommand = math::clip(_commands[0],
+                            mSingleDofP.mAccelerationLowerLimit,
+                            mSingleDofP.mAccelerationUpperLimit);
+      break;
+    case VELOCITY:
+      mCommand = math::clip(_commands[0],
+                            mSingleDofP.mVelocityLowerLimit,
+                            mSingleDofP.mVelocityUpperLimit);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
+             << "LOCKED joint." << std::endl;
+      mCommand = _commands[0];
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -434,6 +506,12 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
   }
 
   setVelocityStatic(_velocity);
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommand = getVelocityStatic();
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -459,6 +537,12 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
   }
 
   setVelocityStatic(_velocities[0]);
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommand = getVelocityStatic();
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -537,9 +621,10 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
   setAccelerationStatic(_acceleration);
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
+  // TODO: Remove at DART 5.1.
 #endif
 }
 
@@ -568,9 +653,10 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationStatic(_accelerations[0]);
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
+  // TODO: Remove at DART 5.1.
 #endif
 }
 
@@ -690,11 +776,11 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 
   mForce = _force;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -721,11 +807,11 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 
   mForce = _forces[0];
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -739,9 +825,10 @@ void SingleDofJoint::resetForces()
 {
   mForce = 0.0;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
+  // TODO: Remove at DART 5.1.
 #endif
 }
 

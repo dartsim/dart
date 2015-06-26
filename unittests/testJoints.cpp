@@ -281,6 +281,80 @@ TEST_F(JOINTS, FREE_JOINT)
 }
 
 //==============================================================================
+template <void (Joint::*setX)(std::size_t, double),
+          void (Joint::*setXLowerLimit)(std::size_t, double),
+          void (Joint::*setXUpperLimit)(std::size_t, double)>
+void testCommandLimits(dynamics::Joint* joint)
+{
+  const double lower = -5.0;
+  const double upper = +5.0;
+  const double mid = 0.5 * (lower + upper);
+  const double lessThanLower    = -10.0;
+  const double greaterThanUpper = +10.0;
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
+  {
+    (joint->*setXLowerLimit)(i, lower);
+    (joint->*setXUpperLimit)(i, upper);
+
+    joint->setCommand(i, mid);
+    EXPECT_EQ(joint->getCommand(i), mid);
+    (joint->*setX)(i, mid);
+    EXPECT_EQ(joint->getCommand(i), mid);
+
+    joint->setCommand(i, lessThanLower);
+    EXPECT_EQ(joint->getCommand(i), lower);
+    (joint->*setX)(i, lessThanLower);
+    EXPECT_EQ(joint->getCommand(i), lessThanLower);
+
+    joint->setCommand(i, greaterThanUpper);
+    EXPECT_EQ(joint->getCommand(i), upper);
+    (joint->*setX)(i, greaterThanUpper);
+    EXPECT_EQ(joint->getCommand(i), greaterThanUpper);
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, COMMAND_LIMIT)
+{
+  simulation::WorldPtr myWorld
+      = utils::SkelParser::readWorld(
+          DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+  EXPECT_TRUE(myWorld != nullptr);
+
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != nullptr);
+
+  auto bodyNodes = pendulum->getBodyNodes();
+
+  for (auto bodyNode : bodyNodes)
+  {
+    Joint* joint = bodyNode->getParentJoint();
+
+    joint->setActuatorType(Joint::FORCE);
+    EXPECT_EQ(joint->getActuatorType(), Joint::FORCE);
+    testCommandLimits<
+        &Joint::setForce,
+        &Joint::setForceLowerLimit,
+        &Joint::setForceUpperLimit>(joint);
+
+    joint->setActuatorType(Joint::ACCELERATION);
+    EXPECT_EQ(joint->getActuatorType(), Joint::ACCELERATION);
+    testCommandLimits<
+        &Joint::setAcceleration,
+        &Joint::setAccelerationLowerLimit,
+        &Joint::setAccelerationUpperLimit>(joint);
+
+    joint->setActuatorType(Joint::VELOCITY);
+    EXPECT_EQ(joint->getActuatorType(), Joint::VELOCITY);
+    testCommandLimits<
+        &Joint::setVelocity,
+        &Joint::setVelocityLowerLimit,
+        &Joint::setVelocityUpperLimit>(joint);
+  }
+}
+
+//==============================================================================
 TEST_F(JOINTS, POSITION_LIMIT)
 {
   double tol = 1e-3;
