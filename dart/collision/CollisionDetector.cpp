@@ -271,6 +271,19 @@ bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr& _skeleton)
   return false;
 }
 
+bool isValidIndex(const std::vector<std::vector<bool>>& _collidablePairs,
+                  const std::size_t _index1,
+                  const std::size_t _index2)
+{
+  assert(_index1 >= _index2);
+
+  if (_collidablePairs.size() > _index1
+      && _collidablePairs[_index1].size() > _index2)
+    return true;
+
+  return false;
+}
+
 bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
                                           const CollisionNode* _node2)
 {
@@ -282,13 +295,10 @@ bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
   if (index1 < index2)
     std::swap(index1, index2);
 
-  // TODO(JS): Workaround
-  // If this fuction is called before all the body nodes in the world are not
-  // added to the collision detector than it cause seg fault. We just return
-  // false in that case.
-  if (index1 > mCollidablePairs.size() - 1
-      || index2 > mCollidablePairs.size() - 1)
-    return true;
+  // Index validity check. The indices are not valid if the body nodes are not
+  // completely added to the collision detector yet.
+  if (!isValidIndex(mCollidablePairs, index1, index2))
+    return false;
 
   return mCollidablePairs[index1][index2];
 }
@@ -305,12 +315,9 @@ void CollisionDetector::setPairCollidable(const CollisionNode* _node1,
   if (index1 < index2)
     std::swap(index1, index2);
 
-  // TODO(JS): Workaround
-  // If this fuction is called before all the body nodes in the world are not
-  // added to the collision detector than it cause seg fault. We just return in
-  // that case.
-  if (index1 > mCollidablePairs.size() - 1
-      || index2 > mCollidablePairs.size() - 1)
+  // Index validity check. The indices are not valid if the body nodes are not
+  // completely added to the collision detector yet.
+  if (!isValidIndex(mCollidablePairs, index1, index2))
     return;
 
   mCollidablePairs[index1][index2] = _val;
