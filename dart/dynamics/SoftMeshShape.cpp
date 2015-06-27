@@ -47,9 +47,9 @@ namespace dynamics {
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
   : Shape(SOFT_MESH),
     mSoftBodyNode(_softBodyNode),
-    mAssimpMesh(NULL)
+    mAssimpMesh(nullptr)
 {
-  assert(_softBodyNode != NULL);
+  assert(_softBodyNode != nullptr);
   // Build mesh here using soft body node
   // TODO(JS): Not implemented.
   _buildMesh();

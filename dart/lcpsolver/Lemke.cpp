@@ -284,7 +284,7 @@ bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
   for (int i = 0; i < n; ++i) {
     if (w(i) < -threshold || _z(i) < -threshold)
       return false;
-    if (abs(w(i) * _z(i)) > threshold)
+    if (std::abs(w(i) * _z(i)) > threshold)
       return false;
   }
   return true;

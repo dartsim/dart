@@ -220,7 +220,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(getPositionsStatic()[1]) == DART_PI * 0.5)
+      if (std::abs(getPositionsStatic()[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mJointP.mName << "]. ("
                   << _positions[0] << ", "
@@ -246,7 +246,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (fabs(_positions[1]) == DART_PI * 0.5)
+      if (std::abs(_positions[1]) == DART_PI * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mJointP.mName << "]. ("
                   << _positions[0] << ", "
@@ -389,7 +389,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
       dJ0 << -(dq1*c2*s1) - dq2*c1*s2, -(dq2*c1*c2) + dq1*s1*s2, dq1*c1,
              0, 0, 0;
       dJ1 << dq2*c2,                -(dq2*s2),    0.0, 0.0, 0.0, 0.0;
-      dJ2.setConstant(0.0);
+      dJ2.setZero();
 
       break;
     }
@@ -407,7 +407,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
              0.0, 0.0, 0.0;
       dJ1 <<     0.0,               -s2*dq2,                -c2*dq2,
              0.0, 0.0, 0.0;
-      dJ2.setConstant(0.0);
+      dJ2.setZero();
       break;
     }
     default:

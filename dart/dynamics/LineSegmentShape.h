@@ -98,7 +98,7 @@ public:
   void removeConnection(size_t _connectionIdx);
 
   /// Get all the connections
-  const std::vector<Eigen::Vector2i>& getConnections() const;
+  const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;
 
   // Documentation inherited
   virtual void draw(renderer::RenderInterface* _ri,
@@ -121,7 +121,7 @@ protected:
   std::vector<Eigen::Vector3d> mVertices;
 
   /// Vector of connections
-  std::vector<Eigen::Vector2i> mConnections;
+  Eigen::aligned_vector<Eigen::Vector2i> mConnections;
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested

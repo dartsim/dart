@@ -125,7 +125,7 @@ public:
 
   /// Remove any unwarranted SoftBodyShapes
   /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
-  /// are implemented
+  /// are implemented. Please see #394.
   void removeSoftBodyShapes();
 
 
@@ -196,7 +196,7 @@ public:
   size_t getNumFaces();
 
   // Documentation inherited.
-  virtual void clearConstraintImpulse();
+  virtual void clearConstraintImpulse() override;
 
 protected:
 
@@ -212,7 +212,7 @@ protected:
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(const SkeletonPtr& _skeleton);
+  virtual void init(const SkeletonPtr& _skeleton) override;
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
@@ -340,9 +340,9 @@ protected:
   // Rendering
   //--------------------------------------------------------------------------
   /// \brief Render the entire subtree rooted at this body node.
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
+  virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const;
+                    bool _useDefaultColor = true, int _depth = 0) const override;
 
 protected:
   /// \brief List of point masses composing deformable mesh.

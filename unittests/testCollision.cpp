@@ -520,7 +520,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   WorldPtr world = SkelParser::readWorld(
       DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
-  EXPECT_TRUE(world != NULL);
+  EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -529,12 +529,12 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   SkeletonPtr skel4 = world->getSkeleton("skeleton 4");
   SkeletonPtr skel5 = world->getSkeleton("skeleton 5");
   SkeletonPtr skel6 = world->getSkeleton("skeleton 6");
-  EXPECT_TRUE(skel1 != NULL);
-  EXPECT_TRUE(skel2 != NULL);
-  EXPECT_TRUE(skel3 != NULL);
-  EXPECT_TRUE(skel4 != NULL);
-  EXPECT_TRUE(skel5 != NULL);
-  EXPECT_TRUE(skel6 != NULL);
+  EXPECT_TRUE(skel1 != nullptr);
+  EXPECT_TRUE(skel2 != nullptr);
+  EXPECT_TRUE(skel3 != nullptr);
+  EXPECT_TRUE(skel4 != nullptr);
+  EXPECT_TRUE(skel5 != nullptr);
+  EXPECT_TRUE(skel6 != nullptr);
 
   Joint* joint1 = skel1->getJoint(0);
   Joint* joint2 = skel2->getJoint(0);
@@ -542,12 +542,12 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   Joint* joint4 = skel4->getJoint(0);
   Joint* joint5 = skel5->getJoint(0);
   Joint* joint6 = skel6->getJoint(0);
-  EXPECT_TRUE(joint1 != NULL);
-  EXPECT_TRUE(joint2 != NULL);
-  EXPECT_TRUE(joint3 != NULL);
-  EXPECT_TRUE(joint4 != NULL);
-  EXPECT_TRUE(joint5 != NULL);
-  EXPECT_TRUE(joint6 != NULL);
+  EXPECT_TRUE(joint1 != nullptr);
+  EXPECT_TRUE(joint2 != nullptr);
+  EXPECT_TRUE(joint3 != nullptr);
+  EXPECT_TRUE(joint4 != nullptr);
+  EXPECT_TRUE(joint5 != nullptr);
+  EXPECT_TRUE(joint6 != nullptr);
   EXPECT_EQ(joint1->getActuatorType(), Joint::FORCE);
   EXPECT_EQ(joint2->getActuatorType(), Joint::PASSIVE);
   EXPECT_EQ(joint3->getActuatorType(), Joint::SERVO);

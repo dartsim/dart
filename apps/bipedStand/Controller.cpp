@@ -36,61 +36,18 @@
  */
 
 #include "apps/bipedStand/Controller.h"
-#include "dart/dynamics/Group.h"
-
-void createIndexing(std::vector<size_t>&)
-{
-  // Do nothing
-}
-
-template <typename ...Args>
-void createIndexing(std::vector<size_t>& _indexing, size_t _name,
-                    Args... args)
-{
-  _indexing.push_back(_name);
-  createIndexing(_indexing, args...);
-}
-
-static std::vector<size_t> createIndexing()
-{
-  // This app was made with dof indices hardcoded, but some internal DART
-  // development have changed the underlying indexing for the robot, so this
-  // map converts the old indexing into the new indexing as a temporary (or
-  // maybe permanent) workaround.
-
-  std::vector<size_t> indexing;
-  //                        0   1   2   3   4   5   6
-  createIndexing(indexing,  0,  1,  2,  3,  4,  5,  6,
-  //                        7   8   9  10  11  12  13
-                            7,  8, 13, 14, 15, 20, 21,
-  //                       14  15  16  17  18  19  20
-                            9, 16, 22, 10, 11, 17, 18,
-  //                       21  22  23  24  25  26  27
-                           23, 24, 25, 31, 12, 19, 26,
-  //                       28  29  30  31  32  33  34
-                           27, 28, 32, 33, 34, 29, 35,
-  //                       35  36
-                           30, 36);
-  return indexing;
-}
-
-static std::vector<dart::dynamics::DegreeOfFreedom*> getDofs(
-    const dart::dynamics::SkeletonPtr& _skel)
-{
-  std::vector<dart::dynamics::DegreeOfFreedom*> dofs;
-  const std::vector<size_t>& indexing = createIndexing();
-  dofs.reserve(indexing.size());
-
-  for(size_t index : indexing)
-    dofs.push_back(_skel->getDof(index));
-
-  return dofs;
-}
 
 Controller::Controller(dart::dynamics::SkeletonPtr _skel,
                        double _t) {
-  mSkel = dart::dynamics::Group::create("Group", getDofs(_skel));
+  mSkel = _skel;
   mLeftHeel = _skel->getBodyNode("h_heel_left");
+
+  mLeftFoot[0] = _skel->getDof("j_heel_left_1")->getIndexInSkeleton();
+  mLeftFoot[1] = _skel->getDof("j_toe_left")->getIndexInSkeleton();
+
+  mRightFoot[0] = _skel->getDof("j_heel_right_1")->getIndexInSkeleton();
+  mRightFoot[1] = _skel->getDof("j_toe_right")->getIndexInSkeleton();
+
   mTimestep = _t;
   mFrame = 0;
   int nDof = mSkel->getNumDofs();
@@ -100,7 +57,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _skel,
   mTorques.resize(nDof);
   mTorques.setZero();
 
-  resetDesiredDofs();
+  mDesiredDofs = mSkel->getPositions();
 
   // using SPD results in simple Kp coefficients
   for (int i = 0; i < 6; i++) {
@@ -130,10 +87,6 @@ void Controller::setDesiredDof(int _index, double _val) {
   mDesiredDofs[_index] = _val;
 }
 
-void Controller::resetDesiredDofs() {
-  mDesiredDofs = mSkel->getPositions();
-}
-
 void Controller::computeTorques() {
   Eigen::VectorXd _dof = mSkel->getPositions();
   Eigen::VectorXd _dofVel = mSkel->getVelocities();
@@ -153,25 +106,25 @@ void Controller::computeTorques() {
   Eigen::Vector3d com = mSkel->getCOM();
   Eigen::Vector3d cop = mLeftHeel->getTransform()
                         * Eigen::Vector3d(0.05, 0, 0);
-  Eigen::Vector2d diff(com[0] - cop[0], com[2] - cop[2]);
+
   double offset = com[0] - cop[0];
   if (offset < 0.1 && offset > 0.0) {
     double k1 = 200.0;
     double k2 = 100.0;
     double kd = 10.0;
-    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
-    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[mLeftFoot[0]]  += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[mLeftFoot[1]]  += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
     mPreOffset = offset;
   } else if (offset > -0.2 && offset < -0.05) {
     double k1 = 2000.0;
     double k2 = 100.0;
     double kd = 100.0;
-    mTorques[17] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[25] += -k2 * offset + kd * (mPreOffset - offset);
-    mTorques[19] += -k1 * offset + kd * (mPreOffset - offset);
-    mTorques[26] += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[mLeftFoot[0]]  += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[mLeftFoot[1]]  += -k2 * offset + kd * (mPreOffset - offset);
+    mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
+    mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
     mPreOffset = offset;
   }
 

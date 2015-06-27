@@ -287,11 +287,11 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
                           Ipopt::Index* _jCol,
                           Ipopt::Number* _values)
 {
-  // If the iRow and jCol arguments are not NULL, then IPOPT wants you to fill
+  // If the iRow and jCol arguments are not nullptr, then IPOPT wants you to fill
   // in the sparsity structure of the Jacobian (the row and column indices
-  // only). At this time, the x argument and the values argument will be NULL.
+  // only). At this time, the x argument and the values argument will be nullptr.
 
-  if (_values == NULL)
+  if (_values == nullptr)
   {
     // return the structure of the Jacobian
 
@@ -312,7 +312,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     // return the values of the Jacobian of the constraints
     size_t idx = 0;
     Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-    Eigen::Map<Eigen::VectorXd> grad(NULL, 0);
+    Eigen::Map<Eigen::VectorXd> grad(nullptr, 0);
 
     // Evaluate function values for equality constraints
     for (size_t i = 0; i < mProblem->getNumEqConstraints(); ++i)

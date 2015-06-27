@@ -66,7 +66,34 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     mFrictions(_coulombFrictions)
 {
   for (size_t i = 0; i < DOF; ++i)
+  {
     mPreserveDofNames[i] = false;
+    mDofNames[i] = std::string();
+  }
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
+    const UniqueProperties& _other)
+  : mPositionLowerLimits(_other.mPositionLowerLimits),
+    mPositionUpperLimits(_other.mPositionUpperLimits),
+    mVelocityLowerLimits(_other.mVelocityLowerLimits),
+    mVelocityUpperLimits(_other.mVelocityUpperLimits),
+    mAccelerationLowerLimits(_other.mAccelerationLowerLimits),
+    mAccelerationUpperLimits(_other.mAccelerationUpperLimits),
+    mForceLowerLimits(_other.mForceLowerLimits),
+    mForceUpperLimits(_other.mForceUpperLimits),
+    mSpringStiffnesses(_other.mSpringStiffnesses),
+    mRestPositions(_other.mRestPositions),
+    mDampingCoefficients(_other.mDampingCoefficients),
+    mFrictions(_other.mFrictions)
+{
+  for (size_t i = 0; i < DOF; ++i)
+  {
+    mPreserveDofNames[i] = _other.mPreserveDofNames[i];
+    mDofNames[i] = _other.mDofNames[i];
+  }
 }
 
 //==============================================================================
@@ -305,7 +332,7 @@ size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCommand(size_t _index, double _position)
+void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
 {
   if (_index >= getNumDofs())
   {
@@ -314,7 +341,43 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double _position)
     return;
   }
 
-  mCommands[_index] = _position;
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mForceLowerLimits[_index],
+                                     mMultiDofP.mForceUpperLimits[_index]);
+      break;
+    case PASSIVE:
+      dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
+             << "PASSIVE joint." << std::endl;
+      mCommands[_index] = _command;
+      break;
+    case SERVO:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mVelocityLowerLimits[_index],
+                                     mMultiDofP.mVelocityUpperLimits[_index]);
+      break;
+    case ACCELERATION:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mAccelerationLowerLimits[_index],
+                                     mMultiDofP.mAccelerationUpperLimits[_index]);
+      break;
+    case VELOCITY:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mVelocityLowerLimits[_index],
+                                     mMultiDofP.mVelocityUpperLimits[_index]);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
+             << "LOCKED joint." << std::endl;
+      mCommands[_index] = _command;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -343,7 +406,43 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
     return;
   }
 
-  mCommands = _commands;
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mForceLowerLimits,
+                             mMultiDofP.mForceUpperLimits);
+      break;
+    case PASSIVE:
+      dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
+             << "PASSIVE joint." << std::endl;
+      mCommands = _commands;
+      break;
+    case SERVO:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mVelocityLowerLimits,
+                             mMultiDofP.mVelocityUpperLimits);
+      break;
+    case ACCELERATION:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mAccelerationLowerLimits,
+                             mMultiDofP.mAccelerationUpperLimits);
+      break;
+    case VELOCITY:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mVelocityLowerLimits,
+                             mMultiDofP.mVelocityUpperLimits);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
+             << "LOCKED joint." << std::endl;
+      mCommands = _commands;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -485,6 +584,12 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
   // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
   notifyVelocityUpdate();
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommands[_index] = getVelocitiesStatic()[_index];
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -512,6 +617,12 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
   }
 
   setVelocitiesStatic(_velocities);
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommands = getVelocitiesStatic();
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -599,11 +710,11 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   mAccelerations[_index] = _acceleration;
   notifyAccelerationUpdate();
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands[_index] = getAccelerationsStatic()[_index];
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -633,11 +744,11 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationsStatic(_accelerations);
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands = getAccelerationsStatic();
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -772,11 +883,11 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 
   mForces[_index] = _force;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -805,11 +916,11 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 
   mForces = _forces;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -824,6 +935,12 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::resetForces()
 {
   mForces.setZero();
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == FORCE)
+    mCommands = mForces;
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================

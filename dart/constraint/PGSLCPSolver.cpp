@@ -201,7 +201,7 @@ bool PGSLCPSolver::isSymmetric(size_t _n, double* _A)
   {
     for (size_t j = 0; j < _n; ++j)
     {
-      if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
         for (size_t k = 0; k < _n; ++k)
@@ -232,7 +232,7 @@ bool PGSLCPSolver::isSymmetric(size_t _n, double* _A,
   {
     for (size_t j = _begin; j <= _end; ++j)
     {
-      if (std::fabs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
         for (size_t k = 0; k < _n; ++k)
@@ -412,7 +412,7 @@ bool solvePGS(int n, int nskip, int /*nub*/, double * A, double * x, double * b,
     // TEST
     if (sentinel)
     {
-      ea = fabs(x[i] - old_x);
+      ea = std::abs(x[i] - old_x);
       if (ea > option->eps_res)
         sentinel = false;
     }
@@ -492,9 +492,9 @@ bool solvePGS(int n, int nskip, int /*nub*/, double * A, double * x, double * b,
           x[idx] = new_x;
       }
 
-      if ( sentinel && fabs(x[idx]) > option->eps_div)
+      if ( sentinel && std::abs(x[idx]) > option->eps_div)
       {
-        ea = fabs((x[idx] - old_x)/x[idx]);
+        ea = std::abs((x[idx] - old_x)/x[idx]);
         if (ea > option->eps_ea)
           sentinel = false;
       }

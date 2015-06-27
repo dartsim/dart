@@ -90,22 +90,22 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalSpatialVelocity() const;
+  virtual void updateLocalSpatialVelocity() const override;
 
   // Documentation inherited
-  virtual void updateLocalSpatialAcceleration() const;
+  virtual void updateLocalSpatialAcceleration() const override;
 
   // Documentation inherited
-  virtual void updateLocalPrimaryAcceleration() const;
+  virtual void updateLocalPrimaryAcceleration() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const;
+  virtual void updateLocalJacobian(bool =true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

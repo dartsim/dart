@@ -224,7 +224,7 @@ ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
                   bool _useDefaultColor, int) const
 {
-  if(NULL == _ri)
+  if(nullptr == _ri)
     return;
 
 //  _ri->pushMatrix();
@@ -258,7 +258,7 @@ const Frame* Entity::getParentFrame() const
 //==============================================================================
 bool Entity::descendsFrom(const Frame *_someFrame) const
 {
-  if(NULL == _someFrame)
+  if(nullptr == _someFrame)
     return false;
 
   if(this == _someFrame)

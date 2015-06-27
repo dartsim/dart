@@ -43,7 +43,6 @@
 #include "dart/common/Console.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
-//#include "dart/constraint/OldConstraintDynamics.h"
 // #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
@@ -218,7 +217,8 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   }
 
   SDFBodyNode sdfBodyNode;
-  sdfBodyNode.properties = std::make_shared<dynamics::SoftBodyNode::Properties>(
+  sdfBodyNode.properties =
+      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
         *standardProperties, softProperties);
   sdfBodyNode.initTransform = standardSDF.initTransform;
   sdfBodyNode.type = "soft";

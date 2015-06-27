@@ -353,36 +353,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange);
+  virtual void setVelocityChange(size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index) const;
+  virtual double getVelocityChange(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetVelocityChanges();
+  virtual void resetVelocityChanges() override;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse);
+  virtual void setConstraintImpulse(size_t _index, double _impulse) override;
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index) const;
+  virtual double getConstraintImpulse(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetConstraintImpulses();
+  virtual void resetConstraintImpulses() override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt);
+  virtual void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt);
+  virtual void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
@@ -424,7 +424,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const;
+  virtual double getPotentialEnergy() const override;
 
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
@@ -438,7 +438,7 @@ protected:
   void registerDofs() override;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames();
+  virtual void updateDegreeOfFreedomNames() override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

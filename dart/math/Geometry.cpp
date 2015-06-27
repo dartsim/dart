@@ -531,33 +531,36 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
   // v = beta*p + gamma*w + 1 / 2*cross(p, w)
   //    , beta = t*(1 + cos(t)) / (2*sin(t)), gamma = <w, p>*(1 - beta) / t^2
   //--------------------------------------------------------------------------
-  double theta =
-      std::acos(
-        std::max(
-          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
+//  double theta =
+//      std::acos(
+//        std::max(
+//          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
 
-  if (theta > DART_PI - DART_EPSILON) {
-    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
+//  if (theta > DART_PI - DART_EPSILON) {
+//    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
 
-    return Eigen::Vector3d(
-          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta),
-          _R(0, 2) > _R(2, 0) ? theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta),
-          _R(1, 0) > _R(0, 1) ? theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta) :
-                             -theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta));
-  } else {
-    double alpha = 0.0;
+//    return Eigen::Vector3d(
+//          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta),
+//          _R(0, 2) > _R(2, 0) ? theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(1, 1) - 1.0)*delta),
+//          _R(1, 0) > _R(0, 1) ? theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta) :
+//                             -theta*sqrt(1.0 + (_R(2, 2) - 1.0)*delta));
+//  } else {
+//    double alpha = 0.0;
 
-    if (theta > DART_EPSILON)
-      alpha = 0.5*theta / sin(theta);
-    else
-      alpha = 0.5 + DART_1_12*theta*theta;
+//    if (theta > DART_EPSILON)
+//      alpha = 0.5*theta / sin(theta);
+//    else
+//      alpha = 0.5 + DART_1_12*theta*theta;
 
-    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
-                           alpha*(_R(0, 2) - _R(2, 0)),
-                           alpha*(_R(1, 0) - _R(0, 1)));
-  }
+//    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
+//                           alpha*(_R(0, 2) - _R(2, 0)),
+//                           alpha*(_R(1, 0) - _R(0, 1)));
+//  }
+
+  Eigen::AngleAxisd aa(_R);
+  return aa.angle()*aa.axis();
 }
 
 Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
@@ -570,7 +573,6 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
       std::acos(
         std::max(
           std::min(0.5 * (_T(0, 0) + _T(1, 1) + _T(2, 2) - 1.0), 1.0), -1.0));
-  double alpha;
   double beta;
   double gamma;
   Eigen::Vector6d ret;
@@ -604,6 +606,7 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
         beta*_T(1, 3) - 0.5*(w[2]*_T(0, 3) - w[0]*_T(2, 3)) + gamma*w[1],
         beta*_T(2, 3) - 0.5*(w[0]*_T(1, 3) - w[1]*_T(0, 3)) + gamma*w[2];
   } else {
+    double alpha;
     if (theta > DART_EPSILON) {
       alpha = 0.5*theta / sin(theta);
       beta = (1.0 + cos(theta))*alpha;
@@ -1402,19 +1405,19 @@ Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
 
 bool verifyRotation(const Eigen::Matrix3d& _T) {
   return !isNan(_T)
-      && fabs(_T.determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.determinant() - 1.0) <= DART_EPSILON;
 }
 
 bool verifyTransform(const Eigen::Isometry3d& _T) {
   return !isNan(_T.matrix().topRows<3>())
-      && fabs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
 #ifndef NDEBUG
-  if (fabs(_m(0, 0)) > DART_EPSILON
-      || fabs(_m(1, 1)) > DART_EPSILON
-      || fabs(_m(2, 2)) > DART_EPSILON) {
+  if (std::abs(_m(0, 0)) > DART_EPSILON
+      || std::abs(_m(1, 1)) > DART_EPSILON
+      || std::abs(_m(2, 2)) > DART_EPSILON) {
     std::cout << "Not skew symmetric matrix" << std::endl;
     std::cerr << _m << std::endl;
     return Eigen::Vector3d::Zero();
