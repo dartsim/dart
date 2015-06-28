@@ -125,6 +125,21 @@ inline double round2(double _x) {
     return static_cast<double>(gintx + 1.0);
 }
 
+template <typename T>
+inline T clip(const T& val, const T& lower, const T& upper)
+{
+  return std::max(lower, std::min(val, upper));
+}
+
+template <typename DerivedA, typename DerivedB>
+inline typename DerivedA::PlainObject clip(
+    const Eigen::MatrixBase<DerivedA>& val,
+    const Eigen::MatrixBase<DerivedB>& lower,
+    const Eigen::MatrixBase<DerivedB>& upper)
+{
+  return lower.cwiseMax(val.cwiseMin(upper));
+}
+
 inline bool isEqual(double _x, double _y) {
   return (std::abs(_x - _y) < DART_EPSILON);
 }

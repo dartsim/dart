@@ -3,6 +3,12 @@
 1. Improved app indexing for bipedStand and atlasSimbicon
     * [Pull request #417](https://github.com/dartsim/dart/pull/417)
 
+1. Added clipping command when it exceeds the limits
+    * [Pull request #419](https://github.com/dartsim/dart/pull/419)
+
+1. Improved CollisionNode's index validity check
+    * [Pull request #421](https://github.com/dartsim/dart/pull/421)
+
 ### Version 5.0.0 (2015-06-15)
 
 1. Fixed aligned memory allocation with Eigen objects
