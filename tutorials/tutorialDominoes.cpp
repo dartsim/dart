@@ -64,11 +64,11 @@ class Controller
 {
 public:
 
-  Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
+  Controller(const SkeletonPtr& manipulator, const SkeletonPtr& /*domino*/)
     : mManipulator(manipulator)
   {
     // Grab the current joint angles to use them as desired angles
-    // Lesson 2b
+    // Lesson 2c
 
     // Grab the last body in the manipulator, and use it as an end effector
     // Lesson 3a
@@ -99,9 +99,9 @@ public:
   /// Coriolis forces
   void setPDForces()
   {
-    // Lesson 2a
+    // Lesson 2b
 
-    // Lesson 2c
+    // Lesson 2d
   }
 
   /// Compute an operational space controller to push on the first domino
@@ -335,22 +335,8 @@ SkeletonPtr createFloor()
 
 SkeletonPtr createManipulator()
 {
-  // Load the Skeleton from a file
-  dart::utils::DartLoader loader;
-  SkeletonPtr manipulator =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
-  manipulator->setName("manipulator");
-
-  // Position its base in a reasonable way
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
-  manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
-
-  // Get it into a useful configuration
-  manipulator->getDof(1)->setPosition( 140.0*M_PI/180.0);
-  manipulator->getDof(2)->setPosition(-140.0*M_PI/180.0);
-
-  return manipulator;
+  // Lesson 2a
+  return Skeleton::create("manipulator");
 }
 
 int main(int argc, char* argv[])
