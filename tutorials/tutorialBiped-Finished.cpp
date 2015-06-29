@@ -96,7 +96,6 @@ public:
   /// Add commanding forces from PD controllers (Lesson 2 Answer)
   void addPDForces()
   {
-    mForces.setZero();
     Eigen::VectorXd q = mBiped->getPositions();
     Eigen::VectorXd dq = mBiped->getVelocities();
     
@@ -302,14 +301,19 @@ SkeletonPtr loadBiped()
 
   SkeletonPtr biped = world->getSkeleton("biped");
 
-  // Set joint limits on knees
+  // Set joint limits
   for(size_t i = 0; i < biped->getNumJoints(); ++i)
     biped->getJoint(i)->setPositionLimited(true);
   
   // Enable self collision check but ignore adjacent bodies
   biped->enableSelfCollision();
-  
-  // Set initial configuration
+
+  return biped;
+}
+
+// Set initial configuration (Lesson 2 Answer)
+void setInitialPose(SkeletonPtr biped)
+{
   biped->setPosition(biped->getDof("j_thigh_left_z")->
                      getIndexInSkeleton(), 0.15);
   biped->setPosition(biped->getDof("j_thigh_right_z")->
@@ -317,16 +321,11 @@ SkeletonPtr loadBiped()
   biped->setPosition(biped->getDof("j_shin_left")->
                      getIndexInSkeleton(), -0.4);
   biped->setPosition(biped->getDof("j_shin_right")->
-                     getIndexInSkeleton(), -1.4);
+                     getIndexInSkeleton(), -0.4);
   biped->setPosition(biped->getDof("j_heel_left_1")->
                      getIndexInSkeleton(), 0.25);
   biped->setPosition(biped->getDof("j_heel_right_1")->
                      getIndexInSkeleton(), 0.25);
-  biped->setPosition(biped->getDof("j_bicep_left_x")->
-                     getIndexInSkeleton(), 0.8);
-  biped->setPosition(biped->getDof("j_bicep_right_x")->
-                     getIndexInSkeleton(), -0.8);
-  return biped;
 }
 
 // Load a skateboard model and connect it to the biped model via an Euler joint
@@ -362,6 +361,14 @@ void setVelocityAccuators(SkeletonPtr biped)
 // Solve for a balanced pose using IK (Lesson 7 Answer)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
+  // Modify the intial pose to stand on one foot 
+  biped->setPosition(biped->getDof("j_shin_right")->
+                     getIndexInSkeleton(), -1.4);
+  biped->setPosition(biped->getDof("j_bicep_left_x")->
+                     getIndexInSkeleton(), 0.8);
+  biped->setPosition(biped->getDof("j_bicep_right_x")->
+                     getIndexInSkeleton(), -0.8);
+
   Eigen::VectorXd newPose = biped->getPositions();
   BodyNodePtr leftHeel = biped->getBodyNode("h_heel_left");
   BodyNodePtr leftToe = biped->getBodyNode("h_toe_left");
@@ -373,17 +380,17 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
     LinearJacobian jacobian = biped->getCOMLinearJacobian() -
         biped->getLinearJacobian(leftHeel, leftHeel->getCOM(leftHeel));
     
-    // sagittal deviation
+    // Sagittal deviation
     double error = deviation[0];
     Eigen::VectorXd gradient = jacobian.row(0);
     Eigen::VectorXd newDirection = -0.2 * error * gradient;
     
-    // lateral deviation
+    // Lateral deviation
     error = deviation[2];
     gradient = jacobian.row(2);
     newDirection += -0.2 * error * gradient;
     
-    // position constraint on four (approximated) corners of the left foot
+    // Position constraint on four (approximated) corners of the left foot
     Eigen::Vector3d offset(0.0, -0.04, -0.03);
     error = (leftHeel->getTransform() * offset)[1] - initialHeight;
     gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
@@ -443,6 +450,9 @@ int main(int argc, char* argv[])
 
   // Lesson 1
   SkeletonPtr biped = loadBiped();
+
+  // Lesson 2
+  setInitialPose(biped);
   
   // Lesson 5
   modifyBipedWithSkateboard(biped);
