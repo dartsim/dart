@@ -131,23 +131,32 @@ SoftBodyNode::~SoftBodyNode()
 }
 
 //==============================================================================
-void SoftBodyNode::removeSoftBodyShapes()
+ShapePtr SoftBodyNode::removeSoftBodyShapes()
 {
-  for(size_t i=0; i<mEntityP.mVizShapes.size(); )
+  ShapePtr oldShape;
+  for(size_t i=0; i<mBodyP.mColShapes.size(); )
   {
-    if(dynamic_cast<dynamics::SoftMeshShape*>(mEntityP.mVizShapes[i].get()))
-      removeVisualizationShape(mEntityP.mVizShapes[i]);
+    if(dynamic_cast<dynamics::SoftMeshShape*>(mBodyP.mColShapes[i].get()))
+    {
+      oldShape = mBodyP.mColShapes[i];
+      removeCollisionShape(oldShape);
+    }
     else
       ++i;
   }
 
-  for(size_t i=0; i<mBodyP.mColShapes.size(); )
+  for(size_t i=0; i<mEntityP.mVizShapes.size(); )
   {
-    if(dynamic_cast<dynamics::SoftMeshShape*>(mBodyP.mColShapes[i].get()))
-      removeCollisionShape(mBodyP.mColShapes[i]);
+    if(dynamic_cast<dynamics::SoftMeshShape*>(mEntityP.mVizShapes[i].get()))
+    {
+      oldShape = mEntityP.mVizShapes[i];
+      removeVisualizationShape(oldShape);
+    }
     else
       ++i;
   }
+
+  return oldShape;
 }
 
 //==============================================================================
@@ -163,7 +172,7 @@ void SoftBodyNode::setProperties(const Properties& _properties)
 void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 {
   // SoftMeshShape pointers should not be copied between bodies
-  removeSoftBodyShapes();
+  ShapePtr oldShape = removeSoftBodyShapes();
 
   size_t newCount = _properties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
@@ -207,6 +216,12 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
   mSoftShape = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
   addVisualizationShape(mSoftShape);
   addCollisionShape(mSoftShape);
+
+  if(oldShape) // Copy the properties of the previous soft shape, if it exists
+  {
+    mSoftShape->setColor(oldShape->getRGBA());
+    mSoftShape->setLocalTransform(oldShape->getLocalTransform());
+  }
 }
 
 //==============================================================================
