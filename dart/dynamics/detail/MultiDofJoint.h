@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 
 #define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )              \
-  dterr << "[MultiDofJoint::" #func "] mismatch beteween size of "  \
+  dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
         << #arg " [" << arg .size() << "] and the number of "       \
         << "DOFs [" << getNumDofs() << "] for Joint named ["        \
         << getName() << "]\n";                                      \
