@@ -57,12 +57,35 @@ const double default_spring_stiffness = 100;
 const double default_damping_coefficient = 10;
 
 const double default_ground_width = 2;
-const double default_wall_thickness = 0.01;
+const double default_wall_thickness = 0.1;
 const double default_wall_height = 1;
 const double default_spawn_range = 0.9*default_ground_width/2;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
+
+void setupRing(const SkeletonPtr& chain)
+{
+  for(size_t i=6; i < chain->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = chain->getDof(i);
+    dof->setSpringStiffness(default_spring_stiffness);
+    dof->setDampingCoefficient(default_damping_coefficient);
+  }
+
+  size_t numEdges = chain->getNumBodyNodes();
+  double angle = 2*M_PI/numEdges;
+
+  for(size_t i=1; i < chain->getNumJoints(); ++i)
+  {
+    Joint* joint = chain->getJoint(i);
+    Eigen::Vector3d restPos = BallJoint::convertToPositions(Eigen::Matrix3d(
+          Eigen::AngleAxisd(angle, Eigen::Vector3d(0, 1, 0))));
+
+    for(size_t j=0; j<3; ++j)
+      joint->setRestPosition(j, restPos[j]);
+  }
+}
 
 class MyWindow : public dart::gui::SimWindow
 {
@@ -90,7 +113,7 @@ public:
         break;
 
       case '2':
-        addRing(mOriginalSoftChain->clone());
+        addChain(mOriginalSoftChain->clone());
         break;
 
       case 'r':
@@ -106,7 +129,7 @@ public:
 
 protected:
 
-  void addRing(const SkeletonPtr& chain)
+  void addChain(const SkeletonPtr& chain)
   {
     // Set the starting position for the chain
     Eigen::Vector6d positions(Eigen::Vector6d::Zero());
@@ -181,12 +204,19 @@ protected:
       angular_speed = mDistribution(mMT) * maximum_start_w;
     }
 
-//    Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
-//    Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
-//    center.setClassicDerivatives(v, w);
+    Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
+    Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
+    center.setClassicDerivatives(v, w);
 
     // Use the reference frames to set the velocity of the Skeleton's root
     chain->getJoint(0)->setVelocities(ref.getSpatialVelocity());
+  }
+
+  void addRing(const SkeletonPtr& chain)
+  {
+    setupRing(chain);
+
+    addChain(chain);
 
     // Create a closed loop to turn the chain into a ring
     BodyNode* head = chain->getBodyNode(0);
@@ -279,52 +309,34 @@ BodyNode* addSoftShape(const SkeletonPtr& chain, const std::string& name,
     joint_properties.mT_ChildBodyToJoint = tf.inverse();
   }
 
+  double soft_shape_width = 2*default_shape_width;
   SoftBodyNode::UniqueProperties soft_properties;
   if(SOFT_BOX == type)
   {
     soft_properties = SoftBodyNodeHelper::makeBoxProperties(Eigen::Vector3d(
-        default_shape_width, default_shape_width, default_shape_height),
+        soft_shape_width, soft_shape_width, default_shape_height),
         Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4),
-        default_shape_density*default_shape_height*pow(default_shape_width,2));
+        default_shape_density*default_shape_height*pow(soft_shape_width,2));
   }
   else if(SOFT_CYLINDER == type)
   {
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
-          default_shape_width/2.0, default_shape_height, 8, 6, 3,
+          soft_shape_width/2.0, default_shape_height, 8, 3, 2,
           default_shape_density * default_shape_height
-          * pow(M_PI*default_shape_width/2.0, 2));
+          * pow(M_PI*soft_shape_width/2.0, 2));
   }
+  soft_properties.mKv = 100;
+  soft_properties.mKe = 0;
+  soft_properties.mDampCoeff = 5;
 
   SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
         parent, joint_properties, SoftBodyNode::Properties(
           BodyNode::Properties(), soft_properties)).second;
 
-  bn->getVisualizationShape(0)->setColor(dart::Color::Blue());
+  bn->getVisualizationShape(0)->setColor(dart::Color::Red());
+
 
   return bn;
-}
-
-void setupChain(const SkeletonPtr& chain)
-{
-  for(size_t i=6; i < chain->getNumDofs(); ++i)
-  {
-    DegreeOfFreedom* dof = chain->getDof(i);
-    dof->setSpringStiffness(default_spring_stiffness);
-    dof->setDampingCoefficient(default_damping_coefficient);
-  }
-
-  size_t numEdges = chain->getNumBodyNodes();
-  double angle = 2*M_PI/numEdges;
-
-  for(size_t i=1; i < chain->getNumJoints(); ++i)
-  {
-    Joint* joint = chain->getJoint(i);
-    Eigen::Vector3d restPos = BallJoint::convertToPositions(Eigen::Matrix3d(
-          Eigen::AngleAxisd(angle, Eigen::Vector3d(0, 1, 0))));
-
-    for(size_t j=0; j<3; ++j)
-      joint->setRestPosition(j, restPos[j]);
-  }
 }
 
 SkeletonPtr createRigidChain()
@@ -338,8 +350,6 @@ SkeletonPtr createRigidChain()
   bn = addRigidShape<BallJoint>(chain, "rigid box 5", Shape::BOX, bn);
   bn = addRigidShape<BallJoint>(chain, "rigid cyl 6", Shape::CYLINDER, bn);
 
-  setupChain(chain);
-
   return chain;
 }
 
@@ -348,13 +358,8 @@ SkeletonPtr createSoftChain()
   SkeletonPtr chain = Skeleton::create("soft_chain");
 
   BodyNode* bn = addSoftShape<FreeJoint>(chain, "soft box 1", SOFT_BOX);
-  bn = addSoftShape<BallJoint>(chain, "soft cyl 2", SOFT_CYLINDER, bn);
-  bn = addSoftShape<BallJoint>(chain, "soft box 3", SOFT_BOX, bn);
-  bn = addSoftShape<BallJoint>(chain, "soft cyl 4", SOFT_CYLINDER, bn);
-  bn = addSoftShape<BallJoint>(chain, "soft box 5", SOFT_BOX, bn);
-  bn = addSoftShape<BallJoint>(chain, "soft cyl 6", SOFT_CYLINDER, bn);
-
-  setupChain(chain);
+//  bn = addSoftShape<BallJoint>(chain, "soft cyl 2", SOFT_CYLINDER, bn);
+//  bn = addSoftShape<BallJoint>(chain, "soft box 3", SOFT_BOX, bn);
 
   return chain;
 }
@@ -396,8 +401,9 @@ SkeletonPtr createWall()
   bn->addVisualizationShape(shape);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(default_ground_width/2.0, 0,
-                                     default_wall_height/2.0);
+  tf.translation() = Eigen::Vector3d(
+        (default_ground_width + default_wall_thickness)/2.0, 0.0,
+        (default_wall_height  + default_wall_thickness)/2.0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return wall;
