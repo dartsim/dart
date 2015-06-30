@@ -1175,6 +1175,10 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 //  _ri->setPenColor(fleshColor);
 //  if (_showMeshs)
   {
+    _ri->setPenColor(mSoftShape->getRGBA());
+    glEnable(GL_LIGHTING);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     Eigen::Vector3d pos;
     Eigen::Vector3d pos_normalized;
     for (size_t i = 0; i < mSoftP.mFaces.size(); ++i)
