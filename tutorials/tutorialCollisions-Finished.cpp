@@ -70,19 +70,37 @@ const double default_soft_damping = 5.0;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-void setupRing(const SkeletonPtr& /*ring*/)
+void setupRing(const SkeletonPtr& ring)
 {
   // Set the spring and damping coefficients for the degrees of freedom
-  // Lesson 4a
+  for(size_t i=6; i < ring->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = ring->getDof(i);
+    dof->setSpringStiffness(default_spring_stiffness);
+    dof->setDampingCoefficient(default_damping_coefficient);
+  }
 
   // Compute the joint angle needed to form a ring
-  // Lesson 4b
+  size_t numEdges = ring->getNumBodyNodes();
+  double angle = 2*M_PI/numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
-  // Lesson 4b
+  for(size_t i=1; i < ring->getNumJoints(); ++i)
+  {
+    Joint* joint = ring->getJoint(i);
+    Eigen::Vector3d restPos = BallJoint::convertToPositions(Eigen::Matrix3d(
+          Eigen::AngleAxisd(angle, Eigen::Vector3d(0, 1, 0))));
+
+    for(size_t j=0; j<3; ++j)
+      joint->setRestPosition(j, restPos[j]);
+  }
 
   // Set the Joints to be in their rest positions
-  // Lesson 4c
+  for(size_t i=6; i < ring->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = ring->getDof(i);
+    dof->setPosition(dof->getRestPosition());
+  }
 }
 
 class MyWindow : public dart::gui::SimWindow
@@ -169,29 +187,81 @@ public:
 protected:
 
   /// Add an object to the world and toss it at the wall
-  bool addObject(const SkeletonPtr& /*object*/)
+  bool addObject(const SkeletonPtr& object)
   {
     // Set the starting position for the object
-    // Lesson 3a
+    Eigen::Vector6d positions(Eigen::Vector6d::Zero());
+
+    // If randomization is on, we will randomize the starting y-location
+    if(mRandomize)
+      positions[4] = default_spawn_range*mDistribution(mMT);
+
+    positions[5] = default_start_height;
+    object->getJoint(0)->setPositions(positions);
 
     // Add the object to the world
-    // Lesson 3b
+    object->setName(object->getName()+std::to_string(mSkelCount++));
+    mWorld->addSkeleton(object);
 
     // Compute collisions
-    // Lesson 3c
+    dart::collision::CollisionDetector* detector =
+        mWorld->getConstraintSolver()->getCollisionDetector();
+    detector->detectCollision(true, true);
+
+    // Look through the collisions to see if the new object would start in
+    // collision with something
+    bool collision = false;
+    size_t collisionCount = detector->getNumContacts();
+    for(size_t i = 0; i < collisionCount; ++i)
+    {
+      const dart::collision::Contact& contact = detector->getContact(i);
+      if(contact.bodyNode1.lock()->getSkeleton() == object
+         || contact.bodyNode2.lock()->getSkeleton() == object)
+      {
+        collision = true;
+        break;
+      }
+    }
 
     // Refuse to add the object if it is in collision
-    // Lesson 3c
+    if(collision)
+    {
+      mWorld->removeSkeleton(object);
+      std::cout << "The new object spawned in a collision. "
+                << "It will not be added to the world." << std::endl;
+      return false;
+    }
 
     // Create reference frames for setting the initial velocity
-    // Lesson 3d
+    Eigen::Isometry3d centerTf(Eigen::Isometry3d::Identity());
+    centerTf.translation() = object->getCOM();
+    SimpleFrame center(Frame::World(), "center", centerTf);
+
+    SimpleFrame ref(&center, "root");
+    ref.setRelativeTransform(object->getBodyNode(0)->getTransform(&center));
 
     // Set the velocities of the reference frames so that we can easily give the
     // Skeleton the linear and angular velocities that we want
-    // Lesson 3e
+    double angle = default_launch_angle;
+    double speed = default_start_v;
+    double angular_speed = default_start_w;
+    if(mRandomize)
+    {
+      angle = (mDistribution(mMT) + 1.0)/2.0 *
+          (maximum_launch_angle - minimum_launch_angle) + minimum_launch_angle;
+
+      speed = (mDistribution(mMT) + 1.0)/2.0 *
+          (maximum_start_v - minimum_start_v) + minimum_start_v;
+
+      angular_speed = mDistribution(mMT) * maximum_start_w;
+    }
+
+    Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
+    Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
+    center.setClassicDerivatives(v, w);
 
     // Use the reference frames to set the velocity of the Skeleton's root
-    // Lesson 3f
+    object->getJoint(0)->setVelocities(ref.getSpatialVelocity());
 
     return true;
   }
@@ -206,10 +276,16 @@ protected:
       return;
 
     // Create a closed loop to turn the chain into a ring
-    // Lesson 5
+    BodyNode* head = ring->getBodyNode(0);
+    BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes()-1);
 
     // Compute the offset where the JointConstraint should be located
-    // Lesson 5
+    Eigen::Vector3d offset = Eigen::Vector3d(0, 0, -default_shape_height / 2.0);
+    auto constraint = new dart::constraint::BallJointConstraint(
+          head, tail, head->getWorldTransform() * offset);
+
+    mWorld->getConstraintSolver()->addConstraint(constraint);
+    mJointConstraints.push_back(constraint);
   }
 
   /// Remove a Skeleton and get rid of the constraint that was associated with
@@ -264,27 +340,61 @@ protected:
 
 /// Add a rigid body with the specified Joint type to a chain
 template<class JointType>
-BodyNode* addRigidBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
-                       Shape::ShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
+BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
+                       Shape::ShapeType type, BodyNode* parent = nullptr)
 {
   // Compute the transform for the center of the object
-  // Lesson 1a
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+  tf.translation() = center;
 
   // Set the Joint properties
-  // Lesson 1b
+  typename JointType::Properties properties;
+  properties.mName = name+"_joint";
+  if(parent)
+  {
+    // If the body has a parent, we should position the joint to be in the
+    // middle of the centers of the two bodies
+    properties.mT_ParentBodyToJoint = tf;
+    properties.mT_ChildBodyToJoint = tf.inverse();
+  }
 
   // Create the Joint and Body pair
-  // Lesson 1c
-  BodyNode* bn = nullptr;
+  BodyNode* bn = chain->createJointAndBodyNodePair<JointType>(
+        parent, properties, BodyNode::Properties(name)).second;
 
   // Make the shape based on the requested Shape type
-  // Lesson 1d
+  std::shared_ptr<Shape> shape;
+  if(Shape::BOX == type)
+  {
+    shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+                                         default_shape_width,
+                                         default_shape_width,
+                                         default_shape_height));
+  }
+  else if(Shape::CYLINDER == type)
+  {
+    shape = std::make_shared<CylinderShape>(default_shape_width/2,
+                                            default_shape_height);
+  }
+  else if(Shape::ELLIPSOID == type)
+  {
+    shape = std::make_shared<EllipsoidShape>(
+          default_shape_height*Eigen::Vector3d::Ones());
+  }
+
+  bn->addVisualizationShape(shape);
+  bn->addCollisionShape(shape);
 
   // Setup the inertia for the body
-  // Lesson 1e
+  Inertia box_inertia;
+  double mass = default_shape_density * shape->getVolume();
+  box_inertia.setMass(mass);
+  box_inertia.setMoment(shape->computeInertia(mass));
+  bn->setInertia(box_inertia);
 
   // Set the coefficient of restitution to make the body more bouncy
-  // Lesson 1f
+  bn->setRestitutionCoeff(default_restitution);
 
   return bn;
 }
@@ -297,21 +407,58 @@ enum SoftShapeType {
 
 /// Add a soft body with the specified Joint type to a chain
 template<class JointType>
-BodyNode* addSoftShape(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
-                       SoftShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
+BodyNode* addSoftShape(const SkeletonPtr& chain, const std::string& name,
+                       SoftShapeType type, BodyNode* parent = nullptr)
 {
   // Compute the transform for the center of the object
-  // Lesson 2a
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+  tf.translation() = center;
 
   // Set the Joint properties
-  // Lesson 2b
+  typename JointType::Properties joint_properties;
+  joint_properties.mName = name+"_joint";
+  if(parent)
+  {
+    // If the body has a parent, we should position the joint to be in the
+    // middle of the centers of the two bodies
+    joint_properties.mT_ParentBodyToJoint = tf;
+    joint_properties.mT_ChildBodyToJoint = tf.inverse();
+  }
 
   // Set the properties of the soft body
-  // Lesson 2c
+  double soft_shape_width = 2*default_shape_width;
+  SoftBodyNode::UniqueProperties soft_properties;
+  // Use the SoftBodyNodeHelper class to create the geometries for the
+  // SoftBodyNode
+  if(SOFT_BOX == type)
+  {
+    soft_properties = SoftBodyNodeHelper::makeBoxProperties(Eigen::Vector3d(
+        soft_shape_width, soft_shape_width, default_shape_height),
+        Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4),
+        default_shape_density*default_shape_height*pow(soft_shape_width,2));
+  }
+  else if(SOFT_CYLINDER == type)
+  {
+    soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
+          soft_shape_width/2.0, default_shape_height, 8, 3, 2,
+          default_shape_density * default_shape_height
+          * pow(M_PI*soft_shape_width/2.0, 2));
+  }
+  else if(SOFT_ELLIPSOID == type)
+  {
+    soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
+          default_shape_height*Eigen::Vector3d::Ones(), 6, 6,
+          default_shape_density * 4.0/3.0*M_PI*pow(default_shape_height/2,3));
+  }
+  soft_properties.mKv = default_vertex_stiffness;
+  soft_properties.mKe = default_edge_stiffness;
+  soft_properties.mDampCoeff = default_soft_damping;
 
   // Create the Joint and Body pair
-  // Lesson 2d
-  SoftBodyNode* bn = nullptr;
+  SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
+        parent, joint_properties, SoftBodyNode::Properties(
+          BodyNode::Properties(name), soft_properties)).second;
 
   return bn;
 }
@@ -375,10 +522,26 @@ SkeletonPtr createHybridBody()
   SkeletonPtr hybrid = Skeleton::create("hybrid");
 
   // Add a soft body
-  /*BodyNode* bn =*/ addSoftShape<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
+  BodyNode* bn = addSoftShape<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
-  // Lesson 2e
+  bn = hybrid->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn->setName("rigid box");
+
+  double box_shape_height = default_shape_height;
+  std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
+        box_shape_height*Eigen::Vector3d::Ones());
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
+  box->setLocalTransform(tf);
+
+  bn->addCollisionShape(box);
+  bn->addVisualizationShape(box);
+
+  Inertia inertia;
+  inertia.setMass(default_shape_density*pow(box_shape_height,3));
+  inertia.setMoment(box->computeInertia(inertia.getMass()));
+  bn->setInertia(inertia);
 
   setAllColors(hybrid, dart::Color::Green());
 
