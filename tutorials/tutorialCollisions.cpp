@@ -50,7 +50,7 @@ const double minimum_launch_angle = 20.0*M_PI/180.0; // rad
 const double maximum_launch_angle = 60.0*M_PI/180.0; // rad
 const double default_launch_angle = 45.0*M_PI/180.0; // rad
 
-const double maximum_start_w = 10*M_PI; // rad/s
+const double maximum_start_w = 6*M_PI; // rad/s
 const double default_start_w = 3*M_PI;  // rad/s
 
 const double default_spring_stiffness = 100;
@@ -99,7 +99,8 @@ public:
       mDistribution(-1.0, std::nextafter(1.0, 2.0)),
       mOriginalRigidChain(rigidChain),
       mOriginalSoftChain(softChain),
-      mOriginalHybridChain(hybridChain)
+      mOriginalHybridChain(hybridChain),
+      mSkelCount(0)
   {
     setWorld(world);
   }
@@ -109,11 +110,20 @@ public:
     switch(key)
     {
       case '1':
-        addRing(mOriginalRigidChain->clone());
+        addChain(mOriginalRigidChain->clone());
         break;
 
       case '2':
+        addRing(mOriginalRigidChain->clone());
+        break;
+
+      case '3':
         addChain(mOriginalSoftChain->clone());
+        break;
+
+      case 'd':
+        if(mWorld->getNumSkeletons() > 2)
+          removeSkeleton(mWorld->getSkeleton(2));
         break;
 
       case 'r':
@@ -127,9 +137,23 @@ public:
     }
   }
 
+  void displayTimer(int _val) override
+  {
+    // We remove playback and baking, because we want to be able to add and
+    // remove objects during runtime
+    int numIter = mDisplayTimeout / (mWorld->getTimeStep() * 1000);
+    if (mSimulating)
+    {
+      for (int i = 0; i < numIter; i++)
+        timeStepping();
+    }
+    glutPostRedisplay();
+    glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
+  }
+
 protected:
 
-  void addChain(const SkeletonPtr& chain)
+  bool addChain(const SkeletonPtr& chain)
   {
     // Set the starting position for the chain
     Eigen::Vector6d positions(Eigen::Vector6d::Zero());
@@ -148,7 +172,7 @@ protected:
     }
 
     // Add the chain to the world
-    chain->setName(chain->getName()+std::to_string(mWorld->getNumSkeletons()));
+    chain->setName(chain->getName()+std::to_string(mSkelCount++));
     mWorld->addSkeleton(chain);
 
     // Compute collisions
@@ -175,9 +199,9 @@ protected:
     if(collision)
     {
       mWorld->removeSkeleton(chain);
-      std::cout << "The new chain spawned in a collision. "
+      std::cout << "The new object spawned in a collision. "
                 << "It will not be added to the world." << std::endl;
-      return;
+      return false;
     }
 
     // Create reference frames for setting the initial velocity
@@ -210,23 +234,45 @@ protected:
 
     // Use the reference frames to set the velocity of the Skeleton's root
     chain->getJoint(0)->setVelocities(ref.getSpatialVelocity());
+
+    return true;
   }
 
-  void addRing(const SkeletonPtr& chain)
+  void addRing(const SkeletonPtr& ring)
   {
-    setupRing(chain);
+    setupRing(ring);
 
-    addChain(chain);
+    if(!addChain(ring))
+      return;
 
     // Create a closed loop to turn the chain into a ring
-    BodyNode* head = chain->getBodyNode(0);
-    BodyNode* tail = chain->getBodyNode(chain->getNumBodyNodes()-1);
+    BodyNode* head = ring->getBodyNode(0);
+    BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes()-1);
 
     Eigen::Vector3d offset = Eigen::Vector3d(0, 0, -default_shape_height / 2.0);
     auto constraint = new dart::constraint::BallJointConstraint(
           head, tail, head->getWorldTransform() * offset);
 
     mWorld->getConstraintSolver()->addConstraint(constraint);
+    mJointConstraints.push_back(constraint);
+  }
+
+  void removeSkeleton(const SkeletonPtr& skel)
+  {
+    for(size_t i=0; i<mJointConstraints.size(); ++i)
+    {
+      dart::constraint::JointConstraint* constraint = mJointConstraints[i];
+      if(constraint->getBodyNode1()->getSkeleton() == skel
+         || constraint->getBodyNode2()->getSkeleton() == skel)
+      {
+        mWorld->getConstraintSolver()->removeConstraint(constraint);
+        mJointConstraints.erase(mJointConstraints.begin()+i);
+        delete constraint;
+        break; // There should only be one constraint per skeleton
+      }
+    }
+
+    mWorld->removeSkeleton(skel);
   }
 
   // std library objects that allow us to generate high-quality random numbers
@@ -235,11 +281,17 @@ protected:
   std::mt19937 mMT;
   std::uniform_real_distribution<double> mDistribution;
 
+  std::vector<dart::constraint::JointConstraint*> mJointConstraints;
+
   SkeletonPtr mOriginalRigidChain;
 
   SkeletonPtr mOriginalSoftChain;
 
   SkeletonPtr mOriginalHybridChain;
+
+  /// Keep track of how many Skeletons we spawn to ensure we can give them all
+  /// unique names
+  size_t mSkelCount;
 
 };
 
@@ -403,7 +455,7 @@ SkeletonPtr createWall()
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(
         (default_ground_width + default_wall_thickness)/2.0, 0.0,
-        (default_wall_height  + default_wall_thickness)/2.0);
+        (default_wall_height  - default_wall_thickness)/2.0);
   bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return wall;
@@ -422,6 +474,11 @@ int main(int argc, char* argv[])
 
   MyWindow window(world, createRigidChain(), createSoftChain(),
                   createHybridChain());
+
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'1': spawn a rigid chain" << std::endl;
+  std::cout << "'2': spawn a rigid ring" << std::endl;
+  std::cout << "'3': spawn a soft body" << std::endl;
 
   glutInit(&argc, argv);
   window.initWindow(640, 480, "Collisions");
