@@ -41,13 +41,13 @@
   dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
         << #arg " [" << arg .size() << "] and the number of "       \
         << "DOFs [" << getNumDofs() << "] for Joint named ["        \
-        << getName() << "]\n";                                      \
+        << getName() << "].\n";                                      \
   assert(false);
 
 #define MULTIDOFJOINT_REPORT_OUT_OF_RANGE( func, index )            \
   dterr << "[MultiDofJoint::" << #func << "] The index [" << index  \
         << "] is out of range for Joint named [" << getName()       \
-        << "] which has " << getNumDofs() << " DOFs\n";             \
+        << "] which has " << getNumDofs() << " DOFs.\n";             \
   assert(false);
 
 //==============================================================================
@@ -235,8 +235,8 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(DOF <= _index)
   {
     dtwarn << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
-           << "index " << _index << ", which is out of bounds. We will set "
-           << "the name of DOF index 0 instead\n";
+           << "index " << _index << ", which is out of bounds for the Joint ["
+           << getName() << "]. We will set the name of DOF index 0 instead.\n";
     assert(false);
     _index = 0;
   }
@@ -281,7 +281,7 @@ bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
     dtwarn << "[MultiDofJoint::isDofNamePreserved] Requesting whether DOF "
            << "index [" << _index << "] in Joint [" << getName()
            << "] is preserved, but this is out of bounds (max " << DOF-1
-           << "). We will return the result of DOF index 0 instead\n";
+           << "). We will return the result of DOF index 0 instead.\n";
     assert(false);
     _index = 0;
   }
@@ -297,7 +297,7 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
   {
     dterr << "[MultiDofJoint::getDofName] Requested name of DOF index ["
           << _index << "] in Joint [" << getName() << "], but that is out of "
-          << "bounds (max " << DOF-1 << "). Returning name of DOF 0\n";
+          << "bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
     assert(false);
     return mMultiDofP.mDofNames[0];
   }
@@ -318,9 +318,7 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getIndexInSkeleton] index (" << _index
-          << ") out of range. Must be less than " << getNumDofs() << "!\n";
-    assert(false);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInSkeleton, _index);
     return 0;
   }
 
@@ -358,7 +356,7 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
       break;
     case PASSIVE:
       dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
+             << "PASSIVE joint [" << getName() << "].\n";
       mCommands[_index] = _command;
       break;
     case SERVO:
@@ -379,7 +377,7 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
       break;
     case LOCKED:
       dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
+             << "LOCKED joint [" << getName() << "].\n";
       mCommands[_index] = _command;
       break;
     default:
@@ -420,7 +418,7 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
       break;
     case PASSIVE:
       dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
+             << "PASSIVE joint [" << getName() << "].\n";
       mCommands = _commands;
       break;
     case SERVO:
@@ -441,7 +439,7 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
       break;
     case LOCKED:
       dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
+             << "LOCKED joint [" << getName() << "].\n";
       mCommands = _commands;
       break;
     default:
@@ -1071,9 +1069,9 @@ Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
   if (static_cast<size_t>(_q1.size()) != getNumDofs()
       || static_cast<size_t>(_q2.size()) != getNumDofs())
   {
-    dterr << "MultiDofJoint::getPositionsDifference: q1's size[" << _q1.size()
-          << "] or q2's size[" << _q2.size() << "is different than the dof ["
-          << getNumDofs() << "] for Joint [" << getName() << "]\n";
+    dterr << "MultiDofJoint::getPositionsDifference: q1's size [" << _q1.size()
+          << "] or q2's size [" << _q2.size() << "] is different than the dof ["
+          << getNumDofs() << "] for Joint [" << getName() << "].\n";
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
@@ -1129,11 +1127,11 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
   if (mMultiDofP.mPositionLowerLimits[_index] > _q0
       || mMultiDofP.mPositionUpperLimits[_index] < _q0)
   {
-    dterr << "Rest position of joint [" << getName() << "], " << _q0
-          << ", is out of the limit range ["
+    dterr << "[MultiDofJoint::setRestPosition] Value of _q0 [" << _q0
+          << "], is out of the limit range ["
           << mMultiDofP.mPositionLowerLimits[_index] << ", "
-          << mMultiDofP.mPositionUpperLimits[_index] << "] in index [" << _index
-          << "] of Joint [" << getName() << "]\n";
+          << mMultiDofP.mPositionUpperLimits[_index] << "] for index ["
+          << _index << "] of Joint [" << getName() << "].\n";
     return;
   }
 
