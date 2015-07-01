@@ -33,7 +33,7 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <random>
 #include "dart/dart.h"
 
 const double default_shape_density = 1000; // kg/m^3
@@ -69,6 +69,7 @@ const double default_soft_damping = 5.0;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
+using namespace dart::gui;
 
 void setupRing(const SkeletonPtr& /*ring*/)
 {
@@ -85,7 +86,7 @@ void setupRing(const SkeletonPtr& /*ring*/)
   // Lesson 4c
 }
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public SimWindow
 {
 public:
 
