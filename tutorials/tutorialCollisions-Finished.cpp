@@ -88,8 +88,9 @@ void setupRing(const SkeletonPtr& ring)
   for(size_t i=1; i < ring->getNumJoints(); ++i)
   {
     Joint* joint = ring->getJoint(i);
-    Eigen::Vector3d restPos = BallJoint::convertToPositions(Eigen::Matrix3d(
-          Eigen::AngleAxisd(angle, Eigen::Vector3d(0, 1, 0))));
+    Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
+    Eigen::Vector3d restPos = BallJoint::convertToPositions(
+          Eigen::Matrix3d(rotation));
 
     for(size_t j=0; j<3; ++j)
       joint->setRestPosition(j, restPos[j]);
@@ -194,7 +195,7 @@ protected:
 
     // If randomization is on, we will randomize the starting y-location
     if(mRandomize)
-      positions[4] = default_spawn_range*mDistribution(mMT);
+      positions[4] = default_spawn_range * mDistribution(mMT);
 
     positions[5] = default_start_height;
     object->getJoint(0)->setPositions(positions);
@@ -237,9 +238,6 @@ protected:
     centerTf.translation() = object->getCOM();
     SimpleFrame center(Frame::World(), "center", centerTf);
 
-    SimpleFrame ref(&center, "root");
-    ref.setRelativeTransform(object->getBodyNode(0)->getTransform(&center));
-
     // Set the velocities of the reference frames so that we can easily give the
     // Skeleton the linear and angular velocities that we want
     double angle = default_launch_angle;
@@ -259,6 +257,9 @@ protected:
     Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
     Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
     center.setClassicDerivatives(v, w);
+
+    SimpleFrame ref(&center, "root_reference");
+    ref.setRelativeTransform(object->getBodyNode(0)->getTransform(&center));
 
     // Use the reference frames to set the velocity of the Skeleton's root
     object->getJoint(0)->setVelocities(ref.getSpatialVelocity());
@@ -280,9 +281,10 @@ protected:
     BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes()-1);
 
     // Compute the offset where the JointConstraint should be located
-    Eigen::Vector3d offset = Eigen::Vector3d(0, 0, -default_shape_height / 2.0);
+    Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
+    offset = tail->getWorldTransform() * offset;
     auto constraint = new dart::constraint::BallJointConstraint(
-          head, tail, head->getWorldTransform() * offset);
+          head, tail, offset);
 
     mWorld->getConstraintSolver()->addConstraint(constraint);
     mJointConstraints.push_back(constraint);
@@ -343,11 +345,6 @@ template<class JointType>
 BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
                        Shape::ShapeType type, BodyNode* parent = nullptr)
 {
-  // Compute the transform for the center of the object
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
-  tf.translation() = center;
-
   // Set the Joint properties
   typename JointType::Properties properties;
   properties.mName = name+"_joint";
@@ -355,6 +352,8 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
     properties.mT_ParentBodyToJoint = tf;
     properties.mT_ChildBodyToJoint = tf.inverse();
   }
@@ -364,7 +363,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
         parent, properties, BodyNode::Properties(name)).second;
 
   // Make the shape based on the requested Shape type
-  std::shared_ptr<Shape> shape;
+  ShapePtr shape;
   if(Shape::BOX == type)
   {
     shape = std::make_shared<BoxShape>(Eigen::Vector3d(
@@ -374,7 +373,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   }
   else if(Shape::CYLINDER == type)
   {
-    shape = std::make_shared<CylinderShape>(default_shape_width/2,
+    shape = std::make_shared<CylinderShape>(default_shape_width/2.0,
                                             default_shape_height);
   }
   else if(Shape::ELLIPSOID == type)
@@ -387,11 +386,11 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   bn->addCollisionShape(shape);
 
   // Setup the inertia for the body
-  Inertia box_inertia;
+  Inertia inertia;
   double mass = default_shape_density * shape->getVolume();
-  box_inertia.setMass(mass);
-  box_inertia.setMoment(shape->computeInertia(mass));
-  bn->setInertia(box_inertia);
+  inertia.setMass(mass);
+  inertia.setMoment(shape->computeInertia(mass));
+  bn->setInertia(inertia);
 
   // Set the coefficient of restitution to make the body more bouncy
   bn->setRestitutionCoeff(default_restitution);
@@ -407,13 +406,10 @@ enum SoftShapeType {
 
 /// Add a soft body with the specified Joint type to a chain
 template<class JointType>
-BodyNode* addSoftShape(const SkeletonPtr& chain, const std::string& name,
-                       SoftShapeType type, BodyNode* parent = nullptr)
+BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
+                      SoftShapeType type, BodyNode* parent = nullptr)
 {
   // Compute the transform for the center of the object
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
-  tf.translation() = center;
 
   // Set the Joint properties
   typename JointType::Properties joint_properties;
@@ -422,43 +418,49 @@ BodyNode* addSoftShape(const SkeletonPtr& chain, const std::string& name,
   {
     // If the body has a parent, we should position the joint to be in the
     // middle of the centers of the two bodies
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
     joint_properties.mT_ParentBodyToJoint = tf;
     joint_properties.mT_ChildBodyToJoint = tf.inverse();
   }
 
   // Set the properties of the soft body
-  double soft_shape_width = 2*default_shape_width;
   SoftBodyNode::UniqueProperties soft_properties;
   // Use the SoftBodyNodeHelper class to create the geometries for the
   // SoftBodyNode
   if(SOFT_BOX == type)
   {
-    soft_properties = SoftBodyNodeHelper::makeBoxProperties(Eigen::Vector3d(
-        soft_shape_width, soft_shape_width, default_shape_height),
-        Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4),
-        default_shape_density*default_shape_height*pow(soft_shape_width,2));
+    double width = default_shape_width, height = default_shape_height;
+    Eigen::Vector3d dims(width, width, height);
+    double mass = default_shape_density * dims[0]*dims[1]*dims[2];
+    soft_properties = SoftBodyNodeHelper::makeBoxProperties(
+          dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4), mass);
   }
   else if(SOFT_CYLINDER == type)
   {
+    double radius = default_shape_width/2.0;
+    double height = default_shape_height;
+    double mass = default_shape_density * height * pow(M_PI*radius, 2);
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
-          soft_shape_width/2.0, default_shape_height, 8, 3, 2,
-          default_shape_density * default_shape_height
-          * pow(M_PI*soft_shape_width/2.0, 2));
+          radius, height, 8, 3, 2, mass);
   }
   else if(SOFT_ELLIPSOID == type)
   {
+    double radius = default_shape_height/2.0;
+    Eigen::Vector3d dims = 2*radius*Eigen::Vector3d::Ones();
+    double mass = default_shape_density * 4.0/3.0*M_PI*pow(radius,3);
     soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
-          default_shape_height*Eigen::Vector3d::Ones(), 6, 6,
-          default_shape_density * 4.0/3.0*M_PI*pow(default_shape_height/2,3));
+          dims, 6, 6, mass);
   }
   soft_properties.mKv = default_vertex_stiffness;
   soft_properties.mKe = default_edge_stiffness;
   soft_properties.mDampCoeff = default_soft_damping;
 
   // Create the Joint and Body pair
+  SoftBodyNode::Properties body_properties(BodyNode::Properties(name),
+                                           soft_properties);
   SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
-        parent, joint_properties, SoftBodyNode::Properties(
-          BodyNode::Properties(name), soft_properties)).second;
+        parent, joint_properties, body_properties).second;
 
   return bn;
 }
@@ -522,7 +524,7 @@ SkeletonPtr createHybridBody()
   SkeletonPtr hybrid = Skeleton::create("hybrid");
 
   // Add a soft body
-  BodyNode* bn = addSoftShape<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
+  BodyNode* bn = addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
   bn = hybrid->createJointAndBodyNodePair<WeldJoint>(bn).second;

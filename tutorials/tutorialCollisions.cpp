@@ -207,9 +207,6 @@ protected:
 
     // Create a closed loop to turn the chain into a ring
     // Lesson 5
-
-    // Compute the offset where the JointConstraint should be located
-    // Lesson 5
   }
 
   /// Remove a Skeleton and get rid of the constraint that was associated with
@@ -267,24 +264,21 @@ template<class JointType>
 BodyNode* addRigidBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
                        Shape::ShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
 {
-  // Compute the transform for the center of the object
+  // Set the Joint properties
   // Lesson 1a
 
-  // Set the Joint properties
-  // Lesson 1b
-
   // Create the Joint and Body pair
-  // Lesson 1c
+  // Lesson 1b
   BodyNode* bn = nullptr;
 
   // Make the shape based on the requested Shape type
-  // Lesson 1d
+  // Lesson 1c
 
   // Setup the inertia for the body
-  // Lesson 1e
+  // Lesson 1d
 
   // Set the coefficient of restitution to make the body more bouncy
-  // Lesson 1f
+  // Lesson 1e
 
   return bn;
 }
@@ -297,20 +291,17 @@ enum SoftShapeType {
 
 /// Add a soft body with the specified Joint type to a chain
 template<class JointType>
-BodyNode* addSoftShape(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
-                       SoftShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
+BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
+                      SoftShapeType /*type*/, BodyNode* /*parent*/ = nullptr)
 {
-  // Compute the transform for the center of the object
+  // Set the Joint properties
   // Lesson 2a
 
-  // Set the Joint properties
+  // Set the properties of the soft body
   // Lesson 2b
 
-  // Set the properties of the soft body
-  // Lesson 2c
-
   // Create the Joint and Body pair
-  // Lesson 2d
+  // Lesson 2c
   SoftBodyNode* bn = nullptr;
 
   return bn;
@@ -375,7 +366,7 @@ SkeletonPtr createHybridBody()
   SkeletonPtr hybrid = Skeleton::create("hybrid");
 
   // Add a soft body
-  /*BodyNode* bn =*/ addSoftShape<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
+  /*BodyNode* bn =*/ addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
   // Lesson 2e
