@@ -16,5 +16,6 @@ pages:
 - Tutorials:
     - 'Introduction': 'tutorials/introduction.md'
     - 'Pendulum': 'tutorials/multi-pendulum.md'
+    - 'Collisions' : 'tutorials/collisions.md'
     - 'Manipulator': 'tutorials/dominoes.md'
     - 'Biped': 'tutorials/biped.md'
