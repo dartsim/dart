@@ -125,13 +125,13 @@ public:
   /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
-    // Lesson 3a
+    // Lesson 3
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    // Lesson 3b
+    // Lesson 3
   }
 
   /// Handle keyboard input
