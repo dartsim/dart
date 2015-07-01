@@ -101,36 +101,37 @@ public:
     }
   }
 
-  void applyForce(size_t)
+  void applyForce(size_t index)
   {
-    // Lesson 1
+    if(index < mForceCountDown.size())
+      mForceCountDown[index] = default_countdown;
   }
 
   void changeRestPosition(double)
   {
-    // Lesson 2
+    // Lesson 2a
   }
 
   void changeStiffness(double)
   {
-    // Lesson 3
+    // Lesson 2b
   }
 
   void changeDamping(double)
   {
-    // Lesson 4
+    // Lesson 2c
   }
 
   /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
-    // Lesson 5
+    // Lesson 3a
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
-    // Lesson 5
+    // Lesson 3b
   }
 
   /// Handle keyboard input
@@ -215,22 +216,32 @@ public:
   void timeStepping() override
   {
     // Reset all the shapes to be Blue
-    // Lesson 1
+    // Lesson 1a
 
-    if(mBodyForce)
-    {
-      // Apply body forces based on user input, and color the body shape red
-      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
-      {
-        // Lesson 1b
-      }
-    }
-    else
+    if(!mBodyForce)
     {
       // Apply joint torques based on user input, and color the Joint shape red
       for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
       {
-        // Lesson 1a
+        if(mForceCountDown[i] > 0)
+        {
+          // Lesson 1b
+
+          --mForceCountDown[i];
+        }
+      }
+    }
+    else
+    {
+      // Apply body forces based on user input, and color the body shape red
+      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
+      {
+        if(mForceCountDown[i] > 0)
+        {
+          // Lesson 1c
+
+          --mForceCountDown[i];
+        }
       }
     }
 
