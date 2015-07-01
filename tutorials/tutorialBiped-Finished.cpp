@@ -471,9 +471,12 @@ int main(int argc, char* argv[])
   biped->setPositions(balancedPose);
   
   WorldPtr world = std::make_shared<World>();
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+#ifdef HAVE_BULLET_COLLISION
   world->getConstraintSolver()->setCollisionDetector(
           new dart::collision::BulletCollisionDetector());
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+#endif
   
   world->addSkeleton(floor);
   world->addSkeleton(biped);

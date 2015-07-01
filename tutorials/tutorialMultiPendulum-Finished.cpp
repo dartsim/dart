@@ -393,8 +393,8 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   return bn;
 }
 
-BodyNode* addBody(const SkeletonPtr& pendulum,
-             BodyNode* parent, const std::string& name)
+BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
+                  const std::string& name)
 {
   // Set up the properties for the Joint
   RevoluteJoint::Properties properties;
