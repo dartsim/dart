@@ -257,6 +257,25 @@ This is very easily done with the following function:
 bn->setRestitutionCoeff(default_restitution);
 ```
 
+### Lesson 1f: Set the damping coefficient
+
+In real life, joints have friction. This pulls energy out of systems over time,
+and makes those systems more stable. In our simulation, we'll ignore air
+friction, but we'll add friction in the joints between bodies in order to have
+better numerical and dynamic stability:
+
+```cpp
+if(parent)
+{
+  Joint* joint = bn->getParentJoint();
+  for(size_t i=0; i < joint->getNumDofs(); ++i)
+    joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
+}
+```
+
+If this BodyNode has a parent BodyNode, then we set damping coefficients of its
+Joint to a default value.
+
 # Lesson 2: Creating a soft body
 
 Find the templated function named ``addSoftBody``. This function will have a
@@ -366,9 +385,22 @@ SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
 Notice that this time it will return a ``SoftBodyNode`` pointer rather than a
 normal ``BodyNode`` pointer. This is one of the advantages of templates!
 
-The ``SoftBodyNodeHelper`` function will automagically set up the inertia and shape
-properties of the SoftBodyNode ahead of time, so we're done in this function.
+### Lesson 2d: Zero out the BodyNode inertia
 
+A SoftBodyNode has two sources of inertia: the underlying inertia of the
+standard BodyNode class, and the point mass inertias of its soft skin. In our
+case, we only want the point mass inertias, so we should zero out the standard
+BodyNode inertia. However, zeroing out inertia values can be very dangerous,
+because it can easily result in singularities. So instead of completely zeroing
+them out, we will just make them small enough that they don't impact the
+simulation:
+
+```cpp
+Inertia inertia;
+inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
+inertia.setMass(1e-8);
+bn->setInertia(inertia);
+```
 
 # Lesson 3: Setting initial conditions and taking advantage of Frames
 
@@ -603,8 +635,8 @@ in the air. But all the rest of the degrees of freedom should be set:
 for(size_t i=6; i < ring->getNumDofs(); ++i)
 {
   DegreeOfFreedom* dof = ring->getDof(i);
-  dof->setSpringStiffness(default_spring_stiffness);
-  dof->setDampingCoefficient(default_damping_coefficient);
+  dof->setSpringStiffness(ring_spring_stiffness);
+  dof->setDampingCoefficient(ring_damping_coefficient);
 }
 ```
 
