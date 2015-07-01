@@ -44,6 +44,7 @@
 
 #include "dart/math/Geometry.h"
 #include "dart/common/Subject.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace renderer {
