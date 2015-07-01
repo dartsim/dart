@@ -56,7 +56,6 @@ public:
   /// Constructor
   Controller(const SkeletonPtr& biped)
     : mBiped(biped),
-      mPreOffset(0.0),
       mSpeed(0.0)
   {
     int nDofs = mBiped->getNumDofs();
@@ -129,31 +128,40 @@ public:
   void addAnkleStrategyForces()
   {
     Eigen::Vector3d COM = mBiped->getCOM();
-    Eigen::Vector3d approximatedCOP = mBiped->getBodyNode("h_heel_left")->
-        getTransform()* Eigen::Vector3d(0.05, 0, 0);
-    double offset = COM[0] - approximatedCOP[0];
+    // Approximated center of pressure in sagittal axis
+    Eigen::Vector3d offset(0.05, 0, 0);
+    Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")->
+        getTransform() * offset;
+    double diff = COM[0] - COP[0];
+
+    Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
+    Eigen::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->
+        getLinearVelocity(offset);
+    double dDiff = dCOM[0] - dCOP[0];
+
     int lHeelIndex = mBiped->getDof("j_heel_left_1")->getIndexInSkeleton();
     int rHeelIndex = mBiped->getDof("j_heel_right_1")->getIndexInSkeleton();
     int lToeIndex = mBiped->getDof("j_toe_left")->getIndexInSkeleton();
     int rToeIndex = mBiped->getDof("j_toe_right")->getIndexInSkeleton();
-    if (offset < 0.1 && offset > 0.0) {
+    if(diff < 0.1 && diff >= 0.0) {
+      // Feedback rule for recovering forward push
       double k1 = 200.0;
       double k2 = 100.0;
-      double kd = 10.0;
-      mForces[lHeelIndex] += -k1 * offset + kd * (mPreOffset - offset);
-      mForces[lToeIndex] += -k2 * offset + kd * (mPreOffset - offset);
-      mForces[rHeelIndex] += -k1 * offset + kd * (mPreOffset - offset);
-      mForces[rToeIndex] += -k2 * offset + kd * (mPreOffset - offset);
-    } else if (offset > -0.2 && offset < -0.05) {
+      double kd = 10;
+      mForces[lHeelIndex] += -k1 * diff - kd * dDiff;
+      mForces[lToeIndex] += -k2 * diff - kd * dDiff;
+      mForces[rHeelIndex] += -k1 * diff - kd * dDiff;
+      mForces[rToeIndex] += -k2 * diff - kd * dDiff;
+    }else if(diff > -0.2 && diff < -0.05) {
+      // Feedback rule for recovering backward push
       double k1 = 2000.0;
       double k2 = 100.0;
-      double kd = 100.0;
-      mForces[lHeelIndex] += -k1 * offset + kd * (mPreOffset - offset);
-      mForces[lToeIndex] += -k2 * offset + kd * (mPreOffset - offset);
-      mForces[rHeelIndex] += -k1 * offset + kd * (mPreOffset - offset);
-      mForces[rToeIndex] += -k2 * offset + kd * (mPreOffset - offset);
-    }
-    mPreOffset = offset;
+      double kd = 100;
+      mForces[lHeelIndex] += -k1 * diff - kd * dDiff;
+      mForces[lToeIndex] += -k2 * diff - kd * dDiff;
+      mForces[rHeelIndex] += -k1 * diff - kd * dDiff;
+      mForces[rToeIndex] += -k2 * diff - kd * dDiff;
+    }  
     mBiped->setForces(mForces);
   }
   
@@ -162,7 +170,8 @@ public:
   {
     int wheelFirstIndex =
         mBiped->getDof("joint_front_left_1")->getIndexInSkeleton();
-    for (size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i){
+    for (size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i)
+    {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
@@ -198,10 +207,7 @@ protected:
 
   /// Target positions for the PD controllers
   Eigen::VectorXd mTargetPositions;
-  
-  /// For ankle strategy: Error in the previous timestep
-  double mPreOffset;
-  
+    
   /// For velocity actuator: Current speed of the skateboard
   double mSpeed;
 };
@@ -346,8 +352,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 
 // Set the actuator type for four wheel joints to "VELOCITY" (Lesson 6 Answer)
 void setVelocityAccuators(SkeletonPtr biped)
-{
-  
+{  
   Joint* wheel1 = biped->getJoint("joint_front_left");
   Joint* wheel2 = biped->getJoint("joint_front_right");
   Joint* wheel3 = biped->getJoint("joint_back_left");
@@ -361,7 +366,7 @@ void setVelocityAccuators(SkeletonPtr biped)
 // Solve for a balanced pose using IK (Lesson 7 Answer)
 Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
-  // Modify the intial pose to stand on one foot 
+  // Modify the intial pose to one-foot stance before IK 
   biped->setPosition(biped->getDof("j_shin_right")->
                      getIndexInSkeleton(), -1.4);
   biped->setPosition(biped->getDof("j_bicep_left_x")->
@@ -377,8 +382,9 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
   for(size_t i = 0; i < default_ik_iterations; ++i)
   {
     Eigen::Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
+    Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
     LinearJacobian jacobian = biped->getCOMLinearJacobian() -
-        biped->getLinearJacobian(leftHeel, leftHeel->getCOM(leftHeel));
+        biped->getLinearJacobian(leftHeel, localCOM);
     
     // Sagittal deviation
     double error = deviation[0];

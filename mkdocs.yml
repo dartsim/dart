@@ -9,7 +9,6 @@ copyright: ﻿Copyright (c) 2011-2015, Georgia Tech Research Corporation
 # Build directories
 theme: readthedocs
 docs_dir: docs/readthedocs
-site_dir: docs/readthedocs/site
 
 pages:
 - Home: 'index.md'
