@@ -53,8 +53,9 @@ const double default_launch_angle = 45.0*M_PI/180.0; // rad
 const double maximum_start_w = 6*M_PI; // rad/s
 const double default_start_w = 3*M_PI;  // rad/s
 
-const double default_spring_stiffness = 0.5;
-const double default_damping_coefficient = 0.05;
+const double ring_spring_stiffness = 0.5;
+const double ring_damping_coefficient = 0.05;
+const double default_damping_coefficient = 0.005;
 
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
@@ -76,8 +77,8 @@ void setupRing(const SkeletonPtr& ring)
   for(size_t i=6; i < ring->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = ring->getDof(i);
-    dof->setSpringStiffness(default_spring_stiffness);
-    dof->setDampingCoefficient(default_damping_coefficient);
+    dof->setSpringStiffness(ring_spring_stiffness);
+    dof->setDampingCoefficient(ring_damping_coefficient);
   }
 
   // Compute the joint angle needed to form a ring
@@ -395,6 +396,13 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   // Set the coefficient of restitution to make the body more bouncy
   bn->setRestitutionCoeff(default_restitution);
 
+  if(parent)
+  {
+    Joint* joint = bn->getParentJoint();
+    for(size_t i=0; i < joint->getNumDofs(); ++i)
+      joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
+  }
+
   return bn;
 }
 
@@ -461,6 +469,11 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
                                            soft_properties);
   SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
         parent, joint_properties, body_properties).second;
+
+  Inertia inertia;
+  inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
+  inertia.setMass(1e-8);
+  bn->setInertia(inertia);
 
   return bn;
 }

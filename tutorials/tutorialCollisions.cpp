@@ -53,8 +53,9 @@ const double default_launch_angle = 45.0*M_PI/180.0; // rad
 const double maximum_start_w = 6*M_PI; // rad/s
 const double default_start_w = 3*M_PI;  // rad/s
 
-const double default_spring_stiffness = 0.5;
-const double default_damping_coefficient = 0.05;
+const double ring_spring_stiffness = 0.5;
+const double ring_damping_coefficient = 0.05;
+const double default_damping_coefficient = 0.005;
 
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
@@ -281,6 +282,9 @@ BodyNode* addRigidBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/
   // Set the coefficient of restitution to make the body more bouncy
   // Lesson 1e
 
+  // Set damping to make the simulation more stable
+  // Lesson 1f
+
   return bn;
 }
 
@@ -304,6 +308,9 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
   // Create the Joint and Body pair
   // Lesson 2c
   SoftBodyNode* bn = nullptr;
+
+  // Zero out the inertia for the underlying BodyNode
+  // Lesson 2d
 
   return bn;
 }

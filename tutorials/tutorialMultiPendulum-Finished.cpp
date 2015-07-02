@@ -272,39 +272,7 @@ public:
       }
     }
 
-    if(mBodyForce)
-    {
-      // Apply body forces based on user input, and color the body shape red
-      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
-      {
-        if(mForceCountDown[i] > 0)
-        {
-          BodyNode* bn = mPendulum->getBodyNode(i);
-          const ShapePtr& shape = bn->getVisualizationShape(1);
-          shape->setColor(dart::Color::Red());
-
-          if(mPositiveSign)
-          {
-            bn->addExtForce(
-                  default_force * Eigen::Vector3d::UnitX(),
-                  Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
-                  true, true);
-          }
-          else
-          {
-            bn->addExtForce(
-                  -default_force * Eigen::Vector3d::UnitX(),
-                  Eigen::Vector3d(default_width / 2.0, 0.0, default_height / 2.0),
-                  true, true);
-          }
-
-          bn->addVisualizationShape(mArrow);
-
-          --mForceCountDown[i];
-        }
-      }
-    }
-    else
+    if(!mBodyForce)
     {
       // Apply joint torques based on user input, and color the Joint shape red
       for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
@@ -312,11 +280,38 @@ public:
         if(mForceCountDown[i] > 0)
         {
           DegreeOfFreedom* dof = mPendulum->getDof(i);
+          dof->setForce( mPositiveSign? default_torque : -default_torque );
+
           BodyNode* bn = dof->getChildBodyNode();
           const ShapePtr& shape = bn->getVisualizationShape(0);
-
-          dof->setForce(mPositiveSign ? default_torque : -default_torque);
           shape->setColor(dart::Color::Red());
+
+          --mForceCountDown[i];
+        }
+      }
+    }
+    else
+    {
+      // Apply body forces based on user input, and color the body shape red
+      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
+      {
+        if(mForceCountDown[i] > 0)
+        {
+          BodyNode* bn = mPendulum->getBodyNode(i);
+
+          Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
+          Eigen::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+          if(!mPositiveSign)
+          {
+            force = -force;
+            location[0] = -location[0];
+          }
+          bn->addExtForce(force, location, true, true);
+
+          const ShapePtr& shape = bn->getVisualizationShape(1);
+          shape->setColor(dart::Color::Red());
+          bn->addVisualizationShape(mArrow);
+
           --mForceCountDown[i];
         }
       }
