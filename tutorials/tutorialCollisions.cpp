@@ -39,6 +39,7 @@
 const double default_shape_density = 1000; // kg/m^3
 const double default_shape_height  = 0.1;  // m
 const double default_shape_width   = 0.03; // m
+const double default_skin_thickness = 1e-3; // m
 
 const double default_start_height = 0.4;  // m
 
@@ -55,7 +56,7 @@ const double default_start_w = 3*M_PI;  // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
-const double default_damping_coefficient = 0.005;
+const double default_damping_coefficient = 0.001;
 
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
@@ -65,7 +66,7 @@ const double default_spawn_range = 0.9*default_ground_width/2;
 const double default_restitution = 0.6;
 
 const double default_vertex_stiffness = 100.0;
-const double default_edge_stiffness = 10.0;
+const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
 using namespace dart::dynamics;
@@ -311,6 +312,9 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
   // Zero out the inertia for the underlying BodyNode
   // Lesson 2d
 
+  // Make the shape transparent
+  // Lesson 2e
+
   return bn;
 }
 
@@ -376,7 +380,7 @@ SkeletonPtr createHybridBody()
   /*BodyNode* bn =*/ addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
-  // Lesson 2e
+  // Lesson 2f
 
   setAllColors(hybrid, dart::Color::Green());
 

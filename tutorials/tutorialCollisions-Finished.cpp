@@ -39,6 +39,7 @@
 const double default_shape_density = 1000; // kg/m^3
 const double default_shape_height  = 0.1;  // m
 const double default_shape_width   = 0.03; // m
+const double default_skin_thickness = 1e-3; // m
 
 const double default_start_height = 0.4;  // m
 
@@ -55,7 +56,7 @@ const double default_start_w = 3*M_PI;  // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
-const double default_damping_coefficient = 0.005;
+const double default_damping_coefficient = 0.001;
 
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
@@ -65,7 +66,7 @@ const double default_spawn_range = 0.9*default_ground_width/2;
 const double default_restitution = 0.6;
 
 const double default_vertex_stiffness = 100.0;
-const double default_edge_stiffness = 10.0;
+const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
 using namespace dart::dynamics;
@@ -417,8 +418,6 @@ template<class JointType>
 BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
                       SoftShapeType type, BodyNode* parent = nullptr)
 {
-  // Compute the transform for the center of the object
-
   // Set the Joint properties
   typename JointType::Properties joint_properties;
   joint_properties.mName = name+"_joint";
@@ -440,7 +439,8 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   {
     double width = default_shape_width, height = default_shape_height;
     Eigen::Vector3d dims(width, width, height);
-    double mass = default_shape_density * dims[0]*dims[1]*dims[2];
+    double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
+    mass *= default_shape_density * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeBoxProperties(
           dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4), mass);
   }
@@ -448,7 +448,12 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   {
     double radius = default_shape_width/2.0;
     double height = default_shape_height;
-    double mass = default_shape_density * height * pow(M_PI*radius, 2);
+    // Mass of center
+    double mass = default_shape_density * height * 2*M_PI*radius
+                  * default_skin_thickness;
+    // Mass of top and bottom
+    mass += 2 * default_shape_density * M_PI*pow(radius,2)
+                * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, 8, 3, 2, mass);
   }
@@ -456,7 +461,8 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   {
     double radius = default_shape_height/2.0;
     Eigen::Vector3d dims = 2*radius*Eigen::Vector3d::Ones();
-    double mass = default_shape_density * 4.0/3.0*M_PI*pow(radius,3);
+    double mass = default_shape_density * 4.0*M_PI*pow(radius, 2)
+                  * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
           dims, 6, 6, mass);
   }
@@ -470,10 +476,16 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
         parent, joint_properties, body_properties).second;
 
+  // Zero out the inertia for the underlying BodyNode
   Inertia inertia;
   inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
   inertia.setMass(1e-8);
   bn->setInertia(inertia);
+
+  // Make the shape transparent
+  Eigen::Vector4d color = bn->getVisualizationShape(0)->getRGBA();
+  color[3] = 0.4;
+  bn->getVisualizationShape(0)->setRGBA(color);
 
   return bn;
 }
@@ -546,15 +558,16 @@ SkeletonPtr createHybridBody()
   double box_shape_height = default_shape_height;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
         box_shape_height*Eigen::Vector3d::Ones());
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
-  box->setLocalTransform(tf);
 
   bn->addCollisionShape(box);
   bn->addVisualizationShape(box);
 
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
+  bn->getParentJoint()->setTransformFromParentBodyNode(tf);
+
   Inertia inertia;
-  inertia.setMass(default_shape_density*pow(box_shape_height,3));
+  inertia.setMass(default_shape_density * box->getVolume());
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
