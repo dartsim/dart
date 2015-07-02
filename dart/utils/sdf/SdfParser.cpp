@@ -740,7 +740,7 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
   SDFJoint newJoint;
   newJoint.parentName = (parent_it == _sdfBodyNodes.end())?
         "" : parent_it->first;
-  newJoint.childName = (parent_it == _sdfBodyNodes.end())?
+  newJoint.childName = (child_it == _sdfBodyNodes.end())?
         "" : child_it->first;
 
   //--------------------------------------------------------------------------
