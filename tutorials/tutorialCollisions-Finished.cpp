@@ -65,7 +65,7 @@ const double default_spawn_range = 0.9*default_ground_width/2;
 
 const double default_restitution = 0.6;
 
-const double default_vertex_stiffness = 100.0;
+const double default_vertex_stiffness = 1000.0;
 const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
@@ -111,13 +111,14 @@ class MyWindow : public dart::gui::SimWindow
 public:
 
   MyWindow(const WorldPtr& world, const SkeletonPtr& ball,
-           const SkeletonPtr& hybridBody, const SkeletonPtr& rigidChain,
-           const SkeletonPtr& rigidRing)
+           const SkeletonPtr& softBody, const SkeletonPtr& hybridBody,
+           const SkeletonPtr& rigidChain, const SkeletonPtr& rigidRing)
     : mRandomize(true),
       mRD(),
       mMT(mRD()),
       mDistribution(-1.0, std::nextafter(1.0, 2.0)),
       mOriginalBall(ball),
+      mOriginalSoftBody(softBody),
       mOriginalHybridBody(hybridBody),
       mOriginalRigidChain(rigidChain),
       mOriginalRigidRing(rigidRing),
@@ -135,14 +136,18 @@ public:
         break;
 
       case '2':
-        addObject(mOriginalHybridBody->clone());
+        addObject(mOriginalSoftBody->clone());
         break;
 
       case '3':
-        addObject(mOriginalRigidChain->clone());
+        addObject(mOriginalHybridBody->clone());
         break;
 
       case '4':
+        addObject(mOriginalRigidChain->clone());
+        break;
+
+      case '5':
         addRing(mOriginalRigidRing->clone());
         break;
 
@@ -327,6 +332,9 @@ protected:
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;
 
+  /// A blueprint Skeleton that we will use to spawn soft bodies
+  SkeletonPtr mOriginalSoftBody;
+
   /// A blueprint Skeleton that we will use to spawn hybrid bodies
   SkeletonPtr mOriginalHybridBody;
 
@@ -397,6 +405,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   // Set the coefficient of restitution to make the body more bouncy
   bn->setRestitutionCoeff(default_restitution);
 
+  // Set damping to make the simulation more stable
   if(parent)
   {
     Joint* joint = bn->getParentJoint();
@@ -437,8 +446,10 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   // SoftBodyNode
   if(SOFT_BOX == type)
   {
-    double width = default_shape_width, height = default_shape_height;
+    // Make a wide and short box
+    double width = default_shape_height, height = 2*default_shape_width;
     Eigen::Vector3d dims(width, width, height);
+
     double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
     mass *= default_shape_density * default_skin_thickness;
     soft_properties = SoftBodyNodeHelper::makeBoxProperties(
@@ -446,8 +457,9 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   }
   else if(SOFT_CYLINDER == type)
   {
-    double radius = default_shape_width/2.0;
-    double height = default_shape_height;
+    // Make a wide and short cylinder
+    double radius = default_shape_height/2.0, height = 2*default_shape_width;
+
     // Mass of center
     double mass = default_shape_density * height * 2*M_PI*radius
                   * default_skin_thickness;
@@ -544,6 +556,32 @@ SkeletonPtr createRigidRing()
   return ring;
 }
 
+SkeletonPtr createSoftBody()
+{
+  SkeletonPtr soft = Skeleton::create("soft");
+
+  // Add a soft body
+  BodyNode* bn = addSoftBody<FreeJoint>(soft, "soft box", SOFT_BOX);
+
+  // Add a rigid collision geometry and inertia
+  double width = default_shape_height, height = 2*default_shape_width;
+  Eigen::Vector3d dims(width, width, height);
+  dims *= 0.6;
+  std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
+
+  bn->addCollisionShape(box);
+  bn->addVisualizationShape(box);
+
+  Inertia inertia;
+  inertia.setMass(default_shape_density * box->getVolume());
+  inertia.setMoment(box->computeInertia(inertia.getMass()));
+  bn->setInertia(inertia);
+
+  setAllColors(soft, dart::Color::Fuschia());
+
+  return soft;
+}
+
 SkeletonPtr createHybridBody()
 {
   SkeletonPtr hybrid = Skeleton::create("hybrid");
@@ -624,14 +662,15 @@ int main(int argc, char* argv[])
   world->addSkeleton(createGround());
   world->addSkeleton(createWall());
 
-  MyWindow window(world, createBall(), createHybridBody(),
+  MyWindow window(world, createBall(), createSoftBody(), createHybridBody(),
                   createRigidChain(), createRigidRing());
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'1': toss a rigid ball" << std::endl;
-  std::cout << "'2': toss a hybrid soft/rigid body" << std::endl;
-  std::cout << "'3': toss a rigid chain" << std::endl;
-  std::cout << "'4': toss a ring of rigid bodies" << std::endl;
+  std::cout << "'2': toss a soft body" << std::endl;
+  std::cout << "'3': toss a hybrid soft/rigid body" << std::endl;
+  std::cout << "'4': toss a rigid chain" << std::endl;
+  std::cout << "'5': toss a ring of rigid bodies" << std::endl;
 
   std::cout << "\n'd': delete the oldest object" << std::endl;
   std::cout <<   "'r': toggle randomness" << std::endl;

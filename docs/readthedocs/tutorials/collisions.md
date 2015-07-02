@@ -324,7 +324,10 @@ the functions are a bit complicated, so here is how to call it for each type:
 
 For the SOFT_BOX:
 ```cpp
-double width = default_shape_width, height = default_shape_height;
+// Make a wide and short box
+double width = default_shape_height, height = 2*default_shape_width;
+Eigen::Vector3d dims(width, width, height);
+
 Eigen::Vector3d dims(width, width, height);
 double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
 mass *= default_shape_density * default_skin_thickness;
@@ -334,8 +337,9 @@ soft_properties = SoftBodyNodeHelper::makeBoxProperties(
 
 For the SOFT_CYLINDER:
 ```cpp
-double radius = default_shape_width/2.0;
-double height = default_shape_height;
+// Make a wide and short cylinder
+double radius = default_shape_height/2.0, height = 2*default_shape_width;
+
 // Mass of center
 double mass = default_shape_density * height * 2*M_PI*radius
               * default_skin_thickness;
@@ -422,12 +426,51 @@ color[3] = 0.4;
 bn->getVisualizationShape(0)->setRGBA(color);
 ```
 
-### Lesson 2f: Add a rigid body attached by a WeldJoint
+### Lesson 2f: Give a hard bone to the SoftBodyNode
 
-To make the shape more interesting, we can attach a protruding rigid body using
-a WeldJoint. Find the ``createHybridBody()`` function and see where we call the
-``addSoftBody`` function. Just below this, we'll create a new rigid body with a
-WeldJoint attachment:
+SoftBodyNodes are intended to be used as soft skins that are attached to rigid
+bones. We can create a rigid shape, place it in the SoftBodyNode, and give some
+inertia to the SoftBodyNode's base BodyNode class, to act as the inertia of the
+bone.
+
+Find the function ``createSoftBody()``. Underneath the call to ``addSoftBody``,
+we can create a box shape that matches the dimensions of the soft box, but scaled
+down:
+
+```cpp
+double width = default_shape_height, height = 2*default_shape_width;
+Eigen::Vector3d dims(width, width, height);
+dims *= 0.6;
+std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
+```
+
+And then we can add that shape to the visualization and collision shapes of the
+SoftBodyNode, just like normal:
+
+```cpp
+bn->addCollisionShape(box);
+bn->addVisualizationShape(box);
+```
+
+And we'll want to make sure that we set the inertia of the underlying BodyNode,
+or else the behavior will not be realistic:
+
+```cpp
+Inertia inertia;
+inertia.setMass(default_shape_density * box->getVolume());
+inertia.setMoment(box->computeInertia(inertia.getMass()));
+bn->setInertia(inertia);
+```
+
+Note that the inertia of the inherited BodyNode is independent of the inertia
+of the SoftBodyNode's skin.
+
+### Lesson 2g: Add a rigid body attached by a WeldJoint
+
+To make a more interesting hybrid shape, we can attach a protruding rigid body
+to a SoftBodyNode using a WeldJoint. Find the ``createHybridBody()`` function
+and see where we call the ``addSoftBody`` function. Just below this, we'll
+create a new rigid body with a WeldJoint attachment:
 
 ```cpp
 bn = hybrid->createJointAndBodyNodePair<WeldJoint>(bn).second;
