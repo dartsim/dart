@@ -268,6 +268,16 @@ inline Eigen::Vector3d Red()
   return Eigen::Vector3d(0.9, 0.1, 0.1);
 }
 
+inline Eigen::Vector3d Fuschia()
+{
+  return Eigen::Vector3d(1.0, 0.0, 0.5);
+}
+
+inline Eigen::Vector4d Fuschia(double alpha)
+{
+  return Eigen::Vector4d(1.0, 0.0, 0.5, alpha);
+}
+
 inline Eigen::Vector4d Orange(double alpha)
 {
   return Eigen::Vector4d(1.0, 0.63, 0.0, alpha);
