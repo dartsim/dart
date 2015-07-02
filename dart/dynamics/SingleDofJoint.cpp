@@ -289,8 +289,12 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
                             mSingleDofP.mForceUpperLimit);
       break;
     case PASSIVE:
-      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
+      if(_command != 0.0)
+      {
+        dtwarn << "[SingleDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a PASSIVE joint [" << getName()
+               << "].\n";
+      }
       mCommand = _command;
       break;
     case SERVO:
@@ -310,8 +314,12 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case LOCKED:
-      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
+      if(_command != 0.0)
+      {
+        dtwarn << "[SingleDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a LOCKED joint [" << getName()
+               << "].\n";
+      }
       mCommand = _command;
       break;
     default:
@@ -344,43 +352,7 @@ void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
     return;
   }
 
-  switch (mJointP.mActuatorType)
-  {
-    case FORCE:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mForceLowerLimit,
-                            mSingleDofP.mForceUpperLimit);
-      break;
-    case PASSIVE:
-      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
-      mCommand = _commands[0];
-      break;
-    case SERVO:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mVelocityLowerLimit,
-                            mSingleDofP.mVelocityUpperLimit);
-      break;
-    case ACCELERATION:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mAccelerationLowerLimit,
-                            mSingleDofP.mAccelerationUpperLimit);
-      break;
-    case VELOCITY:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mVelocityLowerLimit,
-                            mSingleDofP.mVelocityUpperLimit);
-      // TODO: This possibly makes the acceleration to exceed the limits.
-      break;
-    case LOCKED:
-      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
-      mCommand = _commands[0];
-      break;
-    default:
-      assert(false);
-      break;
-  }
+  setCommand(_commands[0]);
 }
 
 //==============================================================================

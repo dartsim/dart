@@ -355,8 +355,12 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
                                      mMultiDofP.mForceUpperLimits[_index]);
       break;
     case PASSIVE:
-      dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
-             << "PASSIVE joint [" << getName() << "].\n";
+      if(0.0 != _command)
+      {
+        dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a PASSIVE joint [" << getName()
+               << "].\n";
+      }
       mCommands[_index] = _command;
       break;
     case SERVO:
@@ -376,8 +380,12 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case LOCKED:
-      dtwarn << "[MultiDofJoint::setCommand] Attempting to set command for "
-             << "LOCKED joint [" << getName() << "].\n";
+      if(0.0 != _command)
+      {
+        dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a LOCKED joint [" << getName()
+               << "].\n";
+      }
       mCommands[_index] = _command;
       break;
     default:
@@ -417,8 +425,12 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
                              mMultiDofP.mForceUpperLimits);
       break;
     case PASSIVE:
-      dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
-             << "PASSIVE joint [" << getName() << "].\n";
+      if(Vector::Zero() != _commands)
+      {
+        dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
+               << _commands.transpose() << ") command for a PASSIVE joint ["
+               << getName() << "].\n";
+      }
       mCommands = _commands;
       break;
     case SERVO:
@@ -438,8 +450,12 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case LOCKED:
-      dtwarn << "[MultiDofJoint::setCommands] Attempting to set command for "
-             << "LOCKED joint [" << getName() << "].\n";
+      if(Vector::Zero() != _commands)
+      {
+        dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
+               << _commands.transpose() << ") command for a LOCKED joint ["
+               << getName() << "].\n";
+      }
       mCommands = _commands;
       break;
     default:
