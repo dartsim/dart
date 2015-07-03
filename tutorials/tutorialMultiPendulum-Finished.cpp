@@ -117,7 +117,7 @@ public:
       // The system becomes numerically unstable when the rest position exceeds
       // 90 degrees
       if(std::abs(q0) > 90.0 * M_PI / 180.0)
-        q0 = q0 > 0 ? 90.0 * M_PI / 180.0 : -90.0 * M_PI / 180.0;
+        q0 = (q0 > 0)? (90.0 * M_PI / 180.0) : -(90.0 * M_PI / 180.0);
 
       dof->setRestPosition(q0);
     }
@@ -158,8 +158,9 @@ public:
     BodyNode* tip  = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
 
     // Attach the last link to the world
-    mBallConstraint = new dart::constraint::BallJointConstraint(
-          tip, tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height));
+    Eigen::Vector3d location =
+        tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
+    mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
     mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
   }
 

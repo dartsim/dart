@@ -76,6 +76,9 @@ public:
     // Compute the body frame offset for the end effector
     mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
 
+    // Create a target reference frame
+    mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target");
+
     // Create a transform from the center of the domino to the top of the domino
     Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
     target_offset.translation() =
@@ -86,8 +89,7 @@ public:
     target_offset.linear() =
         mEndEffector->getTransform(domino->getBodyNode(0)).linear();
 
-    // Place the _target SimpleFrame at the top of the domino
-    mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target");
+    // Place the mTarget SimpleFrame at the top of the domino
     mTarget->setTransform(target_offset, domino->getBodyNode(0));
 
     // Set PD control gains
@@ -106,10 +108,6 @@ public:
     if(nullptr == mManipulator)
       return;
 
-    // Compute the joint forces needed to compensate for Coriolis forces and
-    // gravity
-    const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
-
     // Compute the joint position error
     Eigen::VectorXd q = mManipulator->getPositions();
     Eigen::VectorXd dq = mManipulator->getVelocities();
@@ -119,6 +117,10 @@ public:
 
     // Compute the joint velocity error
     Eigen::VectorXd dq_err = -dq;
+
+    // Compute the joint forces needed to compensate for Coriolis forces and
+    // gravity
+    const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 
     // Compute the desired joint forces
     const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
@@ -139,7 +141,7 @@ public:
     Jacobian J = mEndEffector->getWorldJacobian(mOffset);
     // Compute the pseudo-inverse of the Jacobian
     Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                            + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+                           + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
     // Compute the Jacobian time derivative
     Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
@@ -240,6 +242,10 @@ public:
   // with anything (other than the floor), then discard it.
   void attemptToCreateDomino(double angle)
   {
+    // Create a new domino
+    SkeletonPtr newDomino = mFirstDomino->clone();
+    newDomino->setName("domino #" + std::to_string(mDominoes.size() + 1));
+
     const SkeletonPtr& lastDomino = mDominoes.size() > 0 ?
           mDominoes.back() : mFirstDomino;
 
@@ -253,9 +259,6 @@ public:
     // Adjust the angle for the new domino
     x[2] = mTotalAngle + angle;
 
-    // Create the new domino
-    SkeletonPtr newDomino = mFirstDomino->clone();
-    newDomino->setName("domino #" + std::to_string(mDominoes.size() + 1));
     newDomino->setPositions(x);
 
     mWorld->addSkeleton(newDomino);
@@ -357,9 +360,10 @@ public:
     // order to push it over
     if(mForceCountDown > 0)
     {
-      mFirstDomino->getBodyNode(0)->addExtForce(
-            default_push_force * Eigen::Vector3d::UnitX(),
-            default_domino_height / 2.0 * Eigen::Vector3d::UnitZ());
+      Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
+      Eigen::Vector3d location =
+          default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+      mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 
       --mForceCountDown;
     }
@@ -505,7 +509,7 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
   std::cout << "spacebar: Begin simulation (you can no longer create or remove dominoes)" << std::endl;
   std::cout << "'p': replay simulation" << std::endl;
-  std::cout << "'f': Push the first domino with a disembodies force so that it falls over" << std::endl;
+  std::cout << "'f': Push the first domino with a disembodied force so that it falls over" << std::endl;
   std::cout << "'r': Push the first domino with the manipulator so that it falls over" << std::endl;
   std::cout << "'v': Turn contact force visualization on/off" << std::endl;
 

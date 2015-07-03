@@ -182,22 +182,151 @@ shape; we just need to add it:
 bn->addVisualizationShape(mArrow);
 ```
 
+# Lesson 2: Set spring and damping properties for joints
 
+DART allows Joints to have implicit spring and damping properties. By default,
+these properties are zeroed out, so a joint will only exhibit the forces that
+are given to it by the ``Joint::setForces`` function. However, you can give a
+non-zero spring coefficient to a joint so that it behaves according to Hooke's
+Law, and you can give a non-zero damping coefficient to a joint which will
+result in linear damping. These forces are computed using implicit methods in
+order to improve numerical stability.
 
+### Lesson 2a: Set joint spring rest position
 
+First let's see how to get and set the rest positions.
 
+Find the function named ``changeRestPosition`` in the ``MyWindow`` class. This
+function will be called whenever the user presses the 'q' or 'a' button. We want
+those buttons to curl and uncurl the rest positions for the pendulum. To start,
+we'll go through all the generalized coordinates and change their rest positions
+by ``delta``:
 
+```cpp
+for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+{
+  DegreeOfFreedom* dof = mPendulum->getDof(i);
+  double q0 = dof->getRestPosition() + delta;
 
+  dof->setRestPosition(q0);
+}
+```
 
+However, it's important to note that the system can become somewhat unstable if
+we allow it to curl up too much, so let's put a limit on the magnitude of the
+rest angle. Right before ``dof->setRestPosition(q0);`` we can put:
 
+```cpp
+if(std::abs(q0) > 90.0 * M_PI / 180.0)
+  q0 = (q0 > 0)? (90.0 * M_PI / 180.0) : -(90.0 * M_PI / 180.0);
+```
 
+And there's one last thing to consider: the first joint of the pendulum is a
+BallJoint. BallJoints have three degrees of freedom, which means if we alter
+the rest positions of *all* of the pendulum's degrees of freedom, then the
+pendulum will end up curling out of the x-z plane. You can allow this to happen
+if you want, or you can prevent it from happening by zeroing out the rest
+positions of the BallJoint's other two degrees of freedom:
 
+```cpp
+mPendulum->getDof(0)->setRestPosition(0.0);
+mPendulum->getDof(2)->setRestPosition(0.0);
+```
 
+### Lesson 2b: Set joint spring stiffness
 
+Changing the rest position does not accomplish anything without having any
+spring stiffness. We can change the spring stiffness as follows:
 
+```cpp
+for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+{
+  DegreeOfFreedom* dof = mPendulum->getDof(i);
+  double stiffness = dof->getSpringStiffness() + delta;
+  dof->setSpringStiffness(stiffness);
+}
+```
 
+However, it's important to realize that if the spring stiffness were ever to
+become negative, we would get some very nasty explosive behavior. It's also a
+bad idea to just trust the user to avoid decrementing it into being negative.
+So before the line ``dof->setSpringStiffness(stiffness);`` you'll want to put:
 
+```cpp
+if(stiffness < 0.0)
+  stiffness = 0.0;
+```
 
+### Lesson 2c: Set joint damping
 
+Joint damping can be thought of as friction inside the joint actuator. It
+applies a resistive force to the joint which is proportional to the generalized
+velocities of the joint. This draws energy out of the system and generally
+results in more stable behavior.
 
+The API for getting and setting the damping is just like the API for stiffness:
 
+```cpp
+for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+{
+  DegreeOfFreedom* dof = mPendulum->getDof(i);
+  double damping = dof->getDampingCoefficient() + delta;
+  if(damping < 0.0)
+    damping = 0.0;
+  dof->setDampingCoefficient(damping);
+}
+```
+
+Again, we want to make sure that the damping coefficient is never negative. In
+fact, a negative damping coefficient would be far more harmful than a negative
+stiffness coefficient.
+
+# Lesson 3: Adding and removing dynamic constraints
+
+Dynamic constraints in DART allow you to attach two BodyNodes together according
+to a selection of a few different Joint-style constraints. This allows you to
+create closed loop constraints, which is not possible using standard Joints.
+You can also create a dynamic constraint that attaches a BodyNode to the World
+instead of to another BodyNode.
+
+In our case, we want to attach the last BodyNode to the World with a BallJoint
+style constraint whenever the function ``addConstraint()`` gets called. First,
+let's grab the last BodyNode in the pendulum:
+
+```cpp
+BodyNode* tip  = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
+```
+
+Now we'll want to compute the location that the constraint should have. We want
+to connect the very end of the tip to the world, so the location would be:
+
+```cpp
+Eigen::Vector3d location =
+    tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
+```
+
+Now we can create the BallJointConstraint:
+
+```cpp
+mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+```
+
+And then add it to the world:
+
+```cpp
+mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
+```
+
+Now we also want to be able to remove this constraint. In the function
+``removeConstraint()``, we can put the following code:
+
+```cpp
+mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
+delete mBallConstraint;
+mBallConstraint = nullptr;
+```
+
+Currently DART does not use smart pointers for dynamic constraints, so they
+need to be explicitly deleted. This may be revised in a later version of DART.
+
+**Now you are ready to run the demo!**

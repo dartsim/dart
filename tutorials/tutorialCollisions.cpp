@@ -35,10 +35,12 @@
  */
 #include <random>
 #include "dart/dart.h"
+#include <random>
 
 const double default_shape_density = 1000; // kg/m^3
 const double default_shape_height  = 0.1;  // m
 const double default_shape_width   = 0.03; // m
+const double default_skin_thickness = 1e-3; // m
 
 const double default_start_height = 0.4;  // m
 
@@ -55,7 +57,7 @@ const double default_start_w = 3*M_PI;  // rad/s
 
 const double ring_spring_stiffness = 0.5;
 const double ring_damping_coefficient = 0.05;
-const double default_damping_coefficient = 0.005;
+const double default_damping_coefficient = 0.001;
 
 const double default_ground_width = 2;
 const double default_wall_thickness = 0.1;
@@ -64,8 +66,8 @@ const double default_spawn_range = 0.9*default_ground_width/2;
 
 const double default_restitution = 0.6;
 
-const double default_vertex_stiffness = 100.0;
-const double default_edge_stiffness = 10.0;
+const double default_vertex_stiffness = 1000.0;
+const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
 using namespace dart::dynamics;
@@ -92,13 +94,14 @@ class MyWindow : public SimWindow
 public:
 
   MyWindow(const WorldPtr& world, const SkeletonPtr& ball,
-           const SkeletonPtr& hybridBody, const SkeletonPtr& rigidChain,
-           const SkeletonPtr& rigidRing)
+           const SkeletonPtr& softBody, const SkeletonPtr& hybridBody,
+           const SkeletonPtr& rigidChain, const SkeletonPtr& rigidRing)
     : mRandomize(true),
       mRD(),
       mMT(mRD()),
       mDistribution(-1.0, std::nextafter(1.0, 2.0)),
       mOriginalBall(ball),
+      mOriginalSoftBody(softBody),
       mOriginalHybridBody(hybridBody),
       mOriginalRigidChain(rigidChain),
       mOriginalRigidRing(rigidRing),
@@ -116,14 +119,18 @@ public:
         break;
 
       case '2':
-        addObject(mOriginalHybridBody->clone());
+        addObject(mOriginalSoftBody->clone());
         break;
 
       case '3':
-        addObject(mOriginalRigidChain->clone());
+        addObject(mOriginalHybridBody->clone());
         break;
 
       case '4':
+        addObject(mOriginalRigidChain->clone());
+        break;
+
+      case '5':
         addRing(mOriginalRigidRing->clone());
         break;
 
@@ -246,6 +253,9 @@ protected:
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;
 
+  /// A blueprint Skeleton that we will use to spawn soft bodies
+  SkeletonPtr mOriginalSoftBody;
+
   /// A blueprint Skeleton that we will use to spawn hybrid bodies
   SkeletonPtr mOriginalHybridBody;
 
@@ -312,6 +322,9 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
   // Zero out the inertia for the underlying BodyNode
   // Lesson 2d
 
+  // Make the shape transparent
+  // Lesson 2e
+
   return bn;
 }
 
@@ -369,6 +382,21 @@ SkeletonPtr createRigidRing()
   return ring;
 }
 
+SkeletonPtr createSoftBody()
+{
+  SkeletonPtr soft = Skeleton::create("soft");
+
+  // Add a soft body
+  /*BodyNode* bn =*/ addSoftBody<FreeJoint>(soft, "soft box", SOFT_BOX);
+
+  // Add a rigid collision geometry and inertia
+  // Lesson 2f
+
+  setAllColors(soft, dart::Color::Fuschia());
+
+  return soft;
+}
+
 SkeletonPtr createHybridBody()
 {
   SkeletonPtr hybrid = Skeleton::create("hybrid");
@@ -377,7 +405,7 @@ SkeletonPtr createHybridBody()
   /*BodyNode* bn =*/ addSoftBody<FreeJoint>(hybrid, "soft sphere", SOFT_ELLIPSOID);
 
   // Add a rigid body attached by a WeldJoint
-  // Lesson 2e
+  // Lesson 2g
 
   setAllColors(hybrid, dart::Color::Green());
 
@@ -432,14 +460,15 @@ int main(int argc, char* argv[])
   world->addSkeleton(createGround());
   world->addSkeleton(createWall());
 
-  MyWindow window(world, createBall(), createHybridBody(),
+  MyWindow window(world, createBall(), createSoftBody(), createHybridBody(),
                   createRigidChain(), createRigidRing());
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'1': toss a rigid ball" << std::endl;
-  std::cout << "'2': toss a hybrid soft/rigid body" << std::endl;
-  std::cout << "'3': toss a rigid chain" << std::endl;
-  std::cout << "'4': toss a ring of rigid bodies" << std::endl;
+  std::cout << "'2': toss a soft body" << std::endl;
+  std::cout << "'3': toss a hybrid soft/rigid body" << std::endl;
+  std::cout << "'4': toss a rigid chain" << std::endl;
+  std::cout << "'5': toss a ring of rigid bodies" << std::endl;
 
   std::cout << "\n'd': delete the oldest object" << std::endl;
   std::cout <<   "'r': toggle randomness" << std::endl;

@@ -324,18 +324,28 @@ the functions are a bit complicated, so here is how to call it for each type:
 
 For the SOFT_BOX:
 ```cpp
-double width = default_shape_width, height = default_shape_height;
+// Make a wide and short box
+double width = default_shape_height, height = 2*default_shape_width;
 Eigen::Vector3d dims(width, width, height);
-double mass = default_shape_density * dims[0]*dims[1]*dims[2];
+
+Eigen::Vector3d dims(width, width, height);
+double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
+mass *= default_shape_density * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeBoxProperties(
       dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4), mass);
 ```
 
 For the SOFT_CYLINDER:
 ```cpp
-double radius = default_shape_width/2.0;
-double height = default_shape_height;
-double mass = default_shape_density * height * pow(M_PI*radius, 2);
+// Make a wide and short cylinder
+double radius = default_shape_height/2.0, height = 2*default_shape_width;
+
+// Mass of center
+double mass = default_shape_density * height * 2*M_PI*radius
+              * default_skin_thickness;
+// Mass of top and bottom
+mass += 2 * default_shape_density * M_PI*pow(radius,2)
+            * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
       radius, height, 8, 3, 2, mass);
 ```
@@ -344,7 +354,8 @@ And for the SOFT_ELLIPSOID:
 ```cpp
 double radius = default_shape_height/2.0;
 Eigen::Vector3d dims = 2*radius*Eigen::Vector3d::Ones();
-double mass = default_shape_density * 4.0/3.0*M_PI*pow(radius,3);
+double mass = default_shape_density * 4.0*M_PI*pow(radius, 2)
+              * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
       dims, 6, 6, mass);
 ```
@@ -399,6 +410,98 @@ simulation:
 Inertia inertia;
 inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
 inertia.setMass(1e-8);
+bn->setInertia(inertia);
+```
+
+### Lesson 2e: Make the shape transparent
+
+To help us visually distinguish between the soft and rigid portions of a body,
+we can make the soft part of the shape transparent. Upon creation, a SoftBodyNode
+will have exactly one visualization shape: the soft shape visualizer. We can
+grab that shape and reduce the value of its alpha channel:
+
+```
+Eigen::Vector4d color = bn->getVisualizationShape(0)->getRGBA();
+color[3] = 0.4;
+bn->getVisualizationShape(0)->setRGBA(color);
+```
+
+### Lesson 2f: Give a hard bone to the SoftBodyNode
+
+SoftBodyNodes are intended to be used as soft skins that are attached to rigid
+bones. We can create a rigid shape, place it in the SoftBodyNode, and give some
+inertia to the SoftBodyNode's base BodyNode class, to act as the inertia of the
+bone.
+
+Find the function ``createSoftBody()``. Underneath the call to ``addSoftBody``,
+we can create a box shape that matches the dimensions of the soft box, but scaled
+down:
+
+```cpp
+double width = default_shape_height, height = 2*default_shape_width;
+Eigen::Vector3d dims(width, width, height);
+dims *= 0.6;
+std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
+```
+
+And then we can add that shape to the visualization and collision shapes of the
+SoftBodyNode, just like normal:
+
+```cpp
+bn->addCollisionShape(box);
+bn->addVisualizationShape(box);
+```
+
+And we'll want to make sure that we set the inertia of the underlying BodyNode,
+or else the behavior will not be realistic:
+
+```cpp
+Inertia inertia;
+inertia.setMass(default_shape_density * box->getVolume());
+inertia.setMoment(box->computeInertia(inertia.getMass()));
+bn->setInertia(inertia);
+```
+
+Note that the inertia of the inherited BodyNode is independent of the inertia
+of the SoftBodyNode's skin.
+
+### Lesson 2g: Add a rigid body attached by a WeldJoint
+
+To make a more interesting hybrid shape, we can attach a protruding rigid body
+to a SoftBodyNode using a WeldJoint. Find the ``createHybridBody()`` function
+and see where we call the ``addSoftBody`` function. Just below this, we'll
+create a new rigid body with a WeldJoint attachment:
+
+```cpp
+bn = hybrid->createJointAndBodyNodePair<WeldJoint>(bn).second;
+bn->setName("rigid box");
+```
+
+Now we can give the new rigid BodyNode a regular box shape:
+
+```cpp
+double box_shape_height = default_shape_height;
+std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
+      box_shape_height*Eigen::Vector3d::Ones());
+
+bn->addCollisionShape(box);
+bn->addVisualizationShape(box);
+```
+
+To make the box protrude, we'll shift it away from the center of its parent:
+
+```cpp
+Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
+bn->getParentJoint()->setTransformFromParentBodyNode(tf);
+```
+
+And be sure to set its inertia, or else the simulation will not be realistic:
+
+```cpp
+Inertia inertia;
+inertia.setMass(default_shape_density * box->getVolume());
+inertia.setMoment(box->computeInertia(inertia.getMass()));
 bn->setInertia(inertia);
 ```
 
