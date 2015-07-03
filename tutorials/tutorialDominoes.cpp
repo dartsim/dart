@@ -68,23 +68,10 @@ public:
     : mManipulator(manipulator)
   {
     // Grab the current joint angles to use them as desired angles
-    // Lesson 2c
+    // Lesson 2b
 
-    // Grab the last body in the manipulator, and use it as an end effector
+    // Set up the information needed for an operational space controller
     // Lesson 3a
-
-    // Compute the body frame offset for the end effector
-    // Lesson 3b
-
-    // Create a transform from the center of the domino to the top of the domino
-    // Lesson 3c
-
-    // Rotate the transform so that it matches the orientation of the end
-    // effector
-    // Lesson 3d
-
-    // Place the mTarget SimpleFrame at the top of the domino
-    // Lesson 3e
 
     // Set PD control gains
     mKpPD = 200.0;
@@ -99,15 +86,17 @@ public:
   /// Coriolis forces
   void setPDForces()
   {
-    // Lesson 2b
+    // Write a stable PD controller
+    // Lesson 2c
 
+    // Compensate for gravity and Coriolis forces
     // Lesson 2d
   }
 
   /// Compute an operational space controller to push on the first domino
   void setOperationalSpaceForces()
   {
-    // Lesson 3f
+    // Lesson 3b
   }
 
 protected:
@@ -166,9 +155,9 @@ public:
 
   // Attempt to create a new domino. If the new domino would be in collision
   // with anything (other than the floor), then discard it.
-  void attemptToCreateDomino(double)
+  void attemptToCreateDomino(double /*angle*/)
   {
-    // Create the new domino
+    // Create a new domino
     // Lesson 1a
 
     // Look through the collisions to see if any dominoes are penetrating
