@@ -46,6 +46,7 @@ namespace dynamics {
 
 class Skeleton;
 class DegreeOfFreedom;
+class InverseKinematics;
 
 /// The JacobianEntity class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
@@ -58,10 +59,24 @@ public:
   /// require it. Since this class is pure abstract and virutally inherits
   /// Frame, the most derived class needs to call the constructor of Entity and
   /// Frame anyway.
-  inline JacobianEntity() : Entity(nullptr, "", false), Frame(nullptr, "") { }
+  JacobianEntity();
 
   /// Virtual destructor
-  virtual ~JacobianEntity() = default;
+  virtual ~JacobianEntity();
+
+  /// Get a reference to an IK module for this Entity. The IK module is lazily
+  /// created, so it does not exist until the first time you ask for it.
+  ///
+  /// If this JacobianEntity is a BodyNode or an EndEffector, then this IK
+  /// module will be cloned along with
+  InverseKinematics& getIK();
+
+  /// const version of getIK()
+  const InverseKinematics& getIK() const;
+
+  /// Wipe away the IK module for this Entity. A new one will be recreated the
+  /// next time you call getIK()
+  void resetIK();
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
@@ -229,6 +244,11 @@ public:
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// \}
+
+protected:
+
+  /// Inverse kinematics module which gets lazily created upon request
+  mutable std::unique_ptr<InverseKinematics> mIK;
 
 };
 

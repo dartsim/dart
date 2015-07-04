@@ -72,6 +72,8 @@ public:
 
   virtual ~InverseKinematics();
 
+  const Eigen::VectorXd& solve();
+
   /// ErrorMethod is a base class for different ways of computing the error of
   /// an InverseKinematics module
   class ErrorMethod : public common::Subject
@@ -299,6 +301,7 @@ public:
   void evalObjectiveGradient(const Eigen::VectorXd& _q,
                              Eigen::Map<Eigen::VectorXd> _grad);
 
+  // TODO: Accept arguments using variadic templates and forwarding
   template <class IKErrorMethod>
   IKErrorMethod* setErrorMethod();
 
@@ -306,6 +309,7 @@ public:
 
   const ErrorMethod* getErrorMethod() const;
 
+  // TODO: Accept arguments using variadic templates and forwarding
   template <class IKGradientMethod>
   IKGradientMethod* setGradientMethod();
 
@@ -417,6 +421,8 @@ protected:
   sub_ptr<JacobianEntity> mEntity;
 
   mutable math::Jacobian mJacobian;
+
+  const Eigen::VectorXd mEmptyVector = Eigen::VectorXd();
 };
 
 #include "dart/dynamics/detail/InverseKinematics.h"

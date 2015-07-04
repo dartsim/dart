@@ -51,9 +51,9 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/TemplatedJacobianEntity.impl"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/TemplatedJacobianEntity.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -1107,15 +1107,6 @@ public:
 };
 
 #include "dart/dynamics/detail/BodyNode.h"
-
-//==============================================================================
-template <class EndEffectorT>
-EndEffectorT* BodyNode::createEndEffector(
-    const typename EndEffectorT::Properties& _properties)
-{
-  EndEffectorT* ee = new EndEffectorT(this, _properties);
-  getSkeleton()->registerEndEffector(ee);
-}
 
 }  // namespace dynamics
 }  // namespace dart

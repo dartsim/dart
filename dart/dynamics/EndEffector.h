@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
 #include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/TemplatedJacobianEntity.impl"
+#include "dart/dynamics/TemplatedJacobianEntity.h"
 
 namespace dart {
 namespace dynamics {
@@ -73,7 +73,7 @@ public:
   };
 
   /// Destructor
-  virtual ~EndEffector();
+  virtual ~EndEffector() = default;
 
   /// Remove this EndEffector from existence. Note that this will affect the
   /// indexing of all other EndEffectors that share the same BodyNode or

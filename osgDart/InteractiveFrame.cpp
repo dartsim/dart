@@ -363,6 +363,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( r == 1 )
@@ -451,6 +452,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
 
     std::shared_ptr<dart::dynamics::MeshShape> shape(
         new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( p == 1 )
@@ -467,7 +469,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   {
     for(size_t j=0; j<3; ++j)
     {
-      const std::vector<dart::dynamics::ShapePtr> shapes =
+      const std::vector<dart::dynamics::ShapePtr>& shapes =
           mTools[i][j]->getVisualizationShapes();
       for(size_t s=0; s<shapes.size(); ++s)
         shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);

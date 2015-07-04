@@ -68,6 +68,16 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
+const Eigen::VectorXd& InverseKinematics::solve()
+{
+  if(nullptr == mSolver || nullptr == mProblem)
+    return mEmptyVector;
+
+  mSolver->solve();
+  return mProblem->getOptimalSolution();
+}
+
+//==============================================================================
 InverseKinematics::ErrorMethod::ErrorMethod(InverseKinematics* _ik,
     const std::string& _methodName)
   : mIK(_ik),
@@ -659,7 +669,7 @@ void InverseKinematics::evalObjectiveGradient(
 {
   mObjective->evalGradient(_q, _grad);
 
-  if(mUseNullSpace)
+  if(mUseNullSpace && mNullSpaceObjective)
   {
     mGradCache.resize(_grad.size());
     Eigen::Map<Eigen::VectorXd> grad_map(mGradCache.data(), _grad.size());

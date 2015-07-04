@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_PTR_H_
-#define DART_DYNAMICS_PTR_H_
+#ifndef DART_DYNAMICS_SMARTPOINTER_H_
+#define DART_DYNAMICS_SMARTPOINTER_H_
 
 #include "dart/dynamics/detail/BodyNodePtr.h"
 #include "dart/dynamics/detail/JointPtr.h"
@@ -141,4 +141,4 @@ DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(DegreeOfFreedom)
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_PTR_H_
+#endif // DART_DYNAMICS_SMARTPOINTER_H_

@@ -126,4 +126,13 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
         this, _jointProperties, _bodyProperties);
 }
 
+//==============================================================================
+template <class EndEffectorT>
+EndEffectorT* BodyNode::createEndEffector(
+    const typename EndEffectorT::Properties& _properties)
+{
+  EndEffectorT* ee = new EndEffectorT(this, _properties);
+  getSkeleton()->registerEndEffector(ee);
+}
+
 #endif // DART_DYNAMICS_DETAIL_BODYNODE_H_

@@ -61,12 +61,6 @@ EndEffector::Properties::Properties(
 }
 
 //==============================================================================
-EndEffector::~EndEffector()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void EndEffector::remove()
 {
   size_t index = mIndexInBodyNode;
