@@ -57,14 +57,6 @@ InverseKinematics::~InverseKinematics()
 {
   mTargetConnection.disconnect();
   mEntityConnection.disconnect();
-
-  mOverallObjective->clearCostFunction(true);
-  mOverallObjective->clearGradientFunction();
-  mOverallObjective->clearHessianFunction();
-
-  mConstraint->clearCostFunction(true);
-  mConstraint->clearGradientFunction();
-  mConstraint->clearHessianFunction();
 }
 
 //==============================================================================
@@ -78,7 +70,7 @@ const Eigen::VectorXd& InverseKinematics::solve()
 }
 
 //==============================================================================
-std::shared_ptr<optimizer::Function> cloneIfIkFunc(
+std::shared_ptr<optimizer::Function> cloneIkFunc(
     const std::shared_ptr<optimizer::Function>& _function,
     InverseKinematics* _ik)
 {
@@ -102,21 +94,26 @@ std::unique_ptr<InverseKinematics> InverseKinematics::clone(
   newIK->setOffset(mOffset);
   newIK->setTarget(mTarget);
 
-  newIK->setObjective(cloneIfIkFunc(mObjective, newIK.get()));
-  newIK->setNullSpaceObjective(cloneIfIkFunc(mNullSpaceObjective, newIK.get()));
+  newIK->setObjective(cloneIkFunc(mObjective, newIK.get()));
+  newIK->setNullSpaceObjective(cloneIkFunc(mNullSpaceObjective, newIK.get()));
 
   newIK->mErrorMethod = mErrorMethod->clone(newIK.get());
   newIK->mGradientMethod = mGradientMethod->clone(newIK.get());
 
   newIK->setSolver(mSolver->clone());
 
-  // TODO: Sort through the functions in mProblem and clone them over when
-  // possible.
+  const std::shared_ptr<optimizer::Problem>& newProblem = newIK->getProblem();
+  newProblem->setObjective( cloneIkFunc(mProblem->getObjective(),newIK.get()) );
 
-  // TODO: Make an InverseKinematics::Objective class and an
-  // InverseKinematics::Constraint class to replace mOverallObject and
-  // mConstraint. They can inherit InverseKinematics::Function and then be
-  // cloned while going through all the Problem functions.
+  newProblem->removeAllEqConstraints();
+  for(size_t i=0; i < mProblem->getNumEqConstraints(); ++i)
+    newProblem->addEqConstraint(
+          cloneIkFunc(mProblem->getEqConstraint(i), newIK.get()) );
+
+  newProblem->removeAllIneqConstraints();
+  for(size_t i=0; i < mProblem->getNumIneqConstraints(); ++i)
+    newProblem->addIneqConstraint(
+          cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
 
   return newIK;
 }
@@ -705,7 +702,7 @@ void InverseKinematics::setObjective(
 }
 
 //==============================================================================
-std::shared_ptr<optimizer::Function> InverseKinematics::getObjective()
+const std::shared_ptr<optimizer::Function>& InverseKinematics::getObjective()
 {
   return mObjective;
 }
@@ -732,7 +729,8 @@ void InverseKinematics::setNullSpaceObjective(
 }
 
 //==============================================================================
-std::shared_ptr<optimizer::Function> InverseKinematics::getNullSpaceObjective()
+const std::shared_ptr<optimizer::Function>&
+InverseKinematics::getNullSpaceObjective()
 {
   return mNullSpaceObjective;
 }
@@ -745,32 +743,9 @@ InverseKinematics::getNullSpaceObjective() const
 }
 
 //==============================================================================
-double InverseKinematics::evalObjective(
-    const Eigen::VectorXd& _q)
+bool InverseKinematics::hasNullSpaceObjective() const
 {
-  return mObjective->eval(_q) + mNullSpaceObjective->eval(_q);
-}
-
-//==============================================================================
-void InverseKinematics::evalObjectiveGradient(
-    const Eigen::VectorXd& _q, Eigen::Map<Eigen::VectorXd> _grad)
-{
-  mObjective->evalGradient(_q, _grad);
-
-  if(mUseNullSpace && mNullSpaceObjective)
-  {
-    mGradCache.resize(_grad.size());
-    Eigen::Map<Eigen::VectorXd> grad_map(mGradCache.data(), _grad.size());
-    mNullSpaceObjective->evalGradient(_q, grad_map);
-
-    setConfiguration(_q);
-
-    // Find a nullspace projection to apply to mGradCache
-    computeJacobian();
-    mSVDCache.compute(mJacobian, Eigen::ComputeFullV);
-    math::extractNullSpace(mSVDCache, mNullSpaceCache);
-    _grad += mNullSpaceCache*mNullSpaceCache.transpose()*mGradCache;
-  }
+  return mUseNullSpace;
 }
 
 //==============================================================================
@@ -799,7 +774,7 @@ InverseKinematics::getGradientMethod() const
 }
 
 //==============================================================================
-std::shared_ptr<optimizer::Problem> InverseKinematics::getProblem()
+const std::shared_ptr<optimizer::Problem>& InverseKinematics::getProblem()
 {
   return mProblem;
 }
@@ -813,32 +788,14 @@ std::shared_ptr<const optimizer::Problem> InverseKinematics::getProblem() const
 //==============================================================================
 void InverseKinematics::resetProblem(bool _clearSeeds)
 {
-  mOverallObjective->setCostFunction(
-        [=](const Eigen::VectorXd& _q)
-        { return this->evalObjective(_q); } );
-  mOverallObjective->setGradientFunction(
-        [=](const Eigen::VectorXd& _q,
-            Eigen::Map<Eigen::VectorXd> _grad)
-        { this->evalObjectiveGradient(_q, _grad); } );
-  mOverallObjective->clearHessianFunction();
-
-  mConstraint->setCostFunction(
-        [=](const Eigen::VectorXd& _q)
-        { return this->mErrorMethod->computeError(_q).norm(); } );
-  mConstraint->setGradientFunction(
-        [=](const Eigen::VectorXd& _q,
-            Eigen::Map<Eigen::VectorXd> _grad)
-        { this->mGradientMethod->computeGradient(_q, _grad); } );
-  mConstraint->clearHessianFunction();
-
   mProblem->removeAllEqConstraints();
   mProblem->removeAllIneqConstraints();
 
   if(_clearSeeds)
     mProblem->clearAllSeeds();
 
-  mProblem->setObjective(mOverallObjective);
-  mProblem->addEqConstraint(mConstraint);
+  mProblem->setObjective(std::make_shared<Objective>(this));
+  mProblem->addEqConstraint(std::make_shared<Constraint>(this));
 
   mProblem->setDimension(mDofs.size());
 }
@@ -973,17 +930,111 @@ void InverseKinematics::clearCaches()
 }
 
 //==============================================================================
+InverseKinematics::Objective::Objective(InverseKinematics* _ik)
+  : mIK(_ik)
+{
+  // Do nothing
+}
+
+//==============================================================================
+optimizer::FunctionPtr InverseKinematics::Objective::clone(
+    InverseKinematics* _newIK) const
+{
+  return std::make_shared<Objective>(_newIK);
+}
+
+//==============================================================================
+double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
+{
+  if(nullptr == mIK)
+  {
+    dterr << "[InverseKinematics::Objective::eval] Attempting to use an "
+          << "Objective function of an expired InverseKinematics module!\n";
+    assert(false);
+    return 0;
+  }
+
+  return mIK->getObjective()->eval(_x) + mIK->getNullSpaceObjective()->eval(_x);
+}
+
+//==============================================================================
+void InverseKinematics::Objective::evalGradient(
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+{
+  if(nullptr == mIK)
+  {
+    dterr << "[InverseKinematics::Objective::evalGradient] Attempting to use "
+          << "an Objective function of an expired InverseKinematics module!\n";
+    assert(false);
+    return;
+  }
+
+  mIK->mObjective->evalGradient(_x, _grad);
+
+  if(mIK->hasNullSpaceObjective())
+  {
+    mGradCache.resize(_grad.size());
+    Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
+    mIK->getNullSpaceObjective()->evalGradient(_x, gradMap);
+
+    mIK->setConfiguration(_x);
+
+    const math::Jacobian& J = mIK->computeJacobian();
+    mSVDCache.compute(J, Eigen::ComputeFullV);
+    math::extractNullSpace(mSVDCache, mNullSpaceCache);
+    _grad += mNullSpaceCache*mNullSpaceCache.transpose() * mGradCache;
+  }
+}
+
+//==============================================================================
+InverseKinematics::Constraint::Constraint(InverseKinematics* _ik)
+  : mIK(_ik)
+{
+  // Do nothing
+}
+
+//==============================================================================
+optimizer::FunctionPtr InverseKinematics::Constraint::clone(
+    InverseKinematics* _newIK) const
+{
+  return std::make_shared<Constraint>(_newIK);
+}
+
+//==============================================================================
+double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
+{
+  if(nullptr == mIK)
+  {
+    dterr << "[InverseKinematics::Constraint::eval] Attempting to use a "
+          << "Constraint function of an expired InverseKinematics module!\n";
+    assert(false);
+    return 0;
+  }
+
+  return mIK->getErrorMethod().computeError().norm();
+}
+
+//==============================================================================
+void InverseKinematics::Constraint::evalGradient(
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+{
+  if(nullptr == mIK)
+  {
+    dterr << "[InverseKinematics::Constraint::evalGradient] Attempting to use "
+          << "a Constraint function of an expired InverseKinematics module!\n";
+    assert(false);
+    return;
+  }
+
+  mIK->getGradientMethod().computeGradient(_x, _grad);
+}
+
+//==============================================================================
 void InverseKinematics::initialize()
 {
   // Default to having no objectives
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
-
-  mOverallObjective = std::shared_ptr<optimizer::ModularFunction>(
-        new optimizer::ModularFunction(mEntity->getName()+"_objective"));
-
-  mConstraint = std::shared_ptr<optimizer::ModularFunction>(
-        new optimizer::ModularFunction(mEntity->getName()+"_constraint"));
 
   mProblem = std::make_shared<optimizer::Problem>();
   resetProblem();

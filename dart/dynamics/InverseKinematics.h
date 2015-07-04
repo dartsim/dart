@@ -86,7 +86,9 @@ public:
   class Function
   {
   public:
-    virtual optimizer::FunctionPtr clone(InverseKinematics* _ik) const = 0;
+    virtual optimizer::FunctionPtr clone(InverseKinematics* _newIK) const = 0;
+
+    virtual ~Function() = default;
   };
 
   /// ErrorMethod is a base class for different ways of computing the error of
@@ -327,7 +329,7 @@ public:
   void setObjective(std::shared_ptr<optimizer::Function> _objective);
 
   /// Get the objective function for this IK module
-  std::shared_ptr<optimizer::Function> getObjective();
+  const std::shared_ptr<optimizer::Function>& getObjective();
 
   /// Get the objective function for this IK module
   std::shared_ptr<const optimizer::Function> getObjective() const;
@@ -343,10 +345,13 @@ public:
   void setNullSpaceObjective(std::shared_ptr<optimizer::Function> _nsObjective);
 
   /// Get the null space objective for this IK module
-  std::shared_ptr<optimizer::Function> getNullSpaceObjective();
+  const std::shared_ptr<optimizer::Function>& getNullSpaceObjective();
 
   /// Get the null space objective for this IK module
   std::shared_ptr<const optimizer::Function> getNullSpaceObjective() const;
+
+  /// Returns false if the null space objective does nothing
+  bool hasNullSpaceObjective() const;
 
   double evalObjective(const Eigen::VectorXd& _q);
 
@@ -367,7 +372,7 @@ public:
 
   const GradientMethod& getGradientMethod() const;
 
-  std::shared_ptr<optimizer::Problem> getProblem();
+  const std::shared_ptr<optimizer::Problem>& getProblem();
 
   std::shared_ptr<const optimizer::Problem> getProblem() const;
 
@@ -416,6 +421,52 @@ public:
 
 protected:
 
+  class Objective : public Function, public optimizer::Function
+  {
+  public:
+
+    Objective(InverseKinematics* _ik);
+
+    optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
+
+    double eval(const Eigen::VectorXd& _x) override;
+
+    void evalGradient(const Eigen::VectorXd& _x,
+                      Eigen::Map<Eigen::VectorXd> _grad) override;
+
+    virtual ~Objective() = default;
+
+  protected:
+
+    sub_ptr<InverseKinematics> mIK;
+
+    Eigen::VectorXd mGradCache;
+
+    Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+
+    Eigen::MatrixXd mNullSpaceCache;
+  };
+
+  class Constraint : public Function, public optimizer::Function
+  {
+  public:
+
+    Constraint(InverseKinematics* _ik);
+
+    optimizer::FunctionPtr clone(InverseKinematics* _newIK) const override;
+
+    double eval(const Eigen::VectorXd& _x) override;
+
+    void evalGradient(const Eigen::VectorXd& _x,
+                      Eigen::Map<Eigen::VectorXd> _grad) override;
+
+    virtual ~Constraint() = default;
+
+  protected:
+
+    sub_ptr<InverseKinematics> mIK;
+  };
+
   /// Gets called during construction
   void initialize();
 
@@ -440,16 +491,6 @@ protected:
   std::shared_ptr<optimizer::Function> mNullSpaceObjective;
 
   bool mUseNullSpace;
-
-  Eigen::VectorXd mGradCache;
-
-  Eigen::MatrixXd mNullSpaceCache;
-
-  Eigen::JacobiSVD<math::Jacobian> mSVDCache;
-
-  std::shared_ptr<optimizer::ModularFunction> mOverallObjective;
-
-  std::shared_ptr<optimizer::ModularFunction> mConstraint;
 
   /// The method that this IK module will use to compute errors
   std::unique_ptr<ErrorMethod> mErrorMethod;
