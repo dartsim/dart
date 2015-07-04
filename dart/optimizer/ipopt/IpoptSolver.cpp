@@ -346,9 +346,9 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  // If the iRow and jCol arguments are not NULL, then IPOPT wants you to fill
+  // If the iRow and jCol arguments are not nullptr, then IPOPT wants you to fill
   // in the sparsity structure of the Jacobian (the row and column indices
-  // only). At this time, the x argument and the values argument will be NULL.
+  // only). At this time, the x argument and the values argument will be nullptr.
 
   if (nullptr == _values)
   {

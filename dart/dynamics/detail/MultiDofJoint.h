@@ -37,6 +37,24 @@
 #ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 
+#define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )              \
+  dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
+        << #arg " [" << arg .size() << "] and the number of "       \
+        << "DOFs [" << getNumDofs() << "] for Joint named ["        \
+        << getName() << "].\n";                                     \
+  assert(false);
+
+#define MULTIDOFJOINT_REPORT_OUT_OF_RANGE( func, index )            \
+  dterr << "[MultiDofJoint::" << #func << "] The index [" << index  \
+        << "] is out of range for Joint named [" << getName()       \
+        << "] which has " << getNumDofs() << " DOFs.\n";            \
+  assert(false);
+
+#define MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func ) \
+  dterr << "[MultiDofJoint::" # func "] Unsupported actuator type ("        \
+        << mJointP.mActuatorType << ") for Joint [" << getName() << "].\n"; \
+  assert(false);
+
 //==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
@@ -66,7 +84,34 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     mFrictions(_coulombFrictions)
 {
   for (size_t i = 0; i < DOF; ++i)
+  {
     mPreserveDofNames[i] = false;
+    mDofNames[i] = std::string();
+  }
+}
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
+    const UniqueProperties& _other)
+  : mPositionLowerLimits(_other.mPositionLowerLimits),
+    mPositionUpperLimits(_other.mPositionUpperLimits),
+    mVelocityLowerLimits(_other.mVelocityLowerLimits),
+    mVelocityUpperLimits(_other.mVelocityUpperLimits),
+    mAccelerationLowerLimits(_other.mAccelerationLowerLimits),
+    mAccelerationUpperLimits(_other.mAccelerationUpperLimits),
+    mForceLowerLimits(_other.mForceLowerLimits),
+    mForceUpperLimits(_other.mForceUpperLimits),
+    mSpringStiffnesses(_other.mSpringStiffnesses),
+    mRestPositions(_other.mRestPositions),
+    mDampingCoefficients(_other.mDampingCoefficients),
+    mFrictions(_other.mFrictions)
+{
+  for (size_t i = 0; i < DOF; ++i)
+  {
+    mPreserveDofNames[i] = _other.mPreserveDofNames[i];
+    mDofNames[i] = _other.mDofNames[i];
+  }
 }
 
 //==============================================================================
@@ -169,9 +214,8 @@ DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
   if (_index < DOF)
     return mDofs[_index];
 
-  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
-        << "). The index must be less than (" << DOF << ")!\n";
-  assert(false);
+  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, _index);
+
   return nullptr;
 }
 
@@ -182,9 +226,8 @@ const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
   if (_index < DOF)
     return mDofs[_index];
 
-  dterr << "[MultiDofJoint::getDof] Attempting to access index (" << _index
-        << "). The index must be less than (" << DOF << ")!\n";
-  assert(false);
+  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, _index);
+
   return nullptr;
 }
 
@@ -196,9 +239,10 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
 {
   if(DOF <= _index)
   {
-    dtwarn << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
-           << "index " << _index << ", which is out of bounds. We will set "
-           << "the name of DOF index 0 instead\n";
+    dterr << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
+          << "index " << _index << ", which is out of bounds for the Joint ["
+          << getName() << "]. We will set the name of DOF index 0 instead.\n";
+    assert(false);
     _index = 0;
   }
 
@@ -226,10 +270,8 @@ void MultiDofJoint<DOF>::preserveDofName(size_t _index, bool _preserve)
 {
   if (DOF <= _index)
   {
-    dtwarn << "[MultiDofJoint::preserveDofName] Attempting to preserve the "
-           << "name of DOF index " << _index << ", which is out of bounds. We "
-           << "will preserve the name of DOF index 0 instead\n";
-    _index = 0;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(preserveDofName, _index);
+    return;
   }
 
   mMultiDofP.mPreserveDofNames[_index] = _preserve;
@@ -241,10 +283,7 @@ bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
 {
   if(DOF <= _index)
   {
-    dtwarn << "[MultiDofJoint::isDofNamePreserved] Requesting whether DOF "
-           << "index " << _index << " is preserved, but this is out of bounds "
-           << "(max " << DOF-1 << "). We will return the result of DOF index 0 "
-           << "instead\n";
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(isDofNamePreserved, _index);
     _index = 0;
   }
 
@@ -257,9 +296,10 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
 {
   if(DOF <= _index)
   {
-    dterr << "[MultiDofJoint::getDofName] Requested name of DOF index "
-          << _index << ", but that is out of bounds (max " << DOF-1 << "). "
-          << "Returning name of DOF 0\n";
+    dterr << "[MultiDofJoint::getDofName] Requested name of DOF index ["
+          << _index << "] in Joint [" << getName() << "], but that is out of "
+          << "bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
+    assert(false);
     return mMultiDofP.mDofNames[0];
   }
 
@@ -279,9 +319,7 @@ size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getIndexInSkeleton] index (" << _index
-          << ") out of range. Must be less than " << getNumDofs() << "!\n";
-    assert(false);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInSkeleton, _index);
     return 0;
   }
 
@@ -294,9 +332,7 @@ size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getIndexInTree] index (" << _index
-          << ") out of range. Must be less than " << getNumDofs() << "!\n";
-    assert(false);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInTree, _index);
     return 0;
   }
 
@@ -305,16 +341,58 @@ size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCommand(size_t _index, double _position)
+void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setCommand]: index[" << _index << "] out of range"
-          << std::endl;
-    return;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCommand, _index);
   }
 
-  mCommands[_index] = _position;
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mForceLowerLimits[_index],
+                                     mMultiDofP.mForceUpperLimits[_index]);
+      break;
+    case PASSIVE:
+      if(0.0 != _command)
+      {
+        dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a PASSIVE joint [" << getName()
+               << "].\n";
+      }
+      mCommands[_index] = _command;
+      break;
+    case SERVO:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mVelocityLowerLimits[_index],
+                                     mMultiDofP.mVelocityUpperLimits[_index]);
+      break;
+    case ACCELERATION:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mAccelerationLowerLimits[_index],
+                                     mMultiDofP.mAccelerationUpperLimits[_index]);
+      break;
+    case VELOCITY:
+      mCommands[_index] = math::clip(_command,
+                                     mMultiDofP.mVelocityLowerLimits[_index],
+                                     mMultiDofP.mVelocityUpperLimits[_index]);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      if(0.0 != _command)
+      {
+        dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a LOCKED joint [" << getName()
+               << "].\n";
+      }
+      mCommands[_index] = _command;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -323,8 +401,7 @@ double MultiDofJoint<DOF>::getCommand(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getCommand]: index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCommand, _index);
     return 0.0;
   }
 
@@ -337,13 +414,55 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
 {
   if (static_cast<size_t>(_commands.size()) != getNumDofs())
   {
-    dterr << "[MultiDofJoint::setCommands]: commands's size["
-          << _commands.size() << "] is different with the dof ["
-          << getNumDofs() << "]" << std::endl;
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setCommands, _commands);
     return;
   }
 
-  mCommands = _commands;
+  switch (mJointP.mActuatorType)
+  {
+    case FORCE:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mForceLowerLimits,
+                             mMultiDofP.mForceUpperLimits);
+      break;
+    case PASSIVE:
+      if(Vector::Zero() != _commands)
+      {
+        dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
+               << _commands.transpose() << ") command for a PASSIVE joint ["
+               << getName() << "].\n";
+      }
+      mCommands = _commands;
+      break;
+    case SERVO:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mVelocityLowerLimits,
+                             mMultiDofP.mVelocityUpperLimits);
+      break;
+    case ACCELERATION:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mAccelerationLowerLimits,
+                             mMultiDofP.mAccelerationUpperLimits);
+      break;
+    case VELOCITY:
+      mCommands = math::clip(_commands,
+                             mMultiDofP.mVelocityLowerLimits,
+                             mMultiDofP.mVelocityUpperLimits);
+      // TODO: This possibly makes the acceleration to exceed the limits.
+      break;
+    case LOCKED:
+      if(Vector::Zero() != _commands)
+      {
+        dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
+               << _commands.transpose() << ") command for a LOCKED joint ["
+               << getName() << "].\n";
+      }
+      mCommands = _commands;
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }
 
 //==============================================================================
@@ -366,7 +485,7 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setPosition index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPosition, _index);
     return;
   }
 
@@ -384,7 +503,7 @@ double MultiDofJoint<DOF>::getPosition(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setPosition index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPosition, _index);
     return 0.0;
   }
 
@@ -397,8 +516,7 @@ void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& _positions)
 {
   if (static_cast<size_t>(_positions.size()) != getNumDofs())
   {
-    dterr << "setPositions positions's size[" << _positions.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setPositions, _positions);
     return;
   }
 
@@ -425,8 +543,7 @@ void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setPositionLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionLowerLimit, _index);
     return;
   }
 
@@ -439,8 +556,7 @@ double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getPositionLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionLowerLimit, _index);
     return 0.0;
   }
 
@@ -453,8 +569,7 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setPositionUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionUpperLimit, _index);
     return;
   }
 
@@ -467,8 +582,7 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getPositionUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionUpperLimit, _index);
     return 0.0;
   }
 
@@ -481,7 +595,7 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setVelocity index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocity, _index);
     return;
   }
 
@@ -491,6 +605,12 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
   // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
   notifyVelocityUpdate();
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommands[_index] = getVelocitiesStatic()[_index];
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -499,7 +619,7 @@ double MultiDofJoint<DOF>::getVelocity(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getVelocity index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocity, _index);
     return 0.0;
   }
 
@@ -512,12 +632,17 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 {
   if (static_cast<size_t>(_velocities.size()) != getNumDofs())
   {
-    dterr << "setVelocities velocities's size[" << _velocities.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setVelocities, _velocities);
     return;
   }
 
   setVelocitiesStatic(_velocities);
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == VELOCITY)
+    mCommands = getVelocitiesStatic();
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -540,8 +665,7 @@ void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setVelocityLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityLowerLimit, _index );
     return;
   }
 
@@ -554,8 +678,7 @@ double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getVelocityLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityLowerLimit, _index);
     return 0.0;
   }
 
@@ -568,8 +691,7 @@ void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setVelocityUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityUpperLimit, _index );
     return;
   }
 
@@ -582,8 +704,7 @@ double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getVelocityUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityUpperLimit, _index );
     return 0.0;
   }
 
@@ -596,8 +717,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setAcceleration index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setAcceleration, _index );
     return;
   }
 
@@ -608,11 +728,11 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   mAccelerations[_index] = _acceleration;
   notifyAccelerationUpdate();
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands[_index] = getAccelerationsStatic()[_index];
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -621,8 +741,7 @@ double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getAcceleration index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getAcceleration, _index );
     return 0.0;
   }
 
@@ -635,18 +754,17 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
   if (static_cast<size_t>(_accelerations.size()) != getNumDofs())
   {
-    dterr << "setAccelerations accelerations's size[" << _accelerations.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setAccelerations, _accelerations );
     return;
   }
 
   setAccelerationsStatic(_accelerations);
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands = getAccelerationsStatic();
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -670,8 +788,7 @@ void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setAccelerationLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationLowerLimit, _index);
     return;
   }
 
@@ -684,8 +801,7 @@ double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getAccelerationLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationLowerLimit, _index);
     return 0.0;
   }
 
@@ -699,8 +815,7 @@ void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setAccelerationUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, _index)
     return;
   }
 
@@ -713,8 +828,7 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getAccelerationUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationUpperLimit, _index);
     return 0.0;
   }
 
@@ -784,17 +898,17 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setForce index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForce, _index);
     return;
   }
 
   mForces[_index] = _force;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -803,7 +917,7 @@ double MultiDofJoint<DOF>::getForce(size_t _index)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getForce index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForce, _index);
     return 0.0;
   }
 
@@ -816,18 +930,17 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 {
   if (static_cast<size_t>(_forces.size()) != getNumDofs())
   {
-    dterr << "setForces forces's size[" << _forces.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setForces, _forces);
     return;
   }
 
   mForces = _forces;
 
-#if DART_MAJOR_VERSION == 4
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
   if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
+  // TODO: Remove at DART 5.1.
 #endif
-  // TODO: Remove at DART 5.0.
 }
 
 //==============================================================================
@@ -842,6 +955,12 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::resetForces()
 {
   mForces.setZero();
+
+#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,0)
+  if (mJointP.mActuatorType == FORCE)
+    mCommands = mForces;
+  // TODO: Remove at DART 5.1.
+#endif
 }
 
 //==============================================================================
@@ -850,8 +969,7 @@ void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setForceLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceLowerLimit, _index);
     return;
   }
 
@@ -864,7 +982,7 @@ double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getForceMin index[" << _index << "] out of range" << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceLowerLimit, _index);
     return 0.0;
   }
 
@@ -877,8 +995,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setForceUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceUpperLimit, _index);
     return;
   }
 
@@ -891,8 +1008,7 @@ double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getForceUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceUpperLimit, _index);
     return 0.0;
   }
 
@@ -906,8 +1022,7 @@ void MultiDofJoint<DOF>::setVelocityChange(size_t _index,
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setVelocityChange index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocityChange, _index);
     return;
   }
 
@@ -920,8 +1035,7 @@ double MultiDofJoint<DOF>::getVelocityChange(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getVelocityChange index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocityChange, _index);
     return 0.0;
   }
 
@@ -941,8 +1055,7 @@ void MultiDofJoint<DOF>::setConstraintImpulse(size_t _index, double _impulse)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "setConstraintImpulse index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setConstraintImpulse, _index);
     return;
   }
 
@@ -955,8 +1068,7 @@ double MultiDofJoint<DOF>::getConstraintImpulse(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "getConstraintImpulse index[" << _index << "] out of range"
-          << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getConstraintImpulse, _index);
     return 0.0;
   }
 
@@ -992,9 +1104,10 @@ Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
   if (static_cast<size_t>(_q1.size()) != getNumDofs()
       || static_cast<size_t>(_q2.size()) != getNumDofs())
   {
-    dterr << "MultiDofJoint::getPositionsDifference: q1's size[" << _q1.size()
-          << "] or q2's size[" << _q2.size() << "is different with the dof ["
-          << getNumDofs() << "]." << std::endl;
+    dterr << "[MultiDofJoint::getPositionsDifference] q1's size [" << _q1.size()
+          << "] or q2's size [" << _q2.size() << "] must both equal the dof ["
+          << getNumDofs() << "] for Joint [" << getName() << "].\n";
+    assert(false);
     return Eigen::VectorXd::Zero(getNumDofs());
   }
 
@@ -1015,8 +1128,7 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setSpringStiffness()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setSpringStiffness, _index);
     return;
   }
 
@@ -1031,8 +1143,7 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getSpringStiffness()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getSpringStiffness, _index);
     return 0.0;
   }
 
@@ -1045,19 +1156,18 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setRestPosition()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setRestPosition, _index);
     return;
   }
 
   if (mMultiDofP.mPositionLowerLimits[_index] > _q0
       || mMultiDofP.mPositionUpperLimits[_index] < _q0)
   {
-    dterr << "Rest position of joint[" << getName() << "], " << _q0
-          << ", is out of the limit range["
-          << mMultiDofP.mPositionLowerLimits[_index] << ", "
-          << mMultiDofP.mPositionUpperLimits[_index] << "] in index[" << _index
-          << "].\n";
+    dtwarn << "[MultiDofJoint::setRestPosition] Value of _q0 [" << _q0
+           << "], is out of the limit range ["
+           << mMultiDofP.mPositionLowerLimits[_index] << ", "
+           << mMultiDofP.mPositionUpperLimits[_index] << "] for index ["
+           << _index << "] of Joint [" << getName() << "].\n";
     return;
   }
 
@@ -1070,8 +1180,7 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getRestPosition()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getRestPosition, _index);
     return 0.0;
   }
 
@@ -1084,8 +1193,7 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setDampingCoefficient()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setDampingCoefficient, _index);
     return;
   }
 
@@ -1101,8 +1209,7 @@ double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getDampingCoefficient()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDampingCoefficient, _index);
     return 0.0;
   }
 
@@ -1115,8 +1222,7 @@ void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::setFriction()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCoulombFriction, _index);
     return;
   }
 
@@ -1131,8 +1237,7 @@ double MultiDofJoint<DOF>::getCoulombFriction(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    dterr << "[MultiDofJoint::getFriction()]: index[" << _index
-          << "] out of range." << std::endl;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCoulombFriction, _index);
     return 0.0;
   }
 
@@ -1360,7 +1465,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
                                              _childArtInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaTo);
       break;
   }
 }
@@ -1415,7 +1520,7 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
                                                 _childArtInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
       break;
   }
 }
@@ -1467,7 +1572,7 @@ void MultiDofJoint<DOF>::updateInvProjArtInertia(
       updateInvProjArtInertiaKinematic(_artInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertia);
       break;
   }
 }
@@ -1518,7 +1623,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
       updateInvProjArtInertiaImplicitKinematic(_artInertia, _timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(
+            updateInvProjArtInertiaImplicit);
       break;
   }
 }
@@ -1586,7 +1692,7 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
                                    _childPartialAcc);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasForceTo);
       break;
   }
 }
@@ -1671,7 +1777,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
                                      _childBiasImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasImpulseTo);
       break;
   }
 }
@@ -1742,7 +1848,7 @@ void MultiDofJoint<DOF>::updateTotalForce(
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalForce);
       break;
   }
 }
@@ -1795,7 +1901,7 @@ void MultiDofJoint<DOF>::updateTotalImpulse(
       updateTotalImpulseKinematic(_bodyImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalImpulse);
       break;
   }
 }
@@ -1844,7 +1950,7 @@ void MultiDofJoint<DOF>::updateAcceleration(
       updateAccelerationKinematic(_artInertia, _spatialAcc);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateAcceleration);
       break;
   }
 }
@@ -1892,7 +1998,7 @@ void MultiDofJoint<DOF>::updateVelocityChange(
       updateVelocityChangeKinematic(_artInertia, _velocityChange);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
       break;
   }
 }
@@ -1970,7 +2076,7 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
                     _withSpringForces);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateForceFD);
       break;
   }
 }
@@ -1998,7 +2104,7 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
       updateImpulseID(_bodyImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateImpulseFD);
       break;
   }
 }
@@ -2020,7 +2126,7 @@ void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
       updateConstrainedTermsKinematic(_timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateConstrainedTerms);
       break;
   }
 }

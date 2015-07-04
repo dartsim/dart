@@ -57,40 +57,45 @@ class Shape;
 namespace dart {
 namespace collision {
 
-/// \brief
-class FCLCollisionNode : public CollisionNode {
-public:
-  /// \brief
-  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
+class FCLCollisionNode;
 
-  /// \brief
-  virtual ~FCLCollisionNode();
+struct FCLUserData
+{
+  FCLCollisionNode* fclCollNode;
+  dynamics::BodyNode* bodyNode;
+  dynamics::Shape* shape;
 
-  /// \brief
-  int getNumCollisionGeometries() const;
-
-  /// \brief
-  fcl::CollisionGeometry* getCollisionGeometry(int _idx) const;
-
-  /// \brief
-  fcl::Transform3f getFCLTransform(int _idx) const;
-
-private:
-  /// \brief
-  std::vector<fcl::CollisionGeometry*> mCollisionGeometries;
-
-  /// \brief
-  std::vector<dynamics::ShapePtr> mShapes;
+  FCLUserData(FCLCollisionNode* _fclCollNode,
+              dynamics::BodyNode* _bodyNode,
+              dynamics::Shape* _shape);
 };
 
-/// \brief
-template<class BV>
-fcl::BVHModel<BV>* createMesh(float _sizeX, float _sizeY, float _sizeZ,
-                              const aiScene* _mesh);
+/// FCLCollisionNode
+class FCLCollisionNode : public CollisionNode
+{
+public:
+  /// Constructor
+  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
 
-/// \brief
-template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ);
+  /// Destructor
+  virtual ~FCLCollisionNode();
+
+  /// Get number of collision objects
+  size_t getNumCollisionObjects() const;
+
+  /// Get FCL collision object given index
+  fcl::CollisionObject* getCollisionObject(size_t _idx) const;
+
+  /// Get FCL transformation of shape given index
+  fcl::Transform3f getFCLTransform(size_t _idx) const;
+
+  /// Update transformation and AABB of all the fcl collision objects.
+  void updateFCLCollisionObjects();
+
+private:
+  /// Array of FCL collision object that continas geometry and transform
+  std::vector<fcl::CollisionObject*> mCollisionObjects;
+};
 
 }  // namespace collision
 }  // namespace dart

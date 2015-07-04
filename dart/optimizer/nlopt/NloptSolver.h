@@ -103,7 +103,7 @@ private:
   /// \brief Wrapping function for nlopt callback function, nlopt_func
   static double _nlopt_func(unsigned _n,
                             const double* _x,
-                            double* _gradient,
+                            double* _gradient,  // nullptr if not needed
                             void* _func_data);
 
   /// \brief Wrapping function for nlopt callback function, nlopt_mfunc
@@ -111,7 +111,7 @@ private:
                            double* _result,
                            unsigned _n,
                            const double* _x,
-                           double* _gradient,  // NULL if not needed
+                           double* _gradient,  // nullptr if not needed
                            void* _func_data);
 
   /// \brief NLOPT data structure

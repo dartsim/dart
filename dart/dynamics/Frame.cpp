@@ -63,7 +63,7 @@ Frame::~Frame()
   if(isWorld())
     return;
 
-  changeParentFrame(NULL);
+  changeParentFrame(nullptr);
 
   // Inform all child entities that this Frame is disappearing by setting their
   // reference frames to the World frame.
@@ -430,7 +430,7 @@ bool Frame::isWorld() const
 void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
                  bool _useDefaultColor, int _depth) const
 {
-  if(NULL == _ri)
+  if(nullptr == _ri)
     return;
 
   _ri->pushMatrix();
@@ -601,7 +601,7 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 
 //==============================================================================
 WorldFrame::WorldFrame()
-  : Entity(NULL, "World", true),
+  : Entity(nullptr, "World", true),
     Frame(),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mZero(Eigen::Vector6d::Zero())

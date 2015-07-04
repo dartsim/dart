@@ -157,8 +157,8 @@ public:
                       Ipopt::Number* _g);
 
   /// \brief Method to return:
-  ///        1) The structure of the jacobian (if "values" is NULL)
-  ///        2) The values of the jacobian (if "values" is not NULL)
+  ///        1) The structure of the jacobian (if "values" is nullptr)
+  ///        2) The values of the jacobian (if "values" is not nullptr)
   virtual bool eval_jac_g(Ipopt::Index _n,
                           const Ipopt::Number* _x,
                           bool _new_x,
@@ -170,9 +170,9 @@ public:
 
   /// \brief Method to return:
   ///        1) The structure of the hessian of the lagrangian (if "values" is
-  ///           NULL)
+  ///           nullptr)
   ///        2) The values of the hessian of the lagrangian (if "values" is not
-  ///           NULL)
+  ///           nullptr)
   virtual bool eval_h(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool _new_x,

@@ -108,6 +108,7 @@ public:
     /// The name of the DegreesOfFreedom for this Joint
     std::array<std::string, DOF> mDofNames;
 
+    /// Default constructor
     UniqueProperties(
       const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
       const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
@@ -122,7 +123,16 @@ public:
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
 
+    /// Copy constructor
+    // Note: we only need this because VS2013 lacks full support for std::array
+    // Once std::array is properly supported, this should be removed.
+    UniqueProperties(const UniqueProperties& _other);
+
     virtual ~UniqueProperties() = default;
+
+  public:
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   struct Properties : Joint::Properties, UniqueProperties
@@ -132,6 +142,10 @@ public:
         const UniqueProperties& _multiDofProperties = UniqueProperties());
 
     virtual ~Properties();
+
+  public:
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// Destructor
@@ -193,19 +207,19 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setCommand(size_t _index, double _command);
+  virtual void setCommand(size_t _index, double _command) override;
 
   // Documentation inherited
-  virtual double getCommand(size_t _index) const;
+  virtual double getCommand(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setCommands(const Eigen::VectorXd& _commands);
+  virtual void setCommands(const Eigen::VectorXd& _commands) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getCommands() const;
+  virtual Eigen::VectorXd getCommands() const override;
 
   // Documentation inherited
-  virtual void resetCommands();
+  virtual void resetCommands() override;
 
   //----------------------------------------------------------------------------
   // Position
@@ -364,36 +378,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange);
+  virtual void setVelocityChange(size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index) const;
+  virtual double getVelocityChange(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetVelocityChanges();
+  virtual void resetVelocityChanges() override;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse);
+  virtual void setConstraintImpulse(size_t _index, double _impulse) override;
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index) const;
+  virtual double getConstraintImpulse(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetConstraintImpulses();
+  virtual void resetConstraintImpulses() override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt);
+  virtual void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt);
+  virtual void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
@@ -436,7 +450,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual double getPotentialEnergy() const;
+  virtual double getPotentialEnergy() const override;
 
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;

@@ -312,7 +312,7 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
                                    aiProcess_JoinIdenticalVertices  |
                                    aiProcess_SortByPType            |
                                    aiProcess_OptimizeMeshes,
-                                   NULL, propertyStore);
+                                   nullptr, propertyStore);
   if(!scene)
     dtwarn << "[MeshShape] Assimp could not load file: '" << _fileName << "'. "
            << "This will likely result in a segmentation fault "

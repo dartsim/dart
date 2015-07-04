@@ -395,6 +395,54 @@ void DegreeOfFreedom::resetConstraintImpulse()
 }
 
 //==============================================================================
+void DegreeOfFreedom::setSpringStiffness(double _k)
+{
+  mJoint->setSpringStiffness(mIndexInJoint, _k);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getSpringStiffness() const
+{
+  return mJoint->getSpringStiffness(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setRestPosition(double _q0)
+{
+  mJoint->setRestPosition(mIndexInJoint, _q0);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getRestPosition() const
+{
+  return mJoint->getRestPosition(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setDampingCoefficient(double _coeff)
+{
+  mJoint->setDampingCoefficient(mIndexInJoint, _coeff);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getDampingCoefficient() const
+{
+  return mJoint->getDampingCoefficient(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setCoulombFriction(double _friction)
+{
+  mJoint->setCoulombFriction(mIndexInJoint, _friction);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getCoulombFriction() const
+{
+  return mJoint->getCoulombFriction(mIndexInJoint);
+}
+
+//==============================================================================
 Joint* DegreeOfFreedom::getJoint()
 {
   return mJoint;
@@ -447,6 +495,7 @@ DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
                                  size_t _indexInJoint)
   : mIndexInJoint(_indexInJoint),
     mIndexInSkeleton(0),
+    mIndexInTree(0),
     mJoint(_joint)
 {
   // Do nothing

@@ -778,7 +778,7 @@ void dLCP::unpermute()
 // an optimized Dantzig LCP driver routine for the lo-hi LCP problem.
 
 void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
-                dReal *outer_w/*=NULL*/, int nub, dReal *lo, dReal *hi, int *findex)
+                dReal *outer_w/*=nullptr*/, int nub, dReal *lo, dReal *hi, int *findex)
 {
   dAASSERT (n>0 && A && x && b && lo && hi && nub >= 0 && nub <= n);
 # ifndef dNODEBUG
@@ -814,7 +814,7 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
 #ifdef ROWPTRS
   dReal **Arows = new dReal* [n];
 #else
-  dReal **Arows = NULL;
+  dReal **Arows = nullptr;
 #endif
   int *p = new int[n];
   int *C = new int[n];
@@ -1045,12 +1045,12 @@ void dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
         case 5:		// keep going
           x[si] = lo[si];
           state[si] = false;
-          lcp.transfer_i_from_C_to_N (si, NULL);
+          lcp.transfer_i_from_C_to_N (si, nullptr);
           break;
         case 6:		// keep going
           x[si] = hi[si];
           state[si] = true;
-          lcp.transfer_i_from_C_to_N (si, NULL);
+          lcp.transfer_i_from_C_to_N (si, nullptr);
           break;
         }
 
@@ -1129,8 +1129,8 @@ extern "C" ODE_API int dTestSolveLCP()
   const int n = 100;
 
   //size_t memreq = EstimateTestSolveLCPMemoryReq(n);
-  //dxWorldProcessMemArena *arena = dxAllocateTemporaryWorldProcessMemArena(memreq, NULL, NULL);
-  //if (arena == NULL) {
+  //dxWorldProcessMemArena *arena = dxAllocateTemporaryWorldProcessMemArena(memreq, nullptr, nullptr);
+  //if (arena == nullptr) {
   //  return 0;
   //}
 

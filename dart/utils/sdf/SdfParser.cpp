@@ -20,7 +20,6 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/Paths.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
@@ -162,7 +161,7 @@ simulation::WorldPtr SdfParser::readWorld(
     std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
                                         const std::string&)> skeletonReader)
 {
-  assert(_worldElement != NULL);
+  assert(_worldElement != nullptr);
 
   // Create a world
   simulation::WorldPtr newWorld(new simulation::World);
@@ -170,8 +169,7 @@ simulation::WorldPtr SdfParser::readWorld(
   //--------------------------------------------------------------------------
   // Name attribute
   std::string name = getAttribute(_worldElement, "name");
-  // World don't have name.
-  //newWorld->setName(name);
+  newWorld->setName(name);
 
   //--------------------------------------------------------------------------
   // Load physics
@@ -279,7 +277,8 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
       // create it
       BodyMap::const_iterator rootNode = sdfBodyNodes.find(it->second.parentName);
       SDFJoint rootJoint;
-      rootJoint.properties = std::make_shared<dynamics::FreeJoint::Properties>(
+      rootJoint.properties =
+          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
             dynamics::Joint::Properties("root", rootNode->second.initTransform));
       rootJoint.type = "free";
 
@@ -551,7 +550,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
 
   SDFBodyNode sdfBodyNode;
   sdfBodyNode.properties =
-      std::make_shared<dynamics::BodyNode::Properties>(properties);
+      Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(properties);
   sdfBodyNode.initTransform = initTransform;
 
   return sdfBodyNode;
@@ -675,7 +674,7 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
     const BodyMap& _sdfBodyNodes,
     const Eigen::Isometry3d& _skeletonFrame)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   //--------------------------------------------------------------------------
   // Type attribute
@@ -741,7 +740,7 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
   SDFJoint newJoint;
   newJoint.parentName = (parent_it == _sdfBodyNodes.end())?
         "" : parent_it->first;
-  newJoint.childName = (parent_it == _sdfBodyNodes.end())?
+  newJoint.childName = (child_it == _sdfBodyNodes.end())?
         "" : child_it->first;
 
   //--------------------------------------------------------------------------
@@ -764,19 +763,24 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
       (childWorld * childToJoint).inverse() * _skeletonFrame;
 
   if (type == std::string("prismatic"))
-    newJoint.properties = std::make_shared<dynamics::PrismaticJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
           readPrismaticJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute"))
-    newJoint.properties = std::make_shared<dynamics::RevoluteJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
           readRevoluteJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("screw"))
-    newJoint.properties = std::make_shared<dynamics::ScrewJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
           readScrewJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute2"))
-    newJoint.properties = std::make_shared<dynamics::UniversalJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
           readUniversalJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("ball"))
-    newJoint.properties = std::make_shared<dynamics::BallJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
           readBallJoint(_jointElement, parentModelFrame, name));
 
   newJoint.type = type;
@@ -895,7 +899,7 @@ dynamics::PrismaticJoint::Properties SdfParser::readPrismaticJoint(
     const Eigen::Isometry3d& _parentModelFrame,
     const std::string& _name)
 {
-  assert(_jointElement != NULL);
+  assert(_jointElement != nullptr);
 
   dynamics::PrismaticJoint::Properties newPrismaticJoint;
 

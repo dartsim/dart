@@ -34,6 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+
 #include "dart/common/Console.h"
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"

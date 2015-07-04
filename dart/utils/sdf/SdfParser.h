@@ -84,7 +84,7 @@ public:
       std::string type;
     };
 
-    typedef std::map<std::string, SDFBodyNode> BodyMap;
+    typedef Eigen::aligned_map<std::string, SDFBodyNode> BodyMap;
     typedef std::map<std::string, SDFJoint> JointMap;
 
     static simulation::WorldPtr readWorld(

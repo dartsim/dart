@@ -103,19 +103,19 @@ protected:
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
-  virtual void integratePositions(double _dt);
+  virtual void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames();
+  virtual void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const;
+  virtual void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const;
+  virtual void updateLocalJacobian(bool =true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const;
+  virtual void updateLocalJacobianTimeDeriv() const override;
 
 protected:
 

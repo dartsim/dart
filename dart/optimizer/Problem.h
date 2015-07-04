@@ -121,10 +121,10 @@ public:
   void addIneqConstraint(FunctionPtr _ineqConst);
 
   /// \brief Get number of equality constraints
-  size_t getNumEqConstraints();
+  size_t getNumEqConstraints() const;
 
   /// \brief Get number of inequality constraints
-  size_t getNumIneqConstraints();
+  size_t getNumIneqConstraints() const;
 
   /// \brief Get equality constraint
   FunctionPtr getEqConstraint(size_t _idx) const;

@@ -46,22 +46,13 @@ int main(int argc, char* argv[]) {
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"/skel/cubes.skel");
-  assert(myWorld != NULL);
+  assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
-
-  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
-  {
-    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
-    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
-    {
-      std::cout << skel->getBodyNode(j)->getSpatialInertia() << "\n" << std::endl;
-    }
-  }
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;

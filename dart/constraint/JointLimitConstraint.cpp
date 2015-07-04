@@ -320,7 +320,7 @@ void JointLimitConstraint::applyUnitImpulse(size_t _index)
 //==============================================================================
 void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 {
-  assert(_delVel != NULL && "Null pointer is not allowed.");
+  assert(_delVel != nullptr && "Null pointer is not allowed.");
 
   size_t localIndex = 0;
   size_t dof = mJoint->getNumDofs();

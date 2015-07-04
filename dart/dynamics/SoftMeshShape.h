@@ -70,7 +70,7 @@ public:
 
   // Documentation inherited.
   virtual void draw(
-      renderer::RenderInterface* _ri      = NULL,
+      renderer::RenderInterface* _ri      = nullptr,
       const Eigen::Vector4d&     _col     = Eigen::Vector4d::Ones(),
       bool                       _default = true) const;
 

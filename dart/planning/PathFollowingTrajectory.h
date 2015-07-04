@@ -62,7 +62,8 @@ private:
 		TrajectoryStep() {}
 		TrajectoryStep(double pathPos, double pathVel) :
 			pathPos(pathPos),
-			pathVel(pathVel)
+      pathVel(pathVel),
+      time(0.0)
 		{}
 		double pathPos;
 		double pathVel;

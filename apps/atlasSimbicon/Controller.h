@@ -124,16 +124,28 @@ protected:
   /// \brief Flag for right foot harnessing
   bool mRightFootHarnessOn;
 
+  /// \brief Index for coronal left hip
+  size_t mCoronalLeftHip;
+
+  /// \brief Index for coronal right hip
+  size_t mCoronalRightHip;
+
+  /// \brief Index for sagital left hip
+  size_t mSagitalLeftHip;
+
+  /// \brief Index for sagital right hip
+  size_t mSagitalRightHip;
+
 private:
   /// \brief Check if this controller contains _stateMachine
-  bool _containStateMachine(StateMachine* _stateMachine);
+  bool _containStateMachine(const StateMachine* _stateMachine) const;
 
   /// \brief Check if this controller contains a state machine whose name is
   ///        _name
-  bool _containStateMachine(const std::string& _name);
+  bool _containStateMachine(const std::string& _name) const;
 
   /// \brief Find a state machine whose name is _name
-  StateMachine* _findStateMachine(const std::string& _name);
+  StateMachine* _findStateMachine(const std::string& _name) const;
 
   /// \brief Build state machines
   void _buildStateMachines();

@@ -233,7 +233,7 @@ public:
 
   // Render this Frame as well as any Entities it contains
   virtual void draw(
-      renderer::RenderInterface *_ri = NULL,
+      renderer::RenderInterface *_ri = nullptr,
       const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
       bool _useDefaultColor = true, int _depth = 0) const override;
 
@@ -290,6 +290,9 @@ private:
   /// Contains whether or not this is the World Frame
   const bool mAmWorld;
 
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The WorldFrame class is a class that is used internally to create the
@@ -326,6 +329,10 @@ private:
 
   /// This is set to a Zero vector and never changes
   const Eigen::Vector6d mZero;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics

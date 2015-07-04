@@ -65,19 +65,6 @@ double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double ContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
-ContactConstraint::ContactConstraint(const collision::Contact& _contact)
-  : ConstraintBase(),
-    mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    mIsFrictionOn(true),
-    mAppliedImpulseIndex(-1),
-    mIsBounceOn(false),
-    mActive(false)
-{
-  dterr << "This constructor is deprecated. Please don't use me anymore."
-        << std::endl;
-}
-
-//==============================================================================
 ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
   : ConstraintBase(),
@@ -154,11 +141,11 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::fabs(ct->normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::fabs(ct->normal.dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
 //      if (D.col(0).dot(D.col(1)) > 0.0)
 //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
-      assert(fabs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
 
 //      std::cout << "D: " << std::endl << D << std::endl;
 
@@ -547,7 +534,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
 //==============================================================================
 void ContactConstraint::applyUnitImpulse(size_t _idx)
 {
-  assert(0 <= _idx && _idx < mDim && "Invalid Index.");
+  assert(_idx < mDim && "Invalid Index.");
   assert(isActive());
   assert(mBodyNode1->isReactive() || mBodyNode2->isReactive());
 
@@ -614,7 +601,7 @@ void ContactConstraint::applyUnitImpulse(size_t _idx)
 //==============================================================================
 void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
-  assert(_vel != NULL && "Null pointer is not allowed.");
+  assert(_vel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {
@@ -750,7 +737,7 @@ void ContactConstraint::applyImpulse(double* _lambda)
 //==============================================================================
 void ContactConstraint::getRelVelocity(double* _relVel)
 {
-  assert(_relVel != NULL && "Null pointer is not allowed.");
+  assert(_relVel != nullptr && "Null pointer is not allowed.");
 
   for (size_t i = 0; i < mDim; ++i)
   {

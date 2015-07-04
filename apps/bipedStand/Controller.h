@@ -53,7 +53,6 @@ public:
   Eigen::VectorXd getTorques();
   double getTorque(int _index);
   void setDesiredDof(int _index, double _val);
-  void resetDesiredDofs();
   void computeTorques();
   dart::dynamics::MetaSkeletonPtr getSkel();
   Eigen::VectorXd getDesiredDofs();
@@ -67,9 +66,12 @@ protected:
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;
   Eigen::MatrixXd mKd;
+  size_t mLeftFoot[2];
+  size_t mRightFoot[2];
   int mFrame;
   double mTimestep;
   double mPreOffset;
+
   /// \brief SPD utilizes the current info about contact forces
 };
 

@@ -43,7 +43,7 @@ public:
 public:
 
   /// The default constructor
-  PathPlanner() : world(NULL) {}
+  PathPlanner() : world(nullptr) {}
 
   /// The desired constructor - you should use this one.
   PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
@@ -91,7 +91,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
-  Eigen::VectorXd savedConfiguration = robot->getPositionSegment(dofs);
+  Eigen::VectorXd savedConfiguration = robot->getPositions(dofs);
 
   // ====================================================================
   // Check for collisions in the start and goal configurations
@@ -99,7 +99,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_
   // Sift through the possible start configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleStart;
   for(unsigned int i = 0; i < start.size(); i++) {
-    robot->setPositionSegment(dofs, start[i]);
+    robot->setPositions(dofs, start[i]);
     if(!world->checkCollision()) feasibleStart.push_back(start[i]);
   }
 
@@ -112,7 +112,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_
   // Sift through the possible goal configurations and eliminate those that are in collision
   std::vector<Eigen::VectorXd> feasibleGoal;
   for(unsigned int i = 0; i < goal.size(); i++) {
-    robot->setPositionSegment(dofs, goal[i]);
+    robot->setPositions(dofs, goal[i]);
     if(!world->checkCollision()) feasibleGoal.push_back(goal[i]);
   }
 
@@ -135,7 +135,7 @@ bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_
   }
 
   // Restore previous robot configuration
-  robot->setPositionSegment(dofs, savedConfiguration);
+  robot->setPositions(dofs, savedConfiguration);
 
   return result;
 }

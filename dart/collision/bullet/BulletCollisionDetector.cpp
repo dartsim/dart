@@ -70,8 +70,8 @@ struct CollisionFilter : public btOverlapFilterCallback
   virtual bool needBroadphaseCollision(btBroadphaseProxy* _proxy0,
                                        btBroadphaseProxy* _proxy1) const
   {
-    assert((_proxy0 != NULL && _proxy1 != NULL) &&
-           "Bullet broadphase overlapping pair proxies are NULL");
+    assert((_proxy0 != nullptr && _proxy1 != nullptr) &&
+           "Bullet broadphase overlapping pair proxies are nullptr");
 
     bool collide = (_proxy0->m_collisionFilterGroup &
                     _proxy1->m_collisionFilterMask) != 0;
@@ -123,7 +123,7 @@ BulletCollisionDetector::BulletCollisionDetector() : CollisionDetector()
 
   btOverlapFilterCallback* filterCallback = new CollisionFilter();
   btOverlappingPairCache* pairCache = mBulletCollisionWorld->getPairCache();
-  assert(pairCache != NULL);
+  assert(pairCache != nullptr);
   pairCache->setOverlapFilterCallback(filterCallback);
 }
 

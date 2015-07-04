@@ -44,7 +44,7 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Ptr.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
@@ -180,7 +180,7 @@ protected:
 
 private:
   /// \brief Return true if _skeleton is contained
-  bool containSkeleton(const dynamics::SkeletonPtr _skeleton);
+  bool containSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// \brief
   bool getPairCollidable(const CollisionNode* _node1,
@@ -193,7 +193,7 @@ private:
 
   /// \brief Return true if _bodyNode1 and _bodyNode2 are adjacent bodies
   bool isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
-                        const dynamics::BodyNode* _bodyNode2);
+                        const dynamics::BodyNode* _bodyNode2) const;
 
   /// \brief
   CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);

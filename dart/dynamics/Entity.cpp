@@ -231,7 +231,7 @@ const std::vector<ShapePtr>& Entity::getVisualizationShapes() const
 void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
                   bool _useDefaultColor, int) const
 {
-  if(NULL == _ri)
+  if(nullptr == _ri)
     return;
 
 //  _ri->pushMatrix();

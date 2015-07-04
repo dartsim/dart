@@ -60,7 +60,6 @@ int main(int argc, char* argv[])
   for (int i = 0; i < 3; i++)
     initPose[i] = dart::math::random(-0.5, 0.5);
   myWorld->getSkeleton(1)->setPositions(initPose);
-  myWorld->getSkeleton(1)->computeForwardKinematics(true, true, false);
 
   // create a window and link it to the world
   MyWindow window;

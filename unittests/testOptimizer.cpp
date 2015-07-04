@@ -169,7 +169,7 @@ TEST(Optimizer, BasicNlopt)
   Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), static_cast<int>(prob->getDimension()));
+  EXPECT_EQ(static_cast<size_t>(optX.size()), prob->getDimension());
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }
@@ -202,7 +202,7 @@ TEST(Optimizer, BasicIpopt)
   Eigen::VectorXd optX = prob->getOptimalSolution();
 
   EXPECT_NEAR(minF, 0.544330847, 1e-6);
-  EXPECT_EQ(optX.size(), prob->getDimension());
+  EXPECT_EQ(static_cast<size_t>(optX.size()), prob.getDimension());
   EXPECT_NEAR(optX[0], 0.333334, 1e-6);
   EXPECT_NEAR(optX[1], 0.296296, 1e-6);
 }

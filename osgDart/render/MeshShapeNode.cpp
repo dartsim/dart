@@ -177,7 +177,6 @@ void MeshShapeNode::extractData(bool firstTime)
   if(firstTime) // extract material properties
   {
     mMaterials.reserve(scene->mNumMaterials);
-    std::cout << "Found " << scene->mNumMaterials << " materials" << std::endl;
 
     for(size_t i=0; i<scene->mNumMaterials; ++i)
     {
@@ -187,14 +186,12 @@ void MeshShapeNode::extractData(bool firstTime)
       aiColor4D c;
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_AMBIENT, &c)==AI_SUCCESS)
       {
-        std::cout << "setting ambient to: " << c << std::endl;
         material->setAmbient(osg::Material::FRONT_AND_BACK,
                              osg::Vec4(c.r, c.g, c.b, c.a));
       }
 
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_DIFFUSE, &c)==AI_SUCCESS)
       {
-        std::cout << "setting diffuse to: " << c << std::endl;
         material->setDiffuse(osg::Material::FRONT_AND_BACK,
                              osg::Vec4(c.r, c.g, c.b, c.a));
       }
@@ -210,7 +207,6 @@ void MeshShapeNode::extractData(bool firstTime)
 
       if(aiGetMaterialColor(aiMat, AI_MATKEY_COLOR_EMISSIVE, &c)==AI_SUCCESS)
       {
-        std::cout << "setting emission to: " << c << std::endl;
         material->setEmission(osg::Material::FRONT_AND_BACK,
                               osg::Vec4(c.r, c.g, c.b, c.a));
       }
@@ -582,7 +578,6 @@ void MeshShapeGeometry::extractData(bool firstTime)
       if(colors)
       {
         isColored = true;
-        std::cout << "using color index: " << index+1 << std::endl;
 
         if(mColors->size() != mVertices->size())
           mColors->resize(mVertices->size());
@@ -663,7 +658,6 @@ void MeshShapeGeometry::extractData(bool firstTime)
        || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
     {
       const Eigen::Vector4d& c = mShape->getRGBA();
-      std::cout << "using shape color" << std::endl;
 
       mColors->resize(1);
       (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], c[3]);

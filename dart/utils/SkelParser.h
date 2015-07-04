@@ -45,7 +45,6 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
@@ -108,7 +107,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
   // first: BodyNode name | second: BodyNode information
-  typedef std::map<std::string, SkelBodyNode> BodyMap;
+  typedef Eigen::aligned_map<std::string, SkelBodyNode> BodyMap;
 
   typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
   struct SkelJoint
@@ -143,12 +142,10 @@ protected:
 
   ///
   static SkelBodyNode readBodyNode(tinyxml2::XMLElement* _bodyElement,
-      dynamics::SkeletonPtr _skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///
   static SkelBodyNode readSoftBodyNode(tinyxml2::XMLElement* _softBodyNodeElement,
-      dynamics::SkeletonPtr _Skeleton,
       const Eigen::Isometry3d& _skeletonFrame);
 
   ///

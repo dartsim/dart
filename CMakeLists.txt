@@ -22,9 +22,9 @@ endif()
 #===============================================================================
 project(dart)
 
-set(DART_MAJOR_VERSION "4")
-set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "4")
+set(DART_MAJOR_VERSION "5")
+set(DART_MINOR_VERSION "0")
+set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -56,19 +56,25 @@ option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Release Debug." FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel" FORCE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
-set(BUILD_TYPE_RELEASE FALSE)
 set(BUILD_TYPE_DEBUG FALSE)
+set(BUILD_TYPE_RELEASE FALSE)
+set(BUILD_TYPE_RELWITHDEBINFO FALSE)
+set(BUILD_TYPE_MINSIZEREL FALSE)
 
-if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
-  set(BUILD_TYPE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   set(BUILD_TYPE_DEBUG TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
+  set(BUILD_TYPE_RELEASE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
+  set(BUILD_TYPE_RELWITHDEBINFO TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
+  set(BUILD_TYPE_MINSIZEREL TRUE)
 else()
-  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Release Debug")
+  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 #===============================================================================
@@ -106,6 +112,8 @@ else()
 endif()
 
 # FCL
+# TODO: We need to increate the minimum required fcl version to 0.4.0 for DART
+# 5.0 once fcl 0.4.0 is released.
 find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - ${FCL_VERSION} found")

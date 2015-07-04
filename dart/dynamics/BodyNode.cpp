@@ -382,26 +382,6 @@ const Eigen::Vector3d& BodyNode::getLocalCOM() const
 }
 
 //==============================================================================
-Eigen::Vector3d BodyNode::getWorldCOM() const
-{
-  return getWorldTransform() * getLocalCOM();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldCOMVelocity() const
-{
-  return getSpatialVelocity(getLocalCOM(),
-                            Frame::World(), Frame::World()).tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldCOMAcceleration() const
-{
-  return getSpatialAcceleration(getLocalCOM(),
-                                Frame::World(), Frame::World()).tail<3>();
-}
-
-//==============================================================================
 Eigen::Vector3d BodyNode::getCOM(const Frame* _withRespectTo) const
 {
   return getTransform(_withRespectTo) * getLocalCOM();
@@ -679,13 +659,13 @@ SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
 //==============================================================================
 SkeletonPtr BodyNode::getSkeleton()
 {
-  return SkeletonRefCountingBase::getSkeleton();
+  return mSkeleton.lock();
 }
 
 //==============================================================================
 ConstSkeletonPtr BodyNode::getSkeleton() const
 {
-  return SkeletonRefCountingBase::getSkeleton();
+  return mSkeleton.lock();
 }
 
 //==============================================================================
@@ -715,7 +695,7 @@ const BodyNode* BodyNode::getParentBodyNode() const
 //==============================================================================
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
-  assert(_body != NULL);
+  assert(_body != nullptr);
 
   if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _body) !=
      mChildBodyNodes.end())
@@ -765,6 +745,12 @@ EndEffector* BodyNode::getEndEffector(size_t _index)
 const EndEffector* BodyNode::getEndEffector(size_t _index) const
 {
   return getVectorObjectIfAvailable(_index, mEndEffectors);
+}
+
+//==============================================================================
+size_t BodyNode::getNumChildJoints() const
+{
+  return mChildBodyNodes.size();
 }
 
 //==============================================================================
@@ -828,7 +814,7 @@ size_t BodyNode::getNumDependentGenCoords() const
 //==============================================================================
 size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 {
-  assert(0 <= _arrayIndex && _arrayIndex < mDependentGenCoordIndices.size());
+  assert(_arrayIndex < mDependentGenCoordIndices.size());
 
   return mDependentGenCoordIndices[_arrayIndex];
 }
@@ -904,51 +890,6 @@ const Eigen::Vector6d& BodyNode::getRelativeSpatialVelocity() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& BodyNode::getBodyVelocity() const
-{
-  return getSpatialVelocity();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyLinearVelocity() const
-{
-  return getSpatialVelocity().tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyLinearVelocity(
-    const Eigen::Vector3d& _offset) const
-{
-  const Eigen::Vector6d& V = getSpatialVelocity();
-  return V.tail<3>() + V.head<3>().cross(_offset);
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyAngularVelocity() const
-{
-  return getSpatialVelocity().head<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldLinearVelocity() const
-{
-  return getLinearVelocity();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldLinearVelocity(
-    const Eigen::Vector3d& _offset) const
-{
-  return getLinearVelocity(_offset);
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldAngularVelocity() const
-{
-  return getAngularVelocity();
-}
-
-//==============================================================================
 const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
 {
   return mParentJoint->getLocalSpatialAcceleration();
@@ -1003,138 +944,6 @@ const math::Jacobian& BodyNode::getJacobianClassicDeriv() const
     updateWorldJacobianClassicDeriv();
 
   return mWorldJacobianClassicDeriv;
-}
-
-//==============================================================================
-const Eigen::Vector6d& BodyNode::getBodyAcceleration() const
-{
-  return getSpatialAcceleration();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyLinearAcceleration() const
-{
-  return getSpatialAcceleration().tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyLinearAcceleration(
-    const Eigen::Vector3d& _offset) const
-{
-  return getSpatialAcceleration(_offset).tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getBodyAngularAcceleration() const
-{
-  return getSpatialAcceleration().head<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldLinearAcceleration() const
-{
-  return getSpatialAcceleration(Frame::World(), Frame::World()).tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldLinearAcceleration(
-    const Eigen::Vector3d& _offset) const
-{
-  return getSpatialAcceleration(_offset, Frame::World(), Frame::World()).tail<3>();
-}
-
-//==============================================================================
-Eigen::Vector3d BodyNode::getWorldAngularAcceleration() const
-{
-  return getSpatialAcceleration(Frame::World(), Frame::World()).head<3>();
-}
-
-//==============================================================================
-const math::Jacobian& BodyNode::getBodyJacobian()
-{
-  return getJacobian();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getBodyLinearJacobian()
-{
-  return getJacobian().bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getBodyLinearJacobian(
-    const Eigen::Vector3d& _offset)
-{
-  return getJacobian(_offset).bottomRows<3>();
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getBodyAngularJacobian()
-{
-  return getJacobian().topRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getWorldLinearJacobian()
-{
-  return getJacobian(Frame::World()).bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getWorldLinearJacobian(
-    const Eigen::Vector3d& _offset)
-{
-  return getJacobian(_offset, Frame::World()).bottomRows<3>();
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getWorldAngularJacobian()
-{
-  return getJacobian(Frame::World()).topRows<3>();
-}
-
-//==============================================================================
-const math::Jacobian& BodyNode::getBodyJacobianDeriv()
-{
-  return getJacobianSpatialDeriv();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getBodyLinearJacobianDeriv()
-{
-  return getJacobianSpatialDeriv().bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getBodyLinearJacobianDeriv(
-    const Eigen::Vector3d& _offset)
-{
-  return getJacobianSpatialDeriv(_offset).bottomRows<3>();
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getBodyAngularJacobianDeriv()
-{
-  return getJacobianSpatialDeriv().topRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv()
-{
-  return getJacobianSpatialDeriv(Frame::World()).bottomRows<3>();
-}
-
-//==============================================================================
-math::LinearJacobian BodyNode::getWorldLinearJacobianDeriv(
-    const Eigen::Vector3d& _offset)
-{
-  return getJacobianSpatialDeriv(_offset, Frame::World()).bottomRows<3>();
-}
-
-//==============================================================================
-math::AngularJacobian BodyNode::getWorldAngularJacobianDeriv()
-{
-  return getJacobianSpatialDeriv(Frame::World()).topRows<3>();
 }
 
 //==============================================================================
@@ -1293,8 +1102,6 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
     std::lock_guard<std::mutex> lock(mLockedSkeleton->mMutex);
     mLockedSkeleton->mSkeleton = mSkeleton;
   }
-
-  mParentJoint->init(_skeleton);
 
   //--------------------------------------------------------------------------
   // Fill the list of generalized coordinates this node depends on, and sort
@@ -1527,25 +1334,12 @@ void BodyNode::updatePartialAcceleration() const
 }
 
 //==============================================================================
-void BodyNode::updateAcceleration()
-{
-  updateAccelerationID();
-}
-
-//==============================================================================
 void BodyNode::updateAccelerationID()
 {
   // Note: auto-updating has replaced this function
   getSpatialAcceleration();
   // Verification
   assert(!math::isNan(mAcceleration));
-}
-
-//==============================================================================
-void BodyNode::updateBodyWrench(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces)
-{
-  updateTransmittedForceID(_gravity, _withExternalForces);
 }
 
 //==============================================================================
@@ -1580,7 +1374,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   for (const auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != NULL);
+    assert(childJoint != nullptr);
 
     mF += math::dAdInvT(childJoint->getLocalTransform(),
                         childBodyNode->getBodyForce());
@@ -1588,12 +1382,6 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 
   // Verification
   assert(!math::isNan(mF));
-}
-
-//==============================================================================
-void BodyNode::updateGeneralizedForce(bool _withDampingForces)
-{
-  updateJointForceID(0.001, _withDampingForces, false);
 }
 
 //==============================================================================
@@ -1690,36 +1478,12 @@ void BodyNode::updateBiasImpulse()
 }
 
 //==============================================================================
-void BodyNode::updateJointAndBodyAcceleration()
-{
-  updateAccelerationFD();
-}
-
-//==============================================================================
-void BodyNode::updateJointVelocityChange()
-{
-  updateVelocityChangeFD();
-}
-
-//==============================================================================
-void BodyNode::updateTransmittedWrench()
-{
-  updateTransmittedForceFD();
-}
-
-//==============================================================================
 void BodyNode::updateTransmittedForceFD()
 {
   mF = mBiasForce;
   mF.noalias() += getArticulatedInertiaImplicit() * getSpatialAcceleration();
 
   assert(!math::isNan(mF));
-}
-
-//==============================================================================
-void BodyNode::updateBodyImpForceFwdDyn()
-{
-  updateTransmittedImpulse();
 }
 
 //==============================================================================
@@ -1786,7 +1550,7 @@ void BodyNode::updateJointForceID(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces)
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateForceID(mF, _timeStep,
                               _withDampingForces, _withSpringForces);
 }
@@ -1796,7 +1560,7 @@ void BodyNode::updateJointForceFD(double _timeStep,
                                   double _withDampingForces,
                                   double _withSpringForces)
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateForceFD(mF, _timeStep,
                               _withDampingForces, _withSpringForces);
 }
@@ -1804,7 +1568,7 @@ void BodyNode::updateJointForceFD(double _timeStep,
 //==============================================================================
 void BodyNode::updateJointImpulseFD()
 {
-  assert(mParentJoint != NULL);
+  assert(mParentJoint != nullptr);
   mParentJoint->updateImpulseFD(mF);
 }
 
@@ -1940,12 +1704,6 @@ Eigen::Vector3d BodyNode::getAngularMomentum(const Eigen::Vector3d& _pivot)
 }
 
 //==============================================================================
-bool BodyNode::isImpulseReponsible() const
-{
-  return isReactive();
-}
-
-//==============================================================================
 bool BodyNode::isReactive() const
 {
   const ConstSkeletonPtr& skel = getSkeleton();
@@ -1953,7 +1711,7 @@ bool BodyNode::isReactive() const
   {
     // Check if all the ancestor joints are motion prescribed.
     const BodyNode* body = this;
-    while (body != NULL)
+    while (body != nullptr)
     {
       if (body->mParentJoint->isDynamic())
         return true;
@@ -1970,29 +1728,6 @@ bool BodyNode::isReactive() const
   {
     return false;
   }
-}
-
-//==============================================================================
-void BodyNode::updateConstrainedJointAndBodyAcceleration(double /*_timeStep*/)
-{
-  // 1. dq = dq + del_dq
-  // mParentJoint->updateVelocityWithVelocityChange();
-
-  // 2. ddq = ddq + del_dq / dt
-  // mParentJoint->updateAccelerationWithVelocityChange(_timeStep);
-
-  // 3. tau = tau + imp / dt
-  // mParentJoint->updateForceWithImpulse(_timeStep);
-}
-
-//==============================================================================
-void BodyNode::updateConstrainedTransmittedForce(double _timeStep)
-{
-  ///
-  mAcceleration += mDelV / _timeStep;
-
-  ///
-  mF += mImpF / _timeStep;
 }
 
 //==============================================================================
@@ -2323,7 +2058,7 @@ void BodyNode::updateBodyJacobian() const
   //          n: number of dependent coordinates
   //--------------------------------------------------------------------------
 
-  if(NULL == mParentJoint)
+  if(nullptr == mParentJoint)
     return;
 
   const size_t localDof     = mParentJoint->getNumDofs();
@@ -2423,7 +2158,7 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
   // w: Total angular velocity of this Frame
   // p: Offset from origin of parent Frame
 
-  if(NULL == mParentJoint)
+  if(nullptr == mParentJoint)
     return;
 
   const size_t numLocalDOFs = mParentJoint->getNumDofs();

@@ -1,9 +1,11 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
+file(GLOB detail_srcs "detail/*.cpp")
+file(GLOB detail_hdrs "detail/*.h")
 
-set(dart_common_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_common_srcs ${srcs} PARENT_SCOPE)
+set(dart_common_hdrs "${hdrs};${detail_hdrs}" PARENT_SCOPE)
+set(dart_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_common ${srcs} ${hdrs})
@@ -28,6 +30,13 @@ install(
   DESTINATION include/dart/common
   COMPONENT headers
 )
+
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/common/detail
+  COMPONENT headers
+)
+
 #install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
 

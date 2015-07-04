@@ -92,8 +92,8 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
 
   bool collision = false;
 
-  FCLMeshCollisionNode* FCLMeshCollisionNode1 = NULL;
-  FCLMeshCollisionNode* FCLMeshCollisionNode2 = NULL;
+  FCLMeshCollisionNode* FCLMeshCollisionNode1 = nullptr;
+  FCLMeshCollisionNode* FCLMeshCollisionNode2 = nullptr;
 
   for (size_t i = 0; i < mCollisionNodes.size(); i++)
   {
@@ -107,7 +107,7 @@ bool FCLMeshCollisionDetector::detectCollision(bool _checkAllCollisions,
         continue;
 
       std::vector<Contact>* contactPoints
-          = _calculateContactPoints ? &mContacts : NULL;
+          = _calculateContactPoints ? &mContacts : nullptr;
       if (FCLMeshCollisionNode1->detectCollision(FCLMeshCollisionNode2,
                                                  contactPoints,
                                                  mNumMaxContacts))
@@ -136,7 +136,7 @@ bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
       static_cast<FCLMeshCollisionNode*>(_node2);
   return collisionNode1->detectCollision(
         collisionNode2,
-        _calculateContactPoints ? &mContacts : NULL,
+        _calculateContactPoints ? &mContacts : nullptr,
         mNumMaxContacts);
 }
 

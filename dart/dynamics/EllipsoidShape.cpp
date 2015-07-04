@@ -51,10 +51,6 @@ EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
 EllipsoidShape::~EllipsoidShape() {
 }
 
-void EllipsoidShape::setDim(const Eigen::Vector3d& _size) {
-  setSize(_size);
-}
-
 void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);

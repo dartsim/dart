@@ -72,6 +72,11 @@ public:
   /// Constructor
   explicit ConstraintSolver(double _timeStep);
 
+  /// Copy constructor
+  // TODO: implement copy constructor since this class contains a pointer to
+  // allocated memory.
+  ConstraintSolver(const ConstraintSolver& _other) = delete;
+
   /// Destructor
   virtual ~ConstraintSolver();
 

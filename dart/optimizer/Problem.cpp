@@ -60,7 +60,8 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 
 //==============================================================================
 Problem::Problem(size_t _dim)
-  : mDimension(0)
+  : mDimension(0),
+    mOptimumValue(0.0)
 {
   setDimension(_dim);
 }
@@ -197,7 +198,7 @@ const Eigen::VectorXd& Problem::getUpperBounds() const
 //==============================================================================
 void Problem::setObjective(FunctionPtr _obj)
 {
-  assert(_obj && "NULL pointer is not allowed.");
+  assert(_obj && "nullptr pointer is not allowed.");
   mObjective = _obj;
 }
 
@@ -222,13 +223,13 @@ void Problem::addIneqConstraint(FunctionPtr _ineqConst)
 }
 
 //==============================================================================
-size_t Problem::getNumEqConstraints()
+size_t Problem::getNumEqConstraints() const
 {
   return mEqConstraints.size();
 }
 
 //==============================================================================
-size_t Problem::getNumIneqConstraints()
+size_t Problem::getNumIneqConstraints() const
 {
   return mIneqConstraints.size();
 }

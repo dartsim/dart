@@ -148,7 +148,7 @@ public:
   const std::vector<ShapePtr>& getVisualizationShapes() const;
 
   /// Render this Entity
-  virtual void draw(renderer::RenderInterface* _ri = NULL,
+  virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true, int _depth = 0) const;
 
@@ -263,7 +263,7 @@ private:
   /// Whether or not this Entity is set to be quiet
   const bool mAmQuiet;
 
-  /// Whether or not this ENtity is a Frame
+  /// Whether or not this Entity is a Frame
   bool mAmFrame;
 };
 

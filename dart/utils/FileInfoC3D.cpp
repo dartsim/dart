@@ -44,6 +44,7 @@ namespace utils {
 
 FileInfoC3D::FileInfoC3D()
     : mNumMarkers(0), mNumFrames(0), mFPS(0){
+  std::strcpy(mFileName, "");
 }
 
 bool FileInfoC3D::loadFile(const char* _fName)

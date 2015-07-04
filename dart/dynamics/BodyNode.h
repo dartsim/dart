@@ -45,7 +45,6 @@
 #include <Eigen/StdVector>
 
 #include "dart/config.h"
-#include "dart/common/Deprecated.h"
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 
@@ -54,7 +53,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/TemplatedJacobianEntity.impl"
 #include "dart/dynamics/Marker.h"
-#include "dart/dynamics/Ptr.h"
+#include "dart/dynamics/SmartPointer.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -127,6 +126,9 @@ public:
         double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
         double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
         bool _gravityMode = true);
+
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// Composition of Entity and BodyNode properties
@@ -161,7 +163,7 @@ public:
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name);
+  const std::string& setName(const std::string& _name) override;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
@@ -217,26 +219,6 @@ public:
 
   /// Return center of mass expressed in body frame
   const Eigen::Vector3d& getLocalCOM() const;
-
-  /// Return center of mass expressed in world frame
-  ///
-  /// Deprecated in 4.4. Please use getCOM()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOM() const;
-
-  /// Return velocity of center of mass expressed in world frame
-  ///
-  /// Deprecated in 4.4. Please use getCOMLinearVelocity() or
-  /// getCOMSpatialVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMVelocity() const;
-
-  /// Return acceleration of center of mass expressed in world frame
-  ///
-  /// Deprecated in 4.4. Please use getCOMLinearAcceleration() or
-  /// getCOMSpatialAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldCOMAcceleration() const;
 
   /// Return the center of mass with respect to an arbitrary Frame
   Eigen::Vector3d getCOM(const Frame* _withRespectTo = Frame::World()) const;
@@ -561,10 +543,10 @@ public:
 
   /// Get the transform of this BodyNode with respect to its parent BodyNode,
   /// which is also its parent Frame.
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   // Documentation inherited
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   // Documentation inherited
   const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
@@ -613,248 +595,6 @@ public:
 
   // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
   using TemplatedJacobianEntity<BodyNode>::getJacobianClassicDeriv;
-
-  //----------------------------------------------------------------------------
-  // Deprecated velocity, acceleration, and Jacobian functions
-  //----------------------------------------------------------------------------
-
-  /// Return the spatial velocity at the origin of the bodynode expressed in
-  /// the body-fixed frame
-  ///
-  /// Deprecated in 4.4. Please use getSpatialVelocity() instead.
-  DEPRECATED(4.4)
-  const Eigen::Vector6d& getBodyVelocity() const;
-
-  /// Return the linear velocity of the origin of the bodynode expressed in
-  /// body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getLinearVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyLinearVelocity() const;
-
-  /// Return the linear velocity of a point on the bodynode expressed in
-  /// body-fixed frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getLinearVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyLinearVelocity(const Eigen::Vector3d& _offset) const;
-
-  /// Return the angular velocity expressed in body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getAngularVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyAngularVelocity() const;
-
-  /// Return the linear velocity of the origin of the bodynode expressed in
-  /// world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getLinearVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldLinearVelocity() const;
-
-  /// Return the linear velocity of a point on the bodynode expressed in world
-  /// frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getLinearVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldLinearVelocity(const Eigen::Vector3d& _offset) const;
-
-  /// Return the angular velocity expressed in world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialVelocity(), getAngularVelocity()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldAngularVelocity() const;
-
-  /// Return generalized acceleration at the origin of this body node where the
-  /// acceleration is expressed in this body node frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration()
-  DEPRECATED(4.4)
-  const Eigen::Vector6d& getBodyAcceleration() const;
-
-  /// Return the linear acceleration of the origin of the bodynode expressed in
-  /// body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getLinearAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyLinearAcceleration() const;
-
-  /// Return the linear acceleration of a point on the bodynode expressed in
-  /// body-fixed frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getLinearAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyLinearAcceleration(
-      const Eigen::Vector3d& _offset) const;
-
-  /// Return the angular acceleration expressed in body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getAngularAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getBodyAngularAcceleration() const;
-
-  /// Return the linear acceleration of the origin of the bodynode expressed in
-  /// world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getLinearAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldLinearAcceleration() const;
-
-  /// Return the linear acceleration of a point on the bodynode expressed in
-  /// world frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getLinearAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldLinearAcceleration(
-      const Eigen::Vector3d& _offset) const;
-
-  /// Return the angular acceleration expressed in world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getSpatialAcceleration(), getAngularAcceleration()
-  DEPRECATED(4.4)
-  Eigen::Vector3d getWorldAngularAcceleration() const;
-
-  /// Return generalized Jacobian at the origin of this body node where the
-  /// Jacobian is expressed in this body node frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian()
-  DEPRECATED(4.4)
-  const math::Jacobian& getBodyJacobian();
-
-  /// Return the linear Jacobian of the origin of the bodynode expressed in
-  /// body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getLinearJacobian()
-  DEPRECATED(4.4)
-  math::LinearJacobian getBodyLinearJacobian();
-
-  /// Return the linear Jacobian of a point on the bodynode expressed in
-  /// body-fixed frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getLinearJacobian()
-  DEPRECATED(4.4)
-  math::LinearJacobian getBodyLinearJacobian(const Eigen::Vector3d& _offset);
-
-  /// Return the angular Jacobian expressed in body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getAngularJacobian()
-  DEPRECATED(4.4)
-  math::AngularJacobian getBodyAngularJacobian();
-
-  /// Return the linear Jacobian of the origin of the bodynode expressed in
-  /// world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getLinearJacobian()
-  DEPRECATED(4.4)
-  math::LinearJacobian getWorldLinearJacobian();
-
-  /// Return the linear Jacobian of a point on the bodynode expressed in world
-  /// frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getLinearJacobian()
-  DEPRECATED(4.4)
-  math::LinearJacobian getWorldLinearJacobian(const Eigen::Vector3d& _offset);
-
-  /// Return the angular Jacobian expressed in world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobian(), getAngularJacobian()
-  DEPRECATED(4.4)
-  math::AngularJacobian getWorldAngularJacobian();
-
-  /// Return time derivative of generalized Jacobian at the origin of this body
-  /// node where the Jacobian is expressed in this body node frame
-  ///
-  /// Deprecated as of 4.4. Replaced by getJacobianSpatialDeriv()
-  /// \sa getJacobianSpatialDeriv(), getJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  const math::Jacobian& getBodyJacobianDeriv();
-
-  /// Return the time derivative of the linear Jacobian of the origin of the
-  /// bodynode expressed in body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::LinearJacobian getBodyLinearJacobianDeriv();
-
-  /// Return the time derivative of the linear Jacobian of a point on the
-  /// bodynode expressed in body-fixed frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::LinearJacobian getBodyLinearJacobianDeriv(
-      const Eigen::Vector3d& _offset);
-
-  /// Return the time derivative of the angular Jacobian expressed in body-fixed
-  /// frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getAngularJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::AngularJacobian getBodyAngularJacobianDeriv();
-
-  /// Return the time derivative of the linear Jacobian of the origin of the
-  /// bodynode expressed in world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::LinearJacobian getWorldLinearJacobianDeriv();
-
-  /// Return the time derivative of the linear Jacobian of a point on the
-  /// bodynode expressed in world frame
-  /// \param[in] _offset Offset of the point from the origin of the bodynode
-  /// frame. The offset is expressed in the body-fixed frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getLinearJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::LinearJacobian getWorldLinearJacobianDeriv(
-      const Eigen::Vector3d& _offset);
-
-  /// Return the angular Jacobian expressed in world frame
-  ///
-  /// Deprecated as of 4.4
-  /// \sa getJacobianSpatialDeriv(), getAngularJacobianClassicDeriv()
-  DEPRECATED(4.4)
-  math::AngularJacobian getWorldAngularJacobianDeriv();
-
-  // --- End of Deprecated functions -------------------------------------------
 
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
@@ -925,10 +665,6 @@ public:
   //   - Following functions are managed by constraint solver.
   //----------------------------------------------------------------------------
 
-  /// Deprecated in 4.2. Please use isReactive().
-  DEPRECATED(4.2)
-  bool isImpulseReponsible() const;
-
   /// Return true if the body can react to force or constraint impulse.
   ///
   /// A body node is reactive if the skeleton is mobile and the number of
@@ -977,7 +713,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Render the markers
-  void drawMarkers(renderer::RenderInterface* _ri = NULL,
+  void drawMarkers(renderer::RenderInterface* _ri = nullptr,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;
 
@@ -1036,10 +772,10 @@ protected:
 
   /// Separate generic child Entities from child BodyNodes for more efficient
   /// update notices
-  void processNewEntity(Entity* _newChildEntity);
+  void processNewEntity(Entity* _newChildEntity) override;
 
   /// Remove this Entity from mChildBodyNodes or mNonBodyNodeEntities
-  void processRemovedEntity(Entity* _oldChildEntity);
+  void processRemovedEntity(Entity* _oldChildEntity) override;
 
   /// Update transformation
   virtual void updateTransform();
@@ -1115,62 +851,6 @@ protected:
   /// Update constrained terms due to the constraint impulses for foward
   /// dynamics.
   virtual void updateConstrainedTerms(double _timeStep);
-
-  //- DEPRECATED ---------------------------------------------------------------
-
-  /// Update spatial body acceleration with the partial spatial body
-  /// acceleration.
-  /// \warning Please use updateAccelerationID().
-  DEPRECATED(4.3)
-  virtual void updateAcceleration();
-
-  /// Update the joint acceleration and body acceleration
-  /// \warning Please use updateAccelerationFD().
-  DEPRECATED(4.3)
-  virtual void updateJointAndBodyAcceleration();
-
-  /// Update joint velocity change for impulse-based forward dynamics algorithm
-  /// \warning Please use updateVelocityChangeFD().
-  DEPRECATED(4.3)
-  virtual void updateJointVelocityChange();
-
-  /// Update the spatial body force transmitted to this BodyNode from the
-  /// parent body through the connecting joint. The spatial body force is
-  /// expressed in this BodyNode's frame.
-  /// \warning Please use updateTransmittedForceFD().
-  DEPRECATED(4.3)
-  virtual void updateTransmittedWrench();
-
-  /// Update spatial body force. Inverse dynamics routine.
-  ///
-  /// The spatial body force is transmitted to this BodyNode from the parent
-  /// body through the connecting joint. It is expressed in this BodyNode's
-  /// frame.
-  ///
-  /// \warning Please use updateTransmittedForceID().
-  DEPRECATED(4.3)
-  virtual void updateBodyWrench(const Eigen::Vector3d& _gravity,
-                                bool _withExternalForces = false);
-
-  /// updateBodyImpForceFwdDyn
-  /// \warning Please use updateTransmittedImpulse().
-  DEPRECATED(4.3)
-  virtual void updateBodyImpForceFwdDyn();
-
-  /// Update the joint force
-  /// \warning Please use updateJointForceID().
-  DEPRECATED(4.3)
-  virtual void updateGeneralizedForce(bool _withDampingForces = false);
-
-  /// updateConstrainedJointAndBodyAcceleration
-  /// \warning Deprecated. Please do not use.
-  DEPRECATED(4.3)
-  virtual void updateConstrainedJointAndBodyAcceleration(double _timeStep);
-
-  /// updateConstrainedTransmittedForce
-  /// \warning Deprecated. Please do not use.
-  DEPRECATED(4.3)
-  virtual void updateConstrainedTransmittedForce(double _timeStep);
 
   /// \}
 

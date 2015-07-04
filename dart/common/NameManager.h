@@ -39,9 +39,7 @@
 #define DART_COMMON_NAMEMANAGER_H_
 
 #include <map>
-#include <sstream>
-#include <cassert>
-#include "dart/common/Console.h"
+#include <string>
 
 namespace dart {
 namespace common {
@@ -70,14 +68,10 @@ class NameManager
 public:
   /// Constructor
   NameManager(const std::string& _managerName = "default",
-              const std::string& _defaultName = "default")
-    : mManagerName(_managerName),
-      mDefaultName(_defaultName),
-      mNameBeforeNumber(true),
-      mPrefix(""), mInfix("("), mAffix(")") {}
+              const std::string& _defaultName = "default");
 
   /// Destructor
-  virtual ~NameManager() {}
+  virtual ~NameManager();
 
   /// Set a new pattern for name generation.
   ///
@@ -90,192 +84,49 @@ public:
   ///
   /// returns false if the pattern was invalid (i.e. did not contain b
   /// oth %s and %d)
-  bool setPattern(const std::string& _newPattern)
-  {
-    size_t name_start = _newPattern.find("%s");
-    size_t number_start = _newPattern.find("%d");
-
-    if(name_start == std::string::npos || number_start == std::string::npos)
-      return false;
-
-    if(name_start < number_start)
-      mNameBeforeNumber = true;
-    else
-      mNameBeforeNumber = false;
-
-    size_t prefix_end = std::min(name_start, number_start);
-    size_t infix_end = std::max(name_start, number_start);
-
-    mPrefix = _newPattern.substr(0, prefix_end);
-    mInfix = _newPattern.substr(prefix_end+2, infix_end-prefix_end-2);
-    mAffix = _newPattern.substr(infix_end+2);
-
-    return true;
-  }
+  bool setPattern(const std::string& _newPattern);
 
   /// Issue new unique combined name of given base name and number suffix
-  std::string issueNewName(const std::string& _name) const
-  {
-    if(!hasName(_name))
-      return _name;
-
-    int count = 1;
-    std::string newName;
-    do
-    {
-      std::stringstream ss;
-      if(mNameBeforeNumber)
-          ss << mPrefix << _name << mInfix << count++ << mAffix;
-      else
-          ss << mPrefix << count++ << mInfix << _name << mAffix;
-      newName = ss.str();
-    } while (hasName(newName));
-
-    dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
-          << _name << "] is a duplicate, so it has been renamed to ["
-          << newName << "]\n";
-
-    return newName;
-  }
+  std::string issueNewName(const std::string& _name) const;
 
   /// Call issueNewName() and add the result to the map
-  std::string issueNewNameAndAdd(const std::string& _name, const T& _obj)
-  {
-    const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
-    const std::string& newName = issueNewName(checkEmpty);
-    addName(newName, _obj);
-
-    return newName;
-  }
+  std::string issueNewNameAndAdd(const std::string& _name, const T& _obj);
 
   /// Add an object to the map
-  bool addName(const std::string& _name, const T& _obj)
-  {
-    if (_name.empty())
-    {
-      dtwarn << "[NameManager::addName] (" << mManagerName
-             << ") Empty name is not allowed!\n";
-      return false;
-    }
-
-    if (hasName(_name))
-    {
-      dtwarn << "[NameManager::addName] (" << mManagerName << ") The name ["
-             << _name << "] already exists!\n";
-      return false;
-    }
-
-    mMap.insert(std::pair<std::string, T>(_name, _obj));
-    mReverseMap.insert(std::pair<T, std::string>(_obj, _name));
-
-    assert(mReverseMap.size() == mMap.size());
-
-    return true;
-  }
+  bool addName(const std::string& _name, const T& _obj);
 
   /// Remove an object from the Manager based on its name
-  bool removeName(const std::string& _name)
-  {
-    assert(mReverseMap.size() == mMap.size());
-
-    typename std::map<std::string, T>::iterator it = mMap.find(_name);
-
-    if (it == mMap.end())
-      return false;
-
-    typename std::map<T, std::string>::iterator rit =
-        mReverseMap.find(it->second);
-
-    if (rit != mReverseMap.end())
-      mReverseMap.erase(rit);
-
-    mMap.erase(it);
-
-    return true;
-  }
+  bool removeName(const std::string& _name);
 
   /// Remove an object from the Manager based on reverse lookup
-  bool removeObject(const T& _obj)
-  {
-    assert(mReverseMap.size() == mMap.size());
-
-    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
-
-    if (rit == mReverseMap.end())
-      return false;
-
-    typename std::map<std::string, T>::iterator it = mMap.find(rit->second);
-    if (it != mMap.end())
-      mMap.erase(it);
-
-    mReverseMap.erase(rit);
-
-    return true;
-  }
+  bool removeObject(const T& _obj);
 
   /// Remove _name using the forward lookup and _obj using the reverse lookup.
   /// This will allow you to add _obj under the name _name without any conflicts
-  void removeEntries(const std::string& _name, const T& _obj)
-  {
-    removeObject(_obj);
-    removeName(_name, false);
-  }
+  void removeEntries(const std::string& _name, const T& _obj);
 
   /// Clear all the objects
-  void clear()
-  {
-    mMap.clear();
-    mReverseMap.clear();
-  }
+  void clear();
 
   /// Return true if the name is contained
-  bool hasName(const std::string& _name) const
-  {
-    return (mMap.find(_name) != mMap.end());
-  }
+  bool hasName(const std::string& _name) const;
 
   /// Return true if the object is contained
-  bool hasObject(const T& _obj) const
-  {
-    return (mReverseMap.find(_obj) != mReverseMap.end());
-  }
+  bool hasObject(const T& _obj) const;
 
   /// Get the number of the objects currently stored by the NameManager
-  size_t getCount() const
-  {
-    return mMap.size();
-  }
+  size_t getCount() const;
 
   /// Get object by given name
   /// \param[in] _name
   ///   Name of the requested object
   /// \return
   ///   The object if it exists, or nullptr if it does not exist
-  T getObject(const std::string& _name) const
-  {
-    typename std::map<std::string, T>::const_iterator result =
-        mMap.find(_name);
-
-    if (result != mMap.end())
-      return result->second;
-    else
-      return nullptr;
-  }
+  T getObject(const std::string& _name) const;
 
   /// Use a reverse lookup to get the name that the manager has _obj listed
   /// under. Returns an empty string if it is not in the list.
-  std::string getName(const T& _obj) const
-  {
-    assert(mReverseMap.size() == mMap.size());
-
-    typename std::map<T, std::string>::const_iterator result =
-        mReverseMap.find(_obj);
-
-    if (result != mReverseMap.end())
-      return result->second;
-    else
-      return "";
-  }
+  std::string getName(const T& _obj) const;
 
   /// Change the name of a currently held object. This will do nothing if the
   /// object is already using _newName or if the object is not held by this
@@ -284,46 +135,21 @@ public:
   /// If the object is held, its new name is returned (which might
   /// be different than _newName if there was a duplicate naming conflict). If
   /// the object is not held, an empty string will be returned.
-  std::string changeObjectName(const T& _obj, const std::string& _newName)
-  {
-    assert(mReverseMap.size() == mMap.size());
-
-    typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
-    if(rit == mReverseMap.end())
-      return _newName;
-
-    if(rit->second == _newName)
-      return rit->second;
-
-    removeName(rit->second);
-    return issueNewNameAndAdd(_newName, _obj);
-  }
+  std::string changeObjectName(const T& _obj, const std::string& _newName);
 
   /// Set the name that will be provided to objects passed in with an empty
   /// string for a name
-  void setDefaultName(const std::string& _defaultName)
-  {
-    mDefaultName = _defaultName;
-  }
+  void setDefaultName(const std::string& _defaultName);
 
   /// Get the name that will be provided to objects passed in with an empty
   /// string for a name
-  const std::string& getDefaultName() const
-  {
-    return mDefaultName;
-  }
+  const std::string& getDefaultName() const;
 
   /// Set the name of this NameManager so that it can be printed in error reports
-  void setManagerName(const std::string& _managerName)
-  {
-    mManagerName = _managerName;
-  }
+  void setManagerName(const std::string& _managerName);
 
   /// Get the name of this NameManager
-  const std::string& getManagerName() const
-  {
-    return mManagerName;
-  }
+  const std::string& getManagerName() const;
 
 protected:
   /// Name of this NameManager. This is used to report errors.
@@ -355,5 +181,7 @@ protected:
 
 } // namespace common
 } // namespace dart
+
+#include "dart/common/detail/NameManager.h"
 
 #endif // DART_COMMON_NAMEMANAGER_H_

@@ -61,7 +61,7 @@ CollisionDetector::~CollisionDetector() {
 //==============================================================================
 void CollisionDetector::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
-  assert(_skeleton != NULL
+  assert(_skeleton != nullptr
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");
 
   if (containSkeleton(_skeleton) == false)
@@ -80,7 +80,7 @@ void CollisionDetector::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 //==============================================================================
 void CollisionDetector::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
-  assert(_skeleton != NULL
+  assert(_skeleton != nullptr
       && "Null pointer skeleton is not allowed to add to CollisionDetector.");
 
   if (containSkeleton(_skeleton))
@@ -108,11 +108,11 @@ void CollisionDetector::removeAllSkeletons()
 
 void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
                                                  bool _isRecursive) {
-  assert(_bodyNode != NULL && "Invalid body node.");
+  assert(_bodyNode != nullptr && "Invalid body node.");
 
   // If this collision detector already has collision node for _bodyNode, then
   // we do nothing.
-  if (getCollisionNode(_bodyNode) != NULL) {
+  if (getCollisionNode(_bodyNode) != nullptr) {
     std::cout << "The collision detector already has a collision node for "
               << "body node [" << _bodyNode->getName() << "]." << std::endl;
     return;
@@ -140,11 +140,11 @@ void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
 
 void CollisionDetector::removeCollisionSkeletonNode(
     dynamics::BodyNode* _bodyNode, bool _isRecursive) {
-  assert(_bodyNode != NULL && "Invalid body node.");
+  assert(_bodyNode != nullptr && "Invalid body node.");
 
   // If a collision node is already created for _bodyNode, then we just return
   CollisionNode* collNode = getCollisionNode(_bodyNode);
-  if (collNode == NULL) {
+  if (collNode == nullptr) {
     std::cout << "The collision detector does not have any collision node "
               << "for body node [" << _bodyNode->getName() << "]."
               << std::endl;
@@ -259,7 +259,7 @@ bool CollisionDetector::isCollidable(const CollisionNode* _node1,
 }
 
 //==============================================================================
-bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr _skeleton)
+bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   for (std::vector<dynamics::SkeletonPtr>::const_iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
@@ -267,6 +267,19 @@ bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr _skeleton)
     if ((*it) == _skeleton)
       return true;
   }
+
+  return false;
+}
+
+bool isValidIndex(const std::vector<std::vector<bool>>& _collidablePairs,
+                  const std::size_t _index1,
+                  const std::size_t _index2)
+{
+  assert(_index1 >= _index2);
+
+  if (_collidablePairs.size() > _index1
+      && _collidablePairs[_index1].size() > _index2)
+    return true;
 
   return false;
 }
@@ -282,13 +295,10 @@ bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
   if (index1 < index2)
     std::swap(index1, index2);
 
-  // TODO(JS): Workaround
-  // If this fuction is called before all the body nodes in the world are not
-  // added to the collision detector than it cause seg fault. We just return
-  // false in that case.
-  if (index1 > mCollidablePairs.size() - 1
-      || index2 > mCollidablePairs.size() - 1)
-    return true;
+  // Index validity check. The indices are not valid if the body nodes are not
+  // completely added to the collision detector yet.
+  if (!isValidIndex(mCollidablePairs, index1, index2))
+    return false;
 
   return mCollidablePairs[index1][index2];
 }
@@ -305,19 +315,17 @@ void CollisionDetector::setPairCollidable(const CollisionNode* _node1,
   if (index1 < index2)
     std::swap(index1, index2);
 
-  // TODO(JS): Workaround
-  // If this fuction is called before all the body nodes in the world are not
-  // added to the collision detector than it cause seg fault. We just return in
-  // that case.
-  if (index1 > mCollidablePairs.size() - 1
-      || index2 > mCollidablePairs.size() - 1)
+  // Index validity check. The indices are not valid if the body nodes are not
+  // completely added to the collision detector yet.
+  if (!isValidIndex(mCollidablePairs, index1, index2))
     return;
 
   mCollidablePairs[index1][index2] = _val;
 }
 
-bool CollisionDetector::isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
-                                         const dynamics::BodyNode* _bodyNode2)
+bool CollisionDetector::isAdjacentBodies(
+    const dynamics::BodyNode* _bodyNode1,
+    const dynamics::BodyNode* _bodyNode2) const
 {
   if ((_bodyNode1->getParentBodyNode() == _bodyNode2)
       || (_bodyNode2->getParentBodyNode() == _bodyNode1))
@@ -334,7 +342,7 @@ CollisionNode* CollisionDetector::getCollisionNode(
   if (mBodyCollisionMap.find(_bodyNode) != mBodyCollisionMap.end())
     return mBodyCollisionMap[_bodyNode];
   else
-    return NULL;
+    return nullptr;
 }
 
 }  // namespace collision

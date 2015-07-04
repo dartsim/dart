@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
           DART_DATA_PATH"skel/softBodies.skel");
-  assert(myWorld != NULL);
+  assert(myWorld != nullptr);
 
   for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
   {

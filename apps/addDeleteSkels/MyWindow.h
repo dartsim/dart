@@ -60,10 +60,6 @@ public:
       const Eigen::Vector3d& _position = Eigen::Vector3d(0.0, 1.0, 0.0),
       const Eigen::Vector3d& _size     = Eigen::Vector3d(0.1, 0.1, 0.1),
       double _mass = 0.1);
-
-
-  /// \brief Number of frames for applying external force
-  int mImpulseDuration;
 };
 
 #endif  // APPS_ADDDELETESKELS_MYWINDOW_H_
