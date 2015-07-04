@@ -38,21 +38,23 @@
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
 
 //==============================================================================
-template <class IKErrorMethod>
-IKErrorMethod* InverseKinematics::setErrorMethod()
+template <class IKErrorMethod, typename... Args>
+IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args)
 {
-  IKErrorMethod* newMethod = new IKErrorMethod(this);
-  mErrorMethod = std::move(std::unique_ptr<IKErrorMethod>(newMethod));
-  return newMethod;
+  IKErrorMethod* newMethod =
+      new IKErrorMethod(this, std::forward<Args>(args)...);
+  mErrorMethod = std::unique_ptr<IKErrorMethod>(newMethod);
+  return *newMethod;
 }
 
 //==============================================================================
-template <class IKGradientMethod>
-IKGradientMethod* InverseKinematics::setGradientMethod()
+template <class IKGradientMethod, typename... Args>
+IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
 {
-  IKGradientMethod* newMethod = new IKGradientMethod(this);
-  mGradientMethod = std::move(std::unique_ptr<IKGradientMethod>(newMethod));
-  return newMethod;
+  IKGradientMethod* newMethod =
+      new IKGradientMethod(this, std::forward<Args>(args)...);
+  mGradientMethod = std::unique_ptr<IKGradientMethod>(newMethod);
+  return *newMethod;
 }
 
 //==============================================================================

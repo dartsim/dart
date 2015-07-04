@@ -233,8 +233,8 @@ TEST(Optimizer, InverseKinematics)
   tf.rotate(Eigen::AngleAxisd(M_PI/8, Eigen::Vector3d(0, 1, 0)));
   ik.getTarget()->setTransform(tf);
 
-  ik.getErrorMethod()->setBounds(Eigen::Vector6d::Constant(-1e-8),
-                                 Eigen::Vector6d::Constant( 1e-8));
+  ik.getErrorMethod().setBounds(Eigen::Vector6d::Constant(-1e-8),
+                                Eigen::Vector6d::Constant( 1e-8));
 
   ik.getSolver()->setNumMaxIterations(100);
 
@@ -253,4 +253,3 @@ int main(int argc, char* argv[])
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

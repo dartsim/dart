@@ -74,16 +74,55 @@ public:
 
   const Eigen::VectorXd& solve();
 
+  std::unique_ptr<InverseKinematics> clone(JacobianEntity* _newEntity) const;
+
+  /// This class should be inherited by optimizer::Function classes that have a
+  /// dependency on the InverseKinematics module that they belong to. If you
+  /// pass an InverseKinematics::Function into the Problem of an
+  /// InverseKinematics module, then it will be properly cloned whenever the
+  /// InverseKinematics module that it belongs to gets cloned. Any Function
+  /// classes in the Problem that do not inherit InverseKinematics::Function
+  /// will just be copied over by reference.
+  class Function
+  {
+  public:
+    virtual optimizer::FunctionPtr clone(InverseKinematics* _ik) const = 0;
+  };
+
   /// ErrorMethod is a base class for different ways of computing the error of
   /// an InverseKinematics module
   class ErrorMethod : public common::Subject
   {
   public:
 
+    typedef std::pair<Eigen::Vector6d, Eigen::Vector6d> Bounds;
+    struct Properties
+    {
+      Properties(const Bounds& _bounds =
+            Bounds(Eigen::Vector6d::Constant(-DefaultIKTolerance),
+                   Eigen::Vector6d::Constant( DefaultIKTolerance)),
+
+          double _errorClamp = DefaultIKErrorClamp,
+
+          const Eigen::Vector6d& _errorWeights = Eigen::compose(
+            Eigen::Vector3d::Constant(DefaultIKAngularWeight),
+            Eigen::Vector3d::Constant(DefaultIKLinearWeight)));
+
+      std::pair<Eigen::Vector6d, Eigen::Vector6d> mBounds;
+
+      double mErrorLengthClamp;
+
+      Eigen::Vector6d mErrorWeights;
+    };
+
     ErrorMethod(InverseKinematics* _ik,
-                const std::string& _methodName);
+                const std::string& _methodName,
+                const Properties& _properties = Properties());
 
     virtual ~ErrorMethod() = default;
+
+    virtual std::unique_ptr<ErrorMethod> clone(
+        InverseKinematics* _newIK) const = 0;
 
     virtual Eigen::Vector6d computeError() = 0;
 
@@ -155,11 +194,7 @@ public:
 
     Eigen::Vector6d mLastError;
 
-    std::pair<Eigen::Vector6d, Eigen::Vector6d> mBounds;
-
-    double mErrorLengthClamp;
-
-    Eigen::Vector6d mErrorWeights;
+    Properties mProperties;
 
   };
 
@@ -167,9 +202,13 @@ public:
   {
   public:
 
-    explicit TaskSpaceRegion(InverseKinematics* _ik);
+    explicit TaskSpaceRegion(InverseKinematics* _ik,
+                             const Properties& _properties = Properties(),
+                             bool _computeFromCenter = true);
 
     virtual ~TaskSpaceRegion() = default;
+
+    virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
 
     virtual Eigen::Vector6d computeError() override;
 
@@ -181,9 +220,13 @@ public:
   public:
 
     GradientMethod(InverseKinematics* _ik,
-                   const std::string& _methodName);
+                   const std::string& _methodName,
+                   double _clamp = DefaultIKGradientComponentClamp);
 
     virtual ~GradientMethod() = default;
+
+    virtual std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const = 0;
 
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) = 0;
@@ -219,9 +262,14 @@ public:
   {
   public:
 
-    explicit JacobianDLS(InverseKinematics* _ik);
+    explicit JacobianDLS(InverseKinematics* _ik,
+                         double _clamp = DefaultIKGradientComponentClamp,
+                         double _damping = DefaultIKDLSCoefficient);
 
     virtual ~JacobianDLS() = default;
+
+    virtual std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const;
 
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) override;
@@ -239,9 +287,13 @@ public:
   {
   public:
 
-    explicit JacobianTranspose(InverseKinematics* _ik);
+    explicit JacobianTranspose(InverseKinematics* _ik,
+                               double _clamp = DefaultIKGradientComponentClamp);
 
     virtual ~JacobianTranspose() = default;
+
+    virtual std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const;
 
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) override;
@@ -301,21 +353,19 @@ public:
   void evalObjectiveGradient(const Eigen::VectorXd& _q,
                              Eigen::Map<Eigen::VectorXd> _grad);
 
-  // TODO: Accept arguments using variadic templates and forwarding
-  template <class IKErrorMethod>
-  IKErrorMethod* setErrorMethod();
+  template <class IKErrorMethod, typename... Args>
+  IKErrorMethod& setErrorMethod(Args&&... args);
 
-  ErrorMethod* getErrorMethod();
+  ErrorMethod& getErrorMethod();
 
-  const ErrorMethod* getErrorMethod() const;
+  const ErrorMethod& getErrorMethod() const;
 
-  // TODO: Accept arguments using variadic templates and forwarding
-  template <class IKGradientMethod>
-  IKGradientMethod* setGradientMethod();
+  template <class IKGradientMethod, typename... Args>
+  IKGradientMethod& setGradientMethod(Args&&... args);
 
-  GradientMethod* getGradientMethod();
+  GradientMethod& getGradientMethod();
 
-  const GradientMethod* getGradientMethod() const;
+  const GradientMethod& getGradientMethod() const;
 
   std::shared_ptr<optimizer::Problem> getProblem();
 
@@ -393,7 +443,7 @@ protected:
 
   Eigen::VectorXd mGradCache;
 
-  Eigen::MatrixXd mNullspaceCache;
+  Eigen::MatrixXd mNullSpaceCache;
 
   Eigen::JacobiSVD<math::Jacobian> mSVDCache;
 
