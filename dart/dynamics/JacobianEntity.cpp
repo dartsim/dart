@@ -55,22 +55,28 @@ JacobianEntity::JacobianEntity()
 JacobianEntity::~JacobianEntity() = default;
 
 //==============================================================================
-InverseKinematics& JacobianEntity::getIK()
+InverseKinematics* JacobianEntity::getIK(bool _createIfNull)
 {
-  if(nullptr == mIK)
-    mIK = std::unique_ptr<InverseKinematics>(new InverseKinematics(this));
+  if(nullptr == mIK && _createIfNull)
+    createIK();
 
-  return *mIK;
+  return mIK.get();
 }
 
 //==============================================================================
-const InverseKinematics& JacobianEntity::getIK() const
+const InverseKinematics* JacobianEntity::getIK() const
 {
-  return const_cast<JacobianEntity*>(this)->getIK();
+  return const_cast<JacobianEntity*>(this)->getIK(false);
+}
+
+InverseKinematics* JacobianEntity::createIK()
+{
+  mIK = std::unique_ptr<InverseKinematics>(new InverseKinematics(this));
+  return mIK.get();
 }
 
 //==============================================================================
-void JacobianEntity::resetIK()
+void JacobianEntity::clearIK()
 {
   mIK = nullptr;
 }

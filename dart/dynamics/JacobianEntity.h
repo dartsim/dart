@@ -64,19 +64,21 @@ public:
   /// Virtual destructor
   virtual ~JacobianEntity();
 
-  /// Get a reference to an IK module for this Entity. The IK module is lazily
-  /// created, so it does not exist until the first time you ask for it.
-  ///
-  /// If this JacobianEntity is a BodyNode or an EndEffector, then this IK
-  /// module will be cloned along with
-  InverseKinematics& getIK();
+  /// Get a pointer to an IK module for this Entity. If _createIfNull is true,
+  /// then the IK module will be generated if one does not already exist.
+  InverseKinematics* getIK(bool _createIfNull = true);
 
-  /// const version of getIK()
-  const InverseKinematics& getIK() const;
+  /// Get a pointer to an IK module for this Entity. Because this is a const
+  /// function, a new IK module will NOT be created, even if one does not
+  /// already exist.
+  const InverseKinematics* getIK() const;
 
-  /// Wipe away the IK module for this Entity. A new one will be recreated the
-  /// next time you call getIK()
-  void resetIK();
+  /// Create a new IK module for this Entity. If an IK module already exists in
+  /// this Entity, it will be destroyed and replaced by a brand new one.
+  InverseKinematics* createIK();
+
+  /// Wipe away the IK module for this Entity, leaving it as a nullptr.
+  void clearIK();
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties

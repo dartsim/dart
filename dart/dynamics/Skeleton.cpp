@@ -49,6 +49,7 @@
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -138,7 +139,7 @@ SkeletonPtr Skeleton::clone() const
 
     // Grab the parent BodyNode clone (using its name, which is guaranteed to be
     // unique), or use nullptr if this is a root BodyNode
-    BodyNode* parentClone = originalParent == nullptr? nullptr :
+    BodyNode* parentClone = (originalParent == nullptr)? nullptr :
           skelClone->getBodyNode(originalParent->getName());
 
     if( (nullptr != originalParent) && (nullptr == parentClone) )
@@ -150,7 +151,17 @@ SkeletonPtr Skeleton::clone() const
             << "a bug!\n";
     }
 
-    skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
+    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint);
+
+    // The IK module gets cloned by the Skeleton and not by the BodyNode,
+    // because IK modules rely on the Skeleton's structure and indexing. If the
+    // IK was cloned by the BodyNode into a Skeleton that has a different
+    // structure, then there is no guarantee that it will continue to work
+    // correctly.
+    if(getBodyNode(i)->getIK())
+      newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
+
+    skelClone->registerBodyNode(newBody);
   }
 
   for(size_t i=0; i<getNumEndEffectors(); ++i)
@@ -164,7 +175,12 @@ SkeletonPtr Skeleton::clone() const
     // Grab the clone of the original parent
     BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
 
-    skelClone->registerEndEffector(originalEE->clone(parentClone));
+    EndEffector* newEE = originalEE->clone(parentClone);
+
+    if(originalEE->getIK())
+      newEE->mIK = originalEE->getIK()->clone(newEE);
+
+    skelClone->registerEndEffector(newEE);
   }
 
   skelClone->setProperties(getSkeletonProperties());
