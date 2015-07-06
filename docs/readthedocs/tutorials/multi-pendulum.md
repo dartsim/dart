@@ -3,6 +3,7 @@
 This tutorial will demonstrate some basic interaction with DART's dynamics
 API during simulation. This will show you how to:
 
+- Create a basic program to simulate a dynamic system
 - Change the colors of shapes
 - Add/remove shapes from visualization
 - Apply internal forces in the joints
@@ -10,7 +11,66 @@ API during simulation. This will show you how to:
 - Alter the implicit spring and damping properties of joints
 - Add/remove dynamic constraints
 
-# Lesson 1: Changing shapes and applying forces
+# Lesson 0: Simulate a passive multi-pendulum
+
+This is a warmup lesson that demonstrates how to set up a simulation
+program in DART. The example we will use throughout this tutorial is a
+pendulum with five rigid bodies swinging under gravity. DART allows
+the user to build various articulated rigid/soft body systems from
+scratch. It also loads models in URDF, SDF, and SKEL formats as
+demonstrated in the later tutorials.
+
+In DART, an articulated dynamics model is represented by a
+``Skeleton``. In the ``main`` function, we first create an empty
+skeleton named *pendulum*.
+
+```cpp
+SkeletonPtr pendulum = Skeleton::create("pendulum");
+```
+
+A Skeleton is a structure that consists of ``BodyNode``s (bodies) which are 
+connected by ``Joint``s. Every Joint has a child BodyNode, and every BodyNode 
+has a parent Joint. Even the root BodyNode has a Joint that attaches it to the 
+World. In the function ``makeRootBody``, we create a pair of a
+``BallJoint``  and a BodyNode, and attach this pair to the currently
+empty pendulum skeleton.
+
+```cpp
+BodyNodePtr bn =
+    pendulum->createJointAndBodyNodePair<BallJoint>(nullptr, properties, BodyNode::Properties(name)).second;
+```
+
+Note that the first parameters is a nullptr, which indicates that
+this new BodyNode is the root of the pendulum. If we wish to append
+the new BodyNode to an existing BodyNode in the pendulum,
+we can do so by passing the pointer of the existing BodyNode as
+the first parameter. In fact, this is how we add more BodyNodes to
+the pendulum in the function ``addBody``:
+
+```cpp
+BodyNodePtr bn =
+    pendulum->createJointAndBodyNodePair<RevoluteJoint>(parent, properties, BodyNode::Properties(name)).second;
+```
+The simplest way to set up a simulation program in DART is to use
+``SimWindow`` class. A SimWindow owns an instance of ``World``  and
+simulates all the Skeletons in the World. In this example, we create a World with the
+pendulum skeleton in it, and assign the World to an instance of
+``MyWindow``, a subclass derived from SimWindow.
+
+```cpp
+WorldPtr world(new World);
+world->addSkeleton(pendulum);
+MyWindow window(world);
+```
+
+Every single time step, the ``timeStepping`` function will be called
+and the state of the World will be simulated. The user can override
+the default timeStepping function to customize the simulation
+routine. For example, one can incorporate sensors, actuators, or user
+interaction in the forward simulation.
+
+
+# Lesson 1: Change shapes and applying forces
 
 We have a pendulum with five bodies, and we want to be able to apply forces to
 them during simulation. Additionally, we want to visualize these forces so we
@@ -281,7 +341,7 @@ Again, we want to make sure that the damping coefficient is never negative. In
 fact, a negative damping coefficient would be far more harmful than a negative
 stiffness coefficient.
 
-# Lesson 3: Adding and removing dynamic constraints
+# Lesson 3: Add and remove dynamic constraints
 
 Dynamic constraints in DART allow you to attach two BodyNodes together according
 to a selection of a few different Joint-style constraints. This allows you to
