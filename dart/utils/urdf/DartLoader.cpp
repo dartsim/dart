@@ -383,6 +383,9 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     singleDof.mVelocityUpperLimit =  _jt->limits->velocity;
     singleDof.mForceLowerLimit = -_jt->limits->effort;
     singleDof.mForceUpperLimit =  _jt->limits->effort;
+
+    if(_jt->limits->lower > 0 || _jt->limits->upper < 0)
+      singleDof.mRestPosition = (_jt->limits->lower + _jt->limits->upper) / 2.;
   }
 
   if(_jt->dynamics)
