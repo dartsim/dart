@@ -47,6 +47,7 @@ class BodyNode;
 class Skeleton;
 
 class EndEffector : public FixedFrame,
+                    public AccessoryNode,
                     public TemplatedJacobianNode<EndEffector>
 {
 public:
@@ -74,11 +75,6 @@ public:
 
   /// Destructor
   virtual ~EndEffector();
-
-  /// Remove this EndEffector from existence. Note that this will affect the
-  /// indexing of all other EndEffectors that share the same BodyNode or
-  /// Skeleton.
-  void remove();
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties

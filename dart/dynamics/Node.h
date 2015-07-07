@@ -53,16 +53,6 @@ class Node
 {
 public:
 
-  /// Construct a typical Node that will be attached to a BodyNode
-  enum ConstructNode_t { ConstructNode };
-
-  /// Construct the Node base of a BodyNode
-  enum ConstructBodyNode_t { ConstructBodyNode };
-
-  /// Used when constructing a pure abstract class, because calling the Node
-  /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
-
   friend class BodyNode;
 
   /// Virtual destructor
@@ -101,6 +91,16 @@ private:
 
 protected:
 
+  /// Construct a typical Node that will be attached to a BodyNode
+  enum ConstructNode_t { ConstructNode };
+
+  /// Construct the Node base of a BodyNode
+  enum ConstructBodyNode_t { ConstructBodyNode };
+
+  /// Used when constructing a pure abstract class, because calling the Node
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
   Node(ConstructNode_t, BodyNode* _bn);
 
   Node(ConstructBodyNode_t);
@@ -121,6 +121,9 @@ class AccessoryNode : public virtual Node
 {
 public:
 
+  /// Virtual destructor
+  virtual ~AccessoryNode() = default;
+
   /// Stage the Node for removal. When all strong references to the Node expire,
   /// the Node will be removed from its BodyNode and deleted.
   void remove();
@@ -132,7 +135,7 @@ public:
 protected:
 
   /// Prevent a non-inheriting class from constructing one
-  AccessoryNode() = default;
+  AccessoryNode();
 
 };
 

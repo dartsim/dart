@@ -133,6 +133,8 @@ EndEffectorT* BodyNode::createEndEffector(
 {
   EndEffectorT* ee = new EndEffectorT(this, _properties);
   getSkeleton()->registerEndEffector(ee);
+
+  return ee;
 }
 
 #endif // DART_DYNAMICS_DETAIL_BODYNODE_H_

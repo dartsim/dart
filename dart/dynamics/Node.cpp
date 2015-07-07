@@ -171,5 +171,12 @@ void AccessoryNode::reattach()
   attach();
 }
 
+//==============================================================================
+AccessoryNode::AccessoryNode()
+  : Node(ConstructAbstract)
+{
+  // Do nothing
+}
+
 } // namespace dynamics
 } // namespace dart

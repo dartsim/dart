@@ -85,14 +85,6 @@ public:
 
   using VizShapeRemovedSignal = VizShapeAddedSignal;
 
-  /// Used when constructing a Frame class, because the Frame constructor will
-  /// take care of setting up the parameters you pass into it
-  enum ConstructFrame_t { ConstructFrame };
-
-  /// Used when constructing a pure abstract class, because calling the Entity
-  /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
-
   struct Properties
   {
     /// Name of the Entity
@@ -108,8 +100,6 @@ public:
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
-
-  explicit Entity(ConstructAbstract_t);
 
   /// Destructor
   virtual ~Entity();
@@ -206,6 +196,19 @@ public:
   bool needsAccelerationUpdate() const;
 
 protected:
+
+  /// Used when constructing a Frame class, because the Frame constructor will
+  /// take care of setting up the parameters you pass into it
+  enum ConstructFrame_t { ConstructFrame };
+
+  explicit Entity(ConstructFrame_t);
+
+  /// Used when constructing a pure abstract class, because calling the Entity
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
+  explicit Entity(ConstructAbstract_t);
+
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
 

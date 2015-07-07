@@ -46,18 +46,6 @@ typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
 //==============================================================================
-Frame::Frame(Frame* _refFrame, const std::string& _name)
-  : Entity(_refFrame, _name, false),
-    mWorldTransform(Eigen::Isometry3d::Identity()),
-    mVelocity(Eigen::Vector6d::Zero()),
-    mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(false)
-{
-  mAmFrame = true;
-  changeParentFrame(_refFrame);
-}
-
-//==============================================================================
 Frame::~Frame()
 {
   if(isWorld())
@@ -507,6 +495,20 @@ void Frame::notifyAccelerationUpdate()
 }
 
 //==============================================================================
+Frame::Frame(Frame* _refFrame, const std::string& _name)
+  : Entity(ConstructFrame),
+    mWorldTransform(Eigen::Isometry3d::Identity()),
+    mVelocity(Eigen::Vector6d::Zero()),
+    mAcceleration(Eigen::Vector6d::Zero()),
+    mAmWorld(false)
+{
+  mAmFrame = true;
+  mEntityP.mName = _name;
+  changeParentFrame(_refFrame);
+}
+
+
+//==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
   if (mParentFrame == _newParentFrame)
@@ -559,7 +561,7 @@ void Frame::processRemovedEntity(Entity*)
 }
 
 //==============================================================================
-Frame::Frame()
+Frame::Frame(ConstructWorld_t)
   : Entity(this, "World", true),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
@@ -602,7 +604,7 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 //==============================================================================
 WorldFrame::WorldFrame()
   : Entity(nullptr, "World", true),
-    Frame(),
+    Frame(ConstructWorld),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mZero(Eigen::Vector6d::Zero())
 {

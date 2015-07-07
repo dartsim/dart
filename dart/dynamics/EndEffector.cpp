@@ -272,7 +272,7 @@ void EndEffector::notifyVelocityUpdate()
 
 //==============================================================================
 EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
-  : Entity(nullptr, "", false),
+  : Entity(ConstructFrame),
     Frame(_parent, ""),
     Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),

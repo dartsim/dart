@@ -93,21 +93,6 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 }
 
 //==============================================================================
-Entity::Entity(ConstructAbstract_t)
-  : onFrameChanged(mFrameChangedSignal),
-    onNameChanged(mNameChangedSignal),
-    onVizShapeAdded(mVizShapeAddedSignal),
-    onTransformUpdated(mTransformUpdatedSignal),
-    onVelocityChanged(mVelocityChangedSignal),
-    onAccelerationChanged(mAccelerationChangedSignal),
-    mAmQuiet(false)
-{
-  dterr << "[Entity::Entity] Your class implementation is calling the Entity "
-        << "constructor that is meant to be reserved for abstract classes!\n";
-  assert(false);
-}
-
-//==============================================================================
 Entity::~Entity()
 {
   changeParentFrame(nullptr);
@@ -364,6 +349,45 @@ bool Entity::needsAccelerationUpdate() const
 }
 
 //==============================================================================
+Entity::Entity(ConstructFrame_t)
+  : mParentFrame(nullptr),
+    mNeedTransformUpdate(true),
+    mNeedVelocityUpdate(true),
+    mNeedAccelerationUpdate(true),
+    mFrameChangedSignal(),
+    mNameChangedSignal(),
+    mVizShapeAddedSignal(),
+    mTransformUpdatedSignal(),
+    mVelocityChangedSignal(),
+    mAccelerationChangedSignal(),
+    onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
+    mAmQuiet(false),
+    mAmFrame(false) // The Frame class will change this to true
+{
+  // Do nothing. The Frame class will take care of changing the parent Frame.
+}
+
+//==============================================================================
+Entity::Entity(ConstructAbstract_t)
+  : onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
+    mAmQuiet(false)
+{
+  dterr << "[Entity::Entity] Your class implementation is calling the Entity "
+        << "constructor that is meant to be reserved for abstract classes!\n";
+  assert(false);
+}
+
+//==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
   if (mParentFrame == _newParentFrame)
@@ -396,7 +420,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
-Detachable::Detachable(Frame *_refFrame, const std::string &_name, bool _quiet)
+Detachable::Detachable(Frame* _refFrame, const std::string& _name, bool _quiet)
   : Entity(_refFrame, _name, _quiet)
 {
 
@@ -410,7 +434,7 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
 
 //==============================================================================
 Detachable::Detachable()
-  : Entity(nullptr, "", false)
+  : Entity(ConstructAbstract)
 {
 
 }

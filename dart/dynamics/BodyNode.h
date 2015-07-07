@@ -966,10 +966,6 @@ protected:
   /// Map that retrieves the cleaners for a given Node
   std::unordered_map<Node*, std::shared_ptr<Cleaner> > mNodeMap;
 
-  /// Hold onto a reference to this BodyNode's own cleaner to make sure that it
-  /// never gets called.
-  std::shared_ptr<Cleaner> mSelfCleaner;
-
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
 
@@ -1113,6 +1109,13 @@ public:
   mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
 
   /// \}
+
+private:
+
+  /// Hold onto a reference to this BodyNode's own Cleaner to make sure that it
+  /// never gets destroyed.
+  std::shared_ptr<Cleaner> mSelfCleaner;
+
 };
 
 #include "dart/dynamics/detail/BodyNode.h"

@@ -1043,8 +1043,8 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 //==============================================================================
 BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
-  : Entity(Frame::World(), "", false), // Name gets set later by setProperties
-    Frame(Frame::World(), ""),
+  : Entity(ConstructFrame),
+    Frame(Frame::World(), ""), // Name gets set later by setProperties
     Node(ConstructBodyNode),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),

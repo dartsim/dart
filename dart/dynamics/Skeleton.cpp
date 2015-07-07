@@ -201,7 +201,7 @@ const Skeleton::Properties& Skeleton::getSkeletonProperties() const
 //==============================================================================
 const std::string& Skeleton::setName(const std::string& _name)
 {
-  if(_name == mSkeletonP.mName)
+  if(_name == mSkeletonP.mName && !_name.empty())
     return mSkeletonP.mName;
 
   const std::string oldName = mSkeletonP.mName;
@@ -217,6 +217,8 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
+  mNameMgrForEndEffectors.setManagerName(
+        "Skeleton::EndEffector | "+mSkeletonP.mName);
 
   ConstMetaSkeletonPtr me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
@@ -1330,7 +1332,8 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 
 //==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
-  : mTotalMass(0.0),
+  : mSkeletonP(""),
+    mTotalMass(0.0),
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
@@ -1483,7 +1486,7 @@ void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
     dterr << "[Skeleton::registerEndEffector] Attempting to double-register "
            << "an EndEffector named [" << _newEndEffector->getName() << "] ("
            << _newEndEffector << ") in the Skeleton named [" << getName()
-           << "] (" << this << "). This is most likely a bug; please report "
+           << "] (" << this << "). This is most likely a bug. Please report "
            << "this!\n";
     assert(false);
     return;
@@ -1492,7 +1495,9 @@ void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
 
   mEndEffectors.push_back(_newEndEffector);
   _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
-  addEntryToEndEffectorNameMgr(_newEndEffector);
+
+  // The EndEffector name gets added when the EndEffector is constructed, so we
+  // don't need to add it here.
 }
 
 //==============================================================================
@@ -1625,6 +1630,8 @@ void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
     EndEffector* ee = mEndEffectors[i];
     ee->mIndexInSkeleton = i;
   }
+
+  mNameMgrForEndEffectors.removeName(_oldEndEffector->getName());
 }
 
 //==============================================================================

@@ -63,9 +63,6 @@ public:
   friend class Entity;
   friend class WorldFrame;
 
-  /// Constructor for typical usage
-  explicit Frame(Frame* _refFrame, const std::string& _name);
-
   /// Destructor
   virtual ~Frame();
 
@@ -247,6 +244,16 @@ public:
   virtual void notifyAccelerationUpdate() override;
 
 protected:
+
+  /// Used when constructing a pure abstract class, because calling the Frame
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
+  /// Constructor for typical usage
+  explicit Frame(Frame* _refFrame, const std::string& _name);
+
+  explicit Frame(ConstructAbstract_t);
+
   // Documentation inherited
   virtual void changeParentFrame(Frame* _newParentFrame) override;
 
@@ -260,8 +267,12 @@ protected:
   virtual void processRemovedEntity(Entity* _oldChildEntity);
 
 private:
+
+  /// Used when constructing the World
+  enum ConstructWorld_t { ConstructWorld };
+
   /// Constructor only to be used by the WorldFrame class
-  explicit Frame();
+  explicit Frame(ConstructWorld_t);
 
 protected:
   /// World transform of this Frame. This object is mutable to enable

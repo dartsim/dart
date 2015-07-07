@@ -560,6 +560,21 @@ TEST(Skeleton, Persistence)
   EXPECT_TRUE(weakSkel.lock() == nullptr);
 }
 
+TEST(Skeleton, NodePersistence)
+{
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+
+  EndEffector* manip =
+      skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+
+  EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+
+  manip->remove();
+
+  EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
