@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
 #include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/TemplatedJacobianEntity.h"
+#include "dart/dynamics/TemplatedJacobianNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,7 +47,7 @@ class BodyNode;
 class Skeleton;
 
 class EndEffector : public FixedFrame,
-                    public TemplatedJacobianEntity<EndEffector>
+                    public TemplatedJacobianNode<EndEffector>
 {
 public:
 
@@ -73,7 +73,7 @@ public:
   };
 
   /// Destructor
-  virtual ~EndEffector() = default;
+  virtual ~EndEffector();
 
   /// Remove this EndEffector from existence. Note that this will affect the
   /// indexing of all other EndEffectors that share the same BodyNode or
@@ -159,25 +159,25 @@ public:
   const math::Jacobian& getJacobian() const override;
 
   // Prevent the inherited getJacobian functions from being shadowed
-  using TemplatedJacobianEntity<EndEffector>::getJacobian;
+  using TemplatedJacobianNode<EndEffector>::getJacobian;
 
   // Documentation inherited
   const math::Jacobian& getWorldJacobian() const override;
 
   // Prevent the inherited getWorldJacobian functions from being shadowed
-  using TemplatedJacobianEntity<EndEffector>::getWorldJacobian;
+  using TemplatedJacobianNode<EndEffector>::getWorldJacobian;
 
   // Documentation inherited
   const math::Jacobian& getJacobianSpatialDeriv() const override;
 
   // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
-  using TemplatedJacobianEntity<EndEffector>::getJacobianSpatialDeriv;
+  using TemplatedJacobianNode<EndEffector>::getJacobianSpatialDeriv;
 
   // Documentation inherited
   const math::Jacobian& getJacobianClassicDeriv() const override;
 
   // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
-  using TemplatedJacobianEntity<EndEffector>::getJacobianClassicDeriv;
+  using TemplatedJacobianNode<EndEffector>::getJacobianClassicDeriv;
 
   /// \}
 
@@ -219,9 +219,6 @@ protected:
 
   /// Properties of this EndEffector
   UniqueProperties mEndEffectorP;
-
-  /// The BodyNode that this EndEffector is rigidly attached to
-  BodyNode* mParentBodyNode;
 
   /// The index of this EndEffector within its Skeleton
   size_t mIndexInSkeleton;

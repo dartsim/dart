@@ -37,13 +37,13 @@
 #ifndef DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 #define DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 
-#include "dart/dynamics/JacobianEntity.h"
+#include "dart/dynamics/JacobianNode.h"
 
 namespace dart {
 namespace dynamics {
 
-/// TemplatedJacobianEntity provides a curiously recurring template pattern
-/// implementtion of the various JacobianEntity non-caching functions that take
+/// TemplatedJacobianNode provides a curiously recurring template pattern
+/// implementtion of the various JacobianNode non-caching functions that take
 /// in arguments. These functions are easily distinguished because they return
 /// by value instead of returning by const reference.
 ///
@@ -51,7 +51,7 @@ namespace dynamics {
 /// implementations of these various auxilliary Jacobian functions without any
 /// penalty from dynamic overload resolution.
 template <class EntityType>
-class TemplatedJacobianEntity : public JacobianEntity
+class TemplatedJacobianNode : public JacobianNode
 {
 public:
 
@@ -121,13 +121,13 @@ protected:
 
   /// Default constructor. This is only a formality, because Entity and Frame
   /// do not offer default constructors.
-  TemplatedJacobianEntity();
+  TemplatedJacobianNode();
 
 };
 
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/TemplatedJacobianEntity.h"
+#include "dart/dynamics/detail/TemplatedJacobianNode.h"
 
 #endif // DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_

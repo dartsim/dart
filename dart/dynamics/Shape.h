@@ -218,9 +218,6 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-typedef std::shared_ptr<Shape> ShapePtr;
-typedef std::shared_ptr<const Shape> ConstShapePtr;
-
 }  // namespace dynamics
 }  // namespace dart
 

@@ -34,16 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/JacobianEntity.h"
+#include "dart/dynamics/JacobianNode.h"
 #include "dart/dynamics/InverseKinematics.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-JacobianEntity::JacobianEntity()
+JacobianNode::JacobianNode()
   : Entity(nullptr, "", false),
-    Frame(nullptr, "")
+    Frame(nullptr, ""),
+    Node(Node::ConstructAbstract)
 {
   // Do nothing
 }
@@ -52,31 +53,31 @@ JacobianEntity::JacobianEntity()
 // This destructor needs to be defined somewhere that the definition of
 // InverseKinematics is visible, because it's needed by the
 // std::unique_ptr<InverseKinematics> class member
-JacobianEntity::~JacobianEntity() = default;
+JacobianNode::~JacobianNode() = default;
 
 //==============================================================================
-InverseKinematics* JacobianEntity::getIK(bool _createIfNull)
+std::shared_ptr<InverseKinematics> JacobianNode::getIK(bool _createIfNull)
 {
   if(nullptr == mIK && _createIfNull)
     createIK();
 
+  return mIK;
+}
+
+//==============================================================================
+std::shared_ptr<const InverseKinematics> JacobianNode::getIK() const
+{
+  return const_cast<JacobianNode*>(this)->getIK(false);
+}
+
+InverseKinematics* JacobianNode::createIK()
+{
+  mIK = std::shared_ptr<InverseKinematics>(new InverseKinematics(this));
   return mIK.get();
 }
 
 //==============================================================================
-const InverseKinematics* JacobianEntity::getIK() const
-{
-  return const_cast<JacobianEntity*>(this)->getIK(false);
-}
-
-InverseKinematics* JacobianEntity::createIK()
-{
-  mIK = std::unique_ptr<InverseKinematics>(new InverseKinematics(this));
-  return mIK.get();
-}
-
-//==============================================================================
-void JacobianEntity::clearIK()
+void JacobianNode::clearIK()
 {
   mIK = nullptr;
 }

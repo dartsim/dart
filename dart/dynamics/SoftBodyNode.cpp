@@ -268,6 +268,7 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            const Properties& _properties)
   : Entity(Frame::World(), "", false),
     Frame(Frame::World(), ""),
+    Node(ConstructBodyNode),
     BodyNode(_parentBodyNode, _parentJoint, _properties)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");

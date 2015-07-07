@@ -151,12 +151,17 @@ BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
 //==============================================================================
 BodyNode::~BodyNode()
 {
+  // Delete all Nodes
+  mNodeMap.clear();
+
   // Release markers
   for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
        it != mMarkers.end(); ++it)
   {
     delete (*it);
   }
+
+  delete mParentJoint;
 }
 
 //==============================================================================
@@ -1040,6 +1045,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
   : Entity(Frame::World(), "", false), // Name gets set later by setProperties
     Frame(Frame::World(), ""),
+    Node(ConstructBodyNode),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
     mParentJoint(_parentJoint),
@@ -1073,6 +1079,11 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
 {
+  // Generate an inert cleaner to make sure that it will not try to
+  // double-delete this BodyNode when it gets destroyed.
+  mSelfCleaner = std::shared_ptr<Cleaner>(new Cleaner(nullptr));
+  mCleaner = mSelfCleaner;
+
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
 

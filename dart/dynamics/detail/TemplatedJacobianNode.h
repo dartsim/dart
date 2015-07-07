@@ -43,7 +43,7 @@ namespace dynamics {
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobian(
+TemplatedJacobianNode<EntityType>::getJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
@@ -58,7 +58,7 @@ TemplatedJacobianEntity<EntityType>::getJacobian(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobian(
+TemplatedJacobianNode<EntityType>::getJacobian(
     const Eigen::Vector3d& _offset) const
 {
   math::Jacobian J = static_cast<const EntityType*>(this)->getJacobian();
@@ -70,7 +70,7 @@ TemplatedJacobianEntity<EntityType>::getJacobian(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobian(
+TemplatedJacobianNode<EntityType>::getJacobian(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -88,7 +88,7 @@ TemplatedJacobianEntity<EntityType>::getJacobian(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getWorldJacobian(
+TemplatedJacobianNode<EntityType>::getWorldJacobian(
     const Eigen::Vector3d& _offset) const
 {
   math::Jacobian J = static_cast<const EntityType*>(this)->getWorldJacobian();
@@ -101,7 +101,7 @@ TemplatedJacobianEntity<EntityType>::getWorldJacobian(
 // Documentation inherited
 template<class EntityType>
 math::LinearJacobian
-TemplatedJacobianEntity<EntityType>::getLinearJacobian(
+TemplatedJacobianNode<EntityType>::getLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
@@ -128,7 +128,7 @@ TemplatedJacobianEntity<EntityType>::getLinearJacobian(
 // Documentation inherited
 template<class EntityType>
 math::LinearJacobian
-TemplatedJacobianEntity<EntityType>::getLinearJacobian(
+TemplatedJacobianNode<EntityType>::getLinearJacobian(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -147,7 +147,7 @@ TemplatedJacobianEntity<EntityType>::getLinearJacobian(
 // Documentation inherited
 template<class EntityType>
 math::AngularJacobian
-TemplatedJacobianEntity<EntityType>::getAngularJacobian(
+TemplatedJacobianNode<EntityType>::getAngularJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
@@ -172,7 +172,7 @@ TemplatedJacobianEntity<EntityType>::getAngularJacobian(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
@@ -185,7 +185,7 @@ TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _offset) const
 {
   math::Jacobian J_d =
@@ -199,7 +199,7 @@ TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -216,7 +216,7 @@ TemplatedJacobianEntity<EntityType>::getJacobianSpatialDeriv(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobianClassicDeriv(
+TemplatedJacobianNode<EntityType>::getJacobianClassicDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if(_inCoordinatesOf->isWorld())
@@ -229,7 +229,7 @@ TemplatedJacobianEntity<EntityType>::getJacobianClassicDeriv(
 // Documentation inherited
 template<class EntityType>
 math::Jacobian
-TemplatedJacobianEntity<EntityType>::getJacobianClassicDeriv(
+TemplatedJacobianNode<EntityType>::getJacobianClassicDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -254,7 +254,7 @@ TemplatedJacobianEntity<EntityType>::getJacobianClassicDeriv(
 // Documentation inherited
 template<class EntityType>
 math::LinearJacobian
-TemplatedJacobianEntity<EntityType>::getLinearJacobianDeriv(
+TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d =
@@ -270,7 +270,7 @@ TemplatedJacobianEntity<EntityType>::getLinearJacobianDeriv(
 // Documentation inherited
 template<class EntityType>
 math::LinearJacobian
-TemplatedJacobianEntity<EntityType>::getLinearJacobianDeriv(
+TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -295,7 +295,7 @@ TemplatedJacobianEntity<EntityType>::getLinearJacobianDeriv(
 // Documentation inherited
 template<class EntityType>
 math::AngularJacobian
-TemplatedJacobianEntity<EntityType>::getAngularJacobianDeriv(
+TemplatedJacobianNode<EntityType>::getAngularJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d =
@@ -311,8 +311,10 @@ TemplatedJacobianEntity<EntityType>::getAngularJacobianDeriv(
 /// Default constructor. This is only a formality, because Entity and Frame
 /// do not offer default constructors.
 template<class EntityType>
-TemplatedJacobianEntity<EntityType>::TemplatedJacobianEntity()
-  : Entity(nullptr, "", false), Frame(nullptr, "")
+TemplatedJacobianNode<EntityType>::TemplatedJacobianNode()
+  : Entity(Entity::ConstructAbstract),
+    Frame(nullptr, ""),
+    Node(Node::ConstructAbstract)
 {
   // Do nothing
 }

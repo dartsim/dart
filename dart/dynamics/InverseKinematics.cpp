@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-InverseKinematics::InverseKinematics(JacobianEntity* _entity)
+InverseKinematics::InverseKinematics(JacobianNode* _entity)
   : mActive(false),
     mHierarchyLevel(0),
     mOffset(Eigen::Vector3d::Zero()),
@@ -84,10 +84,10 @@ std::shared_ptr<optimizer::Function> cloneIkFunc(
 }
 
 //==============================================================================
-std::unique_ptr<InverseKinematics> InverseKinematics::clone(
-    JacobianEntity* _newEntity) const
+std::shared_ptr<InverseKinematics> InverseKinematics::clone(
+    JacobianNode* _newEntity) const
 {
-  std::unique_ptr<InverseKinematics> newIK(new InverseKinematics(_newEntity));
+  std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newEntity));
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
   newIK->useDofs(getDofs());
@@ -114,6 +114,9 @@ std::unique_ptr<InverseKinematics> InverseKinematics::clone(
   for(size_t i=0; i < mProblem->getNumIneqConstraints(); ++i)
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
+
+  for(size_t i=0; i < mProblem->getAllSeeds().size(); ++i)
+    newProblem->addSeed(mProblem->getSeed(i));
 
   return newIK;
 }
@@ -693,10 +696,13 @@ const std::vector<int>& InverseKinematics::getDofMap() const
 
 //==============================================================================
 void InverseKinematics::setObjective(
-    std::shared_ptr<optimizer::Function> _objective)
+    const std::shared_ptr<optimizer::Function>& _objective)
 {
   if(nullptr == _objective)
-    _objective = optimizer::FunctionPtr(new optimizer::NullFunction);
+  {
+    mObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
+    return;
+  }
 
   mObjective = _objective;
 }
@@ -716,13 +722,14 @@ InverseKinematics::getObjective() const
 
 //==============================================================================
 void InverseKinematics::setNullSpaceObjective(
-    std::shared_ptr<optimizer::Function> _nsObjective)
+    const std::shared_ptr<optimizer::Function>& _nsObjective)
 {
   mUseNullSpace = true;
   if(nullptr == _nsObjective)
   {
     mUseNullSpace = false;
-    _nsObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
+    mNullSpaceObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
+    return;
   }
 
   mNullSpaceObjective = _nsObjective;
@@ -801,7 +808,8 @@ void InverseKinematics::resetProblem(bool _clearSeeds)
 }
 
 //==============================================================================
-void InverseKinematics::setSolver(std::shared_ptr<optimizer::Solver> _newSolver)
+void InverseKinematics::setSolver(
+    const std::shared_ptr<optimizer::Solver>& _newSolver)
 {
   mSolver = _newSolver;
   if(nullptr == mSolver)
@@ -873,13 +881,13 @@ std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const
 }
 
 //==============================================================================
-JacobianEntity* InverseKinematics::getEntity()
+JacobianNode* InverseKinematics::getEntity()
 {
   return mEntity;
 }
 
 //==============================================================================
-const JacobianEntity* InverseKinematics::getEntity() const
+const JacobianNode* InverseKinematics::getEntity() const
 {
   return mEntity;
 }

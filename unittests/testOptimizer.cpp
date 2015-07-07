@@ -226,7 +226,7 @@ TEST(Optimizer, InverseKinematics)
   SkeletonPtr skel = Skeleton::create();
   skel->createJointAndBodyNodePair<FreeJoint>();
 
-  InverseKinematics* ik = skel->getBodyNode(0)->getIK();
+  std::shared_ptr<InverseKinematics> ik = skel->getBodyNode(0)->getIK(true);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.8);

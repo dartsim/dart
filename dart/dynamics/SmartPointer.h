@@ -88,9 +88,33 @@ DART_DYNAMICS_MAKE_SHARED_WEAK(Branch)
 class Chain;
 DART_DYNAMICS_MAKE_SHARED_WEAK(Chain)
 
-// Shape smart pointers
+// -- Shape smart pointers --
 class Shape;
 DART_DYNAMICS_MAKE_SHARED_WEAK(Shape)
+
+class ArrowShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(ArrowShape)
+
+class BoxShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(BoxShape)
+
+class CylinderShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(CylinderShape)
+
+class EllipsoidShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(EllipsoidShape)
+
+class LineSegmentShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(LineSegmentShape)
+
+class MeshShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(MeshShape)
+
+class PlaneShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(PlaneShape)
+
+class SoftMeshShape;
+DART_DYNAMICS_MAKE_SHARED_WEAK(SoftMeshShape)
 
 // -- Custom BodyNode smart pointers --
 #define DART_DYNAMICS_MAKE_BODYNODEPTR( X )                         \

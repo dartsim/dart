@@ -111,17 +111,7 @@ ConstSkeletonPtr Skeleton::getPtr() const
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)
-  {
-    if(bn->getParentJoint())
-      delete bn->getParentJoint();
-
     delete bn;
-  }
-
-  for (EndEffector* ee : mEndEffectors)
-  {
-    delete ee;
-  }
 }
 
 //==============================================================================
@@ -2969,7 +2959,7 @@ Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
 // derivatives
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
-    JacType (TemplatedJacobianEntity<BodyNode>::*getJacFn)(
+    JacType (TemplatedJacobianNode<BodyNode>::*getJacFn)(
         const Eigen::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(const Skeleton* _skel,
                                const Frame* _inCoordinatesOf)

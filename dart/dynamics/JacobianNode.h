@@ -34,12 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JACOBIANENTITY_H_
-#define DART_DYNAMICS_JACOBIANENTITY_H_
+#ifndef DART_DYNAMICS_JACOBIANNODE_H_
+#define DART_DYNAMICS_JACOBIANNODE_H_
 
 #include <memory>
 
 #include "dart/dynamics/Frame.h"
+#include "dart/dynamics/Node.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
@@ -48,10 +50,10 @@ class Skeleton;
 class DegreeOfFreedom;
 class InverseKinematics;
 
-/// The JacobianEntity class serves as a common interface for BodyNodes and
+/// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
-class JacobianEntity : public virtual Frame
+class JacobianNode : public virtual Frame, public virtual Node
 {
 public:
 
@@ -59,19 +61,19 @@ public:
   /// require it. Since this class is pure abstract and virutally inherits
   /// Frame, the most derived class needs to call the constructor of Entity and
   /// Frame anyway.
-  JacobianEntity();
+  JacobianNode();
 
   /// Virtual destructor
-  virtual ~JacobianEntity();
+  virtual ~JacobianNode();
 
   /// Get a pointer to an IK module for this Entity. If _createIfNull is true,
   /// then the IK module will be generated if one does not already exist.
-  InverseKinematics* getIK(bool _createIfNull = true);
+  std::shared_ptr<InverseKinematics> getIK(bool _createIfNull = false);
 
   /// Get a pointer to an IK module for this Entity. Because this is a const
   /// function, a new IK module will NOT be created, even if one does not
   /// already exist.
-  const InverseKinematics* getIK() const;
+  std::shared_ptr<const InverseKinematics> getIK() const;
 
   /// Create a new IK module for this Entity. If an IK module already exists in
   /// this Entity, it will be destroyed and replaced by a brand new one.
@@ -84,23 +86,23 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-  /// Return the Skeleton this JacobianEntity is attached to
+  /// Return the Skeleton this JacobianNode is attached to
   virtual std::shared_ptr<Skeleton> getSkeleton() = 0;
 
-  /// Return the Skeleton this JacobianEntity is attached to
+  /// Return the Skeleton this JacobianNode is attached to
   virtual std::shared_ptr<const Skeleton> getSkeleton() const = 0;
 
-  /// The number of the generalized coordinates which affect this JacobianEntity
+  /// The number of the generalized coordinates which affect this JacobianNode
   virtual size_t getNumDependentGenCoords() const = 0;
 
-  /// Indices of the generalized coordinates which affect this JacobianEntity
+  /// Indices of the generalized coordinates which affect this JacobianNode
   virtual const std::vector<size_t>& getDependentGenCoordIndices() const = 0;
 
   /// Same as getNumDependentGenCoords()
   virtual size_t getNumDependentDofs() const = 0;
 
   /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
-  /// leading up to this JacobianEntity from the root of the Skeleton.
+  /// leading up to this JacobianNode from the root of the Skeleton.
   virtual const std::vector<const DegreeOfFreedom*> getChainDofs() const = 0;
 
   /// \}
@@ -250,11 +252,11 @@ public:
 protected:
 
   /// Inverse kinematics module which gets lazily created upon request
-  mutable std::unique_ptr<InverseKinematics> mIK;
+  mutable std::shared_ptr<InverseKinematics> mIK;
 
 };
 
 } // namespace dart
 } // namespace dynamics
 
-#endif // DART_DYNAMICS_JACOBIANENTITY_H_
+#endif // DART_DYNAMICS_JACOBIANNODE_H_

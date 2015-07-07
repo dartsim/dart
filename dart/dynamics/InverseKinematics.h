@@ -50,7 +50,7 @@
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/JacobianEntity.h"
+#include "dart/dynamics/JacobianNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -62,19 +62,28 @@ const double DefaultIKDLSCoefficient = 0.05;
 const double DefaultIKAngularWeight = 0.4;
 const double DefaultIKLinearWeight = 1.0;
 
-/// The inverse kinematics class is templated to operate on either a BodyNode
-/// or an EndEffector
+/// The InverseKinematics class provides a convenient way of setting up an IK
+/// optimization problem. It generates constraint functions based on the
+/// specified InverseKinematics::ErrorMethod and
+/// InverseKinematics::GradientMethod.
+///
+/// It also provides a convenient way of specifying a configuration space
+/// objective and a null space objective. It is also possible to fully customize
+/// the optimizer::Problem that the module creates, and the IK module can be
+/// safely cloned  over to another JacobianNode, as long as every
+/// optimizer::Function that depends on the JacobianNode inherits the
+/// InverseKinematics::Function class and correctly overloads the clone function
 class InverseKinematics : public common::Subject
 {
 public:
 
-  InverseKinematics(JacobianEntity* _entity);
+  InverseKinematics(JacobianNode* _entity);
 
   virtual ~InverseKinematics();
 
   const Eigen::VectorXd& solve();
 
-  std::unique_ptr<InverseKinematics> clone(JacobianEntity* _newEntity) const;
+  std::shared_ptr<InverseKinematics> clone(JacobianNode* _newEntity) const;
 
   /// This class should be inherited by optimizer::Function classes that have a
   /// dependency on the InverseKinematics module that they belong to. If you
@@ -326,7 +335,7 @@ public:
 
   /// Set an objective function that should be minimized while satisfying the
   /// inverse kinematics constraint. Pass in a nullptr to remove the objective.
-  void setObjective(std::shared_ptr<optimizer::Function> _objective);
+  void setObjective(const std::shared_ptr<optimizer::Function>& _objective);
 
   /// Get the objective function for this IK module
   const std::shared_ptr<optimizer::Function>& getObjective();
@@ -342,7 +351,8 @@ public:
   /// Note: The objectives given to setObjective() and setNullSpaceObjective()
   /// will always be superimposed (added together) via the evalObjective()
   /// function.
-  void setNullSpaceObjective(std::shared_ptr<optimizer::Function> _nsObjective);
+  void setNullSpaceObjective(
+      const std::shared_ptr<optimizer::Function>& _nsObjective);
 
   /// Get the null space objective for this IK module
   const std::shared_ptr<optimizer::Function>& getNullSpaceObjective();
@@ -352,11 +362,6 @@ public:
 
   /// Returns false if the null space objective does nothing
   bool hasNullSpaceObjective() const;
-
-  double evalObjective(const Eigen::VectorXd& _q);
-
-  void evalObjectiveGradient(const Eigen::VectorXd& _q,
-                             Eigen::Map<Eigen::VectorXd> _grad);
 
   template <class IKErrorMethod, typename... Args>
   IKErrorMethod& setErrorMethod(Args&&... args);
@@ -380,7 +385,7 @@ public:
 
   /// Set the Solver that should be used by this IK module, and set it up with
   /// the Problem configured by this IK module
-  void setSolver(std::shared_ptr<optimizer::Solver> _newSolver);
+  void setSolver(const std::shared_ptr<optimizer::Solver>& _newSolver);
 
   const std::shared_ptr<optimizer::Solver>& getSolver();
 
@@ -409,9 +414,9 @@ public:
 
   std::shared_ptr<const SimpleFrame> getTarget() const;
 
-  JacobianEntity* getEntity();
+  JacobianNode* getEntity();
 
-  const JacobianEntity* getEntity() const;
+  const JacobianNode* getEntity() const;
 
   const math::Jacobian& computeJacobian() const;
 
@@ -509,7 +514,7 @@ protected:
 
   std::shared_ptr<SimpleFrame> mTarget;
 
-  sub_ptr<JacobianEntity> mEntity;
+  sub_ptr<JacobianNode> mEntity;
 
   mutable math::Jacobian mJacobian;
 

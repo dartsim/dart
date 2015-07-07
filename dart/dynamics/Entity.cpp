@@ -93,6 +93,21 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 }
 
 //==============================================================================
+Entity::Entity(ConstructAbstract_t)
+  : onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
+    mAmQuiet(false)
+{
+  dterr << "[Entity::Entity] Your class implementation is calling the Entity "
+        << "constructor that is meant to be reserved for abstract classes!\n";
+  assert(false);
+}
+
+//==============================================================================
 Entity::~Entity()
 {
   changeParentFrame(nullptr);

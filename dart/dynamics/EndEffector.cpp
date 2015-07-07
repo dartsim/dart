@@ -61,23 +61,18 @@ EndEffector::Properties::Properties(
 }
 
 //==============================================================================
-void EndEffector::remove()
+EndEffector::~EndEffector()
 {
   size_t index = mIndexInBodyNode;
-  assert(mParentBodyNode->mEndEffectors[index] == this);
+  assert(mBodyNode->mEndEffectors[index] == this);
 
-  mParentBodyNode->mEndEffectors.erase(
-        mParentBodyNode->mEndEffectors.begin()+index);
-
-  for(size_t i=index; i<mParentBodyNode->mEndEffectors.size(); ++i)
+  for(size_t i=index; i<mBodyNode->mEndEffectors.size(); ++i)
   {
-    EndEffector* ee = mParentBodyNode->mEndEffectors[i];
+    EndEffector* ee = mBodyNode->mEndEffectors[i];
     ee->mIndexInBodyNode = i;
   }
 
   getSkeleton()->unregisterEndEffector(this);
-
-  delete this;
 }
 
 //==============================================================================
@@ -168,49 +163,49 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 std::shared_ptr<Skeleton> EndEffector::getSkeleton()
 {
-  return mParentBodyNode->getSkeleton();
+  return mBodyNode->getSkeleton();
 }
 
 //==============================================================================
 std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
 {
-  return mParentBodyNode->getSkeleton();
+  return mBodyNode->getSkeleton();
 }
 
 //==============================================================================
 size_t EndEffector::getNumDependentGenCoords() const
 {
-  return mParentBodyNode->getNumDependentGenCoords();
+  return mBodyNode->getNumDependentGenCoords();
 }
 
 //==============================================================================
 const std::vector<size_t>& EndEffector::getDependentGenCoordIndices() const
 {
-  return mParentBodyNode->getDependentGenCoordIndices();
+  return mBodyNode->getDependentGenCoordIndices();
 }
 
 //==============================================================================
 size_t EndEffector::getNumDependentDofs() const
 {
-  return mParentBodyNode->getNumDependentDofs();
+  return mBodyNode->getNumDependentDofs();
 }
 
 //==============================================================================
 const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
 {
-  return mParentBodyNode->getChainDofs();
+  return mBodyNode->getChainDofs();
 }
 
 //==============================================================================
 BodyNode* EndEffector::getParentBodyNode()
 {
-  return mParentBodyNode;
+  return mBodyNode;
 }
 
 //==============================================================================
 const BodyNode* EndEffector::getParentBodyNode() const
 {
-  return mParentBodyNode;
+  return mBodyNode;
 }
 
 //==============================================================================
@@ -279,8 +274,8 @@ void EndEffector::notifyVelocityUpdate()
 EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
   : Entity(nullptr, "", false),
     Frame(_parent, ""),
+    Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
-    mParentBodyNode(_parent),
     mIndexInSkeleton(0),
     mIndexInBodyNode(0)
 {
@@ -303,7 +298,7 @@ EndEffector* EndEffector::clone(BodyNode* _parent) const
 void EndEffector::updateEffectorJacobian() const
 {
   mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
-                                      mParentBodyNode->getJacobian());
+                                      mBodyNode->getJacobian());
   mIsEffectorJacobianDirty = false;
 }
 
@@ -320,7 +315,7 @@ void EndEffector::updateEffectorJacobianSpatialDeriv() const
 {
   mEffectorJacobianSpatialDeriv =
       math::AdInvTJac(getRelativeTransform(),
-                      mParentBodyNode->getJacobianSpatialDeriv());
+                      mBodyNode->getJacobianSpatialDeriv());
 
   mIsEffectorJacobianSpatialDerivDirty = false;
 }
@@ -328,15 +323,15 @@ void EndEffector::updateEffectorJacobianSpatialDeriv() const
 //==============================================================================
 void EndEffector::updateWorldJacobianClassicDeriv() const
 {
-  const math::Jacobian& dJ_parent = mParentBodyNode->getJacobianClassicDeriv();
-  const math::Jacobian& J_parent = mParentBodyNode->getWorldJacobian();
+  const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
+  const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
 
   const Eigen::Vector3d& v_local =
-      getLinearVelocity(mParentBodyNode, Frame::World());
+      getLinearVelocity(mBodyNode, Frame::World());
 
-  const Eigen::Vector3d& w_parent = mParentBodyNode->getAngularVelocity();
+  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
   const Eigen::Vector3d& p = (getWorldTransform().translation()
-                  - mParentBodyNode->getWorldTransform().translation()).eval();
+                  - mBodyNode->getWorldTransform().translation()).eval();
 
   mWorldJacobianClassicDeriv = dJ_parent;
   mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=

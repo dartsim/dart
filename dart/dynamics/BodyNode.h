@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -47,13 +48,13 @@
 #include "dart/config.h"
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
-
+#include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/TemplatedJacobianEntity.h"
+#include "dart/dynamics/TemplatedJacobianNode.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -83,7 +84,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public SkeletonRefCountingBase,
-    public TemplatedJacobianEntity<BodyNode>
+    public TemplatedJacobianNode<BodyNode>
 {
 public:
 
@@ -562,14 +563,14 @@ public:
   const math::Jacobian& getJacobian() const override;
 
   // Prevent the inherited getJacobian functions from being shadowed
-  using TemplatedJacobianEntity<BodyNode>::getJacobian;
+  using TemplatedJacobianNode<BodyNode>::getJacobian;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the World Frame.
   const math::Jacobian& getWorldJacobian() const;
 
   // Prevent the inherited getWorldJacobian functions from being shadowed
-  using TemplatedJacobianEntity<BodyNode>::getWorldJacobian;
+  using TemplatedJacobianNode<BodyNode>::getWorldJacobian;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
@@ -582,7 +583,7 @@ public:
   const math::Jacobian& getJacobianSpatialDeriv() const override;
 
   // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
-  using TemplatedJacobianEntity<BodyNode>::getJacobianSpatialDeriv;
+  using TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv;
 
   /// Return the classical time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in the World
@@ -594,7 +595,7 @@ public:
   const math::Jacobian& getJacobianClassicDeriv() const override;
 
   // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
-  using TemplatedJacobianEntity<BodyNode>::getJacobianClassicDeriv;
+  using TemplatedJacobianNode<BodyNode>::getJacobianClassicDeriv;
 
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
@@ -749,6 +750,7 @@ public:
   friend class EndEffector;
   friend class SoftBodyNode;
   friend class PointMass;
+  friend class Node;
 
 protected:
 
@@ -960,6 +962,13 @@ protected:
 
   /// List of markers associated
   std::vector<Marker*> mMarkers;
+
+  /// Map that retrieves the cleaners for a given Node
+  std::unordered_map<Node*, std::shared_ptr<Cleaner> > mNodeMap;
+
+  /// Hold onto a reference to this BodyNode's own cleaner to make sure that it
+  /// never gets called.
+  std::shared_ptr<Cleaner> mSelfCleaner;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;

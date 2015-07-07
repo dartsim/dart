@@ -44,6 +44,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
 #include "dart/dynamics/Shape.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace renderer {
@@ -84,6 +85,14 @@ public:
 
   using VizShapeRemovedSignal = VizShapeAddedSignal;
 
+  /// Used when constructing a Frame class, because the Frame constructor will
+  /// take care of setting up the parameters you pass into it
+  enum ConstructFrame_t { ConstructFrame };
+
+  /// Used when constructing a pure abstract class, because calling the Entity
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
   struct Properties
   {
     /// Name of the Entity
@@ -99,6 +108,8 @@ public:
 
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
+
+  explicit Entity(ConstructAbstract_t);
 
   /// Destructor
   virtual ~Entity();

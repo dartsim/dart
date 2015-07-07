@@ -228,7 +228,7 @@ public:
     return *this;
   }
 
-  /// Locks the Joint reference to ensure that the references Joint is currently
+  /// Locks the Joint reference to ensure that the referenced Joint is currently
   /// still available. If the Joint is not available any longer (i.e. has been
   /// deleted), then this will return a nullptr.
   TemplateJointPtr<JointT, BodyNodeT> lock() const
