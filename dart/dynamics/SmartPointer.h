@@ -40,6 +40,7 @@
 #include "dart/dynamics/detail/BodyNodePtr.h"
 #include "dart/dynamics/detail/JointPtr.h"
 #include "dart/dynamics/detail/DegreeOfFreedomPtr.h"
+#include "dart/dynamics/detail/NodePtr.h"
 
 // This file is a lightweight means of providing the smart pointers which are
 // commonly used within the dart::dynamics namespace. It is 'lightweight' in the
@@ -161,6 +162,9 @@ DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(DegreeOfFreedom)
 // TemplateDegreeOfFreedomPtr<const DegreeOfFreedom>      --> ConstDegreeOfFreedomPtr
 // TemplateWeakDegreeOfFreedomPtr<DegreeOfFreedom>        --> WeakDegreeOfFreedomPtr
 // TemplateWeakDegreeOfFreedomPtr<const DegreeOfFreedom>  --> WeakConstDegreeOfFreedomPtr
+
+class Node;
+DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(Node)
 
 } // namespace dynamics
 } // namespace dart

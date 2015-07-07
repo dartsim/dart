@@ -47,6 +47,19 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+NodeCleaner::NodeCleaner(Node* _node)
+  : mNode(_node)
+{
+  // Do nothing
+}
+
+//==============================================================================
+NodeCleaner::~NodeCleaner()
+{
+  delete mNode;
+}
+
+//==============================================================================
 BodyNodePtr Node::getBodyNodePtr()
 {
   return mBodyNode;
@@ -73,24 +86,11 @@ bool Node::isRemoved() const
 }
 
 //==============================================================================
-Node::Cleaner::Cleaner(Node* _node)
-  : mNode(_node)
+std::shared_ptr<NodeCleaner> Node::generateCleaner()
 {
-  // Do nothing
-}
-
-//==============================================================================
-Node::Cleaner::~Cleaner()
-{
-  delete mNode;
-}
-
-//==============================================================================
-std::shared_ptr<Node::Cleaner> Node::generateCleaner()
-{
-  std::shared_ptr<Cleaner> cleaner = mCleaner.lock();
+  std::shared_ptr<NodeCleaner> cleaner = mCleaner.lock();
   if(nullptr == cleaner)
-    cleaner = std::shared_ptr<Cleaner>(new Cleaner(this));
+    cleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(this));
 
   return cleaner;
 }
@@ -132,7 +132,7 @@ void Node::attach()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<Cleaner> >::iterator it =
+  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
       mBodyNode->mNodeMap.find(this);
 
   if(mBodyNode->mNodeMap.end() == it)
@@ -150,7 +150,7 @@ void Node::stageForRemoval()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<Cleaner> >::iterator it =
+  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
       mBodyNode->mNodeMap.find(this);
 
   if(mBodyNode->mNodeMap.end() == it)

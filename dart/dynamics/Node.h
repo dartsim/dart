@@ -45,6 +45,23 @@ namespace dart {
 namespace dynamics {
 
 class BodyNode;
+class Node;
+
+class NodeCleaner final
+{
+public:
+
+  NodeCleaner(Node* _node);
+
+  NodeCleaner(const NodeCleaner& _cleaner) = delete;
+
+  ~NodeCleaner();
+
+private:
+
+  Node* mNode;
+
+};
 
 /// The Node class is a base class for any object that attaches to a BodyNode.
 /// This base class handles ownership and reference counting for the classes
@@ -54,6 +71,8 @@ class Node
 public:
 
   friend class BodyNode;
+  template<class, class> friend class TemplateNodePtr;
+  template<class, class> friend class TemplateWeakNodePtr;
 
   /// Virtual destructor
   virtual ~Node() = default;
@@ -71,23 +90,7 @@ public:
 
 private:
 
-  class Cleaner
-  {
-  public:
-
-    Cleaner(Node* _node);
-
-    Cleaner(const Cleaner& _cleaner) = delete;
-
-    ~Cleaner();
-
-  private:
-
-    Node* mNode;
-
-  };
-
-  std::shared_ptr<Cleaner> generateCleaner();
+  std::shared_ptr<NodeCleaner> generateCleaner();
 
 protected:
 
@@ -111,7 +114,7 @@ protected:
 
   void stageForRemoval();
 
-  std::weak_ptr<Cleaner> mCleaner;
+  std::weak_ptr<NodeCleaner> mCleaner;
 
   BodyNode* mBodyNode;
 

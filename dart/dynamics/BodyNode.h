@@ -964,7 +964,7 @@ protected:
   std::vector<Marker*> mMarkers;
 
   /// Map that retrieves the cleaners for a given Node
-  std::unordered_map<Node*, std::shared_ptr<Cleaner> > mNodeMap;
+  std::unordered_map<Node*, std::shared_ptr<NodeCleaner> > mNodeMap;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1114,7 +1114,7 @@ private:
 
   /// Hold onto a reference to this BodyNode's own Cleaner to make sure that it
   /// never gets destroyed.
-  std::shared_ptr<Cleaner> mSelfCleaner;
+  std::shared_ptr<NodeCleaner> mSelfCleaner;
 
 };
 

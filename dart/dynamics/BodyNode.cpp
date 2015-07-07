@@ -1081,7 +1081,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 {
   // Generate an inert cleaner to make sure that it will not try to
   // double-delete this BodyNode when it gets destroyed.
-  mSelfCleaner = std::shared_ptr<Cleaner>(new Cleaner(nullptr));
+  mSelfCleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(nullptr));
   mCleaner = mSelfCleaner;
 
   mParentJoint->mChildBodyNode = this;
