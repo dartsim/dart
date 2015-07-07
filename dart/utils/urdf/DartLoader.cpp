@@ -332,7 +332,7 @@ bool DartLoader::createSkeletonRecursive(
   if(!node)
     return false;
   
-  for(unsigned int i = 0; i < _lk->child_links.size(); ++i)
+  for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
       if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node))
         return false;
@@ -490,7 +490,7 @@ bool DartLoader::createDartNodeProperties(
   }
 
   // Set visual information
-  for(unsigned int i = 0; i < _lk->visual_array.size(); i++)
+  for(size_t i = 0; i < _lk->visual_array.size(); i++)
   {
     if(dynamics::ShapePtr shape = createShape(_lk->visual_array[i].get()))
       node->mVizShapes.push_back(shape);
@@ -499,7 +499,7 @@ bool DartLoader::createDartNodeProperties(
   }
 
   // Set collision information
-  for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
+  for(size_t i = 0; i < _lk->collision_array.size(); i++) {
     if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get()))
       node->mColShapes.push_back(shape);
     else
