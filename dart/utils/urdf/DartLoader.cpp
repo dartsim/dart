@@ -385,7 +385,19 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     singleDof.mForceUpperLimit =  _jt->limits->effort;
 
     if(_jt->limits->lower > 0 || _jt->limits->upper < 0)
-      singleDof.mRestPosition = (_jt->limits->lower + _jt->limits->upper) / 2.;
+    {
+      if(std::isfinite(_jt->limits->lower)
+         && std::isfinite(_jt->limits->upper))
+        singleDof.mRestPosition
+          = (_jt->limits->lower + _jt->limits->upper) / 2.;
+      else if(std::isfinite(_jt->limits->lower))
+        singleDof.mRestPosition = _jt->limits->lower;
+      else if(std::isfinite(_jt->limits->upper))
+        singleDof.mRestPosition = _jt->limits->upper;
+
+      // Any other case means that the limits are both +inf, both -inf, or
+      // either is NaN. This should generate a warning elsewhere.
+    }
   }
 
   if(_jt->dynamics)
