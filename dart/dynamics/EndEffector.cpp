@@ -65,6 +65,7 @@ EndEffector::~EndEffector()
 {
   size_t index = mIndexInBodyNode;
   assert(mBodyNode->mEndEffectors[index] == this);
+  mBodyNode->mEndEffectors.erase(mBodyNode->mEndEffectors.begin() + index);
 
   for(size_t i=index; i<mBodyNode->mEndEffectors.size(); ++i)
   {

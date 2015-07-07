@@ -569,10 +569,14 @@ TEST(Skeleton, NodePersistence)
       skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
 
   EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+  EXPECT_TRUE(skel->getEndEffector(0) == manip);
+  EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
 
   manip->remove();
 
   EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+  EXPECT_TRUE(skel->getNumEndEffectors() == 0);
+  EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
 }
 
 TEST(Skeleton, Referential)
