@@ -56,14 +56,17 @@ class TemplatedJacobianNode : public JacobianNode
 public:
 
   // Documentation inherited
-  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const override final;
+  math::Jacobian getJacobian(
+      const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const override final;
+  math::Jacobian getJacobian(
+      const Eigen::Vector3d& _offset) const override final;
 
   // Documentation inherited
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
-                             const Frame* _inCoordinatesOf) const override final;
+  math::Jacobian getJacobian(
+      const Eigen::Vector3d& _offset,
+      const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
