@@ -43,12 +43,12 @@ namespace dart {
 namespace dynamics {
 
 /// TemplatedJacobianNode provides a curiously recurring template pattern
-/// implementtion of the various JacobianNode non-caching functions that take
-/// in arguments. These functions are easily distinguished because they return
-/// by value instead of returning by const reference.
+/// implementtion of the various JacobianNode non-caching functions. These
+/// functions are easily distinguished because they return by value instead of
+/// returning by const reference.
 ///
 /// This style of implementation allows BodyNode and EndEffector to share the
-/// implementations of these various auxilliary Jacobian functions without any
+/// implementations of these various auxiliary Jacobian functions without any
 /// penalty from dynamic overload resolution.
 template <class EntityType>
 class TemplatedJacobianNode : public JacobianNode
@@ -56,66 +56,66 @@ class TemplatedJacobianNode : public JacobianNode
 public:
 
   // Documentation inherited
-  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const override;
+  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const override;
+  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
-                             const Frame* _inCoordinatesOf) const override;
+                             const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
-      const Eigen::Vector3d& _offset) const override;
+      const Eigen::Vector3d& _offset) const override final;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
       const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobian(
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const Frame* _inCoordinatesOf) const override;
+      const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const Eigen::Vector3d& _offset) const override;
+      const Eigen::Vector3d& _offset) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
       const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf) const override;
+      const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const Frame* _inCoordinatesOf) const override;
+      const Frame* _inCoordinatesOf) const override final;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
       const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const Eigen::Vector3d& _offset,
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobianDeriv(
-      const Frame* _inCoordinatesOf = Frame::World()) const override;
+      const Frame* _inCoordinatesOf = Frame::World()) const override final;
 
 protected:
 
