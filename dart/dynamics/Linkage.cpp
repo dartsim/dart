@@ -71,6 +71,9 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
     // Get the root BodyNode of this BodyNode's tree
     size_t treeIndex = inferStart->getTreeIndex();
     start.mNode = inferStart->getSkeleton()->getRootBodyNode(treeIndex);
+
+    if(EXCLUDE == start.mPolicy)
+      start.mPolicy = INCLUDE;
   }
 
   refreshTerminalMap();
