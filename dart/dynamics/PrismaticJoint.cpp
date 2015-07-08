@@ -127,6 +127,12 @@ const std::string& PrismaticJoint::getStaticType()
 }
 
 //==============================================================================
+bool PrismaticJoint::isCyclic(size_t _index) const
+{
+  return false;
+}
+
+//==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mPrismaticP.mAxis = _axis.normalized();

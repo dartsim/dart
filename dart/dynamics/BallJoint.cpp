@@ -71,6 +71,12 @@ const std::string& BallJoint::getStaticType()
 }
 
 //==============================================================================
+bool BallJoint::isCyclic(size_t _index) const
+{
+  return !isPositionLimited(_index);
+}
+
+//==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
   return getMultiDofJointProperties();
