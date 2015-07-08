@@ -72,8 +72,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
     size_t treeIndex = inferStart->getTreeIndex();
     start.mNode = inferStart->getSkeleton()->getRootBodyNode(treeIndex);
 
-    if(EXCLUDE == start.mPolicy)
-      start.mPolicy = INCLUDE;
+    start.mPolicy = INCLUDE;
   }
 
   refreshTerminalMap();
