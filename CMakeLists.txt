@@ -515,6 +515,9 @@ message(STATUS ${PC_CONFIG_OUT})
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
+# Install a Catkin 'package.xml' file. This is required by REP-136.
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
 #===============================================================================
 # Add sub-directories
 #===============================================================================

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dart</name>
+  <version>5.0.0</version>
+  <description>Dynamic Animation and Robotics Toolkit</description>
+  <maintainer email="jslee02@gmail.com">Jeongseok Lee</maintainer>
+  <license>BSD</license>
+  <depend>assimp</depend>
+  <depend>eigen</depend>
+  <depend>fcl</depend>
+  <depend>glut</depend>
+  <depend>libccd</depend>
+  <depend>libflann-dev</depend>
+  <depend>liburdfdom-dev</depend>
+  <depend>libxi-dev</depend>
+  <depend>libxmu-dev</depend>
+  <depend>tinyxml</depend>
+  <depend>tinyxml2</depend>
+  <!-- These are required by REP-136. -->
+  <exec_depend>catkin</exec_depend>
+  <buildtool_depend>cmake</buildtool_depend>
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>
