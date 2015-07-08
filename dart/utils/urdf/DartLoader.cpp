@@ -550,28 +550,25 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
   {
     std::string fullPath = getFullFilePath(mesh->filename);
     if (fullPath.empty())
+    {
+      dtwarn << "[DartLoader::createShape] Skipping URDF mesh with empty"
+                " filename. We are returning a nullptr.\n";
       return nullptr;
+    }
 
     const aiScene* model = dynamics::MeshShape::loadMesh( fullPath );
-    
     if(!model)
-    {
-      dtwarn << "[DartLoader::createShape] Assimp could not load a model from "
-             << "the file '" << fullPath << "'\n";
-      return nullptr;
-    }
-    else
-    {
-      shape = dynamics::ShapePtr(new dynamics::MeshShape(
-          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
-    }
+      return nullptr; // MeshShape::loadMesh logs a warning
+
+    shape = dynamics::ShapePtr(new dynamics::MeshShape(
+      Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
   }
   // Unknown geometry type
   else
   {
-    dtwarn << "[DartLoader::createShape] Unknown urdf Shape type "
-           << "(we only know of Sphere, Box, Cylinder, and Mesh). "
-           << "We are returning a nullptr." << std::endl;
+    dtwarn << "[DartLoader::createShape] Unknown URDF shape type"
+              " (we only know of Sphere, Box, Cylinder, and Mesh)."
+              " We are returning a nullptr.\n";
     return nullptr;
   }
 
