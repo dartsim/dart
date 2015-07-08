@@ -48,23 +48,40 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
 {
   std::vector<BodyNode*> bns;
 
-  if(nullptr == mStart.mNode.lock())
+  Target start = mStart;
+  if(nullptr == start.mNode.lock())
   {
-    dterr << "[Linkage::Criteria::satisfy] Must specify at least a starting "
-          << "BodyNode for the criteria!\n";
-    assert(false);
-    return bns;
+    if(mTargets.size() == 0)
+      return bns;
+
+    // If a start node is not given, then we must infer one from one of the
+    // targets. We are looking for a non-nullptr target so we can use the
+    // root BodyNode of its tree as a starting point.
+
+    size_t i=0;
+    BodyNode* inferStart = mTargets[i].mNode.lock();
+    while(nullptr == inferStart && i+1 < mTargets.size())
+    {
+      inferStart = mTargets[++i].mNode.lock();
+    }
+
+    if(nullptr == inferStart)
+      return bns;
+
+    // Get the root BodyNode of this BodyNode's tree
+    size_t treeIndex = inferStart->getTreeIndex();
+    start.mNode = inferStart->getSkeleton()->getRootBodyNode(treeIndex);
   }
 
   refreshTerminalMap();
 
-  if(EXCLUDE != mStart.mPolicy)
-    bns.push_back(mStart.mNode.lock());
-  expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
+  if(EXCLUDE != start.mPolicy)
+    bns.push_back(start.mNode.lock());
+  expansionPolicy(start.mNode.lock(), start.mPolicy, bns);
 
   for(size_t i=0; i<mTargets.size(); ++i)
   {
-    expandToTarget(mStart, mTargets[i], bns);
+    expandToTarget(start, mTargets[i], bns);
   }
 
   // Make sure each BodyNode is only included once

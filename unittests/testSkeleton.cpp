@@ -833,6 +833,10 @@ TEST(Skeleton, Linkage)
       skel->getBodyNode("c1b3"), "emptyChain");
   checkForBodyNodes(emptyChain, skel, true);
 
+  ChainPtr chainFromNull = Chain::create(nullptr, skel->getBodyNode("c1b2"),
+                                         "chainFromNull");
+  checkForBodyNodes(chainFromNull, skel, true, "c1b1");
+
   ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
