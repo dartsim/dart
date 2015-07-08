@@ -48,43 +48,45 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
 {
   std::vector<BodyNode*> bns;
 
-  Target start = mStart;
-  if(nullptr == start.mNode.lock())
+  if(nullptr == mStart.mNode.lock())
   {
     if(mTargets.size() == 0)
       return bns;
 
-    // If a start node is not given, then we must infer one from one of the
-    // targets. We are looking for a non-nullptr target so we can use the
-    // root BodyNode of its tree as a starting point.
+    refreshTerminalMap();
 
-    size_t i=0;
-    BodyNode* inferStart = mTargets[i].mNode.lock();
-    while(nullptr == inferStart && i+1 < mTargets.size())
+    // If a start node is not given, then we must treat the root node of each
+    // target as if it is a start node.
+
+    for(size_t i=0; i<mTargets.size(); ++i)
     {
-      inferStart = mTargets[++i].mNode.lock();
-    }
+      const Target& target = mTargets[i];
+      if(nullptr == target.mNode.lock())
+        continue;
 
-    if(nullptr == inferStart)
-      return bns;
+      BodyNode* target_bn = target.mNode.lock();
 
-    // Get the root BodyNode of this BodyNode's tree
-    size_t treeIndex = inferStart->getTreeIndex();
-    start.mNode = inferStart->getSkeleton()->getRootBodyNode(treeIndex);
-
-    if(EXCLUDE == start.mPolicy)
+      Target start = mStart;
       start.mPolicy = INCLUDE;
+
+      size_t treeIndex = target_bn->getTreeIndex();
+      start.mNode = target_bn->getSkeleton()->getRootBodyNode(treeIndex);
+
+      expandToTarget(start, target, bns);
+    }
   }
-
-  refreshTerminalMap();
-
-  if(EXCLUDE != start.mPolicy)
-    bns.push_back(start.mNode.lock());
-  expansionPolicy(start.mNode.lock(), start.mPolicy, bns);
-
-  for(size_t i=0; i<mTargets.size(); ++i)
+  else
   {
-    expandToTarget(start, mTargets[i], bns);
+    refreshTerminalMap();
+
+    if(EXCLUDE != mStart.mPolicy)
+      bns.push_back(mStart.mNode.lock());
+    expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
+
+    for(size_t i=0; i<mTargets.size(); ++i)
+    {
+      expandToTarget(mStart, mTargets[i], bns);
+    }
   }
 
   // Make sure each BodyNode is only included once
