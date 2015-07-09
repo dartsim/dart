@@ -18,8 +18,11 @@ if(WIN32)
 endif()
 
 #===============================================================================
-# Poject settings
+# Project settings
 #===============================================================================
+#
+# If you change the version, please update the <version> tag in package.xml.
+
 project(dart)
 
 set(DART_MAJOR_VERSION "5")
@@ -79,6 +82,9 @@ endif()
 #===============================================================================
 # Find dependencies
 #===============================================================================
+#
+# If you add a dependency, please add the corresponding rosdep key as a
+# dependency in package.xml.
 
 #------------------------
 # Mandatory dependencies
