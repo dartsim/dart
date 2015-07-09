@@ -588,6 +588,20 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
+bool MultiDofJoint<DOF>::isPositionLimited(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(isPositionLimited, _index);
+    return true;
+  }
+
+  return !(std::isinf(mMultiDofP.mPositionUpperLimits[_index])
+        && std::isinf(mMultiDofP.mPositionLowerLimits[_index]));
+}
+
+//==============================================================================
+template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
 {
   if (_index >= getNumDofs())

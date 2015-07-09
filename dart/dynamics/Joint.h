@@ -347,6 +347,12 @@ public:
   /// Get upper limit for position
   virtual double getPositionUpperLimit(size_t _index) const = 0;
 
+  /// Gets whether a generalized coordinate is cyclic; i.e. has SO(2) topology.
+  virtual bool isCyclic(size_t _index) const = 0;
+
+  /// Gets whether the position of a generalized coordinate is limited.
+  virtual bool isPositionLimited(size_t _index) const = 0;
+
   /// \}
 
   //----------------------------------------------------------------------------
