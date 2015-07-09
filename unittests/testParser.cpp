@@ -237,6 +237,10 @@ TEST(Parser, PlanarJoint)
   EXPECT_EQ(planarJoint4->getRotationalAxis(), Eigen::Vector3d::UnitZ());
 
   EXPECT_EQ(planarJoint1->getPositions(), Eigen::Vector3d(1, 2, 3));
+  std::cout << "positions (" << planarJoint1->getPositions().size()
+            << "): " << planarJoint1->getPositions().transpose() << std::endl;
+  std::cout << "initial positions: (" << planarJoint1->getInitialPositions().size()
+            << "): " << planarJoint1->getInitialPositions().transpose() << std::endl;
   EXPECT_EQ(planarJoint2->getPositions(), Eigen::Vector3d(1, 2, 3));
   EXPECT_EQ(planarJoint3->getPositions(), Eigen::Vector3d(1, 2, 3));
   EXPECT_EQ(planarJoint4->getPositions(), Eigen::Vector3d(1, 2, 3));

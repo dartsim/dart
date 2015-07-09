@@ -332,9 +332,6 @@ public:
   /// Get the positions of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getPositions() const = 0;
 
-  /// Set the positions of all generalized coordinates in this Joint to zero
-  virtual void resetPositions() = 0;
-
   /// Set lower limit for position
   virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
 
@@ -346,6 +343,27 @@ public:
 
   /// Get upper limit for position
   virtual double getPositionUpperLimit(size_t _index) const = 0;
+
+  /// Set the position of this generalized coordinate to its initial position
+  virtual void resetPosition(size_t _index) = 0;
+
+  /// Set the positions of all generalized coordinates in this Joint to their
+  /// initial positions
+  virtual void resetPositions() = 0;
+
+  /// Change the position that resetPositions() will give to this coordinate
+  virtual void setInitialPosition(size_t _index, double _initial) = 0;
+
+  /// Get the position that resetPosition() will give to this coordinate
+  virtual double getInitialPosition(size_t _index) const = 0;
+
+  /// Change the positions that resetPositions() will give to this Joint's
+  /// coordinates
+  virtual void setInitialPositions(const Eigen::VectorXd& _initial) = 0;
+
+  /// Get the positions that resetPositions() will give to this Joint's
+  /// coordinates
+  virtual Eigen::VectorXd getInitialPositions() const = 0;
 
   /// \}
 
@@ -365,9 +383,6 @@ public:
   /// Get the velocities of all generalized coordinates in this Joint
   virtual Eigen::VectorXd getVelocities() const = 0;
 
-  /// Set the velocities of all generalized coordinates in this Joint to zero
-  virtual void resetVelocities() = 0;
-
   /// Set lower limit for velocity
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
 
@@ -379,6 +394,28 @@ public:
 
   /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(size_t _index) const = 0;
+
+  /// Set the velocity of a generalized coordinate in this Joint to its initial
+  /// velocity
+  virtual void resetVelocity(size_t _index) = 0;
+
+  /// Set the velocities of all generalized coordinates in this Joint to their
+  /// initial velocities
+  virtual void resetVelocities() = 0;
+
+  /// Change the velocity that resetVelocity() will give to this coordinate
+  virtual void setInitialVelocity(size_t _index, double _initial) = 0;
+
+  /// Get the velocity that resetVelocity() will give to this coordinate
+  virtual double getInitialVelocity(size_t _index) const = 0;
+
+  /// Change the velocities that resetVelocities() will give to this Joint's
+  /// coordinates
+  virtual void setInitialVelocities(const Eigen::VectorXd& _initial) = 0;
+
+  /// Get the velocities that resetVelocities() will give to this Joint's
+  /// coordinates
+  virtual Eigen::VectorXd getInitialVelocities() const = 0;
 
   /// \}
 

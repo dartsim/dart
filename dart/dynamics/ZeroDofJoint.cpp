@@ -192,12 +192,6 @@ Eigen::VectorXd ZeroDofJoint::getPositions() const
 }
 
 //==============================================================================
-void ZeroDofJoint::resetPositions()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void ZeroDofJoint::setPositionLowerLimit(size_t _index, double _position)
 {
   // Do nothing
@@ -219,6 +213,42 @@ void ZeroDofJoint::setPositionUpperLimit(size_t _index, double _position)
 double ZeroDofJoint::getPositionUpperLimit(size_t _index) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::resetPosition(size_t _index)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::resetPositions()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::setInitialPosition(size_t _index, double _initial)
+{
+  // Do nothing
+}
+
+//==============================================================================
+double ZeroDofJoint::getInitialPosition(size_t _index) const
+{
+  return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setInitialPositions(const Eigen::VectorXd& _initial)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getInitialPositions() const
+{
+  return Eigen::VectorXd();
 }
 
 //==============================================================================
@@ -247,12 +277,6 @@ Eigen::VectorXd ZeroDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void ZeroDofJoint::resetVelocities()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void ZeroDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   // Do nothing
@@ -274,6 +298,42 @@ void ZeroDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
 double ZeroDofJoint::getVelocityUpperLimit(size_t _index) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::resetVelocity(size_t _index)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::resetVelocities()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::setInitialVelocity(size_t _index, double _initial)
+{
+  // Do nothing
+}
+
+//==============================================================================
+double ZeroDofJoint::getInitialVelocity(size_t _index) const
+{
+  return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setInitialVelocities(const Eigen::VectorXd& _initial)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getInitialVelocities() const
+{
+  return Eigen::VectorXd();
 }
 
 //==============================================================================
