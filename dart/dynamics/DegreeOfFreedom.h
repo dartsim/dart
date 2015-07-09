@@ -159,6 +159,12 @@ public:
   /// Get the upper position limit of this DegreeOfFreedom
   double getPositionUpperLimit() const;
 
+  /// Gets whether a DegreeOfFreedom has SO(2) topology.
+  bool isCyclic() const;
+
+  /// Gets whether the position of this DegreeOfFreedom has limits.
+  bool hasPositionLimit() const;
+
   /// \}
 
   //----------------------------------------------------------------------------
