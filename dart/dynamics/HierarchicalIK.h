@@ -51,13 +51,13 @@ class HierarchicalIK : public common::Subject
 {
 public:
 
-  HierarchicalIK(const SkeletonPtr& _skeleton);
-
   virtual ~HierarchicalIK();
 
   const Eigen::VectorXd& solve();
 
-  std::unique_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const = 0;
+  SkeletonPtr getSkeleton() const;
+
+  virtual std::shared_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const = 0;
 
   class Function
   {
@@ -94,38 +94,71 @@ public:
 
   std::shared_ptr<const optimizer::Solver> getSolver() const;
 
-  SkeletonPtr getSkeleton();
-
-  ConstSkeletonPtr getSkeleton() const;
-
   void setConfiguration(const Eigen::VectorXd& _q);
+
+  virtual void refreshIKs() = 0;
 
   virtual const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const = 0;
 
 protected:
+
+  HierarchicalIK(const SkeletonPtr& _skeleton);
 
   WeakSkeletonPtr mSkeleton;
 
 };
 
 /// The CompositeIK class allows you to specify an arbitrary hierarchy of
-/// InverseKinematics modules for a single Skeleton
+/// InverseKinematics modules for a single Skeleton. Simply add in each IK
+/// module that should be used.
 class CompositeIK : public HierarchicalIK
 {
 public:
 
+  static std::shared_ptr<CompositeIK> create(const SkeletonPtr& _skel);
+
+  std::shared_ptr<HierarchicalIK> clone(
+      const SkeletonPtr &_newSkel) const override;
+
+  virtual std::shared_ptr<CompositeIK> cloneCompositeIK(
+      const SkeletonPtr& _newSkel) const;
+
+  /// Add an IK module to this CompositeIK. This function will return true if
+  /// the module belongs to the Skeleton that this CompositeIK is associated
+  /// with, otherwise it will return false.
+  bool addIK(const InverseKinematicsPtr& _ik);
+
+  void refreshIKs() override;
+
   const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
+
+protected:
+
+  CompositeIK(const SkeletonPtr& _skel);
 };
 
 /// The WholeBodyIK class provides an interface for simultaneously solving all
 /// the IK constraints of all BodyNodes and EndEffectors belonging to a single
-/// Skeleton
+/// Skeleton.
 class WholeBodyIK : public HierarchicalIK
 {
 public:
 
+  static std::shared_ptr<WholeBodyIK> create(const SkeletonPtr& _skel);
+
+  std::shared_ptr<HierarchicalIK> clone(
+      const SkeletonPtr &_newSkel) const override;
+
+  virtual std::shared_ptr<WholeBodyIK> cloneWholeBodyIK(
+      const SkeletonPtr& _newSkel) const;
+
+  void refreshIKs() override;
+
   const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
 
+protected:
+
+  WholeBodyIK(const SkeletonPtr& _skel);
 };
 
 } // namespace dynamics
