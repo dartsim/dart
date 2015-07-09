@@ -129,7 +129,7 @@ const std::string& EulerJoint::getStaticType()
 //==============================================================================
 bool EulerJoint::isCyclic(size_t _index) const
 {
-  return !isPositionLimited(_index);
+  return !hasPositionLimit(_index);
 }
 
 //==============================================================================

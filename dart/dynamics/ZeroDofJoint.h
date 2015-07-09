@@ -145,7 +145,7 @@ public:
   virtual double getPositionUpperLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual bool isPositionLimited(size_t _index) const override;
+  virtual bool hasPositionLimit(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Velocity

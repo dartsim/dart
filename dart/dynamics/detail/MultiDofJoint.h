@@ -588,11 +588,11 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-bool MultiDofJoint<DOF>::isPositionLimited(size_t _index) const
+bool MultiDofJoint<DOF>::hasPositionLimit(size_t _index) const
 {
   if (_index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(isPositionLimited, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(hasPositionLimit, _index);
     return true;
   }
 

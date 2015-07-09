@@ -474,11 +474,11 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
-bool SingleDofJoint::isPositionLimited(size_t _index) const
+bool SingleDofJoint::hasPositionLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( isPositionLimited, _index );
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( hasPositionLimit, _index );
     return true;
   }
 

@@ -222,7 +222,7 @@ double ZeroDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
-bool ZeroDofJoint::isPositionLimited(size_t _index) const
+bool ZeroDofJoint::hasPositionLimit(size_t _index) const
 {
   return true;
 }

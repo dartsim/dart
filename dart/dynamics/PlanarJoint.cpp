@@ -215,7 +215,7 @@ const std::string& PlanarJoint::getStaticType()
 //==============================================================================
 bool PlanarJoint::isCyclic(size_t _index) const
 {
-  return _index == 2 && !isPositionLimited(_index);
+  return _index == 2 && !hasPositionLimit(_index);
 }
 
 //==============================================================================

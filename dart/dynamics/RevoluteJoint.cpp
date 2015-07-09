@@ -123,7 +123,7 @@ const std::string& RevoluteJoint::getType() const
 //==============================================================================
 bool RevoluteJoint::isCyclic(size_t _index) const
 {
-  return !isPositionLimited(_index);
+  return !hasPositionLimit(_index);
 }
 
 //==============================================================================

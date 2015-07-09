@@ -154,7 +154,7 @@ const std::string& FreeJoint::getStaticType()
 //==============================================================================
 bool FreeJoint::isCyclic(size_t _index) const
 {
-  return _index < 3 && !isPositionLimited(_index);
+  return _index < 3 && !hasPositionLimit(_index);
 }
 
 //==============================================================================
