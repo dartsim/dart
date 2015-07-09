@@ -38,17 +38,17 @@
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_H_
 
 #include <memory>
-#include "dart/dynamics/detail/BodyNodePtr.h"
+#include "dart/dynamics/detail/NodePtr.h"
 
 namespace dart {
 namespace dynamics {
 
 /// TemplateInverseKinematicsPtr is a templated class that enables users to
 /// create a reference-counting InverseKinematicsPtr. Holding onto an
-/// InverseKinematicsPtr will ensure that the BodyNode associated with the
+/// InverseKinematicsPtr will ensure that the JacobianNode associated with the
 /// InverseKinematics module will not get deleted, and will keep the
 /// InverseKinematics reference valid.
-template <class InverseKinematicsT, class BodyNodeT>
+template <class InverseKinematicsT, class JacobianNodePtrT>
 class TemplateInverseKinematicsPtr
 {
 public:
@@ -57,22 +57,25 @@ public:
 
   typedef InverseKinematicsT element_type;
 
-  /// Default constructor
-  TemplateInverseKinematicsPtr() = default;
-
-  /// Typical constructor
+  /// Constructor that accepts a shared_ptr
   TemplateInverseKinematicsPtr(const std::shared_ptr<element_type>& _sptr)
   {
     set(_sptr);
   }
 
+  /// Default constructor
+  TemplateInverseKinematicsPtr() = default;
+
   /// Constructor that takes in a strong InverseKinematicsPtr
-  template <class OtherIkT, class OtherBodyNodeT>
+  template <class OtherIkT, class OtherJacNodePtrT>
   TemplateInverseKinematicsPtr(
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherBodyNodeT>& _ptr)
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodePtrT>& _ptr)
   {
     set(_ptr.mIK);
   }
+
+  /// Implicit conversion to regular shared_ptr
+  operator std::shared_ptr<element_type>() const { return mIK; }
 
   /// Constructor that takes in a shared_ptr
   template <class OtherIkT>
@@ -82,25 +85,13 @@ public:
   }
 
   /// Assignment operator
-  template <class OtherIkT, class OtherBodyNodeT>
+  template <class OtherIkT, class OtherJacNodePtrT>
   TemplateInverseKinematicsPtr& operator = (
-      const TemplateInverseKinematicsPtr<OtherIkT, OtherBodyNodeT>& _ptr)
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodePtrT>& _ptr)
   {
     set(_ptr.mIK);
     return *this;
   }
-
-  /// Assignment operator that takes in a shared_ptr
-  template <class OtherIkT>
-  TemplateInverseKinematicsPtr& operator = (
-      const std::shared_ptr<OtherIkT>& _sptr)
-  {
-    set(_sptr);
-    return *this;
-  }
-
-  /// Implicit conversion to a regular shared_ptr
-  operator std::shared_ptr<element_type>() const { return mIK; }
 
   /// Dereferencing operator
   element_type& operator*() const { return *get(); }
@@ -111,30 +102,41 @@ public:
   /// Get the raw pointer
   element_type* get() const
   {
-    if(nullptr == mBodyNodePtr)
+    if(nullptr == mJacNodePtr)
       return nullptr;
 
     return mIK.get();
   }
 
-  /// Set the InverseKinematics module for this InverseKinematicsPtr
+  /// Get the shared_ptr held by this InverseKinematicsPtr
+  std::shared_ptr<element_type> get_shared() const
+  {
+    if(nullptr == mJacNodePtr)
+      return nullptr;
+
+    return mIK;
+  }
+
+  /// Set the InverseKinematics module for this InverseKinematicsPtr from a
+  /// shared_ptr
   void set(const std::shared_ptr<InverseKinematicsT>& _sptr)
   {
     if(nullptr == _sptr)
     {
       mIK = nullptr;
-      mBodyNodePtr = nullptr;
+      mJacNodePtr = nullptr;
       return;
     }
 
-    mBodyNodePtr = _sptr->getEntity()->getBodyNodePtr();
+    mJacNodePtr = _sptr->getEntity();
+    mIK = _sptr;
   }
 
 protected:
 
   std::shared_ptr<element_type> mIK;
 
-  TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+  JacobianNodePtrT mJacNodePtr;
 
 };
 
@@ -142,8 +144,8 @@ protected:
 /// create a non-reference-holding WeakInverseKinematicsPtr. Holding onto a
 /// WeakInverseKinematicsPtr will NOT prevent anything from getting deleted, but
 /// you can use lock() to check whether the InverseKinematics module and its
-/// associated BodyNode still exists.
-template <class InverseKinematicsT, class BodyNodeT>
+/// associated JacobianNode still exists.
+template <class InverseKinematicsT, class JacobianNodePtrT>
 class TemplateWeakInverseKinematicsPtr
 {
 public:
@@ -173,52 +175,38 @@ public:
   /// Locks the InverseKinematics module to ensure that the referenced module is
   /// currently still available. If the module is not available any longer (i.e.
   /// has been deleted), then this will return a nullptr.
-  TemplateInverseKinematicsPtr<InverseKinematicsT, BodyNodeT> lock() const
+  TemplateInverseKinematicsPtr<InverseKinematicsT, JacobianNodePtrT> lock() const
   {
-    TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
-    if(nullptr == bodyNode)
+    JacobianNodePtrT jacNode = mWeakJacNode.lock();
+    if(nullptr == jacNode)
       return nullptr;
 
-    return TemplateInverseKinematicsPtr<InverseKinematicsT, BodyNodeT>(
+    return TemplateInverseKinematicsPtr<InverseKinematicsT, JacobianNodePtrT>(
           mWeakIK.lock());
   }
 
-  /// Set using a shared_ptr
-  void set(const std::shared_ptr<InverseKinematicsT>& _sptr)
-  {
-    if(nullptr == _sptr)
-    {
-      mWeakIK = nullptr;
-      mWeakBodyNode = nullptr;
-      return;
-    }
-
-    mWeakIK = _sptr;
-    mWeakBodyNode = _sptr->getEntity()->getBodyNodePtr();
-  }
-
   /// Set using a strong pointer
-  template <class OtherIkT, class OtherBodyNodeT>
-  void set(const TemplateInverseKinematicsPtr<OtherIkT, OtherBodyNodeT>& _ptr)
+  template <class OtherIkT, class OtherJacNodePtrT>
+  void set(const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodePtrT>& _ptr)
   {
     if(nullptr == _ptr)
     {
       mWeakIK = nullptr;
-      mWeakBodyNode = nullptr;
+      mWeakJacNode = nullptr;
       return;
     }
 
     mWeakIK = _ptr.get();
-    mWeakBodyNode = _ptr.get()->getEntity()->getBodyNodePtr();
+    mWeakJacNode = _ptr.get()->getEntity();
   }
 
   /// Set using a weak pointer
-  template <class OtherIkT, class OtherBodyNodeT>
+  template <class OtherIkT, class OtherJacNodeT>
   void set(const TemplateWeakInverseKinematicsPtr<
-           OtherIkT, OtherBodyNodeT>& _ptr)
+           OtherIkT, OtherJacNodeT>& _ptr)
   {
     mWeakIK = _ptr.mWeakIK;
-    mWeakBodyNode = _ptr.mWeakBodyNode;
+    mWeakJacNode = _ptr.mWeakJacNode;
   }
 
 protected:
@@ -226,8 +214,8 @@ protected:
   /// Weak pointer to the IK module
   std::weak_ptr<InverseKinematicsT> mWeakIK;
 
-  /// Weak pointer to the BodyNode
-  TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
+  /// Weak pointer to the JacobianNode
+  JacobianNodePtrT mWeakJacNode;
 
 };
 

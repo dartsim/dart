@@ -35,6 +35,7 @@
  */
 
 #include "dart/dynamics/JacobianNode.h"
+#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/InverseKinematics.h"
 
 namespace dart {
@@ -70,10 +71,10 @@ std::shared_ptr<const InverseKinematics> JacobianNode::getIK() const
   return const_cast<JacobianNode*>(this)->getIK(false);
 }
 
-InverseKinematics* JacobianNode::createIK()
+std::shared_ptr<InverseKinematics> JacobianNode::createIK()
 {
-  mIK = std::shared_ptr<InverseKinematics>(new InverseKinematics(this));
-  return mIK.get();
+  mIK = InverseKinematics::create(this);
+  return mIK;
 }
 
 //==============================================================================

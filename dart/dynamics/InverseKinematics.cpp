@@ -35,21 +35,17 @@
  */
 
 #include "dart/dynamics/InverseKinematics.h"
+#include "dart/dynamics/BodyNode.h"
 #include "DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-InverseKinematics::InverseKinematics(JacobianNode* _entity)
-  : mActive(false),
-    mHierarchyLevel(0),
-    mOffset(Eigen::Vector3d::Zero()),
-    mHasOffset(false),
-    mEntity(_entity)
-
+InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node)
 {
-  initialize();
+  return InverseKinematicsPtr(std::shared_ptr<InverseKinematics>(
+                                new InverseKinematics(_node)));
 }
 
 //==============================================================================
@@ -84,7 +80,7 @@ std::shared_ptr<optimizer::Function> cloneIkFunc(
 }
 
 //==============================================================================
-std::shared_ptr<InverseKinematics> InverseKinematics::clone(
+InverseKinematicsPtr InverseKinematics::clone(
     JacobianNode* _newEntity) const
 {
   std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newEntity));
@@ -935,6 +931,18 @@ void InverseKinematics::clearCaches()
 {
   mErrorMethod->clearCache();
   mGradientMethod->clearCache();
+}
+
+//==============================================================================
+InverseKinematics::InverseKinematics(JacobianNode* _node)
+  : mActive(false),
+    mHierarchyLevel(0),
+    mOffset(Eigen::Vector3d::Zero()),
+    mHasOffset(false),
+    mEntity(_node)
+
+{
+  initialize();
 }
 
 //==============================================================================

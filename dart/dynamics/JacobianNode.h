@@ -77,7 +77,7 @@ public:
 
   /// Create a new IK module for this Entity. If an IK module already exists in
   /// this Entity, it will be destroyed and replaced by a brand new one.
-  InverseKinematics* createIK();
+  std::shared_ptr<InverseKinematics> createIK();
 
   /// Wipe away the IK module for this Entity, leaving it as a nullptr.
   void clearIK();

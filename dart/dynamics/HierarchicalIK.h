@@ -51,13 +51,13 @@ class HierarchicalIK : public common::Subject
 {
 public:
 
-  HierarchicalIK(const SkeletonPtr& _skeleton = nullptr);
+  HierarchicalIK(const SkeletonPtr& _skeleton);
 
   virtual ~HierarchicalIK();
 
   const Eigen::VectorXd& solve();
 
-  std::unique_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const;
+  std::unique_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const = 0;
 
   class Function
   {
@@ -100,7 +100,31 @@ public:
 
   void setConfiguration(const Eigen::VectorXd& _q);
 
+  virtual const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const = 0;
 
+protected:
+
+  WeakSkeletonPtr mSkeleton;
+
+};
+
+/// The CompositeIK class allows you to specify an arbitrary hierarchy of
+/// InverseKinematics modules for a single Skeleton
+class CompositeIK : public HierarchicalIK
+{
+public:
+
+  const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
+};
+
+/// The WholeBodyIK class provides an interface for simultaneously solving all
+/// the IK constraints of all BodyNodes and EndEffectors belonging to a single
+/// Skeleton
+class WholeBodyIK : public HierarchicalIK
+{
+public:
+
+  const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
 
 };
 

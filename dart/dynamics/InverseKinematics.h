@@ -77,13 +77,20 @@ class InverseKinematics : public common::Subject
 {
 public:
 
-  InverseKinematics(JacobianNode* _entity);
+  /// Create an InverseKinematics module for a specified node
+  static InverseKinematicsPtr create(JacobianNode* _node);
+
+  /// Copying is not allowed
+  InverseKinematics(const InverseKinematics&) = delete;
+
+  /// Assignment is not allowed
+  InverseKinematics& operator = (const InverseKinematics&) = delete;
 
   virtual ~InverseKinematics();
 
   const Eigen::VectorXd& solve();
 
-  std::shared_ptr<InverseKinematics> clone(JacobianNode* _newEntity) const;
+  InverseKinematicsPtr clone(JacobianNode* _newEntity) const;
 
   /// This class should be inherited by optimizer::Function classes that have a
   /// dependency on the InverseKinematics module that they belong to. If you
@@ -425,6 +432,9 @@ public:
   void clearCaches();
 
 protected:
+
+  /// Constructor that accepts a JacobianNode
+  InverseKinematics(JacobianNode* _node);
 
   class Objective : public Function, public optimizer::Function
   {
