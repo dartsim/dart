@@ -5,6 +5,8 @@
   <description>Dynamic Animation and Robotics Toolkit</description>
   <maintainer email="jslee02@gmail.com">Jeongseok Lee</maintainer>
   <license>BSD</license>
+  <buildtool_depend>cmake</buildtool_depend>
+  <buildtool_depend>pkg-config</buildtool_depend>
   <depend>assimp</depend>
   <depend>eigen</depend>
   <depend>fcl</depend>
@@ -18,7 +20,6 @@
   <depend>tinyxml2</depend>
   <!-- These are required by REP-136. -->
   <exec_depend>catkin</exec_depend>
-  <buildtool_depend>cmake</buildtool_depend>
   <export>
     <build_type>cmake</build_type>
   </export>
