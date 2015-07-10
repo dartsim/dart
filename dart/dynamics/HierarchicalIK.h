@@ -42,6 +42,13 @@
 namespace dart {
 namespace dynamics {
 
+/// An IKHierarchy is a sorted set of IK modules. The outer vector represents
+/// the precedence of the IK modules. Modules with the same precedence will have
+/// their gradients added. Precedence of the modules decreases as the index of
+/// the outer vector increases. Modules with lower precedence will be projected
+/// through the null spaces of modules with higher precedence.
+typedef std::vector< std::vector< std::shared_ptr<InverseKinematics> > > IKHierarchy;
+
 /// The HierarchicalIK class provides a convenient way of setting up a
 /// hierarchical inverse kinematics optimization problem which combines several
 /// InverseKinematics problems into one. InverseKinematics problems with a
@@ -51,11 +58,9 @@ class HierarchicalIK : public common::Subject
 {
 public:
 
-  virtual ~HierarchicalIK();
+  virtual ~HierarchicalIK() = default;
 
   const Eigen::VectorXd& solve();
-
-  SkeletonPtr getSkeleton() const;
 
   virtual std::shared_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const = 0;
 
@@ -94,17 +99,64 @@ public:
 
   std::shared_ptr<const optimizer::Solver> getSolver() const;
 
+  virtual void refreshIKHierarchy() = 0;
+
+  virtual const IKHierarchy& getIKHierarchy() const = 0;
+
+  const std::vector<math::Jacobian>& computeNullSpaces() const;
+
   void setConfiguration(const Eigen::VectorXd& _q);
 
-  virtual void refreshIKs() = 0;
+  SkeletonPtr getObject();
 
-  virtual const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const = 0;
+  ConstSkeletonPtr getObject() const;
 
 protected:
+
+  class Objective : public Function, public optimizer::Function
+  {
+  public:
+
+    Objective(HierarchicalIK* _ik);
+
+    optimizer::FunctionPtr clone(HierarchicalIK *_newIK) const override;
+
+    double eval(const Eigen::VectorXd &_x) override;
+
+    void evalGradient(const Eigen::VectorXd& _x,
+                      Eigen::Map<Eigen::VectorXd> _grad) override;
+
+    virtual ~Objective() = default;
+
+  protected:
+
+    sub_ptr<HierarchicalIK> mIK;
+
+  };
+
+  class Constraint : public Function, public optimizer::Function
+  {
+    Constraint(HierarchicalIK* _ik);
+
+    optimizer::FunctionPtr clone(HierarchicalIK *_newIK) const override;
+
+    double eval(const Eigen::VectorXd& _x) override;
+
+    void evalGradient(const Eigen::VectorXd& _x,
+                      Eigen::Map<Eigen::VectorXd> _grad) override;
+
+    virtual ~Constraint() = default;
+
+  protected:
+
+    sub_ptr<InverseKinematics> mIK;
+  };
 
   HierarchicalIK(const SkeletonPtr& _skeleton);
 
   WeakSkeletonPtr mSkeleton;
+
+  mutable std::vector<Eigen::MatrixXd> mNullSpaceCache;
 
 };
 
@@ -126,15 +178,17 @@ public:
   /// Add an IK module to this CompositeIK. This function will return true if
   /// the module belongs to the Skeleton that this CompositeIK is associated
   /// with, otherwise it will return false.
-  bool addIK(const InverseKinematicsPtr& _ik);
+  bool addIK(const std::shared_ptr<InverseKinematics>& _ik);
 
-  void refreshIKs() override;
+  void refreshIKHierarchy() override;
 
-  const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
+  const IKHierarchy& getIKHierarchy() const override;
 
 protected:
 
   CompositeIK(const SkeletonPtr& _skel);
+
+  std::set< std::shared_ptr<InverseKinematics> > mModuleSet;
 };
 
 /// The WholeBodyIK class provides an interface for simultaneously solving all
@@ -152,9 +206,9 @@ public:
   virtual std::shared_ptr<WholeBodyIK> cloneWholeBodyIK(
       const SkeletonPtr& _newSkel) const;
 
-  void refreshIKs() override;
+  void refreshIKHierarchy() override;
 
-  const std::vector< std::shared_ptr<InverseKinematics> >& getIKs() const override;
+  const IKHierarchy& getIKHierarchy() const override;
 
 protected:
 

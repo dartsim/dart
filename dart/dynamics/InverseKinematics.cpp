@@ -152,8 +152,8 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::computeError(
     dterr << "[InverseKinematics::ErrorMethod::computeError] Mismatch between "
           << "configuration size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() <<"]."
-          << "\nSkeleton name: " << mIK->getEntity()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getEntity()->getName()
+          << "\nSkeleton name: " << mIK->getObject()->getSkeleton()->getName()
+          << "\nBody name: " << mIK->getObject()->getName()
           << "\nMethod name: " << mMethodName << "\n";
     mLastError.setZero();
     return mLastError;
@@ -361,7 +361,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
       this->mIK->getTarget()->getRelativeTransform();
   // Use the actual transform with respect to the target's reference frame
   const Eigen::Isometry3d& actualTf =
-      this->mIK->getEntity()->getTransform(
+      this->mIK->getObject()->getTransform(
         this->mIK->getTarget()->getParentFrame());
 
   // ^ This scheme makes it so that the bounds are expressed in the reference
@@ -453,8 +453,8 @@ void InverseKinematics::GradientMethod::computeGradient(
     dterr << "[InverseKinematics::GradientMethod::computeGradient] Mismatch "
           << "between configuration size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
-          << "\nSkeleton name: " << mIK->getEntity()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getEntity()->getName()
+          << "\nSkeleton name: " << mIK->getObject()->getSkeleton()->getName()
+          << "\nBody name: " << mIK->getObject()->getName()
           << "\nMethod name: " << mMethodName << "\n";
     assert(false);
     mLastGradient.resize(_q.size());
@@ -877,13 +877,13 @@ std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const
 }
 
 //==============================================================================
-JacobianNode* InverseKinematics::getEntity()
+JacobianNode* InverseKinematics::getObject()
 {
   return mEntity;
 }
 
 //==============================================================================
-const JacobianNode* InverseKinematics::getEntity() const
+const JacobianNode* InverseKinematics::getObject() const
 {
   return mEntity;
 }
@@ -894,8 +894,8 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
   // TODO(MXG): Test whether we can safely use a const reference here instead of
   // just a regular const
   const math::Jacobian fullJacobian = hasOffset()?
-        getEntity()->getWorldJacobian(mOffset) :
-        this->getEntity()->getWorldJacobian();
+        getObject()->getWorldJacobian(mOffset) :
+        this->getObject()->getWorldJacobian();
 
   mJacobian.resize(6, this->getDofs().size());
 
@@ -922,7 +922,7 @@ void InverseKinematics::setConfiguration(const Eigen::VectorXd& _q)
     return;
   }
 
-  dart::dynamics::SkeletonPtr skel = this->getEntity()->getSkeleton();
+  dart::dynamics::SkeletonPtr skel = this->getObject()->getSkeleton();
   skel->setPositions(mDofs, _q);
 }
 

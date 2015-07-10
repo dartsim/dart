@@ -421,9 +421,9 @@ public:
 
   std::shared_ptr<const SimpleFrame> getTarget() const;
 
-  JacobianNode* getEntity();
+  JacobianNode* getObject();
 
-  const JacobianNode* getEntity() const;
+  const JacobianNode* getObject() const;
 
   const math::Jacobian& computeJacobian() const;
 
@@ -433,9 +433,11 @@ public:
 
 protected:
 
-  /// Constructor that accepts a JacobianNode
-  InverseKinematics(JacobianNode* _node);
-
+  /// The InverseKinematics::Objective Function is simply used to merge the
+  /// objective and null space objective functions that are being held by an
+  /// InverseKinematics module. This class is not meant to be extended or
+  /// instantiated by a user. Call InverseKinematics::resetProblem() to set
+  /// the objective of the module's Problem to an InverseKinematics::Objective.
   class Objective : public Function, public optimizer::Function
   {
   public:
@@ -462,6 +464,12 @@ protected:
     Eigen::MatrixXd mNullSpaceCache;
   };
 
+  /// The InverseKinematics::Constraint Function is simply meant to be used to
+  /// merge the ErrorMethod and GradientMethod that are being held by an
+  /// InverseKinematics module. This class is not meant to be extended or
+  /// instantiated by a user. Call InverseKinematics::resetProblem() to set the
+  /// first equality constraint of the module's Problem to an
+  /// InverseKinematics::Constraint.
   class Constraint : public Function, public optimizer::Function
   {
   public:
@@ -481,6 +489,9 @@ protected:
 
     sub_ptr<InverseKinematics> mIK;
   };
+
+  /// Constructor that accepts a JacobianNode
+  InverseKinematics(JacobianNode* _node);
 
   /// Gets called during construction
   void initialize();
