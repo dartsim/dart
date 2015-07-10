@@ -44,7 +44,8 @@ simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename,
   }
   catch(std::exception const& e)
   {
-      std::cout << "LoadFile Fails: " << e.what() << std::endl;
+      dtwarn << "[SdfParser::readSdfFile] Loading file [" << _filename
+             << "] failed: " << e.what() << "\n";
       return nullptr;
   }
 
@@ -62,10 +63,9 @@ simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename,
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
   {
-    dterr << "The file format of ["
-          << _filename
-          << "] is not sdf 1.4 or 1.5."
-          << std::endl;
+    dtwarn << "[SdfParser::readSdfFile] The file format of [" << _filename
+           << "] was found to be [" << version << "], but we only support SDF "
+           << "1.4 and 1.5!\n";
     return nullptr;
   }
 
@@ -105,7 +105,8 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   }
   catch(std::exception const& e)
   {
-      std::cout << "LoadFile Fails: " << e.what() << std::endl;
+      dtwarn << "[SdfParser::readSkeleton] Loading file [" << _filename
+             << "] failed: " << e.what() << "\n";
       return nullptr;
   }
 
@@ -123,10 +124,9 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
   {
-    dterr << "The file format of ["
-          << _filename
-          << "] is not sdf 1.4 or 1.5."
-          << std::endl;
+    dtwarn << "[SdfParser::readSdfFile] The file format of [" << _filename
+           << "] was found to be [" << version << "], but we only support SDF "
+           << "1.4 and 1.5!\n";
     return nullptr;
   }
   //--------------------------------------------------------------------------
@@ -608,14 +608,30 @@ dynamics::ShapePtr SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
   {
     tinyxml2::XMLElement* meshEle = getElement(geometryElement, "mesh");
     // TODO(JS): We assume that uri is just file name for the mesh
+    if (!hasElement(meshEle, "uri"))
+    {
+      // TODO(MXG): Figure out how to report the file name and line number of
+      dtwarn << "[SdfParser::readShape] Mesh is missing a URI, which is "
+             << "required in order to load it\n";
+      return nullptr;
+    }
     std::string           uri     = getValueString(meshEle, "uri");
-    Eigen::Vector3d       scale   = getValueVector3d(meshEle, "scale");
+
+    Eigen::Vector3d       scale   = hasElement(meshEle, "scale")?
+          getValueVector3d(meshEle, "scale") : Eigen::Vector3d::Ones();
+
     const aiScene* model = dynamics::MeshShape::loadMesh(_skelPath + uri);
     if (model)
+    {
       newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model,
                                                             _skelPath));
+    }
     else
-      dterr << "Fail to load model[" << uri << "]." << std::endl;
+    {
+      dtwarn << "[SdfParser::readShape] Failed to load mesh model ["
+             << uri << "].\n";
+      return nullptr;
+    }
   }
   else
   {
