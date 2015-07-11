@@ -59,14 +59,14 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
 
 //==============================================================================
 template <class DegreeOfFreedomT>
-void InverseKinematics::useDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
+void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 {
   std::vector<size_t> indices;
   indices.reserve(_dofs.size());
   for(const DegreeOfFreedomT* dof : _dofs)
     indices.push_back(dof->getIndexInSkeleton());
 
-  useDofs(indices);
+  setDofs(indices);
 }
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_

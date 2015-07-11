@@ -61,6 +61,7 @@ const Eigen::VectorXd& InverseKinematics::solve()
   if(nullptr == mSolver || nullptr == mProblem)
     return mEmptyVector;
 
+  mProblem->setInitialGuess(getConfiguration());
   mSolver->solve();
   return mProblem->getOptimalSolution();
 }
@@ -86,7 +87,7 @@ InverseKinematicsPtr InverseKinematics::clone(
   std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newEntity));
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
-  newIK->useDofs(getDofs());
+  newIK->setDofs(getDofs());
   newIK->setOffset(mOffset);
   newIK->setTarget(mTarget);
 
@@ -651,21 +652,21 @@ void InverseKinematics::useChain()
 
   if(mNode->getNumDependentGenCoords() == 0)
   {
-    useDofs(mDofs);
+    setDofs(mDofs);
     return;
   }
 
-  useDofs(mNode->getChainDofs());
+  setDofs(mNode->getChainDofs());
 }
 
 //==============================================================================
 void InverseKinematics::useWholeBody()
 {
-  useDofs(mNode->getDependentGenCoordIndices());
+  setDofs(mNode->getDependentGenCoordIndices());
 }
 
 //==============================================================================
-void InverseKinematics::useDofs(const std::vector<size_t>& _dofs)
+void InverseKinematics::setDofs(const std::vector<size_t>& _dofs)
 {
   mDofs = _dofs;
   const std::vector<size_t>& entityDependencies =
@@ -903,18 +904,22 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
   const math::Jacobian fullJacobian = hasOffset()?
         getNode()->getWorldJacobian(mOffset) : getNode()->getWorldJacobian();
 
-  mJacobian.resize(6, this->getDofs().size());
+  mJacobian.setZero(6, this->getDofs().size());
 
   for(int i=0; i< static_cast<int>(this->getDofMap().size()); ++i)
   {
     int j = this->getDofMap()[i];
     if(j >= 0)
-      mJacobian.block<6,1>(0,i) = fullJacobian.block<6,1>(0,j);
-    else
-      mJacobian.block<6,1>(0,i).setZero();
+      mJacobian.block<6,1>(0,j) = fullJacobian.block<6,1>(0,i);
   }
 
   return mJacobian;
+}
+
+//==============================================================================
+Eigen::VectorXd InverseKinematics::getConfiguration() const
+{
+  return mNode->getSkeleton()->getPositions(mDofs);
 }
 
 //==============================================================================
@@ -928,7 +933,7 @@ void InverseKinematics::setConfiguration(const Eigen::VectorXd& _q)
     return;
   }
 
-  dart::dynamics::SkeletonPtr skel = getNode()->getSkeleton();
+  const dart::dynamics::SkeletonPtr& skel = getNode()->getSkeleton();
   skel->setPositions(mDofs, _q);
 }
 

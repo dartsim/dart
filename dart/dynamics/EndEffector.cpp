@@ -73,7 +73,9 @@ EndEffector::~EndEffector()
     ee->mIndexInBodyNode = i;
   }
 
-  getSkeleton()->unregisterEndEffector(this);
+  SkeletonPtr skel = getSkeleton();
+  if(skel)
+    skel->unregisterEndEffector(this);
 }
 
 //==============================================================================

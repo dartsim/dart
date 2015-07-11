@@ -68,129 +68,22 @@ public:
     : osgDart::WorldNode(_world),
       mRobot(_robot)
   {
-    effectors.push_back(mRobot->getBodyNode("l_hand"));
-    initialTfs.push_back(effectors.back()->getWorldTransform());
-    dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(
-        std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "l_target",
-                                  effectors.back()->getWorldTransform(), 0.3));
-    mWorld->addSimpleFrame(targets.back());
-
-
-    effectors.push_back(mRobot->getBodyNode("r_hand"));
-    initialTfs.push_back(effectors.back()->getWorldTransform());
-    dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(
-        std::make_shared<osgDart::InteractiveFrame>(Frame::World(), "r_target",
-                                  effectors.back()->getWorldTransform(), 0.3));
-    mWorld->addSimpleFrame(targets.back());
-
-
-    effectors.push_back(mRobot->getBodyNode("l_foot"));
-    initialTfs.push_back(effectors.back()->getWorldTransform());
-    dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(nullptr);
-
-
-    effectors.push_back(mRobot->getBodyNode("r_foot"));
-    initialTfs.push_back(effectors.back()->getWorldTransform());
-    dofs.push_back(effectors.back()->getDependentGenCoordIndices());
-    targets.push_back(nullptr);
-
-
-    qs.resize(effectors.size());
-    dqs.resize(effectors.size());
-    inv_J.resize(effectors.size());
-    errs.resize(effectors.size());
-
-    l_knee = mRobot->getDof("l_leg_kny");
-    r_knee = mRobot->getDof("r_leg_kny");
-    min_knee_angle = 40.0*M_PI/180.0;
+    // Do nothing
   }
 
   void customPreRefresh() override
   {
-    for(size_t i=0; i<100; ++i)
+    for(size_t i=0; i < mRobot->getNumEndEffectors(); ++i)
     {
-      // compute errors
-      for(size_t e=0; e<effectors.size(); ++e)
-      {
-        BodyNode* bn = effectors[e];
-        const Eigen::Isometry3d& B = bn->getWorldTransform();
-        Eigen::Isometry3d T = (targets[e] == nullptr)?
-              initialTfs[e] : targets[e]->getWorldTransform();
-        Eigen::AngleAxisd aa(T.rotation()*B.rotation().transpose());
-        errs[e].head<3>() = clamped_mag(aa.angle()*aa.axis());
-        errs[e].tail<3>() = clamped_mag(T.translation() - B.translation());
-        if(nullptr == targets[e])
-        {
-          errs[e][3] = 0; errs[e][4] = 0;
-        }
-      }
-
-      bool finished = true;
-      for(size_t e=0; e<effectors.size(); ++e)
-        if(errs[e].norm() > 1e-8)
-          finished = false;
-
-      if(finished)
-        return;
-
-      for(size_t e=0; e<effectors.size(); ++e)
-      {
-        qs[e] = mRobot->getPositions(dofs[e]);
-        const Jacobian& J = effectors[e]->getWorldJacobian();
-        inv_J[e] = J.transpose()*(J*J.transpose()
-                                + 0.0025*Eigen::Matrix6d::Identity()).inverse();
-        dqs[e] = inv_J[e]*errs[e];
-        clamp_components(dqs[e]);
-      }
-
-      q = mRobot->getPositions();
-      for(size_t e=0; e<effectors.size(); ++e)
-      {
-        const std::vector<size_t>& d = dofs[e];
-        for(size_t j=0; j<d.size(); ++j)
-          q[d[j]] += dqs[e][j];
-      }
-
-      mRobot->setPositions(q);
-
-      if(l_knee->getPosition() < min_knee_angle)
-        l_knee->setPosition(min_knee_angle);
-      if(r_knee->getPosition() < min_knee_angle)
-        r_knee->setPosition(min_knee_angle);
+      const InverseKinematicsPtr& ik = mRobot->getEndEffector(i)->getIK();
+      if(ik)
+        ik->solve();
     }
   }
 
 protected:
 
-  void setupViewer() override
-  {
-    if(mViewer)
-    {
-      for(size_t i=0; i<effectors.size(); ++i)
-        mViewer->enableDragAndDrop(targets[i].get());
-    }
-  }
-
   SkeletonPtr mRobot;
-
-  std::vector< BodyNode* > effectors;
-  std::vector< std::vector<size_t> > dofs;
-  std::vector< osgDart::InteractiveFramePtr > targets;
-  std::vector< Eigen::Isometry3d > initialTfs;
-
-  std::vector< Eigen::VectorXd > qs;
-  std::vector< Eigen::VectorXd > dqs;
-  std::vector< Eigen::MatrixXd > inv_J;
-  std::vector< Eigen::Vector6d > errs;
-
-  double min_knee_angle;
-  DegreeOfFreedom* l_knee;
-  DegreeOfFreedom* r_knee;
-
-  Eigen::VectorXd q;
 };
 
 int main()
@@ -211,56 +104,29 @@ int main()
   SkeletonPtr atlas =
       urdf.parseSkeleton(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf");
 
-  SkeletonPtr original = atlas->clone();
-
-  std::cout << "original count: " << atlas->getNumBodyNodes() << std::endl;
-
-//  BodyNode* larm = atlas->getBodyNode("l_uarm");
-  BodyNode* larm = atlas->getBodyNode("l_larm");
-  larm->moveTo(atlas, atlas->getBodyNode("r_hand"));
-  Joint* Jlarm = larm->getParentJoint();
-//  std::pair<Joint*, BodyNode*> copy = larm->copyTo(
-//        atlas.get(), atlas->getBodyNode("r_hand"));
-//  Joint* Jlarm = copy.first;
-  Eigen::Isometry3d T = Jlarm->getTransformFromParentBodyNode().inverse();
-  T.linear() = dart::math::eulerXYZToMatrix(Eigen::Vector3d(91.0*M_PI/180.0, 0, 0));
-  Jlarm->setTransformFromParentBodyNode(T);
-
-
   world->addSkeleton(atlas);
   world->addSkeleton(ground);
 
+  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
+    std::cout << atlas->getBodyNode(i)->getName() << std::endl;
 
-  std::cout << "new count: " << atlas->getNumBodyNodes() << std::endl;
+  EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector();
+  l_hand->setName("l_hand");
 
-//  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
-  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
+  osgDart::InteractiveFramePtr l_target(new osgDart::InteractiveFrame(
+                                          Frame::World(), "l_target"));
+  l_target->setTransform(l_hand->getTransform());
+  l_hand->getIK(true)->setTarget(l_target);
+  world->addSimpleFrame(l_target);
+
+  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
 
+  viewer.enableDragAndDrop(l_target.get());
+
   std::cout << viewer.getInstructions() << std::endl;
-
-//  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
-//    std::cout << i << ") " << atlas->getBodyNode(i)->getName() << std::endl;
-
-//  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
-//  {
-//    for(size_t j=0; j<atlas->getNumBodyNodes(); ++j)
-//    {
-//      if(i != j)
-//      {
-//        if(atlas->getBodyNode(i) == atlas->getBodyNode(j))
-//          std::cout << "repeat BodyNode: " << i << " & " << j << std::endl;
-//      }
-//    }
-//  }
-
-//  for(size_t i=0; i<original->getNumBodyNodes(); ++i)
-//  {
-//    if(atlas->getBodyNode(original->getBodyNode(i)->getName()) == nullptr)
-//      std::cout << "Lost " << original->getBodyNode(i)->getName() << std::endl;
-//  }
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
 

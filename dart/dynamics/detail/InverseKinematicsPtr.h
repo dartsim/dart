@@ -93,6 +93,17 @@ public:
     return *this;
   }
 
+  /// Assignment operator for shared_ptr
+  template <class SharedPtrT>
+  TemplateInverseKinematicsPtr& operator = (const SharedPtrT& _ptr)
+  {
+    set(_ptr);
+    return *this;
+  }
+
+  /// Implicit conversion to bool
+  operator bool() const { return (nullptr != mIK); }
+
   /// Dereferencing operator
   element_type& operator*() const { return *get(); }
 
@@ -131,6 +142,54 @@ public:
     mJacNodePtr = _sptr->getAffiliation();
     mIK = _sptr;
   }
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Comparison operators
+  //----------------------------------------------------------------------------
+
+  /// Equality
+  template <class OtherPtrT>
+  bool operator == (const OtherPtrT& _rhs)
+  {
+    return (mIK == _rhs.mIK);
+  }
+
+  /// Inequality
+  template <class OtherPtrT>
+  bool operator != (const OtherPtrT& _rhs)
+  {
+    return !( *this == _rhs );
+  }
+
+  /// Less than
+  template <class OtherPtrT>
+  bool operator < (const OtherPtrT& _rhs)
+  {
+    return (mIK < _rhs.mIK);
+  }
+
+  /// Greater than
+  template <class OtherPtrT>
+  bool operator > (const OtherPtrT& _rhs)
+  {
+    return (mIK > _rhs.mIK);
+  }
+
+  /// Less than or equal to
+  template <class OtherPtrT>
+  bool operator <= (const OtherPtrT& _rhs)
+  {
+    return (*this < _rhs) || (*this == _rhs);
+  }
+
+  /// Greater than or equal to
+  template <class OtherPtrT>
+  bool operator >= (const OtherPtrT& _rhs)
+  {
+    return (*this > _rhs) || (*this == _rhs);
+  }
+
+  /// \}
 
 protected:
 

@@ -332,9 +332,9 @@ public:
   void useWholeBody();
 
   template <class DegreeOfFreedomT>
-  void useDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
+  void setDofs(const std::vector<DegreeOfFreedomT*>& _dofs);
 
-  void useDofs(const std::vector<size_t>& _dofs);
+  void setDofs(const std::vector<size_t>& _dofs);
 
   const std::vector<size_t>& getDofs() const;
 
@@ -430,6 +430,8 @@ public:
   const JacobianNode* getAffiliation() const;
 
   const math::Jacobian& computeJacobian() const;
+
+  Eigen::VectorXd getConfiguration() const;
 
   void setConfiguration(const Eigen::VectorXd& _q);
 
