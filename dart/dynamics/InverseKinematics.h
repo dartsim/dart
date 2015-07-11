@@ -421,9 +421,13 @@ public:
 
   std::shared_ptr<const SimpleFrame> getTarget() const;
 
-  JacobianNode* getObject();
+  JacobianNode* getNode();
 
-  const JacobianNode* getObject() const;
+  const JacobianNode* getNode() const;
+
+  JacobianNode* getAffiliation();
+
+  const JacobianNode* getAffiliation() const;
 
   const math::Jacobian& computeJacobian() const;
 
@@ -464,6 +468,8 @@ protected:
     Eigen::MatrixXd mNullSpaceCache;
   };
 
+  friend class Objective;
+
   /// The InverseKinematics::Constraint Function is simply meant to be used to
   /// merge the ErrorMethod and GradientMethod that are being held by an
   /// InverseKinematics module. This class is not meant to be extended or
@@ -490,6 +496,8 @@ protected:
     sub_ptr<InverseKinematics> mIK;
   };
 
+  friend class Constraint;
+
   /// Constructor that accepts a JacobianNode
   InverseKinematics(JacobianNode* _node);
 
@@ -508,15 +516,21 @@ protected:
 
   size_t mHierarchyLevel;
 
+  /// A list of the DegreeOfFreedom Skeleton indices that will be used by this
+  /// IK module
   std::vector<size_t> mDofs;
 
+  /// When a Jacobian is computed for a JacobianNode, it will include a column
+  /// for every DegreeOfFreedom that the node depends on. Given the columb index
+  /// of one of those dependent coordinates, this map will return its location
+  /// in the mDofs vector. A value of -1 means that it is not present in the
+  /// mDofs vector and therefore should not be used when performing inverse
+  /// kinematics.
   std::vector<int> mDofMap;
 
   std::shared_ptr<optimizer::Function> mObjective;
 
   std::shared_ptr<optimizer::Function> mNullSpaceObjective;
-
-  bool mUseNullSpace;
 
   /// The method that this IK module will use to compute errors
   std::unique_ptr<ErrorMethod> mErrorMethod;
@@ -535,7 +549,7 @@ protected:
 
   std::shared_ptr<SimpleFrame> mTarget;
 
-  sub_ptr<JacobianNode> mEntity;
+  sub_ptr<JacobianNode> mNode;
 
   mutable math::Jacobian mJacobian;
 

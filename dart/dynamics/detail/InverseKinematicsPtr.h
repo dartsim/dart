@@ -128,7 +128,7 @@ public:
       return;
     }
 
-    mJacNodePtr = _sptr->getObject();
+    mJacNodePtr = _sptr->getAffiliation();
     mIK = _sptr;
   }
 

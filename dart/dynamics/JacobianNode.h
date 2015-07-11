@@ -68,7 +68,7 @@ public:
 
   /// Get a pointer to an IK module for this Entity. If _createIfNull is true,
   /// then the IK module will be generated if one does not already exist.
-  std::shared_ptr<InverseKinematics> getIK(bool _createIfNull = false);
+  const std::shared_ptr<InverseKinematics>& getIK(bool _createIfNull = false);
 
   /// Get a pointer to an IK module for this Entity. Because this is a const
   /// function, a new IK module will NOT be created, even if one does not

@@ -152,9 +152,15 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::computeError(
     dterr << "[InverseKinematics::ErrorMethod::computeError] Mismatch between "
           << "configuration size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() <<"]."
-          << "\nSkeleton name: " << mIK->getObject()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getObject()->getName()
+          << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
+          << "\nBody name: " << mIK->getNode()->getName()
           << "\nMethod name: " << mMethodName << "\n";
+    mLastError.setZero();
+    return mLastError;
+  }
+
+  if(_q.size() == 0)
+  {
     mLastError.setZero();
     return mLastError;
   }
@@ -314,8 +320,7 @@ void InverseKinematics::ErrorMethod::clearCache()
 {
   // This will force the error to be recomputed the next time computeError is
   // called
-  if(mLastConfig.size() > 0)
-    mLastConfig[0] = std::nan("");
+  mLastConfig.resize(0);
 }
 
 //==============================================================================
@@ -358,11 +363,10 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
 
   // Use the target's transform with respect to its reference frame
   const Eigen::Isometry3d& targetTf =
-      this->mIK->getTarget()->getRelativeTransform();
+      mIK->getTarget()->getRelativeTransform();
   // Use the actual transform with respect to the target's reference frame
   const Eigen::Isometry3d& actualTf =
-      this->mIK->getObject()->getTransform(
-        this->mIK->getTarget()->getParentFrame());
+      mIK->getNode()->getTransform(mIK->getTarget()->getParentFrame());
 
   // ^ This scheme makes it so that the bounds are expressed in the reference
   // frame of the target
@@ -453,13 +457,19 @@ void InverseKinematics::GradientMethod::computeGradient(
     dterr << "[InverseKinematics::GradientMethod::computeGradient] Mismatch "
           << "between configuration size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
-          << "\nSkeleton name: " << mIK->getObject()->getSkeleton()->getName()
-          << "\nBody name: " << mIK->getObject()->getName()
+          << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
+          << "\nBody name: " << mIK->getNode()->getName()
           << "\nMethod name: " << mMethodName << "\n";
     assert(false);
     mLastGradient.resize(_q.size());
     mLastGradient.setZero();
     _grad = mLastGradient;
+    return;
+  }
+
+  if(_q.size() == 0)
+  {
+    _grad.setZero();
     return;
   }
 
@@ -524,8 +534,7 @@ void InverseKinematics::GradientMethod::clearCache()
 {
   // This will force the gradient to be recomputed the next time computeGradient
   // is called
-  if(mLastConfig.size() > 0)
-    mLastConfig[0] = std::nan("");
+  mLastConfig.resize(0);
 }
 
 //==============================================================================
@@ -640,19 +649,19 @@ void InverseKinematics::useChain()
 {
   mDofs.clear();
 
-  if(mEntity->getNumDependentGenCoords() == 0)
+  if(mNode->getNumDependentGenCoords() == 0)
   {
     useDofs(mDofs);
     return;
   }
 
-  useDofs(mEntity->getChainDofs());
+  useDofs(mNode->getChainDofs());
 }
 
 //==============================================================================
 void InverseKinematics::useWholeBody()
 {
-  useDofs(mEntity->getDependentGenCoordIndices());
+  useDofs(mNode->getDependentGenCoordIndices());
 }
 
 //==============================================================================
@@ -660,7 +669,7 @@ void InverseKinematics::useDofs(const std::vector<size_t>& _dofs)
 {
   mDofs = _dofs;
   const std::vector<size_t>& entityDependencies =
-      mEntity->getDependentGenCoordIndices();
+      mNode->getDependentGenCoordIndices();
 
   mDofMap.resize(entityDependencies.size());
   for(size_t i=0; i<mDofMap.size(); ++i)
@@ -694,12 +703,6 @@ const std::vector<int>& InverseKinematics::getDofMap() const
 void InverseKinematics::setObjective(
     const std::shared_ptr<optimizer::Function>& _objective)
 {
-  if(nullptr == _objective)
-  {
-    mObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
-    return;
-  }
-
   mObjective = _objective;
 }
 
@@ -720,14 +723,6 @@ InverseKinematics::getObjective() const
 void InverseKinematics::setNullSpaceObjective(
     const std::shared_ptr<optimizer::Function>& _nsObjective)
 {
-  mUseNullSpace = true;
-  if(nullptr == _nsObjective)
-  {
-    mUseNullSpace = false;
-    mNullSpaceObjective = optimizer::FunctionPtr(new optimizer::NullFunction);
-    return;
-  }
-
   mNullSpaceObjective = _nsObjective;
 }
 
@@ -748,7 +743,7 @@ InverseKinematics::getNullSpaceObjective() const
 //==============================================================================
 bool InverseKinematics::hasNullSpaceObjective() const
 {
-  return mUseNullSpace;
+  return (nullptr != mNullSpaceObjective);
 }
 
 //==============================================================================
@@ -821,6 +816,12 @@ const std::shared_ptr<optimizer::Solver>& InverseKinematics::getSolver()
 }
 
 //==============================================================================
+std::shared_ptr<const optimizer::Solver> InverseKinematics::getSolver() const
+{
+  return mSolver;
+}
+
+//==============================================================================
 void InverseKinematics::setOffset(const Eigen::Vector3d& _offset)
 {
   if(Eigen::Vector3d::Zero() == _offset)
@@ -845,19 +846,13 @@ bool InverseKinematics::hasOffset() const
 }
 
 //==============================================================================
-std::shared_ptr<const optimizer::Solver> InverseKinematics::getSolver() const
-{
-  return mSolver;
-}
-
-//==============================================================================
 void InverseKinematics::setTarget(std::shared_ptr<SimpleFrame> _newTarget)
 {
   if(nullptr == _newTarget)
   {
     _newTarget = SimpleFramePtr(
-          new SimpleFrame(Frame::World(), mEntity->getName()+"_target",
-                          mEntity->getWorldTransform()));
+          new SimpleFrame(Frame::World(), mNode->getName()+"_target",
+                          mNode->getWorldTransform()));
   }
 
   mTarget = _newTarget;
@@ -877,15 +872,27 @@ std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const
 }
 
 //==============================================================================
-JacobianNode* InverseKinematics::getObject()
+JacobianNode* InverseKinematics::getNode()
 {
-  return mEntity;
+  return getAffiliation();
 }
 
 //==============================================================================
-const JacobianNode* InverseKinematics::getObject() const
+const JacobianNode* InverseKinematics::getNode() const
 {
-  return mEntity;
+  return getAffiliation();
+}
+
+//==============================================================================
+JacobianNode* InverseKinematics::getAffiliation()
+{
+  return mNode;
+}
+
+//==============================================================================
+const JacobianNode* InverseKinematics::getAffiliation() const
+{
+  return mNode;
 }
 
 //==============================================================================
@@ -894,8 +901,7 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
   // TODO(MXG): Test whether we can safely use a const reference here instead of
   // just a regular const
   const math::Jacobian fullJacobian = hasOffset()?
-        getObject()->getWorldJacobian(mOffset) :
-        this->getObject()->getWorldJacobian();
+        getNode()->getWorldJacobian(mOffset) : getNode()->getWorldJacobian();
 
   mJacobian.resize(6, this->getDofs().size());
 
@@ -922,7 +928,7 @@ void InverseKinematics::setConfiguration(const Eigen::VectorXd& _q)
     return;
   }
 
-  dart::dynamics::SkeletonPtr skel = this->getObject()->getSkeleton();
+  dart::dynamics::SkeletonPtr skel = getNode()->getSkeleton();
   skel->setPositions(mDofs, _q);
 }
 
@@ -931,18 +937,6 @@ void InverseKinematics::clearCaches()
 {
   mErrorMethod->clearCache();
   mGradientMethod->clearCache();
-}
-
-//==============================================================================
-InverseKinematics::InverseKinematics(JacobianNode* _node)
-  : mActive(false),
-    mHierarchyLevel(0),
-    mOffset(Eigen::Vector3d::Zero()),
-    mHasOffset(false),
-    mEntity(_node)
-
-{
-  initialize();
 }
 
 //==============================================================================
@@ -970,7 +964,15 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
     return 0;
   }
 
-  return mIK->getObjective()->eval(_x) + mIK->getNullSpaceObjective()->eval(_x);
+  double cost = 0.0;
+
+  if(mIK->mObjective)
+    cost += mIK->mObjective->eval(_x);
+
+  if(mIK->mNullSpaceObjective)
+    cost += mIK->mNullSpaceObjective->eval(_x);
+
+  return cost;
 }
 
 //==============================================================================
@@ -985,13 +987,16 @@ void InverseKinematics::Objective::evalGradient(
     return;
   }
 
-  mIK->mObjective->evalGradient(_x, _grad);
+  if(mIK->mObjective)
+    mIK->mObjective->evalGradient(_x, _grad);
+  else
+    _grad.setZero();
 
-  if(mIK->hasNullSpaceObjective())
+  if(mIK->mNullSpaceObjective)
   {
     mGradCache.resize(_grad.size());
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
-    mIK->getNullSpaceObjective()->evalGradient(_x, gradMap);
+    mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
 
     mIK->setConfiguration(_x);
 
@@ -1046,6 +1051,18 @@ void InverseKinematics::Constraint::evalGradient(
 }
 
 //==============================================================================
+InverseKinematics::InverseKinematics(JacobianNode* _node)
+  : mActive(false),
+    mHierarchyLevel(0),
+    mOffset(Eigen::Vector3d::Zero()),
+    mHasOffset(false),
+    mNode(_node)
+
+{
+  initialize();
+}
+
+//==============================================================================
 void InverseKinematics::initialize()
 {
   // Default to having no objectives
@@ -1095,7 +1112,7 @@ void InverseKinematics::resetTargetConnection()
 void InverseKinematics::resetEntityConnection()
 {
   mEntityConnection.disconnect();
-  mEntityConnection = mEntity->onTransformUpdated.connect(
+  mEntityConnection = mNode->onTransformUpdated.connect(
         [=](const Entity*)
         { this->clearCaches(); } );
   clearCaches();
