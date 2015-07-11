@@ -45,6 +45,7 @@
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/sdf/SdfParser.h"
 
 using namespace dart;
 using namespace math;
@@ -435,6 +436,30 @@ TEST(Parser, JointDynamicsElements)
   EXPECT_EQ(joint1->getCoulombFriction   (2), 3.0);
   EXPECT_EQ(joint1->getRestPosition      (2), 0.3);
   EXPECT_EQ(joint1->getSpringStiffness   (2), 1.0);
+}
+
+//==============================================================================
+TEST(Parser, SDFSingleBodyWithoutJoint)
+{
+  // Regression test for #444
+  WorldPtr world
+      = SdfParser::readSdfFile(
+          DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
+  EXPECT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  EXPECT_TRUE(skel != nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 1);
+  EXPECT_EQ(skel->getNumJoints(), 1);
+
+  BodyNodePtr bodyNode = skel->getBodyNode(0);
+  EXPECT_TRUE(bodyNode != nullptr);
+  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1);
+  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1);
+
+  JointPtr joint = skel->getJoint(0);
+  EXPECT_TRUE(joint != nullptr);
+  EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
 }
 
 //==============================================================================
