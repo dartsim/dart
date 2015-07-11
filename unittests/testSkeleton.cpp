@@ -759,9 +759,9 @@ void checkForBodyNodes(
   EXPECT_TRUE(contains);
   if(!contains)
   {
-    dtwarn << "The ReferentialSkeleton [" << refSkel->getName() << "] does NOT "
-           << "contain the BodyNode [" << name << "] of the Skeleton ["
-           << skel->getName() << "]\n";
+    dtmsg << "The ReferentialSkeleton [" << refSkel->getName() << "] does NOT "
+          << "contain the BodyNode [" << name << "] of the Skeleton ["
+          << skel->getName() << "]\n";
   }
 
   ++count;
@@ -779,7 +779,16 @@ size_t checkForBodyNodes(
   checkForBodyNodes(count, refSkel, skel, args...);
 
   if(checkCount)
-    EXPECT_TRUE(count == refSkel->getNumBodyNodes());
+  {
+    bool countValid = (count == refSkel->getNumBodyNodes());
+    EXPECT_TRUE(countValid);
+    if(!countValid)
+    {
+      dtmsg << "The number of BodyNodes checked for [" << count << "] "
+            << "does not equal the number [" << refSkel->getNumBodyNodes()
+            << "] in the ReferentialSkeleton [" << refSkel->getName() << "]\n";
+    }
+  }
 
   return count;
 }
@@ -795,7 +804,7 @@ TEST(Skeleton, Linkage)
 
   ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
                  skel->getBodyNode("c3b4"), "midchain");
-  checkForBodyNodes(midchain, skel, true, "c1b3", "c3b1", "c3b2", "c3b3");
+  checkForBodyNodes(midchain, skel, true, "c3b1", "c3b2", "c3b3");
 
   Linkage::Criteria criteria;
   criteria.mStart = skel->getBodyNode("c5b2");
@@ -836,8 +845,16 @@ TEST(Skeleton, Linkage)
   EXPECT_TRUE( count == combinedSkelBases->getNumBodyNodes() );
 
   ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
-                            skel->getBodyNode("c1b3"), "downstreamFreeJoint");
+      skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
+
+  ChainPtr emptyChain = Chain::create(skel->getBodyNode("c1b1"),
+      skel->getBodyNode("c1b3"), "emptyChain");
+  checkForBodyNodes(emptyChain, skel, true);
+
+  ChainPtr chainFromNull = Chain::create(nullptr, skel->getBodyNode("c1b2"),
+                                         "chainFromNull");
+  checkForBodyNodes(chainFromNull, skel, true, "c1b1");
 
   ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
