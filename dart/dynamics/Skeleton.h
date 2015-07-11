@@ -41,6 +41,7 @@
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/HierarchicalIK.h"
 
 namespace dart {
 namespace renderer {
@@ -310,6 +311,25 @@ public:
 
   /// Get EndEffector whose name is _name
   const EndEffector* getEndEffector(const std::string &_name) const;
+
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
+  /// is true, then the IK module will be generated if one does not already
+  /// exist.
+  const std::shared_ptr<WholeBodyIK>& getIK(bool _createIfNull = false);
+
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. Because this is a
+  /// const function, a new IK module cannot be created if one does not already
+  /// exist.
+  std::shared_ptr<const WholeBodyIK> getIK() const;
+
+  /// Create a new WholeBodyIK module for this Skeleton. If an IK module already
+  /// exists in this Skeleton, it will be destroyed and replaced by a brand new
+  /// one.
+  const std::shared_ptr<WholeBodyIK>& createIK();
+
+  /// Wipe away the WholeBodyIK module for this Skeleton, leaving it as a
+  /// nullptr
+  void clearIK();
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -909,6 +929,9 @@ protected:
 
   /// NameManager for tracking EndEffectors
   dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
+
+  /// WholeBodyIK module for this Skeleton
+  std::shared_ptr<WholeBodyIK> mWholeBodyIK;
 
   struct DirtyFlags
   {

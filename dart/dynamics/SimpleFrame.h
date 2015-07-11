@@ -195,8 +195,6 @@ protected:
 
 };
 
-typedef std::shared_ptr<SimpleFrame> SimpleFramePtr;
-
 } // namespace dart
 } // namespace dynamics
 

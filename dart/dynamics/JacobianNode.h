@@ -66,20 +66,21 @@ public:
   /// Virtual destructor
   virtual ~JacobianNode();
 
-  /// Get a pointer to an IK module for this Entity. If _createIfNull is true,
-  /// then the IK module will be generated if one does not already exist.
+  /// Get a pointer to an IK module for this JacobianNode. If _createIfNull is
+  /// true, then the IK module will be generated if one does not already exist.
   const std::shared_ptr<InverseKinematics>& getIK(bool _createIfNull = false);
 
-  /// Get a pointer to an IK module for this Entity. Because this is a const
-  /// function, a new IK module will NOT be created, even if one does not
-  /// already exist.
+  /// Get a pointer to an IK module for this JacobianNode. Because this is a
+  /// const function, a new IK module cannot be created if one does not already
+  /// exist.
   std::shared_ptr<const InverseKinematics> getIK() const;
 
-  /// Create a new IK module for this Entity. If an IK module already exists in
-  /// this Entity, it will be destroyed and replaced by a brand new one.
-  std::shared_ptr<InverseKinematics> createIK();
+  /// Create a new IK module for this JacobianNode. If an IK module already
+  /// exists in this JacobianNode, it will be destroyed and replaced by a brand
+  /// new one.
+  const std::shared_ptr<InverseKinematics>& createIK();
 
-  /// Wipe away the IK module for this Entity, leaving it as a nullptr.
+  /// Wipe away the IK module for this JacobianNode, leaving it as a nullptr.
   void clearIK();
 
   //----------------------------------------------------------------------------
@@ -111,8 +112,8 @@ public:
   /// \{ \name Jacobian Functions
   //----------------------------------------------------------------------------
 
-  /// Return the generalized Jacobian targeting the origin of this Entity. The
-  /// Jacobian is expressed in the Frame of this Entity
+  /// Return the generalized Jacobian targeting the origin of this JacobianNode.
+  /// The Jacobian is expressed in the Frame of this JacobianNode.
   virtual const math::Jacobian& getJacobian() const = 0;
 
   /// A version of getJacobian() that lets you specify a coordinate Frame to
@@ -120,7 +121,7 @@ public:
   virtual math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const = 0;
 
   /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this Entity.
+  /// this JacobianNode.
   virtual math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const = 0;
 
   /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
@@ -128,13 +129,13 @@ public:
   virtual math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
                                      const Frame* _inCoordinatesOf) const = 0;
 
-  /// Return the generalized Jacobian targeting the origin of this Entity. The
-  /// Jacobian is expressed in the World Frame.
+  /// Return the generalized Jacobian targeting the origin of this JacobianNode.
+  /// The Jacobian is expressed in the World Frame.
   virtual const math::Jacobian& getWorldJacobian() const = 0;
 
-  /// Return the generalized Jacobian targeting an offset in this Entity. The
-  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
-  /// expressed in the World Frame.
+  /// Return the generalized Jacobian targeting an offset in this JacobianNode.
+  /// The _offset is expected in coordinates of this BodyNode Frame. The
+  /// Jacobian is expressed in the World Frame.
   virtual math::Jacobian getWorldJacobian(
       const Eigen::Vector3d& _offset) const = 0;
 

@@ -61,6 +61,8 @@ namespace dynamics {
   typedef std::weak_ptr< X >        Weak ## X ## Ptr;       \
   typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
 
+class SimpleFrame;
+DART_DYNAMICS_MAKE_SHARED_WEAK(SimpleFrame)
 
 //-----------------------------------------------------------------------------
 // Skeleton Smart Pointers

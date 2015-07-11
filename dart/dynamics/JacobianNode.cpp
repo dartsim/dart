@@ -72,7 +72,7 @@ std::shared_ptr<const InverseKinematics> JacobianNode::getIK() const
   return const_cast<JacobianNode*>(this)->getIK(false);
 }
 
-std::shared_ptr<InverseKinematics> JacobianNode::createIK()
+const std::shared_ptr<InverseKinematics>& JacobianNode::createIK()
 {
   mIK = InverseKinematics::create(this);
   return mIK;

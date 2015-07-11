@@ -36,7 +36,8 @@
 
 #include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/BodyNode.h"
-#include "DegreeOfFreedom.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace dart {
 namespace dynamics {

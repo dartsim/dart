@@ -43,14 +43,13 @@
 
 #include "dart/common/sub_ptr.h"
 #include "dart/common/Signal.h"
+#include "dart/common/Subject.h"
 #include "dart/math/Geometry.h"
 #include "dart/optimizer/Solver.h"
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/JacobianNode.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {

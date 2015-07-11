@@ -73,9 +73,11 @@ public:
 
   void customPreRefresh() override
   {
+//    mRobot->getIK(true)->solve();
     for(size_t i=0; i < mRobot->getNumEndEffectors(); ++i)
     {
-      const InverseKinematicsPtr& ik = mRobot->getEndEffector(i)->getIK();
+      EndEffector* ee = mRobot->getEndEffector(i);
+      const InverseKinematicsPtr& ik = ee->getIK();
       if(ik)
         ik->solve();
     }

@@ -686,6 +686,34 @@ const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
 }
 
 //==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
+{
+  if(nullptr == mWholeBodyIK && _createIfNull)
+    createIK();
+
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+std::shared_ptr<const WholeBodyIK> Skeleton::getIK() const
+{
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::createIK()
+{
+  mWholeBodyIK = WholeBodyIK::create(mPtr.lock());
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+void Skeleton::clearIK()
+{
+  mWholeBodyIK = nullptr;
+}
+
+//==============================================================================
 Marker* Skeleton::getMarker(const std::string& _name)
 {
   return mNameMgrForMarkers.getObject(_name);
