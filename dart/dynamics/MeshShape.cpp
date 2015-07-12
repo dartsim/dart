@@ -136,6 +136,15 @@ static bool startsWith(const std::string &_target, const std::string &_prefix)
       && _target.substr(0, _prefix.size()) == _prefix;
 }
 
+static bool endsWith(const std::string &_target, const std::string &_suffix)
+{
+  if( _target.size() >= _suffix.size() )
+    std::cout << "Testing: " << _target.substr(_target.size() - _suffix.size()) << std::endl;
+
+  return _target.size() >= _suffix.size()
+      && _target.substr(_target.size() - _suffix.size()) == _suffix;
+}
+
 static std::string extractPathFromUri(const std::string &_uri)
 {
   static const std::string fileSchema = "file://";
@@ -299,8 +308,25 @@ void MeshShape::_updateBoundingBoxDim() {
   mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
-const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size)
+const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size,
+                                   const std::string& _uri)
 {
+  // Extract the file extension.
+  std::string extension;
+  const size_t extensionIndex = _uri.find_last_of('.');
+  if(extensionIndex != std::string::npos)
+    extension = _uri.substr(extensionIndex);
+
+  std::transform(std::begin(extension), std::end(extension),
+                 std::begin(extension), ::tolower);
+
+  // Use the file extension as a "format hint" for Assimp.
+  const char *achFormatHint;
+  if(!extension.empty())
+    achFormatHint = extension.c_str() + 1; // strip the '.'
+  else
+    achFormatHint = nullptr;
+  
   // Remove points and lines
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(propertyStore,
@@ -313,45 +339,47 @@ const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size)
     | aiProcess_JoinIdenticalVertices
     | aiProcess_SortByPType
     | aiProcess_OptimizeMeshes,
-    nullptr, propertyStore
+    achFormatHint, propertyStore
   );
 
   aiReleasePropertyStore(propertyStore);
 
   if(!scene)
   {
-    dterr << "[MeshShape::loadMesh] Failed loading mesh: "
-          << aiGetErrorString() << "\n";
+    const char* assimpMessage = aiGetErrorString();
+    const char* message
+      = (assimpMessage) ? assimpMessage : "An unknown error has occurred.";
+    dterr << "[MeshShape::loadMesh] Failed loading mesh: " << message << '\n';
     return nullptr;
   }
 
-  // TODO: Detect if this is a DAE file. If so, apply the same post-processing
-  // as we do below.
-#if 0
   // Assimp rotates collada files such that the up-axis (specified in the
   // collada file) aligns with assimp's y-axis. Here we are reverting this
   // rotation. We are only catching files with the .dae file ending here. We
   // might miss files with an .xml file ending, which would need to be looked
   // into to figure out whether they are collada files.
-  if (_fileName.length() >= 4
-     && _fileName.substr(_fileName.length() - 4, 4) == ".dae") {
+  if(extension == ".dae" || extension == ".zae")
     scene->mRootNode->mTransformation = aiMatrix4x4();
-  }
+
+  // Pre-transform the verticies. Assimp states that this post-processing step
+  // cannot fail, so we'll assert if it returns nullptr.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
-#endif
+  assert(scene);
 
   return scene;
 }
 
-const aiScene* MeshShape::loadMesh(const utils::MemoryResource& _resource)
+const aiScene* MeshShape::loadMesh(const utils::MemoryResource& _resource,
+                                   const std::string& _uri)
 {
-  return loadMesh(_resource.getData(), _resource.getSize());
+  return loadMesh(_resource.getData(), _resource.getSize(), _uri);
 }
 
 const aiScene* MeshShape::loadMesh(const std::string& _fileName)
 {
   utils::LocalResourceRetriever retriever;
-  return loadMesh(*retriever.retrieve("file://" + _fileName));
+  const std::string uri = "file://" + _fileName;
+  return loadMesh(*retriever.retrieve(uri), uri);
 }
 
 }  // namespace dynamics

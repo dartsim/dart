@@ -514,18 +514,19 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
   // Mesh
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
-    const utils::ConstMemoryResourcePtr resource = mRetriever->retrieve(mesh->filename);
+    const std::string& uri = mesh->filename;
+    const utils::ConstMemoryResourcePtr resource = mRetriever->retrieve(uri);
     if (!resource) {
       return nullptr;
     }
 
-    const aiScene* scene = dynamics::MeshShape::loadMesh(*resource);
+    const aiScene* scene = dynamics::MeshShape::loadMesh(*resource, uri);
     if (!scene)
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
-      scale, scene, mesh->filename, true, mRetriever);
+      scale, scene, uri, true, mRetriever);
   }
   // Unknown geometry type
   else

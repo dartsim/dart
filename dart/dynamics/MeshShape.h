@@ -93,8 +93,10 @@ public:
             bool _default = true) const;
 
   /// \brief
-  static const aiScene* loadMesh(const uint8_t* _data, size_t _size);
-  static const aiScene* loadMesh(const utils::MemoryResource& _resource);
+  static const aiScene* loadMesh(const uint8_t* _data, size_t _size,
+                                 const std::string& _uri = std::string());
+  static const aiScene* loadMesh(const utils::MemoryResource& _resource,
+                                 const std::string& _uri = std::string());
   static const aiScene* loadMesh(const std::string& _fileName);
 
   // Documentation inherited.
