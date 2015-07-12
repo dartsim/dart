@@ -92,7 +92,7 @@ private:
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
     dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
-    bool createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
+    bool createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode& _parent);
 
     template <class VisualOrCollision>
     dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol);
