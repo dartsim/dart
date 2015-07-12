@@ -159,7 +159,10 @@ public:
   /// Get the upper position limit of this DegreeOfFreedom
   double getPositionUpperLimit() const;
 
-  /// Gets whether a DegreeOfFreedom has SO(2) topology.
+  /// Gets whether this DOF is cyclic. Returns true if and only if an infinite
+  /// number of DOF positions produce the same local transform. If this DOF is
+  /// part of a multi-DOF joint, then producing a cycle may require altering
+  /// the position of the Joint's other DOFs.
   bool isCyclic() const;
 
   /// Gets whether the position of this DegreeOfFreedom has limits.
