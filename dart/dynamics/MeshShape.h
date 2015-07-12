@@ -43,6 +43,7 @@
 #include <assimp/scene.h>
 
 #include "dart/dynamics/Shape.h"
+#include "dart/utils/ResourceRetriever.h"
 
 namespace dart {
 namespace dynamics {
@@ -51,8 +52,10 @@ namespace dynamics {
 class MeshShape : public Shape {
 public:
   /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-            const std::string &path = std::string());
+  MeshShape(
+    const Eigen::Vector3d& _scale, const aiScene* _mesh,
+    const std::string &_path = std::string(), bool _isUri = false,
+    const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
   /// \brief Destructor.
   virtual ~MeshShape();
@@ -61,7 +64,13 @@ public:
   const aiScene* getMesh() const;
 
   /// \brief
-  void setMesh(const aiScene* _mesh, const std::string &path = std::string());
+  void setMesh(
+    const aiScene* _mesh,
+    const std::string &path = std::string(), bool _isUri = false,
+    const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+
+  /// \brief URI to the mesh; an empty string if unavailable.
+  const std::string &getMeshUri() const;
 
   /// \brief Path to the mesh on disk; an empty string if unavailable.
   const std::string &getMeshPath() const;
@@ -84,6 +93,8 @@ public:
             bool _default = true) const;
 
   /// \brief
+  static const aiScene* loadMesh(const uint8_t* _data, size_t _size);
+  static const aiScene* loadMesh(const utils::MemoryResource& _resource);
   static const aiScene* loadMesh(const std::string& _fileName);
 
   // Documentation inherited.
@@ -101,8 +112,14 @@ protected:
   /// \brief
   const aiScene* mMesh;
 
-  /// \brief
+  /// \brief URI the mesh, if available).
+  std::string mMeshUri;
+
+  /// \brief Path the mesh on disk, if available.
   std::string mMeshPath;
+
+  /// \brief Optional method of loading resources by URI.
+  utils::ResourceRetrieverPtr mResourceRetriever;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;

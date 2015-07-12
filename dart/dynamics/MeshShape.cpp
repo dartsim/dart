@@ -36,6 +36,7 @@
  */
 
 #include "dart/dynamics/MeshShape.h"
+#include "dart/utils/LocalResourceRetriever.h"
 
 #include <iostream>
 #include <limits>
@@ -129,9 +130,27 @@ aiMaterial::~aiMaterial()
 namespace dart {
 namespace dynamics {
 
+static bool startsWith(const std::string &_target, const std::string &_prefix)
+{
+  return _target.size() >= _prefix.size()
+      && _target.substr(0, _prefix.size()) == _prefix;
+}
+
+static std::string extractPathFromUri(const std::string &_uri)
+{
+  static const std::string fileSchema = "file://";
+
+  if (startsWith(_uri, fileSchema))
+    return _uri.substr(fileSchema.size());
+  else
+    return "";
+}
+
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string &_path)
+                     const std::string &_path, bool _isUri,
+                     const utils::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
+    mResourceRetriever(_resourceRetriever),
     mDisplayList(0),
     mScale(_scale)
 {
@@ -139,7 +158,7 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
 
-  setMesh(_mesh, _path);
+  //setMesh(_mesh, _path, _isUri, _resourceRetriever);
 }
 
 MeshShape::~MeshShape() {
@@ -150,20 +169,42 @@ const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
+const std::string &MeshShape::getMeshUri() const
+{
+  return mMeshUri;
+}
+
 const std::string &MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }
 
-void MeshShape::setMesh(const aiScene* _mesh, const std::string &_path) {
+void MeshShape::setMesh(
+  const aiScene* _mesh, const std::string &_path, bool _isUri,
+  const utils::ResourceRetrieverPtr& _resourceRetriever)
+{
   mMesh = _mesh;
 
   if(nullptr == _mesh) {
     mMeshPath = "";
+    mMeshUri = "";
+    mResourceRetriever = nullptr;
     return;
   }
 
-  mMeshPath = _path;
+  if(_isUri)
+  {
+    mMeshUri = _path;
+    mMeshPath = extractPathFromUri(_path);
+  }
+  else
+  {
+    mMeshUri = "file://" + _path;
+    mMeshPath = _path;
+  }
+
+  mResourceRetriever = _resourceRetriever;
+
   _updateBoundingBoxDim();
   computeVolume();
 }
@@ -258,26 +299,36 @@ void MeshShape::_updateBoundingBoxDim() {
   mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
-const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
+const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size)
+{
+  // Remove points and lines
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
-  // remove points and lines
   aiSetImportPropertyInteger(propertyStore,
                              AI_CONFIG_PP_SBP_REMOVE,
                              aiPrimitiveType_POINT | aiPrimitiveType_LINE);
-  const aiScene* scene =
-      aiImportFileExWithProperties(_fileName.c_str(),
-                                   aiProcess_GenNormals             |
-                                   aiProcess_Triangulate            |
-                                   aiProcess_JoinIdenticalVertices  |
-                                   aiProcess_SortByPType            |
-                                   aiProcess_OptimizeMeshes,
-                                   nullptr, propertyStore);
-  if(!scene)
-    dtwarn << "[MeshShape] Assimp could not load file: '" << _fileName << "'. "
-           << "This will likely result in a segmentation fault "
-           << "if you attempt to use the nullptr we return." << std::endl;
+
+  const aiScene* scene = aiImportFileFromMemoryWithProperties(
+    reinterpret_cast<const char*>(_data), _size,
+      aiProcess_GenNormals
+    | aiProcess_Triangulate
+    | aiProcess_JoinIdenticalVertices
+    | aiProcess_SortByPType
+    | aiProcess_OptimizeMeshes,
+    nullptr, propertyStore
+  );
+
   aiReleasePropertyStore(propertyStore);
 
+  if(!scene)
+  {
+    dterr << "[MeshShape::loadMesh] Failed loading mesh: "
+          << aiGetErrorString() << "\n";
+    return nullptr;
+  }
+
+  // TODO: Detect if this is a DAE file. If so, apply the same post-processing
+  // as we do below.
+#if 0
   // Assimp rotates collada files such that the up-axis (specified in the
   // collada file) aligns with assimp's y-axis. Here we are reverting this
   // rotation. We are only catching files with the .dae file ending here. We
@@ -288,8 +339,20 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
     scene->mRootNode->mTransformation = aiMatrix4x4();
   }
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
+#endif
 
   return scene;
+}
+
+const aiScene* MeshShape::loadMesh(const utils::MemoryResource& _resource)
+{
+  return loadMesh(_resource.getData(), _resource.getSize());
+}
+
+const aiScene* MeshShape::loadMesh(const std::string& _fileName)
+{
+  utils::LocalResourceRetriever retriever;
+  return loadMesh(*retriever.retrieve("file://" + _fileName));
 }
 
 }  // namespace dynamics

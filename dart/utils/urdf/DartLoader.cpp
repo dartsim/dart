@@ -1,7 +1,3 @@
-/**
- * @file DartLoader.cpp
- */
-
 #include "DartLoader.h"
 
 #include <map>
@@ -30,10 +26,21 @@
 namespace dart {
 namespace utils {
 
+DartLoader::DartLoader()
+  : mLocalRetriever(new utils::LocalResourceRetriever)
+  , mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever))
+  , mRetriever(new utils::SchemaResourceRetriever)
+{
+  using namespace std::placeholders;
+
+  mRetriever->addSchemaRetriever("file", mLocalRetriever);
+  mRetriever->addSchemaRetriever("package", mPackageRetriever);
+}
+
 void DartLoader::addPackageDirectory(const std::string& _packageName,
                                      const std::string& _packageDirectory)
 {
-  mPackageDirectories[_packageName] = _packageDirectory;
+  mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(const std::string& _urdfFileName) {
@@ -153,46 +160,6 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   return world;
-}
-
-/**
- * @function getFullFilePath
- */
-std::string DartLoader::getFullFilePath(const std::string& _filename) const
-{
-  std::string fullpath = _filename;
-  size_t scheme = fullpath.find("package://");
-  if(scheme < std::string::npos)
-  {
-    size_t authority_start = scheme+10;
-    size_t authority_end = fullpath.find("/", scheme+10);
-    size_t authority_length = authority_end - authority_start;
-
-    std::map<std::string, std::string>::const_iterator packageDirectory =
-        mPackageDirectories.find(
-          fullpath.substr(authority_start, authority_length));
-
-    if(packageDirectory == mPackageDirectories.end())
-    {
-      dtwarn << "[DartLoader] Trying to load a URDF that uses package '"
-             << fullpath.substr(scheme, authority_end-scheme)
-             << "' (the full line is '" << fullpath
-             << "'), but we do not know the path to that package directory. "
-             << "Please use addPackageDirectory(~) to allow us to find the "
-             << "package directory.\n";
-    }
-    else
-    {
-      fullpath.erase(scheme, authority_end);
-      fullpath.insert(scheme, packageDirectory->second);
-    }
-  }
-  else
-  {
-    fullpath = mRootToSkelPath + fullpath;
-  }
-
-  return fullpath;
 }
 
 /**
@@ -534,25 +501,23 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
   // Mesh
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
-    std::string fullPath = getFullFilePath(mesh->filename);
-    const aiScene* model = dynamics::MeshShape::loadMesh( fullPath );
-    
-    if(!model)
-    {
-      dtwarn << "[DartLoader::createShape] Assimp could not load a model from "
-             << "the file '" << fullPath << "'\n";
-      shape = nullptr;
+    const utils::ConstMemoryResourcePtr resource = mRetriever->retrieve(mesh->filename);
+    if (!resource) {
+      return nullptr;
     }
-    else
-    {
-      shape = dynamics::ShapePtr(new dynamics::MeshShape(
-          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
-    }
+
+    const aiScene* scene = dynamics::MeshShape::loadMesh(*resource);
+    if (!scene)
+      return nullptr;
+
+    const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
+    shape = std::make_shared<dynamics::MeshShape>(
+      scale, scene, mesh->filename, true, mRetriever);
   }
   // Unknown geometry type
   else
   {
-    dtwarn << "[DartLoader::createShape] Unknown urdf Shape type "
+    dtwarn << "[DartLoader::createShape] Unknown URDF Shape type "
            << "(we only know of Sphere, Box, Cylinder, and Mesh). "
            << "We are returning a nullptr." << std::endl;
     return nullptr;

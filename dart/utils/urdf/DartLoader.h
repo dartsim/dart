@@ -10,10 +10,15 @@
 #include <map>
 #include <string>
 
+#include "dart/common/Deprecated.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/ResourceRetriever.h"
+#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/utils/PackageResourceRetriever.h"
+#include "dart/utils/SchemaResourceRetriever.h"
 
 namespace urdf
 {
@@ -46,6 +51,8 @@ namespace utils {
 class DartLoader {
   
 public:
+    /// Constructor with the default ResourceRetriever.
+    DartLoader();
 
     /// Specify the directory of a ROS package. In your URDF files, you may see
     /// strings with a package URI pattern such as:
@@ -66,6 +73,10 @@ public:
     /// "/path/to/my_robot/meshes/mesh_for_my_robot.stl" exists. Whatever you
     /// specify as the package directory will end up replacing the 'package
     /// keyword' and 'package name' components of the URI string.
+    ///
+    /// DEPRECATED: This functionality has been moved into the
+    /// PackageResourceRetrievew class.
+    DEPRECATED(5.0)
     void addPackageDirectory(const std::string& _packageName,
                              const std::string& _packageDirectory);
 
@@ -88,7 +99,6 @@ private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    std::string getFullFilePath(const std::string& _filename) const;
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
     dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
@@ -110,11 +120,16 @@ private:
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
     std::string readFileToString(std::string _xmlFile);
 
+    ResourceRetrieverPtr mResourceRetriever;
     std::map<std::string, std::string> mWorld_To_Entity_Paths;
 
     std::map<std::string, std::string> mPackageDirectories;
     std::string mRootToSkelPath;
     std::string mRootToWorldPath;
+
+    utils::LocalResourceRetrieverPtr mLocalRetriever;
+    utils::PackageResourceRetrieverPtr mPackageRetriever;
+    utils::SchemaResourceRetrieverPtr mRetriever;
 };
 
 }
