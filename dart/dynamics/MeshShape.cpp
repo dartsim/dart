@@ -151,14 +151,14 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const utils::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
-    mDisplayList(0),
-    mScale(_scale)
+    mDisplayList(0)
 {
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
 
-  //setMesh(_mesh, _path, _isUri, _resourceRetriever);
+  setMesh(_mesh, _path, _isUri, _resourceRetriever);
+  setScale(_scale);
 }
 
 MeshShape::~MeshShape() {
@@ -304,8 +304,7 @@ const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size)
   // Remove points and lines
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(propertyStore,
-                             AI_CONFIG_PP_SBP_REMOVE,
-                             aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+    AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
   const aiScene* scene = aiImportFileFromMemoryWithProperties(
     reinterpret_cast<const char*>(_data), _size,

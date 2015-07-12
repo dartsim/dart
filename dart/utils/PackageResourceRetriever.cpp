@@ -69,7 +69,6 @@ ConstMemoryResourcePtr PackageResourceRetriever::retrieve(
   for(const std::string &packagePath : it->second)
   {
     const std::string localUri = "file://" + packagePath + relativePath;
-    std::cout << "requesting: " << localUri << std::endl;
     if(const auto resource = mLocalRetriever->retrieve(localUri))
       return resource;
   }
