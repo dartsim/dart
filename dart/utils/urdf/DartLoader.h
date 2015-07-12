@@ -102,7 +102,7 @@ private:
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
     dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
-    void createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
+    bool createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode& _parent);
 
     template <class VisualOrCollision>
     dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol);
@@ -113,8 +113,8 @@ private:
         dynamics::BodyNode* _parent,
         dynamics::SkeletonPtr _skeleton);
 
-    dynamics::BodyNode::Properties createDartNodeProperties(
-        const urdf::Link* _lk);
+    bool createDartNodeProperties(
+        const urdf::Link* _lk, dynamics::BodyNode::Properties *properties);
 
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);

@@ -246,8 +246,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
     else
     {
       root = root->child_links[0].get();
-      dynamics::BodyNode::Properties rootProperties =
-          createDartNodeProperties(root);
+      dynamics::BodyNode::Properties rootProperties;
+      if (!createDartNodeProperties(root, &rootProperties))
+        return nullptr;
+
       rootNode = createDartJointAndNode(
             root->parent_joint.get(), rootProperties, nullptr, skeleton);
       if(nullptr == rootNode)
@@ -259,8 +261,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
   }
   else
   {
-    dynamics::BodyNode::Properties rootProperties =
-        createDartNodeProperties(root);
+    dynamics::BodyNode::Properties rootProperties;
+    if (!createDartNodeProperties(root, &rootProperties))
+      return nullptr;
+
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
@@ -272,25 +276,34 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
 
   for(size_t i = 0; i < root->child_links.size(); i++)
   {
-    createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode);
+    if (!createSkeletonRecursive(skeleton, root->child_links[i].get(), *rootNode))
+      return nullptr;
+
   }
 
   return skeleton;
 }
 
-void DartLoader::createSkeletonRecursive(
+bool DartLoader::createSkeletonRecursive(
     dynamics::SkeletonPtr _skel,
     const urdf::Link* _lk,
-    dynamics::BodyNode* _parentNode)
+    dynamics::BodyNode& _parentNode)
 {
-  dynamics::BodyNode::Properties properties = createDartNodeProperties(_lk);
+  dynamics::BodyNode::Properties properties;
+  if (!createDartNodeProperties(_lk, &properties))
+    return false;
+
   dynamics::BodyNode* node = createDartJointAndNode(
-        _lk->parent_joint.get(), properties, _parentNode, _skel);
+        _lk->parent_joint.get(), properties, &_parentNode, _skel);
+  if(!node)
+    return false;
   
-  for(unsigned int i = 0; i < _lk->child_links.size(); ++i)
+  for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-      createSkeletonRecursive(_skel, _lk->child_links[i].get(), node);
+      if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), *node))
+        return false;
   }
+  return true;
 }
 
 
@@ -409,7 +422,6 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     {
       dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
             << _jt->type << ")\n";
-      assert(false);
       return nullptr;
     }
   }
@@ -420,16 +432,16 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 /**
  * @function createDartNode
  */
-dynamics::BodyNode::Properties DartLoader::createDartNodeProperties(
-    const urdf::Link* _lk)
+bool DartLoader::createDartNodeProperties(
+    const urdf::Link* _lk, dynamics::BodyNode::Properties *node)
 {
-  dynamics::BodyNode::Properties node(_lk->name);
+  node->mName = _lk->name;
   
   // Load Inertial information
   if(_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;
-    node.mInertia.setLocalCOM(toEigen(origin.position));
-    node.mInertia.setMass(_lk->inertial->mass);
+    node->mInertia.setLocalCOM(toEigen(origin.position));
+    node->mInertia.setMass(_lk->inertial->mass);
 
     Eigen::Matrix3d J;
     J << _lk->inertial->ixx, _lk->inertial->ixy, _lk->inertial->ixz,
@@ -439,27 +451,28 @@ dynamics::BodyNode::Properties DartLoader::createDartNodeProperties(
                                          origin.rotation.y, origin.rotation.z));
     J = R * J * R.transpose();
 
-    node.mInertia.setMoment(J(0,0), J(1,1), J(2,2),
+    node->mInertia.setMoment(J(0,0), J(1,1), J(2,2),
                             J(0,1), J(0,2), J(1,2));
   }
 
   // Set visual information
-  for(unsigned int i = 0; i < _lk->visual_array.size(); i++)
+  for(size_t i = 0; i < _lk->visual_array.size(); i++)
   {
     if(dynamics::ShapePtr shape = createShape(_lk->visual_array[i].get()))
-    {
-      node.mVizShapes.push_back(shape);
-    }
+      node->mVizShapes.push_back(shape);
+    else
+      return false;
   }
 
   // Set collision information
-  for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
-    if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get())) {
-      node.mColShapes.push_back(shape);
-    }
+  for(size_t i = 0; i < _lk->collision_array.size(); i++) {
+    if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get()))
+      node->mColShapes.push_back(shape);
+    else
+      return false;
   }
 
-  return node;
+  return true;
 }
 
 
