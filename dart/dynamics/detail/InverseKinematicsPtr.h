@@ -48,19 +48,25 @@ namespace dynamics {
 /// InverseKinematicsPtr will ensure that the JacobianNode associated with the
 /// InverseKinematics module will not get deleted, and will keep the
 /// InverseKinematics reference valid.
-template <class InverseKinematicsT, class JacobianNodePtrT>
+template <class IkType, class JacobianNodePtrT>
 class TemplateInverseKinematicsPtr
 {
 public:
 
   template<class, class> friend class TemplateInverseKinematicsPtr;
 
-  typedef InverseKinematicsT element_type;
+  typedef IkType element_type;
 
   /// Constructor that accepts a shared_ptr
   TemplateInverseKinematicsPtr(const std::shared_ptr<element_type>& _sptr)
   {
     set(_sptr);
+  }
+
+  /// Constructor that accepts a nullptr
+  TemplateInverseKinematicsPtr(std::nullptr_t)
+  {
+    // Do nothing
   }
 
   /// Default constructor
@@ -101,6 +107,13 @@ public:
     return *this;
   }
 
+  /// Assignment operator for nullptr
+  TemplateInverseKinematicsPtr& operator = (std::nullptr_t)
+  {
+    set(nullptr);
+    return *this;
+  }
+
   /// Implicit conversion to bool
   operator bool() const { return (nullptr != mIK); }
 
@@ -130,7 +143,7 @@ public:
 
   /// Set the InverseKinematics module for this InverseKinematicsPtr from a
   /// shared_ptr
-  void set(const std::shared_ptr<InverseKinematicsT>& _sptr)
+  void set(const std::shared_ptr<IkType>& _sptr)
   {
     if(nullptr == _sptr)
     {
@@ -148,43 +161,49 @@ public:
   //----------------------------------------------------------------------------
 
   /// Equality
-  template <class OtherPtrT>
-  bool operator == (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator == (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return (mIK == _rhs.mIK);
   }
 
   /// Inequality
-  template <class OtherPtrT>
-  bool operator != (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator != (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return !( *this == _rhs );
   }
 
   /// Less than
-  template <class OtherPtrT>
-  bool operator < (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator < (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return (mIK < _rhs.mIK);
   }
 
   /// Greater than
-  template <class OtherPtrT>
-  bool operator > (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator > (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return (mIK > _rhs.mIK);
   }
 
   /// Less than or equal to
-  template <class OtherPtrT>
-  bool operator <= (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator <= (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return (*this < _rhs) || (*this == _rhs);
   }
 
   /// Greater than or equal to
-  template <class OtherPtrT>
-  bool operator >= (const OtherPtrT& _rhs)
+  template <class OtherIkT, class OtherJacNodeT>
+  bool operator >= (
+      const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodeT>& _rhs)
   {
     return (*this > _rhs) || (*this == _rhs);
   }
@@ -198,6 +217,36 @@ protected:
   JacobianNodePtrT mJacNodePtr;
 
 };
+
+// Comparison to nullptr
+template <class IkType, class BodyNodeT>
+inline bool operator == (
+    const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik, std::nullptr_t)
+{
+  return nullptr == _ik.get();
+}
+
+template <class IkType, class BodyNodeT>
+inline bool operator == (
+    std::nullptr_t, const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik)
+{
+  return nullptr == _ik.get();
+}
+
+template <class IkType, class BodyNodeT>
+inline bool operator != (
+    const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik, std::nullptr_t)
+{
+  return nullptr != _ik.get();
+}
+
+template <class IkType, class BodyNodeT>
+inline bool operator != (
+    std::nullptr_t, const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik)
+{
+  return nullptr != _ik.get();
+}
+
 
 /// TemplateWeakInverseKinematicsPtr is a templated class that enables users to
 /// create a non-reference-holding WeakInverseKinematicsPtr. Holding onto a

@@ -67,7 +67,7 @@ public:
 
   enum class RotationOption : int {
 
-    HOLD_CTRL = 0, // Default setting
+    HOLD_MODKEY = 0, // Default setting, hold ctrl key to rotate
     ALWAYS_ON,
     ALWAYS_OFF
 
@@ -99,6 +99,10 @@ public:
   /// the Entity
   virtual void saveState() = 0;
 
+  /// Called when the user lets go of the object that they are dragging and
+  /// dropping. This function does nothing by default, but you can override it.
+  virtual void release();
+
   /// Default method for getting the translation requested by the user
   virtual Eigen::Vector3d getConstrainedDx() const;
 
@@ -124,6 +128,12 @@ public:
   /// Set the option for triggering rotations instead of translations
   void setRotationOption(RotationOption option);
 
+  RotationOption getRotationOption() const;
+
+  void setRotationModKey(osgGA::GUIEventAdapter::ModKeyMask rotationModKey);
+
+  osgGA::GUIEventAdapter::ModKeyMask getRotationModKey() const;
+
 protected:
 
   virtual void handleDestructionNotification(
@@ -148,7 +158,9 @@ protected:
 
   bool mAmMoving;
 
-  RotationOption mOption;
+  RotationOption mRotationOption;
+
+  osgGA::GUIEventAdapter::ModKeyMask mRotationModKey;
 
 };
 
@@ -160,7 +172,7 @@ public:
 
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
-  ~SimpleFrameDnD();
+  virtual ~SimpleFrameDnD() = default;
 
   dart::dynamics::SimpleFrame* getSimpleFrame() const;
 
@@ -186,7 +198,7 @@ public:
   SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame,
                       dart::dynamics::Shape* shape);
 
-  ~SimpleFrameShapeDnD();
+  virtual ~SimpleFrameShapeDnD() = default;
 
   dart::dynamics::Shape* getShape() const;
 
@@ -223,6 +235,51 @@ protected:
 
   InteractiveFrame* mInteractiveFrame;
 
+};
+
+//==============================================================================
+class BodyNodeDnD : public DragAndDrop
+{
+public:
+
+  BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
+              bool useExternalIK = true, bool useWholeBody = false);
+
+  virtual ~BodyNodeDnD() = default;
+
+  dart::dynamics::BodyNode* getBodyNode() const;
+
+  virtual void update() override;
+
+  virtual void move() override;
+
+  virtual void saveState() override;
+
+  virtual void release() override;
+
+  void useExternalIK(bool external=false);
+
+  bool isUsingExternalIK() const;
+
+  void setPreserveOrientationModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
+
+  osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
+
+protected:
+
+  dart::dynamics::WeakBodyNodePtr mBodyNode;
+
+  dart::dynamics::InverseKinematicsPtr mIK;
+
+  Eigen::Vector3d mSavedOffset;
+
+  Eigen::AngleAxisd mSavedRotation;
+
+  bool mUseExternalIK;
+
+  bool mUseWholeBody;
+
+  osgGA::GUIEventAdapter::ModKeyMask mPreserveOrientationModKey;
 };
 
 } // namespace osgDart

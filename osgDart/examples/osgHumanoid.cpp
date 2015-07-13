@@ -89,7 +89,7 @@ public:
 
   void customPreRefresh() override
   {
-    mRobot->getIK(true)->solve();
+//    mRobot->getIK(true)->solve();
   }
 
 protected:
@@ -209,7 +209,8 @@ int main()
 //       -std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0),
 //        std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0));
 
-  EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector();
+//  EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector();
+  BodyNode* r_foot = atlas->getBodyNode("r_foot");
   osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
                                            Frame::World(), "rf_target"));
   rf_target->setTransform(r_foot->getTransform());
@@ -245,6 +246,10 @@ int main()
   viewer.enableDragAndDrop(r_target.get());
 
   viewer.enableDragAndDrop(rf_target.get());
+
+  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
+//    viewer.enableDragAndDrop(atlas->getBodyNode(i), false);
+    viewer.enableDragAndDrop(atlas->getBodyNode(i), true);
 
   std::cout << viewer.getInstructions() << std::endl;
 

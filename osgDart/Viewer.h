@@ -56,6 +56,7 @@ namespace dynamics {
 class Entity;
 class SimpleFrame;
 class Shape;
+class BodyNode;
 } // namespace dynamics
 
 } // namespace dart
@@ -70,6 +71,7 @@ class SimpleFrameDnD;
 class SimpleFrameShapeDnD;
 class InteractiveFrame;
 class InteractiveFrameDnD;
+class BodyNodeDnD;
 
 class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
@@ -159,6 +161,10 @@ public:
   /// A version of enableDragAndDrop specifically for InteractiveFrames
   InteractiveFrameDnD* enableDragAndDrop(InteractiveFrame* _frame);
 
+  /// A version of enableDragAndDrop specifically for BodyNodes
+  BodyNodeDnD* enableDragAndDrop(dart::dynamics::BodyNode* _bn,
+                                 bool _useExternalIK = true);
+
   /// Delete a DragAndDrop object. Returns true if the DnD was active and has
   /// now been deleted
   bool disableDragAndDrop(DragAndDrop* _dnd);
@@ -174,6 +180,10 @@ public:
   /// Delete an InteractiveFrameDnD object. Returns true if a DnD existed and
   /// could be deleted
   bool disableDragAndDrop(InteractiveFrameDnD* _dnd);
+
+  /// Delete a BodyNodeDnD object. Returns true if a DnD existed and could be
+  /// deleted
+  bool disableDragAndDrop(BodyNodeDnD* _dnd);
 
   /// Get a string containing the user interface constructions for this Viewer
   const std::string& getInstructions() const;
@@ -231,6 +241,9 @@ protected:
   /// string of instructions for this Viewer
   std::string mInstructions;
 
+  // TODO(MXG): Consolidate all these maps into a single map of maps which uses
+  // typeid as a key
+
   /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
   std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
 
@@ -242,6 +255,8 @@ protected:
   /// Map from InteractiveFrame ptrs to InteractiveFrameDnD ptrs
   std::map<InteractiveFrame*,InteractiveFrameDnD*> mInteractiveFrameDnDMap;
 
+  /// Map from BodyNode ptrs to BodyNodeDnD ptrs
+  std::map<dart::dynamics::BodyNode*,BodyNodeDnD*> mBodyNodeDnDMap;
 };
 
 }

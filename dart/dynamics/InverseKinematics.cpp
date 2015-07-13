@@ -372,8 +372,8 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   // independently from the computation of rotational error, whereas the work of
   // Berenson computes them simultaneously using homogeneous transform matrices.
   // Handling them in terms of their homogeneous matrices results in less direct
-  // paths while performing gradient descent, because there is a pseudo-error in
-  // translation whenever rotational error exists.
+  // paths while performing gradient descent, because it produces a pseudo-error
+  // in translation whenever rotational error exists.
   //
   // Also, we offer the option of always computing the error from the center of
   // the Task Space Region, which will often allow the end effector to enter the

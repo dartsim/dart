@@ -42,6 +42,7 @@
 
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/BodyNode.h"
 
 #include <iostream>
 
@@ -54,7 +55,8 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mConstraintType(UNCONSTRAINED),
     mAmObstructable(true),
     mAmMoving(false),
-    mOption(RotationOption::HOLD_CTRL)
+    mRotationOption(RotationOption::HOLD_MODKEY),
+    mRotationModKey(osgGA::GUIEventAdapter::MODKEY_CTRL)
 {
   addSubject(mEntity);
   addSubject(mViewer);
@@ -84,7 +86,10 @@ void DragAndDrop::update()
   if(mAmMoving)
   {
     if(osgDart::BUTTON_RELEASE == event)
+    {
       mAmMoving = false;
+      release();
+    }
 
     move();
   }
@@ -126,6 +131,12 @@ void DragAndDrop::setObstructable(bool _obstructable)
 bool DragAndDrop::isObstructable() const
 {
   return mAmObstructable;
+}
+
+//==============================================================================
+void DragAndDrop::release()
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -202,7 +213,26 @@ bool DragAndDrop::isMoving() const
 //==============================================================================
 void DragAndDrop::setRotationOption(RotationOption option)
 {
-  mOption = option;
+  mRotationOption = option;
+}
+
+//==============================================================================
+DragAndDrop::RotationOption DragAndDrop::getRotationOption() const
+{
+  return mRotationOption;
+}
+
+//==============================================================================
+void DragAndDrop::setRotationModKey(
+    osgGA::GUIEventAdapter::ModKeyMask rotationModKey)
+{
+  mRotationModKey = rotationModKey;
+}
+
+//==============================================================================
+osgGA::GUIEventAdapter::ModKeyMask DragAndDrop::getRotationModKey() const
+{
+  return mRotationModKey;
 }
 
 //==============================================================================
@@ -222,12 +252,6 @@ SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
   : DragAndDrop(viewer, frame),
     mFrame(frame)
 {
-
-}
-
-//==============================================================================
-SimpleFrameDnD::~SimpleFrameDnD()
-{
   // Do nothing
 }
 
@@ -242,11 +266,11 @@ void SimpleFrameDnD::move()
 {
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-  bool ctrl_down = (mViewer->getDefaultEventHandler()->getModKeyMask()
-                    & osgGA::GUIEventAdapter::MODKEY_CTRL);
+  bool modkey_down = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                      & mRotationModKey);
 
-  if(  ((RotationOption::HOLD_CTRL==mOption) && ctrl_down)
-      || RotationOption::ALWAYS_ON==mOption )
+  if(  ((RotationOption::HOLD_MODKEY==mRotationOption) && modkey_down)
+      || RotationOption::ALWAYS_ON==mRotationOption )
   {
     // Rotate
 
@@ -286,12 +310,6 @@ SimpleFrameShapeDnD::SimpleFrameShapeDnD(
     dart::dynamics::Shape* shape)
   : SimpleFrameDnD(viewer, frame),
     mShape(shape)
-{
-  // Do nothing
-}
-
-//==============================================================================
-SimpleFrameShapeDnD::~SimpleFrameShapeDnD()
 {
   // Do nothing
 }
@@ -595,13 +613,156 @@ void InteractiveFrameDnD::update()
 //==============================================================================
 void InteractiveFrameDnD::move()
 {
-  // Do nothing
+  // Do nothing. All the work is taken care of in update().
 }
 
 //==============================================================================
 void InteractiveFrameDnD::saveState()
 {
+  // Do nothing. All the work is taken care of in update().
+}
+
+//==============================================================================
+BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
+                         bool useExternalIK, bool useWholeBody)
+  : DragAndDrop(viewer, bn),
+    mBodyNode(bn),
+    mUseExternalIK(useExternalIK),
+    mUseWholeBody(useWholeBody),
+    mPreserveOrientationModKey(osgGA::GUIEventAdapter::MODKEY_ALT)
+{
   // Do nothing
 }
+
+//==============================================================================
+dart::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
+{
+  return mBodyNode.lock();
+}
+
+//==============================================================================
+void BodyNodeDnD::update()
+{
+  DragAndDrop::update();
+
+  if(mAmMoving && mUseExternalIK && mIK)
+  {
+    std::cout << "running solver" << std::endl;
+//    mIK->getSolver()->setNumMaxIterations(10);
+    std::cout << mIK->getTarget()->getWorldTransform().matrix() << std::endl;
+    std::cout << mIK->solve().transpose() << std::endl;
+  }
+}
+
+//==============================================================================
+void BodyNodeDnD::move()
+{
+  std::cout << "moving" << std::endl;
+  if(mIK == nullptr)
+    return;
+
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+
+  bool rotationActive = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                         & mRotationModKey);
+
+  bool preserveOrientation = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                              & mPreserveOrientationModKey);
+
+  if( ((RotationOption::HOLD_MODKEY==mRotationOption) && rotationActive)
+      || RotationOption::ALWAYS_ON==mRotationOption)
+  {
+    if(!preserveOrientation)
+    {
+      Eigen::AngleAxisd R = getConstrainedRotation();
+
+      tf.translation() = mPivot + mSavedOffset;
+      tf.linear() = (R * mSavedRotation).matrix();
+    }
+    else
+    {
+      tf.translation() = mPivot + mSavedOffset;
+      tf.rotate(mSavedRotation);
+    }
+
+    mIK->getErrorMethod().setAngularErrorWeights(
+          Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight));
+  }
+  else
+  {
+    Eigen::Vector3d dx = getConstrainedDx();
+
+    tf.translation() = mPivot + mSavedOffset + dx;
+    tf.rotate(mSavedRotation);
+
+    if(preserveOrientation)
+    {
+      std::cout << "preserving orientation" << std::endl;
+      mIK->getErrorMethod().setAngularErrorWeights(
+            Eigen::Vector3d::Constant(
+              20.0*dart::dynamics::DefaultIKAngularWeight));
+    }
+    else
+    {
+      mIK->getErrorMethod().setAngularErrorWeights(Eigen::Vector3d::Zero());
+    }
+  }
+
+  std::cout << tf.matrix() << "\n" << std::endl;
+
+  if(mIK->getTarget()->getParentFrame()->isWorld())
+    mIK->getTarget()->setRelativeTransform(tf);
+  else
+    mIK->getTarget()->setTransform(tf);
+}
+
+//==============================================================================
+void BodyNodeDnD::saveState()
+{
+  std::cout << "saving state" << std::endl;
+  dart::dynamics::BodyNodePtr bn = mBodyNode.lock();
+  mPivot = bn->getWorldTransform().translation();
+  mSavedRotation = bn->getWorldTransform().rotation();
+
+  if(mUseExternalIK)
+  {
+    mIK = dart::dynamics::InverseKinematics::create(bn);
+  }
+  else
+  {
+    mIK = bn->createIK();
+  }
+
+  if(mUseWholeBody)
+    mIK->useWholeBody();
+  else
+    mIK->useChain();
+
+  mSavedOffset = mPickedPosition - mPivot;
+  const Eigen::Vector3d offset =
+      bn->getWorldTransform().linear().transpose()*mSavedOffset;
+
+  mIK->setOffset(offset);
+
+  Eigen::Isometry3d tf = bn->getWorldTransform();
+  tf.translate(offset);
+  mIK->getTarget()->setTransform(tf);
+}
+
+//==============================================================================
+void BodyNodeDnD::release()
+{
+  std::cout << "releasing" << std::endl;
+  if(mUseExternalIK)
+  {
+    mIK = nullptr;
+  }
+  else
+  {
+    mBodyNode.lock()->clearIK();
+    mIK = nullptr;
+  }
+}
+
 
 } // namespace osgDart

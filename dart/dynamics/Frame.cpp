@@ -450,6 +450,10 @@ void Frame::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mTransformUpdatedSignal.raise(this);
+
   // If we already know we need to update, just quit
   if(mNeedTransformUpdate)
     return;
@@ -458,14 +462,16 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
-
-  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mVelocityChangedSignal.raise(this);
 
   // If we already know we need to update, just quit
   if(mNeedVelocityUpdate)
@@ -475,13 +481,15 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
-
-  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::notifyAccelerationUpdate()
 {
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mAccelerationChangedSignal.raise(this);
+
   // If we already know we need to update, just quit
   if(mNeedAccelerationUpdate)
     return;
@@ -490,8 +498,6 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
-
-  mAccelerationChangedSignal.raise(this);
 }
 
 //==============================================================================

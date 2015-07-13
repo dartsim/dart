@@ -47,6 +47,7 @@
 
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace osgDart
 {
@@ -317,9 +318,12 @@ bool Viewer::isSimulating() const
 //==============================================================================
 DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
 {
-  dart::dynamics::SimpleFrame* sf =
-      dynamic_cast<dart::dynamics::SimpleFrame*>(_entity);
-  if(sf)
+  if(dart::dynamics::BodyNode* bn =
+     dynamic_cast<dart::dynamics::BodyNode*>(_entity))
+    return enableDragAndDrop(bn);
+
+  if(dart::dynamics::SimpleFrame* sf =
+     dynamic_cast<dart::dynamics::SimpleFrame*>(_entity))
     return enableDragAndDrop(sf);
 
   return nullptr;
@@ -411,6 +415,23 @@ InteractiveFrameDnD* Viewer::enableDragAndDrop(
 }
 
 //==============================================================================
+BodyNodeDnD* Viewer::enableDragAndDrop(dart::dynamics::BodyNode* _bn,
+                                       bool _useExternalIK)
+{
+  if(nullptr == _bn)
+    return nullptr;
+
+  std::map<dart::dynamics::BodyNode*,BodyNodeDnD*>::iterator it =
+      mBodyNodeDnDMap.find(_bn);
+  if(it != mBodyNodeDnDMap.end())
+    return it->second;
+
+  BodyNodeDnD* dnd = new BodyNodeDnD(this, _bn, _useExternalIK);
+  mBodyNodeDnDMap[_bn] = dnd;
+  return dnd;
+}
+
+//==============================================================================
 bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
 {
   if(disableDragAndDrop(dynamic_cast<SimpleFrameShapeDnD*>(_dnd)))
@@ -480,6 +501,20 @@ bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 }
 
 //==============================================================================
+bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
+{
+  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it =
+      mBodyNodeDnDMap.find(_dnd->getBodyNode());
+  if(it == mBodyNodeDnDMap.end())
+    return false;
+
+  delete it->second;
+  mBodyNodeDnDMap.erase(it);
+
+  return true;
+}
+
+//==============================================================================
 const std::string& Viewer::getInstructions() const
 {
   return mInstructions;
@@ -515,6 +550,12 @@ void Viewer::updateDragAndDrops()
   for(auto& dnd_pair : mInteractiveFrameDnDMap)
   {
     InteractiveFrameDnD* dnd = dnd_pair.second;
+    dnd->update();
+  }
+
+  for(auto& dnd_pair : mBodyNodeDnDMap)
+  {
+    BodyNodeDnD* dnd = dnd_pair.second;
     dnd->update();
   }
 }
