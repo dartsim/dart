@@ -120,11 +120,15 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 void Problem::addSeed(const Eigen::VectorXd& _seed)
 {
   if(_seed.size() == static_cast<int>(mDimension))
+  {
     mSeeds.push_back(_seed);
+  }
   else
+  {
     dtwarn << "[Problem::addSeed] Attempting to add a seed of dimension ["
            << _seed.size() << "] a Problem of dimension [" << mDimension
            << "]. The seed will not be added.\n";
+  }
 }
 
 //==============================================================================

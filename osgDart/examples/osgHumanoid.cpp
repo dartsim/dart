@@ -43,22 +43,38 @@ using namespace dart::simulation;
 using namespace dart::utils;
 using namespace dart::math;
 
-Eigen::Vector3d clamped_mag(const Eigen::Vector3d& v, double clamp=0.1)
+class RelaxedPose : public dart::optimizer::Function
 {
-  if(v.norm() > clamp)
-    return v.normalized()*clamp;
-  return v;
-}
+public:
 
-void clamp_components(Eigen::VectorXd& v, double clamp=0.1)
-{
-  clamp = fabs(clamp);
-  for(int i=0; i<v.size(); ++i)
+  static const double DefaultObjectiveWeight;
+
+  RelaxedPose(const Eigen::VectorXd& _pose)
+    : mObjectiveWeight(DefaultObjectiveWeight),
+      mPose(_pose)
   {
-    if(fabs(v[i]) > clamp)
-      v[i] = v[i] > 0? clamp : -clamp;
+    // Do nothing
   }
-}
+
+  double eval(const Eigen::VectorXd& _x) override
+  {
+    return mObjectiveWeight * 0.5 * (_x - mPose).dot(_x - mPose);
+  }
+
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override
+  {
+    _grad = mObjectiveWeight * (_x - mPose);
+  }
+
+  double mObjectiveWeight;
+
+protected:
+
+  Eigen::VectorXd mPose;
+};
+
+const double RelaxedPose::DefaultObjectiveWeight = 2.0;
 
 class TeleoperationWorld : public osgDart::WorldNode
 {
@@ -73,19 +89,51 @@ public:
 
   void customPreRefresh() override
   {
-//    mRobot->getIK(true)->solve();
-    for(size_t i=0; i < mRobot->getNumEndEffectors(); ++i)
-    {
-      EndEffector* ee = mRobot->getEndEffector(i);
-      const InverseKinematicsPtr& ik = ee->getIK();
-      if(ik)
-        ik->solve();
-    }
+    mRobot->getIK(true)->solve();
   }
 
 protected:
 
   SkeletonPtr mRobot;
+};
+
+class InputHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  InputHandler(const SkeletonPtr& atlas)
+    : mAtlas(atlas)
+  {
+    // Do nothing
+  }
+
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter&) override
+  {
+    if(nullptr == mAtlas)
+    {
+      return false;
+    }
+
+    if( osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
+    {
+      if( ea.getKey() == 'p' )
+      {
+        for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
+          std::cout << mAtlas->getDof(i)->getName() << ": "
+                    << mAtlas->getDof(i)->getPosition() << std::endl;
+        std::cout << "  -- -- -- -- -- " << std::endl;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+protected:
+
+  SkeletonPtr mAtlas;
+
 };
 
 int main()
@@ -109,24 +157,94 @@ int main()
   world->addSkeleton(atlas);
   world->addSkeleton(ground);
 
-  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
-    std::cout << atlas->getBodyNode(i)->getName() << std::endl;
+  for(size_t i=0; i<atlas->getNumDofs(); ++i)
+  {
+    DegreeOfFreedom* dof = atlas->getDof(i);
+    std::cout << dof->getName() << " ("
+              << dof->getPosition() << "): "
+              << dof->getPositionLowerLimit()*180.0/M_PI << " -> "
+              << dof->getPositionUpperLimit()*180.0/M_PI << std::endl;
+  }
+
+  atlas->getDof("r_leg_hpy")->setPosition(-45.0*M_PI/180.0);
+  atlas->getDof("r_leg_kny")->setPosition( 90.0*M_PI/180.0);
+  atlas->getDof("r_leg_aky")->setPosition(-45.0*M_PI/180.0);
+
+//  atlas->getDof("r_arm_ely")->setPosition(90.0*M_PI/180.0);
+//  atlas->getDof("l_arm_ely")->setPosition(90.0*M_PI/180.0);
+
+  atlas->getDof("r_arm_elx")->setPosition(-90*M_PI/180.0);
+  atlas->getDof("l_arm_elx")->setPosition( 90*M_PI/180.0);
+
+
+
+  atlas->getDof("r_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
 
   EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector();
   l_hand->setName("l_hand");
+
+  Eigen::VectorXd weights = Eigen::VectorXd::Ones(6);
+  weights = 0.01*weights;
 
   osgDart::InteractiveFramePtr l_target(new osgDart::InteractiveFrame(
                                           Frame::World(), "l_target"));
   l_target->setTransform(l_hand->getTransform());
   l_hand->getIK(true)->setTarget(l_target);
+  l_hand->getIK()->useWholeBody();
+  l_hand->getIK()->getGradientMethod().setComponentWeights(weights);
   world->addSimpleFrame(l_target);
+
+  EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector();
+  osgDart::InteractiveFramePtr r_target(new osgDart::InteractiveFrame(
+                                          Frame::World(), "r_target"));
+  r_target->setTransform(r_hand->getTransform());
+  r_hand->getIK(true)->setTarget(r_target);
+  r_hand->getIK()->useWholeBody();
+  r_hand->getIK()->getGradientMethod().setComponentWeights(weights);
+  world->addSimpleFrame(r_target);
+
+//  BodyNode* r_foot = atlas->getBodyNode("r_foot");
+//  InverseKinematicsPtr rik = r_foot->getIK(true);
+//  rik->getErrorMethod().setLinearBounds(
+//       -std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0),
+//        std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0));
+
+  EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector();
+  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+                                           Frame::World(), "rf_target"));
+  rf_target->setTransform(r_foot->getTransform());
+  r_foot->getIK(true)->setTarget(rf_target);
+  r_foot->getIK()->useWholeBody();
+  r_foot->getIK()->setHierarchyLevel(1);
+  world->addSimpleFrame(rf_target);
+
+
+  for(size_t i=3; i < 6; ++i)
+  {
+    atlas->getDof(i)->setPositionLowerLimit(-5);
+    atlas->getDof(i)->setPositionUpperLimit( 5);
+  }
+
+  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver =
+      std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
+      atlas->getIK(true)->getSolver());
+  solver->setNumMaxIterations(10);
+
+  std::shared_ptr<RelaxedPose> objective(new RelaxedPose(atlas->getPositions()));
+  atlas->getIK()->getProblem()->addSeed(atlas->getPositions());
+  atlas->getIK()->setObjective(objective);
 
   osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
 
   osgDart::Viewer viewer;
   viewer.addWorldNode(node);
 
+  viewer.addEventHandler(new InputHandler(atlas));
+
   viewer.enableDragAndDrop(l_target.get());
+  viewer.enableDragAndDrop(r_target.get());
+
+  viewer.enableDragAndDrop(rf_target.get());
 
   std::cout << viewer.getInstructions() << std::endl;
 
