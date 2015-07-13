@@ -310,7 +310,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
 
   for(size_t i = 0; i < root->child_links.size(); i++)
   {
-    if (!createSkeletonRecursive(skeleton, root->child_links[i].get(), *rootNode))
+    if (!createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode))
       return nullptr;
 
   }
@@ -321,20 +321,20 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
 bool DartLoader::createSkeletonRecursive(
     dynamics::SkeletonPtr _skel,
     const urdf::Link* _lk,
-    dynamics::BodyNode& _parentNode)
+    dynamics::BodyNode* _parentNode)
 {
   dynamics::BodyNode::Properties properties;
   if (!createDartNodeProperties(_lk, &properties))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
-        _lk->parent_joint.get(), properties, &_parentNode, _skel);
+        _lk->parent_joint.get(), properties, _parentNode, _skel);
   if(!node)
     return false;
   
   for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-      if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), *node))
+      if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node))
         return false;
   }
   return true;
