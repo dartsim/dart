@@ -261,11 +261,8 @@ bool GradientDescentSolver::solve()
   } while(!minimized || !satisfied);
 
   mLastConfig = x;
-  if(minimized && satisfied)
-  {
-    problem->setOptimalSolution(x);
-    problem->setOptimumValue(problem->getObjective()->eval(x));
-  }
+  problem->setOptimalSolution(x);
+  problem->setOptimumValue(problem->getObjective()->eval(x));
 
   return minimized && satisfied;
 }

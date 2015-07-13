@@ -134,7 +134,7 @@ public:
   // Documentation inherited
   virtual bool solve() override;
 
-  // Documentation inherited
+  /// Get the last configuration that was used by the Solver
   Eigen::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
