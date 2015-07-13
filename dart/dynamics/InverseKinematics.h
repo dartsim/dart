@@ -57,6 +57,7 @@ namespace dynamics {
 const double DefaultIKTolerance = 1e-6;
 const double DefaultIKErrorClamp = 1.0;
 const double DefaultIKGradientComponentClamp = 0.2;
+const double DefaultIKGradientComponentWeight = 1.0;
 const double DefaultIKDLSCoefficient = 0.05;
 const double DefaultIKAngularWeight = 0.4;
 const double DefaultIKLinearWeight = 1.0;
@@ -143,7 +144,7 @@ public:
 
     virtual Eigen::Vector6d computeError() = 0;
 
-    const Eigen::Vector6d& computeError(const Eigen::VectorXd& _q);
+    const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
 
     const std::string& getMethodName() const;
 
@@ -248,8 +249,8 @@ public:
     virtual void computeGradient(const Eigen::Vector6d& _error,
                                  Eigen::VectorXd& _grad) = 0;
 
-    void computeGradient(const Eigen::VectorXd& _q,
-                         Eigen::Map<Eigen::VectorXd> _grad);
+    void evalGradient(const Eigen::VectorXd& _q,
+                      Eigen::Map<Eigen::VectorXd> _grad);
 
     const std::string& getMethodName() const;
 
@@ -258,6 +259,18 @@ public:
     void setComponentWiseClamp(double _clamp = DefaultIKGradientComponentClamp);
 
     double getComponentWiseClamp() const;
+
+    void applyWeights(Eigen::VectorXd& _grad) const;
+
+    /// Set the weights that will be applied to each component of the gradient.
+    /// If the number of components in _weights is smaller than the number of
+    /// components in the gradient, then a weight of 1.0 will be applied to all
+    /// components that are out of the range of _weights. Passing in an empty
+    /// vector for _weights will effectively make all the gradient components
+    /// unweighted.
+    void setComponentWeights(const Eigen::VectorXd& _weights);
+
+    const Eigen::VectorXd& getComponentWeights() const;
 
     void clearCache();
 
@@ -272,6 +285,8 @@ public:
     Eigen::VectorXd mLastGradient;
 
     double mComponentWiseClamp;
+
+    Eigen::VectorXd mComponentWeights;
 
   };
 

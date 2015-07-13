@@ -39,6 +39,10 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/EndEffector.h"
 
+
+
+#include <iostream>
+
 namespace dart {
 namespace dynamics {
 
@@ -48,8 +52,26 @@ const Eigen::VectorXd& HierarchicalIK::solve()
   if(nullptr == mSolver || nullptr == mProblem)
     return mEmptyVector;
 
-  mProblem->setDimension(getSkeleton()->getNumDofs());
+  const SkeletonPtr& skel = getSkeleton();
 
+  if(nullptr == skel)
+    return mEmptyVector;
+
+  const size_t nDofs = skel->getNumDofs();
+  mProblem->setDimension(nDofs);
+
+  mProblem->setInitialGuess(skel->getPositions());
+
+  Eigen::VectorXd bounds(nDofs);
+  for(size_t i=0; i < nDofs; ++i)
+    bounds[i] = skel->getDof(i)->getPositionLowerLimit();
+  mProblem->setLowerBounds(bounds);
+
+  for(size_t i=0; i < nDofs; ++i)
+    bounds[i] = skel->getDof(i)->getPositionUpperLimit();
+  mProblem->setUpperBounds(bounds);
+
+  refreshIKHierarchy();
   mSolver->solve();
   return mProblem->getOptimalSolution();
 }
@@ -123,6 +145,8 @@ void HierarchicalIK::resetProblem(bool _clearSeeds)
 
   mProblem->setObjective(std::make_shared<Objective>(this));
   mProblem->setObjective(std::make_shared<Constraint>(this));
+
+  mProblem->setDimension(mSkeleton.lock()->getNumDofs());
 }
 
 //==============================================================================
@@ -187,6 +211,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   const IKHierarchy& hierarchy = getIKHierarchy();
 
   mNullSpaceCache.resize(hierarchy.size());
+  bool zeroedNullSpace = false;
   for(size_t i=0; i < hierarchy.size(); ++i)
   {
     const std::vector< std::shared_ptr<InverseKinematics> >& level =
@@ -194,9 +219,21 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 
     Eigen::MatrixXd& NS = mNullSpaceCache[i];
     if(i == 0)
+    {
+      // Start with an identity null space
       NS = Eigen::MatrixXd::Identity(nDofs, nDofs);
+    }
+    else if(zeroedNullSpace)
+    {
+      // If the null space has been zeroed out, just propogate the zeroes along
+      NS.setZero(nDofs, nDofs);
+      continue;
+    }
     else
-      NS = mNullSpaceCache[i-1]; // start with the previous level's null space
+    {
+      // Most of the time, we will just build on the last level's null space
+      NS = mNullSpaceCache[i-1];
+    }
 
     mJacCache.resize(6, nDofs);
     for(size_t j=0; j < level.size(); ++j)
@@ -210,12 +247,23 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
       for(size_t d=0; d < dofs.size(); ++d)
       {
         size_t k = dofs[d];
-        mJacCache.block<6,1>(0,k) = J.block<6,1>(0,j);
+        mJacCache.block<6,1>(0,k) = J.block<6,1>(0,d);
       }
 
       mSVDCache.compute(mJacCache, Eigen::ComputeFullV);
       math::extractNullSpace(mSVDCache, mPartialNullspaceCache);
-      NS *= mPartialNullspaceCache * mPartialNullspaceCache.transpose();
+
+      if(mPartialNullspaceCache.rows() > 0 && mPartialNullspaceCache.cols() > 0)
+      {
+        NS *= mPartialNullspaceCache * mPartialNullspaceCache.transpose();
+      }
+      else
+      {
+        // There no longer exists a null space for this or any lower level
+        NS.setZero();
+        zeroedNullSpace = true;
+        break;
+      }
     }
   }
 
@@ -373,7 +421,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
         q[k] = _x[dofs[k]];
 
       InverseKinematics::ErrorMethod& method = ik->getErrorMethod();
-      const Eigen::Vector6d& error = method.computeError(q);
+      const Eigen::Vector6d& error = method.evalError(q);
 
       cost += error.dot(error);
     }
@@ -410,8 +458,11 @@ void HierarchicalIK::Constraint::evalGradient(
 
       // Compute the gradient of this specific error term
       mTempGradCache.setZero(dofs.size());
+      Eigen::Map<Eigen::VectorXd> gradMap(mTempGradCache.data(),
+                                          mTempGradCache.size());
+
       InverseKinematics::GradientMethod& method = ik->getGradientMethod();
-      method.computeGradient(q, mTempGradCache);
+      method.evalGradient(q, gradMap);
 
       // Add the components of this gradient into the gradient of this level
       for(size_t k=0; k < dofs.size(); ++k)
@@ -420,7 +471,10 @@ void HierarchicalIK::Constraint::evalGradient(
 
     // Project this level's gradient through the null spaces of the levels with
     // higher precedence, then add it to the overall gradient
-    _grad += nullspaces[i] * mLevelGradCache;
+    if(i > 0)
+      _grad += nullspaces[i-1] * mLevelGradCache;
+    else
+      _grad += mLevelGradCache;
   }
 }
 
@@ -617,6 +671,8 @@ void WholeBodyIK::refreshIKHierarchy()
   }
 
   mHierarchy.resize(highestLevel+1);
+  for(auto& level : mHierarchy)
+    level.clear();
 
   for(size_t i=0; i < skel->getNumBodyNodes(); ++i)
   {

@@ -39,6 +39,9 @@
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/SimpleFrame.h"
 
+
+#include <iostream>
+
 namespace dart {
 namespace dynamics {
 
@@ -62,7 +65,21 @@ const Eigen::VectorXd& InverseKinematics::solve()
   if(nullptr == mSolver || nullptr == mProblem)
     return mEmptyVector;
 
+  mProblem->setDimension(mDofs.size());
+
   mProblem->setInitialGuess(getConfiguration());
+
+  const SkeletonPtr& skel = getNode()->getSkeleton();
+
+  Eigen::VectorXd bounds(mDofs.size());
+  for(size_t i=0; i < mDofs.size(); ++i)
+    bounds[i] = skel->getDof(mDofs[i])->getPositionLowerLimit();
+  mProblem->setLowerBounds(bounds);
+
+  for(size_t i=0; i < mDofs.size(); ++i)
+    bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
+  mProblem->setUpperBounds(bounds);
+
   mSolver->solve();
   return mProblem->getOptimalSolution();
 }
@@ -146,12 +163,12 @@ InverseKinematics::ErrorMethod::ErrorMethod(
 }
 
 //==============================================================================
-const Eigen::Vector6d& InverseKinematics::ErrorMethod::computeError(
+const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     const Eigen::VectorXd& _q)
 {
   if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
-    dterr << "[InverseKinematics::ErrorMethod::computeError] Mismatch between "
+    dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
           << "configuration size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() <<"]."
           << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
@@ -426,11 +443,11 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
   if(error.norm() > mProperties.mErrorLengthClamp)
     error = error.normalized()*mProperties.mErrorLengthClamp;
 
-  if(!this->mIK->getTarget()->getParentFrame()->isWorld())
+  if(!mIK->getTarget()->getParentFrame()->isWorld())
   {
     // Transform the error term into the world frame if it's not already
     const Eigen::Isometry3d& R =
-        this->mIK->getTarget()->getParentFrame()->getWorldTransform();
+        mIK->getTarget()->getParentFrame()->getWorldTransform();
     error.head<3>() = R.linear()*error.head<3>();
     error.tail<3>() = R.linear()*error.tail<3>();
   }
@@ -450,7 +467,7 @@ InverseKinematics::GradientMethod::GradientMethod(
 }
 
 //==============================================================================
-void InverseKinematics::GradientMethod::computeGradient(
+void InverseKinematics::GradientMethod::evalGradient(
     const Eigen::VectorXd& _q,
     Eigen::Map<Eigen::VectorXd> _grad)
 {
@@ -494,7 +511,7 @@ void InverseKinematics::GradientMethod::computeGradient(
     }
   }
 
-  Eigen::Vector6d error = mIK->getErrorMethod().computeError(_q);
+  Eigen::Vector6d error = mIK->getErrorMethod().evalError(_q);
   mIK->setConfiguration(_q);
   mLastGradient.resize(_grad.size());
   computeGradient(error, mLastGradient);
@@ -513,9 +530,9 @@ void InverseKinematics::GradientMethod::clampGradient(
 {
   for(int i=0; i<_grad.size(); ++i)
   {
-    if(std::abs(_grad[i]) > this->mComponentWiseClamp)
-      _grad[i] = _grad[i] > 0 ?  this->mComponentWiseClamp :
-                                -this->mComponentWiseClamp;
+    if(std::abs(_grad[i]) > mComponentWiseClamp)
+      _grad[i] = _grad[i] > 0 ?  mComponentWiseClamp :
+                                -mComponentWiseClamp;
   }
 }
 
@@ -529,6 +546,29 @@ void InverseKinematics::GradientMethod::setComponentWiseClamp(double _clamp)
 double InverseKinematics::GradientMethod::getComponentWiseClamp() const
 {
   return mComponentWiseClamp;
+}
+
+//==============================================================================
+void InverseKinematics::GradientMethod::applyWeights(
+    Eigen::VectorXd& _grad) const
+{
+  size_t numComponents = std::min(_grad.size(), mComponentWeights.size());
+  for(size_t i = 0; i < numComponents; ++i)
+    _grad[i] = mComponentWeights[i] * _grad[i];
+}
+
+//==============================================================================
+void InverseKinematics::GradientMethod::setComponentWeights(
+    const Eigen::VectorXd& _weights)
+{
+  mComponentWeights = _weights;
+}
+
+//==============================================================================
+const Eigen::VectorXd&
+InverseKinematics::GradientMethod::getComponentWeights() const
+{
+  return mComponentWeights;
 }
 
 //==============================================================================
@@ -561,7 +601,7 @@ void InverseKinematics::JacobianDLS::computeGradient(
     const Eigen::Vector6d& _error,
     Eigen::VectorXd& _grad)
 {
-  const math::Jacobian& J = this->mIK->computeJacobian();
+  const math::Jacobian& J = mIK->computeJacobian();
 
   int rows = J.rows(), cols = J.cols();
   if(rows <= cols)
@@ -575,7 +615,8 @@ void InverseKinematics::JacobianDLS::computeGradient(
             J.transpose()*J).inverse() * J.transpose() * _error;
   }
 
-  this->clampGradient(_grad);
+  applyWeights(_grad);
+  clampGradient(_grad);
 }
 
 //==============================================================================
@@ -611,9 +652,11 @@ void InverseKinematics::JacobianTranspose::computeGradient(
     const Eigen::Vector6d& _error,
     Eigen::VectorXd& _grad)
 {
-  const math::Jacobian& J = this->mIK->computeJacobian();
+  const math::Jacobian& J = mIK->computeJacobian();
   _grad = J.transpose() * _error;
-  this->clampGradient(_grad);
+
+  applyWeights(_grad);
+  clampGradient(_grad);
 }
 
 //==============================================================================
@@ -905,11 +948,11 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
   const math::Jacobian fullJacobian = hasOffset()?
         getNode()->getWorldJacobian(mOffset) : getNode()->getWorldJacobian();
 
-  mJacobian.setZero(6, this->getDofs().size());
+  mJacobian.setZero(6, getDofs().size());
 
-  for(int i=0; i< static_cast<int>(this->getDofMap().size()); ++i)
+  for(int i=0; i< static_cast<int>(getDofMap().size()); ++i)
   {
-    int j = this->getDofMap()[i];
+    int j = getDofMap()[i];
     if(j >= 0)
       mJacobian.block<6,1>(0,j) = fullJacobian.block<6,1>(0,i);
   }
@@ -1038,7 +1081,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
     return 0;
   }
 
-  return mIK->getErrorMethod().computeError().norm();
+  return mIK->getErrorMethod().evalError(_x).norm();
 }
 
 //==============================================================================
@@ -1053,7 +1096,7 @@ void InverseKinematics::Constraint::evalGradient(
     return;
   }
 
-  mIK->getGradientMethod().computeGradient(_x, _grad);
+  mIK->getGradientMethod().evalGradient(_x, _grad);
 }
 
 //==============================================================================
