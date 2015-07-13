@@ -39,10 +39,12 @@
 namespace osgDart
 {
 
+//==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
   : osgGA::OrbitManipulator(flags)
 {
   setVerticalAxisFixed(false);
+  setAllowThrow(false);
 }
 
 //==============================================================================
@@ -50,7 +52,7 @@ TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
                                            const osg::CopyOp& copyOp)
   : osgGA::OrbitManipulator(tm, copyOp)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
