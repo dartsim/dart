@@ -281,7 +281,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
     {
       root = root->child_links[0].get();
       dynamics::BodyNode::Properties rootProperties;
-      if (!createDartNodeProperties(root, &rootProperties))
+      if (!createDartNodeProperties(root, rootProperties))
         return nullptr;
 
       rootNode = createDartJointAndNode(
@@ -296,7 +296,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
   else
   {
     dynamics::BodyNode::Properties rootProperties;
-    if (!createDartNodeProperties(root, &rootProperties))
+    if (!createDartNodeProperties(root, rootProperties))
       return nullptr;
 
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
@@ -324,7 +324,7 @@ bool DartLoader::createSkeletonRecursive(
     dynamics::BodyNode* _parentNode)
 {
   dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(_lk, &properties))
+  if (!createDartNodeProperties(_lk, properties))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
@@ -467,15 +467,15 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
  * @function createDartNode
  */
 bool DartLoader::createDartNodeProperties(
-    const urdf::Link* _lk, dynamics::BodyNode::Properties *node)
+    const urdf::Link* _lk, dynamics::BodyNode::Properties &node)
 {
-  node->mName = _lk->name;
+  node.mName = _lk->name;
   
   // Load Inertial information
   if(_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;
-    node->mInertia.setLocalCOM(toEigen(origin.position));
-    node->mInertia.setMass(_lk->inertial->mass);
+    node.mInertia.setLocalCOM(toEigen(origin.position));
+    node.mInertia.setMass(_lk->inertial->mass);
 
     Eigen::Matrix3d J;
     J << _lk->inertial->ixx, _lk->inertial->ixy, _lk->inertial->ixz,
@@ -485,7 +485,7 @@ bool DartLoader::createDartNodeProperties(
                                          origin.rotation.y, origin.rotation.z));
     J = R * J * R.transpose();
 
-    node->mInertia.setMoment(J(0,0), J(1,1), J(2,2),
+    node.mInertia.setMoment(J(0,0), J(1,1), J(2,2),
                             J(0,1), J(0,2), J(1,2));
   }
 
@@ -493,7 +493,7 @@ bool DartLoader::createDartNodeProperties(
   for(size_t i = 0; i < _lk->visual_array.size(); i++)
   {
     if(dynamics::ShapePtr shape = createShape(_lk->visual_array[i].get()))
-      node->mVizShapes.push_back(shape);
+      node.mVizShapes.push_back(shape);
     else
       return false;
   }
@@ -501,7 +501,7 @@ bool DartLoader::createDartNodeProperties(
   // Set collision information
   for(size_t i = 0; i < _lk->collision_array.size(); i++) {
     if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get()))
-      node->mColShapes.push_back(shape);
+      node.mColShapes.push_back(shape);
     else
       return false;
   }

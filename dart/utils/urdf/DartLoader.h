@@ -104,7 +104,7 @@ private:
         dynamics::SkeletonPtr _skeleton);
 
     bool createDartNodeProperties(
-        const urdf::Link* _lk, dynamics::BodyNode::Properties *properties);
+        const urdf::Link* _lk, dynamics::BodyNode::Properties &properties);
 
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
