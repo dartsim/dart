@@ -442,7 +442,7 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
   }
 
   int cols = _SVD.matrixV().cols(), rows = _SVD.matrixV().rows();
-  _NS = _SVD.matrixV().block(0, rank, rows, cols);
+  _NS = _SVD.matrixV().block(0, rank, rows, cols-rank);
 }
 
 template <typename MatrixType, typename ReturnType>
