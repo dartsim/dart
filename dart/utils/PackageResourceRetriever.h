@@ -75,11 +75,17 @@ public:
   void addPackageDirectory(const std::string& _packageName,
                            const std::string& _packageDirectory);
 
-  virtual ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
+  bool exists(const std::string& _uri) override;
+  ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
 
 private:
   ResourceRetrieverPtr mLocalRetriever;
   std::unordered_map<std::string, std::vector<std::string> > mPackageMap;
+
+  const std::vector<std::string>& getPackagePaths(
+    const std::string& _packageName);
+  bool resolvePackageUri(const std::string& _uri,
+    std::string& _packageName, std::string& _relativePath);
 };
 
 typedef std::shared_ptr<PackageResourceRetriever> PackageResourceRetrieverPtr;

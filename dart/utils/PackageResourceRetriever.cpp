@@ -31,13 +31,62 @@ void PackageResourceRetriever::addPackageDirectory(
   mPackageMap[_packageName].push_back(normalizedPackageDirectory);
 }
 
+bool PackageResourceRetriever::exists(const std::string& _uri)
+{
+  std::string packageName, relativePath;
+  if (!resolvePackageUri(_uri, packageName, relativePath))
+    return false;
+
+  for(const std::string &packagePath : getPackagePaths(packageName))
+  {
+    if (mLocalRetriever->exists(_uri))
+      return true;
+  }
+  return false;
+}
+
 ConstMemoryResourcePtr PackageResourceRetriever::retrieve(
   const std::string& _uri)
+{
+  std::string packageName, relativePath;
+  if (!resolvePackageUri(_uri, packageName, relativePath))
+    return nullptr;
+
+  for(const std::string &packagePath : getPackagePaths(packageName))
+  {
+    const std::string localUri = "file://" + packagePath + relativePath;
+    if(const auto resource = mLocalRetriever->retrieve(localUri))
+      return resource;
+  }
+  return nullptr;
+}
+
+const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
+  const std::string& _packageName)
+{
+  static const std::vector<std::string> empty_placeholder;
+
+  // Lookup the corresponding package path.
+  const auto it = mPackageMap.find(_packageName);
+  if(it != std::end(mPackageMap))
+    return it->second;
+  else
+  {
+    dtwarn << "[PackageResourceResolver::retrieve] Unable to resolve path to"
+              " package '" << _packageName << "'. Did you call"
+              " addPackageDirectory(~) for this package name?\n";
+    return empty_placeholder;
+  }
+}
+
+bool PackageResourceRetriever::resolvePackageUri(
+  const std::string& _uri, std::string& _packageName,
+  std::string& _relativePath)
 {
   static const std::string schema = "package://";
 
   if (_uri.find(schema) != 0)
-    return nullptr;
+    return false;
 
   // Split the URI into package and relative path components.
   const size_t packageIndex = schema.size();
@@ -47,32 +96,13 @@ ConstMemoryResourcePtr PackageResourceRetriever::retrieve(
   {
     dtwarn << "[PackageResourceRetriever::retrieve] Unable to find package"
               " name in URI '" << _uri << "'.\n";
-    return nullptr;
+    return false;
   }
 
   assert(pathIndex >= packageIndex);
-  const std::string packageName = _uri.substr(packageIndex, pathIndex - packageIndex);
-  const std::string relativePath = _uri.substr(pathIndex);
-
-  // Lookup the corresponding package path.
-  const auto it = mPackageMap.find(packageName);
-  if(it == std::end(mPackageMap))
-  {
-    dtwarn << "[PackageResourceResolver::retrieve] Unable to resolve path to"
-              " package '" << packageName << "' while retrieving '" << _uri
-           << "'. Did you call addPackageDirectory(~) with this package"
-              " name?\n";
-    return nullptr;
-  }
-
-  // Try each path, in sequence.
-  for(const std::string &packagePath : it->second)
-  {
-    const std::string localUri = "file://" + packagePath + relativePath;
-    if(const auto resource = mLocalRetriever->retrieve(localUri))
-      return resource;
-  }
-  return nullptr;
+  _packageName = _uri.substr(packageIndex, pathIndex - packageIndex);
+  _relativePath = _uri.substr(pathIndex);
+  return true;
 }
 
 } // namespace utils

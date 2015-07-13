@@ -9,8 +9,7 @@
  * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
  * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
- * This file is provided under the following "BSD-style" License:
- *   Redistribution and use in source and binary forms, with or
+ * This file is provided under the following "BSD-style" License: *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
@@ -69,7 +68,9 @@ typedef std::shared_ptr<const MemoryResource> ConstMemoryResourcePtr;
 
 struct ResourceRetriever {
   virtual ~ResourceRetriever() = default;
-  virtual ConstMemoryResourcePtr retrieve(const std::string &_uri) = 0;
+
+  virtual bool exists(const std::string& _uri) = 0;
+  virtual ConstMemoryResourcePtr retrieve(const std::string& _uri) = 0;
 };
 
 typedef std::shared_ptr<ResourceRetriever> ResourceRetrieverPtr;

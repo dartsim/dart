@@ -1,20 +1,29 @@
 #include <fstream>
+#include <boost/filesystem/operations.hpp>
 #include "dart/common/Console.h"
 #include "dart/utils/LocalResourceRetriever.h"
+
+static const std::string FILE_SCHEMA = "file://";
 
 namespace dart {
 namespace utils {
 
+bool LocalResourceRetriever::exists(const std::string& _uri)
+{
+  if(_uri.size() >= FILE_SCHEMA.size())
+    return boost::filesystem::exists(_uri.substr(FILE_SCHEMA.size()));
+  else
+    return false;
+}
+
 ConstMemoryResourcePtr LocalResourceRetriever::retrieve(
   const std::string& _uri)
 {
-  static const std::string prefix = "file://";
-
   // Only file:// URIs are local.
-  if(_uri.find(prefix) != 0)
+  if(_uri.find(FILE_SCHEMA) != 0)
     return nullptr;
 
-  const std::string localPath = _uri.substr(prefix.size());
+  const std::string localPath = _uri.substr(FILE_SCHEMA.size());
   std::ifstream stream(localPath.c_str(), std::ios::binary);
 
   // Compute the length of the file.

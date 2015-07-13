@@ -45,6 +45,8 @@ class LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;
+
+  bool exists(const std::string& _uri) override;
   ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
 };
 

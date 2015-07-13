@@ -51,11 +51,16 @@ public:
     const std::string& _schema,
     const ResourceRetrieverPtr& _resourceRetriever);
 
+  bool exists(const std::string& _uri) override;
   ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
 
 private:
   std::unordered_map<std::string,
     std::vector<ResourceRetrieverPtr> > mResourceRetrievers;
+
+  const std::vector<ResourceRetrieverPtr>& getRetrievers(
+    const std::string& _uri);
+  std::string getSchema(const std::string& _uri);
 };
 
 typedef std::shared_ptr<SchemaResourceRetriever> SchemaResourceRetrieverPtr;

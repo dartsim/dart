@@ -27,7 +27,52 @@ bool SchemaResourceRetriever::addSchemaRetriever(
   return true;
 }
 
+bool SchemaResourceRetriever::exists(const std::string& _uri)
+{
+  for(const ResourceRetrieverPtr& resourceRetriever : getRetrievers(_uri))
+  {
+    if(resourceRetriever->exists(_uri))
+      return true;
+  }
+  return false;
+}
+
 ConstMemoryResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
+{
+  const std::vector<ResourceRetrieverPtr> &retrievers = getRetrievers(_uri);
+  for(const ResourceRetrieverPtr& resourceRetriever : retrievers)
+  {
+    if(ConstMemoryResourcePtr resource = resourceRetriever->retrieve(_uri))
+      return resource;
+  }
+
+  dtwarn << "[SchemaResourceRetriever::retrieve] All ResourceRetrievers"
+            " registered for this schema failed to retrieve the URI '"
+            << _uri << "' (tried " << retrievers.size() << ").\n";
+
+  return nullptr;
+}
+
+const std::vector<ResourceRetrieverPtr>& SchemaResourceRetriever::getRetrievers(
+  const std::string& _uri)
+{
+  static const std::vector<ResourceRetrieverPtr> empty_placeholder;
+
+  const std::string schema = getSchema(_uri);
+
+  const auto it = mResourceRetrievers.find(schema);
+  if(it != std::end(mResourceRetrievers))
+    return it->second;
+  else
+  {
+    dtwarn << "[SchemaResourceRetriever::retrieve] There are no resource"
+              " retrievers registered for the schema '" << schema << "'"
+              " that is necessary to retrieve URI '" << _uri << "'.\n";
+    return empty_placeholder;
+  }
+}
+
+std::string SchemaResourceRetriever::getSchema(const std::string& _uri)
 {
   const auto schemaIndex = _uri.find("://");
   if(schemaIndex == std::string::npos)
@@ -37,31 +82,7 @@ ConstMemoryResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri
     return nullptr;
   }
 
-  const std::string schema = _uri.substr(0, schemaIndex);
-  const auto resourceRetrieversIt = mResourceRetrievers.find(schema);
-  if (resourceRetrieversIt == std::end(mResourceRetrievers))
-  {
-    dtwarn << "[SchemaResourceRetriever::retrieve] There are no resource"
-              " retrievers registered for the schema '" << schema << "'"
-              " that is necessary to retrieve URI '" << _uri << "'.\n";
-    return nullptr;
-  }
-
-  // Sequentially try each ResourceRetriever until one returns success.
-  const std::vector<ResourceRetrieverPtr> &retrievers
-    = resourceRetrieversIt->second;
-
-  for (const ResourceRetrieverPtr resourceRetriever : retrievers)
-  {
-    if (ConstMemoryResourcePtr resource = resourceRetriever->retrieve(_uri))
-      return resource;
-  }
-
-  dtwarn << "[SchemaResourceRetriever::retrieve] All ResourceRetrievers"
-            " registered for schema '" << schema << "'" " failed to retrieve"
-            " URI '" << _uri << "' (tried " << retrievers.size() << ").\n";
-
-  return nullptr;
+  return _uri.substr(0, schemaIndex);
 }
 
 } // namespace utils
