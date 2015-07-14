@@ -80,6 +80,9 @@ public:
     void addPackageDirectory(const std::string& _packageName,
                              const std::string& _packageDirectory);
 
+    dynamics::SkeletonPtr readSkeleton(const std::string& _uri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
+
     /// Parse a file to produce a Skeleton
     dynamics::SkeletonPtr parseSkeleton(const std::string& _urdfFileName);
 
@@ -101,20 +104,30 @@ private:
 
     void parseWorldToEntityPaths(const std::string& _xml_string);
 
-    dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
-    bool createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode& _parent);
+    dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
+      const urdf::ModelInterface* _model,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
+
+    bool createSkeletonRecursive(
+      dynamics::SkeletonPtr _skel,
+      const urdf::Link* _lk,
+      dynamics::BodyNode& _parent,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     template <class VisualOrCollision>
-    dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol);
+    dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     dynamics::BodyNode* createDartJointAndNode(
         const urdf::Joint* _jt,
         const dynamics::BodyNode::Properties& _body,
         dynamics::BodyNode* _parent,
-        dynamics::SkeletonPtr _skeleton);
+        dynamics::SkeletonPtr _skeleton,
+        const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     bool createDartNodeProperties(
-        const urdf::Link* _lk, dynamics::BodyNode::Properties *properties);
+      const urdf::Link* _lk, dynamics::BodyNode::Properties *properties,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
