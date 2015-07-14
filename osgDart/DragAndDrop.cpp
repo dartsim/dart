@@ -650,7 +650,8 @@ void BodyNodeDnD::update()
     std::cout << "running solver" << std::endl;
 //    mIK->getSolver()->setNumMaxIterations(10);
     std::cout << mIK->getTarget()->getWorldTransform().matrix() << std::endl;
-    std::cout << mIK->solve().transpose() << std::endl;
+//    std::cout << mIK->solve().transpose() << std::endl;
+    mIK->solve();
   }
 }
 

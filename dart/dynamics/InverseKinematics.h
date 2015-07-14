@@ -88,7 +88,9 @@ public:
 
   virtual ~InverseKinematics();
 
-  const Eigen::VectorXd& solve();
+  bool solve(bool _resetConfiguration = false);
+
+  bool solve(Eigen::VectorXd& config, bool _resetConfiguration = false);
 
   InverseKinematicsPtr clone(JacobianNode* _newEntity) const;
 

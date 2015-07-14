@@ -69,7 +69,9 @@ public:
 
   virtual ~HierarchicalIK() = default;
 
-  const Eigen::VectorXd& solve();
+  bool solve(bool _resetConfiguration = false);
+
+  bool solve(Eigen::VectorXd& config, bool _resetConfiguration = false);
 
   virtual std::shared_ptr<HierarchicalIK> clone(const SkeletonPtr& _newSkel) const = 0;
 

@@ -38,24 +38,40 @@
 #include "dart/dynamics/HierarchicalIK.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/EndEffector.h"
-
-
-
-#include <iostream>
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-const Eigen::VectorXd& HierarchicalIK::solve()
+bool HierarchicalIK::solve(bool _resetConfiguration)
 {
-  if(nullptr == mSolver || nullptr == mProblem)
-    return mEmptyVector;
+  if(nullptr == mSolver)
+  {
+    dtwarn << "[HierarchicalIK::solve] The Solver for a HierarchicalIK module "
+           << "associated with [" << mSkeleton.lock()->getName() << "] is a "
+           << "nullptr. You must reset the module's Solver before you can use "
+           << "it.\n";
+    return false;
+  }
+
+  if(nullptr == mProblem)
+  {
+    dtwarn << "[HierarchicalIK::solve] The Problem for a HierarchicalIK module "
+           << "associated with [" << mSkeleton.lock()->getName() << "] is a "
+           << "nullptr. You must reset the module's Problem before you can use "
+           << "it.\n";
+    return false;
+  }
 
   const SkeletonPtr& skel = getSkeleton();
 
   if(nullptr == skel)
-    return mEmptyVector;
+  {
+    dtwarn << "[HierarchicalIK::solve] Calling a HierarchicalIK module which "
+           << "is associated with a Skeleton that no longer exists.\n";
+    return false;
+  }
 
   const size_t nDofs = skel->getNumDofs();
   mProblem->setDimension(nDofs);
@@ -72,8 +88,22 @@ const Eigen::VectorXd& HierarchicalIK::solve()
   mProblem->setUpperBounds(bounds);
 
   refreshIKHierarchy();
-  mSolver->solve();
-  return mProblem->getOptimalSolution();
+
+  if(!_resetConfiguration)
+    return mSolver->solve();
+
+  Eigen::VectorXd config = mSkeleton.lock()->getPositions();
+  bool wasSolved = mSolver->solve();
+  setConfiguration(config);
+  return wasSolved;
+}
+
+//==============================================================================
+bool HierarchicalIK::solve(Eigen::VectorXd& config, bool _resetConfiguration)
+{
+  bool wasSolved = solve(_resetConfiguration);
+  config = mProblem->getOptimalSolution();
+  return wasSolved;
 }
 
 //==============================================================================

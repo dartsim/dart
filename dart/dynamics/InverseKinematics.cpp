@@ -60,10 +60,25 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-const Eigen::VectorXd& InverseKinematics::solve()
+bool InverseKinematics::solve(bool _resetConfiguration)
 {
-  if(nullptr == mSolver || nullptr == mProblem)
-    return mEmptyVector;
+  if(nullptr == mSolver)
+  {
+    dtwarn << "[InverseKinematics::solve] The Solver for an InverseKinematics "
+           << "module associated with [" << mNode->getName() << "] is a "
+           << "nullptr. You must reset the module's Solver before you can use "
+           << "it.\n";
+    return false;
+  }
+
+  if(nullptr == mProblem)
+  {
+    dtwarn << "[InverseKinematics::solve] The Problem for an InverseKinematics "
+           << "module associated with [" << mNode->getName() << "] is a "
+           << "nullptr. You must reset the module's Problem before you can use "
+           << "it.\n";
+    return false;
+  }
 
   mProblem->setDimension(mDofs.size());
 
@@ -80,8 +95,21 @@ const Eigen::VectorXd& InverseKinematics::solve()
     bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
-  mSolver->solve();
-  return mProblem->getOptimalSolution();
+  if(!_resetConfiguration)
+    return mSolver->solve();
+
+  Eigen::VectorXd config = getConfiguration();
+  bool wasSolved = mSolver->solve();
+  setConfiguration(config);
+  return wasSolved;
+}
+
+//==============================================================================
+bool InverseKinematics::solve(Eigen::VectorXd& config, bool _resetConfiguration)
+{
+  bool wasSolved = solve(_resetConfiguration);
+  config = mProblem->getOptimalSolution();
+  return wasSolved;
 }
 
 //==============================================================================
