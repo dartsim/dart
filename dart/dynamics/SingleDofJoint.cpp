@@ -482,8 +482,8 @@ bool SingleDofJoint::hasPositionLimit(size_t _index) const
     return true;
   }
 
-  return !(std::isinf(mSingleDofP.mPositionLowerLimit)
-        && std::isinf(mSingleDofP.mPositionUpperLimit));
+  return std::isfinite(mSingleDofP.mPositionLowerLimit)
+      || std::isfinite(mSingleDofP.mPositionUpperLimit);
 }
 
 //==============================================================================

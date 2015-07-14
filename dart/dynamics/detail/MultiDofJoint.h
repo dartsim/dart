@@ -596,8 +596,8 @@ bool MultiDofJoint<DOF>::hasPositionLimit(size_t _index) const
     return true;
   }
 
-  return !(std::isinf(mMultiDofP.mPositionUpperLimits[_index])
-        && std::isinf(mMultiDofP.mPositionLowerLimits[_index]));
+  return std::isfinite(mMultiDofP.mPositionUpperLimits[_index])
+      || std::isfinite(mMultiDofP.mPositionLowerLimits[_index]);
 }
 
 //==============================================================================
