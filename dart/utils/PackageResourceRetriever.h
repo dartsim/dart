@@ -76,7 +76,7 @@ public:
                            const std::string& _packageDirectory);
 
   bool exists(const std::string& _uri) override;
-  ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
+  ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
   ResourceRetrieverPtr mLocalRetriever;

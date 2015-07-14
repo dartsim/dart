@@ -48,6 +48,8 @@
 
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
+#include "dart/utils/AssimpInputResourceAdaptor.h"
+#include "dart/utils/LocalResourceRetriever.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
 // from the standard assimp library
@@ -308,48 +310,40 @@ void MeshShape::_updateBoundingBoxDim() {
   mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
-const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size,
-                                   const std::string& _uri)
+const aiScene* MeshShape::loadMesh(
+  const std::string& _uri, const utils::ResourceRetrieverPtr& _retriever)
 {
-  // Extract the file extension.
-  std::string extension;
-  const size_t extensionIndex = _uri.find_last_of('.');
-  if(extensionIndex != std::string::npos)
-    extension = _uri.substr(extensionIndex);
-
-  std::transform(std::begin(extension), std::end(extension),
-                 std::begin(extension), ::tolower);
-
-  // Use the file extension as a "format hint" for Assimp.
-  const char *achFormatHint;
-  if(!extension.empty())
-    achFormatHint = extension.c_str() + 1; // strip the '.'
-  else
-    achFormatHint = nullptr;
-  
-  // Remove points and lines
+  // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(propertyStore,
-    AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+    AI_CONFIG_PP_SBP_REMOVE,
+      aiPrimitiveType_POINT
+    | aiPrimitiveType_LINE
+  );
 
-  const aiScene* scene = aiImportFileFromMemoryWithProperties(
-    reinterpret_cast<const char*>(_data), _size,
+  // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
+  // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
+  // completely ridiculous...
+  utils::AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
+  aiFileIO fileIO = utils::createFileIO(&systemIO);
+
+  // Import the file.
+  const aiScene* scene = aiImportFileExWithProperties(
+    _uri.c_str(), 
       aiProcess_GenNormals
     | aiProcess_Triangulate
     | aiProcess_JoinIdenticalVertices
     | aiProcess_SortByPType
     | aiProcess_OptimizeMeshes,
-    achFormatHint, propertyStore
+    &fileIO,
+    propertyStore
   );
 
-  aiReleasePropertyStore(propertyStore);
-
+  // If succeeded, store the importer in the scene to keep it alive. This is
+  // necessary because the importer owns the memory that it allocates.
   if(!scene)
   {
-    const char* assimpMessage = aiGetErrorString();
-    const char* message
-      = (assimpMessage) ? assimpMessage : "An unknown error has occurred.";
-    dterr << "[MeshShape::loadMesh] Failed loading mesh: " << message << '\n';
+    dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
     return nullptr;
   }
 
@@ -358,28 +352,30 @@ const aiScene* MeshShape::loadMesh(const uint8_t* _data, size_t _size,
   // rotation. We are only catching files with the .dae file ending here. We
   // might miss files with an .xml file ending, which would need to be looked
   // into to figure out whether they are collada files.
+  std::string extension;
+  const size_t extensionIndex = _uri.find_last_of('.');
+  if(extensionIndex != std::string::npos)
+    extension = _uri.substr(extensionIndex);
+
+  std::transform(std::begin(extension), std::end(extension),
+                 std::begin(extension), ::tolower);
+
   if(extension == ".dae" || extension == ".zae")
     scene->mRootNode->mTransformation = aiMatrix4x4();
 
-  // Pre-transform the verticies. Assimp states that this post-processing step
-  // cannot fail, so we'll assert if it returns nullptr.
+  // Finally, pre-transform the vertices. We can't do this as part of the
+  // import process, because we may have changed mTransformation above.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
-  assert(scene);
+  if(!scene)
+    dtwarn << "[MeshShape::loadMesh] Failed pre-transforming vertices.\n";
 
   return scene;
 }
 
-const aiScene* MeshShape::loadMesh(const utils::MemoryResource& _resource,
-                                   const std::string& _uri)
-{
-  return loadMesh(_resource.getData(), _resource.getSize(), _uri);
-}
-
 const aiScene* MeshShape::loadMesh(const std::string& _fileName)
 {
-  utils::LocalResourceRetriever retriever;
-  const std::string uri = "file://" + _fileName;
-  return loadMesh(*retriever.retrieve(uri), uri);
+  const auto retriever = std::make_shared<utils::LocalResourceRetriever>();
+  return loadMesh("file://" + _fileName, retriever);
 }
 
 }  // namespace dynamics

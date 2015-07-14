@@ -37,12 +37,12 @@ bool SchemaResourceRetriever::exists(const std::string& _uri)
   return false;
 }
 
-ConstMemoryResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
+ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
 {
   const std::vector<ResourceRetrieverPtr> &retrievers = getRetrievers(_uri);
   for(const ResourceRetrieverPtr& resourceRetriever : retrievers)
   {
-    if(ConstMemoryResourcePtr resource = resourceRetriever->retrieve(_uri))
+    if(ResourcePtr resource = resourceRetriever->retrieve(_uri))
       return resource;
   }
 

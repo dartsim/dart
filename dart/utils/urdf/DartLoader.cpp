@@ -515,12 +515,7 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
     const std::string& uri = mesh->filename;
-    const utils::ConstMemoryResourcePtr resource = mRetriever->retrieve(uri);
-    if (!resource) {
-      return nullptr;
-    }
-
-    const aiScene* scene = dynamics::MeshShape::loadMesh(*resource, uri);
+    const aiScene* scene = dynamics::MeshShape::loadMesh(uri, mRetriever);
     if (!scene)
       return nullptr;
 

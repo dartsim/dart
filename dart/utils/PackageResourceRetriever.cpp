@@ -4,7 +4,6 @@
 #include "dart/utils/LocalResourceRetriever.h"
 #include "dart/utils/ResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
-
 namespace dart {
 namespace utils {
 
@@ -45,8 +44,7 @@ bool PackageResourceRetriever::exists(const std::string& _uri)
   return false;
 }
 
-ConstMemoryResourcePtr PackageResourceRetriever::retrieve(
-  const std::string& _uri)
+ResourcePtr PackageResourceRetriever::retrieve(const std::string& _uri)
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))

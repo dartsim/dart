@@ -52,7 +52,7 @@ public:
     const ResourceRetrieverPtr& _resourceRetriever);
 
   bool exists(const std::string& _uri) override;
-  ConstMemoryResourcePtr retrieve(const std::string& _uri) override;
+  ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
   std::unordered_map<std::string,

@@ -45,6 +45,12 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/utils/ResourceRetriever.h"
 
+namespace Assimp {
+
+class IOSystem;
+
+} // namespace Assimp
+
 namespace dart {
 namespace dynamics {
 
@@ -93,11 +99,11 @@ public:
             bool _default = true) const;
 
   /// \brief
-  static const aiScene* loadMesh(const uint8_t* _data, size_t _size,
-                                 const std::string& _uri = std::string());
-  static const aiScene* loadMesh(const utils::MemoryResource& _resource,
-                                 const std::string& _uri = std::string());
   static const aiScene* loadMesh(const std::string& _fileName);
+
+  /// \brief 
+  static const aiScene* loadMesh(
+    const std::string& _uri, const utils::ResourceRetrieverPtr& _retriever);
 
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;

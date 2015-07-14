@@ -36,8 +36,8 @@
 #define DART_UTILS_RESOURCERETRIEVER_H_
 
 #include <memory>
-#include <functional>
 #include <string>
+#include "Resource.h"
 
 namespace dart {
 namespace utils {
@@ -70,13 +70,12 @@ struct ResourceRetriever {
   virtual ~ResourceRetriever() = default;
 
   virtual bool exists(const std::string& _uri) = 0;
-  virtual ConstMemoryResourcePtr retrieve(const std::string& _uri) = 0;
+  virtual ResourcePtr retrieve(const std::string& _uri) = 0;
 };
 
 typedef std::shared_ptr<ResourceRetriever> ResourceRetrieverPtr;
-typedef std::shared_ptr<const ResourceRetriever> ConstResourceRetrieverPtr;
 
-}  // namespace utils
-}  // namespace dart
+} // namespace utils
+} // namespace dart
 
 #endif // ifndef DART_UTILS_RESOURCERETRIEVER_H_

@@ -33,26 +33,39 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_LOCALRESOURCERETRIEVER_H_
-#define DART_UTILS_LOCALRESOURCERETRIEVER_H_
-#include "dart/utils/ResourceRetriever.h"
+#ifndef DART_UTILS_RESOURCE_H_
+#define DART_UTILS_RESOURCE_H_
+#include <cstddef>
+#include <memory>
 
 namespace dart {
 namespace utils {
 
-/// \brief Retrieve local resources specified by file:// URIs.
-class LocalResourceRetriever : public virtual ResourceRetriever
+class Resource
 {
 public:
-  virtual ~LocalResourceRetriever() = default;
+  enum SeekType {
+    SEEKTYPE_CUR,
+    SEEKTYPE_END,
+    SEEKTYPE_SET
+  };
 
-  bool exists(const std::string& _uri) override;
-  ResourcePtr retrieve(const std::string& _uri) override;
+  static const size_t SIZE_UNKNOWN = -1;
+
+  virtual ~Resource() = default;
+
+  virtual size_t getFileSize() = 0;
+
+  virtual size_t tell() = 0;
+
+  virtual bool seek(size_t _offset, SeekType _origin) = 0;
+
+  virtual size_t read(void *_buffer, size_t _size, size_t _count) = 0; 
 };
 
-typedef std::shared_ptr<LocalResourceRetriever> LocalResourceRetrieverPtr;
+typedef std::shared_ptr<Resource> ResourcePtr;
 
 } // namespace utils
 } // namespace dart
 
-#endif // ifndef DART_UTILS_LOCALRESOURCERETRIEVER_H_
+#endif // ifndef DART_UTILS_RESOURCERETRIEVER_H_
