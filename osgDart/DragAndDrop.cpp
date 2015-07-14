@@ -43,6 +43,8 @@
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 #include <iostream>
 
@@ -670,30 +672,29 @@ void BodyNodeDnD::move()
   bool preserveOrientation = (mViewer->getDefaultEventHandler()->getModKeyMask()
                               & mPreserveOrientationModKey);
 
+  Eigen::Vector3d dx = getConstrainedDx();
+  tf.translation() = mPivot + mSavedOffset + dx;
+
   if( ((RotationOption::HOLD_MODKEY==mRotationOption) && rotationActive)
       || RotationOption::ALWAYS_ON==mRotationOption)
   {
-    if(!preserveOrientation)
-    {
-      Eigen::AngleAxisd R = getConstrainedRotation();
-
-      tf.translation() = mPivot + mSavedOffset;
-      tf.linear() = (R * mSavedRotation).matrix();
-    }
-    else
-    {
-      tf.translation() = mPivot + mSavedOffset;
-      tf.rotate(mSavedRotation);
-    }
+//    Eigen::AngleAxisd R = getConstrainedRotation();
+//    tf.linear() = (R * mSavedRotation).matrix();
 
     mIK->getErrorMethod().setAngularErrorWeights(
           Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight));
+
+    std::vector<size_t> dofs;
+    dart::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
+    for(size_t i=0; i<joint->getNumDofs(); ++i)
+      dofs.push_back(joint->getDof(i)->getIndexInSkeleton());
+
+    mIK->setDofs(dofs);
+
+    mIK->getErrorMethod().setAngularErrorWeights(Eigen::Vector3d::Zero());
   }
   else
   {
-    Eigen::Vector3d dx = getConstrainedDx();
-
-    tf.translation() = mPivot + mSavedOffset + dx;
     tf.rotate(mSavedRotation);
 
     if(preserveOrientation)
@@ -707,6 +708,11 @@ void BodyNodeDnD::move()
     {
       mIK->getErrorMethod().setAngularErrorWeights(Eigen::Vector3d::Zero());
     }
+
+    if(mUseWholeBody)
+      mIK->useWholeBody();
+    else
+      mIK->useChain();
   }
 
   std::cout << tf.matrix() << "\n" << std::endl;
@@ -733,11 +739,6 @@ void BodyNodeDnD::saveState()
   {
     mIK = bn->createIK();
   }
-
-  if(mUseWholeBody)
-    mIK->useWholeBody();
-  else
-    mIK->useChain();
 
   mSavedOffset = mPickedPosition - mPivot;
   const Eigen::Vector3d offset =
