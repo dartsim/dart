@@ -222,6 +222,12 @@ double ZeroDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
+bool ZeroDofJoint::hasPositionLimit(size_t _index) const
+{
+  return true;
+}
+
+//==============================================================================
 void ZeroDofJoint::setVelocity(size_t _index,
                                double _velocity)
 {

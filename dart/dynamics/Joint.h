@@ -42,6 +42,7 @@
 #include <vector>
 #include <memory>
 
+#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
@@ -244,7 +245,10 @@ public:
   /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
-  void setPositionLimited(bool _isPositionLimited);
+  void setPositionLimitEnforced(bool _isPositionLimited);
+
+  /// Deprecated. Replaced by setPositionLimitEnforced.
+  DEPRECATED(5.0) void setPositionLimited(bool _isPositionLimited);
 
   /// Get whether enforcing joint position limit
   ///
@@ -252,7 +256,10 @@ public:
   /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
-  bool isPositionLimited() const;
+  bool isPositionLimitEnforced() const;
+
+  /// Deprecated. Replaced by isPositionLimitEnforced.
+  DEPRECATED(5.0) bool isPositionLimited() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;
@@ -346,6 +353,16 @@ public:
 
   /// Get upper limit for position
   virtual double getPositionUpperLimit(size_t _index) const = 0;
+
+  /// Get whether a generalized coordinate is cyclic. Return true if and only
+  /// if this generalized coordinate has an infinite number of positions that
+  /// produce the same local transform. Note that, for a multi-DOF joint,
+  /// producing a cycle may require altering the position of this Joint's other
+  /// generalized coordinates.
+  virtual bool isCyclic(size_t _index) const = 0;
+
+  /// Get whether the position of a generalized coordinate has limits.
+  virtual bool hasPositionLimit(size_t _index) const = 0;
 
   /// \}
 

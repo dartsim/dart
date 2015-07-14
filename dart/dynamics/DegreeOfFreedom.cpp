@@ -172,6 +172,18 @@ double DegreeOfFreedom::getPositionUpperLimit() const
 }
 
 //==============================================================================
+bool DegreeOfFreedom::hasPositionLimit() const
+{
+  return mJoint->hasPositionLimit(mIndexInJoint);
+}
+
+//==============================================================================
+bool DegreeOfFreedom::isCyclic() const
+{
+  return mJoint->isCyclic(mIndexInJoint);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setVelocity(double _velocity)
 {
   mJoint->setVelocity(mIndexInJoint, _velocity);

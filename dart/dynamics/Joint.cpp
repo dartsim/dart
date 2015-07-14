@@ -79,7 +79,7 @@ void Joint::setProperties(const Properties& _properties)
   setName(_properties.mName);
   setTransformFromParentBodyNode(_properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(_properties.mT_ChildBodyToJoint);
-  setPositionLimited(_properties.mIsPositionLimited);
+  setPositionLimitEnforced(_properties.mIsPositionLimited);
   setActuatorType(_properties.mActuatorType);
 }
 
@@ -277,15 +277,27 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimited(bool _isPositionLimited)
+void Joint::setPositionLimitEnforced(bool _isPositionLimited)
 {
   mJointP.mIsPositionLimited = _isPositionLimited;
 }
 
 //==============================================================================
-bool Joint::isPositionLimited() const
+void Joint::setPositionLimited(bool _isPositionLimited)
+{
+  setPositionLimitEnforced(_isPositionLimited);
+}
+
+//==============================================================================
+bool Joint::isPositionLimitEnforced() const
 {
   return mJointP.mIsPositionLimited;
+}
+
+//==============================================================================
+bool Joint::isPositionLimited() const
+{
+  return isPositionLimitEnforced();
 }
 
 //==============================================================================

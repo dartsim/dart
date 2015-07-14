@@ -148,6 +148,9 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
