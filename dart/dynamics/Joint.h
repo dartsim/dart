@@ -354,14 +354,14 @@ public:
   /// Get upper limit for position
   virtual double getPositionUpperLimit(size_t _index) const = 0;
 
-  /// Gets whether a generalized coordinate is cyclic. Returns true if and only
+  /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that
   /// produce the same local transform. Note that, for a multi-DOF joint,
   /// producing a cycle may require altering the position of this Joint's other
   /// generalized coordinates.
   virtual bool isCyclic(size_t _index) const = 0;
 
-  /// Gets whether the position of a generalized coordinate has limits.
+  /// Get whether the position of a generalized coordinate has limits.
   virtual bool hasPositionLimit(size_t _index) const = 0;
 
   /// \}
