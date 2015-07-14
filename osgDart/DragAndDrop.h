@@ -249,8 +249,6 @@ public:
 
   dart::dynamics::BodyNode* getBodyNode() const;
 
-  virtual void update() override;
-
   virtual void move() override;
 
   virtual void saveState() override;
@@ -265,13 +263,19 @@ public:
 
   osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
 
+  void setJointRestrictionModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
+
+  osgGA::GUIEventAdapter::ModKeyMask getJointRestrictionModKey() const;
+
 protected:
 
   dart::dynamics::WeakBodyNodePtr mBodyNode;
 
   dart::dynamics::InverseKinematicsPtr mIK;
 
-  Eigen::Vector3d mSavedOffset;
+  Eigen::Vector3d mSavedGlobalOffset;
+
+  Eigen::Vector3d mSavedLocalOffset;
 
   Eigen::AngleAxisd mSavedRotation;
 
@@ -280,6 +284,12 @@ protected:
   bool mUseWholeBody;
 
   osgGA::GUIEventAdapter::ModKeyMask mPreserveOrientationModKey;
+
+  osgGA::GUIEventAdapter::ModKeyMask mJointRestrictionModKey;
+
+  Eigen::Vector4d mMovementColor;
+
+  size_t mAdditionalBodyNodes;
 };
 
 } // namespace osgDart

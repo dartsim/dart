@@ -1129,7 +1129,7 @@ void InverseKinematics::Constraint::evalGradient(
 
 //==============================================================================
 InverseKinematics::InverseKinematics(JacobianNode* _node)
-  : mActive(false),
+  : mActive(true),
     mHierarchyLevel(0),
     mOffset(Eigen::Vector3d::Zero()),
     mHasOffset(false),

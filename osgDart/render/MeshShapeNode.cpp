@@ -593,10 +593,47 @@ void MeshShapeGeometry::extractData(bool firstTime)
       }
     }
 
-    uint unit = 0;
-    const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
+    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
+    {
+      unsigned int matIndex = mAiMesh->mMaterialIndex;
+      if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
+      {
+        isColored = true;
+        getOrCreateStateSet()->setAttributeAndModes(
+              mMainNode->getMaterial(mAiMesh->mMaterialIndex));
+      }
+      else
+        getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
+    }
+    else
+    {
+      getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
+    }
+
+    const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[0];
     if(aiTexCoords)
       isColored = true;
+
+    if(!isColored
+       || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
+    {
+      const Eigen::Vector4d& c = mShape->getRGBA();
+
+      if(mColors->size() != 1)
+        mColors->resize(1);
+
+      (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], c[3]);
+
+      setColorArray(mColors);
+      setColorBinding(osg::Geometry::BIND_OVERALL);
+    }
+  }
+
+  // Load textures on the first pass through
+  if(firstTime)
+  {
+    uint unit = 0;
+    const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
 
     while(nullptr != aiTexCoords)
     {
@@ -638,31 +675,6 @@ void MeshShapeGeometry::extractData(bool firstTime)
       } // switch(mAiMesh->mNumUVComponents[unit])
       aiTexCoords = mAiMesh->mTextureCoords[++unit];
     } // while(nullptr != aiTexCoords)
-
-    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
-    {
-      unsigned int matIndex = mAiMesh->mMaterialIndex;
-      if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
-      {
-        isColored = true;
-        getOrCreateStateSet()->setAttributeAndModes(
-              mMainNode->getMaterial(mAiMesh->mMaterialIndex));
-      }
-      else
-        getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
-    }
-    else
-      getOrCreateStateSet()->removeAttribute(osg::StateAttribute::MATERIAL);
-
-    if(!isColored
-       || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
-    {
-      const Eigen::Vector4d& c = mShape->getRGBA();
-
-      mColors->resize(1);
-      (*mColors)[0] = osg::Vec4(c[0], c[1], c[2], c[3]);
-      setColorArray(mColors, osg::Array::BIND_OVERALL);
-    }
   }
 }
 

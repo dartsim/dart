@@ -156,6 +156,18 @@ void Shape::setDataVariance(unsigned int _variance)
 }
 
 //==============================================================================
+void Shape::addDataVariance(unsigned int _variance)
+{
+  mVariance |= _variance;
+}
+
+//==============================================================================
+void Shape::removeDataVariance(unsigned int _variance)
+{
+  mVariance &= ~_variance;
+}
+
+//==============================================================================
 unsigned int Shape::getDataVariance() const
 {
   return mVariance;

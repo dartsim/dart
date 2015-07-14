@@ -45,8 +45,9 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/MeshShape.h"
 
-#include <iostream>
+#include "dart/math/Helpers.h"
 
 namespace osgDart {
 
@@ -631,7 +632,9 @@ BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
     mBodyNode(bn),
     mUseExternalIK(useExternalIK),
     mUseWholeBody(useWholeBody),
-    mPreserveOrientationModKey(osgGA::GUIEventAdapter::MODKEY_ALT)
+    mPreserveOrientationModKey(osgGA::GUIEventAdapter::MODKEY_ALT),
+    mJointRestrictionModKey(osgGA::GUIEventAdapter::MODKEY_SHIFT),
+    mMovementColor(dart::Color::Green(1.0))
 {
   // Do nothing
 }
@@ -643,90 +646,81 @@ dart::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
 }
 
 //==============================================================================
-void BodyNodeDnD::update()
-{
-  DragAndDrop::update();
-
-  if(mAmMoving && mUseExternalIK && mIK)
-  {
-    std::cout << "running solver" << std::endl;
-//    mIK->getSolver()->setNumMaxIterations(10);
-    std::cout << mIK->getTarget()->getWorldTransform().matrix() << std::endl;
-//    std::cout << mIK->solve().transpose() << std::endl;
-    mIK->solve();
-  }
-}
-
-//==============================================================================
 void BodyNodeDnD::move()
 {
-  std::cout << "moving" << std::endl;
   if(mIK == nullptr)
     return;
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  bool restrictJoints = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                         & mJointRestrictionModKey);
 
-  bool rotationActive = (mViewer->getDefaultEventHandler()->getModKeyMask()
-                         & mRotationModKey);
-
-  bool preserveOrientation = (mViewer->getDefaultEventHandler()->getModKeyMask()
-                              & mPreserveOrientationModKey);
-
-  Eigen::Vector3d dx = getConstrainedDx();
-  tf.translation() = mPivot + mSavedOffset + dx;
-
-  if( ((RotationOption::HOLD_MODKEY==mRotationOption) && rotationActive)
-      || RotationOption::ALWAYS_ON==mRotationOption)
+  if(restrictJoints)
   {
-//    Eigen::AngleAxisd R = getConstrainedRotation();
-//    tf.linear() = (R * mSavedRotation).matrix();
-
-    mIK->getErrorMethod().setAngularErrorWeights(
-          Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight));
-
     std::vector<size_t> dofs;
+
     dart::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
-    for(size_t i=0; i<joint->getNumDofs(); ++i)
-      dofs.push_back(joint->getDof(i)->getIndexInSkeleton());
+    for(size_t count = 0; count <= mAdditionalBodyNodes; ++count)
+    {
+      for(size_t j=0; j < joint->getNumDofs(); ++j)
+        dofs.push_back(joint->getDof(j)->getIndexInSkeleton());
+    }
 
     mIK->setDofs(dofs);
-
-    mIK->getErrorMethod().setAngularErrorWeights(Eigen::Vector3d::Zero());
   }
   else
   {
-    tf.rotate(mSavedRotation);
-
-    if(preserveOrientation)
-    {
-      std::cout << "preserving orientation" << std::endl;
-      mIK->getErrorMethod().setAngularErrorWeights(
-            Eigen::Vector3d::Constant(
-              20.0*dart::dynamics::DefaultIKAngularWeight));
-    }
-    else
-    {
-      mIK->getErrorMethod().setAngularErrorWeights(Eigen::Vector3d::Zero());
-    }
-
     if(mUseWholeBody)
       mIK->useWholeBody();
     else
       mIK->useChain();
   }
 
-  std::cout << tf.matrix() << "\n" << std::endl;
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+
+  bool preserveOrientation = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                              & mPreserveOrientationModKey);
+
+  if(preserveOrientation)
+  {
+    tf.rotate(mSavedRotation);
+  }
+  else
+  {
+    Eigen::AngleAxisd R = getConstrainedRotation();
+    tf.linear() = (R * mSavedRotation).matrix();
+  }
+
+  bool rotationActive = (mViewer->getDefaultEventHandler()->getModKeyMask()
+                         & mRotationModKey);
+
+  if( ((RotationOption::HOLD_MODKEY==mRotationOption) && rotationActive)
+      || RotationOption::ALWAYS_ON==mRotationOption)
+  {
+    tf.translation() = mPivot;
+    mIK->setOffset();
+  }
+  else
+  {
+    Eigen::Vector3d dx = getConstrainedDx();
+    tf.translation() = mPivot + dx + mSavedGlobalOffset;
+    mIK->setOffset(mSavedLocalOffset);
+  }
 
   if(mIK->getTarget()->getParentFrame()->isWorld())
     mIK->getTarget()->setRelativeTransform(tf);
   else
     mIK->getTarget()->setTransform(tf);
+
+  if(mUseExternalIK)
+  {
+    mIK->getSolver()->setNumMaxIterations(10);
+    mIK->solve();
+  }
 }
 
 //==============================================================================
 void BodyNodeDnD::saveState()
 {
-  std::cout << "saving state" << std::endl;
   dart::dynamics::BodyNodePtr bn = mBodyNode.lock();
   mPivot = bn->getWorldTransform().translation();
   mSavedRotation = bn->getWorldTransform().rotation();
@@ -740,21 +734,18 @@ void BodyNodeDnD::saveState()
     mIK = bn->createIK();
   }
 
-  mSavedOffset = mPickedPosition - mPivot;
-  const Eigen::Vector3d offset =
-      bn->getWorldTransform().linear().transpose()*mSavedOffset;
+  mSavedGlobalOffset = mPickedPosition - mPivot;
+  mSavedLocalOffset = bn->getWorldTransform().linear().transpose()
+                      * mSavedGlobalOffset;
 
-  mIK->setOffset(offset);
+  mIK->getTarget()->setTransform(bn->getWorldTransform());
 
-  Eigen::Isometry3d tf = bn->getWorldTransform();
-  tf.translate(offset);
-  mIK->getTarget()->setTransform(tf);
+  mAdditionalBodyNodes = 0;
 }
 
 //==============================================================================
 void BodyNodeDnD::release()
 {
-  std::cout << "releasing" << std::endl;
   if(mUseExternalIK)
   {
     mIK = nullptr;
@@ -764,6 +755,44 @@ void BodyNodeDnD::release()
     mBodyNode.lock()->clearIK();
     mIK = nullptr;
   }
+}
+
+//==============================================================================
+void BodyNodeDnD::useExternalIK(bool external)
+{
+  mUseExternalIK = external;
+}
+
+//==============================================================================
+bool BodyNodeDnD::isUsingExternalIK() const
+{
+  return mUseExternalIK;
+}
+
+//==============================================================================
+void BodyNodeDnD::setPreserveOrientationModKey(
+    osgGA::GUIEventAdapter::ModKeyMask modkey)
+{
+  mPreserveOrientationModKey = modkey;
+}
+
+//==============================================================================
+osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getPreserveOrientationModKey() const
+{
+  return mPreserveOrientationModKey;
+}
+
+//==============================================================================
+void BodyNodeDnD::setJointRestrictionModKey(
+    osgGA::GUIEventAdapter::ModKeyMask modkey)
+{
+  mJointRestrictionModKey = modkey;
+}
+
+//==============================================================================
+osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() const
+{
+  return mJointRestrictionModKey;
 }
 
 

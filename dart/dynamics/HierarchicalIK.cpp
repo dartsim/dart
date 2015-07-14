@@ -255,13 +255,13 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
     }
     else if(zeroedNullSpace)
     {
-      // If the null space has been zeroed out, just propogate the zeroes along
+      // If the null space has been zeroed out, just keep propogating the zeroes
       NS.setZero(nDofs, nDofs);
       continue;
     }
     else
     {
-      // Most of the time, we will just build on the last level's null space
+      // Otherwise, we will just build on the last level's null space
       NS = mNullSpaceCache[i-1];
     }
 
@@ -269,6 +269,9 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
     for(size_t j=0; j < level.size(); ++j)
     {
       const std::shared_ptr<InverseKinematics>& ik = level[j];
+
+      if(!ik->isActive())
+        continue;
 
       const math::Jacobian& J = ik->computeJacobian();
       const std::vector<size_t>& dofs = ik->getDofs();
@@ -445,6 +448,9 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
     {
       const std::shared_ptr<InverseKinematics>& ik = level[j];
 
+      if(!ik->isActive())
+        continue;
+
       const std::vector<size_t>& dofs = ik->getDofs();
       Eigen::VectorXd q(dofs.size());
       for(size_t k=0; k < dofs.size(); ++k)
@@ -479,6 +485,9 @@ void HierarchicalIK::Constraint::evalGradient(
     for(size_t j=0; j < level.size(); ++j)
     {
       const std::shared_ptr<InverseKinematics>& ik = level[j];
+
+      if(!ik->isActive())
+        continue;
 
       // Grab only the dependent coordinates from q
       const std::vector<size_t>& dofs = ik->getDofs();

@@ -89,7 +89,7 @@ public:
 
   void customPreRefresh() override
   {
-//    mRobot->getIK(true)->solve();
+    mRobot->getIK(true)->solve();
   }
 
 protected:
@@ -216,7 +216,11 @@ int main()
   rf_target->setTransform(r_foot->getTransform());
   r_foot->getIK(true)->setTarget(rf_target);
   r_foot->getIK()->useWholeBody();
-  r_foot->getIK()->setHierarchyLevel(1);
+//  r_foot->getIK()->setHierarchyLevel(1);
+//  Eigen::Vector3d bounds =
+//      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+//  bounds[2] = 0.0;
+//  r_foot->getIK()->getErrorMethod().setLinearBounds(-bounds, bounds);
   world->addSimpleFrame(rf_target);
 
 
@@ -248,8 +252,8 @@ int main()
   viewer.enableDragAndDrop(rf_target.get());
 
   for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
-//    viewer.enableDragAndDrop(atlas->getBodyNode(i), false);
-    viewer.enableDragAndDrop(atlas->getBodyNode(i), true);
+    viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
+//    viewer.enableDragAndDrop(atlas->getBodyNode(i), true);
 
   std::cout << viewer.getInstructions() << std::endl;
 

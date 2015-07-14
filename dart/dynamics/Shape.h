@@ -152,9 +152,18 @@ public:
   /// \brief
   ShapeType getShapeType() const;
 
-  /// Set the data variance of this shape. Use the DataVariance
-  // TODO(MXG): Implement addDataVariance() and removeDataVariance()
+  /// Set the data variance of this shape. Use the DataVariance to indicate what
+  /// kind of shape information might change during run time so that renderers
+  /// can optimize reliably.
   void setDataVariance(unsigned int _variance);
+
+  /// Add a type of variance to this shape. All other variance types will remain
+  /// the same.
+  void addDataVariance(unsigned int _variance);
+
+  /// Remove a type of variance from this shape. All other variance types will
+  /// remain the same.
+  void removeDataVariance(unsigned int _variance);
 
   /// Get the data variance of this shape
   unsigned int getDataVariance() const;

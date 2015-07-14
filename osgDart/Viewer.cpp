@@ -416,7 +416,7 @@ InteractiveFrameDnD* Viewer::enableDragAndDrop(
 
 //==============================================================================
 BodyNodeDnD* Viewer::enableDragAndDrop(dart::dynamics::BodyNode* _bn,
-                                       bool _useExternalIK)
+                                       bool _useExternalIK, bool _useWholeBody)
 {
   if(nullptr == _bn)
     return nullptr;
@@ -426,7 +426,7 @@ BodyNodeDnD* Viewer::enableDragAndDrop(dart::dynamics::BodyNode* _bn,
   if(it != mBodyNodeDnDMap.end())
     return it->second;
 
-  BodyNodeDnD* dnd = new BodyNodeDnD(this, _bn, _useExternalIK);
+  BodyNodeDnD* dnd = new BodyNodeDnD(this, _bn, _useExternalIK, _useWholeBody);
   mBodyNodeDnDMap[_bn] = dnd;
   return dnd;
 }

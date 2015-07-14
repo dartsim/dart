@@ -163,7 +163,8 @@ public:
 
   /// A version of enableDragAndDrop specifically for BodyNodes
   BodyNodeDnD* enableDragAndDrop(dart::dynamics::BodyNode* _bn,
-                                 bool _useExternalIK = true);
+                                 bool _useExternalIK = true,
+                                 bool _useWholeBody = false);
 
   /// Delete a DragAndDrop object. Returns true if the DnD was active and has
   /// now been deleted
