@@ -42,30 +42,6 @@
 namespace dart {
 namespace utils {
 
-struct MemoryResource {
-public:
-  MemoryResource();
-  MemoryResource(uint8_t* _data, size_t _size, bool _isOwner);
-  MemoryResource(const MemoryResource& _other) = delete;
-  ~MemoryResource();
-
-  MemoryResource& operator=(const MemoryResource& _other) = delete;
-
-  uint8_t* getData();
-  const uint8_t* getData() const;
-
-  size_t getSize() const;
-
-private:
-  uint8_t *mData;
-  size_t mSize;
-  bool mIsOwner;
-};
-
-typedef std::shared_ptr<MemoryResource> MemoryResourcePtr;
-typedef std::shared_ptr<const MemoryResource> ConstMemoryResourcePtr;
-
-
 struct ResourceRetriever {
   virtual ~ResourceRetriever() = default;
 
