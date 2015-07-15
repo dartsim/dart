@@ -84,7 +84,10 @@ public:
       std::string type;
     };
 
+    // Maps the name of a BodyNode to its properties
     typedef Eigen::aligned_map<std::string, SDFBodyNode> BodyMap;
+
+    // Maps a child BodyNode to the properties of its parent Joint
     typedef std::map<std::string, SDFJoint> JointMap;
 
     static simulation::WorldPtr readWorld(
@@ -133,13 +136,12 @@ public:
       CREATE_FREEJOINT_ROOT
     };
 
-    static NextResult getNextJointAndNodePair(
-        JointMap::iterator& it,
-        BodyMap::const_iterator& child,
-        dynamics::BodyNode*& parent,
+    static NextResult getNextJointAndNodePair(BodyMap::iterator& body,
+        JointMap::const_iterator& parentJoint,
+        dynamics::BodyNode*& parentBody,
         const dynamics::SkeletonPtr skeleton,
-        JointMap& sdfJoints,
-        const BodyMap& sdfBodyNodes);
+        BodyMap& sdfBodyNodes,
+        const JointMap& sdfJoints);
 
     /// \brief
     static dynamics::SkeletonPtr makeSkeleton(
