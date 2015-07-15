@@ -39,6 +39,8 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 
+#include <iostream>
+
 namespace dart {
 namespace dynamics {
 
@@ -128,7 +130,7 @@ EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
 const std::string& EndEffector::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
-  if(mEntityP.mName == _name)
+  if(mEntityP.mName == _name && !_name.empty())
     return mEntityP.mName;
 
   // Remove the current name entry and add a new name entry

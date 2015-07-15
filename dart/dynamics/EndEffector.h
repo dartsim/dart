@@ -101,7 +101,7 @@ public:
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name);
+  const std::string& setName(const std::string& _name) override;
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);

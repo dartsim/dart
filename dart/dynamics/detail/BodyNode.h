@@ -137,4 +137,16 @@ EndEffectorT* BodyNode::createEndEffector(
   return ee;
 }
 
+//==============================================================================
+template <class EndEffectorT>
+EndEffectorT* BodyNode::createEndEffector(const std::string& _name)
+{
+  typename EndEffectorT::Properties properties;
+  properties.mName = _name;
+  EndEffectorT* ee = new EndEffectorT(this, properties);
+  getSkeleton()->registerEndEffector(ee);
+
+  return ee;
+}
+
 #endif // DART_DYNAMICS_DETAIL_BODYNODE_H_

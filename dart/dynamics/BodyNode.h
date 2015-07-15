@@ -488,8 +488,11 @@ public:
   /// Create an EndEffector attached to this BodyNode
   template <class EndEffectorT=EndEffector>
   EndEffectorT* createEndEffector(
-      const typename EndEffectorT::Properties& _properties =
-          typename EndEffectorT::Properties());
+      const typename EndEffectorT::Properties& _properties);
+
+  /// Create an EndEffector with the specified name
+  template <class EndEffectorT=EndEffector>
+  EndEffectorT* createEndEffector(const std::string& _name = "EndEffector");
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
