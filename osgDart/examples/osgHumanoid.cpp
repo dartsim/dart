@@ -142,11 +142,12 @@ int main()
 
   SkeletonPtr ground = Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0,0,-0.95);
+  double thickness = 0.01;
+  tf.translation() = Eigen::Vector3d(0,0,-thickness/2.0);
   WeldJoint::Properties joint;
   joint.mT_ParentBodyToJoint = tf;
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
-  ShapePtr groundShape = std::make_shared<BoxShape>(Eigen::Vector3d(10,10,0.01));
+  ShapePtr groundShape = std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
   ground->getBodyNode(0)->addVisualizationShape(groundShape);
   ground->getBodyNode(0)->addCollisionShape(groundShape);
 
@@ -170,6 +171,10 @@ int main()
   atlas->getDof("r_leg_kny")->setPosition( 90.0*M_PI/180.0);
   atlas->getDof("r_leg_aky")->setPosition(-45.0*M_PI/180.0);
 
+  atlas->getDof("l_leg_hpy")->setPosition(-45.0*M_PI/180.0);
+  atlas->getDof("l_leg_kny")->setPosition( 90.0*M_PI/180.0);
+  atlas->getDof("l_leg_aky")->setPosition(-45.0*M_PI/180.0);
+
 //  atlas->getDof("r_arm_ely")->setPosition(90.0*M_PI/180.0);
 //  atlas->getDof("l_arm_ely")->setPosition(90.0*M_PI/180.0);
 
@@ -180,8 +185,7 @@ int main()
 
   atlas->getDof("r_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
 
-  EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector();
-  l_hand->setName("l_hand");
+  EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector("l_hand");
 
   Eigen::VectorXd weights = Eigen::VectorXd::Ones(6);
   weights = 0.01*weights;
@@ -194,7 +198,7 @@ int main()
   l_hand->getIK()->getGradientMethod().setComponentWeights(weights);
   world->addSimpleFrame(l_target);
 
-  EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector();
+  EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
   osgDart::InteractiveFramePtr r_target(new osgDart::InteractiveFrame(
                                           Frame::World(), "r_target"));
   r_target->setTransform(r_hand->getTransform());
@@ -203,31 +207,49 @@ int main()
   r_hand->getIK()->getGradientMethod().setComponentWeights(weights);
   world->addSimpleFrame(r_target);
 
-//  BodyNode* r_foot = atlas->getBodyNode("r_foot");
-//  InverseKinematicsPtr rik = r_foot->getIK(true);
-//  rik->getErrorMethod().setLinearBounds(
-//       -std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0),
-//        std::numeric_limits<double>::infinity()*Eigen::Vector3d(1.0, 1.0, 0.0));
 
-//  EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector();
-  BodyNode* r_foot = atlas->getBodyNode("r_foot");
-  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
-                                           Frame::World(), "rf_target"));
-  rf_target->setTransform(r_foot->getTransform());
-  r_foot->getIK(true)->setTarget(rf_target);
-  r_foot->getIK()->useWholeBody();
-//  r_foot->getIK()->setHierarchyLevel(1);
-//  Eigen::Vector3d bounds =
-//      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-//  bounds[2] = 0.0;
-//  r_foot->getIK()->getErrorMethod().setLinearBounds(-bounds, bounds);
-  world->addSimpleFrame(rf_target);
+  Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
+  tf_foot.translation() = Eigen::Vector3d(0.0, 0.0, -0.08);
 
+  Eigen::Vector3d linearBounds =
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  linearBounds[2] = 1e-8;
+
+  Eigen::Vector3d angularBounds =
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  angularBounds[0] = 1e-8;
+  angularBounds[1] = 1e-8;
+
+  EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
+  r_foot->setRelativeTransform(tf_foot);
+  r_foot->getIK(true)->setHierarchyLevel(1);
+  r_foot->getIK()->getErrorMethod().setLinearBounds(
+        -linearBounds, linearBounds);
+  r_foot->getIK()->getErrorMethod().setAngularBounds(
+        -angularBounds, angularBounds);
+
+  EndEffector* l_foot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
+  l_foot->setRelativeTransform(tf_foot);
+  l_foot->getIK(true)->setHierarchyLevel(1);
+  l_foot->getIK()->getErrorMethod().setLinearBounds(
+        -linearBounds, linearBounds);
+  l_foot->getIK()->getErrorMethod().setAngularBounds(
+        -angularBounds, angularBounds);
 
   for(size_t i=3; i < 6; ++i)
   {
     atlas->getDof(i)->setPositionLowerLimit(-5);
     atlas->getDof(i)->setPositionUpperLimit( 5);
+  }
+
+  double heightChange = -r_foot->getIK()->getTarget()->getWorldTransform().translation()[2];
+  atlas->getDof(5)->setPosition(heightChange);
+
+  for(size_t i=0; i<atlas->getNumEndEffectors(); ++i)
+  {
+    const InverseKinematicsPtr& ik = atlas->getEndEffector(i)->getIK();
+    if(ik)
+      ik->getTarget()->setTransform(atlas->getEndEffector(i)->getTransform());
   }
 
   std::shared_ptr<dart::optimizer::GradientDescentSolver> solver =
@@ -242,14 +264,13 @@ int main()
   osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
 
   osgDart::Viewer viewer;
+  viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 
   viewer.addEventHandler(new InputHandler(atlas));
 
   viewer.enableDragAndDrop(l_target.get());
   viewer.enableDragAndDrop(r_target.get());
-
-  viewer.enableDragAndDrop(rf_target.get());
 
   for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
