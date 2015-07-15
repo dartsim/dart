@@ -139,8 +139,14 @@ public:
   /// Set all currently active WorldNodes to simulate _on
   void simulate(bool _on);
 
-  /// Returns true iff this Viewer is currently set to simulate
+  /// Return true iff this Viewer is currently set to simulate
   bool isSimulating() const;
+
+  /// Prevent simulation from starting, even if simulate(true) is called
+  void allowSimulation(bool _allow);
+
+  /// Return true iff this Viewer is currently allowing simulation to happen
+  bool isAllowingSimulation() const;
 
   /// Returns a nullptr if _entity is not a type that can support the built-in
   /// drag and drop features, otherwise it returns a pointer to the DragAndDrop
@@ -231,6 +237,9 @@ protected:
 
   /// True iff this Viewer is currently simulating
   bool mSimulating;
+
+  /// True iff this Viewer is allowing simulation
+  bool mAllowSimulation;
 
   /// True iff headlights were last set to be on
   bool mHeadlights;

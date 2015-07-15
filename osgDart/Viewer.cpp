@@ -62,6 +62,7 @@ Viewer::Viewer(const osg::Vec4& clearColor)
     mUpwards(osg::Vec3(0,0,1)),
     mOver(osg::Vec3(0,1,0)),
     mSimulating(false),
+    mAllowSimulation(true),
     mHeadlights(true)
 {
   setCameraManipulator(new osgDart::TrackballManipulator);
@@ -299,6 +300,9 @@ void Viewer::setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
 //==============================================================================
 void Viewer::simulate(bool _on)
 {
+  if(!mAllowSimulation && _on)
+    return;
+
   mSimulating = _on;
   for( auto& node_pair : mWorldNodes )
   {
@@ -313,6 +317,21 @@ void Viewer::simulate(bool _on)
 bool Viewer::isSimulating() const
 {
   return mSimulating;
+}
+
+//==============================================================================
+void Viewer::allowSimulation(bool _allow)
+{
+  mAllowSimulation = _allow;
+
+  if(!mAllowSimulation && mSimulating)
+    simulate(false);
+}
+
+//==============================================================================
+bool Viewer::isAllowingSimulation() const
+{
+  return mAllowSimulation;
 }
 
 //==============================================================================
