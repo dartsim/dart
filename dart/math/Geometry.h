@@ -452,6 +452,51 @@ void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
   extractNullSpace(svd, _NS);
 }
 
+typedef std::vector<Eigen::Vector3d> SupportGeometry;
+
+typedef Eigen::aligned_vector<Eigen::Vector2d> SupportPolygon;
+
+/// Project the support geometry points onto a plane with the given normal
+/// and then compute their convex hull, which will take the form of a polgyon
+SupportPolygon computeSupportPolgyon(const SupportGeometry& _geometry,
+                                     const Eigen::Vector3d& _planeNormal);
+
+/// Intersection_t is returned by the computeIntersection() function to indicate
+/// whether there was a valid intersection between the two line segments
+enum Intersection_t {
+
+  INTERSECTING = 0,   ///< An intersection was found
+  PARALLEL,           ///< The line segments are parallel
+  BEYOND_ENDPOINTS    ///< There is no intersection because the end points do not expand far enough
+
+};
+
+/// Compute the intersection between a line segment that goes from a1 -> a2 and
+/// a line segment that goes from b1 -> b2.
+Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
+                                   const Eigen::Vector2d& a1,
+                                   const Eigen::Vector2d& a2,
+                                   const Eigen::Vector2d& b1,
+                                   const Eigen::Vector2d& b2);
+
+/// Compute a 2D cross product
+double cross(const Eigen::Vector2d& _v1, const Eigen::Vector2d& _v2);
+
+/// Returns true if the point _p is inside the support polygon
+bool isInsideSupportPolygon(const Eigen::Vector2d& _p,
+                            const SupportPolygon& _support);
+
+/// Returns the point which is closest to _p that also lays on the line segment
+/// that goes from _s1 -> _s2
+Eigen::Vector2d closestPointOnLineSegment(const Eigen::Vector2d& _p,
+                                          const Eigen::Vector2d& _s1,
+                                          const Eigen::Vector2d& _s2);
+
+/// Returns the point which is closest to _p that also lays on the edge of the
+/// support polygon
+Eigen::Vector2d closestPointOnSupportPolygon(const Eigen::Vector2d& _p,
+                                             const SupportPolygon& _support);
+
 }  // namespace math
 }  // namespace dart
 
