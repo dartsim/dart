@@ -39,6 +39,7 @@
 
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
+//#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace dynamics {
@@ -61,9 +62,14 @@ public:
     /// resetRelativeTransform() is called
     Eigen::Isometry3d mDefaultTransform;
 
+    /// The support geometry that this EndEffector is designed to use
+    math::SupportGeometry mSupportGeometry;
+
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
-                                                Eigen::Isometry3d::Identity());
+            Eigen::Isometry3d::Identity(),
+        const math::SupportGeometry& _supportGeometry =
+            math::SupportGeometry());
   };
 
   struct Properties : Entity::Properties, UniqueProperties
@@ -117,6 +123,17 @@ public:
   /// relative transform of this EndEffector. The default relative transform can
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
+
+  /// Set the support geometry for this EndEffector. The SupportGeometry
+  /// represents points in the EndEffector frame that can be used for contact
+  /// when solving balancing or manipulation constraints.
+  void setSupportGeometry(const math::SupportGeometry& _newSupport);
+
+  /// Get a reference to the SupportGeometry for this EndEffector
+  math::SupportGeometry& getSupportGeometry();
+
+  /// Get a const-reference to the SupportGeometry for this EndEffector
+  const math::SupportGeometry& getSupportGeometry() const;
 
   // Documentation inherited
   std::shared_ptr<Skeleton> getSkeleton() override;

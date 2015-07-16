@@ -46,8 +46,10 @@ namespace dynamics {
 
 //==============================================================================
 EndEffector::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& _defaultTransform)
-  : mDefaultTransform(_defaultTransform)
+    const Eigen::Isometry3d& _defaultTransform,
+    const math::SupportGeometry& _supportGeometry)
+  : mDefaultTransform(_defaultTransform),
+    mSupportGeometry(_supportGeometry)
 {
   // Do nothing
 }
@@ -92,6 +94,7 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
                                 bool _useNow)
 {
   setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
+  setSupportGeometry(_properties.mSupportGeometry);
 }
 
 //==============================================================================
@@ -107,6 +110,9 @@ void EndEffector::copy(const EndEffector& _otherEndEffector)
     return;
 
   setProperties(_otherEndEffector.getEndEffectorProperties());
+
+  // We should also copy the relative transform, because it could be different
+  // than the default relative transform
   setRelativeTransform(_otherEndEffector.getRelativeTransform());
 }
 
@@ -163,6 +169,24 @@ void EndEffector::setDefaultRelativeTransform(
 void EndEffector::resetRelativeTransform()
 {
   setRelativeTransform(mEndEffectorP.mDefaultTransform);
+}
+
+//==============================================================================
+void EndEffector::setSupportGeometry(const math::SupportGeometry& _newSupport)
+{
+  mEndEffectorP.mSupportGeometry = _newSupport;
+}
+
+//==============================================================================
+math::SupportGeometry& EndEffector::getSupportGeometry()
+{
+  return mEndEffectorP.mSupportGeometry;
+}
+
+//==============================================================================
+const math::SupportGeometry& EndEffector::getSupportGeometry() const
+{
+  return mEndEffectorP.mSupportGeometry;
 }
 
 //==============================================================================
