@@ -306,7 +306,9 @@ void EndEffector::notifyTransformUpdate()
     mIsEffectorJacobianSpatialDerivDirty = true;
     mIsWorldJacobianClassicDerivDirty = true;
 
-    getSkeleton()->notifySupportUpdate(getTreeIndex());
+    const SkeletonPtr& skel = getSkeleton();
+    if(skel)
+      skel->notifySupportUpdate(getTreeIndex());
   }
 
   Frame::notifyTransformUpdate();

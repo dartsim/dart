@@ -529,12 +529,15 @@ void HierarchicalIK::Constraint::evalGradient(
 HierarchicalIK::HierarchicalIK(const SkeletonPtr& _skeleton)
   : mSkeleton(_skeleton)
 {
-  initialize();
+  // initialize MUST be called from the constructors of any directly inheriting
+  // classes
 }
 
 //==============================================================================
-void HierarchicalIK::initialize()
+void HierarchicalIK::initialize(const std::shared_ptr<HierarchicalIK> my_ptr)
 {
+  mPtr = my_ptr;
+
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);
 
@@ -588,7 +591,7 @@ void HierarchicalIK::copyOverSetup(
 std::shared_ptr<CompositeIK> CompositeIK::create(const SkeletonPtr& _skel)
 {
   std::shared_ptr<CompositeIK> ik(new CompositeIK(_skel));
-  ik->mPtr = ik;
+  ik->initialize(ik);
   return ik;
 }
 
@@ -700,7 +703,7 @@ CompositeIK::CompositeIK(const SkeletonPtr& _skel)
 std::shared_ptr<WholeBodyIK> WholeBodyIK::create(const SkeletonPtr& _skel)
 {
   std::shared_ptr<WholeBodyIK> ik(new WholeBodyIK(_skel));
-  ik->mPtr = ik;
+  ik->initialize(ik);
   return ik;
 }
 

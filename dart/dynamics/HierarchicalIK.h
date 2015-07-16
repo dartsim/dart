@@ -182,7 +182,7 @@ protected:
 
   HierarchicalIK(const SkeletonPtr& _skeleton);
 
-  void initialize();
+  void initialize(const std::shared_ptr<HierarchicalIK> my_ptr);
 
   /// Copy the setup of this HierarchicalIK module into another HierarchicalIK
   /// module
