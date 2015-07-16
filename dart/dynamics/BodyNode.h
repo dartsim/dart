@@ -419,7 +419,9 @@ public:
       bool _recursive=true) const;
 
   /// Create clones of this BodyNode and all of its children (recursively) and
-  /// create a new Skeleton with the specified name to attach them to.
+  /// create a new Skeleton with the specified name to attach them to. The
+  /// Skeleton::Properties of the current Skeleton will also be copied into the
+  /// new Skeleton that gets created.
   SkeletonPtr copyAs(const std::string& _skeletonName,
                      bool _recursive=true) const;
 
