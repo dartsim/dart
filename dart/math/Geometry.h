@@ -482,6 +482,9 @@ SupportPolygon computeConvexHull(const SupportPolygon& _points);
 SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
                                  const SupportPolygon& _points);
 
+/// Compute the centroid of a polygon, assuming the polygon is a convex hull
+Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
+
 /// Intersection_t is returned by the computeIntersection() function to indicate
 /// whether there was a valid intersection between the two line segments
 enum Intersection_t {

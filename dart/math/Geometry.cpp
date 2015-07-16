@@ -1514,6 +1514,66 @@ SupportPolygon computeConvexHull(const SupportPolygon& _points)
 }
 
 //==============================================================================
+Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
+{
+  if(_convexHull.size() == 0)
+  {
+    dtwarn << "[computeCentroidOfHull] Requesting the centroid of an empty set "
+           << "of points! We will return <0,0>.\n";
+    return Eigen::Vector2d::Zero();
+  }
+
+  if(_convexHull.size() == 1)
+    return _convexHull[0];
+
+  if(_convexHull.size() == 2)
+    return (_convexHull[0]+_convexHull[1])/2.0;
+
+  Eigen::Vector2d c(0,0);
+  Eigen::Vector2d intersect;
+  double area = 0;
+  double area_i;
+  Eigen::Vector2d midp12, midp01;
+
+  for(size_t i=2; i < _convexHull.size(); ++i)
+  {
+    const Eigen::Vector2d& p0 = _convexHull[0];
+    const Eigen::Vector2d& p1 = _convexHull[i-1];
+    const Eigen::Vector2d& p2 = _convexHull[i];
+
+    area_i = 0.5*( (p1[0]-p0[0])*(p2[1]-p0[1]) - (p1[1]-p0[1])*(p2[0]-p0[0]) );
+
+    midp12 = 0.5 * (p1+p2);
+    midp01 = 0.5 * (p0+p1);
+
+    Intersection_t result =
+        computeIntersection(intersect, p0, midp12, p2, midp01);
+
+    if(INTERSECTING != result)
+    {
+      dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
+             << "which is not a proper convex hull! The invalid segment "
+             << "contains indices " << i-2 << " -> " << i << ":\n"
+             << i-2 << ") " << _convexHull[i-2] << "\n"
+             << i-1 << ") " << _convexHull[i-1] << "\n"
+             << i   << ") " << _convexHull[i] << "\n\n";
+      continue;
+    }
+
+    area += area_i;
+    c += area_i*intersect;
+  }
+
+  // A negative area means we have a bug in the code
+  assert(area >= 0.0);
+
+  if(area > 0.0)
+    return c;
+
+  return c/area;
+}
+
+//==============================================================================
 // Returns true if the path that goes from p1 -> p2 -> p3 turns left
 static bool isLeftTurn(const Eigen::Vector2d& p1,
                        const Eigen::Vector2d& p2,
