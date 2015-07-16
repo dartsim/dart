@@ -130,6 +130,12 @@ const std::string& ScrewJoint::getStaticType()
 }
 
 //==============================================================================
+bool ScrewJoint::isCyclic(size_t _index) const
+{
+  return false;
+}
+
+//==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
   mScrewP.mAxis = _axis.normalized();

@@ -50,20 +50,43 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
 
   if(nullptr == mStart.mNode.lock())
   {
-    dterr << "[Linkage::Criteria::satisfy] Must specify at least a starting "
-          << "BodyNode for the criteria!\n";
-    assert(false);
-    return bns;
+    if(mTargets.size() == 0)
+      return bns;
+
+    refreshTerminalMap();
+
+    // If a start node is not given, then we must treat the root node of each
+    // target as if it is a start node.
+
+    for(size_t i=0; i<mTargets.size(); ++i)
+    {
+      const Target& target = mTargets[i];
+      if(nullptr == target.mNode.lock())
+        continue;
+
+      BodyNode* target_bn = target.mNode.lock();
+
+      Target start = mStart;
+      start.mPolicy = INCLUDE;
+
+      size_t treeIndex = target_bn->getTreeIndex();
+      start.mNode = target_bn->getSkeleton()->getRootBodyNode(treeIndex);
+
+      expandToTarget(start, target, bns);
+    }
   }
-
-  refreshTerminalMap();
-
-  bns.push_back(mStart.mNode.lock());
-  expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
-
-  for(size_t i=0; i<mTargets.size(); ++i)
+  else
   {
-    expandToTarget(mStart.mNode.lock(), mTargets[i], bns);
+    refreshTerminalMap();
+
+    if(EXCLUDE != mStart.mPolicy)
+      bns.push_back(mStart.mNode.lock());
+    expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
+
+    for(size_t i=0; i<mTargets.size(); ++i)
+    {
+      expandToTarget(mStart, mTargets[i], bns);
+    }
   }
 
   // Make sure each BodyNode is only included once
@@ -121,21 +144,24 @@ void Linkage::Criteria::expansionPolicy(
     Linkage::Criteria::ExpansionPolicy _policy,
     std::vector<BodyNode*>& _bns) const
 {
-  // If the _start is a terminal, we quit before expanding
-  std::unordered_map<BodyNode*, bool>::const_iterator check_start =
-      mMapOfTerminals.find(_start);
-  if( check_start != mMapOfTerminals.end() )
+  if(EXCLUDE != _policy)
   {
-    bool inclusive = check_start->second;
-    if(inclusive)
-      _bns.push_back(_start);
-    return;
+    // If the _start is a terminal, we quit before expanding
+    std::unordered_map<BodyNode*, bool>::const_iterator check_start =
+        mMapOfTerminals.find(_start);
+    if( check_start != mMapOfTerminals.end() )
+    {
+      bool inclusive = check_start->second;
+      if(inclusive)
+        _bns.push_back(_start);
+      return;
+    }
   }
 
   if(DOWNSTREAM == _policy)
-    expandDownstream(_start, _bns);
+    expandDownstream(_start, _bns, EXCLUDE != _policy);
   else if(UPSTREAM == _policy)
-    expandUpstream(_start, _bns);
+    expandUpstream(_start, _bns, EXCLUDE != _policy);
 }
 
 //==============================================================================
@@ -199,12 +225,13 @@ void stepToParent(std::vector<Recording>& _recorder,
 
 //==============================================================================
 void Linkage::Criteria::expandDownstream(
-    BodyNode* _start, std::vector<BodyNode*>& _bns) const
+    BodyNode* _start, std::vector<BodyNode*>& _bns, bool _includeStart) const
 {
   std::vector<Recording> recorder;
   recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
 
-  _bns.push_back(_start);
+  if(_includeStart)
+    _bns.push_back(_start);
   recorder.push_back(Recording(_start, 0));
 
   while(recorder.size() > 0)
@@ -225,12 +252,13 @@ void Linkage::Criteria::expandDownstream(
 
 //==============================================================================
 void Linkage::Criteria::expandUpstream(
-    BodyNode* _start, std::vector<BodyNode*>& _bns) const
+    BodyNode* _start, std::vector<BodyNode*>& _bns, bool _includeStart) const
 {
   std::vector<Recording> recorder;
   recorder.reserve(_start->getSkeleton()->getNumBodyNodes());
 
-  _bns.push_back(_start);
+  if(_includeStart)
+    _bns.push_back(_start);
   recorder.push_back(Recording(_start, -1));
 
   while(recorder.size() > 0)
@@ -294,28 +322,43 @@ void Linkage::Criteria::expandUpstream(
 
 //==============================================================================
 void Linkage::Criteria::expandToTarget(
-    BodyNode* _start,
+    const Linkage::Criteria::Target& _start,
     const Linkage::Criteria::Target& _target,
     std::vector<BodyNode*>& _bns) const
 {
+  BodyNode* start_bn = _start.mNode.lock();
   BodyNode* target_bn = _target.mNode.lock();
   std::vector<BodyNode*> newBns;
-  newBns.reserve(target_bn->getSkeleton()->getNumBodyNodes());
+  newBns.reserve(start_bn->getSkeleton()->getNumBodyNodes());
 
-  if(target_bn == nullptr || _start->descendsFrom(target_bn))
+  if(target_bn == nullptr || start_bn->descendsFrom(target_bn))
   {
-    newBns = climbToTarget(_start, target_bn);
+    newBns = climbToTarget(start_bn, target_bn);
     trimBodyNodes(newBns, _target.mChain, true);
   }
-  else if(target_bn->descendsFrom(_start))
+  else if(target_bn->descendsFrom(start_bn))
   {
-    newBns = climbToTarget(target_bn, _start);
+    newBns = climbToTarget(target_bn, start_bn);
     std::reverse(newBns.begin(), newBns.end());
     trimBodyNodes(newBns, _target.mChain, false);
   }
   else
   {
-    newBns = climbToCommonRoot(_start, target_bn, _target.mChain);
+    newBns = climbToCommonRoot(_start, _target, _target.mChain);
+  }
+
+  // Remove the start BodyNode if it's supposed to be excluded
+  if(EXCLUDE == _start.mPolicy &&
+     newBns.size() > 0 && newBns.front() == start_bn)
+  {
+    newBns.erase(newBns.begin());
+  }
+
+  // Remove the target BodyNode if it's supposed to be excluded
+  if(EXCLUDE == _target.mPolicy &&
+     newBns.size() > 0 && newBns.back() == target_bn)
+  {
+    newBns.pop_back();
   }
 
   // If we have successfully reached the target, expand from there
@@ -347,18 +390,21 @@ std::vector<BodyNode*> Linkage::Criteria::climbToTarget(
 
 //==============================================================================
 std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
-    BodyNode* _start, BodyNode* _target, bool _chain) const
+    const Target& _start, const Target& _target,
+    bool _chain) const
 {
-  BodyNode* root = _start->getParentBodyNode();
+  BodyNode* start_bn = _start.mNode.lock();
+  BodyNode* target_bn = _target.mNode.lock();
+  BodyNode* root = start_bn->getParentBodyNode();
   while(root != nullptr)
   {
-    if(_target->descendsFrom(root))
+    if(target_bn->descendsFrom(root))
       break;
 
     root = root->getParentBodyNode();
   }
 
-  std::vector<BodyNode*> bnStart = climbToTarget(_start, root);
+  std::vector<BodyNode*> bnStart = climbToTarget(start_bn, root);
   trimBodyNodes(bnStart, _chain, true);
 
   if(root != nullptr && bnStart.back() != root)
@@ -367,7 +413,7 @@ std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
     return bnStart;
   }
 
-  std::vector<BodyNode*> bnTarget = climbToTarget(_target, root);
+  std::vector<BodyNode*> bnTarget = climbToTarget(target_bn, root);
   std::reverse(bnTarget.begin(), bnTarget.end());
   trimBodyNodes(bnTarget, _chain, false);
 

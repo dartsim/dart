@@ -100,6 +100,12 @@ const std::string& TranslationalJoint::getStaticType()
 }
 
 //==============================================================================
+bool TranslationalJoint::isCyclic(size_t _index) const
+{
+  return false;
+}
+
+//==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())

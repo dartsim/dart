@@ -42,6 +42,22 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
+#define SINGLEDOFJOINT_REPORT_DIM_MISMATCH( func, arg )                        \
+  dterr << "[SingleDofJoint::" #func "] Size of " << #arg << "[" << arg .size()\
+        << "] should be exactly 1 for Joint named [" << getName() << "].\n";   \
+  assert(false);
+
+#define SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( func, index )         \
+  dterr << "[SingleDofJoint::" #func "] The index [" << index     \
+        << "] is out of range for Joint named [" << getName()     \
+        << "] which only has a zeroth index.\n";                  \
+  assert(false);
+
+#define SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func )                  \
+  dterr << "[SingleDofJoint::" # func "] Unsupported actuator type ("       \
+        << mJointP.mActuatorType << ") for Joint [" << getName() << "].\n"; \
+  assert(false);
+
 namespace dart {
 namespace dynamics {
 
@@ -162,9 +178,7 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getIndexInSkeleton] index (" << _index
-          << ") may only be 0\n";
-    assert(false);
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getIndexInSkeleton, _index );
     return 0;
   }
 
@@ -176,9 +190,7 @@ size_t SingleDofJoint::getIndexInTree(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getIndexInTree] index (" << _index
-          << ") may only be 0\n";
-    assert(false);
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getIndexInTree, _index );
     return 0;
   }
 
@@ -191,9 +203,7 @@ DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
   if (0 == _index)
     return mDof;
 
-  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
-        << ") of a SingleDofJoint!\n";
-  assert(false);
+  SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getDof, _index );
   return nullptr;
 }
 
@@ -203,9 +213,7 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
   if (0 == _index)
     return mDof;
 
-  dterr << "[SingleDofJoint::getDof] Attempting to access index (" << _index
-        << ") of a SingleDofJoint!\n";
-  assert(false);
+  SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getDof, _index );
   return nullptr;
 }
 
@@ -216,9 +224,10 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
 {
   if (0 < _index)
   {
-    dtwarn << "[SingleDofJoint::getDofName] Attempting to set the name of DOF "
-           << "index " << _index << ", which is out of bounds. We will set "
-           << "the name of DOF index 0 instead\n";
+    dterr << "[SingleDofJoint::getDofName] Attempting to set the name of DOF "
+          << "index " << _index << ", which is out of bounds for the Joint ["
+          << getName() << "]. We will set the name of DOF index 0 instead\n";
+    assert(false);
     _index = 0;
   }
 
@@ -243,9 +252,10 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
 void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
 {
   if (0 < _index)
-    dtwarn << "[SingleDofJoint::preserveDofName] Attempting to preserve the "
-           << "name of DOF index " << _index << ", which is out of bounds. We "
-           << "will preserve the name of DOF index 0 instead\n";
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( preserveDofName, _index );
+    return;
+  }
 
   mSingleDofP.mPreserveDofName = _preserve;
 }
@@ -254,9 +264,9 @@ void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
 bool SingleDofJoint::isDofNamePreserved(size_t _index) const
 {
   if (0 < _index)
-    dtwarn << "[SingleDofJoint::isDofNamePreserved] Requesting whether DOF "
-           << "index " << _index << " is preserved, but this is out of bounds. "
-           << "We will return the result of DOF index 0 instead\n";
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( isDofNamePreserved, _index );
+  }
 
   return mSingleDofP.mPreserveDofName;
 }
@@ -265,8 +275,12 @@ bool SingleDofJoint::isDofNamePreserved(size_t _index) const
 const std::string& SingleDofJoint::getDofName(size_t _index) const
 {
   if (0 < _index)
-    dtwarn << "[SingleDofJoint::getDofName] Requested name of DOF index "
-           << _index << ", which is out of bounds. Returning name of index 0\n";
+  {
+    dterr << "[SingleDofJoint::getDofName] Requested name of DOF index ["
+          << _index << "] in Joint [" << getName() << "], which is out of "
+          << "bounds. Returning the name of the only DOF available.\n";
+    assert(false);
+  }
 
   return mSingleDofP.mDofName;
 }
@@ -276,8 +290,7 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setCommand]: index[" << _index
-          << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setCommand, _index );
     return;
   }
 
@@ -289,8 +302,12 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
                             mSingleDofP.mForceUpperLimit);
       break;
     case PASSIVE:
-      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
+      if(_command != 0.0)
+      {
+        dtwarn << "[SingleDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a PASSIVE joint [" << getName()
+               << "].\n";
+      }
       mCommand = _command;
       break;
     case SERVO:
@@ -310,8 +327,12 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case LOCKED:
-      dtwarn << "[SingleDofJoint::setCommand] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
+      if(_command != 0.0)
+      {
+        dtwarn << "[SingleDofJoint::setCommand] Attempting to set a non-zero ("
+               << _command << ") command for a LOCKED joint [" << getName()
+               << "].\n";
+      }
       mCommand = _command;
       break;
     default:
@@ -325,8 +346,7 @@ double SingleDofJoint::getCommand(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getCommand]: index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getCommand, _index );
     return 0.0;
   }
 
@@ -338,49 +358,11 @@ void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
 {
   if (static_cast<size_t>(_commands.size()) != getNumDofs())
   {
-    dterr << "[SingleDofJoint::setCommands]: commands's size["
-          << _commands.size() << "] is different with the dof [" << getNumDofs()
-          << "]" << std::endl;
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setCommands, _commands );
     return;
   }
 
-  switch (mJointP.mActuatorType)
-  {
-    case FORCE:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mForceLowerLimit,
-                            mSingleDofP.mForceUpperLimit);
-      break;
-    case PASSIVE:
-      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
-             << "PASSIVE joint." << std::endl;
-      mCommand = _commands[0];
-      break;
-    case SERVO:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mVelocityLowerLimit,
-                            mSingleDofP.mVelocityUpperLimit);
-      break;
-    case ACCELERATION:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mAccelerationLowerLimit,
-                            mSingleDofP.mAccelerationUpperLimit);
-      break;
-    case VELOCITY:
-      mCommand = math::clip(_commands[0],
-                            mSingleDofP.mVelocityLowerLimit,
-                            mSingleDofP.mVelocityUpperLimit);
-      // TODO: This possibly makes the acceleration to exceed the limits.
-      break;
-    case LOCKED:
-      dtwarn << "[SingleDofJoint::setCommands] Attempting to set command for "
-             << "LOCKED joint." << std::endl;
-      mCommand = _commands[0];
-      break;
-    default:
-      assert(false);
-      break;
-  }
+  setCommand(0, _commands[0]);
 }
 
 //==============================================================================
@@ -400,7 +382,7 @@ void SingleDofJoint::setPosition(size_t _index, double _position)
 {
   if (_index != 0)
   {
-    dterr << "setPosition index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setPosition, _index );
     return;
   }
 
@@ -412,7 +394,7 @@ double SingleDofJoint::getPosition(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getPosition index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getPosition, _index );
     return 0.0;
   }
 
@@ -424,8 +406,7 @@ void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
   if (static_cast<size_t>(_positions.size()) != getNumDofs())
   {
-    dterr << "setPositions positions's size[" << _positions.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setPositions, _positions );
     return;
   }
 
@@ -449,8 +430,7 @@ void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
 {
   if (_index != 0)
   {
-    dterr << "setPositionLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setPositionLowerLimit, _index );
     return;
   }
 
@@ -462,8 +442,7 @@ double SingleDofJoint::getPositionLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getPositionLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getPositionLowerLimit, _index );
     return 0.0;
   }
 
@@ -475,8 +454,7 @@ void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
 {
   if (_index != 0)
   {
-    dterr << "setPositionUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setPositionUpperLimit, _index );
     return;
   }
 
@@ -488,8 +466,7 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getPositionUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getPositionUpperLimit, _index );
     return 0.0;
   }
 
@@ -497,11 +474,24 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
+bool SingleDofJoint::hasPositionLimit(size_t _index) const
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( hasPositionLimit, _index );
+    return true;
+  }
+
+  return std::isfinite(mSingleDofP.mPositionLowerLimit)
+      || std::isfinite(mSingleDofP.mPositionUpperLimit);
+}
+
+//==============================================================================
 void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 {
   if (_index != 0)
   {
-    dterr << "setVelocity index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setVelocity, _index );
     return;
   }
 
@@ -519,7 +509,7 @@ double SingleDofJoint::getVelocity(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getVelocity index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getVelocity, _index );
     return 0.0;
   }
 
@@ -531,8 +521,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
   if (static_cast<size_t>(_velocities.size()) != getNumDofs())
   {
-    dterr << "setVelocities velocities's size[" << _velocities.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setVelocities, _velocities );
     return;
   }
 
@@ -562,8 +551,7 @@ void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   if (_index != 0)
   {
-    dterr << "setVelocityLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityLowerLimit, _index );
     return;
   }
 
@@ -575,8 +563,7 @@ double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getVelocityLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityLowerLimit, _index );
     return 0.0;
   }
 
@@ -588,8 +575,7 @@ void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
 {
   if (_index != 0)
   {
-    dterr << "setVelocityUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityUpperLimit, _index );
     return;
   }
 
@@ -601,8 +587,7 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getVelocityUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityUpperLimit, _index );
     return 0.0;
   }
 
@@ -614,8 +599,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 {
   if (_index != 0)
   {
-    dterr << "setAcceleration index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setAcceleration, _index );
     return;
   }
 
@@ -633,8 +617,7 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getAcceleration index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getAcceleration, _index );
     return 0.0;
   }
 
@@ -646,8 +629,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
   if (static_cast<size_t>(_accelerations.size()) != getNumDofs())
   {
-    dterr << "setAccelerations accelerations's size[" << _accelerations.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setAccelerations, _accelerations );
     return;
   }
 
@@ -678,8 +660,7 @@ void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
 {
   if (_index != 0)
   {
-    dterr << "setAccelerationLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setAccelerationLowerLimit, _index );
     return;
   }
 
@@ -691,8 +672,7 @@ double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getAccelerationLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getAccelerationLowerLimit, _index );
     return 0.0;
   }
 
@@ -705,8 +685,7 @@ void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
 {
   if (_index != 0)
   {
-    dterr << "setAccelerationUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getAccelerationUpperLimit, _index );
     return;
   }
 
@@ -718,8 +697,7 @@ double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getAccelerationUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getAccelerationUpperLimit, _index );
     return 0.0;
   }
 
@@ -770,7 +748,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 {
   if (_index != 0)
   {
-    dterr << "setForce index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setForce, _index );
     return;
   }
 
@@ -788,7 +766,7 @@ double SingleDofJoint::getForce(size_t _index)
 {
   if (_index != 0)
   {
-    dterr << "getForce index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getForce, _index );
     return 0.0;
   }
 
@@ -800,8 +778,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 {
   if (static_cast<size_t>(_forces.size()) != getNumDofs())
   {
-    dterr << "setForces forces's size[" << _forces.size()
-          << "] is different with the dof [" << getNumDofs() << "]" << std::endl;
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setForces, _forces );
     return;
   }
 
@@ -837,8 +814,7 @@ void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
 {
   if (_index != 0)
   {
-    dterr << "setForceLowerLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setForceLowerLimit, _index );
     return;
   }
 
@@ -850,7 +826,7 @@ double SingleDofJoint::getForceLowerLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getForceMin index[" << _index << "] out of range" << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getForceLowerLimit, _index );
     return 0.0;
   }
 
@@ -862,8 +838,7 @@ void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
 {
   if (_index != 0)
   {
-    dterr << "setForceUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setForceUpperLimit, _index );
     return;
   }
 
@@ -875,8 +850,7 @@ double SingleDofJoint::getForceUpperLimit(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getForceUpperLimit index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getForceUpperLimit, _index );
     return 0.0;
   }
 
@@ -888,8 +862,7 @@ void SingleDofJoint::setVelocityChange(size_t _index, double _velocityChange)
 {
   if (_index != 0)
   {
-    dterr << "setVelocityChange index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityChange, _index );
     return;
   }
 
@@ -901,8 +874,7 @@ double SingleDofJoint::getVelocityChange(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getVelocityChange index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityChange, _index );
     return 0.0;
   }
 
@@ -920,8 +892,7 @@ void SingleDofJoint::setConstraintImpulse(size_t _index, double _impulse)
 {
   if (_index != 0)
   {
-    dterr << "setConstraintImpulse index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setConstraintImpulse, _index );
     return;
   }
 
@@ -933,8 +904,7 @@ double SingleDofJoint::getConstraintImpulse(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "getConstraintImpulse index[" << _index << "] out of range"
-          << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getConstraintImpulse, _index );
     return 0.0;
   }
 
@@ -966,9 +936,10 @@ Eigen::VectorXd SingleDofJoint::getPositionDifferences(
   if (static_cast<size_t>(_q1.size()) != getNumDofs()
       || static_cast<size_t>(_q2.size()) != getNumDofs())
   {
-    dterr << "SingleDofJoint::getPositionsDifference: q1's size[" << _q1.size()
-          << "] or q2's size[" << _q2.size() << "is different with the dof ["
-          << getNumDofs() << "]." << std::endl;
+    dterr << "[SingleDofJoint::getPositionsDifference] q1's size ["
+          << _q1.size() << "] and q2's size [" << _q2.size() << "] must both "
+          << "equal 1 for Joint [" << getName() << "].\n";
+    assert(false);
     return Eigen::Matrix<double, 1, 1>::Zero();
   }
 
@@ -988,8 +959,7 @@ void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setSpringStiffness]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setSpringStiffness, _index );
     return;
   }
 
@@ -1003,8 +973,7 @@ double SingleDofJoint::getSpringStiffness(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getSpringStiffness]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getSpringStiffness, _index );
     return 0.0;
   }
 
@@ -1016,19 +985,18 @@ void SingleDofJoint::setRestPosition(size_t _index, double _q0)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setRestPosition]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setRestPosition, _index );
     return;
   }
 
   if (mSingleDofP.mPositionLowerLimit > _q0
       || mSingleDofP.mPositionUpperLimit < _q0)
   {
-    dterr << "Rest position of joint[" << getName() << "], " << _q0
-          << ", is out of the limit range["
-          << mSingleDofP.mPositionLowerLimit << ", "
-          << mSingleDofP.mPositionUpperLimit << "] in index[" << _index
-          << "].\n";
+    dtwarn << "[SingleDofJoint::setRestPosition] Value of _q0 [" << _q0
+           << "] is out of the limit range ["
+           << mSingleDofP.mPositionLowerLimit << ", "
+           << mSingleDofP.mPositionUpperLimit << "] for index [" << _index
+           << "] of Joint [" << getName() << "].\n";
     return;
   }
 
@@ -1040,8 +1008,7 @@ double SingleDofJoint::getRestPosition(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getRestPosition]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getRestPosition, _index );
     return 0.0;
   }
 
@@ -1053,8 +1020,7 @@ void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setDampingCoefficient]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setDampingCoefficient, _index );
     return;
   }
 
@@ -1068,8 +1034,7 @@ double SingleDofJoint::getDampingCoefficient(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getDampingCoefficient]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getDampingCoefficient, _index );
     return 0.0;
   }
 
@@ -1081,8 +1046,7 @@ void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::setFriction]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setCoulombFriction, _index );
     return;
   }
 
@@ -1096,8 +1060,7 @@ double SingleDofJoint::getCoulombFriction(size_t _index) const
 {
   if (_index != 0)
   {
-    dterr << "[SingleDofJoint::getFriction]: index[" << _index
-          << "] out of range." << std::endl;
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getCoulombFriction, _index );
     return 0.0;
   }
 
@@ -1304,7 +1267,7 @@ void SingleDofJoint::addChildArtInertiaTo(
                                              _childArtInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( addChildArtInertiaTo );
       break;
   }
 }
@@ -1353,7 +1316,7 @@ void SingleDofJoint::addChildArtInertiaImplicitTo(
                                                    _childArtInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
       break;
   }
 }
@@ -1400,7 +1363,7 @@ void SingleDofJoint::updateInvProjArtInertia(
       updateInvProjArtInertiaKinematic(_artInertia);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertia);
       break;
   }
 }
@@ -1445,7 +1408,8 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
       updateInvProjArtInertiaImplicitKinematic(_artInertia, _timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(
+            updateInvProjArtInertiaImplicit);
       break;
   }
 }
@@ -1503,7 +1467,7 @@ void SingleDofJoint::addChildBiasForceTo(
                                           _childPartialAcc);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasForceTo);
       break;
   }
 }
@@ -1572,7 +1536,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
                                             _childBiasImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasImpulseTo);
       break;
   }
 }
@@ -1639,7 +1603,7 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalForce);
       break;
   }
 }
@@ -1686,7 +1650,7 @@ void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
       updateTotalImpulseKinematic(_bodyImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalImpulse);
       break;
   }
 }
@@ -1728,7 +1692,7 @@ void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
       updateAccelerationKinematic(_artInertia, _spatialAcc);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateAcceleration);
       break;
   }
 }
@@ -1772,7 +1736,7 @@ void SingleDofJoint::updateVelocityChange(
       updateVelocityChangeKinematic(_artInertia, _velocityChange);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
       break;
   }
 }
@@ -1846,7 +1810,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
                     _withSpringForces);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateForceFD);
       break;
   }
 }
@@ -1872,7 +1836,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
       updateImpulseID(_bodyImpulse);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateImpulseFD);
       break;
   }
 }
@@ -1893,7 +1857,7 @@ void SingleDofJoint::updateConstrainedTerms(double _timeStep)
       updateConstrainedTermsKinematic(_timeStep);
       break;
     default:
-      dterr << "Unsupported actuator type." << std::endl;
+      SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateConstrainedTerms);
       break;
   }
 }

@@ -18,8 +18,11 @@ if(WIN32)
 endif()
 
 #===============================================================================
-# Poject settings
+# Project settings
 #===============================================================================
+#
+# If you change the version, please update the <version> tag in package.xml.
+
 project(dart)
 
 set(DART_MAJOR_VERSION "5")
@@ -80,6 +83,9 @@ endif()
 #===============================================================================
 # Find dependencies
 #===============================================================================
+#
+# If you add a dependency, please add the corresponding rosdep key as a
+# dependency in package.xml.
 
 #------------------------
 # Mandatory dependencies
@@ -352,30 +358,30 @@ endif()
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(${EIGEN3_INCLUDE_DIRS})
-include_directories(${FCL_INCLUDE_DIRS})
-include_directories(${ASSIMP_INCLUDE_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${OPENGL_INCLUDE_DIR})
-include_directories(${GLUT_INCLUDE_DIR})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
+include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
-  include_directories(${BULLET_INCLUDE_DIRS})
+  include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
   add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  include_directories(${FLANN_INCLUDE_DIRS})
-  include_directories(${urdfdom_INCLUDE_DIRS})
-  include_directories(${TINYXML_INCLUDE_DIRS})
-  include_directories(${TINYXML2_INCLUDE_DIRS})
+  include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
+  include_directories(SYSTEM ${urdfdom_INCLUDE_DIRS})
+  include_directories(SYSTEM ${TINYXML_INCLUDE_DIRS})
+  include_directories(SYSTEM ${TINYXML2_INCLUDE_DIRS})
   if(HAVE_NLOPT)
-    include_directories(${NLOPT_INCLUDE_DIRS})
+    include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
   endif()
   if(HAVE_IPOPT)
-    include_directories(${IPOPT_INCLUDE_DIRS})
+    include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
   endif()
   if(HAVE_SHARK)
-    include_directories(${SHARK_INCLUDE_DIRS})
+    include_directories(SYSTEM ${SHARK_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -517,6 +523,9 @@ set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
 message(STATUS ${PC_CONFIG_OUT})
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
+
+# Install a Catkin 'package.xml' file. This is required by REP-136.
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
 # Add sub-directories

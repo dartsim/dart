@@ -54,7 +54,7 @@ public:
   struct Criteria
   {
     /// Constructor for Chain::Criteria
-    Criteria(BodyNode* _start, BodyNode* _target);
+    Criteria(BodyNode* _start, BodyNode* _target, bool _includeBoth = false);
 
     /// Return a vector of BodyNodes that form a chain
     std::vector<BodyNode*> satisfy() const;
@@ -66,6 +66,11 @@ public:
     /// branching or a FreeJoint along the way
     WeakBodyNodePtr mTarget;
 
+    /// Set this to true if both the start and the target BodyNode should be
+    /// included. Otherwise, whichever is upstream of the other will be left out
+    /// of the chain.
+    bool mIncludeBoth;
+
     /// Convert this Criteria into Linkage::Criteria
     Linkage::Criteria convert() const;
 
@@ -73,13 +78,24 @@ public:
     operator Linkage::Criteria() const;
   };
 
+  /// This enum is used to specify to the create() function that both the start
+  /// and the target BodyNodes should be included in the Chain that gets
+  /// generated.
+  enum IncludeBoth_t { IncludeBoth };
+
   /// Create a Chain given some Chain::Criteria
   static ChainPtr create(const Chain::Criteria& _criteria,
                          const std::string& _name = "Chain");
 
-  /// Create a Chain given a start and a target BodyNode
+  /// Create a Chain given a start and a target BodyNode. Note that whichever
+  /// BodyNode is upstream of the other will be excluded from the Chain.
   static ChainPtr create(BodyNode* _start, BodyNode* _target,
                          const std::string& _name = "Chain");
+
+  /// Create a Chain given a start and a target BodyNode. In this version, both
+  /// BodyNodes will be included in the Chain that gets created.
+  static ChainPtr create(BodyNode* _start, BodyNode* _target,
+                         IncludeBoth_t, const std::string& _name = "Chain");
 
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.
@@ -93,6 +109,10 @@ protected:
   /// Alternative constructor for the Chain class
   Chain(BodyNode* _start, BodyNode* _target,
         const std::string& _name = "Chain");
+
+  /// Alternative constructor for the Chain class
+  Chain(BodyNode* _start, BodyNode* _target,
+        IncludeBoth_t, const std::string& _name = "Chain");
 
 };
 
