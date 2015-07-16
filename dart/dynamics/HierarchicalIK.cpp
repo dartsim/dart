@@ -395,6 +395,8 @@ void HierarchicalIK::Objective::evalGradient(
 
   if(hik->mObjective)
     hik->mObjective->evalGradient(_x, _grad);
+  else
+    _grad.setZero();
 
   if(hik->mNullSpaceObjective)
   {
