@@ -173,8 +173,8 @@ void HierarchicalIK::resetProblem(bool _clearSeeds)
   if(_clearSeeds)
     mProblem->clearAllSeeds();
 
-  mProblem->setObjective(std::make_shared<Objective>(this));
-  mProblem->setObjective(std::make_shared<Constraint>(this));
+  mProblem->setObjective(std::make_shared<Objective>(mPtr.lock()));
+  mProblem->setObjective(std::make_shared<Constraint>(mPtr.lock()));
 
   mProblem->setDimension(mSkeleton.lock()->getNumDofs());
 }
@@ -342,7 +342,7 @@ void HierarchicalIK::clearCaches()
 }
 
 //==============================================================================
-HierarchicalIK::Objective::Objective(HierarchicalIK* _ik)
+HierarchicalIK::Objective::Objective(const std::shared_ptr<HierarchicalIK>& _ik)
   : mIK(_ik)
 {
   // Do nothing
@@ -350,7 +350,7 @@ HierarchicalIK::Objective::Objective(HierarchicalIK* _ik)
 
 //==============================================================================
 optimizer::FunctionPtr HierarchicalIK::Objective::clone(
-    HierarchicalIK* _newIK) const
+    const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Objective>(_newIK);
 }
@@ -358,7 +358,9 @@ optimizer::FunctionPtr HierarchicalIK::Objective::clone(
 //==============================================================================
 double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
 {
-  if(nullptr == mIK)
+  const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+
+  if(nullptr == hik)
   {
     dterr << "[HierarchicalIK::Objective::eval] Attempting to use an Objective "
           << "function of an expired HierarchicalIK module!\n";
@@ -368,11 +370,11 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
 
   double cost = 0.0;
 
-  if(mIK->mObjective)
-    cost += mIK->mObjective->eval(_x);
+  if(hik->mObjective)
+    cost += hik->mObjective->eval(_x);
 
-  if(mIK->mNullSpaceObjective)
-    cost += mIK->mNullSpaceObjective->eval(_x);
+  if(hik->mNullSpaceObjective)
+    cost += hik->mNullSpaceObjective->eval(_x);
 
   return cost;
 }
@@ -381,7 +383,9 @@ double HierarchicalIK::Objective::eval(const Eigen::VectorXd& _x)
 void HierarchicalIK::Objective::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
-  if(nullptr == mIK)
+  const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+
+  if(nullptr == hik)
   {
     dterr << "[HierarchicalIK::Objective::evalGradient] Attempting to use an "
           << "Objective function of an expired HierarchicalIK module!\n";
@@ -389,18 +393,18 @@ void HierarchicalIK::Objective::evalGradient(
     return;
   }
 
-  if(mIK->mObjective)
-    mIK->mObjective->evalGradient(_x, _grad);
+  if(hik->mObjective)
+    hik->mObjective->evalGradient(_x, _grad);
 
-  if(mIK->mNullSpaceObjective)
+  if(hik->mNullSpaceObjective)
   {
     mGradCache.resize(_grad.size());
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
-    mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
+    hik->mNullSpaceObjective->evalGradient(_x, gradMap);
 
-    mIK->setConfiguration(_x);
+    hik->setConfiguration(_x);
 
-    const std::vector<Eigen::MatrixXd>& nullspaces = mIK->computeNullSpaces();
+    const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
     if(nullspaces.size() > 0)
     {
       // Project through the deepest null space
@@ -412,15 +416,14 @@ void HierarchicalIK::Objective::evalGradient(
 }
 
 //==============================================================================
-HierarchicalIK::Constraint::Constraint(HierarchicalIK* _ik)
+HierarchicalIK::Constraint::Constraint(const std::shared_ptr<HierarchicalIK>& _ik)
   : mIK(_ik)
 {
   // Do nothing
 }
 
 //==============================================================================
-optimizer::FunctionPtr HierarchicalIK::Constraint::clone(
-    HierarchicalIK* _newIK) const
+optimizer::FunctionPtr HierarchicalIK::Constraint::clone(const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Constraint>(_newIK);
 }
@@ -428,7 +431,8 @@ optimizer::FunctionPtr HierarchicalIK::Constraint::clone(
 //==============================================================================
 double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
 {
-  if(nullptr == mIK)
+  const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+  if(nullptr == hik)
   {
     dterr << "[HierarchicalIK::Constraint::eval] Attempting to use a "
           << "Constraint function of an expired HierarchicalIK module!\n";
@@ -436,7 +440,7 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
     return 0.0;
   }
 
-  const IKHierarchy& hierarchy = mIK->getIKHierarchy();
+  const IKHierarchy& hierarchy = hik->getIKHierarchy();
 
   double cost = 0.0;
   for(size_t i=0; i < hierarchy.size(); ++i)
@@ -470,10 +474,12 @@ double HierarchicalIK::Constraint::eval(const Eigen::VectorXd& _x)
 void HierarchicalIK::Constraint::evalGradient(
     const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
 {
-  const IKHierarchy& hierarchy = mIK->getIKHierarchy();
-  const SkeletonPtr& skel = mIK->getSkeleton();
+  const std::shared_ptr<HierarchicalIK>& hik = mIK.lock();
+
+  const IKHierarchy& hierarchy = hik->getIKHierarchy();
+  const SkeletonPtr& skel = hik->getSkeleton();
   const size_t nDofs = skel->getNumDofs();
-  const std::vector<Eigen::MatrixXd>& nullspaces = mIK->computeNullSpaces();
+  const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
 
   _grad.setZero();
   for(size_t i=0; i < hierarchy.size(); ++i)
@@ -540,9 +546,48 @@ void HierarchicalIK::initialize()
 }
 
 //==============================================================================
+static std::shared_ptr<optimizer::Function> cloneIkFunc(
+    const std::shared_ptr<optimizer::Function>& _function,
+    const std::shared_ptr<HierarchicalIK>& _ik)
+{
+  std::shared_ptr<HierarchicalIK::Function> ikFunc =
+      std::dynamic_pointer_cast<HierarchicalIK::Function>(_function);
+
+  if(ikFunc)
+    return ikFunc->clone(_ik);
+
+  return _function;
+}
+
+//==============================================================================
+void HierarchicalIK::copyOverSetup(
+    const std::shared_ptr<HierarchicalIK>& _otherIK) const
+{
+  _otherIK->setSolver(mSolver->clone());
+
+  const std::shared_ptr<optimizer::Problem>& newProblem =
+      _otherIK->getProblem();
+  newProblem->setObjective( cloneIkFunc(mProblem->getObjective(), _otherIK) );
+
+  newProblem->removeAllEqConstraints();
+  for(size_t i=0; i < mProblem->getNumEqConstraints(); ++i)
+    newProblem->addEqConstraint(
+          cloneIkFunc(mProblem->getEqConstraint(i), _otherIK));
+
+  newProblem->removeAllIneqConstraints();
+  for(size_t i=0; i < mProblem->getNumIneqConstraints(); ++i)
+    newProblem->addIneqConstraint(
+          cloneIkFunc(mProblem->getIneqConstraint(i), _otherIK));
+
+  newProblem->getAllSeeds() = mProblem->getAllSeeds();
+}
+
+//==============================================================================
 std::shared_ptr<CompositeIK> CompositeIK::create(const SkeletonPtr& _skel)
 {
-  return std::shared_ptr<CompositeIK>(new CompositeIK(_skel));
+  std::shared_ptr<CompositeIK> ik(new CompositeIK(_skel));
+  ik->mPtr = ik;
+  return ik;
 }
 
 //==============================================================================
@@ -557,6 +602,7 @@ std::shared_ptr<CompositeIK> CompositeIK::cloneCompositeIK(
     const SkeletonPtr& _newSkel) const
 {
   std::shared_ptr<CompositeIK> newComposite = create(_newSkel);
+  copyOverSetup(newComposite);
 
   for( const std::shared_ptr<InverseKinematics>& ik : mModuleSet )
   {
@@ -651,7 +697,9 @@ CompositeIK::CompositeIK(const SkeletonPtr& _skel)
 //==============================================================================
 std::shared_ptr<WholeBodyIK> WholeBodyIK::create(const SkeletonPtr& _skel)
 {
-  return std::shared_ptr<WholeBodyIK>(new WholeBodyIK(_skel));
+  std::shared_ptr<WholeBodyIK> ik(new WholeBodyIK(_skel));
+  ik->mPtr = ik;
+  return ik;
 }
 
 //==============================================================================
@@ -665,7 +713,9 @@ std::shared_ptr<HierarchicalIK> WholeBodyIK::clone(
 std::shared_ptr<WholeBodyIK> WholeBodyIK::cloneWholeBodyIK(
     const SkeletonPtr& _newSkel) const
 {
-  return create(_newSkel);
+  std::shared_ptr<WholeBodyIK> newIK = create(_newSkel);
+  copyOverSetup(newIK);
+  return newIK;
 }
 
 //==============================================================================

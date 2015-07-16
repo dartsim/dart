@@ -78,7 +78,8 @@ public:
   class Function
   {
   public:
-    virtual optimizer::FunctionPtr clone(HierarchicalIK* _newIK) const = 0;
+    virtual optimizer::FunctionPtr clone(
+        const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
 
     virtual ~Function() = default;
   };
@@ -134,9 +135,10 @@ protected:
   {
   public:
 
-    Objective(HierarchicalIK* _ik);
+    Objective(const std::shared_ptr<HierarchicalIK>& _ik);
 
-    optimizer::FunctionPtr clone(HierarchicalIK *_newIK) const override;
+    optimizer::FunctionPtr clone(
+        const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     double eval(const Eigen::VectorXd &_x) override;
 
@@ -147,7 +149,7 @@ protected:
 
   protected:
 
-    sub_ptr<HierarchicalIK> mIK;
+    std::weak_ptr<HierarchicalIK> mIK;
 
     Eigen::VectorXd mGradCache;
 
@@ -157,9 +159,10 @@ protected:
   {
   public:
 
-    Constraint(HierarchicalIK* _ik);
+    Constraint(const std::shared_ptr<HierarchicalIK>& _ik);
 
-    optimizer::FunctionPtr clone(HierarchicalIK *_newIK) const override;
+    optimizer::FunctionPtr clone(
+        const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     double eval(const Eigen::VectorXd& _x) override;
 
@@ -170,7 +173,7 @@ protected:
 
   protected:
 
-    sub_ptr<HierarchicalIK> mIK;
+    std::weak_ptr<HierarchicalIK> mIK;
 
     Eigen::VectorXd mLevelGradCache;
 
@@ -180,6 +183,10 @@ protected:
   HierarchicalIK(const SkeletonPtr& _skeleton);
 
   void initialize();
+
+  /// Copy the setup of this HierarchicalIK module into another HierarchicalIK
+  /// module
+  void copyOverSetup(const std::shared_ptr<HierarchicalIK>& _otherIK) const;
 
   WeakSkeletonPtr mSkeleton;
 
@@ -192,6 +199,9 @@ protected:
   optimizer::FunctionPtr mObjective;
 
   optimizer::FunctionPtr mNullSpaceObjective;
+
+  /// Weak pointer to self
+  std::weak_ptr<HierarchicalIK> mPtr;
 
   mutable Eigen::VectorXd mLastConfig;
 

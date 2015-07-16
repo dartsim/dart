@@ -113,7 +113,7 @@ bool InverseKinematics::solve(Eigen::VectorXd& config, bool _resetConfiguration)
 }
 
 //==============================================================================
-std::shared_ptr<optimizer::Function> cloneIkFunc(
+static std::shared_ptr<optimizer::Function> cloneIkFunc(
     const std::shared_ptr<optimizer::Function>& _function,
     InverseKinematics* _ik)
 {
@@ -158,8 +158,7 @@ InverseKinematicsPtr InverseKinematics::clone(
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
 
-  for(size_t i=0; i < mProblem->getAllSeeds().size(); ++i)
-    newProblem->addSeed(mProblem->getSeed(i));
+  newProblem->getAllSeeds() = mProblem->getAllSeeds();
 
   return newIK;
 }

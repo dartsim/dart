@@ -87,11 +87,11 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
-  /// Transform will be set to the new default transform
+  /// Transform will be set to the new default transform.
   void setProperties(const Properties& _properties, bool _useNow=true);
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
-  /// Transform will be set to the new default transform
+  /// Transform will be set to the new default transform.
   void setProperties(const UniqueProperties& _properties, bool _useNow=true);
 
   Properties getEndEffectorProperties() const;
