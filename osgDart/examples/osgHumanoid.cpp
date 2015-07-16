@@ -185,10 +185,16 @@ int main()
 
   atlas->getDof("r_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
 
-  EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector("l_hand");
+
 
   Eigen::VectorXd weights = Eigen::VectorXd::Ones(6);
   weights = 0.01*weights;
+
+  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
+  tf_hand.translation() = Eigen::Vector3d(0.0, 0.12, 0.0);
+
+  EndEffector* l_hand = atlas->getBodyNode("l_hand")->createEndEffector("l_hand");
+  l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   osgDart::InteractiveFramePtr l_target(new osgDart::InteractiveFrame(
                                           Frame::World(), "l_target"));
@@ -199,6 +205,8 @@ int main()
   world->addSimpleFrame(l_target);
 
   EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
+  r_hand->setDefaultRelativeTransform(tf_hand.inverse(), true);
+
   osgDart::InteractiveFramePtr r_target(new osgDart::InteractiveFrame(
                                           Frame::World(), "r_target"));
   r_target->setTransform(r_hand->getTransform());
