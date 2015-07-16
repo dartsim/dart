@@ -1644,6 +1644,7 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
   {
     // There were so many repeated points in the given set that we only have
     // three or fewer unique points
+    _originalIndices.reserve(angles.size()+1);
     _originalIndices.push_back(lowestIndex);
     for(size_t i=0; i < angles.size(); ++i)
       _originalIndices.push_back(angles[i].mIndex);
@@ -1659,6 +1660,7 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
   std::vector<size_t>& edge = _originalIndices;
   size_t lastIndex = lowestIndex;
   size_t secondToLastIndex = angles[0].mIndex;
+  edge.reserve(angles.size()+1);
   edge.push_back(lastIndex);
 
   for(size_t i=1; i < angles.size(); ++i)

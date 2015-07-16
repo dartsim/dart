@@ -1881,6 +1881,12 @@ void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
 }
 
 //==============================================================================
+void Skeleton::notifySupportUpdate(size_t _treeIdx)
+{
+  SET_FLAG(_treeIdx, mSupport);
+}
+
+//==============================================================================
 void Skeleton::updateTotalMass()
 {
   mTotalMass = 0.0;
@@ -2591,6 +2597,123 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
   cache.mFc = cache.mFc / mSkeletonP.mTimeStep;
 
   return cache.mFc;
+}
+
+//==============================================================================
+static void computeSupportPolygon(
+    const Skeleton* skel, math::SupportPolygon& polygon,
+    math::SupportGeometry& geometry,  std::vector<size_t>& ee_indices,
+    Eigen::Vector3d& axis1, Eigen::Vector3d& axis2,
+    size_t treeIndex)
+{
+  polygon.clear();
+  geometry.clear();
+  ee_indices.clear();
+
+  const Eigen::Vector3d& gravity = skel->getGravity();
+  if(gravity.norm() == 0.0)
+  {
+    dtwarn << "[computeSupportPolygon] Requesting support polygon of a "
+           << "Skeleton with no gravity. The result will only be an empty "
+           << "set!\n";
+    return;
+  }
+
+  std::vector<size_t> originalEE_map;
+  originalEE_map.reserve(skel->getNumEndEffectors());
+  for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
+  {
+    const EndEffector* ee = skel->getEndEffector(i);
+    if(ee->getSupportMode()
+       && (INVALID_INDEX == treeIndex || ee->getTreeIndex() == treeIndex))
+    {
+      const math::SupportGeometry& eeGeom = ee->getSupportGeometry();
+      for(const Eigen::Vector3d& v : eeGeom)
+      {
+        geometry.push_back(v);
+        originalEE_map.push_back(ee->getIndexInSkeleton());
+      }
+    }
+  }
+
+  axis1 = (gravity-Eigen::Vector3d::UnitX()).norm() > 1e-6 ?
+        Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitY();
+
+  axis1 = axis1 - gravity.dot(axis1)*gravity/gravity.dot(gravity);
+  axis1.normalize();
+
+  axis2 = gravity.normalized().cross(axis1);
+
+  std::vector<size_t> vertex_indices;
+  polygon = math::computeSupportPolgyon(vertex_indices, geometry, axis1, axis2);
+
+  ee_indices.reserve(vertex_indices.size());
+  for(size_t i=0; i < vertex_indices.size(); ++i)
+    ee_indices[i] = originalEE_map[vertex_indices[i]];
+}
+
+//==============================================================================
+const math::SupportPolygon& Skeleton::getSupportPolygon() const
+{
+  math::SupportPolygon& polygon = mSkelCache.mSupportPolygon;
+
+  if(!mSkelCache.mDirty.mSupport)
+    return polygon;
+
+  computeSupportPolygon(this, polygon, mSkelCache.mSupportGeometry,
+                        mSkelCache.mSupportIndices,
+                        mSkelCache.mSupportAxes.first,
+                        mSkelCache.mSupportAxes.second, INVALID_INDEX);
+
+  mSkelCache.mDirty.mSupport = false;
+  return polygon;
+}
+
+//==============================================================================
+const math::SupportPolygon& Skeleton::getSupportPolygon(size_t _treeIdx) const
+{
+  math::SupportPolygon& polygon = mTreeCache[_treeIdx].mSupportPolygon;
+
+  if(!mTreeCache[_treeIdx].mDirty.mSupport)
+    return polygon;
+
+  computeSupportPolygon(this, polygon, mTreeCache[_treeIdx].mSupportGeometry,
+                        mTreeCache[_treeIdx].mSupportIndices,
+                        mTreeCache[_treeIdx].mSupportAxes.first,
+                        mTreeCache[_treeIdx].mSupportAxes.second, _treeIdx);
+
+  mTreeCache[_treeIdx].mDirty.mSupport = false;
+  return polygon;
+}
+
+//==============================================================================
+const std::vector<size_t>& Skeleton::getSupportIndices() const
+{
+  getSupportPolygon();
+  return mSkelCache.mSupportIndices;
+}
+
+//==============================================================================
+const std::vector<size_t>& Skeleton::getSupportIndices(size_t _treeIdx) const
+{
+  getSupportPolygon(_treeIdx);
+  return mTreeCache[_treeIdx].mSupportIndices;
+}
+
+//==============================================================================
+const std::pair<Eigen::Vector3d, Eigen::Vector3d>&
+Skeleton::getSupportAxes() const
+{
+  getSupportPolygon();
+  return mSkelCache.mSupportAxes;
+}
+
+//==============================================================================
+const std::pair<Eigen::Vector3d, Eigen::Vector3d>&
+Skeleton::getSupportAxes(size_t _treeIdx) const
+{
+  getSupportPolygon(_treeIdx);
+  return mTreeCache[_treeIdx].mSupportAxes;
 }
 
 //==============================================================================

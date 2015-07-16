@@ -58,7 +58,7 @@ public:
   {
     SHIFT_SUPPORT = 0,
     SHIFT_COM
-  }
+  };
 
   BalanceConstraint(const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
                     BalanceMethod_t _method = SHIFT_SUPPORT);

@@ -373,6 +373,40 @@ public:
   Eigen::VectorXd getState() const;
 
   //----------------------------------------------------------------------------
+  /// \{ \name Support Polygon
+  //----------------------------------------------------------------------------
+
+  /// Get the support polygon of this Skeleton, which is computed based on the
+  /// gravitational projection of the support geometries of all EndEffectors
+  /// in this Skeleton that are currently in support mode.
+  const math::SupportPolygon& getSupportPolygon() const;
+
+  /// Same as getSupportPolygon(), but it will only use EndEffectors within the
+  /// specified tree within this Skeleton
+  const math::SupportPolygon& getSupportPolygon(size_t _treeIdx) const;
+
+  /// Get a list of the EndEffector indices that correspond to each of the
+  /// points in the support polygon.
+  const std::vector<size_t>& getSupportIndices() const;
+
+  /// Same as getSupportIndices(), but it corresponds to the support polygon of
+  /// the specified tree within this Skeleton
+  const std::vector<size_t>& getSupportIndices(size_t _treeIdx) const;
+
+  /// Get the axes that correspond to each component in the support polygon.
+  /// These axes are needed in order to map the points on a support polygon
+  /// into 3D space. If gravity is along the z-direction, then these axes will
+  /// simply be <1,0,0> and <0,1,0>.
+  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes() const;
+
+  /// Same as getSupportAxes(), but it corresponds to the support polygon of the
+  /// specified tree within this Skeleton
+  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
+      size_t _treeIdx) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   // Kinematics algorithms
   //----------------------------------------------------------------------------
 
@@ -808,6 +842,9 @@ protected:
   /// needs to be updated
   void notifyArticulatedInertiaUpdate(size_t _treeIdx);
 
+  /// Notify that the support polygon of a tree needs to be updated
+  void notifySupportUpdate(size_t _treeIdx);
+
   /// Update the computation for total mass
   void updateTotalMass();
 
@@ -967,6 +1004,9 @@ protected:
 
     /// Dirty flag for the damping force vector.
     bool mDampingForces;
+
+    /// Dirty flag for the support polygon
+    bool mSupport;
   };
 
   struct DataCache
@@ -1012,6 +1052,20 @@ protected:
 
     /// Constraint force vector.
     Eigen::VectorXd mFc;
+
+    /// Support polygon
+    math::SupportPolygon mSupportPolygon;
+
+    /// A map of which EndEffectors correspond to the individual points in the
+    /// support polygon
+    std::vector<size_t> mSupportIndices;
+
+    /// A pair of vectors which map the 2D coordinates of the support polygon
+    /// into 3D space
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> mSupportAxes;
+
+    /// Support geometry -- only used for temporary storage purposes
+    math::SupportGeometry mSupportGeometry;
   };
 
   mutable std::vector<DataCache> mTreeCache;

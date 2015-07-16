@@ -65,11 +65,15 @@ public:
     /// The support geometry that this EndEffector is designed to use
     math::SupportGeometry mSupportGeometry;
 
+    /// True if this EndEffector is currently usable for support
+    bool mSupport;
+
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
             Eigen::Isometry3d::Identity(),
         const math::SupportGeometry& _supportGeometry =
-            math::SupportGeometry());
+            math::SupportGeometry(),
+        bool _supporting = false);
   };
 
   struct Properties : Entity::Properties, UniqueProperties
@@ -129,11 +133,15 @@ public:
   /// when solving balancing or manipulation constraints.
   void setSupportGeometry(const math::SupportGeometry& _newSupport);
 
-  /// Get a reference to the SupportGeometry for this EndEffector
-  math::SupportGeometry& getSupportGeometry();
-
   /// Get a const-reference to the SupportGeometry for this EndEffector
   const math::SupportGeometry& getSupportGeometry() const;
+
+  /// Pass in true if this EndEffector should be used to support the robot, like
+  /// a foot
+  void setSupportMode(bool _supporting);
+
+  /// Get whether this EndEffector is currently being used for support
+  bool getSupportMode() const;
 
   // Documentation inherited
   std::shared_ptr<Skeleton> getSkeleton() override;
@@ -161,6 +169,9 @@ public:
 
   /// Get the index of this EndEffector within the Skeleton
   size_t getIndexInSkeleton() const;
+
+  /// Get the tree index of the BodyNode that this EndEffector is attached to
+  size_t getTreeIndex() const;
 
   /// \}
 

@@ -45,11 +45,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-EndEffector::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& _defaultTransform,
-    const math::SupportGeometry& _supportGeometry)
+EndEffector::UniqueProperties::UniqueProperties(const Eigen::Isometry3d& _defaultTransform,
+    const math::SupportGeometry& _supportGeometry, bool _supporting)
   : mDefaultTransform(_defaultTransform),
-    mSupportGeometry(_supportGeometry)
+    mSupportGeometry(_supportGeometry),
+    mSupport(_supporting)
 {
   // Do nothing
 }
@@ -174,19 +174,30 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 void EndEffector::setSupportGeometry(const math::SupportGeometry& _newSupport)
 {
+  getSkeleton()->notifySupportUpdate(getTreeIndex());
   mEndEffectorP.mSupportGeometry = _newSupport;
-}
-
-//==============================================================================
-math::SupportGeometry& EndEffector::getSupportGeometry()
-{
-  return mEndEffectorP.mSupportGeometry;
 }
 
 //==============================================================================
 const math::SupportGeometry& EndEffector::getSupportGeometry() const
 {
   return mEndEffectorP.mSupportGeometry;
+}
+
+//==============================================================================
+void EndEffector::setSupportMode(bool _supporting)
+{
+  if(mEndEffectorP.mSupport == _supporting)
+    return;
+
+  getSkeleton()->notifySupportUpdate(getTreeIndex());
+  mEndEffectorP.mSupport = _supporting;
+}
+
+//==============================================================================
+bool EndEffector::getSupportMode() const
+{
+  return mEndEffectorP.mSupport;
 }
 
 //==============================================================================
@@ -244,6 +255,12 @@ size_t EndEffector::getIndexInSkeleton() const
 }
 
 //==============================================================================
+size_t EndEffector::getTreeIndex() const
+{
+  return mBodyNode->getTreeIndex();
+}
+
+//==============================================================================
 const math::Jacobian& EndEffector::getJacobian() const
 {
   if (mIsEffectorJacobianDirty)
@@ -282,10 +299,15 @@ const math::Jacobian& EndEffector::getJacobianClassicDeriv() const
 //==============================================================================
 void EndEffector::notifyTransformUpdate()
 {
-  mIsEffectorJacobianDirty = true;
-  mIsWorldJacobianDirty = true;
-  mIsEffectorJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
+  if(!mNeedTransformUpdate)
+  {
+    mIsEffectorJacobianDirty = true;
+    mIsWorldJacobianDirty = true;
+    mIsEffectorJacobianSpatialDerivDirty = true;
+    mIsWorldJacobianClassicDerivDirty = true;
+
+    getSkeleton()->notifySupportUpdate(getTreeIndex());
+  }
 
   Frame::notifyTransformUpdate();
 }
