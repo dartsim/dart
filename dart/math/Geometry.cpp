@@ -1554,9 +1554,9 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
       dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
              << "which is not a proper convex hull! The invalid segment "
              << "contains indices " << i-2 << " -> " << i << ":\n"
-             << i-2 << ") " << _convexHull[i-2] << "\n"
-             << i-1 << ") " << _convexHull[i-1] << "\n"
-             << i   << ") " << _convexHull[i] << "\n\n";
+             << i-2 << ") " << _convexHull[i-2].transpose() << "\n"
+             << i-1 << ") " << _convexHull[i-1].transpose() << "\n"
+             << i   << ") " << _convexHull[i].transpose() << "\n\n";
       continue;
     }
 
