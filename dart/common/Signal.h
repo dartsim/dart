@@ -142,7 +142,7 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections();
+  void cleanupConnections();
 
   /// Get the number of connections
   size_t getNumConnections() const;
@@ -192,7 +192,7 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections();
+  void cleanupConnections();
 
   /// Get the number of connections
   size_t getNumConnections() const;
