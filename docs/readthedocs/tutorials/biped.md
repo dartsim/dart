@@ -9,17 +9,15 @@ consists of seven Lessons covering the following topics:
 - APIs for dynamic quantities.
 - Skeleton editing.
 
+Please reference the source code in **tutorialBiped.cpp** and **tutorialBiped-Finished.cpp**.
+
 # Lesson 1: Joint limits and self-collision
-Let's start by locating the [main()](http://) function in
-[tutorialBiped.cpp](http://). We first create a floor and call
-[loadBiped()](http://) to load a
-bipedal figure described in SKEL format, which is an XML format
-representing a robot model. A SKEL file describes a
-[World](http://dartsim.github.io/dart/d7/d41/classdart_1_1simulation_1_1World.html)
-with one or more [Skeleton](http://)s in it. Here
-we load in a World from biped.skel and assign the bipedal figure to a
-[Skeleton](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html)
-pointer called *biped*.
+Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
+and call ``loadBiped`` to load a bipedal figure described in SKEL
+format, which is an XML format representing a robot model. A SKEL file
+describes a ``World`` with one or more ``Skeleton``s in it. Here we
+load in a World from **biped.skel** and assign the bipedal figure to a
+``Skeleton`` pointer called *biped*.
 
 ```cpp
 SkeletonPtr loadBiped()
@@ -31,14 +29,14 @@ SkeletonPtr loadBiped()
 }
 ```
 
-Running the skeleton code without any modification (hit the spacebar), you should see a
+Running the skeleton code (hit the spacebar) without any modification, you should see a
 human-like character collapse on the ground and fold in on
 itself. Before we attempt to control the biped, let's first make the
 biped a bit more realistic by enforcing more human-like joint limits.
 
 DART allows the user to set upper and lower bounds on each degree of
 freedom in the SKEL file or using provided APIs. For example, you
-should see the description of the right knee joint in biped.skel:
+should see the description of the right knee joint in **biped.skel**:
 
 ```cpp
 <joint type="revolute" name="j_shin_right">
@@ -56,10 +54,11 @@ should see the description of the right knee joint in biped.skel:
 The &lt;upper> and &lt;lower> tags make sure that the knee can only flex but
 not extend. Alternatively, you can directly specify the joint limits
 in the code using
-[setPositionUpperLimit](http://dartsim.github.io/dart/d6/d5b/classdart_1_1dynamics_1_1Joint.html#aa0635643a0a8c1f22edb8243e86ea801)
-and [setPositionLowerLimit](http://dartsim.github.io/dart/d6/d5b/classdart_1_1dynamics_1_1Joint.html#adadee231309b62cd3e3d904f75f2a969).
+``setPositionUpperLimit`` and ``setPositionLowerLimit``.
 
-In either case, the joint limits on the biped will not be activated until you call [setPositionLimited](http://dartsim.github.io/dart/d6/d5b/classdart_1_1dynamics_1_1Joint.html#a3212ca5f7893cfd9a5422ab17df4038b)
+In either case, the joint limits on the biped will not be activated
+until you call ``setPositionLimited``:
+
 ```cpp
 SkeletonPtr loadBiped()
 {
@@ -105,9 +104,8 @@ damping coefficients. The detailed description of a PD controller can
 be found [here](https://en.wikipedia.org/wiki/PID_controller).
 
 The first task is to set the biped to a particular configuration. You
-can use
-[setPosition](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#ac2036ea4998f688173d19ace0edab841)
-to set each degree of freedom individually:
+can use ``setPosition`` to set each degree of freedom individually:
+
 ```cpp
 void setInitialPose(SkeletonPtr biped)
 {
@@ -119,12 +117,12 @@ void setInitialPose(SkeletonPtr biped)
 Here the degree of freedom named "j_thigh_left_z" is set to 0.15
 radian. Note that each degree of freedom in a skeleton has a numerical
 index which can be accessed by
-[getIndexInSkeleton](http://dartsim.github.io/dart/de/db7/classdart_1_1dynamics_1_1DegreeOfFreedom.html#add2ec1d2f979e9056b466b1be5ee1a86). You
+``getIndexInSkeleton``. You
 can also set the entire configuration using a vector that holds the
 positions of all the degreed of freedoms using
-[setPositions](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#aee6d1a2be46c277602fae2f1d47762ef).
+``setPositions``.
 
-You can set more degrees of freedoms in the lower
+We continue to set more degrees of freedoms in the lower
 body to create a roughly stable standing pose.
 
 ```cpp
@@ -138,7 +136,7 @@ biped->setPosition(biped->getDof("j_heel_right_1")->getIndexInSkeleton(), 0.25);
 
 Now the biped will start in this configuration, but will not maintain
 this configuration as soon as the simulation starts. We need a
-controller to make this happen. Let's take a look at the constructor of our Controller in the
+controller to make this happen. Let's take a look at the constructor of our ``Controller`` in the
 skeleton code:
 
 ```cpp
@@ -160,6 +158,7 @@ Controller(const SkeletonPtr& biped)
     setTargetPositions(mBiped->getPositions());
 }    
 ```
+
 Here we arbitrarily define the stiffness and damping coefficients to
 1000 and 50, except for the first six degrees of freedom. Because the
 global translation and rotation of the biped are not actuated, the
@@ -169,7 +168,8 @@ zero. At the end of the constructor, we set the target position of the PD
 controller to the current configuration of the biped.
 
 With these settings, we can compute the forces generated by the PD
-controller and add them to the internal forces of biped using [setForces](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#a9a6a9b792fa39639d3af613907d2d8ed):
+controller and add them to the internal forces of biped using ``setForces``:
+
 ```cpp
 void addPDForces()
 {
@@ -209,12 +209,12 @@ SPD is a variation of PD control proposed by
 [Jie Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The
 basic idea of SPD is to compute control force using the predicted
 state at the next time step, instead of the current state. This Lesson
-will only demonstrates the implementation of SPD using DART without
+will only demonstrate the implementation of SPD using DART without
 going into details of SPD derivation.
 
 The implementation of SPD involves accessing the current dynamic
 quantities in Lagrange's equations of motion. Fortunately, these
-quantities are readily available via DART APIs, which makes the full
+quantities are readily available via DART API, which makes the full
 implementation of SPD simple and concise:
 
 ```cpp
@@ -235,22 +235,22 @@ void addSPDForces()
 
 You can get mass matrix, Coriolis force, gravitational force, and
 constraint force projected onto generalized coordinates using function
-calls [getMassMatrix](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#a1998cb27dd892d259da109509f313830),
-[getCoriolisForces](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#aeffe03aff506e206f79c5074b3886f08),
-[getGravityForces](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#a0d278dc0365a99729fdbbee7acf0bcd3),
+calls ``getMassMatrix``,
+``getCoriolisForces``,
+``getGravityForces``,
 and
-[getConstraintForces](http://dartsim.github.io/dart/d3/d19/classdart_1_1dynamics_1_1Skeleton.html#a4b46912a4f3966efb2e54f1f5a29a77b),
+``getConstraintForces``,
 respectively. Constraint forces include forces due to contacts, joint
 limits, and other joint constraints set by the user (e.g. the weld
 joint constraint in the multi-pendulum tutorial).
 
 With SPD, a wide range of stiffness and damping coefficients will all
 result in stable motion. In fact, you can just leave them to our
-original values: 1000 and 50. By holding the initial pose, now the biped
+original values: 1000 and 50. By holding the target pose, now the biped
 can stand on the ground in balance indefinitely. However, if you apply
 an external push force on the biped (hit ',' or '.' key to apply a
 backward or forward push), the biped loses its balance quickly. We
-will demonstrate a more robust balance controller in the next Lesson.
+will demonstrate a more robust feedback controller in the next Lesson.
 
 
 # Lesson 4: Ankle strategy
@@ -272,20 +272,20 @@ anterior-posterior axis:
 ```cpp
 void addAnkleStrategyForces()
 {
-Eigen::Vector3d COM = mBiped->getCOM();
-Eigen::Vector3d offset(0.05, 0, 0);
-Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")-> getTransform() * offset;
-double diff = COM[0] - COP[0];
+    Eigen::Vector3d COM = mBiped->getCOM();
+    Eigen::Vector3d offset(0.05, 0, 0);
+    Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
+    double diff = COM[0] - COP[0];
 ...
 }
 ```
 
 DART provides various APIs to access useful kinematic information. For
-example, [getCOM](http://) returns the center of mass of the skeleton and
-[getTransform](http://) returns transformation of the body node with
+example, ``getCOM`` returns the center of mass of the skeleton and
+``getTransform`` returns transformation of the body node with
 respect to any coordinate frame specified by the parameter (world
 coordinate frame as default). DART APIs also come in handy when
-computing the derivative term, - k<sub>d</sub> (x&#775; - p&#775;):
+computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 
 ```cpp
 void addAnkleStrategyForces()
@@ -300,7 +300,7 @@ void addAnkleStrategyForces()
 
 The linear/angular velocity of any point in any coordinate frame can be
 easily accessed in DART. The following table summarizes the APIs for
-accessing velocity.
+accessing various velocities.
 
 | Function name |  Description |
 |-------------|-----------|
@@ -308,7 +308,7 @@ accessing velocity.
 
 The remaining of the ankle strategy implementation is just the matter
 of parameters tuning. We found that using different feedback rules for
-falling forward and backward results in more stable controller.
+falling forward and backward result in more stable controller.
 
 # Lesson 5: Skeleton editing
 
@@ -318,7 +318,7 @@ scratch. In this Lesson, we will load a skateboard model from a SKEL
 file and merge our biped with the skateboard to create a wheel-based
 robot.
 
-We first load a skateboard from [skateboard.skel](http:\\):
+We first load a skateboard from **skateboard.skel**:
 
 ```cpp
 void modifyBipedWithSkateboard(SkeletonPtr biped)
@@ -329,10 +329,10 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 }
 ```
 
-Our goal is to make the skateboard skeleton a subtree of the biped
-skeleton connected to the left heel body node via a newly created
+Our goal is to make the skateboard Skeleton a subtree of the biped
+Skeleton connected to the left heel BodyNode via a newly created
 Euler joint. To do so, you need to first create an instance of
-[EulerJoint::Properties](http:\\) for this new joint.
+``EulerJoint::Properties`` for this new joint.
 
 ```cpp
 void modifyBipedWithSkateboard(SkeletonPtr biped)
@@ -344,7 +344,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 }
 ```
 
-Here we increase the vertical distance between the child body node and
+Here we increase the vertical distance between the child BodyNode and
 the joint by 0.1m to give some space between the skateboard and the
 left foot. Now you can merge the skateboard and the biped using this new Euler
 joint by
@@ -376,7 +376,7 @@ actuator type.
 |Content Cell  | Content Cell |
 
 
-In this Lesson, we will switch the type of actuators for the wheels
+In this Lesson, we will switch the actuator type of the wheels
 from the default FORCE type to VELOCITY type.
 
 ```cpp
@@ -388,8 +388,8 @@ void setVelocityAccuators(SkeletonPtr biped)
 }
 ```
 
-Once all four wheels are set to VELOCITY actuator type, you can these
-actuators by directly setting the desired velocity:
+Once all four wheels are set to VELOCITY actuator type, you can
+command them by directly setting the desired velocity:
 
 ```cpp
 void setWheelCommands()
@@ -401,8 +401,8 @@ void setWheelCommands()
 }
 ```
 
-Note that [setCommand](http://) only exerts commanding force in the current time step. If you wish the
-wheel to continue spinning at a particular speed, [setCommand](http://)
+Note that ``setCommand`` only exerts commanding force in the current time step. If you wish the
+wheel to continue spinning at a particular speed, ``setCommand``
 needs to be called at every time step.
 
 We also set the stiffness and damping coefficients for the wheels to zero.
@@ -456,8 +456,8 @@ degrees of freedom, i.e., the computation of Jacobian matrix. DART
 provides a comprensive set of APIs for accessing various types of
 Jacobian. In this example, computing the gradient of the first term of
 the objective function requires the Jacobian of the
-center of mass of the skeleton, as well as the Jacobian of the center
-of mass of a body node:
+center of mass of the Skeleton, as well as the Jacobian of the center
+of mass of a BodyNode:
 
 ```cpp
 Eigen::VectorXd solveIK(SkeletonPtr biped)
@@ -469,14 +469,14 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
 }
 ```
 
-[getCOMLinearJacobian](http://) returns the linear Jacobian of the
-center of mass of the skeleton, while [getLinearJacobian](http://)
-returns the Jacobian of a point on a body node. The body node and the
+``getCOMLinearJacobian`` returns the linear Jacobian of the
+center of mass of the Skeleton, while ``getLinearJacobian``
+returns the Jacobian of a point on a BodyNode. The BodyNode and the
 local coordinate of the point are specified as parameters to this
 function. Here the point of interest is the center of mass of the left
-foot, which local coordinates can be accessed by [getCOM](http://)
+foot, which local coordinates can be accessed by ``getCOM``
 with a parameter indicating the left foot being the frame of
-reference. We use[getLinearJacobian](http://) again to compute the
+reference. We use ``getLinearJacobian`` again to compute the
 gradient of the second term of the objective function:
 
 ```cpp

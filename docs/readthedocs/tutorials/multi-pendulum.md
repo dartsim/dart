@@ -11,6 +11,8 @@ API during simulation. This will show you how to:
 - Alter the implicit spring and damping properties of joints
 - Add/remove dynamic constraints
 
+Please reference the source code in **tutorialMultiPendulum.cpp** and **tutorialMultiPendulum-Finished.cpp**.
+
 # Lesson 0: Simulate a passive multi-pendulum
 
 This is a warmup lesson that demonstrates how to set up a simulation
@@ -63,7 +65,7 @@ world->addSkeleton(pendulum);
 MyWindow window(world);
 ```
 
-Every single time step, the ``timeStepping`` function will be called
+Every single time step, the ``MyWindow::timeStepping`` function will be called
 and the state of the World will be simulated. The user can override
 the default timeStepping function to customize the simulation
 routine. For example, one can incorporate sensors, actuators, or user
@@ -85,12 +87,6 @@ arrow attached to any body.
 
 Find the function named ``timeStepping`` in the ``MyWindow`` class. The top of
 this function is where we will want to reset everything to the default appearance.
-
-In DART, an articulated dynamics model is represented by a ``Skeleton``. A 
-Skeleton is a structure that consists of ``BodyNode``s (bodies) which are 
-connected by ``Joint``s. Every Joint has a child BodyNode, and every BodyNode 
-has a parent Joint. Even the root BodyNode has a Joint that attaches it to the 
-World.
 
 Each BodyNode contains visualization ``Shape``s that will be rendered during
 simulation. In our case, each BodyNode has two shapes:

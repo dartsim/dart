@@ -11,6 +11,8 @@ The tutorial consists of five Lessons covering the following topics:
 - Setting joint spring and damping properties
 - Creating a closed kinematic chain
 
+Please reference the source code in **tutorialCollision.cpp** and **tutorialCollision-Finished.cpp**.
+
 # Lesson 1: Creating a rigid body
 
 Start by going opening the Skeleton code [tutorialCollisions.cpp](http://).

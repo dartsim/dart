@@ -9,6 +9,8 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 - Write a stable PD controller w/ gravity and coriolis compensation
 - Write an operational space controller
 
+Please reference the source code in **tutorialDominoes.cpp** and **tutorialDominoes-Finished.cpp**.
+
 # Lesson 1: Cloning Skeletons
 
 There are often times where you might want to create an exact replica of an
