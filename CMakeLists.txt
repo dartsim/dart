@@ -609,42 +609,6 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
 endif()
 
 #===============================================================================
-# Package Installer
-#===============================================================================
-set(CPACK_PACKAGE_NAME "dart")
-set(CPACK_SYSTEM_NAME "i386")
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-    set(CPACK_SYSTEM_NAME "amd64")
-endif()
-set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
-set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
-set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
-     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev,
-     libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
-     urdfdom")
-if(HAVE_BULLET_COLLISION)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libbullet-dev (>=2.8.0)")
-endif()
-if(HAVE_NLOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libnlopt-dev")
-endif()
-if(HAVE_IPOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
-endif()
-
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_SYSTEM_NAME}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karen Liu (www.cc.gatech.edu/~karenliu/)")
-
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${DART_PKG_DESC}")
-set(CPACK_PACKAGE_VENDOR "Computer Graphics Lab at GT")
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-
-include(CPack)
-
-#===============================================================================
 # END
 #===============================================================================
 message(STATUS "")
