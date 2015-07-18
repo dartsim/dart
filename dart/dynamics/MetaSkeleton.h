@@ -361,101 +361,103 @@ public:
 
   /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
   /// is expressed in the Frame of the BodyNode.
-  virtual math::Jacobian getJacobian(const BodyNode* _bodyNode) const = 0;
+  virtual math::Jacobian getJacobian(const JacobianNode* _node) const = 0;
 
   /// Get the spatial Jacobian targeting the origin of a BodyNode. You can
   /// specify a coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const = 0;
 
   /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
   /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
   /// in the Frame of the BodyNode.
   virtual math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const = 0;
 
   /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
   /// expected in coordinates of the BodyNode Frame. You can specify a
   /// coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const = 0;
 
   /// Get the spatial Jacobian targeting the origin of a BodyNode. The Jacobian
   /// is expressed in the World Frame.
-  virtual math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const = 0;
+  virtual math::Jacobian getWorldJacobian(const JacobianNode* _node) const = 0;
 
   /// Get the spatial Jacobian targeting an offset in a BodyNode. The _offset is
   /// expected in coordinates of the BodyNode Frame. The Jacobian is expressed
   /// in the World Frame.
   virtual math::Jacobian getWorldJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const = 0;
 
   /// Get the linear Jacobian targeting the origin of a BodyNode. You can
   /// specify a coordinate Frame to express the Jabocian in.
   virtual math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the linear Jacobian targeting an offset in a BodyNode. The _offset is
   /// expected in coordinates of the BodyNode Frame. You can specify a
   /// coordinate Frame to express the Jabocian in.
   virtual math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the angular Jacobian of a BodyNode. You can specify a coordinate Frame
   /// to express the Jabocian in.
   virtual math::AngularJacobian getAngularJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting the origin of a
   /// BodyNode. The Jacobian is expressed in the Frame of the BodyNode.
-  virtual math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const = 0;
+  virtual math::Jacobian getJacobianSpatialDeriv(
+      const JacobianNode* _node) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting the origin of a
   /// BodyNode. You can specify a coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting an offset in a
   /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
   /// The Jacobian is expressed in the Frame of the BodyNode.
   virtual math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting an offset in a
   /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
   /// You can specify a coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting the origin of a
   /// BodyNode. The Jacobian is expressed in the World Frame.
-  virtual math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const = 0;
+  virtual math::Jacobian getJacobianClassicDeriv(
+      const JacobianNode* _node) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting the origin a
   /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
   /// You can specify a coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const = 0;
 
   /// Get the spatial Jacobian time derivative targeting an offset in a
   /// BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
   /// You can specify a coordinate Frame to express the Jabocian in.
   virtual math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
@@ -463,21 +465,21 @@ public:
   /// of a BodyNode. The _offset is expected in coordinates of the BodyNode
   /// Frame. You can specify a coordinate Frame to express the Jabocian in.
   virtual math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the linear Jacobian (classical) time derivative targeting an offset in
   /// a BodyNode. The _offset is expected in coordinates of the BodyNode Frame.
   /// You can specify a coordinate Frame to express the Jabocian in.
   virtual math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the angular Jacobian time derivative of a BodyNode. You can specify a
   /// coordinate Frame to express the Jabocian in.
   virtual math::AngularJacobian getAngularJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// \}

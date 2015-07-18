@@ -150,13 +150,31 @@ public:
   std::shared_ptr<const Skeleton> getSkeleton() const override;
 
   // Documentation inherited
+  bool dependsOn(size_t _genCoordIndex) const override;
+
+  // Documentation inherited
   size_t getNumDependentGenCoords() const override;
+
+  // Documentation inherited
+  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
 
   // Documentation inherited
   const std::vector<size_t>& getDependentGenCoordIndices() const override;
 
   // Documentation inherited
   size_t getNumDependentDofs() const override;
+
+  // Documentation inherited
+  DegreeOfFreedom* getDependentDof(size_t _index) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
+
+  // Documentation inherited
+  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
 
   // Documentation inherited
   const std::vector<const DegreeOfFreedom*> getChainDofs() const override;

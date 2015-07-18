@@ -213,9 +213,21 @@ std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
 }
 
 //==============================================================================
+bool EndEffector::dependsOn(size_t _genCoordIndex) const
+{
+  return mBodyNode->dependsOn(_genCoordIndex);
+}
+
+//==============================================================================
 size_t EndEffector::getNumDependentGenCoords() const
 {
   return mBodyNode->getNumDependentGenCoords();
+}
+
+//==============================================================================
+size_t EndEffector::getDependentGenCoordIndex(size_t _arrayIndex) const
+{
+  return mBodyNode->getDependentGenCoordIndex(_arrayIndex);
 }
 
 //==============================================================================
@@ -228,6 +240,30 @@ const std::vector<size_t>& EndEffector::getDependentGenCoordIndices() const
 size_t EndEffector::getNumDependentDofs() const
 {
   return mBodyNode->getNumDependentDofs();
+}
+
+//==============================================================================
+DegreeOfFreedom* EndEffector::getDependentDof(size_t _index)
+{
+  return mBodyNode->getDependentDof(_index);
+}
+
+//==============================================================================
+const DegreeOfFreedom* EndEffector::getDependentDof(size_t _index) const
+{
+  return mBodyNode->getDependentDof(_index);
+}
+
+//==============================================================================
+const std::vector<DegreeOfFreedom*>& EndEffector::getDependentDofs()
+{
+  return mBodyNode->getDependentDofs();
+}
+
+//==============================================================================
+const std::vector<const DegreeOfFreedom*>& EndEffector::getDependentDofs() const
+{
+  return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
 }
 
 //==============================================================================

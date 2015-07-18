@@ -43,6 +43,8 @@ using namespace dart::simulation;
 using namespace dart::utils;
 using namespace dart::math;
 
+const double display_elevation = 0.05;
+
 class RelaxedPose : public dart::optimizer::Function
 {
 public:
@@ -80,21 +82,48 @@ class TeleoperationWorld : public osgDart::WorldNode
 {
 public:
 
-  TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
+  TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot,
+                     std::shared_ptr<dart::constraint::BalanceConstraint> bal)
     : osgDart::WorldNode(_world),
-      mRobot(_robot)
+      mRobot(_robot),
+      mBalance(bal),
+      iter(0)
   {
     // Do nothing
   }
 
   void customPreRefresh() override
   {
-    mRobot->getIK(true)->solve();
+    bool solved = mRobot->getIK(true)->solve();
+
+    ++iter;
+
+    if(iter > 50)
+    {
+      iter = 0;
+      if(solved)
+      {
+        std::cout << "solved! " << mBalance->getLastError().transpose() << std::endl;
+      }
+      else
+      {
+        std::cout << "failed: " << mBalance->getLastError().transpose() << std::endl;
+        grad.resize(mRobot->getNumDofs());
+        Eigen::Map<Eigen::VectorXd> map(grad.data(), grad.size());
+        mBalance->evalGradient(mRobot->getPositions(), map);
+        std::cout << "grad: " << grad.transpose() << "\n" << std::endl;
+      }
+    }
+
   }
 
 protected:
 
   SkeletonPtr mRobot;
+  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
+  size_t iter;
+
+  Eigen::VectorXd grad;
 };
 
 class InputHandler : public osgGA::GUIEventHandler
@@ -203,6 +232,7 @@ int main()
   l_hand->getIK()->useWholeBody();
   l_hand->getIK()->getGradientMethod().setComponentWeights(weights);
   world->addSimpleFrame(l_target);
+  l_hand->getIK()->setActive(false);
 
   EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
   r_hand->setDefaultRelativeTransform(tf_hand.inverse(), true);
@@ -214,7 +244,15 @@ int main()
   r_hand->getIK()->useWholeBody();
   r_hand->getIK()->getGradientMethod().setComponentWeights(weights);
   world->addSimpleFrame(r_target);
+  r_hand->getIK()->setActive(false);
 
+
+  dart::math::SupportGeometry support;
+  const double dist = 0.03;
+  support.push_back(dist*Eigen::Vector3d(-1.0, -1.0, 0.0));
+  support.push_back(dist*Eigen::Vector3d( 1.0, -1.0, 0.0));
+  support.push_back(dist*Eigen::Vector3d( 1.0,  1.0, 0.0));
+  support.push_back(dist*Eigen::Vector3d(-1.0,  1.0, 0.0));
 
   Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
   tf_foot.translation() = Eigen::Vector3d(0.0, 0.0, -0.08);
@@ -230,19 +268,26 @@ int main()
 
   EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
   r_foot->setRelativeTransform(tf_foot);
+
   r_foot->getIK(true)->setHierarchyLevel(1);
   r_foot->getIK()->getErrorMethod().setLinearBounds(
         -linearBounds, linearBounds);
   r_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
+  r_foot->setSupportGeometry(support);
+  r_foot->setSupportMode(true);
+
 
   EndEffector* l_foot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
   l_foot->setRelativeTransform(tf_foot);
+
   l_foot->getIK(true)->setHierarchyLevel(1);
   l_foot->getIK()->getErrorMethod().setLinearBounds(
         -linearBounds, linearBounds);
   l_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
+  l_foot->setSupportGeometry(support);
+  l_foot->setSupportMode(true);
 
   for(size_t i=3; i < 6; ++i)
   {
@@ -267,9 +312,33 @@ int main()
 
   std::shared_ptr<RelaxedPose> objective(new RelaxedPose(atlas->getPositions()));
   atlas->getIK()->getProblem()->addSeed(atlas->getPositions());
+
+  std::shared_ptr<dart::constraint::BalanceConstraint> balance =
+      std::make_shared<dart::constraint::BalanceConstraint>(atlas->getIK());
+  atlas->getIK()->getProblem()->addEqConstraint(balance);
   atlas->getIK()->setObjective(objective);
 
-  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
+  //// Shift the center of mass towards the support polygon center while trying
+  //// to keep the support polygon where it is
+//  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
+//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+
+  //// Keep shifting the center of mass towards the center of the support
+  //// polygon, even if it is already inside. This is useful for trying to
+  //// optimize a stance
+//  balance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+
+  //// Try to leave the center of mass where it is while moving the support
+  //// polygon to be under the current center of mass location
+//  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
+//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+
+  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_EDGE);
+  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+
+  osg::ref_ptr<osgDart::WorldNode> node =
+      new TeleoperationWorld(world, atlas, balance);
 
   osgDart::Viewer viewer;
   viewer.allowSimulation(false);
@@ -282,7 +351,9 @@ int main()
 
   for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
-//    viewer.enableDragAndDrop(atlas->getBodyNode(i), true);
+
+  viewer.addAttachment(new osgDart::SupportPolygonVisual(
+                         atlas, display_elevation));
 
   std::cout << viewer.getInstructions() << std::endl;
 

@@ -508,39 +508,34 @@ public:
   /// Return (const) _index-th marker of the bodynode
   const Marker* getMarker(size_t _index) const;
 
-  /// Return true if _genCoordIndex-th generalized coordinate
-  bool dependsOn(size_t _genCoordIndex) const;
+  // Documentation inherited
+  bool dependsOn(size_t _genCoordIndex) const override;
 
-  /// The number of the generalized coordinates by which this node is affected
+  // Documentation inherited
   size_t getNumDependentGenCoords() const override;
 
-  /// Return a generalized coordinate index from the array index
-  /// (< getNumDependentDofs)
-  size_t getDependentGenCoordIndex(size_t _arrayIndex) const;
+  // Documentation inherited
+  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
 
-  /// Return a std::vector of generalized coordinate indices that this BodyNode
-  /// depends on.
+  // Documentation inherited
   const std::vector<size_t>& getDependentGenCoordIndices() const override;
 
-  /// Same as getNumDependentGenCoords()
+  // Documentation inherited
   size_t getNumDependentDofs() const override;
 
-  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
-  DegreeOfFreedom* getDependentDof(size_t _index);
+  // Documentation inherited
+  DegreeOfFreedom* getDependentDof(size_t _index) override;
 
-  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
-  const DegreeOfFreedom* getDependentDof(size_t _index) const;
+  // Documentation inherited
+  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
 
-  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
-  /// depends on.
-  const std::vector<DegreeOfFreedom*>& getDependentDofs();
+  // Documentation inherited
+  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
 
-  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
-  /// depends on.
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
 
-  /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
-  /// leading up to this BodyNode from the root of the Skeleton.
+  // Documentation inherited
   const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
   //--------------------------------------------------------------------------

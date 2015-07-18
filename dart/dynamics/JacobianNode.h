@@ -93,14 +93,33 @@ public:
   /// Return the Skeleton this JacobianNode is attached to
   virtual std::shared_ptr<const Skeleton> getSkeleton() const = 0;
 
+  /// Return true if _genCoordIndex-th generalized coordinate
+  virtual bool dependsOn(size_t _genCoordIndex) const = 0;
+
   /// The number of the generalized coordinates which affect this JacobianNode
   virtual size_t getNumDependentGenCoords() const = 0;
+
+  /// Return a generalized coordinate index from the array index
+  /// (< getNumDependentDofs)
+  virtual size_t getDependentGenCoordIndex(size_t _arrayIndex) const = 0;
 
   /// Indices of the generalized coordinates which affect this JacobianNode
   virtual const std::vector<size_t>& getDependentGenCoordIndices() const = 0;
 
   /// Same as getNumDependentGenCoords()
   virtual size_t getNumDependentDofs() const = 0;
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  virtual DegreeOfFreedom* getDependentDof(size_t _index) = 0;
+
+  /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
+  virtual const DegreeOfFreedom* getDependentDof(size_t _index) const = 0;
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this Node depends on
+  virtual const std::vector<DegreeOfFreedom*>& getDependentDofs() = 0;
+
+  /// Return a std::vector of DegreeOfFreedom pointers that this Node depends on
+  virtual const std::vector<const DegreeOfFreedom*>& getDependentDofs() const = 0;
 
   /// Returns a DegreeOfFreedom vector containing the dofs that form a Chain
   /// leading up to this JacobianNode from the root of the Skeleton.

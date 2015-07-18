@@ -1487,14 +1487,16 @@ SupportPolygon computeSupportPolgyon(std::vector<size_t>& _originalIndices,
 // convex hulls
 struct HullAngle
 {
-  HullAngle(double angle, size_t index)
+  HullAngle(double angle, double distance, size_t index)
     : mAngle(angle),
+      mDistance(distance),
       mIndex(index)
   {
     // Do nothing
   }
 
   double mAngle;
+  double mDistance;
   size_t mIndex;
 };
 
@@ -1567,7 +1569,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
   // A negative area means we have a bug in the code
   assert(area >= 0.0);
 
-  if(area > 0.0)
+  if(area == 0.0)
     return c;
 
   return c/area;
@@ -1622,8 +1624,10 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
   {
     const Eigen::Vector2d& p = _points[i];
     if( p != bottom )
-      angles.push_back(HullAngle(atan2(p[1] - bottom[1],
-                                       p[0] - bottom[0]), i));
+    {
+      const Eigen::Vector2d& v = p - bottom;
+      angles.push_back(HullAngle(atan2(v[1], v[0]), v.norm(), i));
+    }
   }
 
   std::sort(angles.begin(), angles.end(), HullAngleComparison);
@@ -1634,7 +1638,10 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
     {
       if(angles[i].mAngle == angles[i+1].mAngle)
       {
-        angles.erase(angles.begin()+i+1);
+        // If two points have the same angle, throw out the one that is closer
+        // to the corner
+        size_t tossout = (angles[i].mDistance < angles[i+1].mDistance)? i : i+1;
+        angles.erase(angles.begin()+tossout);
         --i;
       }
     }
@@ -1661,7 +1668,8 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
   size_t lastIndex = lowestIndex;
   size_t secondToLastIndex = angles[0].mIndex;
   edge.reserve(angles.size()+1);
-  edge.push_back(lastIndex);
+
+  edge.push_back(lowestIndex);
 
   for(size_t i=1; i < angles.size(); ++i)
   {
@@ -1824,7 +1832,7 @@ bool isInsideSupportPolygon(const Eigen::Vector2d& _p,
 }
 
 //==============================================================================
-Eigen::Vector2d closestPointOnLineSegment(const Eigen::Vector2d& _p,
+Eigen::Vector2d computeClosestPointOnLineSegment(const Eigen::Vector2d& _p,
                                           const Eigen::Vector2d& _s1,
                                           const Eigen::Vector2d& _s2)
 {
@@ -1865,16 +1873,16 @@ Eigen::Vector2d closestPointOnLineSegment(const Eigen::Vector2d& _p,
 }
 
 //==============================================================================
-Eigen::Vector2d closestPointOnSupportPolygon(const Eigen::Vector2d& _p,
+Eigen::Vector2d computeClosestPointOnSupportPolygon(const Eigen::Vector2d& _p,
                                              const SupportPolygon& _support)
 {
   size_t _index1;
   size_t _index2;
-  return closestPointOnSupportPolygon(_index1, _index2, _p, _support);
+  return computeClosestPointOnSupportPolygon(_index1, _index2, _p, _support);
 }
 
 //==============================================================================
-Eigen::Vector2d closestPointOnSupportPolygon(size_t& _index1, size_t& _index2,
+Eigen::Vector2d computeClosestPointOnSupportPolygon(size_t& _index1, size_t& _index2,
                                              const Eigen::Vector2d& _p,
                                              const SupportPolygon& _support)
 {
@@ -1896,7 +1904,7 @@ Eigen::Vector2d closestPointOnSupportPolygon(size_t& _index1, size_t& _index2,
   {
     _index1 = 0;
     _index2 = 1;
-    return closestPointOnLineSegment(_p, _support[0], _support[1]);
+    return computeClosestPointOnLineSegment(_p, _support[0], _support[1]);
   }
 
   double best = std::numeric_limits<double>::infinity(), check;
@@ -1906,7 +1914,7 @@ Eigen::Vector2d closestPointOnSupportPolygon(size_t& _index1, size_t& _index2,
     const Eigen::Vector2d& p1 = (i==0)? _support.back() : _support[i-1];
     const Eigen::Vector2d& p2 = _support[i];
 
-    test = closestPointOnLineSegment(_p, p1, p2);
+    test = computeClosestPointOnLineSegment(_p, p1, p2);
     check = (test - _p).norm();
     if(check < best)
     {

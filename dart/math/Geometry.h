@@ -513,21 +513,23 @@ bool isInsideSupportPolygon(const Eigen::Vector2d& _p,
 
 /// Returns the point which is closest to _p that also lays on the line segment
 /// that goes from _s1 -> _s2
-Eigen::Vector2d closestPointOnLineSegment(const Eigen::Vector2d& _p,
-                                          const Eigen::Vector2d& _s1,
-                                          const Eigen::Vector2d& _s2);
+Eigen::Vector2d computeClosestPointOnLineSegment(const Eigen::Vector2d& _p,
+                                                 const Eigen::Vector2d& _s1,
+                                                 const Eigen::Vector2d& _s2);
 
 /// Returns the point which is closest to _p that also lays on the edge of the
 /// support polygon
-Eigen::Vector2d closestPointOnSupportPolygon(const Eigen::Vector2d& _p,
-                                             const SupportPolygon& _support);
+Eigen::Vector2d computeClosestPointOnSupportPolygon(
+    const Eigen::Vector2d& _p,
+    const SupportPolygon& _support);
 
 /// Same as closestPointOnSupportPolygon, but also fills in _index1 and _index2
 /// with the indices of the line segment
-Eigen::Vector2d closestPointOnSupportPolygon(size_t& _index1,
-                                             size_t& _index2,
-                                             const Eigen::Vector2d& _p,
-                                             const SupportPolygon& _support);
+Eigen::Vector2d computeClosestPointOnSupportPolygon(
+    size_t& _index1,
+    size_t& _index2,
+    const Eigen::Vector2d& _p,
+    const SupportPolygon& _support);
 
 }  // namespace math
 }  // namespace dart

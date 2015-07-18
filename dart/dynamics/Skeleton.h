@@ -404,6 +404,23 @@ public:
   const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
       size_t _treeIdx) const;
 
+  /// Get the centroid of the support polygon for this Skeleton
+  const Eigen::Vector2d& getSupportCentroid() const;
+
+  /// Get the centroid of the support polygon for a tree in this Skeleton
+  const Eigen::Vector2d& getSupportCentroid(size_t _treeIdx) const;
+
+  /// The version number of a support polygon will be incremented each time the
+  /// support polygon needs to be recomputed. This number can be used to
+  /// immediately determine whether the support polygon has changed since the
+  /// last time you asked for it, allowing you to be more efficient in how you
+  /// handle the data.
+  size_t getSupportVersion() const;
+
+  /// Same as getSupportVersion(), but it corresponds to the support polygon of
+  /// the specified tree within this Skeleton
+  size_t getSupportVersion(size_t _treeIdx) const;
+
   /// \}
 
   //----------------------------------------------------------------------------
@@ -503,95 +520,98 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  math::Jacobian getJacobian(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobian(const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const override;
+  math::Jacobian getWorldJacobian(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobianSpatialDeriv(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobianClassicDeriv(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// \}
@@ -1007,6 +1027,10 @@ protected:
 
     /// Dirty flag for the support polygon
     bool mSupport;
+
+    /// Increments each time a new support polygon is computed to help keep
+    /// track of changes in the support polygon
+    size_t mSupportVersion;
   };
 
   struct DataCache
@@ -1066,6 +1090,9 @@ protected:
 
     /// Support geometry -- only used for temporary storage purposes
     math::SupportGeometry mSupportGeometry;
+
+    /// Centroid of the support polygon
+    Eigen::Vector2d mSupportCentroid;
   };
 
   mutable std::vector<DataCache> mTreeCache;

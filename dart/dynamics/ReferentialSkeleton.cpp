@@ -295,10 +295,10 @@ size_t ReferentialSkeleton::getIndexOf(
 
 //==============================================================================
 static bool isValidBodyNode(const ReferentialSkeleton* /*_refSkel*/,
-                            const BodyNode* _bodyNode,
+                            const JacobianNode* _node,
                             const std::string& _fname)
 {
-  if(nullptr == _bodyNode)
+  if(nullptr == _node)
   {
     dtwarn << "[ReferentialSkeleton::" << _fname << "] Invalid BodyNode "
            << "pointer: nullptr. Returning zero Jacobian.\n";
@@ -317,11 +317,11 @@ static bool isValidBodyNode(const ReferentialSkeleton* /*_refSkel*/,
 template <typename JacobianType>
 void assignJacobian(JacobianType& _J,
                     const ReferentialSkeleton* _refSkel,
-                    const BodyNode* _bodyNode,
+                    const JacobianNode* _node,
                     const JacobianType& _JBodyNode)
 {
   const std::vector<const DegreeOfFreedom*>& bn_dofs =
-      _bodyNode->getDependentDofs();
+      _node->getDependentDofs();
   size_t nDofs = bn_dofs.size();
   for(size_t i=0; i<nDofs; ++i)
   {
@@ -337,113 +337,113 @@ void assignJacobian(JacobianType& _J,
 template <typename ...Args>
 math::Jacobian variadicGetJacobian(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     Args... args)
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getJacobian") )
+  if( !isValidBodyNode(_refSkel, _node, "getJacobian") )
     return J;
 
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian(args...);
+  const math::Jacobian JBodyNode = _node->getJacobian(args...);
 
-  assignJacobian(J, _refSkel, _bodyNode, JBodyNode);
+  assignJacobian(J, _refSkel, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
-math::Jacobian ReferentialSkeleton::getJacobian(const BodyNode* _bodyNode) const
+math::Jacobian ReferentialSkeleton::getJacobian(
+    const JacobianNode* _node) const
 {
-  return variadicGetJacobian(this, _bodyNode);
+  return variadicGetJacobian(this, _node);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobian(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobian(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetJacobian(this, _bodyNode, _localOffset);
+  return variadicGetJacobian(this, _node, _localOffset);
 }
 
 //==============================================================================
-math::Jacobian ReferentialSkeleton::getJacobian(
-    const BodyNode* _bodyNode,
+math::Jacobian ReferentialSkeleton::getJacobian(const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobian(this, _bodyNode, _localOffset, _inCoordinatesOf);
+  return variadicGetJacobian(this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetWorldJacobian(const ReferentialSkeleton* _refSkel,
-                                        const BodyNode* _bodyNode, Args... args)
+                                        const JacobianNode* _node, Args... args)
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getWorldJacobian") )
+  if( !isValidBodyNode(_refSkel, _node, "getWorldJacobian") )
     return J;
 
-  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian(args...);
+  const math::Jacobian JBodyNode = _node->getWorldJacobian(args...);
 
-  assignJacobian(J, _refSkel, _bodyNode, JBodyNode);
+  assignJacobian(J, _refSkel, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getWorldJacobian(
-    const BodyNode* _bodyNode) const
+    const JacobianNode* _node) const
 {
-  return variadicGetWorldJacobian(this, _bodyNode);
+  return variadicGetWorldJacobian(this, _node);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getWorldJacobian(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetWorldJacobian(this, _bodyNode, _localOffset);
+  return variadicGetWorldJacobian(this, _node, _localOffset);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::LinearJacobian variadicGetLinearJacobian(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::LinearJacobian J =
       math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getLinearJacobian") )
+  if( !isValidBodyNode(_refSkel, _node, "getLinearJacobian") )
     return J;
 
-  const math::LinearJacobian JBodyNode = _bodyNode->getLinearJacobian(args...);
+  const math::LinearJacobian JBodyNode = _node->getLinearJacobian(args...);
 
-  assignJacobian(J, _refSkel, _bodyNode, JBodyNode);
+  assignJacobian(J, _refSkel, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetLinearJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobian(this, _bodyNode, _localOffset,
+  return variadicGetLinearJacobian(this, _node, _localOffset,
                                    _inCoordinatesOf);
 }
 
@@ -451,74 +451,74 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobian(
 template <typename ...Args>
 math::AngularJacobian variadicGetAngularJacobian(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::AngularJacobian J =
       math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getAngularJacobian") )
+  if( !isValidBodyNode(_refSkel, _node, "getAngularJacobian") )
     return J;
 
   const math::AngularJacobian JBodyNode =
-      _bodyNode->getAngularJacobian(args...);
+      _node->getAngularJacobian(args...);
 
-  assignJacobian(J, _refSkel, _bodyNode, JBodyNode);
+  assignJacobian(J, _refSkel, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
 math::AngularJacobian ReferentialSkeleton::getAngularJacobian(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetAngularJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetAngularJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetJacobianSpatialDeriv(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getJacobianSpatialDeriv") )
+  if( !isValidBodyNode(_refSkel, _node, "getJacobianSpatialDeriv") )
     return dJ;
 
-  const math::Jacobian dJBodyNode = _bodyNode->getJacobianSpatialDeriv(args...);
+  const math::Jacobian dJBodyNode = _node->getJacobianSpatialDeriv(args...);
 
-  assignJacobian(dJ, _refSkel, _bodyNode, dJBodyNode);
+  assignJacobian(dJ, _refSkel, _node, dJBodyNode);
 
   return dJ;
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode) const
+    const JacobianNode* _node) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode);
+  return variadicGetJacobianSpatialDeriv(this, _node);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobianSpatialDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset) const
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _localOffset);
+  return variadicGetJacobianSpatialDeriv(this, _node, _localOffset);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _localOffset,
+  return variadicGetJacobianSpatialDeriv(this, _node, _localOffset,
                                          _inCoordinatesOf);
 }
 
@@ -526,40 +526,40 @@ math::Jacobian ReferentialSkeleton::getJacobianSpatialDeriv(
 template <typename ...Args>
 math::Jacobian variadicGetJacobianClassicDeriv(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getJacobianClassicDeriv") )
+  if( !isValidBodyNode(_refSkel, _node, "getJacobianClassicDeriv") )
     return dJ;
 
-  const math::Jacobian dJBodyNode = _bodyNode->getJacobianClassicDeriv(args...);
+  const math::Jacobian dJBodyNode = _node->getJacobianClassicDeriv(args...);
 
-  assignJacobian(dJ, _refSkel, _bodyNode, dJBodyNode);
+  assignJacobian(dJ, _refSkel, _node, dJBodyNode);
 
   return dJ;
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode) const
+    const JacobianNode* _node) const
 {
-  return variadicGetJacobianClassicDeriv(this, _bodyNode);
+  return variadicGetJacobianClassicDeriv(this, _node);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianClassicDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobianClassicDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianClassicDeriv(this, _bodyNode, _localOffset,
+  return variadicGetJacobianClassicDeriv(this, _node, _localOffset,
                                          _inCoordinatesOf);
 }
 
@@ -567,35 +567,35 @@ math::Jacobian ReferentialSkeleton::getJacobianClassicDeriv(
 template <typename ...Args>
 math::LinearJacobian variadicGetLinearJacobianDeriv(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::LinearJacobian dJv =
       math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getLinearJacobianDeriv") )
+  if( !isValidBodyNode(_refSkel, _node, "getLinearJacobianDeriv") )
     return dJv;
 
   const math::LinearJacobian dJvBodyNode =
-      _bodyNode->getLinearJacobianDeriv(args...);
+      _node->getLinearJacobianDeriv(args...);
 
-  assignJacobian(dJv, _refSkel, _bodyNode, dJvBodyNode);
+  assignJacobian(dJv, _refSkel, _node, dJvBodyNode);
 
   return dJv;
 }
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetLinearJacobianDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
-    const BodyNode* _bodyNode, const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _node, const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobianDeriv(this, _bodyNode, _localOffset,
+  return variadicGetLinearJacobianDeriv(this, _node, _localOffset,
                                         _inCoordinatesOf);
 }
 
@@ -603,27 +603,27 @@ math::LinearJacobian ReferentialSkeleton::getLinearJacobianDeriv(
 template <typename ...Args>
 math::AngularJacobian variadicGetAngularJacobianDeriv(
     const ReferentialSkeleton* _refSkel,
-    const BodyNode* _bodyNode, Args... args)
+    const JacobianNode* _node, Args... args)
 {
   math::AngularJacobian dJw =
       math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if( !isValidBodyNode(_refSkel, _bodyNode, "getAngularJacobianDeriv") )
+  if( !isValidBodyNode(_refSkel, _node, "getAngularJacobianDeriv") )
     return dJw;
 
   const math::AngularJacobian dJwBodyNode =
-      _bodyNode->getAngularJacobianDeriv(args...);
+      _node->getAngularJacobianDeriv(args...);
 
-  assignJacobian(dJw, _refSkel, _bodyNode, dJwBodyNode);
+  assignJacobian(dJw, _refSkel, _node, dJwBodyNode);
 
   return dJw;
 }
 
 //==============================================================================
 math::AngularJacobian ReferentialSkeleton::getAngularJacobianDeriv(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetAngularJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetAngularJacobianDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
