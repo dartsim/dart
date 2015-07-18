@@ -1,4 +1,5 @@
 #include <cassert>
+#include <sstream>
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/utils/LocalResourceRetriever.h"
@@ -38,7 +39,8 @@ bool PackageResourceRetriever::exists(const std::string& _uri)
 
   for(const std::string &packagePath : getPackagePaths(packageName))
   {
-    if (mLocalRetriever->exists(_uri))
+    const std::string localUri = "file://" + packagePath + relativePath;
+    if (mLocalRetriever->exists(localUri))
       return true;
   }
   return false;

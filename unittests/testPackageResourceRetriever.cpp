@@ -1,0 +1,277 @@
+/*
+ * Copyright (c) 2015, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
+ *
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <gtest/gtest.h>
+#include "dart/utils/PackageResourceRetriever.h"
+#include "TestHelpers.h"
+
+using dart::utils::Resource;
+using dart::utils::ResourcePtr;
+using dart::utils::ResourceRetriever;
+using dart::utils::PackageResourceRetriever;
+
+namespace {
+
+struct TestResource : public Resource
+{
+  size_t getFileSize() override
+  {
+    return 0;
+  }
+
+  size_t tell() override
+  {
+    return 0;
+  }
+
+  bool seek(size_t _offset, SeekType _origin) override
+  {
+    return false;
+  }
+
+  size_t read(void *_buffer, size_t _size, size_t _count) override
+  {
+    return 0;
+  }
+};
+
+struct PresentResourceRetriever : public ResourceRetriever
+{
+  bool exists(const std::string& _uri) override
+  {
+    mExists.push_back(_uri);
+    return true;
+  }
+
+  ResourcePtr retrieve(const std::string& _uri) override
+  {
+    mRetrieve.push_back(_uri);
+    return std::make_shared<TestResource>();
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
+};
+
+struct AbsentResourceRetriever : public ResourceRetriever
+{
+  bool exists(const std::string& _uri) override
+  {
+    mExists.push_back(_uri);
+    return false;
+  }
+
+  ResourcePtr retrieve(const std::string& _uri) override
+  {
+    mRetrieve.push_back(_uri);
+    return nullptr;
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
+};
+
+}
+
+TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
+{
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+
+  EXPECT_FALSE(retriever.exists("package://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
+{
+  // GTest breaks the string concatenation.
+  const char* expected = "file://" DART_DATA_PATH"test/foo";
+
+  auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test");
+
+  EXPECT_FALSE(retriever.exists("package://test/foo"));
+  ASSERT_EQ(1, mockRetriever->mExists.size());
+  EXPECT_EQ(expected, mockRetriever->mExists.front());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
+{
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test");
+
+  EXPECT_FALSE(retriever.exists("foo://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
+{
+  const char* expected = "file://" DART_DATA_PATH"test/foo";
+
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test/");
+
+  EXPECT_TRUE(retriever.exists("package://test/foo"));
+  ASSERT_EQ(1, mockRetriever->mExists.size());
+  EXPECT_EQ(expected, mockRetriever->mExists.front());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
+{
+  const char* expected = "file://" DART_DATA_PATH"test1/foo";
+
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
+
+  EXPECT_TRUE(retriever.exists("package://test/foo"));
+  ASSERT_EQ(1, mockRetriever->mExists.size());
+  EXPECT_EQ(expected, mockRetriever->mExists.front());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, exists_FallsBackOnSecondUri)
+{
+  const char* expected1 = "file://" DART_DATA_PATH"test1/foo";
+  const char* expected2 = "file://" DART_DATA_PATH"test2/foo";
+
+  auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
+
+  EXPECT_FALSE(retriever.exists("package://test/foo"));
+  ASSERT_EQ(2, mockRetriever->mExists.size());
+  EXPECT_EQ(expected1, mockRetriever->mExists[0]);
+  EXPECT_EQ(expected2, mockRetriever->mExists[1]);
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, retrieve_UnableToResolve_ReturnsNull)
+{
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+
+  EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, retrieve_DelegateFails_ReturnsNull)
+{
+  // GTest breaks the string concatenation.
+  const char* expected = "file://" DART_DATA_PATH"test/foo";
+
+  auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test");
+
+  EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
+}
+
+TEST(PackageResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
+{
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test");
+
+  EXPECT_EQ(nullptr, retriever.retrieve("foo://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
+TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
+{
+  const char* expected = "file://" DART_DATA_PATH"test/foo";
+
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test/");
+
+  EXPECT_TRUE(retriever.retrieve("package://test/foo") != nullptr);
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
+}
+
+TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
+{
+  const char* expected = "file://" DART_DATA_PATH"test1/foo";
+
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
+
+  EXPECT_TRUE(retriever.retrieve("package://test/foo") != nullptr);
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
+}
+
+TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
+{
+  const char* expected1 = "file://" DART_DATA_PATH"test1/foo";
+  const char* expected2 = "file://" DART_DATA_PATH"test2/foo";
+
+  auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
+  retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
+
+  EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  ASSERT_EQ(2, mockRetriever->mRetrieve.size());
+  EXPECT_EQ(expected1, mockRetriever->mRetrieve[0]);
+  EXPECT_EQ(expected2, mockRetriever->mRetrieve[1]);
+}
+
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
