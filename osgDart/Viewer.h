@@ -38,6 +38,7 @@
 #define OSGDART_VIEWER_H
 
 #include <map>
+#include <unordered_set>
 #include <memory>
 
 #include <osgViewer/Viewer>
@@ -72,6 +73,48 @@ class SimpleFrameShapeDnD;
 class InteractiveFrame;
 class InteractiveFrameDnD;
 class BodyNodeDnD;
+class Viewer;
+
+class ViewerAttachment : public virtual osg::Group
+{
+public:
+
+  friend class Viewer;
+
+  /// Default constructor
+  ViewerAttachment();
+
+  /// Virtual destructor
+  virtual ~ViewerAttachment();
+
+  /// This function will get called each time the Viewer is refreshed. Override
+  /// it to have your attachment update with each refresh cycle.
+  virtual void refresh() = 0;
+
+  Viewer* getViewer();
+
+  const Viewer* getViewer() const;
+
+protected:
+
+  /// This function will be called by attach(Viewer*) so you can do customized
+  /// setup when the Viewer changes. By default this function does nothing, so
+  /// overriding it is completely safe.
+  virtual void customAttach(Viewer* newViewer);
+
+  /// This function will get called when the visual is attached to a new Viewer.
+  /// It adds this node as a child to the root node of the Viewer so the
+  /// refresh() function will be called at each update cycle. It will also call
+  /// customAttach(Viewer*) so you can do customized setup.
+  virtual void attach(Viewer* newViewer);
+
+
+
+private:
+
+  Viewer* mViewer;
+
+};
 
 class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
@@ -111,6 +154,16 @@ public:
   /// this Viewer does not contain a WorldNode associated with _world.
   WorldNode* getWorldNode(
       std::shared_ptr<dart::simulation::World> _world) const;
+
+  /// Add an attachment to this Viewer. Note that an attachment can only be
+  /// attached to one Viewer at a time.
+  void addAttachment(ViewerAttachment* _attachment);
+
+  /// Remove the attachment from this Viewer.
+  void removeAttachment(ViewerAttachment* _attachment);
+
+  /// Get the set of attachments in this Viewer
+  const std::unordered_set<ViewerAttachment*>& getAttachments() const;
 
   /// Get the Group node that contains the LightSources for this Viewer
   osg::Group* getLightGroup();
@@ -206,6 +259,9 @@ public:
   /// Called automatically by updateViewer()
   void updateDragAndDrops();
 
+  /// Get the root osg::Group of this Viewer
+  const osg::ref_ptr<osg::Group>& getRootGroup() const;
+
 protected:
 
   /// Default WorldNodeEventHandler for this osgDart::Viewer
@@ -247,6 +303,8 @@ protected:
   /// Map of WorldNodes in this osgDart::Viewer. A WorldNode will map to true
   /// iff it is currently active
   std::map<WorldNode*,bool> mWorldNodes;
+
+  std::unordered_set<ViewerAttachment*> mAttachments;
 
   /// string of instructions for this Viewer
   std::string mInstructions;

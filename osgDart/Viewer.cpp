@@ -52,6 +52,67 @@
 namespace osgDart
 {
 
+//==============================================================================
+class ViewerAttachmentCallback : public osg::NodeCallback
+{
+public:
+
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    osg::ref_ptr<ViewerAttachment> attachment =
+        dynamic_cast<ViewerAttachment*>(node);
+
+    if(attachment)
+      attachment->refresh();
+
+    traverse(node, nv);
+  }
+
+};
+
+//==============================================================================
+ViewerAttachment::ViewerAttachment()
+  : mViewer(nullptr)
+{
+  setUpdateCallback(new ViewerAttachmentCallback);
+}
+
+//==============================================================================
+ViewerAttachment::~ViewerAttachment()
+{
+  if(mViewer)
+    mViewer->removeAttachment(this);
+}
+
+//==============================================================================
+Viewer* ViewerAttachment::getViewer()
+{
+  return mViewer;
+}
+
+//==============================================================================
+const Viewer* ViewerAttachment::getViewer() const
+{
+  return mViewer;
+}
+
+//==============================================================================
+void ViewerAttachment::customAttach(Viewer* /*newViewer*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ViewerAttachment::attach(Viewer* newViewer)
+{
+  if(mViewer)
+    mViewer->getRootGroup()->removeChild(this);
+
+  newViewer->getRootGroup()->addChild(this);
+  customAttach(newViewer);
+}
+
+//==============================================================================
 Viewer::Viewer(const osg::Vec4& clearColor)
   : mRootGroup(new osg::Group),
     mLightGroup(new osg::Group),
@@ -83,7 +144,12 @@ Viewer::Viewer(const osg::Vec4& clearColor)
 //==============================================================================
 Viewer::~Viewer()
 {
-  // Do nothing
+  std::unordered_set<ViewerAttachment*>::iterator
+      it = mAttachments.begin(),
+      end = mAttachments.end();
+
+  while( it != end )
+    removeAttachment(*(it++));
 }
 
 //==============================================================================
@@ -214,6 +280,37 @@ WorldNode* Viewer::getWorldNode(
   }
 
   return node;
+}
+
+//==============================================================================
+void Viewer::addAttachment(ViewerAttachment* _attachment)
+{
+  Viewer* oldViewer = _attachment->mViewer;
+  if(oldViewer)
+    oldViewer->removeAttachment(_attachment);
+
+  _attachment->mViewer = this;
+  mAttachments.insert(_attachment);
+  _attachment->attach(this);
+}
+
+//==============================================================================
+void Viewer::removeAttachment(ViewerAttachment* _attachment)
+{
+  std::unordered_set<ViewerAttachment*>::iterator it =
+      mAttachments.find(_attachment);
+
+  if(it == mAttachments.end())
+    return;
+
+  _attachment->mViewer = nullptr;
+  mAttachments.erase(_attachment);
+}
+
+//==============================================================================
+const std::unordered_set<ViewerAttachment*>& Viewer::getAttachments() const
+{
+  return mAttachments;
 }
 
 //==============================================================================
@@ -577,6 +674,12 @@ void Viewer::updateDragAndDrops()
     BodyNodeDnD* dnd = dnd_pair.second;
     dnd->update();
   }
+}
+
+//==============================================================================
+const osg::ref_ptr<osg::Group>& Viewer::getRootGroup() const
+{
+  return mRootGroup;
 }
 
 } // namespace osgDart

@@ -62,6 +62,7 @@ class EntityNode : public osg::Group
 {
 public:
 
+  /// Constructor
   EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent);
 
   /// Pointer to the Entity associated with this EntityNode

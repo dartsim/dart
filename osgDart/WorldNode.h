@@ -41,6 +41,8 @@
 #include <map>
 #include <memory>
 
+#include "osgDart/Viewer.h"
+
 namespace dart {
 
 namespace simulation {
@@ -68,6 +70,7 @@ public:
 
   friend class Viewer;
 
+  /// Default constructor
   explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr);
 
   /// Set the World that this WorldNode is associated with

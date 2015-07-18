@@ -50,6 +50,7 @@ namespace osgDart
 class WorldNodeCallback : public osg::NodeCallback
 {
 public:
+
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);

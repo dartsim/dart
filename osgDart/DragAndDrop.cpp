@@ -739,6 +739,7 @@ void BodyNodeDnD::saveState()
                       * mSavedGlobalOffset;
 
   mIK->getTarget()->setTransform(bn->getWorldTransform());
+  mIK->setGradientMethod<dart::dynamics::InverseKinematics::JacobianTranspose>();
 
   mAdditionalBodyNodes = 0;
 }
