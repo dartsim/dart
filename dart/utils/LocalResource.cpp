@@ -11,7 +11,7 @@ LocalResource::LocalResource(const std::string& _path)
 {
   if(!mFile)
   {
-    dterr << "[LocalResource::constructor] Failed opening file '" << _path
+    dtwarn << "[LocalResource::constructor] Failed opening file '" << _path
           << "' for reading: " << std::strerror(errno) << "\n";
   }
 }
@@ -23,8 +23,13 @@ LocalResource::~LocalResource()
 
   if (std::fclose(mFile) == EOF)
   {
-    dterr << "[LocalResource::destructor] Failed closing file.\n";
+    dtwarn << "[LocalResource::destructor] Failed closing file.\n";
   }
+}
+
+bool LocalResource::isGood() const
+{
+  return !!mFile;
 }
 
 size_t LocalResource::getFileSize()
@@ -35,7 +40,7 @@ size_t LocalResource::getFileSize()
   const long offset = std::ftell(mFile);
   if(offset == -1L)
   {
-    dterr << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
              " getting current offset: " << std::strerror(errno) << "\n";
     return 0;
   }
@@ -45,7 +50,7 @@ size_t LocalResource::getFileSize()
   // TODO: Does this work on Windows?
   if(std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile))
   {
-    dterr << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
              " seeking to the end of the file.\n";
     return 0;
   }
@@ -53,14 +58,14 @@ size_t LocalResource::getFileSize()
   const long size = std::ftell(mFile);
   if(size == -1L)
   {
-    dterr << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
              " getting end of file offset: " << std::strerror(errno) << "\n";
     return 0;
   }
 
   if(std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile))
   {
-    dterr << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
              " seeking to the current position.\n";
     return 0;
   }
@@ -76,7 +81,7 @@ size_t LocalResource::tell()
   const long offset = std::ftell(mFile);
   if (offset == -1L)
   {
-    dterr << "[LocalResource::tell] Failed"
+    dtwarn << "[LocalResource::tell] Failed"
              " seeking to the current position.\n";
   }
 
@@ -102,7 +107,7 @@ bool LocalResource::seek(size_t _offset, SeekType _mode)
     break;
 
   default:
-    dterr << "[LocalResource::Seek] Invalid origin. Expected"
+    dtwarn << "[LocalResource::Seek] Invalid origin. Expected"
              " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n";
     return false;
   }
@@ -124,7 +129,7 @@ size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
   const size_t result = std::fread(_buffer, _size, _count, mFile);
   if (std::ferror(mFile)) 
   {
-    dterr << "[LocalResource::tell] Failed reading file.\n";
+    dtwarn << "[LocalResource::tell] Failed reading file.\n";
   }
   return result;
 }

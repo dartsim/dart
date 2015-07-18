@@ -49,6 +49,9 @@ public:
   LocalResource(const LocalResource& _other) = delete;
   LocalResource& operator=(const LocalResource& _other) = delete;
 
+  /// Return if the resource is open and in a valid state.
+  bool isGood() const;
+
   // Documentation inherited.
   size_t getFileSize() override;
 
