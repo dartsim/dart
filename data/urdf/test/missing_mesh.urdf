@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="multipleshapes">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="this_file_does_not_exist.stl"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
