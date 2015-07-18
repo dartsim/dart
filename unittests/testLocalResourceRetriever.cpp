@@ -135,19 +135,19 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   ASSERT_EQ(0, resource->read(buffer.data(), content.size() + 1, 1));
 
   // Reading should only return full blocks.
-  buffer.assign('\0', buffer.size());
+  buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
   ASSERT_EQ(1, resource->read(buffer.data(), 8, 1));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading multiple blocks
-  buffer.assign('\0', buffer.size());
+  buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
   ASSERT_EQ(2, resource->read(buffer.data(), 4, 2));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading the whole file at once.
-  buffer.assign('\0', buffer.size());
+  buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
   ASSERT_EQ(1, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());

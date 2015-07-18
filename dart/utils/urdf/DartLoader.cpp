@@ -23,6 +23,17 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/urdf/urdf_world_parser.h"
 
+using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
+
+static std::string getBasePath(const std::string& _uri)
+{
+  const size_t index = _uri.find_last_of('/');
+  if (index != std::string::npos)
+    return _uri.substr(0, index);
+  else
+    return "";
+}
+
 namespace dart {
 namespace utils {
 
@@ -43,51 +54,36 @@ void DartLoader::addPackageDirectory(const std::string& _packageName,
   mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
 }
 
-dynamics::SkeletonPtr DartLoader::readSkeleton(const std::string& _uri,
+dynamics::SkeletonPtr DartLoader::parseSkeleton(
+  const std::string& _uri,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
-  using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
+  const utils::ResourceRetrieverPtr resourceRetriever
+    = getResourceRetriever(_resourceRetriever);
 
-  const ResourcePtr resource = _resourceRetriever->retrieve(_uri);
-  const size_t size = resource->getFileSize();
+  // TODO: Support for Windows-style paths?
+  mRootToSkelPath = getBasePath(_uri);
 
-  // std::string is guaranteed to be contiguous in C++11.
-  std::string buffer;
-  buffer.resize(size);
-  resource->read(&buffer.front(), size, 1);
+  std::string content;
+  if (!readFileToString(resourceRetriever, _uri, content))
+    return nullptr;
 
   // Use urdfdom to load the URDF file.
-  const ModelInterfacePtr urdfInterface = urdf::parseURDF(buffer);
+  const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
   if(!urdfInterface)
   {
     dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
            << _uri << "'.\n";
     return nullptr;
   }
-  return modelInterfaceToSkeleton(urdfInterface.get(), _resourceRetriever);
-}
 
-dynamics::SkeletonPtr DartLoader::parseSkeleton(const std::string& _urdfFileName) {
-  std::string urdfString = readFileToString(_urdfFileName);
-
-  if(urdfString.empty())
-  {
-    dtwarn << "[DartLoder::parseSkeleton] A blank or nonexistent file cannot "
-           << "be parsed into a Skeleton. Returning a nullptr\n";
-    return nullptr;
-  }
-
-  // Change path to a Unix-style path if given a Windows one
-  // Windows can handle Unix-style paths (apparently)
-  mRootToSkelPath = _urdfFileName;
-  std::replace(mRootToSkelPath.begin(), mRootToSkelPath.end(), '\\' , '/' );
-  mRootToSkelPath = mRootToSkelPath.substr(0, mRootToSkelPath.rfind("/") + 1);
-
-  return parseSkeletonString(urdfString, mRootToSkelPath);
+  // TODO: Pass the ResourceRetriever down here.
+  return modelInterfaceToSkeleton(urdfInterface.get(), resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
-    const std::string& _urdfString, const std::string& _urdfFileDirectory)
+    const std::string& _urdfString, const std::string& _baseUri,
+    const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
   {
@@ -96,37 +92,41 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     return nullptr;
   }
 
-  mRootToSkelPath = _urdfFileDirectory;
+  mRootToSkelPath = _baseUri;
 
-  boost::shared_ptr<urdf::ModelInterface> skeletonModelPtr = urdf::parseURDF(_urdfString);
-  if(!skeletonModelPtr)
-      return nullptr;
-
-  return modelInterfaceToSkeleton(skeletonModelPtr.get(), mRetriever);
-}
-
-simulation::WorldPtr DartLoader::parseWorld(const std::string& _urdfFileName)
-{
-  std::string urdfString = readFileToString(_urdfFileName);
-
-  if(urdfString.empty())
+  ModelInterfacePtr urdfInterface = urdf::parseURDF(_urdfString);
+  if(!urdfInterface)
   {
-    dtwarn << "[DartLoader::parseWorld] A blank or nonexistent file cannot "
-           << "be parsed into a World. Returning a nullptr\n";
+    dtwarn << "[DartLoader::parseSkeletonString] Failed loading URDF.\n";
     return nullptr;
   }
 
-  // Change path to a Unix-style path if given a Windows one
-  // Windows can handle Unix-style paths (apparently)
-  mRootToWorldPath = _urdfFileName;
-  std::replace(mRootToWorldPath.begin(), mRootToWorldPath.end(), '\\' , '/');
-  mRootToWorldPath = mRootToWorldPath.substr(0, mRootToWorldPath.rfind("/") + 1);
+  // TODO: Pass the ResourceRetriever down here.
+  return modelInterfaceToSkeleton(
+    urdfInterface.get(), getResourceRetriever(_resourceRetriever));
+}
 
-  return parseWorldString(urdfString, mRootToWorldPath);
+simulation::WorldPtr DartLoader::parseWorld(
+  const std::string& _uri,
+  const utils::ResourceRetrieverPtr& _resourceRetriever)
+{
+  const utils::ResourceRetrieverPtr resourceRetriever
+    = getResourceRetriever(_resourceRetriever);
+
+  std::string content;
+  if (!readFileToString(resourceRetriever, _uri, content))
+    return nullptr;
+
+  // TODO: Support for Windows-style paths?
+  mRootToSkelPath = getBasePath(_uri);
+
+  // TODO: Pass the ResourceRetriever down here.
+  return parseWorldString(content, mRootToWorldPath);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
-    const std::string& _urdfString, const std::string& _urdfFileDirectory)
+    const std::string& _urdfString, const std::string& _baseUri,
+    const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
   {
@@ -135,15 +135,19 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  mRootToWorldPath = _urdfFileDirectory;
+  mRootToWorldPath = _baseUri;
 
   std::shared_ptr<urdf::World> worldInterface =
       urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
 
   if(!worldInterface)
-      return nullptr;
+  {
+    dtwarn << "[DartLoader::parseWorldString] Failed loading URDF.\n";
+    return nullptr;
+  }
 
   // Store paths from world to entities
+  // TODO: Pass the ResourceRetriever down here.
   parseWorldToEntityPaths(_urdfString);
 
   simulation::WorldPtr world(new simulation::World());
@@ -343,33 +347,21 @@ bool DartLoader::createSkeletonRecursive(
 /**
  * @function readXml
  */
-std::string  DartLoader::readFileToString(std::string _xmlFile) {
-  
-  std::string xml_string;
-  std::ifstream xml_file(_xmlFile.c_str());
+bool DartLoader::readFileToString(
+  const utils::ResourceRetrieverPtr& _resourceRetriever,
+  const std::string &_uri,
+  std::string &_output)
+{
+  const ResourcePtr resource = _resourceRetriever->retrieve(_uri);
+  if (!resource)
+    return false;
 
-  if(!xml_file.is_open())
-  {
-    dtwarn << "[DartLoader::readFileToString] Failed to open file '" << _xmlFile << "'! "
-           << "Check whether the file exists and has appropriate permissions.\n";
-    return xml_string;
-  }
-  
-  // Read xml
-  while(xml_file.good()) {
-    std::string line;
-    std::getline(xml_file, line);
-    xml_string += (line + "\n");
-  }
-  xml_file.close();
+  // Safe because std::string is guaranteed to be contiguous in C++11.
+  const size_t size = resource->getFileSize();
+  _output.resize(size);
+  resource->read(&_output.front(), size, 1);
 
-  if(xml_string.empty())
-  {
-    dtwarn << "[DartLoader::readFileToString] Opened file '" << _xmlFile << "', but found it to "
-           << "be empty. Please make sure you provided the correct filename\n";
-  }
-  
-  return xml_string;
+  return true;
 }
 
 /**
@@ -575,6 +567,15 @@ dynamics::ShapePtr DartLoader::createShape(
   shape->setLocalTransform(toEigen(_vizOrCol->origin));
   setMaterial(shape, _vizOrCol);
   return shape;
+}
+
+utils::ResourceRetrieverPtr DartLoader::getResourceRetriever(
+  const utils::ResourceRetrieverPtr& _resourceRetriever)
+{
+  if (_resourceRetriever)
+    return _resourceRetriever;
+  else
+    return mRetriever;
 }
 
 template dynamics::ShapePtr DartLoader::createShape<urdf::Visual>(

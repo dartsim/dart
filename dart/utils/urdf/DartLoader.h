@@ -49,9 +49,7 @@ namespace utils {
  * @class DartLoader
  */
 class DartLoader {
-  
-public:
-    /// Constructor with the default ResourceRetriever.
+  public: /// Constructor with the default ResourceRetriever.
     DartLoader();
 
     /// Specify the directory of a ROS package. In your URDF files, you may see
@@ -80,22 +78,24 @@ public:
     void addPackageDirectory(const std::string& _packageName,
                              const std::string& _packageDirectory);
 
-    dynamics::SkeletonPtr readSkeleton(const std::string& _uri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
-
     /// Parse a file to produce a Skeleton
-    dynamics::SkeletonPtr parseSkeleton(const std::string& _urdfFileName);
+    dynamics::SkeletonPtr parseSkeleton(
+      const std::string& _uri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a Skeleton
-    dynamics::SkeletonPtr parseSkeletonString(const std::string& _urdfString,
-                                              const std::string& _urdfFileDirectory);
+    dynamics::SkeletonPtr parseSkeletonString(
+      const std::string& _urdfString, const std::string& _baseUri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
-    dart::simulation::WorldPtr parseWorld(const std::string& _urdfFileName);
+    dart::simulation::WorldPtr parseWorld(const std::string& _uri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a World
-    dart::simulation::WorldPtr parseWorldString(const std::string& _urdfString,
-                                        const std::string& _urdfFileDirectory);
+    dart::simulation::WorldPtr parseWorldString(
+      const std::string& _urdfString, const std::string& _baseUri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
 private:
 
@@ -129,9 +129,16 @@ private:
       const urdf::Link* _lk, dynamics::BodyNode::Properties *properties,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
+    utils::ResourceRetrieverPtr getResourceRetriever(
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
+
     Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
-    std::string readFileToString(std::string _xmlFile);
+
+    static bool readFileToString(
+      const utils::ResourceRetrieverPtr& _resourceRetriever,
+      const std::string &_uri,
+      std::string &_output);
 
     ResourceRetrieverPtr mResourceRetriever;
     std::map<std::string, std::string> mWorld_To_Entity_Paths;
