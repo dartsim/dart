@@ -51,9 +51,37 @@ class BalanceConstraint : public optimizer::Function,
 {
 public:
 
+  /// The ErrorMethod_t determines whether the error should be computed based on
+  /// the center of mass's distance from the centroid of the support polygon
+  /// (FROM_CENTROID) or the COM's distance from the edge of the support polygon
+  /// (FROM_EDGE). Note that once the center of mass is inside the support
+  /// polygon, the error will immediately drop to zero regardless of which is
+  /// chosen.
+  ///
+  /// Alternatively, choosing OPTIMIZE_BALANCE will not drop the error to zero
+  /// while inside the support polygon. Instead, it will try to drive the center
+  /// of mass to the centroid of the support polygon. The error will only drop
+  /// to zero once it is within a certain tolerance of the centroid. The
+  /// tolerance can be set by using setOptimizationTolerance(). This method is
+  /// ideal for use as an Objective function to improve the quality of a
+  /// configuration rather than as a constraint function.
+  enum ErrorMethod_t
+  {
+    FROM_CENTROID = 0,
+    FROM_EDGE,
+    OPTIMIZE_BALANCE
+  };
+
   /// The BalanceMethod_t determines whether balancing should be achieved by
   /// shifting the locations of the supporting EndEffectors or by shifting the
   /// center of mass without moving the support locations.
+  ///
+  /// Note that if the BalanceMethod_t is SHIFT_SUPPORT, then its behavior will
+  /// change significantly based on the ErrorMethod_t: if the ErrorMethod_t is
+  /// FROM_CENTROID or OPTIMIZE BALANCE, then all support points will be shifted
+  /// towards the center of mass simultaneously. However, if the ErrorMethod_t
+  /// is FROM_EDGE, then only the EndEffector that is closest to the center of
+  /// mass will be shifted.
   enum BalanceMethod_t
   {
     SHIFT_SUPPORT = 0,
@@ -61,7 +89,8 @@ public:
   };
 
   BalanceConstraint(const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
-                    BalanceMethod_t _method = SHIFT_SUPPORT);
+                    BalanceMethod_t _balanceMethod = SHIFT_SUPPORT,
+                    ErrorMethod_t _errorMethod = FROM_CENTROID);
 
   virtual ~BalanceConstraint() = default;
 
@@ -73,9 +102,23 @@ public:
   void evalGradient(const Eigen::VectorXd& _x,
                     Eigen::Map<Eigen::VectorXd> _grad) override;
 
+  void setErrorMethod(ErrorMethod_t _method);
+
+  ErrorMethod_t getErrorMethod() const;
+
   void setBalanceMethod(BalanceMethod_t _method);
 
   BalanceMethod_t getBalanceMethod() const;
+
+  void setOptimizationTolerance(double _tol);
+
+  double getOptimizationTolerance() const;
+
+  void setPseudoInverseDamping(double _damping);
+
+  double getPseudoInverseDamping();
+
+  const Eigen::Vector3d& getLastError() const;
 
   void clearCaches();
 
@@ -85,8 +128,31 @@ protected:
 
   BalanceMethod_t mBalanceMethod;
 
-  Eigen::VectorXd mLastConfig;
+  ErrorMethod_t mErrorMethod;
 
+  double mOptimizationTolerance;
+
+  double mDamping;
+
+  size_t mClosestEndEffector[2];
+
+  /// The error vector points away from the direction that the center of mass
+  /// should move in order to reduce the balance error
+  Eigen::Vector3d mLastError;
+
+  Eigen::Vector3d mLastCOM;
+
+  size_t mLastSupportVersion;
+
+  math::LinearJacobian mComJacCache;
+
+  math::LinearJacobian mEEJacCache;
+
+  Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
+
+  Eigen::MatrixXd mNullSpaceCache;
+
+  Eigen::MatrixXd mPartialNullSpaceCache;
 };
 
 }
