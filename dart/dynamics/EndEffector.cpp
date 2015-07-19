@@ -366,7 +366,12 @@ EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
     Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
     mIndexInSkeleton(0),
-    mIndexInBodyNode(0)
+    mIndexInBodyNode(0),
+    mIsEffectorJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsEffectorJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true)
+
 {
   setProperties(_properties);
 

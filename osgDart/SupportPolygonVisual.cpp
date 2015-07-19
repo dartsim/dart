@@ -264,14 +264,25 @@ void SupportPolygonVisual::refresh()
 
   if(mDisplayCentroid)
   {
-    const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)?
-          skel->getSupportCentroid() : skel->getSupportCentroid(mTreeIndex);
-
-    const Eigen::Vector3d& C = Cp[0]*axes.first + Cp[1]*axes.second
-                               + up*mElevation;
-
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    tf.translation() = C;
+
+    if(poly.size() > 0)
+    {
+      const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)?
+            skel->getSupportCentroid() : skel->getSupportCentroid(mTreeIndex);
+
+      const Eigen::Vector3d& C = Cp[0]*axes.first + Cp[1]*axes.second
+                                 + up*mElevation;
+
+      tf.translation() = C;
+    }
+    else
+    {
+      // If there is no support polygon, then just lay the centroid over the
+      // center of mass
+      tf.translation() = skel->getCOM();
+    }
+
     mCentroid->setTransform(tf);
 
     mCentroidNode->refresh(false, true);

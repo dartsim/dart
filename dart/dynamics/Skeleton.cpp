@@ -2619,6 +2619,9 @@ static void computeSupportPolygon(
     dtwarn << "[computeSupportPolygon] Requesting support polygon of a "
            << "Skeleton with no gravity. The result will only be an empty "
            << "set!\n";
+    axis1.setZero();
+    axis2.setZero();
+    centroid = Eigen::Vector2d::Constant(std::nan(""));
     return;
   }
 
@@ -2654,7 +2657,10 @@ static void computeSupportPolygon(
   for(size_t i=0; i < vertex_indices.size(); ++i)
     ee_indices[i] = originalEE_map[vertex_indices[i]];
 
-  centroid = math::computeCentroidOfHull(polygon);
+  if(polygon.size() > 0)
+    centroid = math::computeCentroidOfHull(polygon);
+  else
+    centroid = Eigen::Vector2d::Constant(std::nan(""));
 }
 
 //==============================================================================

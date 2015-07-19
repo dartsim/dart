@@ -404,10 +404,13 @@ public:
   const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
       size_t _treeIdx) const;
 
-  /// Get the centroid of the support polygon for this Skeleton
+  /// Get the centroid of the support polygon for this Skeleton. If the support
+  /// polygon is an empty set, the components of this vector will be nan.
   const Eigen::Vector2d& getSupportCentroid() const;
 
-  /// Get the centroid of the support polygon for a tree in this Skeleton
+  /// Get the centroid of the support polygon for a tree in this Skeleton. If
+  /// the support polygon is an empty set, the components of this vector will be
+  /// nan.
   const Eigen::Vector2d& getSupportCentroid(size_t _treeIdx) const;
 
   /// The version number of a support polygon will be incremented each time the

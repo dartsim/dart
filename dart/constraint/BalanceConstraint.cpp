@@ -99,6 +99,12 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
   }
 
   const math::SupportPolygon& polygon = skel->getSupportPolygon();
+  if(polygon.empty())
+  {
+    mLastError.setZero();
+    return 0.0;
+  }
+
   const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes =
       skel->getSupportAxes();
   Eigen::Vector2d projected_com(com.dot(axes.first), com.dot(axes.second));
@@ -114,7 +120,7 @@ double BalanceConstraint::eval(const Eigen::VectorXd& _x)
 
     if(!zeroError)
     {
-      const Eigen::Vector2d& centroid = math::computeCentroidOfHull(polygon);
+      const Eigen::Vector2d& centroid = skel->getSupportCentroid();
       projected_error = projected_com - centroid;
     }
 
