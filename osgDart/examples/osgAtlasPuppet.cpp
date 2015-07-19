@@ -84,15 +84,17 @@ public:
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
     : osgDart::WorldNode(_world),
-      mRobot(_robot),
-      iter(0)
+      mAtlas(_robot),
+      iter(0),
+      l_foot(_robot->getEndEffector("l_foot")),
+      r_foot(_robot->getEndEffector("r_foot"))
   {
     // Do nothing
   }
 
   void customPreRefresh() override
   {
-    bool solved = mRobot->getIK(true)->solve();
+    bool solved = mAtlas->getIK(true)->solve();
 
     if(!solved)
       ++iter;
@@ -107,18 +109,14 @@ public:
 
 protected:
 
-  SkeletonPtr mRobot;
+  SkeletonPtr mAtlas;
   size_t iter;
+
+  EndEffectorPtr l_foot;
+  EndEffectorPtr r_foot;
 
   Eigen::VectorXd grad;
 };
-
-void printVec3d(const osg::Vec3d& v)
-{
-  for(size_t i=0; i<3; ++i)
-    std::cout << v[i] << "  ";
-  std::cout << std::endl;
-}
 
 class InputHandler : public osgGA::GUIEventHandler
 {
@@ -128,7 +126,35 @@ public:
     : mAtlas(atlas),
       mWorld(world)
   {
-    // Do nothing
+    initialize();
+  }
+
+  void initialize()
+  {
+    mRestConfig = mAtlas->getPositions();
+
+    mLegs.reserve(12);
+    for(size_t i=0; i<mAtlas->getNumDofs(); ++i)
+    {
+      if(mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_")
+        mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
+    }
+    // We should also adjust the pelvis when detangling the legs
+    mLegs.push_back(mAtlas->getDof("rootJoint_rot_x")->getIndexInSkeleton());
+    mLegs.push_back(mAtlas->getDof("rootJoint_rot_y")->getIndexInSkeleton());
+    mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
+
+    for(size_t i=0; i < mAtlas->getNumEndEffectors(); ++i)
+    {
+      const InverseKinematicsPtr ik = mAtlas->getEndEffector(i)->getIK();
+      if(ik)
+      {
+        mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
+        mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
+        mConstraintActive.push_back(false);
+        mEndEffectorIndex.push_back(i);
+      }
+    }
   }
 
   virtual bool handle(const osgGA::GUIEventAdapter& ea,
@@ -145,8 +171,73 @@ public:
       {
         for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
           std::cout << mAtlas->getDof(i)->getName() << ": "
-                    << mAtlas->getDof(i)->getPosition()*180.0/M_PI << std::endl;
+                    << mAtlas->getDof(i)->getPosition() << std::endl;
         std::cout << "  -- -- -- -- -- " << std::endl;
+        return true;
+      }
+
+      if( ea.getKey() == 'r' )
+      {
+        // Reset all the positions except for x, y, and yaw
+        for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
+        {
+          if( i < 2 || 4 < i )
+            mAtlas->getDof(i)->setPosition(mRestConfig[i]);
+        }
+        return true;
+      }
+
+      if( ea.getKey() == 'd' )
+      {
+        // detangle the legs
+        for(size_t i=0; i < mLegs.size(); ++i)
+        {
+          size_t k = mLegs[i];
+          mAtlas->getDof(k)->setPosition(mRestConfig[k]);
+        }
+        return true;
+      }
+
+      if( '1' <= ea.getKey() && ea.getKey() <= '9' )
+      {
+        size_t index = ea.getKey() - '1';
+        if(index < mConstraintActive.size())
+        {
+          EndEffector* ee = mAtlas->getEndEffector(mEndEffectorIndex[index]);
+          const InverseKinematicsPtr& ik = ee->getIK();
+          if(ik && mConstraintActive[index])
+          {
+            mConstraintActive[index] = false;
+
+            ik->getErrorMethod().setBounds(mDefaultBounds[index]);
+            ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
+            mWorld->removeSimpleFrame(ik->getTarget());
+          }
+          else if(ik)
+          {
+            mConstraintActive[index] = true;
+
+            // Use the standard default bounds instead of our custom default
+            // bounds
+            ik->getErrorMethod().setBounds();
+            ik->getTarget()->setTransform(ee->getTransform());
+            mWorld->addSimpleFrame(ik->getTarget());
+          }
+        }
+        return true;
+      }
+
+      if( 'q' == ea.getKey() )
+      {
+        EndEffector* ee = mAtlas->getEndEffector("l_foot");
+        ee->setSupportMode(!ee->getSupportMode());
+        return true;
+      }
+
+      if( 'w' == ea.getKey() )
+      {
+        EndEffector* ee = mAtlas->getEndEffector("r_foot");
+        ee->setSupportMode(!ee->getSupportMode());
         return true;
       }
     }
@@ -159,6 +250,18 @@ protected:
   SkeletonPtr mAtlas;
 
   WorldPtr mWorld;
+
+  Eigen::VectorXd mRestConfig;
+
+  std::vector<size_t> mLegs;
+
+  std::vector<bool> mConstraintActive;
+
+  std::vector<size_t> mEndEffectorIndex;
+
+  std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+
+  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 };
 
 SkeletonPtr createGround()
@@ -231,12 +334,9 @@ void setupStartConfiguration(const SkeletonPtr& atlas)
   atlas->getDof("r_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
   atlas->getDof("l_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
 
-  // Give finite limits to the root translation
-  for(size_t i=3; i < 6; ++i)
-  {
-    atlas->getDof(i)->setPositionLowerLimit(-5);
-    atlas->getDof(i)->setPositionUpperLimit( 5);
-  }
+  // Give limits to the height
+  atlas->getDof("rootJoint_pos_z")->setPositionLowerLimit(0.600);
+  atlas->getDof("rootJoint_pos_z")->setPositionUpperLimit(0.885);
 }
 
 void setupEndEffectors(const SkeletonPtr& atlas)
@@ -246,6 +346,14 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // joint
   Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(6);
   rootjoint_weights = 0.01*rootjoint_weights;
+
+  // Setting the bounds to be infinite allows the end effector to be implicitly
+  // unconstrained
+  Eigen::Vector3d linearBounds =
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+
+  Eigen::Vector3d angularBounds =
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
   // -- Set up the left hand --
 
@@ -261,14 +369,14 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the left hand
-  osgDart::InteractiveFramePtr l_target(new osgDart::InteractiveFrame(
-                                          Frame::World(), "l_target"));
+  osgDart::InteractiveFramePtr lh_target(new osgDart::InteractiveFrame(
+                                           Frame::World(), "lh_target"));
 
   // Set the target of the left hand to the interactive frame. We pass true into
   // the function to tell it that it should create the IK module if it does not
   // already exist. If we don't do that, then calling getIK() could return a
   // nullptr if the IK module was never created.
-  l_hand->getIK(true)->setTarget(l_target);
+  l_hand->getIK(true)->setTarget(lh_target);
 
   // Tell the left hand to use the whole body for its IK
   l_hand->getIK()->useWholeBody();
@@ -276,8 +384,13 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Set the weights for the gradient
   l_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
 
-  // Start off being inactive
-  l_hand->getIK()->setActive(false);
+  // Set the bounds for the IK to be infinite so that the hands start out
+  // unconstrained
+  l_hand->getIK()->getErrorMethod().setLinearBounds(
+        -linearBounds, linearBounds);
+
+  l_hand->getIK()->getErrorMethod().setAngularBounds(
+        -angularBounds, angularBounds);
 
   // -- Set up the right hand --
 
@@ -292,11 +405,11 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the right hand
-  osgDart::InteractiveFramePtr r_target(new osgDart::InteractiveFrame(
-                                          Frame::World(), "r_target"));
+  osgDart::InteractiveFramePtr rh_target(new osgDart::InteractiveFrame(
+                                           Frame::World(), "rh_target"));
 
-  // Create the right hand's IK and set its  target
-  r_hand->getIK(true)->setTarget(r_target);
+  // Create the right hand's IK and set its target
+  r_hand->getIK(true)->setTarget(rh_target);
 
   // Tell the right hand to use the whole body for its IK
   r_hand->getIK()->useWholeBody();
@@ -304,15 +417,20 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Set the weights for the gradient
   r_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
 
-  // Start off being inactive
-  r_hand->getIK()->setActive(false);
+  // Set the bounds for the IK to be infinite so that the hands start out
+  // unconstrained
+  r_hand->getIK()->getErrorMethod().setLinearBounds(
+        -linearBounds, linearBounds);
+
+  r_hand->getIK()->getErrorMethod().setAngularBounds(
+        -angularBounds, angularBounds);
 
 
   // Define the support geometry for the feet. These points will be used to
   // compute the convex hull of the robot's support polygon
   dart::math::SupportGeometry support;
-  const double sup_pos_x =  0.10;
-  const double sup_neg_x = -0.03;
+  const double sup_pos_x =  0.10-0.186;
+  const double sup_neg_x = -0.03-0.186;
   const double sup_pos_y =  0.03;
   const double sup_neg_y = -0.03;
   support.push_back(Eigen::Vector3d(sup_neg_x, sup_neg_y, 0.0));
@@ -323,18 +441,12 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Create a relative transform that goes from the center of the feet to the
   // bottom of the feet
   Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
-  tf_foot.translation() = Eigen::Vector3d(0.0, 0.0, -0.08);
+  tf_foot.translation() = Eigen::Vector3d(0.186, 0.0, -0.08);
 
-  // Define linear bounds for the feet that allow them to traverse across the
-  // ground while also staying pinned to the ground
-  Eigen::Vector3d linearBounds =
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  // Constrain the feet to snap to the ground
   linearBounds[2] = 1e-8;
 
-  // Define angular bounds for the feet that allow them to yaw while remaining
-  // flat on the ground
-  Eigen::Vector3d angularBounds =
-      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  // Constrain the feet to lie flat on the ground
   angularBounds[0] = 1e-8;
   angularBounds[1] = 1e-8;
 
@@ -342,11 +454,18 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   EndEffector* l_foot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
   l_foot->setRelativeTransform(tf_foot);
 
-  // Create the IK module for the left foot and set its hierarchy level to 1.
-  // This will project its IK goals through the null space of any IK modules
-  // that are on level 0. This means that it will try to accomplish its goals
-  // while also accommodating the goals of other modules.
-  l_foot->getIK(true)->setHierarchyLevel(1);
+  // Create an interactive frame to use as the target for the left foot
+  osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
+                                           Frame::World(), "lf_target"));
+
+  // Create the left foot's IK and set its target
+  l_foot->getIK(true)->setTarget(lf_target);
+
+  // Set the left foot's IK hierarchy level to 1. This will project its IK goals
+  // through the null space of any IK modules that are on level 0. This means
+  // that it will try to accomplish its goals while also accommodating the goals
+  // of other modules.
+  l_foot->getIK()->setHierarchyLevel(1);
 
   // Use the bounds defined above
   l_foot->getIK()->getErrorMethod().setLinearBounds(
@@ -364,8 +483,15 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
   r_foot->setRelativeTransform(tf_foot);
 
-  // Create the IK module for the right foot and set its hierarchy level to 1
-  r_foot->getIK(true)->setHierarchyLevel(1);
+  // Create an interactive frame to use as the target for the right foot
+  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+                                           Frame::World(), "rf_target"));
+
+  // Create the right foot's IK module and set its target
+  r_foot->getIK(true)->setTarget(rf_target);
+
+  // Set the right foot's IK hierarchy level to 1
+  r_foot->getIK()->setHierarchyLevel(1);
 
   // Use the bounds defined above
   r_foot->getIK()->getErrorMethod().setLinearBounds(
@@ -381,10 +507,10 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Move atlas to the ground so that it starts out squatting with its feet on
   // the ground
-  double heightChange = -r_foot->getIK()->getTarget()->getWorldTransform().translation()[2];
+  double heightChange = -r_foot->getWorldTransform().translation()[2];
   atlas->getDof(5)->setPosition(heightChange);
 
-  // Now that the feet are on the ground, we should set the feet's targets
+  // Now that the feet are on the ground, we should set their target transforms
   l_foot->getIK()->getTarget()->setTransform(l_foot->getTransform());
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
@@ -437,6 +563,25 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
+void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& atlas)
+{
+  // Turn on drag-and-drop for the whole Skeleton
+  for(size_t i=0; i < atlas->getNumBodyNodes(); ++i)
+    viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
+
+  for(size_t i=0; i < atlas->getNumEndEffectors(); ++i)
+  {
+    EndEffector* ee = atlas->getEndEffector(i);
+    if(!ee->getIK())
+      continue;
+
+    // Check whether the target is an interactive frame, and add it if it is
+    if(const auto& frame = std::dynamic_pointer_cast<osgDart::InteractiveFrame>(
+         ee->getIK()->getTarget()))
+      viewer.enableDragAndDrop(frame.get());
+  }
+}
+
 int main()
 {
   WorldPtr world(new World);
@@ -464,9 +609,7 @@ int main()
   // Add our custom input handler to the Viewer
   viewer.addEventHandler(new InputHandler(atlas, world));
 
-  // Turn on drag-and-drop for the whole Skeleton
-  for(size_t i=0; i<atlas->getNumBodyNodes(); ++i)
-    viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
+  enableDragAndDrops(viewer, atlas);
 
   // Attach a support polygon visualizer
   viewer.addAttachment(new osgDart::SupportPolygonVisual(
@@ -474,6 +617,23 @@ int main()
 
   // Print out instructions for the viewer
   std::cout << viewer.getInstructions() << std::endl;
+
+  std::cout << "Alt + Click:   Try to translate a body without changing its orientation\n"
+            << "Ctrl + Click:  Try to rotate a body without changing its translation\n"
+            << "Shift + Click: Move a body using only its parent joint\n"
+            << "1 -> 4:        Toggle the interactive target of an EndEffector\n"
+            << "q:             Toggle Support Mode on/off for the left foot\n"
+            << "w:             Toggle Support Mode on/off for the right foot\n"
+            << "r:             Reset the robot's configuration\n"
+            << "d:             Detangle the robot's legs (reset, but only the lower body)\n\n"
+            << "  Because this uses iterative Jacobian methods, the solver can get finicky,\n"
+            << "  and the robot can get tangled up. Use 'd' and 'r' keys when the robot is\n"
+            << "  in a messy configuration\n\n"
+            << "  The green polygon is the support polygon of the robot, and the blue/red ball is\n"
+            << "  the robot's center of mass. The green ball is the centroid of the polygon.\n\n"
+            << "Note that this is purely kinematic. Physical simulation is not allowed in this app.\n"
+            << std::endl;
+
 
   // Set up the window
   viewer.setUpViewInWindow(0, 0, 1280, 960);
