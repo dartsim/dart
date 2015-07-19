@@ -6,6 +6,7 @@ Build-Depends: debhelper (>= 9),
                libeigen3-dev,
                libfcl-dev (>= 0.2.7),
                libassimp-dev (>= 3),
+               libassimp-dev (<< 3.0~dfsg-4),
                freeglut3-dev,
                libxi-dev,
                libxmu-dev,
@@ -28,6 +29,7 @@ Depends: ${misc:Depends},
          libdart-core5.0 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
+         libassimp-dev (<< 3.0~dfsg-4),
          libfcl-dev
 Description: Dynamic Animation and Robotics Toolkit, core development files
  DART is a collaborative, cross-platform, open source library created by the
