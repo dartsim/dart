@@ -1553,14 +1553,19 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 
     if(INTERSECTING != result)
     {
+      double a1 = atan2( (p1-p0)[1], (p1-p0)[0] )*180.0/M_PI;
+      double a2 = atan2( (p2-p0)[1], (p2-p0)[0] )*180.0/M_PI;
+      double diff = a1-a2;
       dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
              << "which is not a proper convex hull! The invalid segment "
-             << "contains indices " << i-2 << " -> " << i << ":\n"
-             << i-2 << ") " << _convexHull[i-2].transpose() << "\n"
-             << i-1 << ") " << _convexHull[i-1].transpose() << "\n"
-             << i   << ") " << _convexHull[i].transpose() << "\n"
-             << (PARALLEL==result? "These segments are parallel!\n\n" :
-                                   "These segments are not connected!\n\n");
+             << "contains indices " << i-1 << " -> " << i << ":\n"
+             << i-1 << ") " << p1.transpose() << " (" << a1 << " degrees)" << "\n"
+             << i   << ") " << p2.transpose() << " (" << a2 << " degrees)" << "\n"
+             << "0) " << p0.transpose() << "\n"
+             << "(" << result << ") "
+             << (PARALLEL==result? "These segments are parallel!\n" :
+                                   "These segments are too short to intersect!\n")
+             << "Difference in angle: " << diff << "\n\n";
       continue;
     }
 
@@ -1638,7 +1643,7 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
   {
     for(size_t i=0; i<angles.size()-1; ++i)
     {
-      if(angles[i].mAngle == angles[i+1].mAngle)
+      if( std::abs(angles[i].mAngle - angles[i+1].mAngle) < 1e-12 )
       {
         // If two points have the same angle, throw out the one that is closer
         // to the corner
@@ -1729,7 +1734,7 @@ Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
 
   Eigen::Vector2d& point = _intersectionPoint;
 
-  if( dx_b*dy_a - dx_a*dy_b == 0 )
+  if( std::abs(dx_b*dy_a - dx_a*dy_b) < 1e-12 )
   {
     // The line segments are parallel, so give back an average of all the points
     point = (a1+a2+b1+b2)/4.0;
