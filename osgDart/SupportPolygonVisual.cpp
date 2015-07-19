@@ -101,9 +101,24 @@ double SupportPolygonVisual::getDisplayElevation() const
 }
 
 //==============================================================================
+void SupportPolygonVisual::displayPolygon(bool display)
+{
+  if(mDisplayPolygon == display)
+    return;
+
+  mDisplayPolygon = display;
+
+  if(mDisplayPolygon)
+    addChild(mPolygonGeode);
+  else
+    removeChild(mPolygonGeode);
+}
+
+//==============================================================================
 void SupportPolygonVisual::setPolygonColor(const Eigen::Vector4d& color)
 {
   (*mPolygonColor)[0] = osg::Vec4(color[0], color[1], color[2], color[3]);
+  mPolygonGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
 }
 
 //==============================================================================
@@ -231,20 +246,21 @@ void SupportPolygonVisual::refresh()
         skel->getSupportAxes() : skel->getSupportAxes(mTreeIndex);
   const Eigen::Vector3d& up = axes.first.cross(axes.second);
 
-  mVertices->resize(poly.size());
-  mFaces->resize(poly.size());
-  for(size_t i=0; i < poly.size(); ++i)
+  if(mDisplayPolygon)
   {
-    const Eigen::Vector3d& v = axes.first*poly[i][0] + axes.second*poly[i][1]
-                                + up*mElevation;
-    (*mVertices)[i] = osg::Vec3(v[0], v[1], v[2]);
-    (*mFaces)[i] = i;
+    mVertices->resize(poly.size());
+    mFaces->resize(poly.size());
+    for(size_t i=0; i < poly.size(); ++i)
+    {
+      const Eigen::Vector3d& v = axes.first*poly[i][0] + axes.second*poly[i][1]
+                                  + up*mElevation;
+      (*mVertices)[i] = osg::Vec3(v[0], v[1], v[2]);
+      (*mFaces)[i] = i;
+    }
+
+    mPolygonGeom->setVertexArray(mVertices);
+    mPolygonGeom->setPrimitiveSet(0, mFaces);
   }
-
-  mGeom->setVertexArray(mVertices);
-  mGeom->setPrimitiveSet(0, mFaces);
-
-  mGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
 
   if(mDisplayCentroid)
   {
@@ -317,26 +333,28 @@ void SupportPolygonVisual::refresh()
 //==============================================================================
 void SupportPolygonVisual::initialize()
 {
-  mGeode = new osg::Geode;
-  mGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  addChild(mGeode);
+  mDisplayPolygon = true;
+  mPolygonGeode = new osg::Geode;
+  mPolygonGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+  addChild(mPolygonGeode);
 
-  mGeom = new osg::Geometry;
-  mGeode->addDrawable(mGeom);
+  mPolygonGeom = new osg::Geometry;
+  mPolygonGeode->addDrawable(mPolygonGeom);
 
   mVertices = new osg::Vec3Array;
-  mGeom->setVertexArray(mVertices);
-  mGeom->setDataVariance(osg::Object::DYNAMIC);
+  mPolygonGeom->setVertexArray(mVertices);
+  mPolygonGeom->setDataVariance(osg::Object::DYNAMIC);
 
   osg::Vec4 color(0.1, 0.9, 0.1, 1.0);
   mPolygonColor = new osg::Vec4Array;
   mPolygonColor->resize(1);
   (*mPolygonColor)[0] = color;
-  mGeom->setColorArray(mPolygonColor);
-  mGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  mPolygonGeom->setColorArray(mPolygonColor);
+  mPolygonGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
   mFaces = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLE_FAN, 0);
-  mGeom->addPrimitiveSet(mFaces);
+  mPolygonGeom->addPrimitiveSet(mFaces);
+  mPolygonGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
 
   mDisplayCentroid = true;
   mCentroid = std::make_shared<dart::dynamics::SimpleFrame>(

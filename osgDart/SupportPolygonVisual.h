@@ -78,6 +78,12 @@ public:
   /// Get the elevation of display for the support polygon
   double getDisplayElevation() const;
 
+  /// Display the support polygon
+  void displayPolygon(bool display);
+
+  /// Returns true if the support polygon is being displayed
+  bool isPolygonDisplayed() const;
+
   /// Set the color of the support polygon
   void setPolygonColor(const Eigen::Vector4d& color);
 
@@ -138,6 +144,8 @@ protected:
 
   double mElevation;
 
+  bool mDisplayPolygon;
+
   bool mDisplayCentroid;
 
   dart::dynamics::SimpleFramePtr mCentroid;
@@ -156,9 +164,9 @@ protected:
 
   osg::ref_ptr<osg::Vec4Array> mPolygonColor;
 
-  osg::ref_ptr<osg::Geode> mGeode;
+  osg::ref_ptr<osg::Geode> mPolygonGeode;
 
-  osg::ref_ptr<osg::Geometry> mGeom;
+  osg::ref_ptr<osg::Geometry> mPolygonGeom;
 
   osg::ref_ptr<osg::Vec3Array> mVertices;
 
