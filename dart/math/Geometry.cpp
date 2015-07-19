@@ -1520,9 +1520,10 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 {
   if(_convexHull.size() == 0)
   {
+    Eigen::Vector2d invalid = Eigen::Vector2d::Constant(std::nan(""));
     dtwarn << "[computeCentroidOfHull] Requesting the centroid of an empty set "
-           << "of points! We will return <0,0>.\n";
-    return Eigen::Vector2d::Zero();
+           << "of points! We will return <" << invalid.transpose() << ">.\n";
+    return invalid;
   }
 
   if(_convexHull.size() == 1)
