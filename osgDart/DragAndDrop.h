@@ -255,9 +255,13 @@ public:
 
   virtual void release() override;
 
-  void useExternalIK(bool external=false);
+  void useExternalIK(bool external);
 
   bool isUsingExternalIK() const;
+
+  void useWholeBody(bool wholeBody);
+
+  bool isUsingWholeBody() const;
 
   void setPreserveOrientationModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
 

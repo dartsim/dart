@@ -771,6 +771,18 @@ bool BodyNodeDnD::isUsingExternalIK() const
 }
 
 //==============================================================================
+void BodyNodeDnD::useWholeBody(bool wholeBody)
+{
+  mUseWholeBody = wholeBody;
+}
+
+//==============================================================================
+bool BodyNodeDnD::isUsingWholeBody() const
+{
+  return mUseWholeBody;
+}
+
+//==============================================================================
 void BodyNodeDnD::setPreserveOrientationModKey(
     osgGA::GUIEventAdapter::ModKeyMask modkey)
 {
