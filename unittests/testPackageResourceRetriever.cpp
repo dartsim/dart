@@ -43,69 +43,6 @@ using dart::utils::ResourcePtr;
 using dart::utils::ResourceRetriever;
 using dart::utils::PackageResourceRetriever;
 
-namespace {
-
-struct TestResource : public Resource
-{
-  size_t getFileSize() override
-  {
-    return 0;
-  }
-
-  size_t tell() override
-  {
-    return 0;
-  }
-
-  bool seek(size_t _offset, SeekType _origin) override
-  {
-    return false;
-  }
-
-  size_t read(void *_buffer, size_t _size, size_t _count) override
-  {
-    return 0;
-  }
-};
-
-struct PresentResourceRetriever : public ResourceRetriever
-{
-  bool exists(const std::string& _uri) override
-  {
-    mExists.push_back(_uri);
-    return true;
-  }
-
-  ResourcePtr retrieve(const std::string& _uri) override
-  {
-    mRetrieve.push_back(_uri);
-    return std::make_shared<TestResource>();
-  }
-
-  std::vector<std::string> mExists;
-  std::vector<std::string> mRetrieve;
-};
-
-struct AbsentResourceRetriever : public ResourceRetriever
-{
-  bool exists(const std::string& _uri) override
-  {
-    mExists.push_back(_uri);
-    return false;
-  }
-
-  ResourcePtr retrieve(const std::string& _uri) override
-  {
-    mRetrieve.push_back(_uri);
-    return nullptr;
-  }
-
-  std::vector<std::string> mExists;
-  std::vector<std::string> mRetrieve;
-};
-
-}
-
 TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 {
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();

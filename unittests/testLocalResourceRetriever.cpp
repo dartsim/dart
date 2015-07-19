@@ -127,7 +127,7 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   EXPECT_EQ(content.size(), resource->tell());
 
   // TODO: SEEKTYPE_END should require negative input.
-  ASSERT_TRUE(resource->seek(3, Resource::SEEKTYPE_END));
+  ASSERT_TRUE(resource->seek(-3, Resource::SEEKTYPE_END));
   EXPECT_EQ(content.size() - 3, resource->tell());
 
   // Reading a block that's too large should do nothing.

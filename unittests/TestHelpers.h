@@ -45,6 +45,7 @@
 #ifndef DART_UNITTESTS_TEST_HELPERS_H
 #define DART_UNITTESTS_TEST_HELPERS_H
 
+#include <vector>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 #include "dart/math/Geometry.h"
@@ -52,6 +53,7 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/ResourceRetriever.h"
 
 using namespace Eigen;
 using namespace dart::math;
@@ -373,5 +375,67 @@ SkeletonPtr createBox(
 
   return box;
 }
+
+//==============================================================================
+struct TestResource : public dart::utils::Resource
+{
+  size_t getFileSize() override
+  {
+    return 0;
+  }
+
+  size_t tell() override
+  {
+    return 0;
+  }
+
+  bool seek(ptrdiff_t _offset, SeekType _origin) override
+  {
+    return false;
+  }
+
+  size_t read(void *_buffer, size_t _size, size_t _count) override
+  {
+    return 0;
+  }
+};
+
+//==============================================================================
+struct PresentResourceRetriever : public dart::utils::ResourceRetriever
+{
+  bool exists(const std::string& _uri) override
+  {
+    mExists.push_back(_uri);
+    return true;
+  }
+
+  dart::utils::ResourcePtr retrieve(const std::string& _uri) override
+  {
+    mRetrieve.push_back(_uri);
+    return std::make_shared<TestResource>();
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
+};
+
+//==============================================================================
+struct AbsentResourceRetriever : public dart::utils::ResourceRetriever
+{
+  bool exists(const std::string& _uri) override
+  {
+    mExists.push_back(_uri);
+    return false;
+  }
+
+  dart::utils::ResourcePtr retrieve(const std::string& _uri) override
+  {
+    mRetrieve.push_back(_uri);
+    return nullptr;
+  }
+
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
+};
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

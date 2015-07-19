@@ -89,7 +89,7 @@ size_t LocalResource::tell()
   return offset;
 }
 
-bool LocalResource::seek(size_t _offset, SeekType _mode)
+bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 {
   int origin;
   switch(_mode)

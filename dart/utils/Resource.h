@@ -50,15 +50,13 @@ public:
     SEEKTYPE_SET
   };
 
-  static const size_t SIZE_UNKNOWN = -1;
-
   virtual ~Resource() = default;
 
   virtual size_t getFileSize() = 0;
 
   virtual size_t tell() = 0;
 
-  virtual bool seek(size_t _offset, SeekType _origin) = 0;
+  virtual bool seek(ptrdiff_t _offset, SeekType _origin) = 0;
 
   virtual size_t read(void *_buffer, size_t _size, size_t _count) = 0; 
 };

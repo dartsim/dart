@@ -59,7 +59,7 @@ public:
   size_t tell() override;
 
   // Documentation inherited.
-  bool seek(size_t _origin, SeekType _mode) override;
+  bool seek(ptrdiff_t _origin, SeekType _mode) override;
 
   // Documentation inherited.
   size_t read(void *_buffer, size_t _size, size_t _count) override;
