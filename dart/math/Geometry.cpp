@@ -1558,7 +1558,9 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
              << "contains indices " << i-2 << " -> " << i << ":\n"
              << i-2 << ") " << _convexHull[i-2].transpose() << "\n"
              << i-1 << ") " << _convexHull[i-1].transpose() << "\n"
-             << i   << ") " << _convexHull[i].transpose() << "\n\n";
+             << i   << ") " << _convexHull[i].transpose() << "\n"
+             << (PARALLEL==result? "These segments are parallel!\n\n" :
+                                   "These segments are not connected!\n\n");
       continue;
     }
 
