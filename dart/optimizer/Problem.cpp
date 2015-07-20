@@ -38,7 +38,6 @@
 #include "dart/optimizer/Problem.h"
 
 #include <algorithm>
-#include <iostream>
 #include <limits>
 
 #include "dart/math/Helpers.h"

@@ -37,7 +37,6 @@
 
 #include "dart/dynamics/MeshShape.h"
 
-#include <iostream>
 #include <limits>
 #include <string>
 

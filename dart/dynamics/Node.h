@@ -39,6 +39,7 @@
 
 #include <memory>
 
+#include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
@@ -70,7 +71,7 @@ private:
 /// The Node class is a base class for any object that attaches to a BodyNode.
 /// This base class handles ownership and reference counting for the classes
 /// that inherit it.
-class Node
+class Node : public virtual common::Subject
 {
 public:
 

@@ -39,9 +39,6 @@
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-
-#include <iostream>
-
 namespace dart {
 namespace dynamics {
 

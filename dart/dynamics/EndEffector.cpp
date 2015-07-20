@@ -39,8 +39,6 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 
-#include <iostream>
-
 namespace dart {
 namespace dynamics {
 
