@@ -342,15 +342,6 @@ if(NOT BUILD_CORE_ONLY)
                         ${TINYXML_LIBRARIES}
                         ${TINYXML2_LIBRARIES}
   )
-  if(HAVE_NLOPT)
-    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${NLOPT_LIBRARIES})
-  endif()
-  if(HAVE_IPOPT)
-    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${IPOPT_LIBRARIES})
-  endif()
-  if(HAVE_SHARK)
-    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${SHARK_LIBRARIES})
-  endif()
 endif()
 
 #===============================================================================
