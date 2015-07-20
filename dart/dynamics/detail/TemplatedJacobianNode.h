@@ -41,36 +41,36 @@ namespace dart {
 namespace dynamics {
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobian(
+TemplatedJacobianNode<NodeType>::getJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
-    return static_cast<const EntityType*>(this)->getJacobian();
+    return static_cast<const NodeType*>(this)->getJacobian();
   else if(_inCoordinatesOf->isWorld())
-    return static_cast<const EntityType*>(this)->getWorldJacobian();
+    return static_cast<const NodeType*>(this)->getWorldJacobian();
 
   return math::AdRJac(getTransform(_inCoordinatesOf),
-                      static_cast<const EntityType*>(this)->getJacobian());
+                      static_cast<const NodeType*>(this)->getJacobian());
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobian(
+TemplatedJacobianNode<NodeType>::getJacobian(
     const Eigen::Vector3d& _offset) const
 {
-  math::Jacobian J = static_cast<const EntityType*>(this)->getJacobian();
+  math::Jacobian J = static_cast<const NodeType*>(this)->getJacobian();
   J.bottomRows<3>() += J.topRows<3>().colwise().cross(_offset);
 
   return J;
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobian(
+TemplatedJacobianNode<NodeType>::getJacobian(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -82,16 +82,16 @@ TemplatedJacobianNode<EntityType>::getJacobian(
   Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
   T.translation() = - T.linear() * _offset;
 
-  return math::AdTJac(T, static_cast<const EntityType*>(this)->getJacobian());
+  return math::AdTJac(T, static_cast<const NodeType*>(this)->getJacobian());
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getWorldJacobian(
+TemplatedJacobianNode<NodeType>::getWorldJacobian(
     const Eigen::Vector3d& _offset) const
 {
-  math::Jacobian J = static_cast<const EntityType*>(this)->getWorldJacobian();
+  math::Jacobian J = static_cast<const NodeType*>(this)->getWorldJacobian();
   J.bottomRows<3>() += J.topRows<3>().colwise().cross(
                                       getWorldTransform().linear() * _offset);
 
@@ -99,41 +99,41 @@ TemplatedJacobianNode<EntityType>::getWorldJacobian(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::LinearJacobian
-TemplatedJacobianNode<EntityType>::getLinearJacobian(
+TemplatedJacobianNode<NodeType>::getLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
   {
     const math::Jacobian& J =
-        static_cast<const EntityType*>(this)->getJacobian();
+        static_cast<const NodeType*>(this)->getJacobian();
 
     return J.bottomRows<3>();
   }
   else if(_inCoordinatesOf->isWorld())
   {
     const math::Jacobian& JWorld =
-        static_cast<const EntityType*>(this)->getWorldJacobian();
+        static_cast<const NodeType*>(this)->getWorldJacobian();
 
     return JWorld.bottomRows<3>();
   }
 
   const math::Jacobian& J =
-      static_cast<const EntityType*>(this)->getJacobian();
+      static_cast<const NodeType*>(this)->getJacobian();
 
   return getTransform(_inCoordinatesOf).linear() * J.bottomRows<3>();
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::LinearJacobian
-TemplatedJacobianNode<EntityType>::getLinearJacobian(
+TemplatedJacobianNode<NodeType>::getLinearJacobian(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J =
-      static_cast<const EntityType*>(this)->getJacobian();
+      static_cast<const NodeType*>(this)->getJacobian();
 
   math::LinearJacobian JLinear;
   JLinear = J.bottomRows<3>() + J.topRows<3>().colwise().cross(_offset);
@@ -145,51 +145,51 @@ TemplatedJacobianNode<EntityType>::getLinearJacobian(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::AngularJacobian
-TemplatedJacobianNode<EntityType>::getAngularJacobian(
+TemplatedJacobianNode<NodeType>::getAngularJacobian(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
   {
     const math::Jacobian& J =
-        static_cast<const EntityType*>(this)->getJacobian();
+        static_cast<const NodeType*>(this)->getJacobian();
     return J.topRows<3>();
   }
   else if(_inCoordinatesOf->isWorld())
   {
     const math::Jacobian& JWorld =
-        static_cast<const EntityType*>(this)->getWorldJacobian();
+        static_cast<const NodeType*>(this)->getWorldJacobian();
     return JWorld.topRows<3>();
   }
 
   const math::Jacobian& J =
-      static_cast<const EntityType*>(this)->getJacobian();
+      static_cast<const NodeType*>(this)->getJacobian();
 
   return getTransform(_inCoordinatesOf).linear() * J.topRows<3>();
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if(this == _inCoordinatesOf)
-    return static_cast<const EntityType*>(this)->getJacobianSpatialDeriv();
+    return static_cast<const NodeType*>(this)->getJacobianSpatialDeriv();
 
   return math::AdRJac(getTransform(_inCoordinatesOf),
-        static_cast<const EntityType*>(this)->getJacobianSpatialDeriv());
+        static_cast<const NodeType*>(this)->getJacobianSpatialDeriv());
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _offset) const
 {
   math::Jacobian J_d =
-      static_cast<const EntityType*>(this)->getJacobianSpatialDeriv();
+      static_cast<const NodeType*>(this)->getJacobianSpatialDeriv();
 
   J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(_offset);
 
@@ -197,9 +197,9 @@ TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
+TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
@@ -210,34 +210,34 @@ TemplatedJacobianNode<EntityType>::getJacobianSpatialDeriv(
   T.translation() = T.linear() * -_offset;
 
   return math::AdTJac(
-        T, static_cast<const EntityType*>(this)->getJacobianSpatialDeriv());
+        T, static_cast<const NodeType*>(this)->getJacobianSpatialDeriv());
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobianClassicDeriv(
+TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if(_inCoordinatesOf->isWorld())
-    return static_cast<const EntityType*>(this)->getJacobianClassicDeriv();
+    return static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
   return math::AdRInvJac(_inCoordinatesOf->getWorldTransform(),
-        static_cast<const EntityType*>(this)->getJacobianClassicDeriv());
+        static_cast<const NodeType*>(this)->getJacobianClassicDeriv());
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::Jacobian
-TemplatedJacobianNode<EntityType>::getJacobianClassicDeriv(
+TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
   math::Jacobian J_d =
-      static_cast<const EntityType*>(this)->getJacobianClassicDeriv();
+      static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
   const math::Jacobian& J =
-      static_cast<const EntityType*>(this)->getWorldJacobian();
+      static_cast<const NodeType*>(this)->getWorldJacobian();
 
   const Eigen::Vector3d& w = getAngularVelocity();
   const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
@@ -252,13 +252,13 @@ TemplatedJacobianNode<EntityType>::getJacobianClassicDeriv(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::LinearJacobian
-TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
+TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d =
-      static_cast<const EntityType*>(this)->getJacobianClassicDeriv();
+      static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
   if(_inCoordinatesOf->isWorld())
     return J_d.bottomRows<3>();
@@ -268,17 +268,17 @@ TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::LinearJacobian
-TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
+TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
     const Eigen::Vector3d& _offset,
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d =
-      static_cast<const EntityType*>(this)->getJacobianClassicDeriv();
+      static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
   const math::Jacobian& J =
-      static_cast<const EntityType*>(this)->getWorldJacobian();
+      static_cast<const NodeType*>(this)->getWorldJacobian();
 
   const Eigen::Vector3d& w = getAngularVelocity();
   const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
@@ -293,13 +293,13 @@ TemplatedJacobianNode<EntityType>::getLinearJacobianDeriv(
 }
 
 // Documentation inherited
-template<class EntityType>
+template<class NodeType>
 math::AngularJacobian
-TemplatedJacobianNode<EntityType>::getAngularJacobianDeriv(
+TemplatedJacobianNode<NodeType>::getAngularJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   const math::Jacobian& J_d =
-      static_cast<const EntityType*>(this)->getJacobianClassicDeriv();
+      static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
   if(_inCoordinatesOf->isWorld())
     return J_d.topRows<3>();
@@ -310,8 +310,8 @@ TemplatedJacobianNode<EntityType>::getAngularJacobianDeriv(
 
 /// Default constructor. This is only a formality, because Entity and Frame
 /// do not offer default constructors.
-template<class EntityType>
-TemplatedJacobianNode<EntityType>::TemplatedJacobianNode()
+template<class NodeType>
+TemplatedJacobianNode<NodeType>::TemplatedJacobianNode()
   : Entity(Entity::ConstructAbstract),
     Frame(nullptr, ""),
     Node(Node::ConstructAbstract)
