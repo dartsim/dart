@@ -247,10 +247,12 @@ double NloptSolver::_nlopt_func(unsigned _n,
   if (_gradient)
   {
     Eigen::Map<Eigen::VectorXd> grad(_gradient, _n);
-    fn->evalGradient(x, grad);
+    fn->evalGradient(static_cast<const Eigen::VectorXd&>(x), grad);
   }
 
-  return fn->eval(x);
+  return fn->eval(static_cast<const Eigen::VectorXd&>(x));
+  // TODO(MXG): Remove the static_casts once the old eval() functions are
+  // removed and there is no longer ambiguity.
 }
 
 //==============================================================================
