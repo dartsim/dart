@@ -228,7 +228,7 @@ bool Uri::fromString(const std::string& _input)
   // This is regex is from Appendix B of RFC 3986.
   static regex uriRegex(
     R"END(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)END",
-    regex::extended);
+    regex::extended | regex::optimize);
   static const size_t schemeIndex = 2;
   static const size_t authorityIndex = 4;
   static const size_t pathIndex = 5;
