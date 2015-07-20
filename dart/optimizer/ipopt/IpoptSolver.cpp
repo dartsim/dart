@@ -271,7 +271,10 @@ bool DartTNLP::eval_f(Ipopt::Index _n,
   if (_new_x)
   {
     Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-    mObjValue = problem->getObjective()->eval(x);
+    mObjValue = problem->getObjective()->eval(
+          static_cast<const Eigen::VectorXd&>(x));
+    // TODO(MXG): Remove this static cast once the
+    // Eigen::Map<const Eigen::VectorXd>& version of the function is removed
   }
 
   _obj_value = mObjValue;
@@ -291,7 +294,8 @@ bool DartTNLP::eval_grad_f(Ipopt::Index _n,
   {
     Eigen::Map<const Eigen::VectorXd> x(_x, _n);
     Eigen::Map<Eigen::VectorXd> grad(_grad_f, _n);
-    problem->getObjective()->evalGradient(x, grad);
+    problem->getObjective()->evalGradient(
+          static_cast<const Eigen::VectorXd&>(x), grad);
   }
 
   return true;
@@ -320,14 +324,16 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
   // Evaluate function values for equality constraints
   for (size_t i = 0; i < problem->getNumEqConstraints(); ++i)
   {
-    _g[idx] = problem->getEqConstraint(i)->eval(x);
+    _g[idx] = problem->getEqConstraint(i)->eval(
+          static_cast<const Eigen::VectorXd&>(x));
     idx++;
   }
 
   // Evaluate function values for inequality constraints
   for (size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
   {
-    _g[idx] = problem->getIneqConstraint(i)->eval(x);
+    _g[idx] = problem->getIneqConstraint(i)->eval(
+          static_cast<const Eigen::VectorXd&>(x));
     idx++;
   }
 
@@ -377,7 +383,8 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     for (size_t i = 0; i < problem->getNumEqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
-      problem->getEqConstraint(i)->evalGradient(x, grad);
+      problem->getEqConstraint(i)->evalGradient(
+            static_cast<const Eigen::VectorXd&>(x), grad);
       idx += _n;
     }
 
@@ -385,7 +392,8 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     for (size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
-      problem->getIneqConstraint(i)->evalGradient(x, grad);
+      problem->getIneqConstraint(i)->evalGradient(
+            static_cast<const Eigen::VectorXd&>(x), grad);
       idx += _n;
     }
   }
