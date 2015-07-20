@@ -96,7 +96,8 @@ public:
   bool fromString(const std::string& _input);
   bool fromStringOrPath(const std::string& _input);
 
-  bool fromRelativeUri(const Uri& _base, const std::string& _relative);
+  bool fromRelativeUri(const Uri& _base, const std::string& _relative,
+                       bool _strict = false);
   bool fromRelativeUri(const Uri& _base, const Uri& _relative,
                        bool _strict = false);
 

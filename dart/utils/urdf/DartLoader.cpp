@@ -567,30 +567,18 @@ dynamics::ShapePtr DartLoader::createShape(
   // Mesh
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
-    // Parse the URI. This is necessary to detect whether it is a full URI, an
-    // absolute path, or a relative path.
-    Uri meshUri;
-    if(!meshUri.fromStringOrPath(mesh->filename))
+    // Resolve relative URIs.
+    Uri relativeUri, absoluteUri;
+    if(!absoluteUri.fromRelativeUri(_baseUri, mesh->filename))
     {
-      dtwarn << "[DartLoader::createShape] Failed parsing mesh URI: "
-             << mesh->filename << "\n";
+      dtwarn << "[DartLoader::createShape] Failed resolving mesh URI '"
+             << mesh->filename << "' relative to '" << _baseUri.toString()
+             << "'\n";
       return nullptr;
     }
 
-    // Resolve the relative path using _baseUri as the root.
-    std::string resolvedUri;
-    if(meshUri.isRelativePath() && meshUri.mPath)
-    {
-      meshUri = _baseUri;
-      meshUri.append(*meshUri.mPath);
-      resolvedUri = meshUri.toString();
-    }
-    else
-    {
-      resolvedUri = mesh->filename;
-    }
-    
     // Load the mesh.
+    const std::string resolvedUri = absoluteUri.toString();
     const aiScene* scene = dynamics::MeshShape::loadMesh(
       resolvedUri, _resourceRetriever);
     if (!scene)

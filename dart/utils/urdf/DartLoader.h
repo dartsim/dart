@@ -50,7 +50,8 @@ namespace utils {
  * @class DartLoader
  */
 class DartLoader {
-  public: /// Constructor with the default ResourceRetriever.
+  public:
+    /// Constructor with the default ResourceRetriever.
     DartLoader();
 
     /// Specify the directory of a ROS package. In your URDF files, you may see

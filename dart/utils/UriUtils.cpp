@@ -154,10 +154,11 @@ bool Uri::isRelativePath() const
   return isPath() && !mPath->empty() && mPath->front() != '/';
 }
 
-bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative)
+bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative, bool _strict)
 {
   Uri relativeUri;
-  relativeUri.mPath = _relative;
+  if(!relativeUri.fromString(_relative))
+    return false;
 
   return fromRelativeUri(_base, relativeUri, true);
 }
