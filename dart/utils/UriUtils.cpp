@@ -173,7 +173,7 @@ bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
   assert(_base.mPath && "The path component is always defined.");
   assert(_relative.mPath && "The path component is always defined.");
 
-  // TODO If !(!_strict && _relative.mScheme == _base.mScheme), then we need to
+  // TODO If (!_strict && _relative.mScheme == _base.mScheme), then we need to
   // enable backwards compatability.
 
   // This directly implements the psueocode in Section 5.2.2. of RFC 3986.

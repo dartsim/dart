@@ -99,16 +99,16 @@ private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    bool parseWorldToEntityPaths(
+    static bool parseWorldToEntityPaths(
       const std::string& _xml_string,
       std::map<std::string, std::string>& _worldToEntityPaths);
 
-    dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
+    static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
       const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
-    bool createSkeletonRecursive(
+    static bool createSkeletonRecursive(
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk,
       dynamics::BodyNode& _parent,
@@ -116,11 +116,11 @@ private:
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     template <class VisualOrCollision>
-    dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
+    static dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
       const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
-    dynamics::BodyNode* createDartJointAndNode(
+    static dynamics::BodyNode* createDartJointAndNode(
       const urdf::Joint* _jt,
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
@@ -128,7 +128,7 @@ private:
       const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
-    bool createDartNodeProperties(
+    static bool createDartNodeProperties(
       const urdf::Link* _lk,
       dynamics::BodyNode::Properties *properties,
       const Uri& _baseUri,
@@ -137,8 +137,8 @@ private:
     utils::ResourceRetrieverPtr getResourceRetriever(
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
-    Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
-    Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
+    static Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
+    static Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
 
     static bool readFileToString(
       const utils::ResourceRetrieverPtr& _resourceRetriever,

@@ -134,6 +134,9 @@ simulation::WorldPtr DartLoader::parseWorldString(
     const std::string& _urdfString, const Uri& _baseUri,
     const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
+  const utils::ResourceRetrieverPtr resourceRetriever
+    = getResourceRetriever(_resourceRetriever);
+
   if(_urdfString.empty())
   {
     dtwarn << "[DartLoader::parseWorldString] A blank string cannot be "
@@ -177,7 +180,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
     //mRootToSkelPath = mRootToWorldPath + it->second;
 
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-      worldInterface->models[i].model.get(), _baseUri, mRetriever);
+      worldInterface->models[i].model.get(), _baseUri, resourceRetriever);
 
     if(!skeleton)
     {
@@ -573,7 +576,7 @@ dynamics::ShapePtr DartLoader::createShape(
     {
       dtwarn << "[DartLoader::createShape] Failed resolving mesh URI '"
              << mesh->filename << "' relative to '" << _baseUri.toString()
-             << "'\n";
+             << "'.\n";
       return nullptr;
     }
 
@@ -586,7 +589,7 @@ dynamics::ShapePtr DartLoader::createShape(
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
-      scale, scene, resolvedUri, true, mRetriever);
+      scale, scene, resolvedUri, true, _resourceRetriever);
   }
   // Unknown geometry type
   else
