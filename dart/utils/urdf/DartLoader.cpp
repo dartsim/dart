@@ -82,11 +82,8 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
     return nullptr;
   }
 
-  // TODO: Extract the base path from _uri.
-  Uri baseUri;
-
   return modelInterfaceToSkeleton(
-    urdfInterface.get(), baseUri, resourceRetriever);
+    urdfInterface.get(), uri, resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
@@ -107,7 +104,6 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     return nullptr;
   }
 
-  // TODO: Pass the ResourceRetriever down here.
   return modelInterfaceToSkeleton(
     urdfInterface.get(), _baseUri, getResourceRetriever(_resourceRetriever));
 }
@@ -131,11 +127,7 @@ simulation::WorldPtr DartLoader::parseWorld(
   if (!readFileToString(resourceRetriever, _uri, content))
     return nullptr;
 
-  // TODO: Extract the base path from _uri.
-  Uri baseUri;
-
-  // TODO: Pass the ResourceRetriever down here.
-  return parseWorldString(content, baseUri);
+  return parseWorldString(content, uri, _resourceRetriever);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
@@ -149,6 +141,9 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
+  // TODO: Where does this come from?
+  std::string mRootToWorldPath;
+
   std::shared_ptr<urdf::World> worldInterface =
       urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
 
@@ -159,8 +154,9 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   // Store paths from world to entities
-  // TODO: Pass the ResourceRetriever down here.
-  parseWorldToEntityPaths(_urdfString);
+  std::map<std::string, std::string> worldToEntityPaths;
+  if(!parseWorldToEntityPaths(_urdfString, worldToEntityPaths))
+    return nullptr;
 
   simulation::WorldPtr world(new simulation::World);
 
@@ -168,16 +164,18 @@ simulation::WorldPtr DartLoader::parseWorldString(
   {
     std::string model_name = worldInterface->models[i].model->getName();
     std::map<std::string, std::string>::const_iterator it =
-        mWorld_To_Entity_Paths.find(model_name);
+        worldToEntityPaths.find(model_name);
 
-    if(it == mWorld_To_Entity_Paths.end())
+    if(it == worldToEntityPaths.end())
     {
       dtwarn << "[DartLoader::parseWorldString] Could not find file path for ["
              << model_name << "]. We will not parse it!\n";
       continue;
     }
 
-    mRootToSkelPath = mRootToWorldPath + it->second;
+    // TODO: Where does this come from? What is it used for?
+    //mRootToSkelPath = mRootToWorldPath + it->second;
+
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
       worldInterface->models[i].model.get(), _baseUri, mRetriever);
 
@@ -206,7 +204,11 @@ simulation::WorldPtr DartLoader::parseWorldString(
 /**
  * @function parseWorldToEntityPaths
  */
-void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
+
+bool DartLoader::parseWorldToEntityPaths(
+  const std::string& _xml_string,
+  std::map<std::string, std::string>& _worldToEntityPaths
+)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse(_xml_string.c_str());
@@ -214,7 +216,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
   TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
 
   if( !world_xml ) {
-    return;
+    return false;
   }
 
   // Get all include filenames
@@ -225,11 +227,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
 
     const char* filename = include_xml->Attribute("filename");
     const char* model_name = include_xml->Attribute("model_name");
-    std::string string_filename( filename );
-    std::string string_filepath = string_filename.substr( 0, string_filename.rfind("/") + 1 );
-    std::string string_model_name( model_name );
-
-    includedFiles[string_model_name] = string_filepath;
+    includedFiles[model_name] = filename;
   }
 
   // Get all entities
@@ -249,12 +247,12 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
       {
         dtwarn <<"[DartLoader::parseWorldToEntityPaths] Did not find entity model ["
                << string_entity_model << "] included. We might fail to load some Skeletons!\n";
-        return;
+        return false;
       }
       // Add it
       else
       {
-        mWorld_To_Entity_Paths[string_entity_name] =
+        _worldToEntityPaths[string_entity_name] =
             includedFiles.find( string_entity_model )->second;
       }
     }
@@ -266,6 +264,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
 
   } // for all entities
 
+  return true;
 }
 
 /**

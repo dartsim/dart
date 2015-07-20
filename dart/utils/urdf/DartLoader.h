@@ -72,10 +72,6 @@ class DartLoader {
     /// "/path/to/my_robot/meshes/mesh_for_my_robot.stl" exists. Whatever you
     /// specify as the package directory will end up replacing the 'package
     /// keyword' and 'package name' components of the URI string.
-    ///
-    /// DEPRECATED: This functionality has been moved into the
-    /// PackageResourceRetrievew class.
-    DEPRECATED(5.0)
     void addPackageDirectory(const std::string& _packageName,
                              const std::string& _packageDirectory);
 
@@ -99,11 +95,12 @@ class DartLoader {
       const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
 private:
-
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    void parseWorldToEntityPaths(const std::string& _xml_string);
+    bool parseWorldToEntityPaths(
+      const std::string& _xml_string,
+      std::map<std::string, std::string>& _worldToEntityPaths);
 
     dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
@@ -148,12 +145,8 @@ private:
       std::string &_output);
 
     ResourceRetrieverPtr mResourceRetriever;
-    std::map<std::string, std::string> mWorld_To_Entity_Paths;
 
     std::map<std::string, std::string> mPackageDirectories;
-    std::string mRootToSkelPath;
-    std::string mRootToWorldPath;
-
     utils::LocalResourceRetrieverPtr mLocalRetriever;
     utils::PackageResourceRetrieverPtr mPackageRetriever;
     utils::SchemaResourceRetrieverPtr mRetriever;
