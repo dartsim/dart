@@ -127,10 +127,9 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 }
 
 //==============================================================================
-InverseKinematicsPtr InverseKinematics::clone(
-    JacobianNode* _newEntity) const
+InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 {
-  std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newEntity));
+  std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newNode));
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
   newIK->setDofs(getDofs());
@@ -246,6 +245,7 @@ void InverseKinematics::ErrorMethod::setBounds(const Eigen::Vector6d& _lower,
 {
   mProperties.mBounds.first = _lower;
   mProperties.mBounds.second = _upper;
+  clearCache();
 }
 
 //==============================================================================
@@ -253,6 +253,7 @@ void InverseKinematics::ErrorMethod::setBounds(
     const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds)
 {
   mProperties.mBounds = _bounds;
+  clearCache();
 }
 
 //==============================================================================
@@ -268,6 +269,7 @@ void InverseKinematics::ErrorMethod::setAngularBounds(
 {
   mProperties.mBounds.first.head<3>() = _lower;
   mProperties.mBounds.second.head<3>() = _upper;
+  clearCache();
 }
 
 //==============================================================================
@@ -292,6 +294,7 @@ void InverseKinematics::ErrorMethod::setLinearBounds(
 {
   mProperties.mBounds.first.tail<3>() = _lower;
   mProperties.mBounds.second.tail<3>() = _upper;
+  clearCache();
 }
 
 //==============================================================================
@@ -314,6 +317,7 @@ InverseKinematics::ErrorMethod::getLinearBounds() const
 void InverseKinematics::ErrorMethod::setErrorLengthClamp(double _clampSize)
 {
   mProperties.mErrorLengthClamp = _clampSize;
+  clearCache();
 }
 
 //==============================================================================
@@ -327,6 +331,7 @@ void InverseKinematics::ErrorMethod::setErrorWeights(
     const Eigen::Vector6d& _weights)
 {
   mProperties.mErrorWeights = _weights;
+  clearCache();
 }
 
 //==============================================================================
@@ -340,6 +345,7 @@ void InverseKinematics::ErrorMethod::setAngularErrorWeights(
     const Eigen::Vector3d& _weights)
 {
   mProperties.mErrorWeights.head<3>() = _weights;
+  clearCache();
 }
 
 //==============================================================================
@@ -353,6 +359,7 @@ void InverseKinematics::ErrorMethod::setLinearErrorWeights(
     const Eigen::Vector3d& _weights)
 {
   mProperties.mErrorWeights.tail<3>() = _weights;
+  clearCache();
 }
 
 //==============================================================================
