@@ -516,7 +516,7 @@ double SingleDofJoint::getInitialPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setInitialPositions(const Eigen::VectorXd& _initial)
 {
-  if( static_cast<size_t>(_initial.size() != getNumDofs()) )
+  if( static_cast<size_t>(_initial.size()) != getNumDofs() )
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setInitialPositions, _initial );
     return;
