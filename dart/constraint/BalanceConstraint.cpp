@@ -207,7 +207,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       const dynamics::EndEffector* ee = skel->getEndEffector(i);
 
       // Skip this EndEffector if it is not being used for support
-      if(!ee->getSupportMode())
+      if(!ee->getSupport() || !ee->getSupport()->isActive())
         continue;
 
       mEEJacCache = skel->getLinearJacobian(ee);
@@ -263,7 +263,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       {
         const dynamics::EndEffector* ee = skel->getEndEffector(i);
 
-        if(!ee->getSupportMode())
+        if(!ee->getSupport() || !ee->getSupport()->isActive())
           continue;
 
         mEEJacCache = skel->getLinearJacobian(ee);
@@ -300,7 +300,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
         const dynamics::EndEffector* ee =
             skel->getEndEffector(mClosestEndEffector[i]);
 
-        if(!ee->getSupportMode())
+        if(!ee->getSupport() || !ee->getSupport()->isActive())
         {
           dtwarn << "[BalanceConstraint::evalGradient] The EndEffector named ["
                  << ee->getName() << "] was identified as the closest "

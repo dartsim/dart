@@ -230,14 +230,14 @@ public:
       if( 'q' == ea.getKey() )
       {
         EndEffector* ee = mAtlas->getEndEffector("l_foot");
-        ee->setSupportMode(!ee->getSupportMode());
+        ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
       if( 'w' == ea.getKey() )
       {
         EndEffector* ee = mAtlas->getEndEffector("r_foot");
-        ee->setSupportMode(!ee->getSupportMode());
+        ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
     }
@@ -473,11 +473,11 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
 
-  // Pass in the support geometry for the foot
-  l_foot->setSupportGeometry(support);
+  // Create Support for the foot and give it geometry
+  l_foot->getSupport(true)->setGeometry(support);
 
   // Turn on support mode so that it can be used as a foot
-  l_foot->setSupportMode(true);
+  l_foot->getSupport()->setActive();
 
   // Create an end effector for the right foot and set its relative transform
   EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
@@ -499,11 +499,11 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
 
-  // Pass in the support geometry for the foot
-  r_foot->setSupportGeometry(support);
+  // Create Support for the foot and give it geometry
+  r_foot->getSupport(true)->setGeometry(support);
 
   // Turn on support mode so that it can be used as a foot
-  r_foot->setSupportMode(true);
+  r_foot->getSupport()->setActive();
 
   // Move atlas to the ground so that it starts out squatting with its feet on
   // the ground

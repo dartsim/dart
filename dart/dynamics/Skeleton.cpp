@@ -1871,25 +1871,6 @@ void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
 }
 
 //==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
-{
-  SET_FLAG(_treeIdx, mArticulatedInertia);
-  SET_FLAG(_treeIdx, mMassMatrix);
-  SET_FLAG(_treeIdx, mAugMassMatrix);
-  SET_FLAG(_treeIdx, mInvMassMatrix);
-  SET_FLAG(_treeIdx, mInvAugMassMatrix);
-  SET_FLAG(_treeIdx, mCoriolisForces);
-  SET_FLAG(_treeIdx, mGravityForces);
-  SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
-}
-
-//==============================================================================
-void Skeleton::notifySupportUpdate(size_t _treeIdx)
-{
-  SET_FLAG(_treeIdx, mSupport);
-}
-
-//==============================================================================
 void Skeleton::updateTotalMass()
 {
   mTotalMass = 0.0;
@@ -2630,10 +2611,10 @@ static void computeSupportPolygon(
   for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
   {
     const EndEffector* ee = skel->getEndEffector(i);
-    if(ee->getSupportMode()
+    if(ee->getSupport() && ee->getSupport()->isActive()
        && (INVALID_INDEX == treeIndex || ee->getTreeIndex() == treeIndex))
     {
-      const math::SupportGeometry& eeGeom = ee->getSupportGeometry();
+      const math::SupportGeometry& eeGeom = ee->getSupport()->getGeometry();
       for(const Eigen::Vector3d& v : eeGeom)
       {
         geometry.push_back(ee->getWorldTransform()*v);
@@ -2848,6 +2829,25 @@ void Skeleton::clearInternalForces()
 {
   for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->clearInternalForces();
+}
+
+//==============================================================================
+void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
+{
+  SET_FLAG(_treeIdx, mArticulatedInertia);
+  SET_FLAG(_treeIdx, mMassMatrix);
+  SET_FLAG(_treeIdx, mAugMassMatrix);
+  SET_FLAG(_treeIdx, mInvMassMatrix);
+  SET_FLAG(_treeIdx, mInvAugMassMatrix);
+  SET_FLAG(_treeIdx, mCoriolisForces);
+  SET_FLAG(_treeIdx, mGravityForces);
+  SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
+}
+
+//==============================================================================
+void Skeleton::notifySupportUpdate(size_t _treeIdx)
+{
+  SET_FLAG(_treeIdx, mSupport);
 }
 
 //==============================================================================

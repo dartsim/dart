@@ -691,6 +691,13 @@ public:
   // Documentation inherited
   void clearInternalForces() override;
 
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
+
+  /// Notify that the support polygon of a tree needs to be updated
+  void notifySupportUpdate(size_t _treeIdx);
+
   // Documentation inherited
   double getKineticEnergy() const override;
 
@@ -860,13 +867,6 @@ protected:
 
   /// Take in and register a subtree of BodyNodes
   void receiveBodyNodeTree(const std::vector<BodyNode*>& _tree);
-
-  /// Notify that the articulated inertia and everything that depends on it
-  /// needs to be updated
-  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
-
-  /// Notify that the support polygon of a tree needs to be updated
-  void notifySupportUpdate(size_t _treeIdx);
 
   /// Update the computation for total mass
   void updateTotalMass();
