@@ -68,11 +68,42 @@ const std::string& Function::getName() const
 }
 
 //==============================================================================
+double Function::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+{
+  dterr << "[Function::eval(Eigen::Map<const Eigen::VectorXd>&)] Using a "
+        << "deprecated member function! Please override "
+        << "Function::eval(const Eigen::VectorXd&) and use that instead!\n";
+  assert(false);
+  return 0.0;
+}
+
+//==============================================================================
+double Function::eval(const Eigen::VectorXd& _x)
+{
+  // TODO(MXG): This is for backwards compatibility. This function should be
+  // made pure abstract with the next major version-up
+  Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+  return eval(temp);
+}
+
+//==============================================================================
+void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad)
+{
+  // TODO(MXG): This content should be moved into the other evalGradient
+  // function and this version of the function should be removed during the next
+  // major version-up
+  dtwarn << "Gradient is not provided by function named [" << mName
+         << "]. Use gradient-free algorithm.\n";
+}
+
+//==============================================================================
 void Function::evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad)
 {
-  dterr << "Gradient is not provided by function named [" << mName
-        << "]. Use gradient-free algorithm.\n";
+  // TODO(MXG): This is for backwards compatibility
+  Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+  evalGradient(temp, _grad);
 }
 
 //==============================================================================

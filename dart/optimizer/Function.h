@@ -44,6 +44,8 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
+
 namespace dart {
 namespace optimizer {
 
@@ -63,8 +65,23 @@ public:
   /// \brief Get the name of this Function
   const std::string& getName() const;
 
+  /// \brief Evaluate and return the objective function at the point x.
+  ///
+  /// Note: This function is deprecated in favor of the const Eigen::VectorXd&
+  /// version
+  DEPRECATED(5.1)
+  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);
+
   /// \brief Evaluate and return the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& _x) = 0;
+  virtual double eval(const Eigen::VectorXd& _x);
+
+  /// \brief Evaluate and return the objective function at the point x
+  ///
+  /// Note: This function is deprecated in favor of the const Eigen::VectorXd&
+  /// version
+  DEPRECATED(5.1)
+  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
+                            Eigen::Map<Eigen::VectorXd> _grad);
 
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalGradient(const Eigen::VectorXd& _x,
