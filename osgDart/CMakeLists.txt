@@ -26,14 +26,16 @@ if(${OPENSCENEGRAPH_FOUND})
     ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
   )
 
+  add_subdirectory(render)
+  add_subdirectory(examples)
+
   install(
     FILES ${osgDart_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
     DESTINATION include/osgDart
     COMPONENT headers
   )
 
-  add_subdirectory(render)
-  add_subdirectory(examples)
+  install(TARGETS osgDart EXPORT osgDartTargets DESTINATION lib)
 
 else(${OPENSCENEGRAPH_FOUND})
 
