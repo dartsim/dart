@@ -50,6 +50,7 @@
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/JacobianNode.h"
 
 namespace dart {
 namespace dynamics {
