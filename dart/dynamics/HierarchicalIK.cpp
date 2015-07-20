@@ -310,7 +310,7 @@ Eigen::VectorXd HierarchicalIK::getConfiguration() const
   if(skel)
     return skel->getPositions();
 
-  return Eigen::VectorXd;
+  return Eigen::VectorXd();
 }
 
 //==============================================================================
