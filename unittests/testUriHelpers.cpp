@@ -232,6 +232,83 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
   }
 }
 
+TEST(UriHelpers, getRelativeUri)
+{
+  std::vector<std::pair<std::string, std::string> > testPairs = {
+  // RFC 3986, Section 5.4.1.: Normal Examples
+    { "g:h"           ,  "g:h" },
+    { "g"             ,  "http://a/b/c/g" },
+    { "./g"           ,  "http://a/b/c/g" },
+    { "g/"            ,  "http://a/b/c/g/" },
+    { "/g"            ,  "http://a/g" },
+    { "//g"           ,  "http://g" },
+    { "?y"            ,  "http://a/b/c/d;p?y" },
+    { "g?y"           ,  "http://a/b/c/g?y" },
+    { "#s"            ,  "http://a/b/c/d;p?q#s" },
+    { "g#s"           ,  "http://a/b/c/g#s" },
+    { "g?y#s"         ,  "http://a/b/c/g?y#s" },
+    { ";x"            ,  "http://a/b/c/;x" },
+    { "g;x"           ,  "http://a/b/c/g;x" },
+    { "g;x?y#s"       ,  "http://a/b/c/g;x?y#s" },
+    { ""              ,  "http://a/b/c/d;p?q" },
+    { "."             ,  "http://a/b/c/" },
+    { "./"            ,  "http://a/b/c/" },
+    { ".."            ,  "http://a/b/" },
+    { "../"           ,  "http://a/b/" },
+    { "../g"          ,  "http://a/b/g" },
+    { "../.."         ,  "http://a/" },
+    { "../../"        ,  "http://a/" },
+    { "../../g"       ,  "http://a/g" },
+  // RFC 3986, Section 5.4.2.: Abnormal Examples
+    { "../../../g"    ,  "http://a/g" },
+    { "../../../../g" ,  "http://a/g" },
+    { "/./g"          ,  "http://a/g" },
+    { "/../g"         ,  "http://a/g" },
+    { "g."            ,  "http://a/b/c/g." },
+    { ".g"            ,  "http://a/b/c/.g" },
+    { "g.."           ,  "http://a/b/c/g.." },
+    { "..g"           ,  "http://a/b/c/..g" },
+    { "./../g"        ,  "http://a/b/g" },
+    { "./g/."         ,  "http://a/b/c/g/" },
+    { "g/./h"         ,  "http://a/b/c/g/h" },
+    { "g/../h"        ,  "http://a/b/c/h" },
+    { "g;x=1/./y"     ,  "http://a/b/c/g;x=1/y" },
+    { "g;x=1/../y"    ,  "http://a/b/c/y" },
+    { "g?y/./x"       ,  "http://a/b/c/g?y/./x" },
+    { "g?y/../x"      ,  "http://a/b/c/g?y/../x" },
+    { "g#s/./x"       ,  "http://a/b/c/g#s/./x" },
+    { "g#s/../x"      ,  "http://a/b/c/g#s/../x" },
+  };
+
+  Uri baseUri, relativeUri, mergedUri;
+  ASSERT_TRUE(baseUri.fromString("http://a/b/c/d;p?q"));
+
+  for (const auto& it : testPairs)
+  {
+    const std::string& expectedUri = it.second;
+
+    ASSERT_TRUE(relativeUri.fromString(it.first));
+
+    // Strict mode
+    ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+    EXPECT_EQ(expectedUri, mergedUri.toString());
+
+    // Backwards compatability mode
+    ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, false));
+    EXPECT_EQ(expectedUri, mergedUri.toString());
+  }
+
+  // Strict mode behavior.
+  ASSERT_TRUE(relativeUri.fromString("http:g"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", true));
+  EXPECT_EQ("http:g", mergedUri.toString());
+
+  // Backwards compatability mode behavior.
+  ASSERT_TRUE(relativeUri.fromString("http:g"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", false));
+  EXPECT_EQ("http://a/b/c/g", mergedUri.toString());
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
