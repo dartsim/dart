@@ -56,7 +56,7 @@ InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node)
 InverseKinematics::~InverseKinematics()
 {
   mTargetConnection.disconnect();
-  mEntityConnection.disconnect();
+  mNodeConnection.disconnect();
 }
 
 //==============================================================================
@@ -1169,7 +1169,7 @@ void InverseKinematics::initialize()
   // target's transform, our saved caches will be cleared so that the error and
   // gradient will be recomputed the next time they are polled.
   resetTargetConnection();
-  resetEntityConnection();
+  resetNodeConnection();
 
   // By default, we use the linkage when performing IK
   useChain();
@@ -1192,10 +1192,10 @@ void InverseKinematics::resetTargetConnection()
 }
 
 //==============================================================================
-void InverseKinematics::resetEntityConnection()
+void InverseKinematics::resetNodeConnection()
 {
-  mEntityConnection.disconnect();
-  mEntityConnection = mNode->onTransformUpdated.connect(
+  mNodeConnection.disconnect();
+  mNodeConnection = mNode->onTransformUpdated.connect(
         [=](const Entity*)
         { this->clearCaches(); } );
   clearCaches();
