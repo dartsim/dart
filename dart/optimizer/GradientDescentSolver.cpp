@@ -301,7 +301,7 @@ void GradientDescentSolver::setProperties(const UniqueProperties& _properties)
   setPerturbationStep(_properties.mPerturbationStep);
   setMaxPerturbationFactor(_properties.mMaxPerturbationFactor);
   setDefaultConstraintWeight(_properties.mDefaultConstraintWeight);
-  getConstraintWeights() = _properties.mEqConstraintWeights;
+  getEqConstraintWeights() = _properties.mEqConstraintWeights;
 }
 
 //==============================================================================
@@ -389,15 +389,27 @@ double GradientDescentSolver::getDefaultConstraintWeight() const
 }
 
 //==============================================================================
-Eigen::VectorXd& GradientDescentSolver::getConstraintWeights()
+Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights()
 {
   return mGradientP.mEqConstraintWeights;
 }
 
 //==============================================================================
-const Eigen::VectorXd& GradientDescentSolver::getConstraintWeights() const
+const Eigen::VectorXd& GradientDescentSolver::getEqConstraintWeights() const
 {
   return mGradientP.mEqConstraintWeights;
+}
+
+//==============================================================================
+Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights()
+{
+  return mGradientP.mIneqConstraintWeights;
+}
+
+//==============================================================================
+const Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const
+{
+  return mGradientP.mIneqConstraintWeights;
 }
 
 //==============================================================================

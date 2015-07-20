@@ -158,32 +158,56 @@ public:
   /// Copy the Properties of another GradientDescentSolver
   GradientDescentSolver& operator=(const GradientDescentSolver& _other);
 
+  /// Set the multiplier for the step size
   void setStepSize(double _newMultiplier);
 
+  /// Get the multiplier for the step size
   double getStepSize() const;
 
+  /// Set the maximum number of solving attempts before quitting. Each attempt
+  /// will use getNumMaxIterations() steps. When a new attempt is started, it
+  /// will use the next seed in the list of seeds. If we've reached the end of
+  /// the list of seeds, the attempt will start from a randomized configuration.
   void setMaxAttempts(size_t _maxAttempts);
 
+  /// Get the maximum number of solving attempts.
   size_t getMaxAttempts() const;
 
+  /// Set the number of steps that will be taken before applying a randomized
+  /// perturbation.
   void setPerturbationStep(size_t _step);
 
+  /// Get UniqueProperties::mPerturbationStep
   size_t getPerturbationStep() const;
 
+  /// Set UniqueProperties::mPerturbationFactor
   void setMaxPerturbationFactor(double _factor);
 
+  /// Get UniqueProperties::mPerturbationFactor
   double getMaxPerturbationFactor() const;
 
+  /// Set UniqueProperties::mDefaultConstraintWeight
   void setDefaultConstraintWeight(double _newDefault);
 
+  /// Get UniqueProperties::mDefaultConstraintWeight
   double getDefaultConstraintWeight() const;
 
-  Eigen::VectorXd& getConstraintWeights();
+  /// Set UniqueProperties::mEqConstraintWeights
+  Eigen::VectorXd& getEqConstraintWeights();
 
-  const Eigen::VectorXd& getConstraintWeights() const;
+  /// Get UniqueProperties::mEqConstraintWeights
+  const Eigen::VectorXd& getEqConstraintWeights() const;
 
+  /// Set UniqueProperties::mIneqConstraintWeights
+  Eigen::VectorXd& getIneqConstraintWeights();
+
+  /// Get UniqueProperties::mIneqConstraintWeights
+  const Eigen::VectorXd& getIneqConstraintWeights() const;
+
+  /// Randomize the configuration based on this Solver's settings
   void randomizeConfiguration(Eigen::VectorXd& _x);
 
+  /// Clamp the configuration to the limits of the Problem
   void clampToBoundary(Eigen::VectorXd& _x);
 
   /// Get the number of iterations used in the last attempt to solve the problem
@@ -191,14 +215,22 @@ public:
 
 protected:
 
+  /// GradientDescentSolver properties
   UniqueProperties mGradientP;
 
+  /// The last number of iterations performed by this Solver
   size_t mLastNumIterations;
 
+  /// Randomization device
   std::random_device mRD;
+
+  /// Mersenne twister method
   std::mt19937 mMT;
+
+  /// Distribution
   std::uniform_real_distribution<double> mDistribution;
 
+  /// The last config reached by this Solver
   Eigen::VectorXd mLastConfig;
 };
 
