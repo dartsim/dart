@@ -67,6 +67,9 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;
 

@@ -227,6 +227,9 @@ public:
   // Documentation inherited
   double getPositionUpperLimit(size_t _index) const override;
 
+  // Documentation inherited
+  bool hasPositionLimit(size_t _index) const override;
+
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------

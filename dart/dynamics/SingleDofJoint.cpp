@@ -474,6 +474,19 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
+bool SingleDofJoint::hasPositionLimit(size_t _index) const
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( hasPositionLimit, _index );
+    return true;
+  }
+
+  return std::isfinite(mSingleDofP.mPositionLowerLimit)
+      || std::isfinite(mSingleDofP.mPositionUpperLimit);
+}
+
+//==============================================================================
 void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 {
   if (_index != 0)

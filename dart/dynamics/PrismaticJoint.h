@@ -99,6 +99,9 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   ///
   void setAxis(const Eigen::Vector3d& _axis);
 

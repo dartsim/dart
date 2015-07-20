@@ -128,6 +128,8 @@ public:
         double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
         bool _gravityMode = true);
 
+    virtual ~UniqueProperties() = default;
+
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -139,6 +141,8 @@ public:
     Properties(
         const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
         const UniqueProperties& _bodyNodeProperties = UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// Destructor
