@@ -304,9 +304,19 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 }
 
 //==============================================================================
+Eigen::VectorXd HierarchicalIK::getConfiguration() const
+{
+  const SkeletonPtr& skel = mSkeleton.lock();
+  if(skel)
+    return skel->getPositions();
+
+  return Eigen::VectorXd;
+}
+
+//==============================================================================
 void HierarchicalIK::setConfiguration(const Eigen::VectorXd& _q)
 {
-  const SkeletonPtr skel = mSkeleton.lock();
+  const SkeletonPtr& skel = mSkeleton.lock();
   if(skel)
     skel->setPositions(_q);
 }

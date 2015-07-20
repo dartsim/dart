@@ -95,7 +95,7 @@ public:
   /// after the problem is solved.
   bool solve(bool _resetConfiguration = false);
 
-  /// Same as solve(bool), but the vector config will be filled with the solved
+  /// Same as solve(bool), but the config vector will be filled with the solved
   /// configuration.
   bool solve(Eigen::VectorXd& config, bool _resetConfiguration = false);
 
@@ -611,7 +611,7 @@ public:
   void resetProblem(bool _clearSeeds=false);
 
   /// Set the Solver that should be used by this IK module, and set it up with
-  /// the Problem configured by this IK module
+  /// the Problem that is configured by this IK module
   void setSolver(const std::shared_ptr<optimizer::Solver>& _newSolver);
 
   /// Get the Solver that is being used by this IK module.
