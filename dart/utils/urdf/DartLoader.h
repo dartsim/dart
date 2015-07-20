@@ -144,9 +144,6 @@ private:
       const std::string &_uri,
       std::string &_output);
 
-    ResourceRetrieverPtr mResourceRetriever;
-
-    std::map<std::string, std::string> mPackageDirectories;
     utils::LocalResourceRetrieverPtr mLocalRetriever;
     utils::PackageResourceRetrieverPtr mPackageRetriever;
     utils::SchemaResourceRetrieverPtr mRetriever;
