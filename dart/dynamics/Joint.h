@@ -503,6 +503,15 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
+  /// \{ \name Sanity Check
+  //----------------------------------------------------------------------------
+
+  /// Returns false if the initial position or initial velocity are outside of
+  /// limits
+  // TODO: Consider extending this to a more comprehensive sanity check
+  bool checkSanity(bool _printWarnings = true) const;
+
+  //----------------------------------------------------------------------------
   /// \{ \name Velocity change
   //----------------------------------------------------------------------------
 
