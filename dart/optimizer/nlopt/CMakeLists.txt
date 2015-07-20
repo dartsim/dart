@@ -4,7 +4,7 @@ file(GLOB hdrs "*.h")
 
 # Library
 dart_add_library(dart-nlopt ${srcs} ${hdrs})
-target_link_libraries(dart-nlopt dart)
+target_link_libraries(dart-nlopt dart-core ${NLOPT_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})
