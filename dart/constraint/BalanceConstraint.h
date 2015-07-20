@@ -88,74 +88,112 @@ public:
     SHIFT_COM
   };
 
+  /// Constructor
   BalanceConstraint(const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
                     BalanceMethod_t _balanceMethod = SHIFT_SUPPORT,
                     ErrorMethod_t _errorMethod = FROM_CENTROID);
 
+  /// Virtual destructor
   virtual ~BalanceConstraint() = default;
 
+  // Documentation inherited
   optimizer::FunctionPtr clone(
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
+  // Documentation inherited
   double eval(const Eigen::VectorXd& _x) override;
 
+  // Documentation inherited
   void evalGradient(const Eigen::VectorXd& _x,
                     Eigen::Map<Eigen::VectorXd> _grad) override;
 
+  /// Set the method that this constraint function will use to compute the
+  /// error. See the ErrorMethod_t docs for more information.
   void setErrorMethod(ErrorMethod_t _method);
 
+  /// Get the method that this constraint function will use to compute the
+  /// error.
   ErrorMethod_t getErrorMethod() const;
 
+  /// Set the method that this constraint function will use to achieve balance.
+  /// See the BalanceMethod_t docs for more information.
   void setBalanceMethod(BalanceMethod_t _method);
 
+  /// Get the method that this constraint function will use to achieve balance.
   BalanceMethod_t getBalanceMethod() const;
 
+  /// Set the tolerance for how far the center of mass can be from the support
+  /// polygon centroid before the balance is considered optimized.
   void setOptimizationTolerance(double _tol);
 
+  /// Get the tolerance for how far the center of mass can be from the support
+  /// polygon centroid before the balance is considered optimized.
   double getOptimizationTolerance() const;
 
+  /// Set the damping factor that will be used when computing the pseudoinverse
   void setPseudoInverseDamping(double _damping);
 
+  /// Get the damping factor that will be used when computing the pseudoinverse
   double getPseudoInverseDamping();
 
+  /// Get the last error vector that was computed by this BalanceConstraint
   const Eigen::Vector3d& getLastError() const;
 
+  /// Clear the caches to force the error computation to update. It should not
+  /// generally be necessary to call this function.
   void clearCaches();
 
 protected:
 
+  /// Pointer to the hierarchical IK that owns this Function. Note that this
+  /// Function does not work correctly without a HierarchicalIK.
   std::weak_ptr<dynamics::HierarchicalIK> mIK;
 
-  BalanceMethod_t mBalanceMethod;
-
+  /// The method that will be used to compute error
   ErrorMethod_t mErrorMethod;
 
+  /// The method that will be used for balance
+  BalanceMethod_t mBalanceMethod;
+
+  /// The tolerance allowed before optimization is considered successful
   double mOptimizationTolerance;
 
+  /// The damping factor for the pseudoinverse
   double mDamping;
 
+  /// The indices of the supporting end effectors that are closest to the center
+  /// of mass. These are used when using FROM_EDGE
   size_t mClosestEndEffector[2];
 
   /// The error vector points away from the direction that the center of mass
   /// should move in order to reduce the balance error
   Eigen::Vector3d mLastError;
 
+  /// The last computed location of the center of mass
   Eigen::Vector3d mLastCOM;
 
+  /// The last version of the support polygon that was computed
   size_t mLastSupportVersion;
 
+  /// Cache for the center of mass Jacobian so that the memory space does not
+  /// need to be reallocated each loop
   math::LinearJacobian mComJacCache;
 
+  /// Cache for the end effector Jacobians so the space does not need to be
+  /// reallocated each loop
   math::LinearJacobian mEEJacCache;
 
+  /// Cache for the SVD
   Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
 
+  /// Cache for the full null space
   Eigen::MatrixXd mNullSpaceCache;
 
+  /// Cache for an individual null space
   Eigen::MatrixXd mPartialNullSpaceCache;
 };
 
-}
-}
+} // namespace constraint
+} // namespace dart
 
 #endif // DART_CONSTRAINT_BALANCECONSTRAINT_H_

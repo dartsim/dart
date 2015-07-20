@@ -47,8 +47,8 @@ BalanceConstraint::BalanceConstraint(
     const std::shared_ptr<dynamics::HierarchicalIK>& _ik,
     BalanceMethod_t _balanceMethod, ErrorMethod_t _errorMethod)
   : mIK(_ik),
-    mBalanceMethod(_balanceMethod),
     mErrorMethod(_errorMethod),
+    mBalanceMethod(_balanceMethod),
     mOptimizationTolerance(1e-8),
     mDamping(0.05),
     mLastError(Eigen::Vector3d::Zero()),
