@@ -4,6 +4,7 @@ file(GLOB hdrs "*.h")
 
 # Library
 dart_add_library(dart-ipopt ${srcs} ${hdrs})
+target_link_libraries(dart-ipopt dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
