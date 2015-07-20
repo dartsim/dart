@@ -133,7 +133,7 @@ bool GradientDescentSolver::solve()
     {
       ++mLastNumIterations;
 
-      Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
+//      Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
 
       // Perturb the configuration if we have reached an iteration where we are
       // supposed to perturb it.
@@ -153,7 +153,7 @@ bool GradientDescentSolver::solve()
       satisfied = true;
       for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
       {
-        if(std::abs(problem->getEqConstraint(i)->eval(xMap)) > tol)
+        if(std::abs(problem->getEqConstraint(i)->eval(x)) > tol)
         {
           satisfied = false;
           break; // If we already know that at least one constraint is violated,
@@ -164,7 +164,7 @@ bool GradientDescentSolver::solve()
       // Check if the inequality constraints are satisfied
       for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
       {
-        double ineqCost = problem->getIneqConstraint(i)->eval(xMap);
+        double ineqCost = problem->getIneqConstraint(i)->eval(x);
         if(ineqCost > std::abs(tol))
         {
           ineqViolated[i] = true;
@@ -178,13 +178,13 @@ bool GradientDescentSolver::solve()
       Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), dim);
       // Compute the gradient of the objective, combined with the weighted
       // gradients of the softened constraints
-      problem->getObjective()->evalGradient(xMap, dxMap);
+      problem->getObjective()->evalGradient(x, dxMap);
       for(int i=0; i < static_cast<int>(problem->getNumEqConstraints()); ++i)
       {
         // TODO: Should we ignore the gradients of equality constraints that are
         // already satisfied, the way we do for inequality constraints? It might
         // save some operations.
-        problem->getEqConstraint(i)->evalGradient(xMap, gradMap);
+        problem->getEqConstraint(i)->evalGradient(x, gradMap);
 
         // Get the user-specified weight if available, otherwise use the default
         // weight value
@@ -199,7 +199,7 @@ bool GradientDescentSolver::solve()
       {
         if(ineqViolated[i])
         {
-          problem->getIneqConstraint(i)->evalGradient(xMap, gradMap);
+          problem->getIneqConstraint(i)->evalGradient(x, gradMap);
 
           // Get the user-specified weight if available, otherwise use the
           // default weight value
