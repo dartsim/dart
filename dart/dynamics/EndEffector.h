@@ -65,7 +65,7 @@ public:
 
   /// Pass in true if this EndEffector should be used to support the robot, like
   /// a foot
-  void setMode(bool _supporting);
+  void setActive(bool _supporting = true);
 
   /// Get whether this EndEffector is currently being used for support
   bool isActive() const;

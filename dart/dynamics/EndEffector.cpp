@@ -71,7 +71,7 @@ const math::SupportGeometry& Support::getGeometry() const
 }
 
 //==============================================================================
-void Support::setMode(bool _supporting)
+void Support::setActive(bool _supporting)
 {
   if(mActive == _supporting)
     return;
