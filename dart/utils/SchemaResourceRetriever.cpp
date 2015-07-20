@@ -1,6 +1,7 @@
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/utils/SchemaResourceRetriever.h"
+#include "dart/utils/UriUtils.h"
 
 namespace dart {
 namespace utils {
@@ -74,15 +75,15 @@ const std::vector<ResourceRetrieverPtr>& SchemaResourceRetriever::getRetrievers(
 
 std::string SchemaResourceRetriever::getSchema(const std::string& _uri)
 {
-  const auto schemaIndex = _uri.find("://");
-  if(schemaIndex == std::string::npos)
+  Uri uri;
+  if(!uri.fromString(_uri))
   {
-    dterr << "[SchemaResourceRetriever::retrieve] Failed to extract schema from"
-             " URI '" << _uri << "'. Is this a valid URI?\n";
-    return nullptr;
+    dtwarn << "[SchemaResourceRetriever::retrieve] Failed parsing URI:"
+           << _uri << "\n";
+    return "";
   }
 
-  return _uri.substr(0, schemaIndex);
+  return uri.mScheme.get_value_or("file");
 }
 
 } // namespace utils
