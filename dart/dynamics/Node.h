@@ -51,14 +51,18 @@ class NodeCleaner final
 {
 public:
 
+  /// Constructor
   NodeCleaner(Node* _node);
 
+  /// Do not copy
   NodeCleaner(const NodeCleaner& _cleaner) = delete;
 
+  /// Non-virtual destructor (this class cannot be inherited)
   ~NodeCleaner();
 
 private:
 
+  /// Node that this Cleaner is responsible for
   Node* mNode;
 
 };
@@ -104,20 +108,30 @@ protected:
   /// constructor is just a formality
   enum ConstructAbstract_t { ConstructAbstract };
 
+  /// Used when constructing a Node type that does NOT inherit from BodyNode
   Node(ConstructNode_t, BodyNode* _bn);
 
+  /// Used when constructing a BodyNode
   Node(ConstructBodyNode_t);
 
+  /// Used when constructing a pure abstract type
   Node(ConstructAbstract_t);
 
+  /// Attach the Node to its BodyNode
   void attach();
 
+  /// When all external references to the Node disappear, it will be deleted
   void stageForRemoval();
 
+  /// weak pointer to the cleaner for this Node. We use a shared_ptr "cleaner"
+  /// class instead of managing Nodes directly with shared_ptrs because this
+  /// scheme allows BodyNodes to circumvent the shared_ptr management by setting
+  /// the mNode member of the Cleaner to a nullptr. That way the BodyNode can
+  /// never be deleted by its Cleaner.
   std::weak_ptr<NodeCleaner> mCleaner;
 
+  /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;
-
 };
 
 class AccessoryNode : public virtual Node
