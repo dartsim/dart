@@ -234,6 +234,9 @@ public:
   double getPositionUpperLimit(size_t _index) const override;
 
   // Documentation inherited
+  bool hasPositionLimit(size_t _index) const override;
+
+  // Documentation inherited
   void resetPosition(size_t _index) override;
 
   // Documentation inherited

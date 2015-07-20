@@ -130,7 +130,7 @@ public:
       const Vector& _coulombFrictions = Vector::Constant(0.0));
     // TODO(MXG): In version 6.0, we should add mInitialPositions and
     // mInitialVelocities to the constructor arguments. For now we must wait in
-    // order to avoid breaking the API
+    // order to avoid breaking the API.
 
     /// Copy constructor
     // Note: we only need this because VS2013 lacks full support for std::array
@@ -257,6 +257,9 @@ public:
 
   // Documentation inherited
   double getPositionUpperLimit(size_t _index) const override;
+
+  // Documentation inherited
+  virtual bool hasPositionLimit(size_t _index) const override;
 
   // Documentation inherited
   void resetPosition(size_t _index) override;

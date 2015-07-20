@@ -96,6 +96,8 @@ public:
         const std::vector<Eigen::Vector3i>& _faces =
                                           std::vector<Eigen::Vector3i>());
 
+    virtual ~UniqueProperties() = default;
+
     /// Add a PointMass to this Properties struct
     void addPointMass(const PointMass::Properties& _properties);
 
@@ -112,6 +114,8 @@ public:
         const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
         const SoftBodyNode::UniqueProperties& _softProperties =
                                             SoftBodyNode::UniqueProperties());
+
+    virtual ~Properties() = default;
   };
 
   /// \brief

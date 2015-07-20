@@ -142,6 +142,9 @@ public:
   virtual double getPositionUpperLimit(size_t _index) const override;
 
   // Documentation inherited
+  virtual bool hasPositionLimit(size_t _index) const override;
+
+  // Documentation inherited
   virtual void resetPosition(size_t _index) override;
 
   // Documentation inherited

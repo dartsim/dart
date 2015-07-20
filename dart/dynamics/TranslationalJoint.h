@@ -71,6 +71,9 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 

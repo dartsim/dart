@@ -71,6 +71,12 @@ const std::string& WeldJoint::getStaticType()
 }
 
 //==============================================================================
+bool WeldJoint::isCyclic(size_t _index) const
+{
+  return false;
+}
+
+//==============================================================================
 WeldJoint::Properties WeldJoint::getWeldJointProperties() const
 {
   return getZeroDofJointProperties();
