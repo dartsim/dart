@@ -32,6 +32,11 @@ using std::ssub_match;
 
 #endif
 
+static bool startsWith(const std::string& _target, const std::string& _prefix)
+{
+  return _target.substr(0, _prefix.size()) == _prefix;
+}
+
 namespace dart {
 namespace utils {
 
@@ -329,48 +334,87 @@ std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
 
 std::string Uri::removeDotSegments(const std::string& _path)
 {
-  /*
-   The pseudocode also refers to a "remove_dot_segments" routine for
-   interpreting and removing the special "." and ".." complete path
-   segments from a referenced path.  This is done after the path is
-   extracted from a reference, whether or not the path was relative, in
-   order to remove any invalid or extraneous dot-segments prior to
-   forming the target URI.  Although there are many ways to accomplish
-   this removal process, we describe a simple method using two string
-   buffers.
+  // 1.  The input buffer is initialized with the now-appended path
+  //     components and the output buffer is initialized to the empty
+  //     string.
+  std::string input = _path;
+  std::string output;
 
-   1.  The input buffer is initialized with the now-appended path
-       components and the output buffer is initialized to the empty
-       string.
+  // 2.  While the input buffer is not empty, loop as follows:
+  while(!input.empty())
+  {
+    // A.  If the input buffer begins with a prefix of "../" or "./",
+    //     then remove that prefix from the input buffer; otherwise,
+    if(startsWith(input, "../"))
+    {
+      input = input.substr(3);
+    }
+    else if(startsWith(input, "./"))
+    {
+      input = input.substr(2);
+    }
+    // B.  if the input buffer begins with a prefix of "/./" or "/.",
+    //     where "." is a complete path segment, then replace that
+    //     prefix with "/" in the input buffer; otherwise,
+    else if(input == "/.")
+    {
+      input = "/";
+    }
+    else if(startsWith(input, "/./"))
+    {
+      input = "/" + input.substr(3);
+    }
+    // C.  if the input buffer begins with a prefix of "/../" or "/..",
+    //     where ".." is a complete path segment, then replace that
+    //     prefix with "/" in the input buffer and remove the last
+    //     segment and its preceding "/" (if any) from the output
+    //     buffer; otherwise,
+    else if(input  == "/..")
+    {
+      input = "/";
 
-   2.  While the input buffer is not empty, loop as follows:
+      size_t index = output.find_last_of('/');
+      if(index != std::string::npos)
+        output = output.substr(0, index);
+      else
+        output = "";
+    }
+    else if(startsWith(input, "/../"))
+    {
+      input = "/" + input.substr(4);
 
-       A.  If the input buffer begins with a prefix of "../" or "./",
-           then remove that prefix from the input buffer; otherwise,
+      size_t index = output.find_last_of('/');
+      if(index != std::string::npos)
+        output = output.substr(0, index);
+      else
+        output = "";
+    }
+    // D.  if the input buffer consists only of "." or "..", then remove
+    //     that from the input buffer; otherwise,
+    else if(input == "." || input == "..")
+    {
+      input = "";
+    }
+    // E.  move the first path segment in the input buffer to the end of
+    //     the output buffer, including the initial "/" character (if
+    //     any) and any subsequent characters up to, but not including,
+    //     the next "/" character or the end of the input buffer.
+    else 
+    {
+      // Start at index one so we keep the leading '/'.
+      size_t index = input.find_first_of('/', 1); 
+      output += input.substr(0, index);
 
-       B.  if the input buffer begins with a prefix of "/./" or "/.",
-           where "." is a complete path segment, then replace that
-           prefix with "/" in the input buffer; otherwise,
+      if(index != std::string::npos)
+        input = input.substr(index);
+      else
+        input = "";
+    }
+  }
 
-       C.  if the input buffer begins with a prefix of "/../" or "/..",
-           where ".." is a complete path segment, then replace that
-           prefix with "/" in the input buffer and remove the last
-           segment and its preceding "/" (if any) from the output
-           buffer; otherwise,
-
-       D.  if the input buffer consists only of "." or "..", then remove
-           that from the input buffer; otherwise,
-
-       E.  move the first path segment in the input buffer to the end of
-           the output buffer, including the initial "/" character (if
-           any) and any subsequent characters up to, but not including,
-           the next "/" character or the end of the input buffer.
-
-   3.  Finally, the output buffer is returned as the result of
-       remove_dot_segments.
-  */
-  assert(false && "Not implemented.");
-  return "";
+  // 3.  Finally, the output buffer is returned as the result of
+  //     remove_dot_segments.
+  return output;
 }
 
 } // namespace utils
