@@ -252,6 +252,7 @@ protected:
   /// Constructor for typical usage
   explicit Frame(Frame* _refFrame, const std::string& _name);
 
+  /// Constructor for use by pure abstract classes
   explicit Frame(ConstructAbstract_t);
 
   // Documentation inherited
