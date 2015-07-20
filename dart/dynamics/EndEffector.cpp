@@ -45,11 +45,52 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+Support::Support(EndEffector* _ee)
+  : mEndEffector(_ee)
+{
+  if(nullptr == mEndEffector)
+  {
+    dterr << "[Support::Support] It is not permissible to construct a Support "
+          << "with a nullptr EndEffector!\n";
+    assert(false);
+  }
+}
+
+//==============================================================================
+void Support::setGeometry(const math::SupportGeometry& _newSupport)
+{
+  mGeometry = _newSupport;
+  mEndEffector->getSkeleton()->notifySupportUpdate(
+        mEndEffector->getTreeIndex());
+}
+
+//==============================================================================
+const math::SupportGeometry& Support::getGeometry() const
+{
+  return mGeometry;
+}
+
+//==============================================================================
+void Support::setMode(bool _supporting)
+{
+  if(mActive == _supporting)
+    return;
+
+  mActive = _supporting;
+  mEndEffector->getSkeleton()->notifySupportUpdate(
+        mEndEffector->getTreeIndex());
+}
+
+//==============================================================================
+bool Support::isActive() const
+{
+  return mActive;
+}
+
+//==============================================================================
 EndEffector::UniqueProperties::UniqueProperties(const Eigen::Isometry3d& _defaultTransform,
     const math::SupportGeometry& _supportGeometry, bool _supporting)
-  : mDefaultTransform(_defaultTransform),
-    mSupportGeometry(_supportGeometry),
-    mSupport(_supporting)
+  : mDefaultTransform(_defaultTransform)
 {
   // Do nothing
 }
@@ -94,7 +135,6 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
                                 bool _useNow)
 {
   setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
-  setSupportGeometry(_properties.mSupportGeometry);
 }
 
 //==============================================================================
@@ -172,32 +212,31 @@ void EndEffector::resetRelativeTransform()
 }
 
 //==============================================================================
-void EndEffector::setSupportGeometry(const math::SupportGeometry& _newSupport)
+Support* EndEffector::getSupport(bool _createIfNull)
 {
-  getSkeleton()->notifySupportUpdate(getTreeIndex());
-  mEndEffectorP.mSupportGeometry = _newSupport;
+  if(nullptr == mSupport && _createIfNull)
+    constructSupport();
+
+  return mSupport.get();
 }
 
 //==============================================================================
-const math::SupportGeometry& EndEffector::getSupportGeometry() const
+const Support* EndEffector::getSupport() const
 {
-  return mEndEffectorP.mSupportGeometry;
+  return mSupport.get();
 }
 
 //==============================================================================
-void EndEffector::setSupportMode(bool _supporting)
+Support* EndEffector::constructSupport()
 {
-  if(mEndEffectorP.mSupport == _supporting)
-    return;
-
-  getSkeleton()->notifySupportUpdate(getTreeIndex());
-  mEndEffectorP.mSupport = _supporting;
+  mSupport = std::unique_ptr<Support>(new Support(this));
+  return mSupport.get();
 }
 
 //==============================================================================
-bool EndEffector::getSupportMode() const
+void EndEffector::eraseSupport()
 {
-  return mEndEffectorP.mSupport;
+  mSupport = nullptr;
 }
 
 //==============================================================================

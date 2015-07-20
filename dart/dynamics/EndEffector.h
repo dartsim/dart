@@ -46,6 +46,42 @@ namespace dynamics {
 
 class BodyNode;
 class Skeleton;
+class EndEffector;
+
+class Support // Inherit the Addon class once it is implemented
+{
+public:
+
+  /// Constructor
+  Support(EndEffector* _ee);
+
+  /// Set the support geometry for this EndEffector. The SupportGeometry
+  /// represents points in the EndEffector frame that can be used for contact
+  /// when solving balancing or manipulation constraints.
+  void setGeometry(const math::SupportGeometry& _newSupport);
+
+  /// Get a const-reference to the SupportGeometry for this EndEffector
+  const math::SupportGeometry& getGeometry() const;
+
+  /// Pass in true if this EndEffector should be used to support the robot, like
+  /// a foot
+  void setMode(bool _supporting);
+
+  /// Get whether this EndEffector is currently being used for support
+  bool isActive() const;
+
+protected:
+
+  /// The support geometry that this EndEffector is designed to use
+  math::SupportGeometry mGeometry;
+
+  /// True if this EndEffector is currently usable for support
+  bool mActive;
+
+  /// EndEffector that this support is associated with
+  EndEffector* mEndEffector;
+
+};
 
 class EndEffector : public FixedFrame,
                     public AccessoryNode,
@@ -61,12 +97,6 @@ public:
     /// The relative transform will be set to this whenever
     /// resetRelativeTransform() is called
     Eigen::Isometry3d mDefaultTransform;
-
-    /// The support geometry that this EndEffector is designed to use
-    math::SupportGeometry mSupportGeometry;
-
-    /// True if this EndEffector is currently usable for support
-    bool mSupport;
 
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
@@ -128,20 +158,19 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  /// Set the support geometry for this EndEffector. The SupportGeometry
-  /// represents points in the EndEffector frame that can be used for contact
-  /// when solving balancing or manipulation constraints.
-  void setSupportGeometry(const math::SupportGeometry& _newSupport);
+  /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
+  /// is true, then the Support will be generated if one does not already exist.
+  Support* getSupport(bool _createIfNull = false);
 
-  /// Get a const-reference to the SupportGeometry for this EndEffector
-  const math::SupportGeometry& getSupportGeometry() const;
+  /// Get a pointer to the Support Addon for this EndEffector.
+  const Support* getSupport() const;
 
-  /// Pass in true if this EndEffector should be used to support the robot, like
-  /// a foot
-  void setSupportMode(bool _supporting);
+  /// Create a new Support Addon for this EndEffector. If a Support Addon
+  /// already exists for this EndEffector, it will be deleted and replaced.
+  Support* constructSupport();
 
-  /// Get whether this EndEffector is currently being used for support
-  bool getSupportMode() const;
+  /// Erase the Support Addon from this EndEffector
+  void eraseSupport();
 
   // Documentation inherited
   std::shared_ptr<Skeleton> getSkeleton() override;
@@ -267,6 +296,9 @@ protected:
 
   /// The index of this EndEffector within its BodyNode
   size_t mIndexInBodyNode;
+
+  /// TODO(MXG): When Addons are implemented, this should be changed
+  std::unique_ptr<Support> mSupport;
 
   /// Cached Jacobian of this EndEffector
   ///
