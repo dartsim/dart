@@ -138,42 +138,61 @@ protected:
   /// Initialize the memory used by this visual
   void initialize();
 
+  /// Skeleton for this visual
   dart::dynamics::WeakSkeletonPtr mSkeleton;
 
+  /// Tree index for this visual
   size_t mTreeIndex;
 
+  /// Elevation that this visual should use
   double mElevation;
 
+  /// Whether to display the polygon
   bool mDisplayPolygon;
 
+  /// Whether to display the centroid
   bool mDisplayCentroid;
 
+  /// SimpleFrame for the centroid
   dart::dynamics::SimpleFramePtr mCentroid;
 
+  /// Radius to be used by the centroid
   double mCentroidRadius;
 
+  /// Whether to display the center of mass
   bool mDisplayCOM;
 
+  /// SimpleFrame for the center of mass
   dart::dynamics::SimpleFramePtr mCom;
 
+  /// Radius to be used by the center of mass
   double mComRadius;
 
+  /// Color to be used when COM is valid
   Eigen::Vector4d mValidColor;
 
+  /// Color to be used when COM is invalid
   Eigen::Vector4d mInvalidColor;
 
+  /// Color for the polygon
   osg::ref_ptr<osg::Vec4Array> mPolygonColor;
 
+  /// Geode to hold the polygon
   osg::ref_ptr<osg::Geode> mPolygonGeode;
 
+  /// Geometry to describe the polygon
   osg::ref_ptr<osg::Geometry> mPolygonGeom;
 
+  /// Vertices of the polygon
   osg::ref_ptr<osg::Vec3Array> mVertices;
 
+  /// Faces of the polygon
   osg::ref_ptr<osg::DrawElementsUShort> mFaces;
 
+  /// Node to render the centroid
   osg::ref_ptr<FrameNode> mCentroidNode;
 
+  /// Node to render the COM
   osg::ref_ptr<FrameNode> mComNode;
 };
 

@@ -73,8 +73,10 @@ public:
 
   };
 
+  /// Constructor
   DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
 
+  /// Virtual destructor
   virtual ~DragAndDrop();
 
   /// Get the Entity that this DragAndDrop is associated with
@@ -128,21 +130,28 @@ public:
   /// Set the option for triggering rotations instead of translations
   void setRotationOption(RotationOption option);
 
+  /// Get the current rotation option for this DnD
   RotationOption getRotationOption() const;
 
+  /// Set the modkey that will be used to toggle rotation for this DnD
   void setRotationModKey(osgGA::GUIEventAdapter::ModKeyMask rotationModKey);
 
+  /// Get the modkey that will be used to toggle rotation for this DnD
   osgGA::GUIEventAdapter::ModKeyMask getRotationModKey() const;
 
 protected:
 
+  /// Perform cleanup when the subject is destroyed
   virtual void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
+  /// Pointer to the DnD's Viewer
   Viewer* mViewer;
 
+  /// Pointer to the DnD's Entity
   dart::dynamics::Entity* mEntity;
 
+  /// The location in the world that was picked by the user
   Eigen::Vector3d mPickedPosition;
 
   /// Reference vector for constraint (slope for line constraint, or normal for
@@ -152,14 +161,19 @@ protected:
   /// Point in space about which rotations should happen
   Eigen::Vector3d mPivot;
 
+  /// Constraint type for this DnD
   ConstraintType mConstraintType;
 
+  /// Whether other objects can block this one from being picked
   bool mAmObstructable;
 
+  /// Whether this DnD is currently moving
   bool mAmMoving;
 
+  /// Option for rotation settings
   RotationOption mRotationOption;
 
+  /// Modkey for rotation
   osgGA::GUIEventAdapter::ModKeyMask mRotationModKey;
 
 };
@@ -170,20 +184,27 @@ class SimpleFrameDnD : public DragAndDrop
 {
 public:
 
+  /// Constructor
   SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
 
+  /// Virtual destructor
   virtual ~SimpleFrameDnD() = default;
 
+  /// Get the SimpleFrame associated with this DnD
   dart::dynamics::SimpleFrame* getSimpleFrame() const;
 
+  // Documentation inherited
   virtual void move() override;
 
+  // Documentation inherited
   virtual void saveState() override;
 
 protected:
 
+  /// SimpleFrame pointer
   dart::dynamics::SimpleFrame* mFrame;
 
+  /// The saved rotation of the frame
   Eigen::AngleAxisd mSavedRotation;
 };
 
@@ -195,20 +216,26 @@ class SimpleFrameShapeDnD : public SimpleFrameDnD
 {
 public:
 
+  /// Constructor
   SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame,
                       dart::dynamics::Shape* shape);
 
+  /// Virtual destructor
   virtual ~SimpleFrameShapeDnD() = default;
 
+  /// Get the Shape associated with this DnD
   dart::dynamics::Shape* getShape() const;
 
+  // Documentation inherited
   virtual void update() override;
 
 protected:
 
+  // Documentation inherited
   virtual void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
+  /// Shape associated with this DnD
   dart::dynamics::Shape* mShape;
 };
 
@@ -217,24 +244,31 @@ class InteractiveFrameDnD : public DragAndDrop
 {
 public:
 
+  /// Constructor
   InteractiveFrameDnD(Viewer* viewer, osgDart::InteractiveFrame* frame);
 
+  /// Virtual destructor
   virtual ~InteractiveFrameDnD();
 
+  /// Get the frame associated with this DnD
   InteractiveFrame* getFrame() const;
 
+  // Documentation inherited
   virtual void update() override;
 
+  // Documentation inherited
   virtual void move() override;
 
+  // Documentation inherited
   virtual void saveState() override;
 
 protected:
 
+  /// Vector of DnD components that are united under this DnD
   std::vector<DragAndDrop*> mDnDs;
 
+  /// Pointer to the interactive frame
   InteractiveFrame* mInteractiveFrame;
-
 };
 
 //==============================================================================
@@ -242,57 +276,84 @@ class BodyNodeDnD : public DragAndDrop
 {
 public:
 
+  /// Constructor
   BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
               bool useExternalIK = true, bool useWholeBody = false);
 
+  /// Virtual destructor
   virtual ~BodyNodeDnD() = default;
 
+  /// Get the BodyNode associated with this DnD
   dart::dynamics::BodyNode* getBodyNode() const;
 
+  // Documentation inherited
   virtual void move() override;
 
+  // Documentation inherited
   virtual void saveState() override;
 
+  // Documentation inherited
   virtual void release() override;
 
+  /// Tell this DnD to use an external IK instead of the one embedded in the
+  /// BodyNode. Using the one embedded in the BodyNode allows it to
+  /// automatically be used in a WholeBodyIK, but using an external IK allows it
+  /// to be automatically solved without instructing a WholeBodyIK to solve.
   void useExternalIK(bool external);
 
+  /// Returns true if it is using an external IK
   bool isUsingExternalIK() const;
 
+  /// Tell this DnD to use the whole body
   void useWholeBody(bool wholeBody);
 
+  /// Returns true if this DnD is using the whole body
   bool isUsingWholeBody() const;
 
+  /// Set the key that will preserve the orientation of the body
   void setPreserveOrientationModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
 
+  /// Get the key that will preserve the orientation of the body
   osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
 
+  /// Set the key that will restrict which joints are used by the DnD
   void setJointRestrictionModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
 
+  /// Get the key that will restrict which joints are used by the DnD
   osgGA::GUIEventAdapter::ModKeyMask getJointRestrictionModKey() const;
 
 protected:
 
+  /// The BodyNode associated with this DnD
   dart::dynamics::WeakBodyNodePtr mBodyNode;
 
+  /// The IK module being used by this DnD
   dart::dynamics::InverseKinematicsPtr mIK;
 
+  /// The offset of the pick from the BodyNode origin, expressed in global
+  /// coordinates
   Eigen::Vector3d mSavedGlobalOffset;
 
+  /// The offset of the pick from the BodyNode origin, expressed in local
+  /// coordinates
   Eigen::Vector3d mSavedLocalOffset;
 
+  /// The rotation of the BodyNode
   Eigen::AngleAxisd mSavedRotation;
 
+  /// Whether to use an external IK
   bool mUseExternalIK;
 
+  /// Whether to use the whole body
   bool mUseWholeBody;
 
+  /// Key for preserving orientation
   osgGA::GUIEventAdapter::ModKeyMask mPreserveOrientationModKey;
 
+  /// Key for restricting joint usage
   osgGA::GUIEventAdapter::ModKeyMask mJointRestrictionModKey;
 
-  Eigen::Vector4d mMovementColor;
-
+  /// Currently unused, but this will change in the future
   size_t mAdditionalBodyNodes;
 };
 

@@ -89,6 +89,7 @@ int main()
   viewer.enableDragAndDrop(frame.get());
   viewer.enableDragAndDrop(draggable.get());
 
+  viewer.addInstructionText("\nCtrl + Left-click: Rotate the box\n");
   std::cout << viewer.getInstructions() << std::endl;
 
   viewer.setUpViewInWindow(0, 0, 640, 480);

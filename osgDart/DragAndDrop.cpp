@@ -633,8 +633,7 @@ BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
     mUseExternalIK(useExternalIK),
     mUseWholeBody(useWholeBody),
     mPreserveOrientationModKey(osgGA::GUIEventAdapter::MODKEY_ALT),
-    mJointRestrictionModKey(osgGA::GUIEventAdapter::MODKEY_SHIFT),
-    mMovementColor(dart::Color::Green(1.0))
+    mJointRestrictionModKey(osgGA::GUIEventAdapter::MODKEY_SHIFT)
 {
   // Do nothing
 }
