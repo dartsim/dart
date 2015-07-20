@@ -212,8 +212,10 @@ public:
 
 protected:
 
+  /// Pointer to the IK module
   std::shared_ptr<element_type> mIK;
 
+  /// Pointer to the Node associated with the IK module
   JacobianNodePtrT mJacNodePtr;
 
 };
@@ -226,6 +228,7 @@ inline bool operator == (
   return nullptr == _ik.get();
 }
 
+// Comparison to nullptr
 template <class IkType, class BodyNodeT>
 inline bool operator == (
     std::nullptr_t, const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik)
@@ -233,6 +236,7 @@ inline bool operator == (
   return nullptr == _ik.get();
 }
 
+// Comparison to nullptr
 template <class IkType, class BodyNodeT>
 inline bool operator != (
     const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik, std::nullptr_t)
@@ -240,6 +244,7 @@ inline bool operator != (
   return nullptr != _ik.get();
 }
 
+// Comparison to nullptr
 template <class IkType, class BodyNodeT>
 inline bool operator != (
     std::nullptr_t, const TemplateInverseKinematicsPtr<IkType, BodyNodeT>& _ik)

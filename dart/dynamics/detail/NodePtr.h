@@ -237,10 +237,13 @@ public:
 
 protected:
 
+  /// Node that this pointer references
   NodeT* mNode;
 
+  /// Cleaner for the Node
   std::weak_ptr<NodeCleaner> mWeakCleaner;
 
+  /// Pointer to the BodyNode that the Node is attached to
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNodePtr;
 };
 
