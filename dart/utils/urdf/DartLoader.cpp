@@ -61,8 +61,13 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const utils::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
-  // TODO: Support for Windows-style paths?
-  mRootToSkelPath = getBasePath(_uri);
+  Uri uri;
+  if(!uri.fromString(_uri))
+  {
+    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
+           << _uri << "\n";
+    return nullptr;
+  }
 
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
@@ -77,12 +82,15 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
     return nullptr;
   }
 
-  // TODO: Pass the ResourceRetriever down here.
-  return modelInterfaceToSkeleton(urdfInterface.get(), resourceRetriever);
+  // TODO: Extract the base path from _uri.
+  Uri baseUri;
+
+  return modelInterfaceToSkeleton(
+    urdfInterface.get(), baseUri, resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
-    const std::string& _urdfString, const std::string& _baseUri,
+    const std::string& _urdfString, const Uri& _baseUri,
     const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
@@ -91,8 +99,6 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
            << "parsed into a Skeleton. Returning a nullptr\n";
     return nullptr;
   }
-
-  mRootToSkelPath = _baseUri;
 
   ModelInterfacePtr urdfInterface = urdf::parseURDF(_urdfString);
   if(!urdfInterface)
@@ -103,7 +109,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 
   // TODO: Pass the ResourceRetriever down here.
   return modelInterfaceToSkeleton(
-    urdfInterface.get(), getResourceRetriever(_resourceRetriever));
+    urdfInterface.get(), _baseUri, getResourceRetriever(_resourceRetriever));
 }
 
 simulation::WorldPtr DartLoader::parseWorld(
@@ -113,19 +119,27 @@ simulation::WorldPtr DartLoader::parseWorld(
   const utils::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
+  Uri uri;
+  if(!uri.fromString(_uri))
+  {
+    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
+           << _uri << "\n";
+    return nullptr;
+  }
+
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
     return nullptr;
 
-  // TODO: Support for Windows-style paths?
-  mRootToSkelPath = getBasePath(_uri);
+  // TODO: Extract the base path from _uri.
+  Uri baseUri;
 
   // TODO: Pass the ResourceRetriever down here.
-  return parseWorldString(content, mRootToWorldPath);
+  return parseWorldString(content, baseUri);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
-    const std::string& _urdfString, const std::string& _baseUri,
+    const std::string& _urdfString, const Uri& _baseUri,
     const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
@@ -134,8 +148,6 @@ simulation::WorldPtr DartLoader::parseWorldString(
            << "parsed into a World. Returning a nullptr\n";
     return nullptr;
   }
-
-  mRootToWorldPath = _baseUri;
 
   std::shared_ptr<urdf::World> worldInterface =
       urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
@@ -150,7 +162,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   // TODO: Pass the ResourceRetriever down here.
   parseWorldToEntityPaths(_urdfString);
 
-  simulation::WorldPtr world(new simulation::World());
+  simulation::WorldPtr world(new simulation::World);
 
   for(size_t i = 0; i < worldInterface->models.size(); ++i)
   {
@@ -167,7 +179,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
     mRootToSkelPath = mRootToWorldPath + it->second;
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-      worldInterface->models[i].model.get(), mRetriever);
+      worldInterface->models[i].model.get(), _baseUri, mRetriever);
 
     if(!skeleton)
     {
@@ -262,6 +274,7 @@ void DartLoader::parseWorldToEntityPaths(const std::string& _xml_string)
  */
 dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   const urdf::ModelInterface* _model,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(_model->getName());
@@ -278,12 +291,12 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     {
       root = root->child_links[0].get();
       dynamics::BodyNode::Properties rootProperties;
-      if (!createDartNodeProperties(root, &rootProperties, _resourceRetriever))
+      if (!createDartNodeProperties(root, &rootProperties, _baseUri, _resourceRetriever))
         return nullptr;
 
       rootNode = createDartJointAndNode(
         root->parent_joint.get(), rootProperties, nullptr, skeleton,
-        _resourceRetriever);
+        _baseUri, _resourceRetriever);
       if(nullptr == rootNode)
       {
         dterr << "[DartLoader::modelInterfaceToSkeleton] Failed to create root node!\n";
@@ -294,7 +307,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   else
   {
     dynamics::BodyNode::Properties rootProperties;
-    if (!createDartNodeProperties(root, &rootProperties, _resourceRetriever))
+    if (!createDartNodeProperties(root, &rootProperties, _baseUri, _resourceRetriever))
       return nullptr;
 
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
@@ -308,8 +321,9 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 
   for(size_t i = 0; i < root->child_links.size(); i++)
   {
-    if (!createSkeletonRecursive(skeleton, root->child_links[i].get(),
-                                 *rootNode, _resourceRetriever))
+    if (!createSkeletonRecursive(
+           skeleton, root->child_links[i].get(), *rootNode,
+           _baseUri, _resourceRetriever))
       return nullptr;
 
   }
@@ -321,15 +335,16 @@ bool DartLoader::createSkeletonRecursive(
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode& _parentNode,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(_lk, &properties, _resourceRetriever))
+  if (!createDartNodeProperties(_lk, &properties, _baseUri, _resourceRetriever))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
     _lk->parent_joint.get(), properties, &_parentNode, _skel,
-    _resourceRetriever);
+    _baseUri, _resourceRetriever);
 
   if(!node)
     return false;
@@ -337,7 +352,7 @@ bool DartLoader::createSkeletonRecursive(
   for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
     if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), *node,
-                                 _resourceRetriever))
+                                 _baseUri, _resourceRetriever))
       return false;
   }
   return true;
@@ -372,6 +387,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
+    const Uri& _baseUri,
     const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::Joint::Properties basicProperties;
@@ -461,6 +477,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 bool DartLoader::createDartNodeProperties(
   const urdf::Link* _lk,
   dynamics::BodyNode::Properties *node,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   node->mName = _lk->name;
@@ -486,8 +503,10 @@ bool DartLoader::createDartNodeProperties(
   // Set visual information
   for(size_t i = 0; i < _lk->visual_array.size(); i++)
   {
-    if(dynamics::ShapePtr shape = createShape(_lk->visual_array[i].get(),
-                                              _resourceRetriever))
+    dynamics::ShapePtr shape = createShape(
+      _lk->visual_array[i].get(), _baseUri, _resourceRetriever);
+
+    if(shape)
       node->mVizShapes.push_back(shape);
     else
       return false;
@@ -495,8 +514,10 @@ bool DartLoader::createDartNodeProperties(
 
   // Set collision information
   for(size_t i = 0; i < _lk->collision_array.size(); i++) {
-    if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get(),
-                                              _resourceRetriever))
+    dynamics::ShapePtr shape = createShape(
+      _lk->collision_array[i].get(), _baseUri, _resourceRetriever);
+
+    if (shape)
       node->mColShapes.push_back(shape);
     else
       return false;
@@ -521,6 +542,7 @@ void setMaterial(dynamics::ShapePtr _shape, const urdf::Collision* _col) {
 template <class VisualOrCollision>
 dynamics::ShapePtr DartLoader::createShape(
   const VisualOrCollision* _vizOrCol,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::ShapePtr shape;
@@ -546,14 +568,38 @@ dynamics::ShapePtr DartLoader::createShape(
   // Mesh
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
-    const std::string& uri = mesh->filename;
-    const aiScene* scene = dynamics::MeshShape::loadMesh(uri, _resourceRetriever);
+    // Parse the URI. This is necessary to detect whether it is a full URI, an
+    // absolute path, or a relative path.
+    Uri meshUri;
+    if(!meshUri.fromStringOrPath(mesh->filename))
+    {
+      dtwarn << "[DartLoader::createShape] Failed parsing mesh URI: "
+             << mesh->filename << "\n";
+      return nullptr;
+    }
+
+    // Resolve the relative path using _baseUri as the root.
+    std::string resolvedUri;
+    if(meshUri.isRelativePath() && meshUri.mPath)
+    {
+      meshUri = _baseUri;
+      meshUri.append(*meshUri.mPath);
+      resolvedUri = meshUri.toString();
+    }
+    else
+    {
+      resolvedUri = mesh->filename;
+    }
+    
+    // Load the mesh.
+    const aiScene* scene = dynamics::MeshShape::loadMesh(
+      resolvedUri, _resourceRetriever);
     if (!scene)
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
-      scale, scene, uri, true, mRetriever);
+      scale, scene, resolvedUri, true, mRetriever);
   }
   // Unknown geometry type
   else
@@ -580,9 +626,11 @@ utils::ResourceRetrieverPtr DartLoader::getResourceRetriever(
 
 template dynamics::ShapePtr DartLoader::createShape<urdf::Visual>(
   const urdf::Visual* _vizOrCol,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever);
 template dynamics::ShapePtr DartLoader::createShape<urdf::Collision>(
   const urdf::Collision* _vizOrCol,
+  const Uri& _baseUri,
   const utils::ResourceRetrieverPtr& _resourceRetriever);
 
 /**

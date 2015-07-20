@@ -86,12 +86,29 @@ public:
 
   void clear();
 
+  bool isPath() const;
+  bool isRelativePath() const;
+
+  void append(const std::string& _relativePath);
+  void transform();
+
+
   bool fromString(const std::string& _input);
   bool fromStringOrPath(const std::string& _input);
+
+  bool fromRelativeUri(const Uri& _base, const std::string& _relative);
+  bool fromRelativeUri(const Uri& _base, const Uri& _relative,
+                       bool _strict = false);
 
   std::string toString() const;
 
   static std::string getUri(const std::string& _input);
+
+private:
+  // These are helper functions for implementing transform();
+
+  static std::string mergePaths(const Uri& _base, const Uri& _relative);
+  static std::string removeDotSegments(const std::string& _path);
 };
 
 } // namespace utils

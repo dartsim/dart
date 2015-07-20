@@ -19,6 +19,7 @@
 #include "dart/utils/LocalResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 #include "dart/utils/SchemaResourceRetriever.h"
+#include "dart/utils/UriUtils.h"
 
 namespace urdf
 {
@@ -85,7 +86,7 @@ class DartLoader {
 
     /// Parse a text string to produce a Skeleton
     dynamics::SkeletonPtr parseSkeletonString(
-      const std::string& _urdfString, const std::string& _baseUri,
+      const std::string& _urdfString, const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
@@ -94,7 +95,7 @@ class DartLoader {
 
     /// Parse a text string to produce a World
     dart::simulation::WorldPtr parseWorldString(
-      const std::string& _urdfString, const std::string& _baseUri,
+      const std::string& _urdfString, const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
 private:
@@ -106,27 +107,33 @@ private:
 
     dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
+      const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     bool createSkeletonRecursive(
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk,
       dynamics::BodyNode& _parent,
+      const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     template <class VisualOrCollision>
     dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
+      const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     dynamics::BodyNode* createDartJointAndNode(
-        const urdf::Joint* _jt,
-        const dynamics::BodyNode::Properties& _body,
-        dynamics::BodyNode* _parent,
-        dynamics::SkeletonPtr _skeleton,
-        const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const urdf::Joint* _jt,
+      const dynamics::BodyNode::Properties& _body,
+      dynamics::BodyNode* _parent,
+      dynamics::SkeletonPtr _skeleton,
+      const Uri& _baseUri,
+      const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     bool createDartNodeProperties(
-      const urdf::Link* _lk, dynamics::BodyNode::Properties *properties,
+      const urdf::Link* _lk,
+      dynamics::BodyNode::Properties *properties,
+      const Uri& _baseUri,
       const utils::ResourceRetrieverPtr& _resourceRetriever);
 
     utils::ResourceRetrieverPtr getResourceRetriever(

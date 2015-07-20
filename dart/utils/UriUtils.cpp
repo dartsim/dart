@@ -136,6 +136,84 @@ void Uri::clear()
   mFragment.reset();
 }
 
+void Uri::append(const std::string& _relativePath)
+{
+  if (mPath)
+    mPath = *mPath + "/" + _relativePath;
+  else
+    mPath = _relativePath;
+}
+
+bool Uri::isPath() const
+{
+  return !mScheme && mPath;
+}
+
+bool Uri::isRelativePath() const
+{
+  return isPath() && !mPath->empty() && mPath->front() != '/';
+}
+
+bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative)
+{
+  Uri relativeUri;
+  relativeUri.mPath = _relative;
+
+  return fromRelativeUri(_base, relativeUri, true);
+}
+
+bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
+{
+  assert(_base.mPath && "The path component is always defined.");
+  assert(_relative.mPath && "The path component is always defined.");
+
+  // This directly implements the psueocode in Section 5.2.2. of RFC 3986.
+  if(_relative.mScheme || (!_strict && _relative.mScheme == _base.mScheme))
+  {
+    mScheme = _relative.mScheme;
+    mAuthority = _relative.mAuthority;
+    mPath = removeDotSegments(*_relative.mPath);
+    mQuery = _relative.mQuery;
+  }
+  else
+  {
+    if(_relative.mAuthority)
+    {
+      mAuthority = _relative.mAuthority;
+      mPath = removeDotSegments(*_relative.mPath);
+      mQuery = _relative.mQuery;
+    }
+    else
+    {
+      if(_relative.mPath->empty())
+      {
+        mPath = _base.mPath;
+
+        if(_relative.mQuery)
+          mQuery = _relative.mQuery;
+        else
+          mQuery = _base.mQuery;
+      }
+      else
+      {
+        if(_relative.mPath->front() == '/')
+          mPath = removeDotSegments(*_relative.mPath);
+        else
+          mPath = removeDotSegments(mergePaths(_base, _relative));
+
+        mQuery = _relative.mQuery;
+      }
+
+      mAuthority = _base.mAuthority;
+    }
+
+    mScheme = _base.mScheme;
+  }
+
+  mFragment = _relative.mFragment;
+  return true;
+}
+
 bool Uri::fromString(const std::string& _input)
 {
   // This is regex is from Appendix B of RFC 3986.
@@ -228,6 +306,70 @@ std::string Uri::getUri(const std::string& _input)
     return uri.toString();
   else
     return "";
+}
+
+std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
+{
+  assert(_base.mPath && "The path component is always defined.");
+  assert(_relative.mPath && "The path component is always defined.");
+
+  // This directly implements the logic from Section 5.2.3. of RFC 3986.
+  if(_base.mAuthority && _base.mPath->empty())
+    return "/" + *_relative.mPath;
+  else
+  {
+    const size_t index = _base.mPath->find_last_of('/');
+    if(index != std::string::npos)
+      return _base.mPath->substr(0, index + 1) + *_relative.mPath;
+    else
+      return *_relative.mPath;
+  }
+}
+
+std::string Uri::removeDotSegments(const std::string& _path)
+{
+  /*
+   The pseudocode also refers to a "remove_dot_segments" routine for
+   interpreting and removing the special "." and ".." complete path
+   segments from a referenced path.  This is done after the path is
+   extracted from a reference, whether or not the path was relative, in
+   order to remove any invalid or extraneous dot-segments prior to
+   forming the target URI.  Although there are many ways to accomplish
+   this removal process, we describe a simple method using two string
+   buffers.
+
+   1.  The input buffer is initialized with the now-appended path
+       components and the output buffer is initialized to the empty
+       string.
+
+   2.  While the input buffer is not empty, loop as follows:
+
+       A.  If the input buffer begins with a prefix of "../" or "./",
+           then remove that prefix from the input buffer; otherwise,
+
+       B.  if the input buffer begins with a prefix of "/./" or "/.",
+           where "." is a complete path segment, then replace that
+           prefix with "/" in the input buffer; otherwise,
+
+       C.  if the input buffer begins with a prefix of "/../" or "/..",
+           where ".." is a complete path segment, then replace that
+           prefix with "/" in the input buffer and remove the last
+           segment and its preceding "/" (if any) from the output
+           buffer; otherwise,
+
+       D.  if the input buffer consists only of "." or "..", then remove
+           that from the input buffer; otherwise,
+
+       E.  move the first path segment in the input buffer to the end of
+           the output buffer, including the initial "/" character (if
+           any) and any subsequent characters up to, but not including,
+           the next "/" character or the end of the input buffer.
+
+   3.  Finally, the output buffer is returned as the result of
+       remove_dot_segments.
+  */
+  assert(false && "Not implemented.");
+  return "";
 }
 
 } // namespace utils
