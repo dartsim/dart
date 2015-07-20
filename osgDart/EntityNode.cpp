@@ -250,9 +250,6 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
 
     default:
       node = new render::WarningShapeNode(shape, this);
-      // TODO(MXG): Should we create a WarningShapeNode for unsuccessful
-      // dynamic cast attempts as well? That would avoid spamming the error
-      // message.
       break;
   }
 
