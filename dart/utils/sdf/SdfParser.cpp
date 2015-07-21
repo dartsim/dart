@@ -20,6 +20,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/LocalResourceRetriever.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
@@ -28,7 +29,7 @@ namespace utils {
 simulation::WorldPtr SdfParser::readSdfFile(
   const std::string& _filename, const ResourceRetrieverPtr& _retriever)
 {
-  return readSdfFile(_filename, _retriever,
+  return readSdfFile(_filename, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const ResourceRetrieverPtr&)>(&SdfParser::readWorld));
@@ -94,7 +95,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
 dynamics::SkeletonPtr SdfParser::readSkeleton(
   const std::string& _fileName, const ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(_fileName, _retriever,
+  return readSkeleton(_fileName, getResourceRetriever(_retriever),
     static_cast<dynamics::SkeletonPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const ResourceRetrieverPtr&)>(&SdfParser::readSkeleton));
@@ -1054,6 +1055,15 @@ dynamics::FreeJoint::Properties SdfParser::readFreeJoint(
   assert(_jointElement != nullptr);
 
   return dynamics::FreeJoint::Properties();
+}
+
+ResourceRetrieverPtr SdfParser::getResourceRetriever(
+    const ResourceRetrieverPtr& _retriever)
+{
+  if(_retriever)
+    return _retriever;
+  else
+    return std::make_shared<LocalResourceRetriever>();
 }
 
 } // namespace utils

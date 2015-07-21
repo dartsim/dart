@@ -65,14 +65,14 @@ class SoftSdfParser : public SdfParser
 {
 public:
   /// \brief
-  // TODO: Make ResourceRetrieverPtr optional.
   static simulation::WorldPtr readSoftSdfFile(
-    const std::string& _filename, const ResourceRetrieverPtr& _retriever);
+      const std::string& _filename,
+      const ResourceRetrieverPtr& _retriever = nullptr);
 
   /// \brief
-  // TODO: Make ResourceRetrieverPtr optional.
   static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName, const ResourceRetrieverPtr& _retriever);
+      const std::string& _fileName,
+      const ResourceRetrieverPtr& _retriever = nullptr);
 
   static bool createSoftPair(dynamics::SkeletonPtr skeleton,
                              dynamics::BodyNode* parent,

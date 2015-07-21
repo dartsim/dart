@@ -71,7 +71,7 @@ namespace utils {
 simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
   const std::string& _filename, const ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSdfFile(_filename, _retriever,
+  return SdfParser::readSdfFile(_filename, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const ResourceRetrieverPtr&)>(&SoftSdfParser::readWorld));
@@ -80,7 +80,7 @@ simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
 dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
     const std::string& _filename, const ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSkeleton(_filename, _retriever,
+  return SdfParser::readSkeleton(_filename, getResourceRetriever(_retriever),
     static_cast<dynamics::SkeletonPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const ResourceRetrieverPtr&)>(&SoftSdfParser::readSkeleton));
@@ -237,6 +237,9 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
   return sdfBodyNode;
 }
+
+ResourceRetrieverPtr getResourceRetriever(
+    const ResourceRetrieverPtr& _retriever);
 
 }  // namespace utils
 }  // namespace dart

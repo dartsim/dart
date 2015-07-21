@@ -53,7 +53,8 @@ public:
     /// \brief
     // TODO: Make ResourceRetriever optional.
     static dart::simulation::WorldPtr readSdfFile(
-        const std::string& _filename, const ResourceRetrieverPtr& _retriever);
+        const std::string& _filename,
+        const ResourceRetrieverPtr& _retriever = nullptr);
 
     static simulation::WorldPtr readSdfFile(
         const std::string& _filename,
@@ -65,7 +66,8 @@ public:
     /// \brief
     // TODO: Make ResourceRetriever optional.
     static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName, const ResourceRetrieverPtr& _retriever);
+      const std::string& _fileName,
+      const ResourceRetrieverPtr& _retriever = nullptr);
 
     static dynamics::SkeletonPtr readSkeleton(
         const std::string& _fileName,
@@ -291,7 +293,8 @@ public:
         const Eigen::Isometry3d& _parentModelFrame,
         const std::string& _name);
 
-
+    static ResourceRetrieverPtr getResourceRetriever(
+        const ResourceRetrieverPtr& _retriever);
 };
 
 } // namespace utils
