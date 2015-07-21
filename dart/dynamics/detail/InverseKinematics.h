@@ -37,6 +37,11 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
 
+#include <type_traits>
+
+namespace dart {
+namespace dynamics {
+
 //==============================================================================
 template <class IKErrorMethod, typename... Args>
 IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args)
@@ -54,6 +59,9 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
   IKGradientMethod* newMethod =
       new IKGradientMethod(this, std::forward<Args>(args)...);
   mGradientMethod = std::unique_ptr<IKGradientMethod>(newMethod);
+
+  mAnalytical = dynamic_cast<Analytical*>(mGradientMethod.get());
+
   return *newMethod;
 }
 
@@ -68,5 +76,8 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 
   setDofs(indices);
 }
+
+} // namespace dart
+} // namespace dynamics
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_

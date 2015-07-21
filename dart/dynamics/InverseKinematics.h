@@ -38,6 +38,7 @@
 #define DART_DYNAMICS_INVERSEKINEMATICS_H_
 
 #include <memory>
+#include <functional>
 
 #include <Eigen/SVD>
 
@@ -187,6 +188,12 @@ public:
     /// an update is needed.
     virtual Eigen::Vector6d computeError() = 0;
 
+    /// Override this function with your implementation of computing the desired
+    /// world transform of the Node. If you want the desired transform to always
+    /// be equal to the Target's transform, you can simply call
+    /// ErrorMethod::computeDesiredTransform to implement this function.
+    virtual Eigen::Isometry3d computeDesiredTransform() = 0;
+
     /// This function is used to handle caching the error vector.
     const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
 
@@ -309,6 +316,9 @@ public:
 
     // Documentation inherited
     virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
+
+    // Documentation inherited
+    virtual Eigen::Isometry3d computeDesiredTransform() override;
 
     // Documentation inherited
     virtual Eigen::Vector6d computeError() override;
@@ -485,6 +495,118 @@ public:
                                  Eigen::VectorXd& _grad) override;
   };
 
+  /// Analytical is a base class that should be inherited by methods that are
+  /// made to solve the IK analytically instead of iteratively. This provides an
+  /// extended API that is relevant to Analytical solvers but not iterative
+  /// solvers.
+  class Analytical : public GradientMethod
+  {
+  public:
+
+    enum Validity_t
+    {
+      VALID = 0,
+      LIMIT_VIOLATED = 1 << 1,
+      OUT_OF_REACH   = 1 << 2
+    };
+
+    struct Solution
+    {
+      /// Default constructor
+      Solution(const Eigen::VectorXd& _config = Eigen::VectorXd(),
+               int _validity = VALID);
+
+      /// Configuration computed by the Analytical solver
+      Eigen::VectorXd mConfig;
+
+      /// Bitmap for whether this configuration is valid. Bitwise-compare it to
+      /// the enumerations in Validity_t to whether this configuration is valid.
+      int mValidity;
+    };
+
+    // std::function template for comparing the quality of configurations
+    typedef std::function<bool(
+        const Eigen::VectorXd& _better,
+        const Eigen::VectorXd& _worse)> QualityComparison;
+
+    /// Constructor
+    Analytical(InverseKinematics* _ik, const std::string& _methodName);
+
+    /// Virtual destructor
+    virtual ~Analytical() = default;
+
+    /// Get the solutions for this IK module, along with a tag indicating
+    /// whether each solution is valid.
+    const std::vector<Solution>& getSolutions();
+
+    /// You should not need to override this function. Instead, you should
+    /// override computeSolutions.
+    void computeGradient(const Eigen::Vector6d&,
+                         Eigen::VectorXd& _grad) override;
+
+    /// Use this function to fill the entries of the mSolutions variable. Be
+    /// sure to clear the mSolutions vector at the start, and to also return the
+    /// mSolutions vector at the end. Note that you are not expected to evaluate
+    /// any of the solutions for their quality. However, you should set the
+    /// Solution::mValidity flag to OUT_OF_REACH for each solution that does not
+    /// actually reach the desired transform, and you should call
+    /// checkSolutionJointLimits() and the end of the function, which will set
+    /// the LIMIT_VIOLATED flags of any configurations that are outside of the
+    /// position limits.
+    virtual const std::vector<Solution>& computeSolutions(
+        const Eigen::Isometry3d& _desiredBodyTf) = 0;
+
+    /// Get a list of the DOFs that will be included in the entries of the
+    /// solutions returned by getSolutions(). Ideally, this should match up with
+    /// the DOFs being used by the InverseKinematics module, but this might not
+    /// always be possible, so this function ensures that solutions can be
+    /// interpreted correctly.
+    virtual const std::vector<size_t>& getDofs() const = 0;
+
+    /// Set the configuration of the DOFs. The components of _config must
+    /// correspond to the DOFs provided by getDofs().
+    void setConfiguration(const Eigen::VectorXd& _config);
+
+    /// Get the configuration of the DOFs. The components of this vector will
+    /// correspond to the DOFs provided by getDofs().
+    Eigen::VectorXd getConfiguration() const;
+
+    /// Set the function that will be used to compare the qualities of two
+    /// solutions. This function should return true if the first argument is a
+    /// better solution than the second argument.
+    ///
+    /// By default, it will prefer solutions whose norm in jointspace is smaller
+    /// (i.e. it prefers joint values that are closer to zero).
+    void setQualityComparisonFunction(const QualityComparison& _func);
+
+    /// Reset the quality comparison function to the default method
+    void resetQualityComparisonFunction();
+
+  protected:
+
+    /// Go through the mSolutions vector and tag entries with LIMIT_VIOLATED if
+    /// any components of their configuration are outside of their position
+    /// limits.
+    void checkSolutionJointLimits();
+
+    /// Vector of solutions
+    std::vector<Solution> mSolutions;
+
+    /// Function for comparing the quality of
+    QualityComparison mQualityComparator;
+
+  private:
+
+    /// A cache for the valid solutions. The valid and invalid solution caches
+    /// are kept separate so that they can each be sorted by quality
+    /// individually. Valid solutions will always be at the top of mFinalResults
+    /// even if their quality is scored below the invalid solutions.
+    std::vector<Solution> mValidSolutionsCache;
+
+    /// A cache for the invalid solutions.
+    std::vector<Solution> mInvalidSolutionsCache;
+  };
+
   /// If this IK module is set to active, then it will be utilized by any
   /// HierarchicalIK that has it in its list. If it is set to inactive, then it
   /// will be ignored by any HierarchicalIK holding onto it, but you can still
@@ -596,6 +718,16 @@ public:
   /// Get the GradientMethod for this IK module. Every IK module always has a
   /// GradientMethod available, so this is passed by reference.
   const GradientMethod& getGradientMethod() const;
+
+  /// Get the Analytical IK method for this module, if one is available.
+  /// Analytical methods are not provided by default. If this IK module does not
+  /// have an analytical method, then this will return a nullptr.
+  Analytical* getAnalytical();
+
+  /// Get the Analytical IK method for this module, if one is available.
+  /// Analytical methods are not provided by default. If this IK module does not
+  /// have an analytical method, then this will return a nullptr.
+  const Analytical* getAnalytical() const;
 
   /// Get the Problem that is being maintained by this IK module.
   const std::shared_ptr<optimizer::Problem>& getProblem();
@@ -811,6 +943,13 @@ protected:
   /// The method that this IK module will use to compute gradients
   std::unique_ptr<GradientMethod> mGradientMethod;
 
+  /// If mGradientMethod is an Analytical extension, then this will have the
+  /// same value is mGradientMethod. Otherwise, this will be a nullptr.
+  ///
+  /// Note that this pointer's memory does not need to be managed, because it is
+  /// always either nullptr or a reference to mGradientMethod.
+  Analytical* mAnalytical;
+
   /// The Problem that will be maintained by this IK module
   std::shared_ptr<optimizer::Problem> mProblem;
 
@@ -833,9 +972,11 @@ protected:
   mutable math::Jacobian mJacobian;
 };
 
-#include "dart/dynamics/detail/InverseKinematics.h"
+typedef InverseKinematics IK;
 
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/InverseKinematics.h"
 
 #endif // DART_DYNAMICS_INVERSEKINEMATICS_H_
