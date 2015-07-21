@@ -5,7 +5,7 @@
 #include "AssimpInputResourceAdaptor.h"
 
 namespace dart {
-namespace utils {
+namespace dynamics {
 
 /*
  * AssimpInputResourceRetrieverWrapper
@@ -203,5 +203,5 @@ aiFileIO createFileIO(Assimp::IOSystem* _system)
   return out;
 }
 
-} // namespace utils
+} // namespace dynamics
 } // namespace dart

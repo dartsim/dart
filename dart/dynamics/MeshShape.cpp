@@ -46,7 +46,7 @@
 
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
-#include "dart/utils/AssimpInputResourceAdaptor.h"
+#include "dart/dynamics/AssimpInputResourceAdaptor.h"
 #include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
@@ -327,8 +327,8 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
-  utils::AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
-  aiFileIO fileIO = utils::createFileIO(&systemIO);
+  AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
+  aiFileIO fileIO = createFileIO(&systemIO);
 
   // Import the file.
   const aiScene* scene = aiImportFileExWithProperties(

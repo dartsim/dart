@@ -33,8 +33,8 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_ASSIMPINPUTRESOURCEADAPTOR_H_
-#define DART_UTILS_ASSIMPINPUTRESOURCEADAPTOR_H_
+#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
+#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
@@ -42,7 +42,7 @@
 #include "dart/common/ResourceRetriever.h"
 
 namespace dart {
-namespace utils {
+namespace dynamics {
 
 class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 {
@@ -124,7 +124,7 @@ private:
 aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 aiFile createFile(Assimp::IOStream* adaptor);
 
-} // namespace utils
+} // namespace dynamics
 } // namespace dart
 
-#endif // ifndef DART_UTILS_ASSIMPINPUTRESOURCEADAPTOR_H_
+#endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
