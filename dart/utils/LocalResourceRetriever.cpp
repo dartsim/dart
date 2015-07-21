@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "dart/common/Console.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 #include "dart/utils/LocalResourceRetriever.h"
 #include "LocalResource.h"
 

@@ -2,7 +2,7 @@
 #include <regex>
 #include <sstream>
 #include "dart/common/Console.h"
-#include "UriUtils.h"
+#include "Uri.h"
 
 // std::regex is only implemented in GCC 4.9 and above; i.e. libstdc++ 6.0.20
 // or above. In fact, it contains major bugs in GCC 4.8 [1]. There is no

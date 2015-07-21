@@ -19,7 +19,7 @@
 #include "dart/utils/LocalResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 #include "dart/utils/SchemaResourceRetriever.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 
 namespace urdf
 {

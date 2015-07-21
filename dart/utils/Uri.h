@@ -32,8 +32,8 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_URIUTILS_H_
-#define DART_UTILS_URIUTILS_H_
+#ifndef DART_UTILS_URI_H_
+#define DART_UTILS_URI_H_
 
 namespace dart {
 namespace utils {
@@ -118,4 +118,4 @@ private:
 } // namespace utils
 } // namespace dart
 
-#endif // ifndef DART_UTILS_URIUTILS_H_
+#endif // ifndef DART_UTILS_URI_H_

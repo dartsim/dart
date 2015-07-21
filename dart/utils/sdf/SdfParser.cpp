@@ -21,7 +21,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/LocalResourceRetriever.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/utils/SchemaResourceRetriever.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 
 namespace dart {
 namespace utils {

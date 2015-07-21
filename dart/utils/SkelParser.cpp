@@ -72,7 +72,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/LocalResourceRetriever.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 
 namespace dart {
 namespace utils {

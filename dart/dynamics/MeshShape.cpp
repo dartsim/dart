@@ -50,7 +50,7 @@
 #include "dart/common/Console.h"
 #include "dart/utils/AssimpInputResourceAdaptor.h"
 #include "dart/utils/LocalResourceRetriever.h"
-#include "dart/utils/UriUtils.h"
+#include "dart/utils/Uri.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
 // from the standard assimp library
