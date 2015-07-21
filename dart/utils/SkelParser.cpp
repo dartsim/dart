@@ -860,12 +860,13 @@ dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
     tinyxml2::XMLElement* meshEle      = getElement(geometryEle, "mesh");
     std::string           filename     = getValueString(meshEle, "file_name");
     Eigen::Vector3d       scale        = getValueVector3d(meshEle, "scale");
-    // TODO(JS): Do we assume that all mesh files place at DART_DATA_PATH?
-    const aiScene* model = dynamics::MeshShape::loadMesh(DART_DATA_PATH +
-                                                         filename);
+
+    const std::string meshUri = Uri::getRelativeUri(_baseUri, filename);
+    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
     if (model)
     {
-      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model));
+      newShape = std::make_shared<dynamics::MeshShape>(
+        scale, model, meshUri, true, _retriever);
     }
     else
     {
