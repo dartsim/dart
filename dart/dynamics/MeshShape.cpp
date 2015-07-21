@@ -36,8 +36,6 @@
  */
 
 #include "dart/dynamics/MeshShape.h"
-#include "dart/utils/LocalResourceRetriever.h"
-
 #include <iostream>
 #include <limits>
 #include <string>
@@ -50,7 +48,7 @@
 #include "dart/common/Console.h"
 #include "dart/utils/AssimpInputResourceAdaptor.h"
 #include "dart/utils/LocalResourceRetriever.h"
-#include "dart/utils/Uri.h"
+#include "dart/common/Uri.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
 // from the standard assimp library
@@ -160,7 +158,7 @@ static std::string extractPathFromUri(const std::string &_uri)
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const std::string &_path,
-                     const utils::ResourceRetrieverPtr& _resourceRetriever)
+                     const common::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
     mDisplayList(0)
@@ -193,7 +191,7 @@ const std::string &MeshShape::getMeshPath() const
 
 void MeshShape::setMesh(
   const aiScene* _mesh, const std::string &_path,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   mMesh = _mesh;
 
@@ -204,7 +202,7 @@ void MeshShape::setMesh(
     return;
   }
 
-  utils::Uri uri;
+  common::Uri uri;
   if(uri.fromString(_path))
   {
     mMeshUri = _path;
@@ -316,7 +314,7 @@ void MeshShape::_updateBoundingBoxDim() {
 }
 
 const aiScene* MeshShape::loadMesh(
-  const std::string& _uri, const utils::ResourceRetrieverPtr& _retriever)
+  const std::string& _uri, const common::ResourceRetrieverPtr& _retriever)
 {
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();

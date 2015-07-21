@@ -32,11 +32,11 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_URI_H_
-#define DART_UTILS_URI_H_
+#ifndef DART_COMMON_URI_H_
+#define DART_COMMON_URI_H_
 
 namespace dart {
-namespace utils {
+namespace common {
 
 class UriComponent {
 public:
@@ -110,12 +110,11 @@ public:
 
 private:
   // These are helper functions for implementing transform();
-
   static std::string mergePaths(const Uri& _base, const Uri& _relative);
   static std::string removeDotSegments(const std::string& _path);
 };
 
-} // namespace utils
+} // namespace common
 } // namespace dart
 
 #endif // ifndef DART_UTILS_URI_H_

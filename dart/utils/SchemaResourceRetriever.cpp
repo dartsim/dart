@@ -1,19 +1,19 @@
 #include <iostream>
 #include "dart/common/Console.h"
+#include "dart/common/Uri.h"
 #include "dart/utils/SchemaResourceRetriever.h"
-#include "dart/utils/Uri.h"
 
 namespace dart {
 namespace utils {
 
 void SchemaResourceRetriever::addDefaultRetriever(
-  const ResourceRetrieverPtr& _resourceRetriever)
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   mDefaultResourceRetrievers.push_back(_resourceRetriever);
 }
 
 bool SchemaResourceRetriever::addSchemaRetriever(
-  const std::string& _schema, const ResourceRetrieverPtr& _resourceRetriever)
+  const std::string& _schema, const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(!_resourceRetriever)
   {
@@ -36,7 +36,7 @@ bool SchemaResourceRetriever::addSchemaRetriever(
 
 bool SchemaResourceRetriever::exists(const std::string& _uri)
 {
-  for(const ResourceRetrieverPtr& resourceRetriever : getRetrievers(_uri))
+  for(const common::ResourceRetrieverPtr& resourceRetriever : getRetrievers(_uri))
   {
     if(resourceRetriever->exists(_uri))
       return true;
@@ -44,12 +44,12 @@ bool SchemaResourceRetriever::exists(const std::string& _uri)
   return false;
 }
 
-ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
 {
-  const std::vector<ResourceRetrieverPtr> &retrievers = getRetrievers(_uri);
-  for(const ResourceRetrieverPtr& resourceRetriever : retrievers)
+  const std::vector<common::ResourceRetrieverPtr> &retrievers = getRetrievers(_uri);
+  for(const common::ResourceRetrieverPtr& resourceRetriever : retrievers)
   {
-    if(ResourcePtr resource = resourceRetriever->retrieve(_uri))
+    if(common::ResourcePtr resource = resourceRetriever->retrieve(_uri))
       return resource;
   }
 
@@ -60,12 +60,12 @@ ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
   return nullptr;
 }
 
-std::vector<ResourceRetrieverPtr> SchemaResourceRetriever::getRetrievers(
+std::vector<common::ResourceRetrieverPtr> SchemaResourceRetriever::getRetrievers(
   const std::string& _uri)
 {
   const std::string schema = getSchema(_uri);
 
-  std::vector<ResourceRetrieverPtr> retrievers;
+  std::vector<common::ResourceRetrieverPtr> retrievers;
 
   const auto it = mResourceRetrievers.find(schema);
   if(it != std::end(mResourceRetrievers))
@@ -91,7 +91,7 @@ std::vector<ResourceRetrieverPtr> SchemaResourceRetriever::getRetrievers(
 
 std::string SchemaResourceRetriever::getSchema(const std::string& _uri)
 {
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
     dtwarn << "[SchemaResourceRetriever::retrieve] Failed parsing URI:"

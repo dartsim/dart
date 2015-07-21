@@ -90,18 +90,18 @@ public:
   /// Read World from skel file
   static simulation::WorldPtr readWorld(
     const std::string& _filename,
-    const ResourceRetrieverPtr& _retriever = nullptr);
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   /// Read World from an xml-formatted string
   static simulation::WorldPtr readWorldXML(
     const std::string& _xmlString,
     const std::string& _baseUri = "",
-    const ResourceRetrieverPtr& _retriever = nullptr);
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   /// Read Skeleton from skel file
   static dynamics::SkeletonPtr readSkeleton(
     const std::string& _filename,
-    const ResourceRetrieverPtr& _retriever = nullptr);
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
 
@@ -144,33 +144,33 @@ protected:
   static simulation::WorldPtr readWorld(
       tinyxml2::XMLElement* _worldElement,
       const std::string& _baseUri,
-      const ResourceRetrieverPtr& _retriever);
+      const common::ResourceRetrieverPtr& _retriever);
 
   ///
   static dart::dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const std::string& _baseUri,
-      const ResourceRetrieverPtr& _retriever);
+      const common::ResourceRetrieverPtr& _retriever);
 
   ///
   static SkelBodyNode readBodyNode(
       tinyxml2::XMLElement* _bodyElement,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _baseUri,
-      const ResourceRetrieverPtr& _retriever);
+      const common::ResourceRetrieverPtr& _retriever);
 
   ///
   static SkelBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _baseUri,
-      const ResourceRetrieverPtr& _retriever);
+      const common::ResourceRetrieverPtr& _retriever);
 
   ///
   static dynamics::ShapePtr readShape(tinyxml2::XMLElement* _shapeElement,
                                       const std::string& bodyName,
                                       const std::string& _baseUri,
-                                      const ResourceRetrieverPtr& _retriever);
+                                      const common::ResourceRetrieverPtr& _retriever);
 
   /// Read marker
   static dynamics::Marker::Properties readMarker(
@@ -244,7 +244,7 @@ protected:
       SkelJoint& _joint,
       const std::string& _name);
 
-  static ResourceRetrieverPtr getRetriever(const ResourceRetrieverPtr& _retriever);
+  static common::ResourceRetrieverPtr getRetriever(const common::ResourceRetrieverPtr& _retriever);
 };
 
 } // namespace utils

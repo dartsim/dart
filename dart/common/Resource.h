@@ -33,13 +33,13 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_RESOURCE_H_
-#define DART_UTILS_RESOURCE_H_
+#ifndef DART_COMMON_RESOURCE_H_
+#define DART_COMMON_RESOURCE_H_
 #include <cstddef>
 #include <memory>
 
 namespace dart {
-namespace utils {
+namespace common {
 
 class Resource
 {
@@ -63,7 +63,7 @@ public:
 
 typedef std::shared_ptr<Resource> ResourcePtr;
 
-} // namespace utils
+} // namespace common
 } // namespace dart
 
 #endif // ifndef DART_UTILS_RESOURCERETRIEVER_H_

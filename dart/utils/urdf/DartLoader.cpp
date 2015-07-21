@@ -56,12 +56,12 @@ void DartLoader::addPackageDirectory(const std::string& _packageName,
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const std::string& _uri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  const utils::ResourceRetrieverPtr resourceRetriever
+  const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
     dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
@@ -87,8 +87,8 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
-    const std::string& _urdfString, const Uri& _baseUri,
-    const utils::ResourceRetrieverPtr& _resourceRetriever)
+    const std::string& _urdfString, const common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
   {
@@ -110,12 +110,12 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 
 simulation::WorldPtr DartLoader::parseWorld(
   const std::string& _uri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  const utils::ResourceRetrieverPtr resourceRetriever
+  const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
     dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
@@ -131,10 +131,10 @@ simulation::WorldPtr DartLoader::parseWorld(
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
-    const std::string& _urdfString, const Uri& _baseUri,
-    const utils::ResourceRetrieverPtr& _resourceRetriever)
+    const std::string& _urdfString, const common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  const utils::ResourceRetrieverPtr resourceRetriever
+  const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
   if(_urdfString.empty())
@@ -276,8 +276,8 @@ bool DartLoader::parseWorldToEntityPaths(
  */
 dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   const urdf::ModelInterface* _model,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::SkeletonPtr skeleton = dynamics::Skeleton::create(_model->getName());
 
@@ -337,8 +337,8 @@ bool DartLoader::createSkeletonRecursive(
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode& _parentNode,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::BodyNode::Properties properties;
   if (!createDartNodeProperties(_lk, &properties, _baseUri, _resourceRetriever))
@@ -365,11 +365,11 @@ bool DartLoader::createSkeletonRecursive(
  * @function readXml
  */
 bool DartLoader::readFileToString(
-  const utils::ResourceRetrieverPtr& _resourceRetriever,
+  const common::ResourceRetrieverPtr& _resourceRetriever,
   const std::string &_uri,
   std::string &_output)
 {
-  const ResourcePtr resource = _resourceRetriever->retrieve(_uri);
+  const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
   if (!resource)
     return false;
 
@@ -389,8 +389,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    const Uri& _baseUri,
-    const utils::ResourceRetrieverPtr& _resourceRetriever)
+    const common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::Joint::Properties basicProperties;
 
@@ -479,8 +479,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 bool DartLoader::createDartNodeProperties(
   const urdf::Link* _lk,
   dynamics::BodyNode::Properties *node,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   node->mName = _lk->name;
   
@@ -544,8 +544,8 @@ void setMaterial(dynamics::ShapePtr _shape, const urdf::Collision* _col) {
 template <class VisualOrCollision>
 dynamics::ShapePtr DartLoader::createShape(
   const VisualOrCollision* _vizOrCol,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::ShapePtr shape;
 
@@ -571,7 +571,7 @@ dynamics::ShapePtr DartLoader::createShape(
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
     // Resolve relative URIs.
-    Uri relativeUri, absoluteUri;
+    common::Uri relativeUri, absoluteUri;
     if(!absoluteUri.fromRelativeUri(_baseUri, mesh->filename))
     {
       dtwarn << "[DartLoader::createShape] Failed resolving mesh URI '"
@@ -605,8 +605,8 @@ dynamics::ShapePtr DartLoader::createShape(
   return shape;
 }
 
-utils::ResourceRetrieverPtr DartLoader::getResourceRetriever(
-  const utils::ResourceRetrieverPtr& _resourceRetriever)
+common::ResourceRetrieverPtr DartLoader::getResourceRetriever(
+  const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if (_resourceRetriever)
     return _resourceRetriever;
@@ -616,12 +616,12 @@ utils::ResourceRetrieverPtr DartLoader::getResourceRetriever(
 
 template dynamics::ShapePtr DartLoader::createShape<urdf::Visual>(
   const urdf::Visual* _vizOrCol,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever);
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever);
 template dynamics::ShapePtr DartLoader::createShape<urdf::Collision>(
   const urdf::Collision* _vizOrCol,
-  const Uri& _baseUri,
-  const utils::ResourceRetrieverPtr& _resourceRetriever);
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever);
 
 /**
  * @function pose2Affine3d

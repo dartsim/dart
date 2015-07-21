@@ -588,15 +588,15 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement,
 
 void openXMLFile(
   tinyxml2::XMLDocument& doc, const char* const filename,
-  const ResourceRetrieverPtr& _retriever)
+  const common::ResourceRetrieverPtr& _retriever)
 {
-    ResourceRetrieverPtr retriever;
+    common::ResourceRetrieverPtr retriever;
     if(_retriever)
       retriever = _retriever;
     else
       retriever = std::make_shared<LocalResourceRetriever>();
 
-    const ResourcePtr resource = retriever->retrieve(filename);
+    const common::ResourcePtr resource = retriever->retrieve(filename);
     if(!resource)
     {
       dtwarn << "[openXMLFile] Failed opening URI '"

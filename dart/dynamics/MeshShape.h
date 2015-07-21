@@ -43,7 +43,7 @@
 #include <assimp/scene.h>
 
 #include "dart/dynamics/Shape.h"
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 
 namespace Assimp {
 
@@ -62,7 +62,7 @@ public:
     const Eigen::Vector3d& _scale,
     const aiScene* _mesh,
     const std::string &_path = "",
-    const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
   /// \brief Destructor.
   virtual ~MeshShape();
@@ -73,7 +73,7 @@ public:
   /// \brief
   void setMesh(
     const aiScene* _mesh, const std::string &path = "",
-    const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
   /// \brief URI to the mesh; an empty string if unavailable.
   const std::string &getMeshUri() const;
@@ -103,7 +103,7 @@ public:
 
   /// \brief 
   static const aiScene* loadMesh(
-    const std::string& _uri, const utils::ResourceRetrieverPtr& _retriever);
+    const std::string& _uri, const common::ResourceRetrieverPtr& _retriever);
 
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
@@ -127,7 +127,7 @@ protected:
   std::string mMeshPath;
 
   /// \brief Optional method of loading resources by URI.
-  utils::ResourceRetrieverPtr mResourceRetriever;
+  common::ResourceRetrieverPtr mResourceRetriever;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;

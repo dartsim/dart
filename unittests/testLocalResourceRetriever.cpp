@@ -38,7 +38,7 @@
 #include "dart/utils/LocalResourceRetriever.h"
 #include "TestHelpers.h"
 
-using dart::utils::Resource;
+using dart::common::Resource;
 using dart::utils::LocalResourceRetriever;
 
 TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)

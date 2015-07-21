@@ -11,7 +11,7 @@ namespace utils {
  * AssimpInputResourceRetrieverWrapper
  */
 AssimpInputResourceRetrieverAdaptor::AssimpInputResourceRetrieverAdaptor(
-      const ResourceRetrieverPtr& _resourceRetriever)
+      const common::ResourceRetrieverPtr& _resourceRetriever)
   : mResourceRetriever(_resourceRetriever)
 {
 }
@@ -39,7 +39,7 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
     return nullptr;
   }
 
-  if(const ResourcePtr resource = mResourceRetriever->retrieve(pFile))
+  if(const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
     return new AssimpInputResourceAdaptor(resource);
   else
     return nullptr;
@@ -56,7 +56,7 @@ void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
  * AssimpInputResourceAdaptor
  */
 AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
-      const ResourcePtr& _resource)
+      const common::ResourcePtr& _resource)
   : mResource(_resource)
 {
   assert(_resource);
@@ -78,6 +78,8 @@ size_t AssimpInputResourceAdaptor::Write(
 
 aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
 {
+  using common::Resource;
+
   Resource::SeekType origin;
   switch(pOrigin)
   {

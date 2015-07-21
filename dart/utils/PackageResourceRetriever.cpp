@@ -3,14 +3,13 @@
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/utils/LocalResourceRetriever.h"
-#include "dart/utils/ResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 
 namespace dart {
 namespace utils {
 
 PackageResourceRetriever::PackageResourceRetriever(
-  const ResourceRetrieverPtr& localRetriever)
+  const common::ResourceRetrieverPtr& localRetriever)
 {
   if (localRetriever)
     mLocalRetriever = localRetriever;
@@ -47,7 +46,7 @@ bool PackageResourceRetriever::exists(const std::string& _uri)
   return false;
 }
 
-ResourcePtr PackageResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr PackageResourceRetriever::retrieve(const std::string& _uri)
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))

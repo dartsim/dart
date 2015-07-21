@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "dart/common/Console.h"
-#include "dart/utils/Uri.h"
+#include "dart/common/Uri.h"
 #include "dart/utils/LocalResourceRetriever.h"
 #include "LocalResource.h"
 
@@ -10,7 +10,7 @@ namespace utils {
 
 bool LocalResourceRetriever::exists(const std::string& _uri)
 {
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
     dtwarn << "[exists] Failed parsing URI: " << _uri << "\n";
@@ -25,9 +25,9 @@ bool LocalResourceRetriever::exists(const std::string& _uri)
   return std::ifstream(*uri.mScheme, std::ios::binary).good();
 }
 
-ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
 {
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
     dtwarn << "[exists] Failed parsing URI: " << _uri << "\n";

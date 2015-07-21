@@ -38,9 +38,9 @@
 #include "dart/utils/SchemaResourceRetriever.h"
 #include "TestHelpers.h"
 
-using dart::utils::Resource;
-using dart::utils::ResourcePtr;
-using dart::utils::ResourceRetriever;
+using dart::common::Resource;
+using dart::common::ResourcePtr;
+using dart::common::ResourceRetriever;
 using dart::utils::SchemaResourceRetriever;
 
 TEST(SchemaResourceRetriever, exists_NothingRegistered_ReturnsFalse)

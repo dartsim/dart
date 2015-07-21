@@ -37,33 +37,33 @@
 #define DART_UTILS_SCHEMARESOURCERETRIEVER_H_
 #include <unordered_map>
 #include <vector>
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 
 namespace dart {
 namespace utils {
 
-class SchemaResourceRetriever : public virtual ResourceRetriever
+class SchemaResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   virtual ~SchemaResourceRetriever() = default;
 
-  void addDefaultRetriever(const ResourceRetrieverPtr& _resourceRetriever);
+  void addDefaultRetriever(const common::ResourceRetrieverPtr& _resourceRetriever);
 
   bool addSchemaRetriever(
     const std::string& _schema,
-    const ResourceRetrieverPtr& _resourceRetriever);
+    const common::ResourceRetrieverPtr& _resourceRetriever);
 
   bool exists(const std::string& _uri) override;
-  ResourcePtr retrieve(const std::string& _uri) override;
+  common::ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
-  std::vector<ResourceRetrieverPtr> getRetrievers(const std::string& _uri);
+  std::vector<common::ResourceRetrieverPtr> getRetrievers(const std::string& _uri);
 
   std::string getSchema(const std::string& _uri);
 
   std::unordered_map<std::string,
-    std::vector<ResourceRetrieverPtr> > mResourceRetrievers;
-  std::vector<ResourceRetrieverPtr> mDefaultResourceRetrievers;
+    std::vector<common::ResourceRetrieverPtr> > mResourceRetrievers;
+  std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
 
 typedef std::shared_ptr<SchemaResourceRetriever> SchemaResourceRetrieverPtr;

@@ -37,17 +37,17 @@
 #define DART_UTILS_PACKAGERESOURCERETRIEVER_H_
 #include <unordered_map>
 #include <vector>
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 
 namespace dart {
 namespace utils {
 
 /// \brief Retrieve local resources specified by package:// URIs.
-class PackageResourceRetriever : public virtual ResourceRetriever
+class PackageResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   PackageResourceRetriever(
-    const ResourceRetrieverPtr& localRetriever = nullptr);
+    const common::ResourceRetrieverPtr& localRetriever = nullptr);
 
   virtual ~PackageResourceRetriever() = default;
 
@@ -76,10 +76,10 @@ public:
                            const std::string& _packageDirectory);
 
   bool exists(const std::string& _uri) override;
-  ResourcePtr retrieve(const std::string& _uri) override;
+  common::ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
-  ResourceRetrieverPtr mLocalRetriever;
+  common::ResourceRetrieverPtr mLocalRetriever;
   std::unordered_map<std::string, std::vector<std::string> > mPackageMap;
 
   const std::vector<std::string>& getPackagePaths(

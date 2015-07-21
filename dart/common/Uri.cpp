@@ -38,7 +38,7 @@ static bool startsWith(const std::string& _target, const std::string& _prefix)
 }
 
 namespace dart {
-namespace utils {
+namespace common {
 
 /*
  * UriComponent
@@ -450,5 +450,5 @@ std::string Uri::removeDotSegments(const std::string& _path)
   return output;
 }
 
-} // namespace utils
+} // namespace common
 } // namespace dart

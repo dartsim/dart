@@ -15,11 +15,11 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/Uri.h"
+#include "dart/common/ResourceRetriever.h"
 #include "dart/utils/LocalResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 #include "dart/utils/SchemaResourceRetriever.h"
-#include "dart/utils/Uri.h"
 
 namespace urdf
 {
@@ -79,21 +79,21 @@ class DartLoader {
     /// Parse a file to produce a Skeleton
     dynamics::SkeletonPtr parseSkeleton(
       const std::string& _uri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a Skeleton
     dynamics::SkeletonPtr parseSkeletonString(
-      const std::string& _urdfString, const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const std::string& _urdfString, const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
     dart::simulation::WorldPtr parseWorld(const std::string& _uri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a World
     dart::simulation::WorldPtr parseWorldString(
-      const std::string& _urdfString, const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+      const std::string& _urdfString, const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
 private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
@@ -105,43 +105,43 @@ private:
 
     static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
-      const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static bool createSkeletonRecursive(
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk,
       dynamics::BodyNode& _parent,
-      const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     template <class VisualOrCollision>
     static dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
-      const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static dynamics::BodyNode* createDartJointAndNode(
       const urdf::Joint* _jt,
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
-      const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static bool createDartNodeProperties(
       const urdf::Link* _lk,
       dynamics::BodyNode::Properties *properties,
-      const Uri& _baseUri,
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    utils::ResourceRetrieverPtr getResourceRetriever(
-      const utils::ResourceRetrieverPtr& _resourceRetriever);
+    common::ResourceRetrieverPtr getResourceRetriever(
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
     static Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
 
     static bool readFileToString(
-      const utils::ResourceRetrieverPtr& _resourceRetriever,
+      const common::ResourceRetrieverPtr& _resourceRetriever,
       const std::string &_uri,
       std::string &_output);
 

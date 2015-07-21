@@ -35,19 +35,19 @@
  */
 #ifndef DART_UTILS_LOCALRESOURCERETRIEVER_H_
 #define DART_UTILS_LOCALRESOURCERETRIEVER_H_
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 
 namespace dart {
 namespace utils {
 
 /// \brief Retrieve local resources specified by file:// URIs.
-class LocalResourceRetriever : public virtual ResourceRetriever
+class LocalResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;
 
   bool exists(const std::string& _uri) override;
-  ResourcePtr retrieve(const std::string& _uri) override;
+  common::ResourcePtr retrieve(const std::string& _uri) override;
 };
 
 typedef std::shared_ptr<LocalResourceRetriever> LocalResourceRetrieverPtr;

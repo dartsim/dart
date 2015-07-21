@@ -53,7 +53,7 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 
 using namespace Eigen;
 using namespace dart::math;
@@ -377,7 +377,7 @@ SkeletonPtr createBox(
 }
 
 //==============================================================================
-struct TestResource : public dart::utils::Resource
+struct TestResource : public dart::common::Resource
 {
   size_t getFileSize() override
   {
@@ -401,7 +401,7 @@ struct TestResource : public dart::utils::Resource
 };
 
 //==============================================================================
-struct PresentResourceRetriever : public dart::utils::ResourceRetriever
+struct PresentResourceRetriever : public dart::common::ResourceRetriever
 {
   bool exists(const std::string& _uri) override
   {
@@ -409,7 +409,7 @@ struct PresentResourceRetriever : public dart::utils::ResourceRetriever
     return true;
   }
 
-  dart::utils::ResourcePtr retrieve(const std::string& _uri) override
+  dart::common::ResourcePtr retrieve(const std::string& _uri) override
   {
     mRetrieve.push_back(_uri);
     return std::make_shared<TestResource>();
@@ -420,7 +420,7 @@ struct PresentResourceRetriever : public dart::utils::ResourceRetriever
 };
 
 //==============================================================================
-struct AbsentResourceRetriever : public dart::utils::ResourceRetriever
+struct AbsentResourceRetriever : public dart::common::ResourceRetriever
 {
   bool exists(const std::string& _uri) override
   {
@@ -428,7 +428,7 @@ struct AbsentResourceRetriever : public dart::utils::ResourceRetriever
     return false;
   }
 
-  dart::utils::ResourcePtr retrieve(const std::string& _uri) override
+  dart::common::ResourcePtr retrieve(const std::string& _uri) override
   {
     mRetrieve.push_back(_uri);
     return nullptr;

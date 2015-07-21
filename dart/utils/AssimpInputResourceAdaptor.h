@@ -38,8 +38,8 @@
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
-#include "dart/utils/Resource.h"
-#include "dart/utils/ResourceRetriever.h"
+#include "dart/common/Resource.h"
+#include "dart/common/ResourceRetriever.h"
 
 namespace dart {
 namespace utils {
@@ -48,7 +48,7 @@ class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 {
 public:
   AssimpInputResourceRetrieverAdaptor(
-    const ResourceRetrieverPtr& _resourceRetriever);
+    const common::ResourceRetrieverPtr& _resourceRetriever);
   virtual ~AssimpInputResourceRetrieverAdaptor() = default;
 
 	/// \brief Tests for the existence of a file at the given path. 
@@ -80,13 +80,13 @@ public:
 	void Close(Assimp::IOStream* pFile) override;
 
 private:
-  ResourceRetrieverPtr mResourceRetriever;
+  common::ResourceRetrieverPtr mResourceRetriever;
 };
 
 class AssimpInputResourceAdaptor : public Assimp::IOStream
 {
 public:
-  AssimpInputResourceAdaptor(const ResourcePtr& _resource);
+  AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
   virtual ~AssimpInputResourceAdaptor() = default;
 
   /// \brief Read from the file
@@ -117,7 +117,7 @@ public:
   void Flush() override;
 
 private:
-  ResourcePtr mResource;
+  common::ResourcePtr mResource;
 };
 
 

@@ -32,15 +32,15 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_RESOURCERETRIEVER_H_
-#define DART_UTILS_RESOURCERETRIEVER_H_
+#ifndef DART_COMMON_RESOURCERETRIEVER_H_
+#define DART_COMMON_RESOURCERETRIEVER_H_
 
 #include <memory>
 #include <string>
 #include "Resource.h"
 
 namespace dart {
-namespace utils {
+namespace common {
 
 struct ResourceRetriever {
   virtual ~ResourceRetriever() = default;
@@ -51,7 +51,7 @@ struct ResourceRetriever {
 
 typedef std::shared_ptr<ResourceRetriever> ResourceRetrieverPtr;
 
-} // namespace utils
+} // namespace common
 } // namespace dart
 
 #endif // ifndef DART_UTILS_RESOURCERETRIEVER_H_

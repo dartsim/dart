@@ -35,12 +35,12 @@
  */
 #ifndef DART_UTILS_LOCALRESOURCE_H_
 #define DART_UTILS_LOCALRESOURCE_H_
-#include "Resource.h"
+#include "dart/common/Resource.h"
 
 namespace dart {
 namespace utils {
 
-class LocalResource : public virtual Resource
+class LocalResource : public virtual common::Resource
 {
 public:
   LocalResource(const std::string& _path);
