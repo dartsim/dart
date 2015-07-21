@@ -88,17 +88,20 @@ class SkelParser
 {
 public:
   /// Read World from skel file
-  static simulation::WorldPtr readWorld(const std::string& _filename,
-    const ResourceRetrieverPtr& _retriever);
+  static simulation::WorldPtr readWorld(
+    const std::string& _filename,
+    const ResourceRetrieverPtr& _retriever = nullptr);
 
   /// Read World from an xml-formatted string
   static simulation::WorldPtr readWorldXML(
     const std::string& _xmlString,
-    const std::string& _baseUri, const ResourceRetrieverPtr& _retriever);
+    const std::string& _baseUri = "",
+    const ResourceRetrieverPtr& _retriever = nullptr);
 
   /// Read Skeleton from skel file
-  static dynamics::SkeletonPtr readSkeleton(const std::string& _filename,
-    const ResourceRetrieverPtr& _retriever);
+  static dynamics::SkeletonPtr readSkeleton(
+    const std::string& _filename,
+    const ResourceRetrieverPtr& _retriever = nullptr);
 
   typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
 
@@ -240,6 +243,8 @@ protected:
       tinyxml2::XMLElement* _jointElement,
       SkelJoint& _joint,
       const std::string& _name);
+
+  static ResourceRetrieverPtr getRetriever(const ResourceRetrieverPtr& _retriever);
 };
 
 } // namespace utils

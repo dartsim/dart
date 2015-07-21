@@ -71,6 +71,8 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/utils/UriUtils.h"
 
 namespace dart {
 namespace utils {
@@ -105,14 +107,17 @@ static tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorld(
-  const std::string& _filename, const ResourceRetrieverPtr& _retriever)
+  const std::string& _filename,
+  const ResourceRetrieverPtr& _retriever)
 {
+  const ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str());
+    openXMLFile(_dartFile, _filename.c_str(), retriever);
   }
   catch(std::exception const& e)
   {
@@ -129,13 +134,17 @@ simulation::WorldPtr SkelParser::readWorld(
     return nullptr;
   }
 
-  return readWorld(worldElement, _filename, _retriever);
+  return readWorld(worldElement, _filename, retriever);
 }
 
 //==============================================================================
-simulation::WorldPtr SkelParser::readWorldXML(const std::string& _xmlString,
-  const std::string& _baseUri, const ResourceRetrieverPtr& _retriever)
+simulation::WorldPtr SkelParser::readWorldXML(
+  const std::string& _xmlString,
+  const std::string& _baseUri,
+  const ResourceRetrieverPtr& _retriever)
 {
+  const ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   tinyxml2::XMLDocument _dartXML;
   if(_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS)
   {
@@ -150,19 +159,22 @@ simulation::WorldPtr SkelParser::readWorldXML(const std::string& _xmlString,
     return nullptr;
   }
 
-  return readWorld(worldElement, _baseUri, _retriever);
+  return readWorld(worldElement, _baseUri, retriever);
 }
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
-  const std::string& _filename, const ResourceRetrieverPtr& _retriever)
+  const std::string& _filename,
+  const ResourceRetrieverPtr& _retriever)
 {
+  const ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str());
+    openXMLFile(_dartFile, _filename.c_str(), retriever);
   }
   catch(std::exception const& e)
   {
@@ -195,7 +207,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   }
 
   dynamics::SkeletonPtr newSkeleton = readSkeleton(
-    skeletonElement, _filename, _retriever);
+    skeletonElement, _filename, retriever);
 
   return newSkeleton;
 }
@@ -1950,6 +1962,15 @@ SkelParser::JointPropPtr SkelParser::readFreeJoint(
 
   return Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
       properties);
+}
+
+ResourceRetrieverPtr SkelParser::getRetriever(
+  const ResourceRetrieverPtr& _retriever)
+{
+  if(_retriever)
+    return _retriever;
+  else
+    return std::make_shared<LocalResourceRetriever>();
 }
 
 }  // namespace utils
