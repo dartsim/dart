@@ -11,6 +11,7 @@
 #include <tinyxml2.h>
 
 #include "dart/utils/Parser.h"
+#include "dart/utils/ResourceRetriever.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
@@ -50,19 +51,28 @@ class SdfParser
 {
 public:
     /// \brief
-    static dart::simulation::WorldPtr readSdfFile(const std::string& _filename);
+    // TODO: Make ResourceRetriever optional.
+    static dart::simulation::WorldPtr readSdfFile(
+        const std::string& _filename, const ResourceRetrieverPtr& _retriever);
 
     static simulation::WorldPtr readSdfFile(
         const std::string& _filename,
-        std::function<simulation::WorldPtr (tinyxml2::XMLElement*,
-                                          const std::string&)> xmlReader);
+        const ResourceRetrieverPtr& _retriever,
+        std::function<simulation::WorldPtr (
+          tinyxml2::XMLElement*, const std::string&,
+          const ResourceRetrieverPtr&)> xmlReader);
 
     /// \brief
-    static dynamics::SkeletonPtr readSkeleton(const std::string& _fileName);
+    // TODO: Make ResourceRetriever optional.
+    static dynamics::SkeletonPtr readSkeleton(
+      const std::string& _fileName, const ResourceRetrieverPtr& _retriever);
 
-    static dynamics::SkeletonPtr readSkeleton(const std::string& _fileName,
+    static dynamics::SkeletonPtr readSkeleton(
+        const std::string& _fileName,
+        const ResourceRetrieverPtr& _retriever,
         std::function<dynamics::SkeletonPtr(
-          tinyxml2::XMLElement*, const std::string&)> xmlReader);
+          tinyxml2::XMLElement*, const std::string&,
+          const ResourceRetrieverPtr&)> xmlReader);
 
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
 
@@ -92,14 +102,17 @@ public:
 
     static simulation::WorldPtr readWorld(
         tinyxml2::XMLElement* _worldElement,
-        const std::string& _skelPath);
+        const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever);
 
     /// \brief
     static simulation::WorldPtr readWorld(
         tinyxml2::XMLElement* _worldElement,
         const std::string& _skelPath,
-        std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
-                                            const std::string&)> skeletonReader);
+        const ResourceRetrieverPtr& _retriever,
+        std::function<dynamics::SkeletonPtr(
+          tinyxml2::XMLElement*, const std::string&,
+          const ResourceRetrieverPtr&)> skeletonReader);
 
     /// \brief
     static void readPhysics(tinyxml2::XMLElement* _physicsElement,
@@ -108,15 +121,18 @@ public:
     /// \brief
     static dynamics::SkeletonPtr readSkeleton(
         tinyxml2::XMLElement* _skeletonElement,
-        const std::string& _skelPath);
+        const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever);
 
     static dynamics::SkeletonPtr readSkeleton(
         tinyxml2::XMLElement* _skeletonElement,
         const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever,
 
         std::function<SDFBodyNode (tinyxml2::XMLElement*,
                                    const Eigen::Isometry3d&,
-                                   const std::string&)> bodyReader,
+                                   const std::string&,
+                                   const ResourceRetrieverPtr&)> bodyReader,
 
         std::function<bool(dynamics::SkeletonPtr,
                            dynamics::BodyNode*,
@@ -192,27 +208,32 @@ public:
     static BodyMap readAllBodyNodes(
         tinyxml2::XMLElement* _skeletonElement,
         const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever, 
         const Eigen::Isometry3d& skeletonFrame);
 
     static BodyMap readAllBodyNodes(
         tinyxml2::XMLElement* _skeletonElement,
         const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever, 
         const Eigen::Isometry3d& skeletonFrame,
 
         std::function<SDFBodyNode(tinyxml2::XMLElement*,
                                   const Eigen::Isometry3d&,
-                                  const std::string&)> bodyReader);
+                                  const std::string&,
+                                  const ResourceRetrieverPtr&)> bodyReader);
 
     /// \brief
     static SDFBodyNode readBodyNode(
         tinyxml2::XMLElement* _bodyNodeElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const std::string& _skelPath);
+        const std::string& _skelPath,
+        const ResourceRetrieverPtr& _retriever);
 
     /// \brief
     static dynamics::ShapePtr readShape(
             tinyxml2::XMLElement* _shapelement,
-            const std::string& _skelPath);
+            const std::string& _skelPath,
+            const ResourceRetrieverPtr& _retriever);
 
     /// \brief
     static JointMap readAllJoints(
