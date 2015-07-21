@@ -6,6 +6,12 @@
 namespace dart {
 namespace utils {
 
+void SchemaResourceRetriever::addDefaultRetriever(
+  const ResourceRetrieverPtr& _resourceRetriever)
+{
+  mDefaultResourceRetrievers.push_back(_resourceRetriever);
+}
+
 bool SchemaResourceRetriever::addSchemaRetriever(
   const std::string& _schema, const ResourceRetrieverPtr& _resourceRetriever)
 {
@@ -54,23 +60,33 @@ ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
   return nullptr;
 }
 
-const std::vector<ResourceRetrieverPtr>& SchemaResourceRetriever::getRetrievers(
+std::vector<ResourceRetrieverPtr> SchemaResourceRetriever::getRetrievers(
   const std::string& _uri)
 {
-  static const std::vector<ResourceRetrieverPtr> empty_placeholder;
-
   const std::string schema = getSchema(_uri);
+
+  std::vector<ResourceRetrieverPtr> retrievers;
 
   const auto it = mResourceRetrievers.find(schema);
   if(it != std::end(mResourceRetrievers))
-    return it->second;
-  else
+    retrievers.insert(
+      std::end(retrievers),
+      std::begin(it->second),
+      std::end(it->second));
+
+  retrievers.insert(
+    std::end(retrievers),
+    std::begin(mDefaultResourceRetrievers),
+    std::end(mDefaultResourceRetrievers));
+
+  if(retrievers.empty())
   {
     dtwarn << "[SchemaResourceRetriever::retrieve] There are no resource"
               " retrievers registered for the schema '" << schema << "'"
               " that is necessary to retrieve URI '" << _uri << "'.\n";
-    return empty_placeholder;
   }
+
+  return retrievers;
 }
 
 std::string SchemaResourceRetriever::getSchema(const std::string& _uri)

@@ -47,6 +47,8 @@ class SchemaResourceRetriever : public virtual ResourceRetriever
 public:
   virtual ~SchemaResourceRetriever() = default;
 
+  void addDefaultRetriever(const ResourceRetrieverPtr& _resourceRetriever);
+
   bool addSchemaRetriever(
     const std::string& _schema,
     const ResourceRetrieverPtr& _resourceRetriever);
@@ -55,12 +57,13 @@ public:
   ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
+  std::vector<ResourceRetrieverPtr> getRetrievers(const std::string& _uri);
+
+  std::string getSchema(const std::string& _uri);
+
   std::unordered_map<std::string,
     std::vector<ResourceRetrieverPtr> > mResourceRetrievers;
-
-  const std::vector<ResourceRetrieverPtr>& getRetrievers(
-    const std::string& _uri);
-  std::string getSchema(const std::string& _uri);
+  std::vector<ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
 
 typedef std::shared_ptr<SchemaResourceRetriever> SchemaResourceRetrieverPtr;
