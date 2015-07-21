@@ -47,7 +47,7 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 #include "dart/utils/AssimpInputResourceAdaptor.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
@@ -377,7 +377,7 @@ const aiScene* MeshShape::loadMesh(
 
 const aiScene* MeshShape::loadMesh(const std::string& _fileName)
 {
-  const auto retriever = std::make_shared<utils::LocalResourceRetriever>();
+  const auto retriever = std::make_shared<common::LocalResourceRetriever>();
   return loadMesh("file://" + _fileName, retriever);
 }
 

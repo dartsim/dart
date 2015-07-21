@@ -20,7 +20,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 #include "dart/utils/sdf/SdfParser.h"
 
@@ -1067,7 +1067,7 @@ common::ResourceRetrieverPtr SdfParser::getResourceRetriever(
   if(_retriever)
     return _retriever;
   else
-    return std::make_shared<LocalResourceRetriever>();
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 } // namespace utils

@@ -35,11 +35,11 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "TestHelpers.h"
 
 using dart::common::Resource;
-using dart::utils::LocalResourceRetriever;
+using dart::common::LocalResourceRetriever;
 
 TEST(LocalResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
 {

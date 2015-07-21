@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include "dart/common/Console.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 
 namespace dart {
@@ -14,7 +14,7 @@ PackageResourceRetriever::PackageResourceRetriever(
   if (localRetriever)
     mLocalRetriever = localRetriever;
   else
-    mLocalRetriever = std::make_shared<LocalResourceRetriever>();
+    mLocalRetriever = std::make_shared<common::LocalResourceRetriever>();
 }
 
 void PackageResourceRetriever::addPackageDirectory(

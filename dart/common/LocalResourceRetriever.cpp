@@ -2,11 +2,11 @@
 #include <fstream>
 #include "dart/common/Console.h"
 #include "dart/common/Uri.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "LocalResourceRetriever.h"
 #include "LocalResource.h"
 
 namespace dart {
-namespace utils {
+namespace common {
 
 bool LocalResourceRetriever::exists(const std::string& _uri)
 {
@@ -44,5 +44,5 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
     return nullptr;
 }
 
-} // namespace utils
+} // namespace common
 } // namespace dart

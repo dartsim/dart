@@ -17,7 +17,7 @@
 #include "dart/simulation/World.h"
 #include "dart/common/Uri.h"
 #include "dart/common/ResourceRetriever.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
 #include "dart/utils/SchemaResourceRetriever.h"
 
@@ -145,7 +145,7 @@ private:
       const std::string &_uri,
       std::string &_output);
 
-    utils::LocalResourceRetrieverPtr mLocalRetriever;
+    common::LocalResourceRetrieverPtr mLocalRetriever;
     utils::PackageResourceRetrieverPtr mPackageRetriever;
     utils::SchemaResourceRetrieverPtr mRetriever;
 };

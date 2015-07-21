@@ -71,7 +71,7 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
 namespace dart {
@@ -1971,7 +1971,7 @@ common::ResourceRetrieverPtr SkelParser::getRetriever(
   if(_retriever)
     return _retriever;
   else
-    return std::make_shared<LocalResourceRetriever>();
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 }  // namespace utils

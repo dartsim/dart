@@ -43,7 +43,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
-#include "dart/utils/LocalResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.h"
 
 namespace dart {
 namespace utils {
@@ -594,7 +594,7 @@ void openXMLFile(
     if(_retriever)
       retriever = _retriever;
     else
-      retriever = std::make_shared<LocalResourceRetriever>();
+      retriever = std::make_shared<common::LocalResourceRetriever>();
 
     const common::ResourcePtr resource = retriever->retrieve(filename);
     if(!resource)

@@ -33,42 +33,26 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DART_UTILS_LOCALRESOURCE_H_
-#define DART_UTILS_LOCALRESOURCE_H_
-#include "dart/common/Resource.h"
+#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#define DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#include "dart/common/ResourceRetriever.h"
 
 namespace dart {
-namespace utils {
+namespace common {
 
-class LocalResource : public virtual common::Resource
+/// \brief Retrieve local resources specified by file:// URIs.
+class LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
-  LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+  virtual ~LocalResourceRetriever() = default;
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
-
-  /// Return if the resource is open and in a valid state.
-  bool isGood() const;
-
-  // Documentation inherited.
-  size_t getFileSize() override;
-
-  // Documentation inherited.
-  size_t tell() override;
-
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
-
-  // Documentation inherited.
-  size_t read(void *_buffer, size_t _size, size_t _count) override;
-
-private:
-  std::FILE* mFile;
+  bool exists(const std::string& _uri) override;
+  ResourcePtr retrieve(const std::string& _uri) override;
 };
 
-} // namespace utils
+typedef std::shared_ptr<LocalResourceRetriever> LocalResourceRetrieverPtr;
+
+} // namespace common
 } // namespace dart
 
-#endif // ifndef DART_UTILS_LOCALRESOURCERETRIEVER_H_
+#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_

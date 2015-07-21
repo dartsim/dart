@@ -1,10 +1,10 @@
 #include <cstring>
 #include <iostream>
-#include "LocalResource.h"
 #include "dart/common/Console.h"
+#include "LocalResource.h"
 
 namespace dart {
-namespace utils {
+namespace common {
 
 LocalResource::LocalResource(const std::string& _path)
   : mFile(std::fopen(_path.c_str(), "rb"))
@@ -134,6 +134,6 @@ size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
   return result;
 }
 
-} // namespace utils
+} // namespace common
 } // namespace dart
 
