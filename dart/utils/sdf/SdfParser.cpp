@@ -635,7 +635,7 @@ dynamics::ShapePtr SdfParser::readShape(
 
     if (model)
       newShape = std::make_shared<dynamics::MeshShape>(
-        scale, model, meshUri, true, _retriever);
+        scale, model, meshUri, _retriever);
     else
       dterr << "Fail to load model[" << meshUri << "]." << std::endl;
   }

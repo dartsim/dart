@@ -866,7 +866,7 @@ dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
     if (model)
     {
       newShape = std::make_shared<dynamics::MeshShape>(
-        scale, model, meshUri, true, _retriever);
+        scale, model, meshUri, _retriever);
     }
     else
     {

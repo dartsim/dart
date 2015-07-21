@@ -50,6 +50,7 @@
 #include "dart/common/Console.h"
 #include "dart/utils/AssimpInputResourceAdaptor.h"
 #include "dart/utils/LocalResourceRetriever.h"
+#include "dart/utils/UriUtils.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
 // from the standard assimp library
@@ -158,7 +159,7 @@ static std::string extractPathFromUri(const std::string &_uri)
 }
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string &_path, bool _isUri,
+                     const std::string &_path,
                      const utils::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
@@ -168,7 +169,7 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
 
-  setMesh(_mesh, _path, _isUri, _resourceRetriever);
+  setMesh(_mesh, _path, _resourceRetriever);
   setScale(_scale);
 }
 
@@ -191,7 +192,7 @@ const std::string &MeshShape::getMeshPath() const
 }
 
 void MeshShape::setMesh(
-  const aiScene* _mesh, const std::string &_path, bool _isUri,
+  const aiScene* _mesh, const std::string &_path,
   const utils::ResourceRetrieverPtr& _resourceRetriever)
 {
   mMesh = _mesh;
@@ -203,15 +204,19 @@ void MeshShape::setMesh(
     return;
   }
 
-  if(_isUri)
+  utils::Uri uri;
+  if(uri.fromString(_path))
   {
     mMeshUri = _path;
-    mMeshPath = extractPathFromUri(_path);
+
+    if(uri.mScheme.get_value_or("file") == "file")
+      mMeshPath = uri.mPath.get_value_or("");
   }
   else
   {
-    mMeshUri = "file://" + _path;
-    mMeshPath = _path;
+    dtwarn << "[MeshShape::setMesh] Failed parsing URI '" << _path << "'.\n";
+    mMeshUri = "";
+    mMeshPath = "";
   }
 
   mResourceRetriever = _resourceRetriever;

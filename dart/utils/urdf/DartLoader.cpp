@@ -589,7 +589,7 @@ dynamics::ShapePtr DartLoader::createShape(
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
     shape = std::make_shared<dynamics::MeshShape>(
-      scale, scene, resolvedUri, true, _resourceRetriever);
+      scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type
   else
