@@ -317,6 +317,36 @@ std::string Uri::getUri(const std::string& _input)
     return "";
 }
 
+std::string Uri::getRelativeUri(
+  const std::string& _base, const std::string& _relative, bool _strict)
+{
+  Uri baseUri;
+  if(!baseUri.fromString(_base))
+  {
+    dtwarn << "[getRelativeUri] Failed parsing base URI '"
+           << _base << "'.\n";
+    return "";
+  }
+
+  Uri relativeUri;
+  if(!relativeUri.fromString(_relative))
+  {
+    dtwarn << "[getRelativeUri] Failed parsing relative URI '"  
+           << _relative << "'.\n";
+    return "";
+  }
+
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(baseUri, relativeUri, _strict))
+  {
+    dtwarn << "[getRelativeUri] Failed merging URI '" << _relative
+           << "' with base URI '" << _base << "'.\n";
+    return "";
+  }
+
+  return mergedUri.toString();
+}
+
 std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
 {
   assert(_base.mPath && "The path component is always defined.");

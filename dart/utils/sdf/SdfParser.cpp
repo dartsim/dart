@@ -21,6 +21,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 #include "dart/utils/LocalResourceRetriever.h"
+#include "dart/utils/UriUtils.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
@@ -628,12 +629,15 @@ dynamics::ShapePtr SdfParser::readShape(
     // TODO(JS): We assume that uri is just file name for the mesh
     std::string           uri     = getValueString(meshEle, "uri");
     Eigen::Vector3d       scale   = getValueVector3d(meshEle, "scale");
-    const aiScene* model = dynamics::MeshShape::loadMesh(_skelPath + uri);
+
+    const std::string meshUri = Uri::getRelativeUri(_skelPath, uri);
+    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
+
     if (model)
-      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model,
-                                                            _skelPath));
+      newShape = std::make_shared<dynamics::MeshShape>(
+        scale, model, meshUri, true, _retriever);
     else
-      dterr << "Fail to load model[" << uri << "]." << std::endl;
+      dterr << "Fail to load model[" << meshUri << "]." << std::endl;
   }
   else
   {

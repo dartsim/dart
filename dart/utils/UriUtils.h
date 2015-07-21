@@ -104,6 +104,9 @@ public:
   std::string toString() const;
 
   static std::string getUri(const std::string& _input);
+  static std::string getRelativeUri(const std::string& _base,
+                                    const std::string& _relative,
+                                    bool _strict = false);
 
 private:
   // These are helper functions for implementing transform();
