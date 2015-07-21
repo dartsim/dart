@@ -48,7 +48,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str());
+      openXMLFile(_dartFile, _filename.c_str(), _retriever);
   }
   catch(std::exception const& e)
   {
@@ -114,7 +114,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str());
+      openXMLFile(_dartFile, _filename.c_str(), _retriever);
   }
   catch(std::exception const& e)
   {
