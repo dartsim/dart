@@ -176,24 +176,13 @@ public:
         return true;
       }
 
-      if( ea.getKey() == 'r' )
+      if( ea.getKey() == 't' )
       {
         // Reset all the positions except for x, y, and yaw
         for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
         {
           if( i < 2 || 4 < i )
             mAtlas->getDof(i)->setPosition(mRestConfig[i]);
-        }
-        return true;
-      }
-
-      if( ea.getKey() == 'd' )
-      {
-        // detangle the legs
-        for(size_t i=0; i < mLegs.size(); ++i)
-        {
-          size_t k = mLegs[i];
-          mAtlas->getDof(k)->setPosition(mRestConfig[k]);
         }
         return true;
       }
@@ -227,14 +216,14 @@ public:
         return true;
       }
 
-      if( 'q' == ea.getKey() )
+      if( 'x' == ea.getKey() )
       {
         EndEffector* ee = mAtlas->getEndEffector("l_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
 
-      if( 'w' == ea.getKey() )
+      if( 'c' == ea.getKey() )
       {
         EndEffector* ee = mAtlas->getEndEffector("r_foot");
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
@@ -452,7 +441,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Create an end effector for the left foot and set its relative transform
   EndEffector* l_foot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
-  l_foot->setRelativeTransform(tf_foot);
+  l_foot->setDefaultRelativeTransform(tf_foot, true);
 
   // Create an interactive frame to use as the target for the left foot
   osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
@@ -481,7 +470,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Create an end effector for the right foot and set its relative transform
   EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
-  r_foot->setRelativeTransform(tf_foot);
+  r_foot->setDefaultRelativeTransform(tf_foot, true);
 
   // Create an interactive frame to use as the target for the right foot
   osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
@@ -508,7 +497,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Move atlas to the ground so that it starts out squatting with its feet on
   // the ground
   double heightChange = -r_foot->getWorldTransform().translation()[2];
-  atlas->getDof(5)->setPosition(heightChange);
+  atlas->getDof("rootJoint_pos_z")->setPosition(heightChange);
 
   // Now that the feet are on the ground, we should set their target transforms
   l_foot->getIK()->getTarget()->setTransform(l_foot->getTransform());
@@ -624,11 +613,10 @@ int main()
             << "1 -> 4:        Toggle the interactive target of an EndEffector\n"
             << "q:             Toggle Support Mode on/off for the left foot\n"
             << "w:             Toggle Support Mode on/off for the right foot\n"
-            << "r:             Reset the robot's configuration\n"
-            << "d:             Detangle the robot's legs (reset, but only the lower body)\n\n"
+            << "t:             Reset the robot's configuration\n"
             << "  Because this uses iterative Jacobian methods, the solver can get finicky,\n"
-            << "  and the robot can get tangled up. Use 'd' and 'r' keys when the robot is\n"
-            << "  in a messy configuration\n\n"
+            << "  and the robot can get tangled up. Use the 't' key when the robot is in a\n"
+               "  messy configuration\n\n"
             << "  The green polygon is the support polygon of the robot, and the blue/red ball is\n"
             << "  the robot's center of mass. The green ball is the centroid of the polygon.\n\n"
             << "Note that this is purely kinematic. Physical simulation is not allowed in this app.\n"
