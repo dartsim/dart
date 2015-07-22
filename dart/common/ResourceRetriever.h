@@ -42,10 +42,15 @@
 namespace dart {
 namespace common {
 
+/// ResourceRetriever provides methods for testing for the existance of and
+/// accessing the content of a resource specified by URI.
 struct ResourceRetriever {
   virtual ~ResourceRetriever() = default;
 
+  /// \brief Return whether the resource specified by a URI exists.
   virtual bool exists(const std::string& _uri) = 0;
+
+  /// \brief Return the resource specified by a URI or nullptr on failure.
   virtual ResourcePtr retrieve(const std::string& _uri) = 0;
 };
 

@@ -42,12 +42,18 @@
 namespace dart {
 namespace utils {
 
-/// \brief Retrieve local resources specified by package:// URIs.
+/// Retrieve local resources specified by package:// URIs by: (1) resolving 
+/// the package path and (2) passing the resolved URI to another
+/// \ref ResourceRetriever. This class uses requires you to manually provide the
+/// base URI of every package that you wish to resolve using the
+/// \ref addPackageDirectory method.
 class PackageResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
+  /// Construct a PackageResourceRetriever that uses the specified \a
+  /// _localRetriever to load resolved URIs.
   PackageResourceRetriever(
-    const common::ResourceRetrieverPtr& localRetriever = nullptr);
+    const common::ResourceRetrieverPtr& _localRetriever = nullptr);
 
   virtual ~PackageResourceRetriever() = default;
 
@@ -71,11 +77,20 @@ public:
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
   ///
-  /// 
+  /// You can call this method multiple times with the same \a _packageName to
+  /// provide multiple candidates for resolution. This is necessarry if your
+  /// resources are split between the Catkin devel and source spaces. Multiple
+  /// candidates will be tested in the same order in which they were added.
+  ///
+  /// This class supports arbitrary URIs for \a _packageDirectory, as long as
+  /// they are supported by the \a _localRetriever passed to the constructor.
   void addPackageDirectory(const std::string& _packageName,
                            const std::string& _packageDirectory);
 
+  // Documentation inherited.
   bool exists(const std::string& _uri) override;
+
+  // Documentation inherited.
   common::ResourcePtr retrieve(const std::string& _uri) override;
 
 private:

@@ -42,18 +42,36 @@
 namespace dart {
 namespace utils {
 
+/// SchemaResourceRetriever allows multiple \ref ResourceRetriever to be used
+/// interchangably by: (1) associating each \ref ResourceRetriever with a
+/// particular URI schema and/or (2) providing a precedence order for trying
+/// multiple retrievers.
 class SchemaResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   virtual ~SchemaResourceRetriever() = default;
 
-  void addDefaultRetriever(const common::ResourceRetrieverPtr& _resourceRetriever);
+  /// \brief Add a default \ref ResourceRetriever for all URIs.
+  /// This \ref ResourceRetriever will be called after all schema-specific
+  /// ResourceRetrievers, if any, have failed. This method may be called
+  /// multiple times. In that case, the ResourceRetrievers will be queried
+  /// in the same order in which they were added.
+  void addDefaultRetriever(
+    const common::ResourceRetrieverPtr& _resourceRetriever);
 
+  /// \brief Add a default \ref ResourceRetriever for \a _schema
+  /// This \ref ResourceRetriever will be called after URIs that match the
+  /// specified schema. This method may be called multiple times. In that
+  /// case, the ResourceRetrievers will be queried in the same order in which
+  /// they were added.
   bool addSchemaRetriever(
     const std::string& _schema,
     const common::ResourceRetrieverPtr& _resourceRetriever);
 
+  // Documentation inherited.
   bool exists(const std::string& _uri) override;
+
+  // Documentation inherited.
   common::ResourcePtr retrieve(const std::string& _uri) override;
 
 private:

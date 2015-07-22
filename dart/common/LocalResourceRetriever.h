@@ -40,13 +40,17 @@
 namespace dart {
 namespace common {
 
-/// \brief Retrieve local resources specified by file:// URIs.
+/// LocalResourceRetriever provides access to local resources specified by
+/// file:// URIs by wrapping the standard C and C++ file manipulation routines.
 class LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;
 
+  // Documentation inherited.
   bool exists(const std::string& _uri) override;
+
+  // Documentation inherited.
   ResourcePtr retrieve(const std::string& _uri) override;
 };
 
