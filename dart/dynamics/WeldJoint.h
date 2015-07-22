@@ -72,6 +72,9 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
+  // Documentation inherited
   virtual void setTransformFromParentBodyNode(const Eigen::Isometry3d& _T) override;
 
   // Documentation inherited

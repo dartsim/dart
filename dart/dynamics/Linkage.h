@@ -64,9 +64,10 @@ public:
     /// The ExpansionPolicy indicates how the collection of BodyNodes should
     /// expand from the starting BodyNode (mStart)
     enum ExpansionPolicy {
-      NEUTRAL = 0,  ///< Do not expand. Only include the BodyNodes needed to reach the target
-      DOWNSTREAM,   ///< Expand downstream, toward the leaves of the tree
-      UPSTREAM      ///< Expand upstream, toward the root of the tree
+      INCLUDE = 0,  ///< Do not expand from the target. Include everything up to the target and then stop.
+      EXCLUDE,      ///< Do not expand from the target. Include everything up to the target, but NOT the target, and then stop.
+      DOWNSTREAM,   ///< Include the target, and then expand downstream, toward the leaves of the tree.
+      UPSTREAM      ///< Include the target, and then expand upstream, toward the root of the tree.
     };
 
     /// Return a vector of BodyNodes that satisfy the parameters of the Criteria
@@ -78,7 +79,7 @@ public:
     {
       /// Default constructor for Target
       Target(BodyNode* _target = nullptr,
-             ExpansionPolicy _policy = NEUTRAL,
+             ExpansionPolicy _policy = INCLUDE,
              bool _chain = false);
 
       /// The Linkage will expand from the starting BodyNode up to this node
@@ -139,22 +140,23 @@ public:
                          std::vector<BodyNode*>& _bns) const;
 
     /// Expand downstream
-    void expandDownstream(BodyNode* _start, std::vector<BodyNode*>& _bns) const;
+    void expandDownstream(BodyNode* _start, std::vector<BodyNode*>& _bns,
+                          bool _includeStart) const;
 
     /// Expand upstream
-    void expandUpstream(BodyNode* _start, std::vector<BodyNode*>& _bns) const;
+    void expandUpstream(BodyNode* _start, std::vector<BodyNode*>& _bns,
+                        bool _includeStart) const;
 
     /// Construct a path from start to target
-    void expandToTarget(BodyNode* _start, const Target& _target,
+    void expandToTarget(const Target& _start, const Target& _target,
                         std::vector<BodyNode*>& _bns) const;
 
     /// Expand upwards from the _start BodyNode to the _target BodyNode
-    std::vector<BodyNode*> climbToTarget(
-        BodyNode* _start, BodyNode* _target) const;
+    std::vector<BodyNode*> climbToTarget(BodyNode* _start, BodyNode* _target) const;
 
     /// Expand upwards from both BodyNodes to a common root
     std::vector<BodyNode*> climbToCommonRoot(
-        BodyNode* _start, BodyNode* _target, bool _chain) const;
+        const Target& _start, const Target& _target, bool _chain) const;
 
     /// Crawl through the list and cut it off anywhere that the criteria is
     /// violated

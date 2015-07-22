@@ -111,7 +111,7 @@ private:
     static bool createSkeletonRecursive(
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk,
-      dynamics::BodyNode& _parent,
+      dynamics::BodyNode* _parent,
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
@@ -130,7 +130,7 @@ private:
 
     static bool createDartNodeProperties(
       const urdf::Link* _lk,
-      dynamics::BodyNode::Properties *properties,
+      dynamics::BodyNode::Properties &properties,
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 

@@ -45,7 +45,6 @@
 #include "dart/simulation/World.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
-#include "dart/utils/sdf/SdfParser.h"
 
 using namespace dart;
 using namespace math;
@@ -54,7 +53,7 @@ using namespace simulation;
 using namespace utils;
 
 //==============================================================================
-TEST(Parser, DataStructure)
+TEST(SkelParser, DataStructure)
 {
   bool              valBool       = true;
   int               valInt        = -3;
@@ -98,7 +97,7 @@ TEST(Parser, DataStructure)
 }
 
 //==============================================================================
-TEST(Parser, EmptyWorld)
+TEST(SkelParser, EmptyWorld)
 {
   WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
 
@@ -115,7 +114,7 @@ TEST(Parser, EmptyWorld)
 }
 
 //==============================================================================
-TEST(Parser, SinglePendulum)
+TEST(SkelParser, SinglePendulum)
 {
   WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/single_pendulum.skel");
@@ -135,7 +134,7 @@ TEST(Parser, SinglePendulum)
 }
 
 //==============================================================================
-TEST(Parser, SerialChain)
+TEST(SkelParser, SerialChain)
 {
   WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
@@ -155,7 +154,7 @@ TEST(Parser, SerialChain)
 }
 
 //==============================================================================
-TEST(Parser, RigidAndSoftBodies)
+TEST(SkelParser, RigidAndSoftBodies)
 {
   using namespace dart;
   using namespace math;
@@ -180,7 +179,7 @@ TEST(Parser, RigidAndSoftBodies)
 }
 
 //==============================================================================
-TEST(Parser, PlanarJoint)
+TEST(SkelParser, PlanarJoint)
 {
   using namespace dart;
   using namespace math;
@@ -329,7 +328,7 @@ TEST(SKEL_PARSER, JointActuatorType)
   EXPECT_EQ(joint4->getActuatorType(), Joint::VELOCITY);}
 
 //==============================================================================
-TEST(Parser, DofAttributes)
+TEST(SkelParser, DofAttributes)
 {
   WorldPtr world = SkelParser::readWorld(
                    DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
@@ -406,7 +405,7 @@ TEST(Parser, DofAttributes)
 }
 
 //==============================================================================
-TEST(Parser, JointDynamicsElements)
+TEST(SkelParser, JointDynamicsElements)
 {
   WorldPtr world
       = SkelParser::readWorld(
@@ -436,30 +435,6 @@ TEST(Parser, JointDynamicsElements)
   EXPECT_EQ(joint1->getCoulombFriction   (2), 3.0);
   EXPECT_EQ(joint1->getRestPosition      (2), 0.3);
   EXPECT_EQ(joint1->getSpringStiffness   (2), 1.0);
-}
-
-//==============================================================================
-TEST(Parser, SDFSingleBodyWithoutJoint)
-{
-  // Regression test for #444
-  WorldPtr world
-      = SdfParser::readSdfFile(
-          DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
-  EXPECT_TRUE(world != nullptr);
-
-  SkeletonPtr skel = world->getSkeleton(0);
-  EXPECT_TRUE(skel != nullptr);
-  EXPECT_EQ(skel->getNumBodyNodes(), 1);
-  EXPECT_EQ(skel->getNumJoints(), 1);
-
-  BodyNodePtr bodyNode = skel->getBodyNode(0);
-  EXPECT_TRUE(bodyNode != nullptr);
-  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1);
-  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1);
-
-  JointPtr joint = skel->getJoint(0);
-  EXPECT_TRUE(joint != nullptr);
-  EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
 }
 
 //==============================================================================

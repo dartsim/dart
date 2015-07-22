@@ -98,6 +98,9 @@ public:
   // Documentation inherited
   virtual const std::string& getType() const override;
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   /// Get joint type for this class
   static const std::string& getStaticType();
 

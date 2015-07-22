@@ -293,7 +293,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     {
       root = root->child_links[0].get();
       dynamics::BodyNode::Properties rootProperties;
-      if (!createDartNodeProperties(root, &rootProperties, _baseUri, _resourceRetriever))
+      if (!createDartNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
         return nullptr;
 
       rootNode = createDartJointAndNode(
@@ -309,7 +309,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   else
   {
     dynamics::BodyNode::Properties rootProperties;
-    if (!createDartNodeProperties(root, &rootProperties, _baseUri, _resourceRetriever))
+    if (!createDartNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
       return nullptr;
 
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
@@ -324,7 +324,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   for(size_t i = 0; i < root->child_links.size(); i++)
   {
     if (!createSkeletonRecursive(
-           skeleton, root->child_links[i].get(), *rootNode,
+           skeleton, root->child_links[i].get(), rootNode,
            _baseUri, _resourceRetriever))
       return nullptr;
 
@@ -336,24 +336,23 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 bool DartLoader::createSkeletonRecursive(
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
-  dynamics::BodyNode& _parentNode,
+  dynamics::BodyNode* _parentNode,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(_lk, &properties, _baseUri, _resourceRetriever))
+  if (!createDartNodeProperties(_lk, properties, _baseUri, _resourceRetriever))
     return false;
 
   dynamics::BodyNode* node = createDartJointAndNode(
-    _lk->parent_joint.get(), properties, &_parentNode, _skel,
+    _lk->parent_joint.get(), properties, _parentNode, _skel,
     _baseUri, _resourceRetriever);
-
   if(!node)
     return false;
   
   for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-    if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), *node,
+    if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node,
                                  _baseUri, _resourceRetriever))
       return false;
   }
@@ -478,17 +477,17 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
  */
 bool DartLoader::createDartNodeProperties(
   const urdf::Link* _lk,
-  dynamics::BodyNode::Properties *node,
+  dynamics::BodyNode::Properties &node,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  node->mName = _lk->name;
+  node.mName = _lk->name;
   
   // Load Inertial information
   if(_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;
-    node->mInertia.setLocalCOM(toEigen(origin.position));
-    node->mInertia.setMass(_lk->inertial->mass);
+    node.mInertia.setLocalCOM(toEigen(origin.position));
+    node.mInertia.setMass(_lk->inertial->mass);
 
     Eigen::Matrix3d J;
     J << _lk->inertial->ixx, _lk->inertial->ixy, _lk->inertial->ixz,
@@ -498,7 +497,7 @@ bool DartLoader::createDartNodeProperties(
                                          origin.rotation.y, origin.rotation.z));
     J = R * J * R.transpose();
 
-    node->mInertia.setMoment(J(0,0), J(1,1), J(2,2),
+    node.mInertia.setMoment(J(0,0), J(1,1), J(2,2),
                             J(0,1), J(0,2), J(1,2));
   }
 
@@ -509,7 +508,7 @@ bool DartLoader::createDartNodeProperties(
       _lk->visual_array[i].get(), _baseUri, _resourceRetriever);
 
     if(shape)
-      node->mVizShapes.push_back(shape);
+      node.mVizShapes.push_back(shape);
     else
       return false;
   }
@@ -520,7 +519,7 @@ bool DartLoader::createDartNodeProperties(
       _lk->collision_array[i].get(), _baseUri, _resourceRetriever);
 
     if (shape)
-      node->mColShapes.push_back(shape);
+      node.mColShapes.push_back(shape);
     else
       return false;
   }
