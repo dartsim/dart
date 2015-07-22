@@ -157,7 +157,7 @@ TEST(SchemaResourceRetriever, retrieve_SchemaResourceRetrieverSucceeds_ReturnsNo
 
   EXPECT_TRUE(retriever1->mExists.empty());
   ASSERT_EQ(1, retriever1->mRetrieve.size());
-  EXPECT_EQ("package://test/foo", retriever1->mExists.front());
+  EXPECT_EQ("package://test/foo", retriever1->mRetrieve.front());
 
   EXPECT_TRUE(retriever2->mExists.empty());
   EXPECT_TRUE(retriever2->mRetrieve.empty());
@@ -182,8 +182,8 @@ TEST(SchemaResourceRetriever, retrieve_DefaultResourceRetrieverSucceeds_ReturnsN
   EXPECT_EQ("package://test/foo", retriever1->mRetrieve.front());
 
   EXPECT_TRUE(retriever2->mExists.empty());
-  ASSERT_EQ(1, retriever1->mRetrieve.size());
-  EXPECT_EQ("package://test/foo", retriever1->mRetrieve.front());
+  ASSERT_EQ(1, retriever2->mRetrieve.size());
+  EXPECT_EQ("package://test/foo", retriever2->mRetrieve.front());
 
   EXPECT_TRUE(retriever3->mExists.empty());
   EXPECT_TRUE(retriever3->mRetrieve.empty());
