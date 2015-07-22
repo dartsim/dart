@@ -53,7 +53,7 @@ public:
   bool isGood() const;
 
   // Documentation inherited.
-  size_t getFileSize() override;
+  size_t getSize() override;
 
   // Documentation inherited.
   size_t tell() override;

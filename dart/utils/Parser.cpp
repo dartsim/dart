@@ -605,7 +605,7 @@ void openXMLFile(
     }
 
     // C++11 guarantees that std::string has contiguous storage.
-    const size_t size = resource->getFileSize();
+    const size_t size = resource->getSize();
     std::string content;
     content.resize(size);
     if(resource->read(&content.front(), size, 1) != 1)

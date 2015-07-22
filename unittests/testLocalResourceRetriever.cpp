@@ -112,7 +112,7 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
 
-  EXPECT_EQ(content.size(), resource->getFileSize());
+  EXPECT_EQ(content.size(), resource->getSize());
 
   // Relative seek.
   ASSERT_TRUE(resource->seek(2, Resource::SEEKTYPE_CUR));

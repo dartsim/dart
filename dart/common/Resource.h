@@ -59,7 +59,7 @@ public:
   virtual ~Resource() = default;
 
   /// \brief Return the size of the resource, in bytes.
-  virtual size_t getFileSize() = 0;
+  virtual size_t getSize() = 0;
 
   /// \brief Return the current value of the position indicator.
   /// \note This method has the same API as the standard ftell function.

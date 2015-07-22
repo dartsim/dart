@@ -32,7 +32,7 @@ bool LocalResource::isGood() const
   return !!mFile;
 }
 
-size_t LocalResource::getFileSize()
+size_t LocalResource::getSize()
 {
   if(!mFile)
     return 0;
@@ -40,7 +40,7 @@ size_t LocalResource::getFileSize()
   const long offset = std::ftell(mFile);
   if(offset == -1L)
   {
-    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
              " getting current offset: " << std::strerror(errno) << "\n";
     return 0;
   }
@@ -50,7 +50,7 @@ size_t LocalResource::getFileSize()
   // TODO: Does this work on Windows?
   if(std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile))
   {
-    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
              " seeking to the end of the file.\n";
     return 0;
   }
@@ -58,14 +58,14 @@ size_t LocalResource::getFileSize()
   const long size = std::ftell(mFile);
   if(size == -1L)
   {
-    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
              " getting end of file offset: " << std::strerror(errno) << "\n";
     return 0;
   }
 
   if(std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile))
   {
-    dtwarn << "[LocalResource::getFileSize] Unable to compute file size: Failed"
+    dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
              " seeking to the current position.\n";
     return 0;
   }

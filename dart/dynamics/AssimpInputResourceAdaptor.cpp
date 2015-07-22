@@ -114,7 +114,7 @@ size_t AssimpInputResourceAdaptor::Tell() const
 
 size_t AssimpInputResourceAdaptor::FileSize() const
 {
-  return mResource->getFileSize();
+  return mResource->getSize();
 }
 
 void AssimpInputResourceAdaptor::Flush()

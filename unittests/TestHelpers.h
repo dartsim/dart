@@ -379,7 +379,7 @@ SkeletonPtr createBox(
 //==============================================================================
 struct TestResource : public dart::common::Resource
 {
-  size_t getFileSize() override
+  size_t getSize() override
   {
     return 0;
   }
