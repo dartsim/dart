@@ -582,6 +582,14 @@ public:
     /// Reset the quality comparison function to the default method
     void resetQualityComparisonFunction();
 
+    /// Construct a mapping from the DOFs of getDofs() to their indices within
+    /// the Node's list of dependent DOFs. This will be called immediately after
+    /// the Analytical is constructed; this one call is sufficient as long as
+    /// the DOFs of Analytical::getDofs() is not changed. However, if your
+    /// Analytical is able to change the DOFs that it operates on, then you will
+    /// need to call this function each time the DOFs have changed.
+    void constructDofMap();
+
   protected:
 
     /// Go through the mSolutions vector and tag entries with LIMIT_VIOLATED if
@@ -597,6 +605,10 @@ public:
 
   private:
 
+    /// This maps the DOFs provided by getDofs() to their index in the Node's
+    /// list of dependent DOFs. This map is constructed by constructDofMap().
+    std::vector<int> mDofMap;
+
     /// A cache for the valid solutions. The valid and invalid solution caches
     /// are kept separate so that they can each be sorted by quality
     /// individually. Valid solutions will always be at the top of mFinalResults
@@ -605,6 +617,9 @@ public:
 
     /// A cache for the invalid solutions.
     std::vector<Solution> mInvalidSolutionsCache;
+
+    /// A cache for storing the current configuration
+    Eigen::VectorXd mConfigCache;
   };
 
   /// If this IK module is set to active, then it will be utilized by any

@@ -61,6 +61,8 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
   mGradientMethod = std::unique_ptr<IKGradientMethod>(newMethod);
 
   mAnalytical = dynamic_cast<Analytical*>(mGradientMethod.get());
+  if(nullptr != mAnalytical)
+    mAnalytical->constructDofMap();
 
   return *newMethod;
 }

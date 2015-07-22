@@ -784,10 +784,28 @@ void InverseKinematics::Analytical::computeGradient(
 {
   getSolutions();
 
-  if(mSolutions.size() >= 1)
-    _grad = getConfiguration() - mSolutions[0].mConfig;
-  else
-    _grad.setZero();
+  _grad.setZero();
+
+  if(mSolutions.size() == 0)
+    return;
+
+  const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
+  mConfigCache = mIK->getConfiguration();
+
+  const std::vector<int>& analyticalToDependent = mDofMap;
+  const std::vector<int>& dependentToGradient = mIK->getDofMap();
+
+  for(size_t i=0; i < analyticalToDependent.size(); ++i)
+  {
+    if(analyticalToDependent[i] == -1)
+      continue;
+
+    int index = dependentToGradient[analyticalToDependent[i]];
+    if(index == -1)
+      continue;
+
+    _grad[index] = mConfigCache[i] - bestSolution[i];
+  }
 }
 
 //==============================================================================
@@ -818,6 +836,40 @@ void InverseKinematics::Analytical::resetQualityComparisonFunction()
   {
     return better.norm() < worse.norm();
   };
+}
+
+//==============================================================================
+void InverseKinematics::Analytical::constructDofMap()
+{
+  const std::vector<size_t>& analyticalDofs = getDofs();
+  const std::vector<size_t>& nodeDofs =
+      mIK->getNode()->getDependentGenCoordIndices();
+
+  mDofMap.clear();
+  mDofMap.resize(analyticalDofs.size());
+  for(size_t i=0; i < analyticalDofs.size(); ++i)
+  {
+    mDofMap[i] = -1;
+    for(size_t j=0; j < nodeDofs.size(); ++j)
+    {
+      if(analyticalDofs[i] == nodeDofs[j])
+        mDofMap[i] = j;
+    }
+
+    if(mDofMap[i] == -1)
+    {
+      DegreeOfFreedom* dof = mIK->getNode()->getSkeleton()->
+          getDof(analyticalDofs[i]);
+      std::string name = (dof==nullptr)? std::string("nonexistent") :
+                                         dof->getName();
+      dtwarn << "[InverseKinematics::Analytical::constructDofMap] Your "
+             << "analytical IK solver includes a DegreeOfFreedom ("
+             << analyticalDofs[i] << ") [" << name << "] which is not a "
+             << "dependent DOF of the JacobianNode ["
+             << mIK->getNode()->getName() << "]. This might result in "
+             << "undesirable behavior, such as that DOF being ignored\n";
+    }
+  }
 }
 
 //==============================================================================
