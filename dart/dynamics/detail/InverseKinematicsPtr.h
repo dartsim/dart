@@ -58,9 +58,9 @@ public:
   typedef IkType element_type;
 
   /// Constructor that accepts a shared_ptr
-  TemplateInverseKinematicsPtr(const std::shared_ptr<element_type>& _sptr)
+  TemplateInverseKinematicsPtr(const std::shared_ptr<element_type>& sptr)
   {
-    set(_sptr);
+    set(sptr);
   }
 
   /// Constructor that accepts a nullptr
@@ -85,9 +85,9 @@ public:
 
   /// Constructor that takes in a shared_ptr
   template <class OtherIkT>
-  TemplateInverseKinematicsPtr(const std::shared_ptr<OtherIkT>& _sptr)
+  TemplateInverseKinematicsPtr(const std::shared_ptr<OtherIkT>& sptr)
   {
-    set(_sptr);
+    set(sptr);
   }
 
   /// Assignment operator
@@ -143,17 +143,17 @@ public:
 
   /// Set the InverseKinematics module for this InverseKinematicsPtr from a
   /// shared_ptr
-  void set(const std::shared_ptr<IkType>& _sptr)
+  void set(const std::shared_ptr<IkType>& sptr)
   {
-    if(nullptr == _sptr)
+    if(nullptr == sptr)
     {
       mIK = nullptr;
       mJacNodePtr = nullptr;
       return;
     }
 
-    mJacNodePtr = _sptr->getAffiliation();
-    mIK = _sptr;
+    mJacNodePtr = sptr->getAffiliation();
+    mIK = sptr;
   }
 
   //----------------------------------------------------------------------------

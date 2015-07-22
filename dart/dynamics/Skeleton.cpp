@@ -3200,7 +3200,8 @@ JacType getCOMJacobianTemplate(const Skeleton* _skel,
 //==============================================================================
 math::Jacobian Skeleton::getCOMJacobian(const Frame* _inCoordinatesOf) const
 {
-  return getCOMJacobianTemplate<math::Jacobian, &BodyNode::getJacobian>(
+  return getCOMJacobianTemplate<math::Jacobian,
+          &TemplatedJacobianNode<BodyNode>::getJacobian>(
         this, _inCoordinatesOf);
 }
 
@@ -3209,7 +3210,8 @@ math::LinearJacobian Skeleton::getCOMLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::LinearJacobian,
-           &BodyNode::getLinearJacobian>(this, _inCoordinatesOf);
+           &TemplatedJacobianNode<BodyNode>::getLinearJacobian>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -3217,7 +3219,8 @@ math::Jacobian Skeleton::getCOMJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::Jacobian,
-      &BodyNode::getJacobianSpatialDeriv>(this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -3225,7 +3228,8 @@ math::LinearJacobian Skeleton::getCOMLinearJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::LinearJacobian,
-      &BodyNode::getLinearJacobianDeriv>(this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getLinearJacobianDeriv>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
