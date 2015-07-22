@@ -22,7 +22,7 @@ bool LocalResourceRetriever::exists(const std::string& _uri)
   if (uri.mScheme.get_value_or("file") != "file")
     return false;
 
-  return std::ifstream(*uri.mScheme, std::ios::binary).good();
+  return std::ifstream(*uri.mPath, std::ios::binary).good();
 }
 
 common::ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
