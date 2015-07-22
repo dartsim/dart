@@ -116,6 +116,13 @@ bool GradientDescentSolver::solve()
   double gamma = mGradientP.mStepSize;
   size_t dim = problem->getDimension();
 
+  if(dim == 0)
+  {
+    problem->setOptimalSolution(Eigen::VectorXd());
+    problem->setOptimumValue(0.0);
+    return true;
+  }
+
   Eigen::VectorXd x = problem->getInitialGuess();
   assert(x.size() == static_cast<int>(dim));
 
