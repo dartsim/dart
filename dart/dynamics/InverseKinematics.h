@@ -575,11 +575,19 @@ public:
     /// solutions. This function should return true if the first argument is a
     /// better solution than the second argument.
     ///
-    /// By default, it will prefer solutions whose norm in jointspace is smaller
-    /// (i.e. it prefers joint values that are closer to zero).
+    /// By default, it will prefer the solution which has the smallest size for
+    /// its largest change in joint angle. In other words, for each
+    /// configuration that it is given, it will compare the largest change in
+    /// joint angle for each configuration and pick the one that is smallest.
+    ///
+    /// Note that outside of this comparison function, the Solutions will be
+    /// split between which are valid, which are out-of-reach, and which are
+    /// in violation of joint limits. Valid solutions will always be ranked
+    /// above invalid solutions, and joint limit violations will always be
+    /// ranked last.
     void setQualityComparisonFunction(const QualityComparison& _func);
 
-    /// Reset the quality comparison function to the default method
+    /// Reset the quality comparison function to the default method.
     void resetQualityComparisonFunction();
 
     /// Construct a mapping from the DOFs of getDofs() to their indices within
@@ -600,7 +608,7 @@ public:
     /// Vector of solutions
     std::vector<Solution> mSolutions;
 
-    /// Function for comparing the quality of
+    /// Function for comparing the qualities of solutions
     QualityComparison mQualityComparator;
 
   private:
@@ -615,8 +623,11 @@ public:
     /// even if their quality is scored below the invalid solutions.
     std::vector<Solution> mValidSolutionsCache;
 
-    /// A cache for the invalid solutions.
-    std::vector<Solution> mInvalidSolutionsCache;
+    /// A cache for the out of reach solutions.
+    std::vector<Solution> mOutOfReachCache;
+
+    /// A cache for solutions that violate joint limits
+    std::vector<Solution> mLimitViolationCache;
 
     /// A cache for storing the current configuration
     Eigen::VectorXd mConfigCache;

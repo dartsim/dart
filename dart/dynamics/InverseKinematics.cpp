@@ -743,18 +743,21 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
   mValidSolutionsCache.clear();
   mValidSolutionsCache.reserve(mSolutions.size());
 
-  mInvalidSolutionsCache.clear();
-  mInvalidSolutionsCache.reserve(mSolutions.size());
+  mOutOfReachCache.clear();
+  mOutOfReachCache.reserve(mSolutions.size());
+
+  mLimitViolationCache.clear();
+  mLimitViolationCache.reserve(mSolutions.size());
 
   for(size_t i=0; i < mSolutions.size(); ++i)
   {
     const Solution& s = mSolutions[i];
     if(s.mValidity == VALID)
       mValidSolutionsCache.push_back(s);
+    else if( (s.mValidity & LIMIT_VIOLATED) == LIMIT_VIOLATED)
+      mLimitViolationCache.push_back(s);
     else
-    {
-      mInvalidSolutionsCache.push_back(s);
-    }
+      mOutOfReachCache.push_back(s);
   }
 
   auto comparator = [=](const Solution& s1, const Solution& s2)
@@ -765,15 +768,21 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
   std::sort(mValidSolutionsCache.begin(), mValidSolutionsCache.end(),
             comparator);
 
-  std::sort(mInvalidSolutionsCache.begin(), mInvalidSolutionsCache.end(),
+  std::sort(mOutOfReachCache.begin(), mOutOfReachCache.end(),
+            comparator);
+
+  std::sort(mLimitViolationCache.begin(), mLimitViolationCache.end(),
             comparator);
 
   mSolutions.clear();
   mSolutions.insert(mSolutions.end(), mValidSolutionsCache.begin(),
                     mValidSolutionsCache.end());
 
-  mSolutions.insert(mSolutions.end(), mInvalidSolutionsCache.begin(),
-                    mInvalidSolutionsCache.end());
+  mSolutions.insert(mSolutions.end(), mOutOfReachCache.begin(),
+                    mOutOfReachCache.end());
+
+  mSolutions.insert(mSolutions.end(), mLimitViolationCache.begin(),
+                    mLimitViolationCache.end());
 
   return mSolutions;
 }
@@ -834,7 +843,28 @@ void InverseKinematics::Analytical::resetQualityComparisonFunction()
   mQualityComparator = [=](const Eigen::VectorXd& better,
                            const Eigen::VectorXd& worse)
   {
-    return better.norm() < worse.norm();
+    const std::vector<size_t>& dofs = getDofs();
+    double biggestJump = 0.0;
+    bool isBetter = true;
+    for(size_t i=0; i < dofs.size(); ++i)
+    {
+      double q = mIK->getNode()->getSkeleton()->getPosition(dofs[i]);
+      const double& testBetter = std::abs(q - better[i]);
+      if(testBetter > biggestJump)
+      {
+        biggestJump = testBetter;
+        isBetter = false;
+      }
+
+      const double& testWorse = std::abs(q - worse[i]);
+      if(testWorse > biggestJump)
+      {
+        biggestJump = testWorse;
+        isBetter = true;
+      }
+    }
+
+    return isBetter;
   };
 }
 
