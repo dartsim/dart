@@ -48,7 +48,7 @@ IKErrorMethod& InverseKinematics::setErrorMethod(Args&&... args)
 {
   IKErrorMethod* newMethod =
       new IKErrorMethod(this, std::forward<Args>(args)...);
-  mErrorMethod = std::unique_ptr<IKErrorMethod>(newMethod);
+  mErrorMethod = std::unique_ptr<ErrorMethod>(newMethod);
   return *newMethod;
 }
 
@@ -58,7 +58,7 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
 {
   IKGradientMethod* newMethod =
       new IKGradientMethod(this, std::forward<Args>(args)...);
-  mGradientMethod = std::unique_ptr<IKGradientMethod>(newMethod);
+  mGradientMethod = std::unique_ptr<GradientMethod>(newMethod);
 
   mAnalytical = dynamic_cast<Analytical*>(mGradientMethod.get());
   if(nullptr != mAnalytical)
