@@ -404,14 +404,14 @@ Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform()
   const Eigen::Vector6d& error = evalError(mIK->getConfiguration());
 
   Eigen::Isometry3d tf = mIK->getNode()->getWorldTransform();
-  tf.pretranslate(error.tail<3>());
+  tf.pretranslate(-error.tail<3>());
 
   for(size_t i=0; i < 3; ++i)
   {
     const double angle = error[i];
     Eigen::Vector3d axis(Eigen::Vector3d::Zero());
     axis[i] = 1.0;
-    tf.rotate(Eigen::AngleAxisd(angle, axis));
+    tf.rotate(Eigen::AngleAxisd(-angle, axis));
   }
 
   return tf;
