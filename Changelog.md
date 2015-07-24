@@ -1,4 +1,4 @@
-### Version 5.0.1 (2015-XX-XX)
+### Version 5.0.1 (2015-07-24)
 
 1. Improved app indexing for bipedStand and atlasSimbicon
     * [Pull request #417](https://github.com/dartsim/dart/pull/417)
@@ -8,6 +8,22 @@
 
 1. Improved CollisionNode's index validity check
     * [Pull request #421](https://github.com/dartsim/dart/pull/421)
+
+1. Standardized warning messages for Joints
+    * [Pull request #425](https://github.com/dartsim/dart/pull/425)
+    * [Pull request #429](https://github.com/dartsim/dart/pull/429)
+
+1. Fixed bug in SDF parser -- correct child for a joint
+    * [Pull request #431](https://github.com/dartsim/dart/pull/431)
+
+1. Fixed SDF parsing for single link model without joint
+    * [Pull request #444](https://github.com/dartsim/dart/pull/444)
+
+1. Added missing virtual destructors to Properties in Entity and [Soft]BodyNode
+    * [Pull request #458](https://github.com/dartsim/dart/pull/458)
+
+1. Limited maximum required version of Assimp less than 3.0~dfsg-4
+    * [Pull request #459](https://github.com/dartsim/dart/pull/459)
 
 ### Version 5.0.0 (2015-06-15)
 
