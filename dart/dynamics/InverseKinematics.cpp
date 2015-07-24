@@ -403,16 +403,20 @@ Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform()
 {
   const Eigen::Vector6d& error = evalError(mIK->getConfiguration());
 
-  Eigen::Isometry3d tf = mIK->getNode()->getWorldTransform();
-  tf.pretranslate(-error.tail<3>());
+  const Eigen::Isometry3d currentTf = mIK->getNode()->getWorldTransform();
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
+  tf.rotate(currentTf.linear());
   for(size_t i=0; i < 3; ++i)
   {
     const double angle = error[i];
     Eigen::Vector3d axis(Eigen::Vector3d::Zero());
     axis[i] = 1.0;
-    tf.rotate(Eigen::AngleAxisd(-angle, axis));
+    tf.prerotate(Eigen::AngleAxisd(-angle, axis));
   }
+
+  tf.pretranslate(currentTf.translation());
+  tf.pretranslate(-error.tail<3>());
 
   return tf;
 }
@@ -730,11 +734,17 @@ InverseKinematics::Analytical::Analytical(InverseKinematics* _ik,
   : GradientMethod(_ik, _methodName)
 {
   resetQualityComparisonFunction();
+
+  mIK->getErrorMethod().setErrorLengthClamp(
+        std::numeric_limits<double>::infinity());
+  mIK->getErrorMethod().setErrorWeights(Eigen::Vector6d::Constant(1.0));
 }
 
 //==============================================================================
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 {
+  mRestoreConfigCache = getConfiguration();
+
   const Eigen::Isometry3d& desiredTf =
       mIK->getErrorMethod().computeDesiredTransform();
 
@@ -783,6 +793,8 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 
   mSolutions.insert(mSolutions.end(), mLimitViolationCache.begin(),
                     mLimitViolationCache.end());
+
+  setConfiguration(mRestoreConfigCache);
 
   return mSolutions;
 }

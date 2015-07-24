@@ -499,6 +499,11 @@ public:
   /// made to solve the IK analytically instead of iteratively. This provides an
   /// extended API that is relevant to Analytical solvers but not iterative
   /// solvers.
+  ///
+  /// Creating an Analytical solver will have the side effect of removing the
+  /// error clamp and error weights from your ErrorMethod. If you still want
+  /// your error computations to be clamped and weighted, you should set it
+  /// again after creating the Analytical solver.
   class Analytical : public GradientMethod
   {
   public:
@@ -506,8 +511,8 @@ public:
     enum Validity_t
     {
       VALID = 0,
-      LIMIT_VIOLATED = 1 << 1,
-      OUT_OF_REACH   = 1 << 2
+      OUT_OF_REACH   = 1 << 0,
+      LIMIT_VIOLATED = 1 << 1
     };
 
     struct Solution
@@ -631,6 +636,11 @@ public:
 
     /// A cache for storing the current configuration
     Eigen::VectorXd mConfigCache;
+
+    /// A cache for storing the current configuration so that it can be restored
+    /// later. This is different from mConfigCache which will not be used to
+    /// restore the configuration.
+    Eigen::VectorXd mRestoreConfigCache;
   };
 
   /// If this IK module is set to active, then it will be utilized by any
