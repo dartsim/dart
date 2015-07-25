@@ -1,6 +1,8 @@
 brew tap dartsim/dart
 brew tap homebrew/science
 
+brew update
+
 brew install git
 # brew install cmake   # installed cmake-3.0.2
 brew install assimp
