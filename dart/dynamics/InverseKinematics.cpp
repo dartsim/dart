@@ -826,6 +826,7 @@ void InverseKinematics::Analytical::computeGradient(
       continue;
 
     _grad[index] = mConfigCache[i] - bestSolution[i];
+//    _grad[index] = bestSolution[i] - mConfigCache[i];
   }
 }
 
@@ -1007,6 +1008,9 @@ void InverseKinematics::setDofs(const std::vector<size_t>& _dofs)
   }
 
   mProblem->setDimension(mDofs.size());
+
+  if(mAnalytical)
+    mAnalytical->constructDofMap();
 }
 
 //==============================================================================
