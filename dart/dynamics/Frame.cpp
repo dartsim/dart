@@ -271,8 +271,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
       (getSpatialAcceleration()
        - math::AdT(_relativeTo->getTransform(this),
                    _relativeTo->getSpatialAcceleration())
-       - math::ad(getSpatialVelocity(),
-                  getSpatialVelocity(_relativeTo, this))).eval();
+       + math::ad(getSpatialVelocity(),
+                  math::AdT(_relativeTo->getTransform(this),
+                            _relativeTo->getSpatialVelocity()))).eval();
 
   if(this == _inCoordinatesOf)
     return result;
