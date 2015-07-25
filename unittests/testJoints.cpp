@@ -378,11 +378,11 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double limit0 = DART_PI / 6.0;
   double limit1 = DART_PI / 6.0;
 
-  joint0->setPositionLimitEnforced((true);
+  joint0->setPositionLimitEnforced(true);
   joint0->setPositionLowerLimit(0, -limit0);
   joint0->setPositionUpperLimit(0, limit0);
 
-  joint1->setPositionLimitEnforced((true);
+  joint1->setPositionLimitEnforced(true);
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
@@ -454,8 +454,8 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   double frictionForce  = 5.0;
 
-  joint0->setPositionLimitEnforced((false);
-  joint1->setPositionLimitEnforced((false);
+  joint0->setPositionLimitEnforced(false);
+  joint1->setPositionLimitEnforced(false);
 
   joint0->setCoulombFriction(0, frictionForce);
   joint1->setCoulombFriction(0, frictionForce);
