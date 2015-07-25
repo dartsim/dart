@@ -519,7 +519,7 @@ void FCLCollisionNode::updateFCLCollisionObjects()
 
       fcl::CollisionGeometry* collGeom
           = const_cast<fcl::CollisionGeometry*>(
-              fclCollObj->getCollisionGeometry());
+              fclCollObj->collisionGeometry().get());
       assert(nullptr != dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
       fcl::BVHModel<fcl::OBBRSS>* bvhModel
           = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);

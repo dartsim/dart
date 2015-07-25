@@ -235,7 +235,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
         static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
     for (size_t j = 0; j < collisionNode->getNumCollisionObjects(); j++)
     {
-      if (collisionNode->getCollisionObject(j)->getCollisionGeometry()
+      if (collisionNode->getCollisionObject(j)->collisionGeometry().get()
           == _fclCollGeom)
         return mCollisionNodes[i];
     }
