@@ -87,6 +87,107 @@ public:
   /// Convert a FreeJoint-style 6D vector into a transform
   static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
 
+  /// Set the transform, spatial velocity, and spatial acceleration of the child
+  /// BodyNode relative to an arbitrary Frame. The reference frame can be
+  /// arbitrarily specified.
+  ///
+  /// If you want to set more than one kind of Cartetian coordinates (e.g.,
+  /// transform and spatial velocity) at the same time, you should call
+  /// corresponding setters in a certain order (transform -> velocity ->
+  /// acceleration), If you don't velocity or acceleration can be corrupted by
+  /// transform or velocity. This function calls the corresponding setters in
+  /// the right order so that all the desired Cartetian coordinates are properly
+  /// set.
+  ///
+  /// Pass nullptr for "newTransform", "newSpatialVelocity", or
+  /// "newSpatialAcceleration" if you don't want to set them.
+  ///
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  /// \param[in] withRespectTo The relative Frame of "newTransform".
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] velrelativeTo The relative frame of "newSpatialVelocity".
+  /// \param[in] velinCoordinatesOf The reference frame of "newSpatialVelocity".
+  /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
+  /// child BodyNode.
+  /// \param[in] accrelativeTo The relative frame of "newSpatialAcceleration".
+  /// \param[in] accinCoordinatesOf The reference frame of
+  /// "newSpatialAcceleration".
+  void setRelativeSpatialMotion(
+      const Eigen::Isometry3d* newTransform,
+      const Frame* withRespectTo,
+      const Eigen::Vector6d* newSpatialVelocity,
+      const Frame* velRelativeTo,
+      const Frame* velInCoordinatesOf,
+      const Eigen::Vector6d* newSpatialAcceleration,
+      const Frame* accRelativeTo,
+      const Frame* accInCoordinatesOf);
+
+  /// Set the transform of the child BodyNode relative to the parent BodyNode
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  void setRelativeTransform(const Eigen::Isometry3d& newTransform);
+
+  /// Set the transform of the child BodyNode relative to an arbitrary Frame.
+  /// \param[in] newTransform Desired transform of the child BodyNode.
+  /// \param[in] withRespectTo The relative Frame of "newTransform".
+  void setRelativeTransform(const Eigen::Isometry3d& newTransform,
+                            const Frame* withRespectTo);
+
+  /// Set the spatial velocity of the child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode. The reference frame of "newSpatialVelocity" is the child
+  /// BodyNode.
+  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity);
+
+  /// Set the spatial velocity of the child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
+  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
+                                  const Frame* inCoordinatesOf);
+
+  /// Set the spatial velocity of the child BodyNode relative to an arbitrary
+  /// Frame.
+  /// \param[in] newSpatialVelocity Desired spatial velocity of the child
+  /// BodyNode.
+  /// \param[in] relativeTo The relative frame of "newSpatialVelocity".
+  /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
+  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
+                                  const Frame* relativeTo,
+                                  const Frame* inCoordinatesOf);
+
+  /// Set the spatial acceleration of the child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialVelocity Desired spatial acceleration of the child
+  /// BodyNode. The reference frame of "newSpatialAcceleration" is the child
+  /// BodyNode.
+  void setRelativeSpatialAcceleration(
+      const Eigen::Vector6d& newSpatialAcceleration);
+
+  /// Set the spatial acceleration of the child BodyNode relative to the parent
+  /// BodyNode.
+  /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
+  /// child BodyNode.
+  /// \param[in] inCoordinatesOf The reference frame of
+  /// "newSpatialAcceleration".
+  void setRelativeSpatialAcceleration(
+      const Eigen::Vector6d& newSpatialAcceleration,
+      const Frame* inCoordinatesOf);
+
+  /// Set the spatial acceleration of the child BodyNode relative to an
+  /// arbitrary Frame.
+  /// \param[in] newSpatialAcceleration Desired spatial acceleration of the
+  /// child BodyNode.
+  /// \param[in] relativeTo The relative frame of "newSpatialAcceleration".
+  /// \param[in] inCoordinatesOf The reference frame of
+  /// "newSpatialAcceleration".
+  void setRelativeSpatialAcceleration(
+      const Eigen::Vector6d& newSpatialAcceleration,
+      const Frame* relativeTo,
+      const Frame* inCoordinatesOf);
+
   // Documentation inherited
   Eigen::Matrix6d getLocalJacobianStatic(
       const Eigen::Vector6d& _positions) const override;
