@@ -795,12 +795,26 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
   Eigen::Vector6d   actualVel;
   Eigen::Vector6d   actualAcc;
 
+  Eigen::Vector3d   actualLinVel;
+  Eigen::Vector3d   actualAngVel;
+  Eigen::Vector3d   actualLinAcc;
+  Eigen::Vector3d   actualAngAcc;
+
+  Eigen::Vector3d   oldLinVel;
+  Eigen::Vector3d   oldAngVel;
+  Eigen::Vector3d   oldLinAcc;
+  Eigen::Vector3d   oldAngAcc;
+
   //-- Test
   for (std::size_t i = 0; i < numTests; ++i)
   {
-    const Eigen::Isometry3d desiredTf  = random_transform();
-    const Eigen::Vector6d   desiredVel = random_vec<6>();
-    const Eigen::Vector6d   desiredAcc = random_vec<6>();
+    const Eigen::Isometry3d desiredTf     = random_transform();
+    const Eigen::Vector6d   desiredVel    = random_vec<6>();
+    const Eigen::Vector6d   desiredAcc    = random_vec<6>();
+    const Eigen::Vector3d   desiredLinVel = random_vec<3>();
+    const Eigen::Vector3d   desiredAngVel = random_vec<3>();
+    const Eigen::Vector3d   desiredLinAcc = random_vec<3>();
+    const Eigen::Vector3d   desiredAngAcc = random_vec<3>();
 
     //-- Relative transformation
 
@@ -833,6 +847,52 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
                       relativeTo, inCoordinatesOf);
 
         EXPECT_TRUE(equals(desiredVel, actualVel));
+      }
+    }
+
+    //-- Relative classic linear velocity
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setRelativeSpatialVelocity(
+              desiredVel, relativeTo, inCoordinatesOf);
+        oldAngVel
+            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+        joint1->setRelativeLinearVelocity(
+              desiredLinVel, relativeTo, inCoordinatesOf);
+
+        actualLinVel
+            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        actualAngVel
+            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredLinVel, actualLinVel));
+        EXPECT_TRUE(equals(oldAngVel, actualAngVel));
+      }
+    }
+
+    //-- Relative classic angular velocity
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setRelativeSpatialVelocity(
+              desiredVel, relativeTo, inCoordinatesOf);
+        oldLinVel
+            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        joint1->setRelativeAngularVelocity(
+              desiredAngVel, relativeTo, inCoordinatesOf);
+
+        actualLinVel =
+            bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        actualAngVel =
+            bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(oldLinVel, actualLinVel));
+        EXPECT_TRUE(equals(desiredAngVel, actualAngVel));
       }
     }
 
@@ -875,6 +935,53 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
         EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
         EXPECT_TRUE(equals(desiredVel, actualVel));
         EXPECT_TRUE(equals(desiredAcc, actualAcc));
+      }
+    }
+
+
+    //-- Relative classic linear acceleration
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setRelativeSpatialAcceleration(
+              desiredAcc, relativeTo, inCoordinatesOf);
+        oldAngAcc
+            = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+        joint1->setRelativeLinearAcceleration(
+              desiredLinAcc, relativeTo, inCoordinatesOf);
+
+        actualLinAcc
+            = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        actualAngAcc
+            = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredLinAcc, actualLinAcc));
+        EXPECT_TRUE(equals(oldAngAcc, actualAngAcc));
+      }
+    }
+
+    //-- Relative classic angular acceleration
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setRelativeSpatialAcceleration(
+              desiredAcc, relativeTo, inCoordinatesOf);
+        oldLinAcc
+            = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        joint1->setRelativeAngularAcceleration(
+              desiredAngAcc, relativeTo, inCoordinatesOf);
+
+        actualLinAcc =
+            bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        actualAngAcc =
+            bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
+        EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));
       }
     }
   }

@@ -125,6 +125,8 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform,
                                      const Frame* withRespectTo)
 {
+  assert(nullptr != withRespecTo);
+
   setRelativeTransform(
     withRespectTo->getTransform(getParentBodyNode()) * newTransform);
 }
@@ -141,6 +143,8 @@ void FreeJoint::setRelativeSpatialVelocity(
     const Eigen::Vector6d& newSpatialVelocity,
     const Frame* inCoordinatesOf)
 {
+  assert(nullptr != inCoordinatesOf);
+
   if (getChildBodyNode() == inCoordinatesOf)
   {
     setRelativeSpatialVelocity(newSpatialVelocity);
@@ -159,6 +163,9 @@ void FreeJoint::setRelativeSpatialVelocity(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
   if (getChildBodyNode() == relativeTo)
   {
     dtwarn << "[FreeJoint::setRelativeSpatialVelocity] Invalid reference frame "
@@ -203,6 +210,82 @@ void FreeJoint::setRelativeSpatialVelocity(
 }
 
 //==============================================================================
+void FreeJoint::setRelativeLinearVelocity(
+    const Eigen::Vector3d& newLinearVelocity,
+    const Frame* relativeTo,
+    const Frame* inCoordinatesOf)
+{
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
+  Eigen::Vector6d targetSpatialVelocity;
+
+  if (Frame::World() == relativeTo)
+  {
+    targetSpatialVelocity.head<3>()
+        = getChildBodyNode()->getSpatialVelocity().head<3>();
+  }
+  else
+  {
+    targetSpatialVelocity.head<3>()
+        = getChildBodyNode()->getSpatialVelocity(
+            relativeTo, getChildBodyNode()).head<3>();
+  }
+
+  targetSpatialVelocity.tail<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear()
+        * newLinearVelocity;
+  // Above code is equivalent to:
+  // targetSpatialVelocity.tail<3>()
+  //     = getChildBodyNode()->getTransform(
+  //         inCoordinatesOf).linear().transpose()
+  //       * newLinearVelocity;
+  // but slower.
+
+  setRelativeSpatialVelocity(
+        targetSpatialVelocity, relativeTo, getChildBodyNode());
+}
+
+//==============================================================================
+void FreeJoint::setRelativeAngularVelocity(
+    const Eigen::Vector3d& newAngularVelocity,
+    const Frame* relativeTo,
+    const Frame* inCoordinatesOf)
+{
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
+  Eigen::Vector6d targetSpatialVelocity;
+
+  targetSpatialVelocity.head<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear()
+        * newAngularVelocity;
+  // Above code is equivalent to:
+  // targetSpatialVelocity.head<3>()
+  //     = getChildBodyNode()->getTransform(
+  //         inCoordinatesOf).linear().transpose()
+  //       * newAngularVelocity;
+  // but slower.
+
+  if (Frame::World() == relativeTo)
+  {
+    targetSpatialVelocity.tail<3>()
+        = getChildBodyNode()->getSpatialVelocity().tail<3>();
+  }
+  else
+  {
+    targetSpatialVelocity.tail<3>()
+        = getChildBodyNode()->getSpatialVelocity(
+            relativeTo, getChildBodyNode()).tail<3>();
+  }
+
+  setRelativeSpatialVelocity(
+        targetSpatialVelocity, relativeTo, getChildBodyNode());
+}
+
+//==============================================================================
 void FreeJoint::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& newSpatialAcceleration)
 {
@@ -218,6 +301,8 @@ void FreeJoint::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& newSpatialAcceleration,
     const Frame* inCoordinatesOf)
 {
+  assert(nullptr != inCoordinatesOf);
+
   if (getChildBodyNode() == inCoordinatesOf)
   {
     setRelativeSpatialAcceleration(newSpatialAcceleration);
@@ -236,6 +321,9 @@ void FreeJoint::setRelativeSpatialAcceleration(
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
 {
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
   if (getChildBodyNode() == relativeTo)
   {
     dtwarn << "[FreeJoint::setRelativeSpatialAcceleration] Invalid reference "
@@ -287,6 +375,84 @@ void FreeJoint::setRelativeSpatialAcceleration(
   }
 
   setRelativeSpatialAcceleration(targetRelSpatialAcc);
+}
+
+//==============================================================================
+void FreeJoint::setRelativeLinearAcceleration(
+    const Eigen::Vector3d& newLinearAcceleration,
+    const Frame* relativeTo,
+    const Frame* inCoordinatesOf)
+{
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
+  Eigen::Vector6d targetSpatialAcceleration;
+
+  if (Frame::World() == relativeTo)
+  {
+    targetSpatialAcceleration.head<3>()
+        = getChildBodyNode()->getSpatialAcceleration().head<3>();
+  }
+  else
+  {
+    targetSpatialAcceleration.head<3>()
+        = getChildBodyNode()->getSpatialAcceleration(
+            relativeTo, getChildBodyNode()).head<3>();
+  }
+
+  const Eigen::Vector6d& V
+      = getChildBodyNode()->getSpatialVelocity(relativeTo, inCoordinatesOf);
+  targetSpatialAcceleration.tail<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear()
+        * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
+  // Above code is equivalent to:
+  // targetSpatialAcceleration.tail<3>()
+  //     = getChildBodyNode()->getTransform(
+  //         inCoordinatesOf).linear().transpose()
+  //       * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
+  // but slower.
+
+  setRelativeSpatialAcceleration(
+        targetSpatialAcceleration, relativeTo, getChildBodyNode());
+}
+
+//==============================================================================
+void FreeJoint::setRelativeAngularAcceleration(
+    const Eigen::Vector3d& newAngularAcceleration,
+    const Frame* relativeTo,
+    const Frame* inCoordinatesOf)
+{
+  assert(nullptr != relativeTo);
+  assert(nullptr != inCoordinatesOf);
+
+  Eigen::Vector6d targetSpatialAcceleration;
+
+  targetSpatialAcceleration.head<3>()
+      = getChildBodyNode()->getWorldTransform().linear().transpose()
+        * inCoordinatesOf->getWorldTransform().linear()
+        * newAngularAcceleration;
+  // Above code is equivalent to:
+  // targetSpatialAcceleration.head<3>()
+  //     = getChildBodyNode()->getTransform(
+  //         inCoordinatesOf).linear().transpose()
+  //       * newAngularAcceleration;
+  // but slower.
+
+  if (Frame::World() == relativeTo)
+  {
+    targetSpatialAcceleration.tail<3>()
+        = getChildBodyNode()->getSpatialAcceleration().tail<3>();
+  }
+  else
+  {
+    targetSpatialAcceleration.tail<3>()
+        = getChildBodyNode()->getSpatialAcceleration(
+            relativeTo, getChildBodyNode()).tail<3>();
+  }
+
+  setRelativeSpatialAcceleration(
+        targetSpatialAcceleration, relativeTo, getChildBodyNode());
 }
 
 //==============================================================================
