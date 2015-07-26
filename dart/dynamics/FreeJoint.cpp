@@ -241,7 +241,7 @@ void FreeJoint::setRelativeLinearVelocity(
   //     = getChildBodyNode()->getTransform(
   //         inCoordinatesOf).linear().transpose()
   //       * newLinearVelocity;
-  // but slower.
+  // but faster.
 
   setRelativeSpatialVelocity(
         targetSpatialVelocity, relativeTo, getChildBodyNode());
@@ -267,7 +267,7 @@ void FreeJoint::setRelativeAngularVelocity(
   //     = getChildBodyNode()->getTransform(
   //         inCoordinatesOf).linear().transpose()
   //       * newAngularVelocity;
-  // but slower.
+  // but faster.
 
   if (Frame::World() == relativeTo)
   {
@@ -411,7 +411,7 @@ void FreeJoint::setRelativeLinearAcceleration(
   //     = getChildBodyNode()->getTransform(
   //         inCoordinatesOf).linear().transpose()
   //       * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
-  // but slower.
+  // but faster.
 
   setRelativeSpatialAcceleration(
         targetSpatialAcceleration, relativeTo, getChildBodyNode());
@@ -437,7 +437,7 @@ void FreeJoint::setRelativeAngularAcceleration(
   //     = getChildBodyNode()->getTransform(
   //         inCoordinatesOf).linear().transpose()
   //       * newAngularAcceleration;
-  // but slower.
+  // but faster.
 
   if (Frame::World() == relativeTo)
   {
