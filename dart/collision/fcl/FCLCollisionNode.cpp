@@ -50,6 +50,11 @@
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/collision/fcl/FCLTypes.h"
 
+#define FCL_VERSION_AT_LEAST(x,y,z) \
+  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
+  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
+  FCL_PATCH_VERSION >= z))))
+
 namespace dart {
 namespace collision {
 
@@ -516,10 +521,15 @@ void FCLCollisionNode::updateFCLCollisionObjects()
 
       const aiMesh* mesh = softMeshShape->getAssimpMesh();
       softMeshShape->update();
-
+#if FCL_VERSION_AT_LEAST(0,3,0)
       fcl::CollisionGeometry* collGeom
           = const_cast<fcl::CollisionGeometry*>(
               fclCollObj->collisionGeometry().get());
+#else
+      fcl::CollisionGeometry* collGeom
+          = const_cast<fcl::CollisionGeometry*>(
+              fclCollObj->getCollisionGeometry());
+#endif
       assert(nullptr != dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
       fcl::BVHModel<fcl::OBBRSS>* bvhModel
           = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);
