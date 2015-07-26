@@ -546,7 +546,7 @@ public:
 
     /// You should not need to override this function. Instead, you should
     /// override computeSolutions.
-    void computeGradient(const Eigen::Vector6d&,
+    void computeGradient(const Eigen::Vector6d&_error,
                          Eigen::VectorXd& _grad) override;
 
     /// Use this function to fill the entries of the mSolutions variable. Be

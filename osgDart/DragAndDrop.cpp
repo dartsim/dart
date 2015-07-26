@@ -501,6 +501,8 @@ public:
     mEntity = tool;
   }
 
+  virtual ~InteractiveToolDnD() = default;
+
 protected:
 
   dart::sub_ptr<InteractiveTool> mTool;
@@ -531,14 +533,6 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
     dnd = mDnDs[i+6];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
   }
-}
-
-//==============================================================================
-InteractiveFrameDnD::~InteractiveFrameDnD()
-{
-  for(size_t i=0; i<mDnDs.size(); ++i)
-    delete mDnDs[i];
-  mDnDs.clear();
 }
 
 //==============================================================================

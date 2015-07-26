@@ -801,17 +801,19 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 
 //==============================================================================
 void InverseKinematics::Analytical::computeGradient(
-    const Eigen::Vector6d& /*_error*/, Eigen::VectorXd& _grad)
+    const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
 {
-  getSolutions();
-
   _grad.setZero();
+  if(Eigen::Vector6d::Zero() == _error)
+    return;
+
+  getSolutions();
 
   if(mSolutions.size() == 0)
     return;
 
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
-  mConfigCache = mIK->getConfiguration();
+  mConfigCache = getConfiguration();
 
   const std::vector<int>& analyticalToDependent = mDofMap;
   const std::vector<int>& dependentToGradient = mIK->getDofMap();
