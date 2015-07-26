@@ -125,7 +125,7 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform,
                                      const Frame* withRespectTo)
 {
-  assert(nullptr != withRespecTo);
+  assert(nullptr != withRespectTo);
 
   setRelativeTransform(
     withRespectTo->getTransform(getParentBodyNode()) * newTransform);
