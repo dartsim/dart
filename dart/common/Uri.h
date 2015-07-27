@@ -79,39 +79,54 @@ private:
 
 class Uri {
 public:
+  /// Scheme, e.g. 'http', 'file', 'package'
   UriComponent mScheme;
+
+  /// Authority, e.g. 'google.com', 'en.wikipedia.org'
   UriComponent mAuthority;
+
+  /// Path, e.g. '/index.html', '/foo/bar.txt'
   UriComponent mPath;
+
+  /// Query string, i.e. the part of the URI after the ?
   UriComponent mQuery;
+
+  /// Fragment, e.g. the part of the URI after the #
   UriComponent mFragment;
 
+  /// Clear the URI by reset()ing all components.
   void clear();
 
-  bool isPath() const;
-  bool isRelativePath() const;
-
-  void append(const std::string& _relativePath);
-  void transform();
-
-
+  /// Parse URI from a string; return success.
   bool fromString(const std::string& _input);
+
+  /// Parse a URI or local path (i.e. URI with no schema) from a string.
   bool fromStringOrPath(const std::string& _input);
 
+  /// Resolve a relative path reference; return success.
   bool fromRelativeUri(const Uri& _base, const std::string& _relative,
                        bool _strict = false);
+
+  /// Resolve a relative path reference; return success.
   bool fromRelativeUri(const Uri& _base, const Uri& _relative,
                        bool _strict = false);
 
+  /// Combine the parts of the URI into a string.
   std::string toString() const;
 
+  /// Parse a URI from a string; return an empty string on failure.
   static std::string getUri(const std::string& _input);
+
+  /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(const std::string& _base,
                                     const std::string& _relative,
                                     bool _strict = false);
 
 private:
-  // These are helper functions for implementing transform();
+  /// Implement section 5.2.3 of RFC 3986.
   static std::string mergePaths(const Uri& _base, const Uri& _relative);
+
+  /// Implement section 5.2.4 of RFC 3986.
   static std::string removeDotSegments(const std::string& _path);
 };
 

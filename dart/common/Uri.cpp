@@ -1,5 +1,4 @@
 #include <cassert>
-#include <regex>
 #include <sstream>
 #include "dart/common/Console.h"
 #include "Uri.h"
@@ -139,24 +138,6 @@ void Uri::clear()
   mPath.reset();
   mQuery.reset();
   mFragment.reset();
-}
-
-void Uri::append(const std::string& _relativePath)
-{
-  if (mPath)
-    mPath = *mPath + "/" + _relativePath;
-  else
-    mPath = _relativePath;
-}
-
-bool Uri::isPath() const
-{
-  return !mScheme && mPath;
-}
-
-bool Uri::isRelativePath() const
-{
-  return isPath() && !mPath->empty() && mPath->front() != '/';
 }
 
 bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative, bool _strict)
