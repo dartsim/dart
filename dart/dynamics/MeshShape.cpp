@@ -131,31 +131,6 @@ aiMaterial::~aiMaterial()
 namespace dart {
 namespace dynamics {
 
-static bool startsWith(const std::string &_target, const std::string &_prefix)
-{
-  return _target.size() >= _prefix.size()
-      && _target.substr(0, _prefix.size()) == _prefix;
-}
-
-static bool endsWith(const std::string &_target, const std::string &_suffix)
-{
-  if( _target.size() >= _suffix.size() )
-    std::cout << "Testing: " << _target.substr(_target.size() - _suffix.size()) << std::endl;
-
-  return _target.size() >= _suffix.size()
-      && _target.substr(_target.size() - _suffix.size()) == _suffix;
-}
-
-static std::string extractPathFromUri(const std::string &_uri)
-{
-  static const std::string fileSchema = "file://";
-
-  if (startsWith(_uri, fileSchema))
-    return _uri.substr(fileSchema.size());
-  else
-    return "";
-}
-
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const std::string &_path,
                      const common::ResourceRetrieverPtr& _resourceRetriever)
