@@ -216,13 +216,13 @@ public:
     if(nullptr == _ptr)
     {
       mNode = nullptr;
-      mWeakCleaner = nullptr;
+      mWeakCleaner.reset();
       mWeakBodyNodePtr = nullptr;
       return;
     }
 
     mWeakBodyNodePtr = _ptr->getBodyNodePtr();
-    mWeakCleaner = _ptr->mCleaner;
+    mWeakCleaner = _ptr->generateCleaner();
     mNode = _ptr;
   }
 
