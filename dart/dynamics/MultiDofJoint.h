@@ -37,7 +37,6 @@
 #ifndef DART_DYNAMICS_MULTIDOFJOINT_H_
 #define DART_DYNAMICS_MULTIDOFJOINT_H_
 
-#include <iostream>
 #include <string>
 #include <array>
 
