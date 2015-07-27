@@ -60,7 +60,7 @@ Controller::Controller(dart::dynamics::SkeletonPtr _robot,
 
   // Remove position limits
   for (int i = 0; i < dof; ++i)
-    _robot->getJoint(i)->setPositionLimited(false);
+    _robot->getJoint(i)->setPositionLimitEnforced(false);
 
   // Set joint damping
   for (int i = 0; i < dof; ++i)
