@@ -216,7 +216,7 @@ public:
     if(nullptr == _ptr)
     {
       mNode = nullptr;
-      mWeakCleaner = nullptr;
+      mWeakCleaner.reset();
       mWeakBodyNodePtr = nullptr;
       return;
     }

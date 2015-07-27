@@ -90,7 +90,10 @@ std::shared_ptr<NodeCleaner> Node::generateCleaner()
 {
   std::shared_ptr<NodeCleaner> cleaner = mCleaner.lock();
   if(nullptr == cleaner)
+  {
     cleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(this));
+    mCleaner = cleaner;
+  }
 
   return cleaner;
 }
