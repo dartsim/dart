@@ -565,18 +565,62 @@ TEST(Skeleton, NodePersistence)
   SkeletonPtr skel = Skeleton::create();
   skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
 
-  EndEffector* manip =
-      skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+  {
+    EndEffector* manip =
+        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
 
-  EXPECT_TRUE(skel->getEndEffector("manip") == manip);
-  EXPECT_TRUE(skel->getEndEffector(0) == manip);
-  EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
 
-  manip->remove();
+    WeakEndEffectorPtr weakManip = manip;
 
-  EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
-  EXPECT_TRUE(skel->getNumEndEffectors() == 0);
-  EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    manip->remove();
+
+    // The Node has been removed, and no strong reference to it exists, so it
+    // should be gone from the Skeleton
+    EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+    EXPECT_TRUE(skel->getNumEndEffectors() == 0);
+    EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
+
+    EXPECT_TRUE(weakManip.lock() == nullptr);
+  }
+
+  {
+    EndEffector* manip =
+        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+
+    EndEffectorPtr strongManip = manip;
+    WeakEndEffectorPtr weakManip = strongManip;
+
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    manip->remove();
+
+    // The Node has been removed, but a strong reference to it still exists, so
+    // it will remain in the Skeleton for now
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    strongManip = nullptr;
+
+    // The Node has been removed, and no strong reference to it exists any
+    // longer, so it should be gone from the Skeleton
+    EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+    EXPECT_TRUE(skel->getNumEndEffectors() == 0);
+    EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
+
+    EXPECT_TRUE(weakManip.lock() == nullptr);
+  }
 }
 
 TEST(Skeleton, Referential)
