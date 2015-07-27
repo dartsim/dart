@@ -79,8 +79,10 @@ SingleDofJoint::UniqueProperties::UniqueProperties(
     std::string _dofName)
   : mPositionLowerLimit(_positionLowerLimit),
     mPositionUpperLimit(_positionUpperLimit),
+    mInitialPosition(0.0),
     mVelocityLowerLimit(_velocityLowerLimit),
     mVelocityUpperLimit(_velocityUpperLimit),
+    mInitialVelocity(0.0),
     mAccelerationLowerLimit(_accelerationLowerLimit),
     mAccelerationUpperLimit(_accelerationUpperLimit),
     mForceLowerLimit(_forceLowerLimit),
@@ -124,8 +126,10 @@ void SingleDofJoint::setProperties(const UniqueProperties& _properties)
   setDofName(0, _properties.mDofName, _properties.mPreserveDofName);
   setPositionLowerLimit(0, _properties.mPositionLowerLimit);
   setPositionUpperLimit(0, _properties.mPositionUpperLimit);
+  setInitialPosition(0, _properties.mInitialPosition);
   setVelocityLowerLimit(0, _properties.mVelocityLowerLimit);
   setVelocityUpperLimit(0, _properties.mVelocityUpperLimit);
+  setInitialVelocity(0, _properties.mInitialVelocity);
   setAccelerationLowerLimit(0, _properties.mAccelerationLowerLimit);
   setAccelerationUpperLimit(0, _properties.mAccelerationUpperLimit);
   setForceLowerLimit(0, _properties.mForceLowerLimit);
@@ -420,12 +424,6 @@ Eigen::VectorXd SingleDofJoint::getPositions() const
 }
 
 //==============================================================================
-void SingleDofJoint::resetPositions()
-{
-  setPositionStatic(0.0);
-}
-
-//==============================================================================
 void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
 {
   if (_index != 0)
@@ -487,6 +485,66 @@ bool SingleDofJoint::hasPositionLimit(size_t _index) const
 }
 
 //==============================================================================
+void SingleDofJoint::resetPosition(size_t _index)
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( resetPosition, _index );
+    return;
+  }
+
+  setPositionStatic(mSingleDofP.mInitialPosition);
+}
+
+//==============================================================================
+void SingleDofJoint::resetPositions()
+{
+  setPositionStatic(mSingleDofP.mInitialPosition);
+}
+
+//==============================================================================
+void SingleDofJoint::setInitialPosition(size_t _index, double _initial)
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setInitialPosition, _index );
+    return;
+  }
+
+  mSingleDofP.mInitialPosition = _initial;
+}
+
+//==============================================================================
+double SingleDofJoint::getInitialPosition(size_t _index) const
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getInitialPosition, _index );
+    return 0.0;
+  }
+
+  return mSingleDofP.mInitialPosition;
+}
+
+//==============================================================================
+void SingleDofJoint::setInitialPositions(const Eigen::VectorXd& _initial)
+{
+  if( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  {
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setInitialPositions, _initial );
+    return;
+  }
+
+  setInitialPosition(0, _initial[0]);
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getInitialPositions() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mSingleDofP.mInitialPosition);
+}
+
+//==============================================================================
 void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 {
   if (_index != 0)
@@ -541,12 +599,6 @@ Eigen::VectorXd SingleDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void SingleDofJoint::resetVelocities()
-{
-  setVelocityStatic(0.0);
-}
-
-//==============================================================================
 void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   if (_index != 0)
@@ -592,6 +644,66 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
   }
 
   return mSingleDofP.mVelocityUpperLimit;
+}
+
+//==============================================================================
+void SingleDofJoint::resetVelocity(size_t _index)
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( resetVelocity, _index );
+    return;
+  }
+
+  setVelocityStatic(mSingleDofP.mInitialVelocity);
+}
+
+//==============================================================================
+void SingleDofJoint::resetVelocities()
+{
+  setVelocityStatic(mSingleDofP.mInitialVelocity);
+}
+
+//==============================================================================
+void SingleDofJoint::setInitialVelocity(size_t _index, double _initial)
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( setInitialVelocity, _index );
+    return;
+  }
+
+  mSingleDofP.mInitialVelocity = _initial;
+}
+
+//==============================================================================
+double SingleDofJoint::getInitialVelocity(size_t _index) const
+{
+  if (_index != 0)
+  {
+    SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( getInitialVelocity, _index );
+    return 0.0;
+  }
+
+  return mSingleDofP.mInitialVelocity;
+}
+
+//==============================================================================
+void SingleDofJoint::setInitialVelocities(const Eigen::VectorXd& _initial)
+{
+  if( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  {
+    SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, _initial );
+    return;
+  }
+
+  setInitialVelocity(0, _initial[0]);
+}
+
+//==============================================================================
+Eigen::VectorXd SingleDofJoint::getInitialVelocities() const
+{
+  return Eigen::Matrix<double, 1, 1>::Constant(mSingleDofP.mInitialVelocity);
 }
 
 //==============================================================================
