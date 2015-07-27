@@ -908,6 +908,10 @@ void InverseKinematics::Analytical::computeGradient(
     Eigen::AngleAxisd aaError(postTf.linear() * desiredTf.linear().transpose());
     postError.head<3>() = aaError.angle() * aaError.axis();
 
+    double norm = postError.norm();
+    if(norm > mExtraErrorLengthClamp)
+      postError = mExtraErrorLengthClamp*postError/norm;
+
     applyExtraDofGradient(_grad, postError, mIK, mExtraDofs,
                           mComponentWeights, mComponentWiseClamp);
   }
@@ -938,6 +942,18 @@ IK::Analytical::ExtraDofUtilization_t
 IK::Analytical::getExtraDofUtilization() const
 {
   return mExtraDofUtilization;
+}
+
+//==============================================================================
+void IK::Analytical::setExtraErrorLengthClamp(double _clamp)
+{
+  mExtraErrorLengthClamp = _clamp;
+}
+
+//==============================================================================
+double IK::Analytical::getExtraErrorLengthClamp() const
+{
+  return mExtraErrorLengthClamp;
 }
 
 //==============================================================================
