@@ -186,7 +186,8 @@ InverseKinematics::ErrorMethod::ErrorMethod(
 }
 
 //==============================================================================
-Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform()
+Eigen::Isometry3d InverseKinematics::ErrorMethod::computeDesiredTransform(
+    const Eigen::Isometry3d& /*_currentTf*/, const Eigen::Vector6d& /*_error*/)
 {
   return mIK->getTarget()->getTransform();
 }
@@ -399,24 +400,23 @@ InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
 }
 
 //==============================================================================
-Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform()
+Eigen::Isometry3d InverseKinematics::TaskSpaceRegion::computeDesiredTransform(
+    const Eigen::Isometry3d& _currentTf,
+    const Eigen::Vector6d& _error)
 {
-  const Eigen::Vector6d& error = evalError(mIK->getConfiguration());
-
-  const Eigen::Isometry3d currentTf = mIK->getNode()->getWorldTransform();
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-  tf.rotate(currentTf.linear());
+  tf.rotate(_currentTf.linear());
   for(size_t i=0; i < 3; ++i)
   {
-    const double angle = error[i];
+    const double angle = _error[i];
     Eigen::Vector3d axis(Eigen::Vector3d::Zero());
     axis[i] = 1.0;
     tf.prerotate(Eigen::AngleAxisd(-angle, axis));
   }
 
-  tf.pretranslate(currentTf.translation());
-  tf.pretranslate(-error.tail<3>());
+  tf.pretranslate(_currentTf.translation());
+  tf.pretranslate(-_error.tail<3>());
 
   return tf;
 }
@@ -731,7 +731,9 @@ InverseKinematics::Analytical::Solution::Solution(
 //==============================================================================
 InverseKinematics::Analytical::Analytical(InverseKinematics* _ik,
                                           const std::string& _methodName)
-  : GradientMethod(_ik, _methodName)
+  : GradientMethod(_ik, _methodName),
+    mExtraDofUtilization(UNUSED),
+    mExtraErrorLengthClamp(DefaultIKErrorClamp)
 {
   resetQualityComparisonFunction();
 
@@ -743,12 +745,22 @@ InverseKinematics::Analytical::Analytical(InverseKinematics* _ik,
 //==============================================================================
 const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 {
+  const Eigen::Isometry3d& currentTf = mIK->getNode()->getWorldTransform();
+  const Eigen::Vector6d& error = mIK->getErrorMethod().computeError();
+
+  const Eigen::Isometry3d& _desiredTf =
+      mIK->getErrorMethod().computeDesiredTransform(currentTf, error);
+
+  return getSolutions(_desiredTf);
+}
+
+//==============================================================================
+const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
+    const Eigen::Isometry3d& _desiredTf)
+{
   mRestoreConfigCache = getConfiguration();
 
-  const Eigen::Isometry3d& desiredTf =
-      mIK->getErrorMethod().computeDesiredTransform();
-
-  computeSolutions(desiredTf);
+  computeSolutions(_desiredTf);
 
   mValidSolutionsCache.clear();
   mValidSolutionsCache.reserve(mSolutions.size());
@@ -800,6 +812,36 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions()
 }
 
 //==============================================================================
+static void applyExtraDofGradient(Eigen::VectorXd& grad,
+                                  const Eigen::Vector6d& error,
+                                  const InverseKinematics* ik,
+                                  const std::vector<size_t>& extraDofs,
+                                  const Eigen::VectorXd& compWeights,
+                                  double compClamp)
+{
+  const math::Jacobian& J = ik->computeJacobian();
+  const std::vector<int>& gradMap = ik->getDofMap();
+
+  for(size_t i=0; i < extraDofs.size(); ++i)
+  {
+    size_t depIndex = extraDofs[i];
+    int gradIndex = gradMap[depIndex];
+    if(gradIndex == -1)
+      continue;
+
+    double weight = compWeights.size() > gradIndex ?
+          compWeights[gradIndex] : 1.0;
+
+    double dq = weight*J.col(gradIndex).transpose()*error;
+
+    if(std::abs(dq) > compClamp)
+      dq = dq < 0 ? -compClamp : compClamp;
+
+    grad[gradIndex] = dq;
+  }
+}
+
+//==============================================================================
 void InverseKinematics::Analytical::computeGradient(
     const Eigen::Vector6d& _error, Eigen::VectorXd& _grad)
 {
@@ -807,12 +849,37 @@ void InverseKinematics::Analytical::computeGradient(
   if(Eigen::Vector6d::Zero() == _error)
     return;
 
-  getSolutions();
+  const Eigen::Isometry3d& desiredTf =
+      mIK->getErrorMethod().computeDesiredTransform(
+        mIK->getNode()->getWorldTransform(), _error);
+
+  if(PRE_ANALYTICAL == mExtraDofUtilization && mExtraDofs.size() > 0)
+  {
+    const double norm = _error.norm();
+    const Eigen::Vector6d& error = norm > mExtraErrorLengthClamp?
+          mExtraErrorLengthClamp * _error/norm : _error;
+
+    applyExtraDofGradient(_grad, error, mIK, mExtraDofs,
+                          mComponentWeights, mComponentWiseClamp);
+
+    const std::vector<int>& gradMap = mIK->getDofMap();
+    for(size_t i=0; i < mExtraDofs.size(); ++i)
+    {
+      const size_t depIndex = mExtraDofs[i];
+      DegreeOfFreedom* dof = mIK->getNode()->getDependentDof(depIndex);
+
+      const size_t gradIndex = gradMap[depIndex];
+      dof->setPosition(dof->getPosition() - _grad[gradIndex]);
+    }
+  }
+
+  getSolutions(desiredTf);
 
   if(mSolutions.size() == 0)
     return;
 
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
+  int bestValidity = mSolutions[0].mValidity;
   mConfigCache = getConfiguration();
 
   const std::vector<int>& analyticalToDependent = mDofMap;
@@ -828,7 +895,21 @@ void InverseKinematics::Analytical::computeGradient(
       continue;
 
     _grad[index] = mConfigCache[i] - bestSolution[i];
-//    _grad[index] = bestSolution[i] - mConfigCache[i];
+  }
+
+  if(POST_ANALYTICAL == mExtraDofUtilization && mExtraDofs.size() > 0
+     && (bestValidity != VALID) )
+  {
+    setConfiguration(bestSolution);
+
+    const Eigen::Isometry3d& postTf = mIK->getNode()->getWorldTransform();
+    Eigen::Vector6d postError;
+    postError.tail<3>() = postTf.translation() - desiredTf.translation();
+    Eigen::AngleAxisd aaError(postTf.linear() * desiredTf.linear().transpose());
+    postError.head<3>() = aaError.angle() * aaError.axis();
+
+    applyExtraDofGradient(_grad, postError, mIK, mExtraDofs,
+                          mComponentWeights, mComponentWiseClamp);
   }
 }
 
@@ -843,6 +924,20 @@ void InverseKinematics::Analytical::setConfiguration(
 Eigen::VectorXd InverseKinematics::Analytical::getConfiguration() const
 {
   return mIK->getNode()->getSkeleton()->getPositions(getDofs());
+}
+
+//==============================================================================
+void InverseKinematics::Analytical::setExtraDofUtilization(
+    ExtraDofUtilization_t _utilization)
+{
+  mExtraDofUtilization = _utilization;
+}
+
+//==============================================================================
+IK::Analytical::ExtraDofUtilization_t
+IK::Analytical::getExtraDofUtilization() const
+{
+  return mExtraDofUtilization;
 }
 
 //==============================================================================
@@ -892,13 +987,20 @@ void InverseKinematics::Analytical::constructDofMap()
 
   mDofMap.clear();
   mDofMap.resize(analyticalDofs.size());
+
+  std::vector<bool> isExtraDof;
+  isExtraDof.resize(nodeDofs.size(), true);
+
   for(size_t i=0; i < analyticalDofs.size(); ++i)
   {
     mDofMap[i] = -1;
     for(size_t j=0; j < nodeDofs.size(); ++j)
     {
       if(analyticalDofs[i] == nodeDofs[j])
+      {
         mDofMap[i] = j;
+        isExtraDof[j] = false;
+      }
     }
 
     if(mDofMap[i] == -1)
@@ -914,6 +1016,16 @@ void InverseKinematics::Analytical::constructDofMap()
              << mIK->getNode()->getName() << "]. This might result in "
              << "undesirable behavior, such as that DOF being ignored\n";
     }
+  }
+
+  mExtraDofs.clear();
+  mExtraDofs.reserve(isExtraDof.size());
+
+  const std::vector<int>& gradDofMap = mIK->getDofMap();
+  for(size_t i=0; i < isExtraDof.size(); ++i)
+  {
+    if( isExtraDof[i] && (gradDofMap[i] > -1) )
+      mExtraDofs.push_back(i);
   }
 }
 

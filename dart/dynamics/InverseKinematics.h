@@ -189,10 +189,11 @@ public:
     virtual Eigen::Vector6d computeError() = 0;
 
     /// Override this function with your implementation of computing the desired
-    /// world transform of the Node. If you want the desired transform to always
-    /// be equal to the Target's transform, you can simply call
-    /// ErrorMethod::computeDesiredTransform to implement this function.
-    virtual Eigen::Isometry3d computeDesiredTransform() = 0;
+    /// given the current transform and error vector. If you want the desired
+    /// transform to always be equal to the Target's transform, you can simply
+    /// call ErrorMethod::computeDesiredTransform to implement this function.
+    virtual Eigen::Isometry3d computeDesiredTransform(
+        const Eigen::Isometry3d& _currentTf, const Eigen::Vector6d& _error) = 0;
 
     /// This function is used to handle caching the error vector.
     const Eigen::Vector6d& evalError(const Eigen::VectorXd& _q);
@@ -318,7 +319,9 @@ public:
     virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
 
     // Documentation inherited
-    virtual Eigen::Isometry3d computeDesiredTransform() override;
+    virtual Eigen::Isometry3d computeDesiredTransform(
+        const Eigen::Isometry3d& _currentTf,
+        const Eigen::Vector6d& _error) override;
 
     // Documentation inherited
     virtual Eigen::Vector6d computeError() override;
@@ -508,11 +511,38 @@ public:
   {
   public:
 
+    /// Bitwise enumerations that are used to describe some properties of each
+    /// solution produced by the analytical IK.
     enum Validity_t
     {
       VALID = 0,
       OUT_OF_REACH   = 1 << 0,
       LIMIT_VIOLATED = 1 << 1
+    };
+
+    /// If there are extra DOFs in the IK module which your Analytical solver
+    /// implementation does not make use of, those DOFs can be used to
+    /// supplement the analytical solver using Jacobian transpose iteration.
+    /// This enumeration is used to indicate whether you want those DOFs to be
+    /// used before applying the analytical solution, after applying the
+    /// analytical solution, or not be used at all.
+    ///
+    /// Jacobian transpose is used for the extra DOFs because it is inexpensive
+    /// and robust to degenerate Jacobians which are common in low dimensional
+    /// joint spaces. The primary advantage of pseudoinverse methods over
+    /// Jacobian transpose methods is their precision, but analytical methods
+    /// are even more precise than pseudoinverse methods, so that precision is
+    /// not needed in this case.
+    ///
+    /// If you want the extra DOFs to use a different method than Jacobian
+    /// transpose, you can create two seperate IK modules (one which is
+    /// analytical and one with the iterative method of your choice) and combine
+    /// them in a HierarchicalIK.
+    enum ExtraDofUtilization_t
+    {
+      UNUSED = 0,
+      PRE_ANALYTICAL,
+      POST_ANALYTICAL
     };
 
     struct Solution
@@ -541,12 +571,21 @@ public:
     virtual ~Analytical() = default;
 
     /// Get the solutions for this IK module, along with a tag indicating
-    /// whether each solution is valid.
+    /// whether each solution is valid. This function will assume that you want
+    /// to use the desired transform given by the IK module's current
+    /// ErrorMethod.
     const std::vector<Solution>& getSolutions();
+
+    /// Get the solutions for this IK module, along with a tag indicating
+    /// whether each solution is valid. This function will compute the
+    /// configurations using the given desired transform instead of using the
+    /// IK module's current ErrorMethod.
+    const std::vector<Solution>& getSolutions(
+        const Eigen::Isometry3d& _desiredTf);
 
     /// You should not need to override this function. Instead, you should
     /// override computeSolutions.
-    void computeGradient(const Eigen::Vector6d&_error,
+    void computeGradient(const Eigen::Vector6d& _error,
                          Eigen::VectorXd& _grad) override;
 
     /// Use this function to fill the entries of the mSolutions variable. Be
@@ -575,6 +614,19 @@ public:
     /// Get the configuration of the DOFs. The components of this vector will
     /// correspond to the DOFs provided by getDofs().
     Eigen::VectorXd getConfiguration() const;
+
+    /// Set how you want extra DOFs to be utilized by the IK module
+    void setExtraDofUtilization(ExtraDofUtilization_t _utilization);
+
+    /// Get how extra DOFs are being utilized by the IK module
+    ExtraDofUtilization_t getExtraDofUtilization() const;
+
+    /// Set how much to clamp the error vector that gets applied to extra DOFs
+    void setExtraErrorLengthClamp(double _clamp);
+
+    /// Get how much we will clamp the error vector that gets applied to extra
+    /// DOFs
+    double getExtraErrorLengthClamp() const;
 
     /// Set the function that will be used to compare the qualities of two
     /// solutions. This function should return true if the first argument is a
@@ -618,9 +670,20 @@ public:
 
   private:
 
+    /// Flag for how to use the extra DOFs in the IK module.
+    ExtraDofUtilization_t mExtraDofUtilization;
+
+    /// How much to clamp the extra error that gets applied to DOFs
+    double mExtraErrorLengthClamp;
+
     /// This maps the DOFs provided by getDofs() to their index in the Node's
     /// list of dependent DOFs. This map is constructed by constructDofMap().
     std::vector<int> mDofMap;
+
+    /// List of extra DOFs in the module which are not covered by the Analytical
+    /// IK implementation. The index of each DOF is its dependency index in the
+    /// JacobianNode (i.e. the column it applies to in the Node's Jacobian).
+    std::vector<size_t> mExtraDofs;
 
     /// A cache for the valid solutions. The valid and invalid solution caches
     /// are kept separate so that they can each be sorted by quality
