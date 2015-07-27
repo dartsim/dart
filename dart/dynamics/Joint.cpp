@@ -64,7 +64,7 @@ Joint::Properties::Properties(const std::string& _name,
     mIsPositionLimited(_isPositionLimited),
     mActuatorType(_actuatorType)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -316,6 +316,56 @@ size_t Joint::getJointIndexInTree() const
 size_t Joint::getTreeIndex() const
 {
   return mChildBodyNode->getTreeIndex();
+}
+
+//==============================================================================
+bool Joint::checkSanity(bool _printWarnings) const
+{
+  bool sane = true;
+  for(size_t i=0; i < getNumDofs(); ++i)
+  {
+    if(getInitialPosition(i) < getPositionLowerLimit(i)
+       || getPositionUpperLimit(i) < getInitialPosition(i))
+    {
+      if(_printWarnings)
+      {
+        dtwarn << "[Joint::checkSanity] Initial position of index " << i << " ["
+               << getDofName(i) << "] in Joint [" << getName() << "] is "
+               << "outside of its position limits\n"
+               << " -- Initial Position: " << getInitialPosition(i) << "\n"
+               << " -- Limits: [" << getPositionLowerLimit(i) << ", "
+               << getPositionUpperLimit(i) << "]\n";
+      }
+      else
+      {
+        return false;
+      }
+
+      sane = false;
+    }
+
+    if(getInitialVelocity(i) < getVelocityLowerLimit(i)
+       || getVelocityUpperLimit(i) < getInitialVelocity(i))
+    {
+      if(_printWarnings)
+      {
+        dtwarn << "[Joint::checkSanity] Initial velocity of index " << i << " ["
+               << getDofName(i) << "] is Joint [" << getName() << "] is "
+               << "outside of its velocity limits\n"
+               << " -- Initial Velocity: " << getInitialVelocity(i) << "\n"
+               << " -- Limits: [" << getVelocityLowerLimit(i) << ", "
+               << getVelocityUpperLimit(i) << "]\n";
+      }
+      else
+      {
+        return false;
+      }
+
+      sane = false;
+    }
+  }
+
+  return sane;
 }
 
 //==============================================================================

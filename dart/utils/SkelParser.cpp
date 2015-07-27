@@ -565,6 +565,9 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
     it = joints.find(nextJoint->second);
   }
 
+  newSkeleton->resetPositions();
+  newSkeleton->resetVelocities();
+
   return newSkeleton;
 }
 
@@ -1165,11 +1168,11 @@ struct DofProxy
 
       lowerPosition(&properties.mPositionLowerLimit),
       upperPosition(&properties.mPositionUpperLimit),
-      initalPosition(&joint.position.data()[0]),
+      initalPosition(&properties.mInitialPosition),
 
       lowerVelocity(&properties.mVelocityLowerLimit),
       upperVelocity(&properties.mVelocityUpperLimit),
-      initialVelocity(&joint.velocity.data()[0]),
+      initialVelocity(&properties.mInitialVelocity),
 
       lowerAcceleration(&properties.mAccelerationLowerLimit),
       upperAcceleration(&properties.mAccelerationUpperLimit),
@@ -1204,11 +1207,11 @@ struct DofProxy
 
       lowerPosition(&properties.mPositionLowerLimits.data()[index]),
       upperPosition(&properties.mPositionUpperLimits.data()[index]),
-      initalPosition(&joint.position.data()[index]),
+      initalPosition(&properties.mInitialPositions.data()[index]),
 
       lowerVelocity(&properties.mVelocityLowerLimits.data()[index]),
       upperVelocity(&properties.mVelocityUpperLimits.data()[index]),
-      initialVelocity(&joint.velocity.data()[index]),
+      initialVelocity(&properties.mInitialVelocities.data()[index]),
 
       lowerAcceleration(&properties.mAccelerationLowerLimits.data()[index]),
       upperAcceleration(&properties.mAccelerationUpperLimits.data()[index]),
@@ -1520,6 +1523,7 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
+    properties.mInitialPosition = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1530,6 +1534,7 @@ SkelParser::JointPropPtr SkelParser::readRevoluteJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
+    properties.mInitialVelocity = ivel[0];
   }
 
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
@@ -1577,6 +1582,7 @@ SkelParser::JointPropPtr SkelParser::readPrismaticJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
+    properties.mInitialPosition = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1587,6 +1593,7 @@ SkelParser::JointPropPtr SkelParser::readPrismaticJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
+    properties.mInitialVelocity = ivel[0];
   }
 
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
@@ -1641,6 +1648,7 @@ SkelParser::JointPropPtr SkelParser::readScrewJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
+    properties.mInitialPosition = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1651,6 +1659,7 @@ SkelParser::JointPropPtr SkelParser::readScrewJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
+    properties.mInitialVelocity = ivel[0];
   }
 
   readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
@@ -1712,6 +1721,7 @@ SkelParser::JointPropPtr SkelParser::readUniversalJoint(
   {
     Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1720,6 +1730,7 @@ SkelParser::JointPropPtr SkelParser::readUniversalJoint(
   {
     Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
@@ -1744,6 +1755,7 @@ SkelParser::JointPropPtr SkelParser::readBallJoint(
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1752,6 +1764,7 @@ SkelParser::JointPropPtr SkelParser::readBallJoint(
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
@@ -1798,6 +1811,7 @@ SkelParser::JointPropPtr SkelParser::readEulerJoint(
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1806,6 +1820,7 @@ SkelParser::JointPropPtr SkelParser::readEulerJoint(
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
@@ -1834,6 +1849,7 @@ SkelParser::JointPropPtr SkelParser::readTranslationalJoint(
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1842,6 +1858,7 @@ SkelParser::JointPropPtr SkelParser::readTranslationalJoint(
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
@@ -1917,6 +1934,7 @@ SkelParser::JointPropPtr SkelParser::readPlanarJoint(
   {
     Eigen::Vector3d init_pos = getValueVector3d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1925,6 +1943,7 @@ SkelParser::JointPropPtr SkelParser::readPlanarJoint(
   {
     Eigen::Vector3d init_vel = getValueVector3d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
@@ -1949,6 +1968,7 @@ SkelParser::JointPropPtr SkelParser::readFreeJoint(
   {
     Eigen::Vector6d init_pos = getValueVector6d(_jointElement, "init_pos");
     _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
   }
 
   //--------------------------------------------------------------------------
@@ -1957,6 +1977,7 @@ SkelParser::JointPropPtr SkelParser::readFreeJoint(
   {
     Eigen::Vector6d init_vel = getValueVector6d(_jointElement, "init_vel");
     _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
   }
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 6);
