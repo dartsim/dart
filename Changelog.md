@@ -1,4 +1,4 @@
-### Version 5.0.1 (2015-07-24)
+### Version 5.0.1 (2015-07-28)
 
 1. Improved app indexing for bipedStand and atlasSimbicon
     * [Pull request #417](https://github.com/dartsim/dart/pull/417)
@@ -24,6 +24,9 @@
 
 1. Limited maximum required version of Assimp less than 3.0~dfsg-4
     * [Pull request #459](https://github.com/dartsim/dart/pull/459)
+
+1. Fixed SEGFAULTs in DartLoader
+    * [Pull request #472](https://github.com/dartsim/dart/pull/472)
 
 ### Version 5.0.0 (2015-06-15)
 
