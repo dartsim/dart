@@ -44,7 +44,9 @@ namespace dynamics {
 
 //==============================================================================
 Support::Support(EndEffector* _ee)
-  : mEndEffector(_ee)
+  : mActive(false),
+    mEndEffector(_ee)
+
 {
   if(nullptr == mEndEffector)
   {
