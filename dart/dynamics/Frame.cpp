@@ -122,7 +122,7 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 Eigen::Isometry3d Frame::getTransform(const Frame* withRespectTo,
                                       const Frame* inCoordinatesOf) const
 {
-  assert(nullptr != withRespecTo);
+  assert(nullptr != withRespectTo);
   assert(nullptr != inCoordinatesOf);
 
   if (withRespectTo == inCoordinatesOf)
