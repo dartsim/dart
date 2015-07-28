@@ -60,13 +60,15 @@ public:
 
   double eval(const Eigen::VectorXd& _x) override
   {
-    return mObjectiveWeight * 0.5 * (_x - mPose).dot(_x - mPose);
+//    return mObjectiveWeight * 0.5 * (_x - mPose).dot(_x - mPose);
+    return 0.0;
   }
 
   void evalGradient(const Eigen::VectorXd& _x,
                     Eigen::Map<Eigen::VectorXd> _grad) override
   {
-    _grad = mObjectiveWeight * (_x - mPose);
+//    _grad = mObjectiveWeight * (_x - mPose);
+    _grad.setZero();
   }
 
   double mObjectiveWeight;
