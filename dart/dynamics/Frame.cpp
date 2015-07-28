@@ -119,6 +119,24 @@ Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 }
 
 //==============================================================================
+Eigen::Isometry3d Frame::getTransform(const Frame* withRespectTo,
+                                      const Frame* inCoordinatesOf) const
+{
+  assert(nullptr != withRespecTo);
+  assert(nullptr != inCoordinatesOf);
+
+  if (withRespectTo == inCoordinatesOf)
+    return getTransform(withRespectTo);
+
+  // Rotation from "inCoordinatesOf" to "withRespecTo"
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = inCoordinatesOf->getWorldTransform().linear().transpose()
+               * withRespectTo->getWorldTransform().linear();
+
+  return T * getTransform(withRespectTo);
+}
+
+//==============================================================================
 const Eigen::Vector6d& Frame::getSpatialVelocity() const
 {
   if(mAmWorld)
