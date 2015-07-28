@@ -92,7 +92,7 @@ bool HierarchicalIK::solve(bool _resetConfiguration)
   if(!_resetConfiguration)
     return mSolver->solve();
 
-  Eigen::VectorXd config = mSkeleton.lock()->getPositions();
+  Eigen::VectorXd config = skel->getPositions();
   bool wasSolved = mSolver->solve();
   setConfiguration(config);
   return wasSolved;
@@ -174,7 +174,7 @@ void HierarchicalIK::resetProblem(bool _clearSeeds)
     mProblem->clearAllSeeds();
 
   mProblem->setObjective(std::make_shared<Objective>(mPtr.lock()));
-  mProblem->setObjective(std::make_shared<Constraint>(mPtr.lock()));
+  mProblem->addEqConstraint(std::make_shared<Constraint>(mPtr.lock()));
 
   mProblem->setDimension(mSkeleton.lock()->getNumDofs());
 }
