@@ -273,9 +273,11 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
                                    aiProcess_OptimizeMeshes,
                                    nullptr, propertyStore);
   if(!scene)
-    dtwarn << "[MeshShape] Assimp could not load file: '" << _fileName << "'. "
-           << "This will likely result in a segmentation fault "
-           << "if you attempt to use the nullptr we return." << std::endl;
+  {
+    dtwarn << "[MeshShape::loadMesh] Assimp could not load file: '"
+           << _fileName << "'.\n";
+    return nullptr;
+  }
   aiReleasePropertyStore(propertyStore);
 
   // Assimp rotates collada files such that the up-axis (specified in the

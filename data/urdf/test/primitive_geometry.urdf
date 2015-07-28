@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<robot name="primitive_geometry">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <sphere radius="1"/>
+        <cylinder radius="1" length="1"/>
+        <box size="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
