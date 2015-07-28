@@ -534,14 +534,6 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
 }
 
 //==============================================================================
-InteractiveFrameDnD::~InteractiveFrameDnD()
-{
-  for(size_t i=0; i<mDnDs.size(); ++i)
-    delete mDnDs[i];
-  mDnDs.clear();
-}
-
-//==============================================================================
 InteractiveFrame* InteractiveFrameDnD::getFrame() const
 {
   return mInteractiveFrame;

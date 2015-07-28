@@ -248,7 +248,7 @@ public:
   InteractiveFrameDnD(Viewer* viewer, osgDart::InteractiveFrame* frame);
 
   /// Virtual destructor
-  virtual ~InteractiveFrameDnD();
+  virtual ~InteractiveFrameDnD() = default;
 
   /// Get the frame associated with this DnD
   InteractiveFrame* getFrame() const;
