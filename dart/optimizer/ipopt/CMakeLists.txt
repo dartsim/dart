@@ -3,8 +3,8 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-dart_add_library(dart-ipopt ${srcs} ${hdrs})
-target_link_libraries(dart-ipopt dart-core ${IPOPT_LIBRARIES})
+dart_add_library(dart-optimizer-ipopt ${srcs} ${hdrs})
+target_link_libraries(dart-optimizer-ipopt dart-core ${IPOPT_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
@@ -25,4 +25,4 @@ install(
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS dart-ipopt EXPORT DARTIpoptTargets DESTINATION lib)
+install(TARGETS dart-optimizer-ipopt EXPORT DARTIpoptTargets DESTINATION lib)

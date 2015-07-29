@@ -3,8 +3,8 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-dart_add_library(dart-snopt ${srcs} ${hdrs})
-target_link_libraries(dart-snopt dart)
+dart_add_library(dart-optimizer-snopt ${srcs} ${hdrs})
+target_link_libraries(dart-optimizer-snopt dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_snopt headers" ${hdrs})
@@ -25,5 +25,5 @@ install(
   DESTINATION include/dart/optimizer/snopt
   COMPONENT headers
 )
-install(TARGETS dart-snopt EXPORT DARTSNOPTTargets DESTINATION lib)
+install(TARGETS dart-optimizer-snopt EXPORT DARTSNOPTTargets DESTINATION lib)
 
