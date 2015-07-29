@@ -38,6 +38,7 @@
 #ifndef DART_DYNAMICS_SKELETON_H_
 #define DART_DYNAMICS_SKELETON_H_
 
+#include <mutex>
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
@@ -108,6 +109,9 @@ public:
 
   /// Get the shared_ptr that manages this Skeleton
   ConstSkeletonPtr getPtr() const;
+
+  /// Get the mutex that protects the state of this Skeleton
+  std::mutex& getMutex() const;
 
   /// Destructor
   virtual ~Skeleton();
@@ -1108,6 +1112,8 @@ protected:
   // TODO(JS): Better naming
   /// Flag for status of impulse testing.
   bool mIsImpulseApplied;
+
+  mutable std::mutex mMutex;
 
 public:
   //--------------------------------------------------------------------------

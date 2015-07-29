@@ -84,13 +84,13 @@ foreach(test ${tests})
 endforeach(test)
 
 if(HAVE_IPOPT)
-  target_link_libraries(testOptimizer dart-ipopt ${IPOPT_LIBRARIES})
+  target_link_libraries(testOptimizer dart-optimizer-ipopt ${IPOPT_LIBRARIES})
 endif(HAVE_IPOPT)
 
 if(HAVE_NLOPT)
-  target_link_libraries(testOptimizer dart-nlopt ${NLOPT_LIBRARIES})
+  target_link_libraries(testOptimizer dart-optimizer-nlopt ${NLOPT_LIBRARIES})
 endif(HAVE_NLOPT)
 
 if(HAVE_SNOPT)
-  target_link_libraries(testOptimizer dart-snopt)
+  target_link_libraries(testOptimizer dart-optimizer-snopt)
 endif(HAVE_SNOPT)

@@ -45,44 +45,111 @@ using namespace dart::math;
 
 const double display_elevation = 0.05;
 
-class RelaxedPose : public dart::optimizer::Function
+class RelaxedPosture : public dart::optimizer::Function
 {
 public:
 
-  static const double DefaultObjectiveWeight;
-
-  RelaxedPose(const Eigen::VectorXd& _pose)
-    : mObjectiveWeight(DefaultObjectiveWeight),
-      mPose(_pose)
+  RelaxedPosture(const Eigen::VectorXd& idealPosture,
+                 const Eigen::VectorXd& lower, const Eigen::VectorXd& upper,
+                 const Eigen::VectorXd& weights, bool enforceIdeal = false)
+    : enforceIdealPosture(enforceIdeal),
+      mIdeal(idealPosture),
+      mLower(lower),
+      mUpper(upper),
+      mWeights(weights)
   {
-    // Do nothing
+    int dofs = mIdeal.size();
+    if(mLower.size() != dofs || mWeights.size() != dofs || mUpper.size() != dofs)
+    {
+      dterr << "[RelaxedPose::RelaxedPose] Dimension mismatch:\n"
+            << "  ideal:   " << mIdeal.size()   << "\n"
+            << "  lower:   " << mLower.size()   << "\n"
+            << "  upper:   " << mUpper.size()   << "\n"
+            << "  weights: " << mWeights.size() << "\n";
+    }
+    mResultVector.setZero(dofs);
   }
 
   double eval(const Eigen::VectorXd& _x) override
   {
-//    return mObjectiveWeight * 0.5 * (_x - mPose).dot(_x - mPose);
-    return 0.0;
+    computeResultVector(_x);
+    return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(const Eigen::VectorXd& _x,
                     Eigen::Map<Eigen::VectorXd> _grad) override
   {
-//    _grad = mObjectiveWeight * (_x - mPose);
+    computeResultVector(_x);
+
     _grad.setZero();
+    int smaller = std::min(mResultVector.size(), _grad.size());
+    for(int i=0; i < smaller; ++i)
+      _grad[i] = mResultVector[i];
   }
 
-  double mObjectiveWeight;
+  void computeResultVector(const Eigen::VectorXd& _x)
+  {
+    mResultVector.setZero();
+
+    if(enforceIdealPosture)
+    {
+      // Try to get the robot into the best possible posture
+      for(int i=0; i < _x.size(); ++i)
+      {
+        if(mIdeal.size() <= i)
+          break;
+
+        mResultVector[i] = mWeights[i]*(_x[i] - mIdeal[i]);
+      }
+    }
+    else
+    {
+      // Only adjust the posture if it is really bad
+      for(int i=0; i < _x.size(); ++i)
+      {
+        if(mIdeal.size() <= i)
+          break;
+
+        if(_x[i] < mLower[i])
+          mResultVector[i] = mWeights[i]*(_x[i] - mLower[i]);
+        else if(mUpper[i] < _x[i])
+          mResultVector[i] = mWeights[i]*(_x[i] - mUpper[i]);
+      }
+    }
+  }
+
+  bool enforceIdealPosture;
 
 protected:
 
-  Eigen::VectorXd mPose;
-};
+  Eigen::VectorXd mResultVector;
 
-const double RelaxedPose::DefaultObjectiveWeight = 2.0;
+  Eigen::VectorXd mIdeal;
+
+  Eigen::VectorXd mLower;
+
+  Eigen::VectorXd mUpper;
+
+  Eigen::VectorXd mWeights;
+};
 
 class TeleoperationWorld : public osgDart::WorldNode
 {
 public:
+
+  enum MoveEnum_t
+  {
+    MOVE_Q = 0,
+    MOVE_W,
+    MOVE_E,
+    MOVE_A,
+    MOVE_S,
+    MOVE_D,
+    MOVE_F,
+    MOVE_Z,
+
+    NUM_MOVE
+  };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
     : osgDart::WorldNode(_world),
@@ -91,11 +158,82 @@ public:
       l_foot(_robot->getEndEffector("l_foot")),
       r_foot(_robot->getEndEffector("r_foot"))
   {
-    // Do nothing
+    mMoveComponents.resize(NUM_MOVE, false);
+    mAnyMovement = false;
+  }
+
+  void setMovement(const std::vector<bool>& moveComponents)
+  {
+    mMoveComponents = moveComponents;
+
+    mAnyMovement = false;
+
+    for(bool move : mMoveComponents)
+    {
+      if(move)
+      {
+        mAnyMovement = true;
+        break;
+      }
+    }
   }
 
   void customPreRefresh() override
   {
+    if(mAnyMovement)
+    {
+      Eigen::Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
+      Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
+      Eigen::Vector3d forward = old_tf.linear().col(0);
+      forward[2] = 0.0;
+      if(forward.norm() > 1e-10)
+        forward.normalize();
+      else
+        forward.setZero();
+
+      Eigen::Vector3d left = old_tf.linear().col(1);
+      left[2] = 0.0;
+      if(left.norm() > 1e-10)
+        left.normalize();
+      else
+        left.setZero();
+
+      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
+
+      const double linearStep = 0.01;
+      const double elevationStep = 0.2*linearStep;
+      const double rotationalStep = 2.0*M_PI/180.0;
+
+      if(mMoveComponents[MOVE_W])
+        new_tf.translate( linearStep*forward);
+
+      if(mMoveComponents[MOVE_S])
+        new_tf.translate(-linearStep*forward);
+
+      if(mMoveComponents[MOVE_A])
+        new_tf.translate( linearStep*left);
+
+      if(mMoveComponents[MOVE_D])
+        new_tf.translate(-linearStep*left);
+
+      if(mMoveComponents[MOVE_F])
+        new_tf.translate( elevationStep*up);
+
+      if(mMoveComponents[MOVE_Z])
+        new_tf.translate(-elevationStep*up);
+
+      if(mMoveComponents[MOVE_Q])
+        new_tf.rotate(Eigen::AngleAxisd( rotationalStep, up));
+
+      if(mMoveComponents[MOVE_E])
+        new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
+
+      new_tf.pretranslate(old_tf.translation());
+      new_tf.rotate(old_tf.rotation());
+
+      mAtlas->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
+    }
+
     bool solved = mAtlas->getIK(true)->solve();
 
     if(!solved)
@@ -118,14 +256,21 @@ protected:
   EndEffectorPtr r_foot;
 
   Eigen::VectorXd grad;
+
+  std::vector<bool> mMoveComponents;
+
+  bool mAnyMovement;
 };
 
 class InputHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(const SkeletonPtr& atlas, const WorldPtr& world)
-    : mAtlas(atlas),
+  InputHandler(osgDart::Viewer* viewer, TeleoperationWorld* teleop,
+               const SkeletonPtr& atlas, const WorldPtr& world)
+    : mViewer(viewer),
+      mTeleop(teleop),
+      mAtlas(atlas),
       mWorld(world)
   {
     initialize();
@@ -157,6 +302,16 @@ public:
         mEndEffectorIndex.push_back(i);
       }
     }
+
+    mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
+          mAtlas->getIK(true)->getObjective());
+
+    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
+          mAtlas->getIK(true)->getProblem()->getEqConstraint(1));
+
+    mOptimizationKey = 'r';
+
+    mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
   }
 
   virtual bool handle(const osgGA::GUIEventAdapter& ea,
@@ -231,12 +386,84 @@ public:
         ee->getSupport()->setActive(!ee->getSupport()->isActive());
         return true;
       }
+
+      switch(ea.getKey())
+      {
+        case 'w': mMoveComponents[TeleoperationWorld::MOVE_W] = true; break;
+        case 'a': mMoveComponents[TeleoperationWorld::MOVE_A] = true; break;
+        case 's': mMoveComponents[TeleoperationWorld::MOVE_S] = true; break;
+        case 'd': mMoveComponents[TeleoperationWorld::MOVE_D] = true; break;
+        case 'q': mMoveComponents[TeleoperationWorld::MOVE_Q] = true; break;
+        case 'e': mMoveComponents[TeleoperationWorld::MOVE_E] = true; break;
+        case 'f': mMoveComponents[TeleoperationWorld::MOVE_F] = true; break;
+        case 'z': mMoveComponents[TeleoperationWorld::MOVE_Z] = true; break;
+      }
+
+      switch(ea.getKey())
+      {
+        case 'w': case 'a': case 's': case 'd': case 'q': case'e': case 'f': case 'z':
+        {
+          mTeleop->setMovement(mMoveComponents);
+          return true;
+        }
+      }
+
+      if(mOptimizationKey == ea.getKey())
+      {
+        if(mPosture)
+          mPosture->enforceIdealPosture = true;
+
+        if(mBalance)
+          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+
+        return true;
+      }
+    }
+
+    if( osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
+    {
+      if(ea.getKey() == mOptimizationKey)
+      {
+        if(mPosture)
+          mPosture->enforceIdealPosture = false;
+
+        if(mBalance)
+          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
+
+        return true;
+      }
+
+
+      switch(ea.getKey())
+      {
+        case 'w': mMoveComponents[TeleoperationWorld::MOVE_W] = false; break;
+        case 'a': mMoveComponents[TeleoperationWorld::MOVE_A] = false; break;
+        case 's': mMoveComponents[TeleoperationWorld::MOVE_S] = false; break;
+        case 'd': mMoveComponents[TeleoperationWorld::MOVE_D] = false; break;
+        case 'q': mMoveComponents[TeleoperationWorld::MOVE_Q] = false; break;
+        case 'e': mMoveComponents[TeleoperationWorld::MOVE_E] = false; break;
+        case 'f': mMoveComponents[TeleoperationWorld::MOVE_F] = false; break;
+        case 'z': mMoveComponents[TeleoperationWorld::MOVE_Z] = false; break;
+      }
+
+      switch(ea.getKey())
+      {
+        case 'w': case 'a': case 's': case 'd': case 'q': case'e': case 'f': case 'z':
+        {
+          mTeleop->setMovement(mMoveComponents);
+          return true;
+        }
+      }
     }
 
     return false;
   }
 
 protected:
+
+  osgDart::Viewer* mViewer;
+
+  TeleoperationWorld* mTeleop;
 
   SkeletonPtr mAtlas;
 
@@ -253,6 +480,14 @@ protected:
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
   Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+
+  std::shared_ptr<RelaxedPosture> mPosture;
+
+  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
+
+  char mOptimizationKey;
+
+  std::vector<bool> mMoveComponents;
 };
 
 SkeletonPtr createGround()
@@ -324,10 +559,6 @@ void setupStartConfiguration(const SkeletonPtr& atlas)
   // Prevent the knees from bending backwards
   atlas->getDof("r_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
   atlas->getDof("l_leg_kny")->setPositionLowerLimit( 10*M_PI/180.0);
-
-  // Give limits to the height
-  atlas->getDof("rootJoint_pos_z")->setPositionLowerLimit(0.600);
-  atlas->getDof("rootJoint_pos_z")->setPositionUpperLimit(0.885);
 }
 
 void setupEndEffectors(const SkeletonPtr& atlas)
@@ -443,7 +674,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Create an end effector for the left foot and set its relative transform
   EndEffector* l_foot = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
-  l_foot->setDefaultRelativeTransform(tf_foot, true);
+  l_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the left foot
   osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
@@ -472,7 +703,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Create an end effector for the right foot and set its relative transform
   EndEffector* r_foot = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
-  r_foot->setDefaultRelativeTransform(tf_foot, true);
+  r_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the right foot
   osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
@@ -499,7 +730,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // Move atlas to the ground so that it starts out squatting with its feet on
   // the ground
   double heightChange = -r_foot->getWorldTransform().translation()[2];
-  atlas->getDof("rootJoint_pos_z")->setPosition(heightChange);
+  atlas->getDof(5)->setPosition(heightChange);
 
   // Now that the feet are on the ground, we should set their target transforms
   l_foot->getIK()->getTarget()->setTransform(l_foot->getTransform());
@@ -514,13 +745,45 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
       atlas->getIK(true)->getSolver());
   solver->setNumMaxIterations(10);
 
-  std::shared_ptr<RelaxedPose> objective(new RelaxedPose(atlas->getPositions()));
-  atlas->getIK()->getProblem()->addSeed(atlas->getPositions());
+  size_t nDofs = atlas->getNumDofs();
+
+  double default_weight = 0.01;
+  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
+  weights[2] = 0.0;
+  weights[3] = 0.0;
+  weights[4] = 0.0;
+
+  weights[6] *= 0.2;
+  weights[7] *= 0.2;
+  weights[8] *= 0.2;
+
+  Eigen::VectorXd lower_posture = Eigen::VectorXd::Constant(
+        nDofs, -std::numeric_limits<double>::infinity());
+  lower_posture[0] = -0.35;
+  lower_posture[1] = -0.35;
+  lower_posture[5] =  0.600;
+
+  lower_posture[6] = -0.1;
+  lower_posture[7] = -0.1;
+  lower_posture[8] = -0.1;
+
+  Eigen::VectorXd upper_posture = Eigen::VectorXd::Constant(
+        nDofs, std::numeric_limits<double>::infinity());
+  upper_posture[0] =  0.35;
+  upper_posture[1] =  0.35;
+  upper_posture[5] =  0.885;
+
+  upper_posture[6] =  0.1;
+  upper_posture[7] =  0.1;
+  upper_posture[8] =  0.1;
+
+  std::shared_ptr<RelaxedPosture> objective = std::make_shared<RelaxedPosture>(
+        atlas->getPositions(), lower_posture, upper_posture, weights);
+  atlas->getIK()->setObjective(objective);
 
   std::shared_ptr<dart::constraint::BalanceConstraint> balance =
       std::make_shared<dart::constraint::BalanceConstraint>(atlas->getIK());
   atlas->getIK()->getProblem()->addEqConstraint(balance);
-  atlas->getIK()->setObjective(objective);
 
 //  // Shift the center of mass towards the support polygon center while trying
 //  // to keep the support polygon where it is
@@ -589,7 +852,7 @@ int main()
 
   setupWholeBodySolver(atlas);
 
-  osg::ref_ptr<osgDart::WorldNode> node = new TeleoperationWorld(world, atlas);
+  osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, atlas);
 
   osgDart::Viewer viewer;
 
@@ -598,7 +861,7 @@ int main()
   viewer.addWorldNode(node);
 
   // Add our custom input handler to the Viewer
-  viewer.addEventHandler(new InputHandler(atlas, world));
+  viewer.addEventHandler(new InputHandler(&viewer, node, atlas, world));
 
   enableDragAndDrops(viewer, atlas);
 
@@ -613,12 +876,15 @@ int main()
             << "Ctrl + Click:  Try to rotate a body without changing its translation\n"
             << "Shift + Click: Move a body using only its parent joint\n"
             << "1 -> 4:        Toggle the interactive target of an EndEffector\n"
-            << "q:             Toggle Support Mode on/off for the left foot\n"
-            << "w:             Toggle Support Mode on/off for the right foot\n"
-            << "t:             Reset the robot's configuration\n"
+            << "W A S D:       Move the robot around the scene\n"
+            << "Q E:           Rotate the robot counter-clockwise and clockwise\n"
+            << "F Z:           Shift the robot's elevation up and down\n"
+            << "X C:           Toggle support on the left and right foot\n"
+            << "R:             Optimize the robot's posture\n"
+            << "T:             Reset the robot to its relaxed posture\n\n"
             << "  Because this uses iterative Jacobian methods, the solver can get finicky,\n"
-            << "  and the robot can get tangled up. Use the 't' key when the robot is in a\n"
-               "  messy configuration\n\n"
+            << "  and the robot can get tangled up. Use 'R' and 'T' keys when the robot is\n"
+            << "  in a messy configuration\n\n"
             << "  The green polygon is the support polygon of the robot, and the blue/red ball is\n"
             << "  the robot's center of mass. The green ball is the centroid of the polygon.\n\n"
             << "Note that this is purely kinematic. Physical simulation is not allowed in this app.\n"
