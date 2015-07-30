@@ -69,7 +69,7 @@ public:
   explicit IpoptSolver(std::shared_ptr<Problem> _problem);
 
   /// Destructor
-  virtual ~IpoptSolver() = default;
+  virtual ~IpoptSolver();
 
   // Documentation inherited
   virtual bool solve();
@@ -107,7 +107,7 @@ public:
   friend class IpoptSolver;
 
   /// \brief
-  virtual ~DartTNLP() = default;
+  virtual ~DartTNLP();
 
   //------------------------- Ipopt::TNLP --------------------------------------
   /// \brief Method to return some info about the nlp

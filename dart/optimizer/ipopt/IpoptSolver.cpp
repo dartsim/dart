@@ -68,6 +68,12 @@ IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
 }
 
 //==============================================================================
+IpoptSolver::~IpoptSolver()
+{
+  // Do nothing
+}
+
+//==============================================================================
 bool IpoptSolver::solve()
 {
   // Change some options
@@ -146,6 +152,12 @@ DartTNLP::DartTNLP(IpoptSolver* _solver)
     mSolver(_solver)
 {
   assert(_solver && "Null pointer is not allowed.");
+}
+
+//==============================================================================
+DartTNLP::~DartTNLP()
+{
+  // Do nothing
 }
 
 //==============================================================================

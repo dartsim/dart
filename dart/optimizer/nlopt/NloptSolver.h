@@ -61,7 +61,7 @@ public:
               nlopt::algorithm _alg = nlopt::LN_COBYLA);
 
   /// Destructor
-  virtual ~NloptSolver() = default;
+  virtual ~NloptSolver();
 
   // Documentation inherited
   virtual bool solve();
