@@ -45,6 +45,11 @@
 #include "dart/collision/fcl/FCLCollisionNode.h"
 #include "dart/collision/fcl/FCLTypes.h"
 
+#define FCL_VERSION_AT_LEAST(x,y,z) \
+  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
+  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
+  FCL_PATCH_VERSION >= z))))
+
 namespace dart {
 namespace collision {
 
@@ -235,8 +240,13 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
         static_cast<FCLCollisionNode*>(mCollisionNodes[i]);
     for (size_t j = 0; j < collisionNode->getNumCollisionObjects(); j++)
     {
+#if FCL_VERSION_AT_LEAST(0,3,0)
+      if (collisionNode->getCollisionObject(j)->collisionGeometry().get()
+          == _fclCollGeom)
+#else
       if (collisionNode->getCollisionObject(j)->getCollisionGeometry()
           == _fclCollGeom)
+#endif
         return mCollisionNodes[i];
     }
   }

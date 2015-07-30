@@ -72,8 +72,10 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     const Vector& _coulombFrictions)
   : mPositionLowerLimits(_positionLowerLimits),
     mPositionUpperLimits(_positionUpperLimits),
+    mInitialPositions(Vector::Zero()),
     mVelocityLowerLimits(_velocityLowerLimits),
     mVelocityUpperLimits(_velocityUpperLimits),
+    mInitialVelocities(Vector::Zero()),
     mAccelerationLowerLimits(_accelerationLowerLimits),
     mAccelerationUpperLimits(_accelerationUpperLimits),
     mForceLowerLimits(_forceLowerLimits),
@@ -96,8 +98,10 @@ MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
     const UniqueProperties& _other)
   : mPositionLowerLimits(_other.mPositionLowerLimits),
     mPositionUpperLimits(_other.mPositionUpperLimits),
+    mInitialPositions(_other.mInitialPositions),
     mVelocityLowerLimits(_other.mVelocityLowerLimits),
     mVelocityUpperLimits(_other.mVelocityUpperLimits),
+    mInitialVelocities(_other.mInitialVelocities),
     mAccelerationLowerLimits(_other.mAccelerationLowerLimits),
     mAccelerationUpperLimits(_other.mAccelerationUpperLimits),
     mForceLowerLimits(_other.mForceLowerLimits),
@@ -157,8 +161,10 @@ void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
     setDofName(i, _properties.mDofNames[i], _properties.mPreserveDofNames[i]);
     setPositionLowerLimit(i, _properties.mPositionLowerLimits[i]);
     setPositionUpperLimit(i, _properties.mPositionUpperLimits[i]);
+    setInitialPosition(i, _properties.mInitialPositions[i]);
     setVelocityLowerLimit(i, _properties.mVelocityLowerLimits[i]);
     setVelocityUpperLimit(i, _properties.mVelocityUpperLimits[i]);
+    setInitialVelocity(i, _properties.mInitialVelocities[i]);
     setAccelerationLowerLimit(i, _properties.mAccelerationLowerLimits[i]);
     setAccelerationUpperLimit(i, _properties.mAccelerationUpperLimits[i]);
     setForceLowerLimit(i, _properties.mForceLowerLimits[i]);
@@ -529,13 +535,6 @@ Eigen::VectorXd MultiDofJoint<DOF>::getPositions() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::resetPositions()
-{
-  setPositionsStatic(Eigen::Matrix<double, DOF, 1>::Zero());
-}
-
-//==============================================================================
-template <size_t DOF>
 void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
 {
   if (_index >= getNumDofs())
@@ -571,6 +570,72 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
   }
 
   mMultiDofP.mPositionUpperLimits[_index] = _position;
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::resetPosition(size_t _index)
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(resetPosition, _index);
+    return;
+  }
+
+  setPosition(_index, mMultiDofP.mInitialPositions[_index]);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::resetPositions()
+{
+  setPositionsStatic(mMultiDofP.mInitialPositions);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInitialPosition(size_t _index, double _initial)
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setInitialPosition, _index);
+    return;
+  }
+
+  mMultiDofP.mInitialPositions[_index] = _initial;
+}
+
+//==============================================================================
+template <size_t DOF>
+double MultiDofJoint<DOF>::getInitialPosition(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getInitialPosition, _index);
+    return 0.0;
+  }
+
+  return mMultiDofP.mInitialPositions[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInitialPositions(const Eigen::VectorXd& _initial)
+{
+  if ( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  {
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setInitialPositions, _initial);
+    return;
+  }
+
+  mMultiDofP.mInitialPositions = _initial;
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getInitialPositions() const
+{
+  return mMultiDofP.mInitialPositions;
 }
 
 //==============================================================================
@@ -662,13 +727,6 @@ Eigen::VectorXd MultiDofJoint<DOF>::getVelocities() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::resetVelocities()
-{
-  setVelocitiesStatic(Eigen::Matrix<double, DOF, 1>::Zero());
-}
-
-//==============================================================================
-template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
 {
   if (_index >= getNumDofs())
@@ -717,6 +775,72 @@ double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
   }
 
   return mMultiDofP.mVelocityUpperLimits[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::resetVelocity(size_t _index)
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( resetVelocity, _index );
+    return;
+  }
+
+  setVelocity(_index, mMultiDofP.mInitialVelocities[_index]);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::resetVelocities()
+{
+  setVelocitiesStatic(mMultiDofP.mInitialVelocities);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInitialVelocity(size_t _index, double _initial)
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setInitialVelocity, _index );
+    return;
+  }
+
+  mMultiDofP.mInitialVelocities[_index] = _initial;
+}
+
+//==============================================================================
+template <size_t DOF>
+double MultiDofJoint<DOF>::getInitialVelocity(size_t _index) const
+{
+  if (_index >= getNumDofs())
+  {
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getInitialVelocity, _index );
+    return 0.0;
+  }
+
+  return mMultiDofP.mInitialVelocities[_index];
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setInitialVelocities(const Eigen::VectorXd& _initial)
+{
+  if ( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  {
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, _initial );
+    return;
+  }
+
+  mMultiDofP.mInitialVelocities = _initial;
+}
+
+//==============================================================================
+template <size_t DOF>
+Eigen::VectorXd MultiDofJoint<DOF>::getInitialVelocities() const
+{
+  return mMultiDofP.mInitialVelocities;
 }
 
 //==============================================================================

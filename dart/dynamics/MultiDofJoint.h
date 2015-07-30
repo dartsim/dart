@@ -71,11 +71,17 @@ public:
     /// Upper limit of position
     Vector mPositionUpperLimits;
 
+    /// Initial positions
+    Vector mInitialPositions;
+
     /// Min value allowed.
     Vector mVelocityLowerLimits;
 
     /// Max value allowed.
     Vector mVelocityUpperLimits;
+
+    /// Initial velocities
+    Vector mInitialVelocities;
 
     /// Min value allowed.
     Vector mAccelerationLowerLimits;
@@ -122,6 +128,9 @@ public:
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
+    // TODO(MXG): In version 6.0, we should add mInitialPositions and
+    // mInitialVelocities to the constructor arguments. For now we must wait in
+    // order to avoid breaking the API.
 
     /// Copy constructor
     // Note: we only need this because VS2013 lacks full support for std::array
@@ -238,9 +247,6 @@ public:
   Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
-  void resetPositions() override;
-
-  // Documentation inherited
   void setPositionLowerLimit(size_t _index, double _position) override;
 
   // Documentation inherited
@@ -254,6 +260,24 @@ public:
 
   // Documentation inherited
   virtual bool hasPositionLimit(size_t _index) const override;
+
+  // Documentation inherited
+  void resetPosition(size_t _index) override;
+
+  // Documentation inherited
+  void resetPositions() override;
+
+  // Documentation inherited
+  void setInitialPosition(size_t _index, double _initial) override;
+
+  // Documentation inherited
+  double getInitialPosition(size_t _index) const override;
+
+  // Documentation inherited
+  void setInitialPositions(const Eigen::VectorXd& _initial) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getInitialPositions() const override;
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -272,9 +296,6 @@ public:
   Eigen::VectorXd getVelocities() const override;
 
   // Documentation inherited
-  void resetVelocities() override;
-
-  // Documentation inherited
   void setVelocityLowerLimit(size_t _index, double _velocity) override;
 
   // Documentation inherited
@@ -285,6 +306,24 @@ public:
 
   // Documentation inherited
   double getVelocityUpperLimit(size_t _index) const override;
+
+  // Documentation inherited
+  void resetVelocity(size_t _index) override;
+
+  // Documentation inherited
+  void resetVelocities() override;
+
+  // Documentation inherited
+  void setInitialVelocity(size_t _index, double _initial) override;
+
+  // Documentation inherited
+  double getInitialVelocity(size_t _index) const override;
+
+  // Documentation inherited
+  void setInitialVelocities(const Eigen::VectorXd& _initial) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getInitialVelocities() const override;
 
   //----------------------------------------------------------------------------
   // Acceleration

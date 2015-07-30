@@ -648,7 +648,7 @@ double State::getDerivativeGain(int _idx) const
 //==============================================================================
 void State::setFeedbackSagitalCOMDistance(size_t _index, double _val)
 {
-  assert(0 <= _index && _index <= mSagitalCd.size() && "Invalid index.");
+  assert(_index <= mSagitalCd.size() && "Invalid index.");
 
   mSagitalCd[_index] = _val;
 }
@@ -656,7 +656,7 @@ void State::setFeedbackSagitalCOMDistance(size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
 {
-  assert(0 <= _index && _index <= mSagitalCv.size() && "Invalid index.");
+  assert(_index <= mSagitalCv.size() && "Invalid index.");
 
   mSagitalCv[_index] = _val;
 }
@@ -664,7 +664,7 @@ void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
 {
-  assert(0 <= _index && _index <= mCoronalCd.size() && "Invalid index.");
+  assert(_index <= mCoronalCd.size() && "Invalid index.");
 
   mCoronalCd[_index] = _val;
 }
@@ -672,7 +672,7 @@ void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
 //==============================================================================
 void State::setFeedbackCoronalCOMVelocity(size_t _index, double _val)
 {
-  assert(0 <= _index && _index <= mCoronalCv.size() && "Invalid index.");
+  assert(_index <= mCoronalCv.size() && "Invalid index.");
 
   mCoronalCv[_index] = _val;
 }
