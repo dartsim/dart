@@ -70,6 +70,12 @@ NloptSolver::NloptSolver(std::shared_ptr<Problem> _problem,
 }
 
 //==============================================================================
+NloptSolver::~NloptSolver()
+{
+  // Do nothing
+}
+
+//==============================================================================
 static std::vector<double> convertToStd(const Eigen::VectorXd& v)
 {
   return std::vector<double>(v.data(), v.data() + v.size());
