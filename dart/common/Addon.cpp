@@ -34,7 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
+#include <string>
+#include <iostream>
+
 #include "dart/common/Addon.h"
+#include "dart/common/Console.h"
 
 namespace dart {
 namespace common {
@@ -70,11 +75,23 @@ const std::string& Addon::getType() const
 }
 
 //==============================================================================
-Addon::Addon(const std::string& type)
+Addon::Addon(AddonManager* manager, const std::string& type)
   : mType(type)
+{
+  if(nullptr == manager)
+  {
+    dterr << "[Addon::constructor] You are not allowed to construct an Addon "
+          << "outside of an AddonManager!\n";
+    assert(false);
+  }
+}
+
+//==============================================================================
+void Addon::changeManager(AddonManager* newManager)
 {
   // Do nothing
 }
+
 
 } // namespace common
 } // namespace dart

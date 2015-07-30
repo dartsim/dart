@@ -48,6 +48,8 @@ class Addon
 {
 public:
 
+  friend class AddonManager;
+
   /// If your Addon has a State class, then that State class should inherit this
   /// Addon::State class. This allows us to safely serialize, store, and clone
   /// the states of arbitrary Addon extensions. If your Addon is stateless, then
@@ -140,7 +142,15 @@ public:
 protected:
 
   /// Constructor
-  Addon(const std::string& type);
+  ///
+  // We require the AddonManager requirement in this constructor to make it
+  // clear to extensions that they must have an AddonManager argument in their
+  // constructors.
+  Addon(AddonManager* manager, const std::string& type);
+
+  /// This function should be overriden if your Addon needs to do any special
+  /// handling when its AddonManager gets changed.
+  virtual void changeManager(AddonManager* newManager);
 
   /// Type of this Addon
   std::string mType;

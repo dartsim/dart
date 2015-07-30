@@ -37,6 +37,68 @@
 #ifndef DART_COMMON_ADDONMANAGER_H_
 #define DART_COMMON_ADDONMANAGER_H_
 
+#include <map>
+#include <typeinfo>
+#include <typeindex>
 
+#include "dart/common/Addon.h"
+
+namespace dart {
+namespace common {
+
+class AddonManager
+{
+public:
+
+  /// Virtual destructor
+  virtual ~AddonManager() = default;
+
+  /// Check if this AddonManager has a certain type of Addon
+  template <class T>
+  bool has() const;
+
+  /// Get a certain type of Addon from this AddonManager
+  template <class T>
+  T* get();
+
+  /// Get a certain type of Addon from this AddonManager
+  template <class T>
+  const T* get() const;
+
+  /// Make a clone of the addon and place the clone into this AddonManager. If
+  /// an Addon of the same type already exists in this AddonManager, the
+  /// existing Addon will be destroyed.
+  template <class T>
+  void set(const std::unique_ptr<T>& addon);
+
+  /// Use move semantics to place addon into this AddonManager. If an Addon of
+  /// the same type already exists in this AddonManager, the existing Addon will
+  /// be destroyed.
+  template <class T>
+  void set(std::unique_ptr<T>&& addon);
+
+  /// Construct an Addon inside of this AddonManager
+  template <class T, typename ...Args>
+  T* construct(Args&&... args);
+
+  /// Remove an Addon from this AddonManager.
+  ///
+  /// Note that this does not remove the entry from the AddonManager, but it
+  /// sets the entry to a nullptr.
+  template <class T>
+  void erase();
+
+protected:
+
+  typedef std::map< std::type_index, std::unique_ptr<Addon> > AddonMap;
+
+  /// A map that relates the type of Addon to its pointer
+  AddonMap mAddonMap;
+};
+
+} // namespace common
+} // namespace dart
+
+#include "dart/common/detail/AddonManager.h"
 
 #endif // DART_COMMON_ADDONMANAGER_H_
