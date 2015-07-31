@@ -50,6 +50,54 @@ class AddonManager
 {
 public:
 
+
+  template <typename MapType>
+  class MapHolder final
+  {
+  public:
+
+    /// Default constructor
+    MapHolder() = default;
+
+    /// Copy constructor
+    MapHolder(const MapHolder& otherStates);
+
+    /// Move constructor
+    MapHolder(MapHolder&& otherStates);
+
+    /// Map-based constructor
+    MapHolder(const MapType& otherMap);
+
+    /// Map-based move constructor
+    MapHolder(MapType&& otherMap);
+
+    /// Assignment operator
+    MapHolder& operator=(const MapHolder& otherStates);
+
+    /// Move assignment operator
+    MapHolder& operator=(MapHolder&& otherStates);
+
+    /// Map-based assignment operator
+    MapHolder& operator=(const MapType& otherMap);
+
+    /// Map-based move assignment operator
+    MapHolder& operator=(MapType&& otherMap);
+
+    /// Get the map of Addon::States
+    const MapType& getMap() const;
+
+  private:
+
+    /// A map containing the collection of States for the Addon
+    MapType mMap;
+  };
+
+  typedef std::map< std::type_index, std::unique_ptr<Addon::State> > StateMap;
+  typedef MapHolder<StateMap> State;
+
+  typedef std::map< std::type_index, std::unique_ptr<Addon::Properties> > PropertiesMap;
+  typedef MapHolder<PropertiesMap> Properties;
+
   /// Virtual destructor
   virtual ~AddonManager() = default;
 
@@ -87,6 +135,22 @@ public:
   /// sets the entry to a nullptr.
   template <class T>
   void erase();
+
+  /// Set the states of the addons in this AddonManager based on the given
+  /// AddonManager::State. The states of any Addon types that do not exist
+  /// within this manager will be ignored.
+  void setAddonStates(const State& newStates);
+
+  /// Get the states of the addons inside of this AddonManager
+  State getAddonStates() const;
+
+  /// Set the properties of the addons in this AddonManager based on the given
+  /// AddonManager::Properties. The properties of any Addon types that do not
+  /// exist within this manager will be ignored.
+  void setAddonProperties(const Properties& newProperties);
+
+  /// Get the properties of the addons inside of this AddonManager
+  Properties getAddonProperties() const;
 
 protected:
 

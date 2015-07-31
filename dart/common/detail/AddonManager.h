@@ -43,6 +43,84 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>::MapHolder(const MapHolder& otherHolder)
+{
+  *this = otherHolder;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>::MapHolder(MapHolder&& otherHolder)
+{
+  *this = otherHolder;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>::MapHolder(const MapType& otherMap)
+{
+  *this = otherMap;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>::MapHolder(MapType&& otherMap)
+{
+  *this = otherMap;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
+    const MapHolder& otherHolder)
+{
+  *this = otherHolder.getMap();
+
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
+    MapHolder&& otherHolder)
+{
+  mMap = std::move(otherHolder.mMap);
+
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
+    const MapType& otherMap)
+{
+  mMap.clear();
+
+  for(const auto& object : otherMap)
+    mMap[object.first] = object.second->clone();
+
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
+    MapType&& otherHolder)
+{
+  mMap = std::move(otherHolder);
+
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+const MapType& AddonManager::MapHolder<MapType>::getMap() const
+{
+  return mMap;
+}
+
+//==============================================================================
 template <class T>
 bool AddonManager::has() const
 {
