@@ -213,14 +213,11 @@ bool DartTNLP::get_starting_point(Ipopt::Index n,
 //==============================================================================
 bool DartTNLP::eval_f(Ipopt::Index _n,
                       const Ipopt::Number* _x,
-                      bool _new_x,
+                      bool /*_new_x*/,
                       Ipopt::Number& _obj_value)
 {
-  if (_new_x)
-  {
-    Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-    mObjValue = mProblem->getObjective()->eval(x);
-  }
+  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
+  mObjValue = mProblem->getObjective()->eval(x);
 
   _obj_value = mObjValue;
 
@@ -230,15 +227,12 @@ bool DartTNLP::eval_f(Ipopt::Index _n,
 //==============================================================================
 bool DartTNLP::eval_grad_f(Ipopt::Index _n,
                            const Ipopt::Number* _x,
-                           bool _new_x,
+                           bool /*_new_x*/,
                            Ipopt::Number* _grad_f)
 {
-  if (_new_x)
-  {
-    Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-    Eigen::Map<Eigen::VectorXd> grad(_grad_f, _n);
-    mProblem->getObjective()->evalGradient(x, grad);
-  }
+  Eigen::Map<const Eigen::VectorXd> x(_x, _n);
+  Eigen::Map<Eigen::VectorXd> grad(_grad_f, _n);
+  mProblem->getObjective()->evalGradient(x, grad);
 
   return true;
 }
@@ -349,6 +343,8 @@ bool DartTNLP::eval_h(Ipopt::Index _n,
                       Ipopt::Number* _values)
 {
   // TODO(JS): Not implemented yet.
+  dterr << "[DartTNLP::eval_h] Not implemented yet.\n";
+
   return TNLP::eval_h(_n, _x, _new_x, _obj_factor, _m, _lambda, _new_lambda,
                       _nele_hess, _iRow, _jCol, _values);
 }
