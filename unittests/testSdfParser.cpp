@@ -62,13 +62,13 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 
   SkeletonPtr skel = world->getSkeleton(0);
   EXPECT_TRUE(skel != nullptr);
-  EXPECT_EQ(skel->getNumBodyNodes(), 1);
-  EXPECT_EQ(skel->getNumJoints(), 1);
+  EXPECT_EQ(skel->getNumBodyNodes(), 1u);
+  EXPECT_EQ(skel->getNumJoints(), 1u);
 
   BodyNodePtr bodyNode = skel->getBodyNode(0);
   EXPECT_TRUE(bodyNode != nullptr);
-  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1);
-  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1);
+  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1u);
+  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1u);
 
   JointPtr joint = skel->getJoint(0);
   EXPECT_TRUE(joint != nullptr);
