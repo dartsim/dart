@@ -64,7 +64,8 @@ IpoptSolver::IpoptSolver(Problem* _problem)
   mIpoptApp->Options()->SetNumericValue("tol", 1e-9);
   mIpoptApp->Options()->SetStringValue("mu_strategy", "adaptive");
   mIpoptApp->Options()->SetStringValue("output_file", "ipopt.out");
-  mIpoptApp->Options()->SetStringValue("hessian_approximation", "limited-memory");
+  mIpoptApp->Options()->SetStringValue("hessian_approximation",
+                                       "limited-memory");
 
   // Intialize the IpoptApplication and process the options
   Ipopt::ApplicationReturnStatus status = mIpoptApp->Initialize();
