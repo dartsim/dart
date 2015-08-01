@@ -130,9 +130,6 @@ public:
   virtual Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
-  virtual void resetPositions() override;
-
-  // Documentation inherited
   virtual void setPositionLowerLimit(size_t _index, double _position) override;
 
   // Documentation inherited
@@ -143,6 +140,27 @@ public:
 
   // Documentation inherited
   virtual double getPositionUpperLimit(size_t _index) const override;
+
+  // Documentation inherited
+  virtual bool hasPositionLimit(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void resetPosition(size_t _index) override;
+
+  // Documentation inherited
+  virtual void resetPositions() override;
+
+  // Documentation inherited
+  virtual void setInitialPosition(size_t _index, double _initial) override;
+
+  // Documentation inherited
+  virtual double getInitialPosition(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void setInitialPositions(const Eigen::VectorXd& _initial) override;
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getInitialPositions() const override;
 
   //----------------------------------------------------------------------------
   // Velocity
@@ -161,9 +179,6 @@ public:
   virtual Eigen::VectorXd getVelocities() const override;
 
   // Documentation inherited
-  virtual void resetVelocities() override;
-
-  // Documentation inherited
   virtual void setVelocityLowerLimit(size_t _index, double _velocity) override;
 
   // Documentation inherited
@@ -174,6 +189,24 @@ public:
 
   // Documentation inherited
   virtual double getVelocityUpperLimit(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void resetVelocity(size_t _index) override;
+
+  // Documentation inherited
+  virtual void resetVelocities() override;
+
+  // Documentation inherited
+  virtual void setInitialVelocity(size_t _index, double _initial) override;
+
+  // Documentation inherited
+  virtual double getInitialVelocity(size_t _index) const override;
+
+  // Documentation inherited
+  virtual void setInitialVelocities(const Eigen::VectorXd& _initial) override;
+
+  // Documentation inherited
+  virtual Eigen::VectorXd getInitialVelocities() const override;
 
   //----------------------------------------------------------------------------
   // Acceleration

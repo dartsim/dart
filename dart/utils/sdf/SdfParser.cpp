@@ -259,13 +259,13 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
 
   // Iterate through the collected properties and construct the Skeleton from
   // the root nodes downward
-  JointMap::iterator it = sdfJoints.begin();
-  BodyMap::const_iterator child;
-  dynamics::BodyNode* parent;
-  while(it != sdfJoints.end())
+  BodyMap::iterator body = sdfBodyNodes.begin();
+  JointMap::const_iterator parentJoint;
+  dynamics::BodyNode* parentBody;
+  while(body != sdfBodyNodes.end())
   {
     NextResult result = getNextJointAndNodePair(
-          it, child, parent, newSkeleton, sdfJoints, sdfBodyNodes);
+          body, parentJoint, parentBody, newSkeleton, sdfBodyNodes, sdfJoints);
 
     if(BREAK == result)
       break;
@@ -275,24 +275,30 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
     {
       // If a root FreeJoint is needed for the parent of the current joint, then
       // create it
-      BodyMap::const_iterator rootNode = sdfBodyNodes.find(it->second.parentName);
       SDFJoint rootJoint;
-      rootJoint.properties = std::make_shared<dynamics::FreeJoint::Properties>(
-            dynamics::Joint::Properties("root", rootNode->second.initTransform));
+      rootJoint.properties =
+          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
+            dynamics::Joint::Properties("root", body->second.initTransform));
       rootJoint.type = "free";
 
-      if(!pairCreator(newSkeleton, nullptr, rootJoint, rootNode->second))
+      if(!pairCreator(newSkeleton, nullptr, rootJoint, body->second))
         break;
+
+      sdfBodyNodes.erase(body);
+      body = sdfBodyNodes.begin();
 
       continue;
     }
 
-    if(!pairCreator(newSkeleton, parent, it->second, child->second))
+    if(!pairCreator(newSkeleton, parentBody, parentJoint->second, body->second))
       break;
 
-    sdfJoints.erase(it);
-    it = sdfJoints.begin();
+    sdfBodyNodes.erase(body);
+    body = sdfBodyNodes.begin();
   }
+
+  // Set positions to their initial values
+  newSkeleton->resetPositions();
 
   return newSkeleton;
 }
@@ -312,57 +318,48 @@ bool SdfParser::createPair(dynamics::SkeletonPtr skeleton,
 }
 
 SdfParser::NextResult SdfParser::getNextJointAndNodePair(
-    JointMap::iterator& it,
-    BodyMap::const_iterator& child,
-    dynamics::BodyNode*& parent,
+    BodyMap::iterator& body,
+    JointMap::const_iterator& parentJoint,
+    dynamics::BodyNode*& parentBody,
     const dynamics::SkeletonPtr skeleton,
-    JointMap& sdfJoints,
-    const BodyMap& sdfBodyNodes)
+    BodyMap& sdfBodyNodes,
+    const JointMap& sdfJoints)
 {
-  NextResult result = VALID;
-  const SDFJoint& joint = it->second;
-  parent = skeleton->getBodyNode(joint.parentName);
-  if(nullptr == parent
-     && joint.parentName != "world" && !joint.parentName.empty())
+  parentJoint = sdfJoints.find(body->first);
+  if(parentJoint == sdfJoints.end())
+  {
+    return CREATE_FREEJOINT_ROOT;
+  }
+
+  const std::string& parentBodyName = parentJoint->second.parentName;
+  const std::string& parentJointName = parentJoint->second.properties->mName;
+
+  // Check if the parent Body is created yet
+  parentBody = skeleton->getBodyNode(parentBodyName);
+  if(nullptr == parentBody && parentBodyName != "world"
+     && !parentBodyName.empty())
   {
     // Find the properties of the parent Joint of the current Joint, because it
     // does not seem to be created yet.
-    JointMap::iterator check_parent_joint = sdfJoints.find(joint.parentName);
-    if(check_parent_joint == sdfJoints.end())
-    {
-      BodyMap::const_iterator check_parent_node = sdfBodyNodes.find(joint.parentName);
-      if(check_parent_node == sdfBodyNodes.end())
-      {
-        dterr << "[SdfParser::getNextJointAndNodePair] Could not find Link "
-              << "named [" << joint.parentName << "] requested as parent of "
-              << "Joint [" << joint.properties->mName << "]. We will now quit "
-              << "parsing.\n";
-        return BREAK;
-      }
+    BodyMap::iterator check_parent_body = sdfBodyNodes.find(parentBodyName);
 
-      // If the current Joint has a parent BodyNode but does not have a parent
-      // Joint, then we need to create a FreeJoint for the parent BodyNode.
-      result = CREATE_FREEJOINT_ROOT;
+    if(check_parent_body == sdfBodyNodes.end())
+    {
+      // The Body does not exist in the file
+      dterr << "[SdfParser::getNextJointAndNodePair] Could not find Link "
+            << "named [" << parentBodyName << "] requested as parent of "
+            << "Joint [" << parentJointName << "]. We will now quit "
+            << "parsing.\n";
+      return BREAK;
     }
     else
     {
-      it = check_parent_joint;
+      body = check_parent_body;
       return CONTINUE; // Create the parent before creating the current Joint
     }
   }
 
-  // Find the child node of this Joint, so we can create them together
-  child = sdfBodyNodes.find(joint.childName);
-  if(child == sdfBodyNodes.end())
-  {
-    dterr << "[SdfParser::getNextJointAndNodePair] Could not find Link named ["
-          << joint.childName << "] requested as child of Joint ["
-          << joint.properties->mName << "]. This should not be possible! "
-          << "We will now quit parsing. Please report this bug!\n";
-    return BREAK;
-  }
-
-  return result;
+  return VALID;
 }
 
 dynamics::SkeletonPtr SdfParser::makeSkeleton(
@@ -549,7 +546,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
 
   SDFBodyNode sdfBodyNode;
   sdfBodyNode.properties =
-      std::make_shared<dynamics::BodyNode::Properties>(properties);
+      Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(properties);
   sdfBodyNode.initTransform = initTransform;
 
   return sdfBodyNode;
@@ -739,7 +736,7 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
   SDFJoint newJoint;
   newJoint.parentName = (parent_it == _sdfBodyNodes.end())?
         "" : parent_it->first;
-  newJoint.childName = (parent_it == _sdfBodyNodes.end())?
+  newJoint.childName = (child_it == _sdfBodyNodes.end())?
         "" : child_it->first;
 
   //--------------------------------------------------------------------------
@@ -762,19 +759,24 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
       (childWorld * childToJoint).inverse() * _skeletonFrame;
 
   if (type == std::string("prismatic"))
-    newJoint.properties = std::make_shared<dynamics::PrismaticJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
           readPrismaticJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute"))
-    newJoint.properties = std::make_shared<dynamics::RevoluteJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
           readRevoluteJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("screw"))
-    newJoint.properties = std::make_shared<dynamics::ScrewJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
           readScrewJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute2"))
-    newJoint.properties = std::make_shared<dynamics::UniversalJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
           readUniversalJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("ball"))
-    newJoint.properties = std::make_shared<dynamics::BallJoint::Properties>(
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
           readBallJoint(_jointElement, parentModelFrame, name));
 
   newJoint.type = type;
@@ -800,7 +802,8 @@ static void reportMissingElement(const std::string& functionName,
 static void readAxisElement(
     tinyxml2::XMLElement* axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    Eigen::Vector3d& axis, double& lower, double& upper, double& damping)
+    Eigen::Vector3d& axis, double& lower, double& upper, double& initial,
+    double& damping)
 {
   // use_parent_model_frame
   bool useParentModelFrame = false;
@@ -846,6 +849,20 @@ static void readAxisElement(
       upper = getValueDouble(limitElement, "upper");
     }
   }
+
+  // If the zero position is out of our limits, we should change the initial
+  // position instead of assuming zero
+  if( 0.0 < lower || upper < 0.0 )
+  {
+    if( std::isfinite(lower) && std::isfinite(upper) )
+      initial = (lower + upper) / 2.0;
+    else if( std::isfinite(lower) )
+      initial = lower;
+    else if( std::isfinite(upper) )
+      initial = upper;
+
+    // Any other case means the limits are both +inf, both -inf, or one is a NaN
+  }
 }
 
 dart::dynamics::WeldJoint::Properties SdfParser::readWeldJoint(
@@ -878,6 +895,7 @@ dynamics::RevoluteJoint::Properties SdfParser::readRevoluteJoint(
                     newRevoluteJoint.mAxis,
                     newRevoluteJoint.mPositionLowerLimit,
                     newRevoluteJoint.mPositionUpperLimit,
+                    newRevoluteJoint.mInitialPosition,
                     newRevoluteJoint.mDampingCoefficient);
   }
   else
@@ -908,6 +926,7 @@ dynamics::PrismaticJoint::Properties SdfParser::readPrismaticJoint(
                     newPrismaticJoint.mAxis,
                     newPrismaticJoint.mPositionLowerLimit,
                     newPrismaticJoint.mPositionUpperLimit,
+                    newPrismaticJoint.mInitialPosition,
                     newPrismaticJoint.mDampingCoefficient);
   }
   else
@@ -938,6 +957,7 @@ dynamics::ScrewJoint::Properties SdfParser::readScrewJoint(
                     newScrewJoint.mAxis,
                     newScrewJoint.mPositionLowerLimit,
                     newScrewJoint.mPositionUpperLimit,
+                    newScrewJoint.mInitialPosition,
                     newScrewJoint.mDampingCoefficient);
   }
   else
@@ -975,6 +995,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[0],
                     newUniversalJoint.mPositionLowerLimits[0],
                     newUniversalJoint.mPositionUpperLimits[0],
+                    newUniversalJoint.mInitialPositions[0],
                     newUniversalJoint.mDampingCoefficients[0]);
   }
   else
@@ -993,6 +1014,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[1],
                     newUniversalJoint.mPositionLowerLimits[1],
                     newUniversalJoint.mPositionUpperLimits[1],
+                    newUniversalJoint.mInitialPositions[1],
                     newUniversalJoint.mDampingCoefficients[1]);
   }
   else

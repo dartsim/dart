@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,44 +34,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_BALANCE_CONTROLLER_H_
-#define APPS_BALANCE_CONTROLLER_H_
+#include <iostream>
+#include <gtest/gtest.h>
+#include "dart/utils/urdf/DartLoader.h"
 
-#include <vector>
+using dart::utils::DartLoader;
 
-#include <Eigen/Dense>
+TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"skel/test/does_not_exist.urdf"));
+}
 
-#include "dart/dart.h"
+TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid.urdf"));
+}
 
-class Controller {
-public:
-  Controller(dart::dynamics::SkeletonPtr _skel,
-             double _t);
-  virtual ~Controller();
+TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_mesh.urdf"));
+}
 
-  Eigen::VectorXd getTorques();
-  double getTorque(int _index);
-  void setDesiredDof(int _index, double _val);
-  void computeTorques();
-  dart::dynamics::MetaSkeletonPtr getSkel();
-  Eigen::VectorXd getDesiredDofs();
-  Eigen::MatrixXd getKp();
-  Eigen::MatrixXd getKd();
+TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid_mesh.urdf"));
+}
 
-protected:
-  dart::dynamics::MetaSkeletonPtr mSkel;
-  dart::dynamics::BodyNodePtr mLeftHeel;
-  Eigen::VectorXd mTorques;
-  Eigen::VectorXd mDesiredDofs;
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKd;
-  size_t mLeftFoot[2];
-  size_t mRightFoot[2];
-  int mFrame;
-  double mTimestep;
-  double mPreOffset;
+TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_package.urdf"));
+}
 
-  /// \brief SPD utilizes the current info about contact forces
-};
+TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
+{
+  DartLoader loader;
+  EXPECT_TRUE(nullptr !=
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/primitive_geometry.urdf"));
+}
 
-#endif  // APPS_BALANCE_CONTROLLER_H_
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

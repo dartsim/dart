@@ -64,7 +64,7 @@ Joint::Properties::Properties(const std::string& _name,
     mIsPositionLimited(_isPositionLimited),
     mActuatorType(_actuatorType)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -79,7 +79,7 @@ void Joint::setProperties(const Properties& _properties)
   setName(_properties.mName);
   setTransformFromParentBodyNode(_properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(_properties.mT_ChildBodyToJoint);
-  setPositionLimited(_properties.mIsPositionLimited);
+  setPositionLimitEnforced(_properties.mIsPositionLimited);
   setActuatorType(_properties.mActuatorType);
 }
 
@@ -277,15 +277,27 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimited(bool _isPositionLimited)
+void Joint::setPositionLimitEnforced(bool _isPositionLimited)
 {
   mJointP.mIsPositionLimited = _isPositionLimited;
 }
 
 //==============================================================================
-bool Joint::isPositionLimited() const
+void Joint::setPositionLimited(bool _isPositionLimited)
+{
+  setPositionLimitEnforced(_isPositionLimited);
+}
+
+//==============================================================================
+bool Joint::isPositionLimitEnforced() const
 {
   return mJointP.mIsPositionLimited;
+}
+
+//==============================================================================
+bool Joint::isPositionLimited() const
+{
+  return isPositionLimitEnforced();
 }
 
 //==============================================================================
@@ -304,6 +316,56 @@ size_t Joint::getJointIndexInTree() const
 size_t Joint::getTreeIndex() const
 {
   return mChildBodyNode->getTreeIndex();
+}
+
+//==============================================================================
+bool Joint::checkSanity(bool _printWarnings) const
+{
+  bool sane = true;
+  for(size_t i=0; i < getNumDofs(); ++i)
+  {
+    if(getInitialPosition(i) < getPositionLowerLimit(i)
+       || getPositionUpperLimit(i) < getInitialPosition(i))
+    {
+      if(_printWarnings)
+      {
+        dtwarn << "[Joint::checkSanity] Initial position of index " << i << " ["
+               << getDofName(i) << "] in Joint [" << getName() << "] is "
+               << "outside of its position limits\n"
+               << " -- Initial Position: " << getInitialPosition(i) << "\n"
+               << " -- Limits: [" << getPositionLowerLimit(i) << ", "
+               << getPositionUpperLimit(i) << "]\n";
+      }
+      else
+      {
+        return false;
+      }
+
+      sane = false;
+    }
+
+    if(getInitialVelocity(i) < getVelocityLowerLimit(i)
+       || getVelocityUpperLimit(i) < getInitialVelocity(i))
+    {
+      if(_printWarnings)
+      {
+        dtwarn << "[Joint::checkSanity] Initial velocity of index " << i << " ["
+               << getDofName(i) << "] is Joint [" << getName() << "] is "
+               << "outside of its velocity limits\n"
+               << " -- Initial Velocity: " << getInitialVelocity(i) << "\n"
+               << " -- Limits: [" << getVelocityLowerLimit(i) << ", "
+               << getVelocityUpperLimit(i) << "]\n";
+      }
+      else
+      {
+        return false;
+      }
+
+      sane = false;
+    }
+  }
+
+  return sane;
 }
 
 //==============================================================================

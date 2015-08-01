@@ -106,6 +106,12 @@ ConstSkeletonPtr Skeleton::getPtr() const
 }
 
 //==============================================================================
+std::mutex& Skeleton::getMutex() const
+{
+  return mMutex;
+}
+
+//==============================================================================
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)
@@ -431,6 +437,7 @@ SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
   return mNameMgrForSoftBodyNodes.getObject(_name);
 }
 
+//==============================================================================
 const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
   return mNameMgrForSoftBodyNodes.getObject(_name);

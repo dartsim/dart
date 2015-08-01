@@ -51,43 +51,6 @@ using namespace dart::dynamics;
 using namespace dart::constraint;
 
 //==============================================================================
-void createIndexing(std::vector<size_t>&)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <typename ...Args>
-void createIndexing(std::vector<size_t>& _indexing, size_t _name,
-                    Args... args)
-{
-  _indexing.push_back(_name);
-  createIndexing(_indexing, args...);
-}
-
-//==============================================================================
-static std::vector<size_t> createIndexing()
-{
-  // This app was made with dof indices hardcoded, but some internal DART
-  // development have changed the underlying indexing for the robot, so this
-  // map converts the old indexing into the new indexing as a temporary (or
-  // maybe permanent) workaround.
-
-  std::vector<size_t> indexing;
-  //                        0   1   2   3   4   5   6
-  createIndexing(indexing,  0,  1,  2,  3,  4,  5,  6,
-  //                        7   8   9  10  11  12  13
-                           14, 26,  7, 15, 27,  8, 16,
-  //                       14  15  16  17  18  19  20
-                           28,  9, 21, 17, 29, 10, 22,
-  //                       21  22  23  24  25  26  27
-                           18, 30, 11, 23, 19, 31, 12,
-  //                       28  29  30  31  32
-                           24, 13, 25, 20, 32);
-  return indexing;
-}
-
-//==============================================================================
 State::State(SkeletonPtr _skeleton, const std::string& _name)
   : mName(_name),
     mSkeleton(_skeleton),
@@ -99,8 +62,7 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
     mDesiredGlobalSwingLegAngleOnSagital(0.0),
     mDesiredGlobalSwingLegAngleOnCoronal(0.0),
     mDesiredGlobalPelvisAngleOnSagital(0.0),
-    mDesiredGlobalPelvisAngleOnCoronal(0.0),
-    mDofMapping(createIndexing())
+    mDesiredGlobalPelvisAngleOnCoronal(0.0)
 {
   int dof = mSkeleton->getNumDofs();
 
@@ -120,8 +82,6 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
     mKd[i] = ATLAS_DEFAULT_KD;
   }
 
-  _buildJointMap();
-
   mPelvis     = mSkeleton->getBodyNode("pelvis");
   mLeftFoot   = mSkeleton->getBodyNode("l_foot");
   mRightFoot  = mSkeleton->getBodyNode("r_foot");
@@ -135,6 +95,11 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   assert(mLeftThigh  != nullptr);
   assert(mRightThigh != nullptr);
 //  assert(mStanceFoot != nullptr);
+
+  mCoronalLeftHip  = mSkeleton->getDof("l_leg_hpx")->getIndexInSkeleton(); // 10
+  mCoronalRightHip = mSkeleton->getDof("r_leg_hpx")->getIndexInSkeleton(); // 11
+  mSagitalLeftHip  = mSkeleton->getDof("l_leg_hpy")->getIndexInSkeleton(); // 13
+  mSagitalRightHip = mSkeleton->getDof("r_leg_hpy")->getIndexInSkeleton(); // 14
 }
 
 //==============================================================================
@@ -183,8 +148,8 @@ void State::computeControlForce(double _timestep)
   assert(mNextState != nullptr && "Next state should be set.");
 
   int dof = mSkeleton->getNumDofs();
-  VectorXd q = mSkeleton->getPositions(mDofMapping);
-  VectorXd dq = mSkeleton->getVelocities(mDofMapping);
+  VectorXd q = mSkeleton->getPositions();
+  VectorXd dq = mSkeleton->getVelocities();
 
   // Compute relative joint angles from desired global angles of the pelvis and
   // the swing leg
@@ -235,7 +200,7 @@ void State::computeControlForce(double _timestep)
   _updateTorqueForStanceLeg();
 
   // Apply control torque to the skeleton
-  mSkeleton->setForces(mDofMapping, mTorque);
+  mSkeleton->setForces(mTorque);
 
   mElapsedTime += _timestep;
   mFrame++;
@@ -466,15 +431,6 @@ double State::getCoronalRightLegAngle() const
 }
 
 //==============================================================================
-void State::_buildJointMap()
-{
-  mJointMap.clear();
-
-  for (size_t i = 0; i < mSkeleton->getNumBodyNodes(); ++i)
-    mJointMap[mSkeleton->getJoint(i)->getName()] = i;
-}
-
-//==============================================================================
 Eigen::Vector3d State::_getJointPosition(BodyNode* _bodyNode) const
 {
   Joint* parentJoint = _bodyNode->getParentJoint();
@@ -504,10 +460,10 @@ void State::_updateTorqueForStanceLeg()
     double tauTorsoSagital
         = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
           - 1.0 * (0);
-    mTorque[13] = tauTorsoSagital - mTorque[14];
+    mTorque[mSagitalLeftHip] = tauTorsoSagital - mTorque[mSagitalRightHip];
 
-//    cout << "Torque[13]     : " << mTorque[13] << endl;
-//    cout << "Torque[14]     : " << mTorque[14] << endl;
+//    cout << "Torque[mSagitalLeftHip]     : " << mTorque[mSagitalLeftHip] << endl;
+//    cout << "Torque[mSagitalRightHip]     : " << mTorque[mSagitalRightHip] << endl;
 //    cout << "tauTorsoSagital: " << tauTorsoSagital << endl;
 //    cout << endl;
 
@@ -516,10 +472,10 @@ void State::_updateTorqueForStanceLeg()
     double tauTorsoCoronal
         = -5000.0 * (pelvisCoronalAngle - mDesiredGlobalPelvisAngleOnCoronal)
           - 1.0 * (0);
-    mTorque[10] = -tauTorsoCoronal - mTorque[11];
+    mTorque[mCoronalLeftHip] = -tauTorsoCoronal - mTorque[mCoronalRightHip];
 
-//    cout << "Torque[10]     : " << mTorque[10] << endl;
-//    cout << "Torque[11]     : " << mTorque[11] << endl;
+//    cout << "Torque[mCoronalLeftHip]     : " << mTorque[mCoronalLeftHip] << endl;
+//    cout << "Torque[mCoronalRightHip]     : " << mTorque[mCoronalRightHip] << endl;
 //    cout << "tauTorsoCoronal: " << tauTorsoCoronal << endl;
 //    cout << endl;
 
@@ -537,10 +493,10 @@ void State::_updateTorqueForStanceLeg()
     double tauTorsoSagital
         = -5000.0 * (pelvisSagitalAngle + mDesiredGlobalPelvisAngleOnSagital)
           - 1.0 * (0);
-    mTorque[14] = tauTorsoSagital - mTorque[13];
+    mTorque[mSagitalRightHip] = tauTorsoSagital - mTorque[mSagitalLeftHip];
 
-//    cout << "Torque[13]     : " << mTorque[13] << endl;
-//    cout << "Torque[14]     : " << mTorque[14] << endl;
+//    cout << "Torque[mSagitalLeftHip]     : " << mTorque[mSagitalLeftHip] << endl;
+//    cout << "Torque[mSagitalRightHip]    : " << mTorque[mSagitalRightHip] << endl;
 //    cout << "tauTorsoSagital: " << tauTorsoSagital << endl;
 //    cout << endl;
 
@@ -549,10 +505,10 @@ void State::_updateTorqueForStanceLeg()
     double tauTorsoCoronal
         = -5000.0 * (pelvisCoronalAngle - mDesiredGlobalPelvisAngleOnCoronal)
           - 1.0 * (0);
-    mTorque[11] = -tauTorsoCoronal - mTorque[10];
+    mTorque[mCoronalRightHip] = -tauTorsoCoronal - mTorque[mCoronalLeftHip];
 
-    //    cout << "Torque[10]     : " << mTorque[10] << endl;
-    //    cout << "Torque[11]     : " << mTorque[11] << endl;
+    //    cout << "Torque[mCoronalLeftHip]     : " << mTorque[mCoronalLeftHip] << endl;
+    //    cout << "Torque[mCoronalRightHip]     : " << mTorque[mCoronalRightHip] << endl;
     //    cout << "tauTorsoCoronal: " << tauTorsoCoronal << endl;
     //    cout << endl;
   }
@@ -575,23 +531,10 @@ double State::getElapsedTime() const
 }
 
 //==============================================================================
-void State::setDesiredJointPosition(int _idx, double _val)
-{
-  assert(0 <= _idx && _idx <= mDesiredJointPositions.size()
-         && "Invalid joint index.");
-
-  mDesiredJointPositions[_idx] = _val;
-}
-
-//==============================================================================
 void State::setDesiredJointPosition(const string& _jointName, double _val)
 {
-  // TODO(JS)
-  NOT_YET(State::setDesiredJointPosition());
-
-  assert(mSkeleton->getJoint(_jointName) != nullptr);
-
-  mDesiredJointPositions[mJointMap[_jointName]] = _val;
+  size_t index = mSkeleton->getDof(_jointName)->getIndexInSkeleton();
+  mDesiredJointPositions[index] = _val;
 }
 
 //==============================================================================
@@ -703,35 +646,35 @@ double State::getDerivativeGain(int _idx) const
 //}
 
 //==============================================================================
-void State::setFeedbackSagitalCOMDistance(int _idx, double _val)
+void State::setFeedbackSagitalCOMDistance(size_t _index, double _val)
 {
-  assert(0 <= _idx && _idx <= mSagitalCd.size() && "Invalid index.");
+  assert(_index <= mSagitalCd.size() && "Invalid index.");
 
-  mSagitalCd[_idx] = _val;
+  mSagitalCd[_index] = _val;
 }
 
 //==============================================================================
-void State::setFeedbackSagitalCOMVelocity(int _idx, double _val)
+void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
 {
-  assert(0 <= _idx && _idx <= mSagitalCv.size() && "Invalid index.");
+  assert(_index <= mSagitalCv.size() && "Invalid index.");
 
-  mSagitalCv[_idx] = _val;
+  mSagitalCv[_index] = _val;
 }
 
 //==============================================================================
-void State::setFeedbackCoronalCOMDistance(int _idx, double _val)
+void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
 {
-  assert(0 <= _idx && _idx <= mCoronalCd.size() && "Invalid index.");
+  assert(_index <= mCoronalCd.size() && "Invalid index.");
 
-  mCoronalCd[_idx] = _val;
+  mCoronalCd[_index] = _val;
 }
 
 //==============================================================================
-void State::setFeedbackCoronalCOMVelocity(int _idx, double _val)
+void State::setFeedbackCoronalCOMVelocity(size_t _index, double _val)
 {
-  assert(0 <= _idx && _idx <= mCoronalCv.size() && "Invalid index.");
+  assert(_index <= mCoronalCv.size() && "Invalid index.");
 
-  mCoronalCv[_idx] = _val;
+  mCoronalCv[_index] = _val;
 }
 
 //==============================================================================

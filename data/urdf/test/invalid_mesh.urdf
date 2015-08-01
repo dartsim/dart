@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="invalid_mesh">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="invalid_mesh.stl"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

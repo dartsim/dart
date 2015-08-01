@@ -52,25 +52,19 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
+  dart::dynamics::SkeletonPtr biped = myWorld->getSkeleton("fullbody1");
+
+  biped->getDof("j_pelvis_rot_y")->setPosition( -0.20);
+  biped->getDof("j_thigh_left_z")->setPosition(  0.15);
+  biped->getDof("j_shin_left")->setPosition(    -0.40);
+  biped->getDof("j_heel_left_1")->setPosition(   0.25);
+  biped->getDof("j_thigh_right_z")->setPosition( 0.15);
+  biped->getDof("j_shin_right")->setPosition(   -0.40);
+  biped->getDof("j_heel_right_1")->setPosition(  0.25);
+  biped->getDof("j_abdomen_2")->setPosition(     0.00);
+
   // create controller
-  Controller* myController = new Controller(myWorld->getSkeleton(1),
-                                            myWorld->getTimeStep());
-  dart::dynamics::MetaSkeletonPtr group = myController->getSkel();
-
-  std::vector<size_t> genCoordIds;
-  genCoordIds.push_back(1);
-  genCoordIds.push_back(6);   // left hip
-  genCoordIds.push_back(14);  // left knee
-  genCoordIds.push_back(17);  // left ankle
-  genCoordIds.push_back(9);   // right hip
-  genCoordIds.push_back(15);  // right knee
-  genCoordIds.push_back(19);  // right ankle
-  genCoordIds.push_back(13);  // lower back
-  Eigen::VectorXd initConfig(8);
-  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  group->setPositions(genCoordIds, initConfig);
-
-  myController->resetDesiredDofs();
+  Controller* myController = new Controller(biped, myWorld->getTimeStep());
 
   // create a window and link it to the world
   MyWindow window;

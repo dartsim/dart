@@ -63,6 +63,7 @@ public:
 
     UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
                      double _pitch = 0.1);
+
     virtual ~UniqueProperties() = default;
   };
 
@@ -103,6 +104,9 @@ public:
 
   /// Get joint type for this class
   static const std::string& getStaticType();
+
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
 
   ///
   void setAxis(const Eigen::Vector3d& _axis);

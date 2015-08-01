@@ -18,13 +18,16 @@ if(WIN32)
 endif()
 
 #===============================================================================
-# Poject settings
+# Project settings
 #===============================================================================
+#
+# If you change the version, please update the <version> tag in package.xml.
+
 project(dart)
 
-set(DART_MAJOR_VERSION "4")
-set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "4")
+set(DART_MAJOR_VERSION "5")
+set(DART_MINOR_VERSION "0")
+set(DART_PATCH_VERSION "1")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -55,24 +58,33 @@ option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 # Build type settings
 #===============================================================================
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Release Debug." FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel" FORCE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
-set(BUILD_TYPE_RELEASE FALSE)
 set(BUILD_TYPE_DEBUG FALSE)
+set(BUILD_TYPE_RELEASE FALSE)
+set(BUILD_TYPE_RELWITHDEBINFO FALSE)
+set(BUILD_TYPE_MINSIZEREL FALSE)
 
-if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
-  set(BUILD_TYPE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   set(BUILD_TYPE_DEBUG TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
+  set(BUILD_TYPE_RELEASE TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
+  set(BUILD_TYPE_RELWITHDEBINFO TRUE)
+elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
+  set(BUILD_TYPE_MINSIZEREL TRUE)
 else()
-  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Release Debug")
+  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 #===============================================================================
 # Find dependencies
 #===============================================================================
+#
+# If you add a dependency, please add the corresponding rosdep key as a
+# dependency in package.xml.
 
 #------------------------
 # Mandatory dependencies
@@ -344,30 +356,30 @@ endif()
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(${EIGEN3_INCLUDE_DIRS})
-include_directories(${FCL_INCLUDE_DIRS})
-include_directories(${ASSIMP_INCLUDE_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${OPENGL_INCLUDE_DIR})
-include_directories(${GLUT_INCLUDE_DIR})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
+include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
-  include_directories(${BULLET_INCLUDE_DIRS})
+  include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
   add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  include_directories(${FLANN_INCLUDE_DIRS})
-  include_directories(${urdfdom_INCLUDE_DIRS})
-  include_directories(${TINYXML_INCLUDE_DIRS})
-  include_directories(${TINYXML2_INCLUDE_DIRS})
+  include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
+  include_directories(SYSTEM ${urdfdom_INCLUDE_DIRS})
+  include_directories(SYSTEM ${TINYXML_INCLUDE_DIRS})
+  include_directories(SYSTEM ${TINYXML2_INCLUDE_DIRS})
   if(HAVE_NLOPT)
-    include_directories(${NLOPT_INCLUDE_DIRS})
+    include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
   endif()
   if(HAVE_IPOPT)
-    include_directories(${IPOPT_INCLUDE_DIRS})
+    include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
   endif()
   if(HAVE_SHARK)
-    include_directories(${SHARK_INCLUDE_DIRS})
+    include_directories(SYSTEM ${SHARK_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -509,6 +521,9 @@ message(STATUS ${PC_CONFIG_OUT})
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
+# Install a Catkin 'package.xml' file. This is required by REP-136.
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -592,42 +607,6 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
     endif()
   endif()
 endif()
-
-#===============================================================================
-# Package Installer
-#===============================================================================
-set(CPACK_PACKAGE_NAME "dart")
-set(CPACK_SYSTEM_NAME "i386")
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-    set(CPACK_SYSTEM_NAME "amd64")
-endif()
-set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
-set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
-set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
-     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev,
-     libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
-     urdfdom")
-if(HAVE_BULLET_COLLISION)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libbullet-dev (>=2.8.0)")
-endif()
-if(HAVE_NLOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libnlopt-dev")
-endif()
-if(HAVE_IPOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
-endif()
-
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_SYSTEM_NAME}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karen Liu (www.cc.gatech.edu/~karenliu/)")
-
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${DART_PKG_DESC}")
-set(CPACK_PACKAGE_VENDOR "Computer Graphics Lab at GT")
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-
-include(CPack)
 
 #===============================================================================
 # END

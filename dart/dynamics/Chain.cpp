@@ -41,9 +41,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Chain::Criteria::Criteria(BodyNode* _start, BodyNode* _target)
+Chain::Criteria::Criteria(BodyNode* _start, BodyNode* _target,
+                          bool _includeBoth)
   : mStart(_start),
-    mTarget(_target)
+    mTarget(_target),
+    mIncludeBoth(_includeBoth)
 {
   // Do nothing
 }
@@ -59,9 +61,29 @@ Linkage::Criteria Chain::Criteria::convert() const
 {
   Linkage::Criteria criteria;
   criteria.mStart.mNode = mStart;
-  criteria.mTargets.push_back(
-        Linkage::Criteria::Target(mTarget.lock(),
-                                  Linkage::Criteria::NEUTRAL, true));
+  criteria.mStart.mPolicy = Linkage::Criteria::INCLUDE;
+
+  Linkage::Criteria::Target target;
+  target.mNode = mTarget;
+  target.mChain = true;
+  target.mPolicy = Linkage::Criteria::INCLUDE;
+
+  if(!mIncludeBoth)
+  {
+    if(target.mNode.lock() &&
+       target.mNode.lock()->descendsFrom(criteria.mStart.mNode.lock()))
+    {
+      criteria.mStart.mPolicy = Linkage::Criteria::EXCLUDE;
+    }
+
+    if(criteria.mStart.mNode.lock() &&
+       criteria.mStart.mNode.lock()->descendsFrom(target.mNode.lock()))
+    {
+      target.mPolicy = Linkage::Criteria::EXCLUDE;
+    }
+  }
+
+  criteria.mTargets.push_back(target);
 
   return criteria;
 }
@@ -86,6 +108,15 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
                        const std::string& _name)
 {
   ChainPtr chain(new Chain(_start, _target, _name));
+  chain->mPtr = chain;
+  return chain;
+}
+
+//==============================================================================
+ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
+                       IncludeBoth_t, const std::string& _name)
+{
+  ChainPtr chain(new Chain(_start, _target, IncludeBoth, _name));
   chain->mPtr = chain;
   return chain;
 }
@@ -128,6 +159,14 @@ Chain::Chain(const Chain::Criteria& _criteria, const std::string& _name)
 //==============================================================================
 Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
   : Linkage(Chain::Criteria(_start, _target), _name)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Chain::Chain(BodyNode* _start, BodyNode* _target,
+             IncludeBoth_t, const std::string& _name)
+  : Linkage(Chain::Criteria(_start, _target, true))
 {
   // Do nothing
 }

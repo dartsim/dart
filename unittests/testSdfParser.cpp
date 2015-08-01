@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,44 +34,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_BALANCE_CONTROLLER_H_
-#define APPS_BALANCE_CONTROLLER_H_
+#include <iostream>
+#include <gtest/gtest.h>
+#include "TestHelpers.h"
 
-#include <vector>
+#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/sdf/SdfParser.h"
 
-#include <Eigen/Dense>
+using namespace dart;
+using namespace math;
+using namespace dynamics;
+using namespace simulation;
+using namespace utils;
 
-#include "dart/dart.h"
+//==============================================================================
+TEST(SdfParser, SDFSingleBodyWithoutJoint)
+{
+  // Regression test for #444
+  WorldPtr world
+      = SdfParser::readSdfFile(
+          DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
+  EXPECT_TRUE(world != nullptr);
 
-class Controller {
-public:
-  Controller(dart::dynamics::SkeletonPtr _skel,
-             double _t);
-  virtual ~Controller();
+  SkeletonPtr skel = world->getSkeleton(0);
+  EXPECT_TRUE(skel != nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 1);
+  EXPECT_EQ(skel->getNumJoints(), 1);
 
-  Eigen::VectorXd getTorques();
-  double getTorque(int _index);
-  void setDesiredDof(int _index, double _val);
-  void computeTorques();
-  dart::dynamics::MetaSkeletonPtr getSkel();
-  Eigen::VectorXd getDesiredDofs();
-  Eigen::MatrixXd getKp();
-  Eigen::MatrixXd getKd();
+  BodyNodePtr bodyNode = skel->getBodyNode(0);
+  EXPECT_TRUE(bodyNode != nullptr);
+  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1);
+  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1);
 
-protected:
-  dart::dynamics::MetaSkeletonPtr mSkel;
-  dart::dynamics::BodyNodePtr mLeftHeel;
-  Eigen::VectorXd mTorques;
-  Eigen::VectorXd mDesiredDofs;
-  Eigen::MatrixXd mKp;
-  Eigen::MatrixXd mKd;
-  size_t mLeftFoot[2];
-  size_t mRightFoot[2];
-  int mFrame;
-  double mTimestep;
-  double mPreOffset;
+  JointPtr joint = skel->getJoint(0);
+  EXPECT_TRUE(joint != nullptr);
+  EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
+}
 
-  /// \brief SPD utilizes the current info about contact forces
-};
-
-#endif  // APPS_BALANCE_CONTROLLER_H_
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

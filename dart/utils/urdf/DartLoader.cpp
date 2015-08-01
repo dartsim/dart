@@ -174,12 +174,13 @@ std::string DartLoader::getFullFilePath(const std::string& _filename) const
 
     if(packageDirectory == mPackageDirectories.end())
     {
-      dtwarn << "[DartLoader] Trying to load a URDF that uses package '"
-             << fullpath.substr(scheme, authority_end-scheme)
-             << "' (the full line is '" << fullpath
-             << "'), but we do not know the path to that package directory. "
-             << "Please use addPackageDirectory(~) to allow us to find the "
-             << "package directory.\n";
+      dterr << "[DartLoader] Trying to load a URDF that uses package '"
+            << fullpath.substr(scheme, authority_end-scheme)
+            << "' (the full line is '" << fullpath
+            << "'), but we do not know the path to that package directory. "
+            << "Please use addPackageDirectory(~) to allow us to find the "
+            << "package directory.\n";
+      fullpath = "";
     }
     else
     {
@@ -279,8 +280,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
     else
     {
       root = root->child_links[0].get();
-      dynamics::BodyNode::Properties rootProperties =
-          createDartNodeProperties(root);
+      dynamics::BodyNode::Properties rootProperties;
+      if (!createDartNodeProperties(root, rootProperties))
+        return nullptr;
+
       rootNode = createDartJointAndNode(
             root->parent_joint.get(), rootProperties, nullptr, skeleton);
       if(nullptr == rootNode)
@@ -292,8 +295,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
   }
   else
   {
-    dynamics::BodyNode::Properties rootProperties =
-        createDartNodeProperties(root);
+    dynamics::BodyNode::Properties rootProperties;
+    if (!createDartNodeProperties(root, rootProperties))
+      return nullptr;
+
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
@@ -305,25 +310,34 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(const urdf::ModelInte
 
   for(size_t i = 0; i < root->child_links.size(); i++)
   {
-    createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode);
+    if (!createSkeletonRecursive(skeleton, root->child_links[i].get(), rootNode))
+      return nullptr;
+
   }
 
   return skeleton;
 }
 
-void DartLoader::createSkeletonRecursive(
+bool DartLoader::createSkeletonRecursive(
     dynamics::SkeletonPtr _skel,
     const urdf::Link* _lk,
     dynamics::BodyNode* _parentNode)
 {
-  dynamics::BodyNode::Properties properties = createDartNodeProperties(_lk);
+  dynamics::BodyNode::Properties properties;
+  if (!createDartNodeProperties(_lk, properties))
+    return false;
+
   dynamics::BodyNode* node = createDartJointAndNode(
         _lk->parent_joint.get(), properties, _parentNode, _skel);
+  if(!node)
+    return false;
   
-  for(unsigned int i = 0; i < _lk->child_links.size(); ++i)
+  for(size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-      createSkeletonRecursive(_skel, _lk->child_links[i].get(), node);
+      if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node))
+        return false;
   }
+  return true;
 }
 
 
@@ -383,6 +397,23 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     singleDof.mVelocityUpperLimit =  _jt->limits->velocity;
     singleDof.mForceLowerLimit = -_jt->limits->effort;
     singleDof.mForceUpperLimit =  _jt->limits->effort;
+
+    // If the zero position is out of our limits, we should change the initial
+    // position instead of assuming zero.
+    if(_jt->limits->lower > 0 || _jt->limits->upper < 0)
+    {
+      if(std::isfinite(_jt->limits->lower)
+         && std::isfinite(_jt->limits->upper))
+        singleDof.mInitialPosition =
+            (_jt->limits->lower + _jt->limits->upper) / 2.0;
+      else if(std::isfinite(_jt->limits->lower))
+        singleDof.mInitialPosition = _jt->limits->lower;
+      else if(std::isfinite(_jt->limits->upper))
+        singleDof.mInitialPosition = _jt->limits->upper;
+
+      // Any other case means that the limits are both +inf, both -inf, or
+      // either of them is NaN. This should generate warnings elsewhere.
+    }
   }
 
   if(_jt->dynamics)
@@ -442,7 +473,6 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     {
       dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
             << _jt->type << ")\n";
-      assert(false);
       return nullptr;
     }
   }
@@ -453,10 +483,10 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 /**
  * @function createDartNode
  */
-dynamics::BodyNode::Properties DartLoader::createDartNodeProperties(
-    const urdf::Link* _lk)
+bool DartLoader::createDartNodeProperties(
+    const urdf::Link* _lk, dynamics::BodyNode::Properties &node)
 {
-  dynamics::BodyNode::Properties node(_lk->name);
+  node.mName = _lk->name;
   
   // Load Inertial information
   if(_lk->inertial) {
@@ -477,22 +507,23 @@ dynamics::BodyNode::Properties DartLoader::createDartNodeProperties(
   }
 
   // Set visual information
-  for(unsigned int i = 0; i < _lk->visual_array.size(); i++)
+  for(size_t i = 0; i < _lk->visual_array.size(); i++)
   {
     if(dynamics::ShapePtr shape = createShape(_lk->visual_array[i].get()))
-    {
       node.mVizShapes.push_back(shape);
-    }
+    else
+      return false;
   }
 
   // Set collision information
-  for(unsigned int i = 0; i < _lk->collision_array.size(); i++) {
-    if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get())) {
+  for(size_t i = 0; i < _lk->collision_array.size(); i++) {
+    if(dynamics::ShapePtr shape = createShape(_lk->collision_array[i].get()))
       node.mColShapes.push_back(shape);
-    }
+    else
+      return false;
   }
 
-  return node;
+  return true;
 }
 
 
@@ -535,26 +566,26 @@ dynamics::ShapePtr DartLoader::createShape(const VisualOrCollision* _vizOrCol)
   else if(urdf::Mesh* mesh = dynamic_cast<urdf::Mesh*>(_vizOrCol->geometry.get()))
   {
     std::string fullPath = getFullFilePath(mesh->filename);
+    if (fullPath.empty())
+    {
+      dtwarn << "[DartLoader::createShape] Skipping URDF mesh with empty"
+                " filename. We are returning a nullptr.\n";
+      return nullptr;
+    }
+
     const aiScene* model = dynamics::MeshShape::loadMesh( fullPath );
-    
     if(!model)
-    {
-      dtwarn << "[DartLoader::createShape] Assimp could not load a model from "
-             << "the file '" << fullPath << "'\n";
-      shape = nullptr;
-    }
-    else
-    {
-      shape = dynamics::ShapePtr(new dynamics::MeshShape(
-          Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
-    }
+      return nullptr; // MeshShape::loadMesh logs a warning
+
+    shape = dynamics::ShapePtr(new dynamics::MeshShape(
+      Eigen::Vector3d(mesh->scale.x, mesh->scale.y, mesh->scale.z), model, fullPath));
   }
   // Unknown geometry type
   else
   {
-    dtwarn << "[DartLoader::createShape] Unknown urdf Shape type "
-           << "(we only know of Sphere, Box, Cylinder, and Mesh). "
-           << "We are returning a nullptr." << std::endl;
+    dtwarn << "[DartLoader::createShape] Unknown URDF shape type"
+              " (we only know of Sphere, Box, Cylinder, and Mesh)."
+              " We are returning a nullptr.\n";
     return nullptr;
   }
 

@@ -108,6 +108,9 @@ public:
   /// Get joint type for this class
   static const std::string& getStaticType();
 
+  // Documentation inherited
+  virtual bool isCyclic(size_t _index) const override;
+
   /// Set the axis order
   /// \param[in] _order Axis order
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be
