@@ -128,7 +128,8 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform,
   assert(nullptr != withRespectTo);
 
   setRelativeTransform(
-    withRespectTo->getTransform(getParentBodyNode()) * newTransform);
+        withRespectTo->getTransform(getChildBodyNode()->getParentFrame())
+        * newTransform);
 }
 
 //==============================================================================
@@ -185,19 +186,21 @@ void FreeJoint::setRelativeSpatialVelocity(
 
   // Compute the target relative spatial velocity from the parent body node to
   // the child body node.
-  if (getParentBodyNode() != relativeTo)
+  if (getChildBodyNode()->getParentFrame() != relativeTo)
   {
     if (relativeTo->isWorld())
     {
       const Eigen::Vector6d parentVelocity = math::AdInvT(
-        getLocalTransform(), getParentBodyNode()->getSpatialVelocity());
+            getLocalTransform(),
+            getChildBodyNode()->getParentFrame()->getSpatialVelocity());
 
       targetRelSpatialVel -= parentVelocity;
     }
     else
     {
       const Eigen::Vector6d parentVelocity = math::AdInvT(
-            getLocalTransform(), getParentBodyNode()->getSpatialVelocity());
+            getLocalTransform(),
+            getChildBodyNode()->getParentFrame()->getSpatialVelocity());
       const Eigen::Vector6d arbitraryVelocity = math::AdT(
             relativeTo->getTransform(getChildBodyNode()),
             relativeTo->getSpatialVelocity());
@@ -344,13 +347,14 @@ void FreeJoint::setRelativeSpatialAcceleration(
 
   // Compute the target relative spatial acceleration from the parent body node
   // to the child body node.
-  if (getParentBodyNode() != relativeTo)
+  if (getChildBodyNode()->getParentFrame() != relativeTo)
   {
     if (relativeTo->isWorld())
     {
       const Eigen::Vector6d parentAcceleration
-          = math::AdInvT(getLocalTransform(),
-                         getParentBodyNode()->getSpatialAcceleration())
+          = math::AdInvT(
+            getLocalTransform(),
+            getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(getChildBodyNode()->getSpatialVelocity(),
                        getLocalJacobianStatic() * getVelocitiesStatic());
 
@@ -359,8 +363,9 @@ void FreeJoint::setRelativeSpatialAcceleration(
     else
     {
       const Eigen::Vector6d parentAcceleration
-          = math::AdInvT(getLocalTransform(),
-                         getParentBodyNode()->getSpatialAcceleration())
+          = math::AdInvT(
+            getLocalTransform(),
+            getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(getChildBodyNode()->getSpatialVelocity(),
                        getLocalJacobianStatic() * getVelocitiesStatic());
       const Eigen::Vector6d arbitraryAcceleration =
