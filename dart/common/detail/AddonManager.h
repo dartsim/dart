@@ -95,10 +95,34 @@ template <typename MapType>
 AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
     const MapType& otherMap)
 {
-  mMap.clear();
+  typename MapType::iterator receiver = mMap.begin();
+  typename MapType::const_iterator sender = otherMap.begin();
 
-  for(const auto& object : otherMap)
-    mMap[object.first] = object.second->clone();
+  while( mMap.end() != receiver && otherMap.end() != sender)
+  {
+    if( receiver->first == sender->first )
+    {
+      // We should copy the incoming object when possible so we can avoid the
+      // memory allocation overhead of cloning.
+      if(receiver->second)
+        receiver->second->copy(*sender->second);
+      else
+        receiver->second = sender->second->clone();
+
+      ++receiver;
+      ++sender;
+    }
+    else if( receiver->first < sender->first )
+    {
+      // Erase this entry in the map, because it does not have an analog in the
+      // map that we are copying
+      mMap.erase(receiver++);
+    }
+    else
+    {
+      ++sender;
+    }
+  }
 
   return *this;
 }
@@ -135,7 +159,7 @@ T* AddonManager::get()
   if(mAddonMap.end() == it)
     return nullptr;
 
-  return it->second;
+  return static_cast<T*>(it->second.get());
 }
 
 //==============================================================================
@@ -156,16 +180,18 @@ void AddonManager::set(const std::unique_ptr<T>& addon)
 template <class T>
 void AddonManager::set(std::unique_ptr<T>&& addon)
 {
-  addon->changeManager(this);
-  mAddonMap[typeid(T)] = addon;
+  becomeManager(addon.get());
+  mAddonMap[typeid(T)] = std::move(addon);
 }
 
 //==============================================================================
 template <class T, typename ...Args>
 T* AddonManager::construct(Args&&... args)
 {
-   mAddonMap[typeid(T)] = std::unique_ptr<T>(
-         new T(this, std::forward(args)...));
+  T* addon = new T(this, std::forward(args)...);
+  mAddonMap[typeid(T)] = std::unique_ptr<T>(addon);
+
+  return addon;
 }
 
 //==============================================================================
@@ -177,61 +203,56 @@ void AddonManager::erase()
     it->second = nullptr;
 }
 
+//==============================================================================
+template <class T>
+std::unique_ptr<T> AddonManager::release()
+{
+  std::unique_ptr<T> extraction = nullptr;
+  AddonMap::iterator it = mAddonMap.find( typeid(T) );
+  if(mAddonMap.end() != it)
+    extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
+
+  return extraction;
+}
+
 } // namespace common
 } // namespace dart
 
+//==============================================================================
+#define DART_INSTANTIATE_ADDON( AddonName, it )                                 \
+  mAddonMap[typeid( AddonName )] = nullptr;                                     \
+  it = mAddonMap.find(typeid( AddonName ));
 
 //==============================================================================
 #define DART_SPECIALIZED_ADDON( AddonName, it )                                 \
-  template <>                                                                   \
-  bool has< AddonName >() const                                                 \
-  { return (get< AddonName >() != nullptr); }                                   \
                                                                                 \
   inline bool has ## AddonName () const                                         \
-  { return has< AddonName >(); }                                                \
-                                                                                \
-  template <>                                                                   \
-  AddonName * get< AddonName >()                                                \
-  { return it ->second; }                                                       \
+  { return (get< AddonName >() != nullptr); }                                   \
                                                                                 \
   inline AddonName * get ## AddonName ()                                        \
-  { return get< AddonName >(); }                                                \
-                                                                                \
-  template <>                                                                   \
-  const AddonName * get< AddonName >() const                                    \
-  { return it ->second; }                                                       \
+  { return static_cast< AddonName *>( it ->second.get() ); }                    \
                                                                                 \
   inline const AddonName* get ## AddonName () const                             \
-  { return it ->second; }                                                       \
+  { return static_cast< AddonName *>( it ->second.get() ); }                    \
                                                                                 \
-  template <>                                                                   \
-  void set< AddonName >(const std::unique_ptr< AddonName >& addon)              \
+  inline void set ## AddonName (const std::unique_ptr< AddonName >& addon)      \
   { it ->second = addon->clone(this); }                                         \
                                                                                 \
-  inline set ## AddonName (const std::unique_ptr< AddonName >& addon)           \
-  { set< AddonName >(addon); }                                                  \
-                                                                                \
-  template <>                                                                   \
-  void set< AddonName >(std::unique_ptr< AddonName >&& addon)                   \
-  { addon->changeManager(this); it ->second = addon; }                          \
-                                                                                \
-  inline set ## AddonName (std::unique_ptr< AddonName >&& addon)                \
-  { set< AddonName >(addon); }                                                  \
-                                                                                \
-  template <typename ...Args>                                                   \
-  AddonName * construct<AddonName>(Args&&... args)                              \
-  { it ->second = std::unique_ptr< AddonName >(                                 \
-          new AddonName (this, std::forward(args)...)); }                       \
+  inline void set ## AddonName (std::unique_ptr< AddonName >&& addon)           \
+  { becomeManager(addon.get()); it ->second = std::move(addon); }               \
                                                                                 \
   template <typename ...Args>                                                   \
   inline AddonName * construct ## AddonName (Args&&... args)                    \
-  { construct< AddonName >(args); }                                             \
-                                                                                \
-  template <>                                                                   \
-  void erase< AddonName >()                                                     \
-  { it ->second = nullptr; }                                                    \
+  { it ->second = std::unique_ptr< AddonName >(                                 \
+          new AddonName (this, std::forward(args)...));                         \
+    return static_cast< AddonName *>( it ->second.get() ); }                    \
                                                                                 \
   inline void erase ## AddonName ()                                             \
-  { erase< AddonName >(); }
+  { it ->second = nullptr; }                                                    \
+                                                                                \
+  inline std::unique_ptr< AddonName > release ## AddonName ()                   \
+  { std::unique_ptr< AddonName > extraction = std::unique_ptr< AddonName >(     \
+          static_cast< AddonName *>(it ->second.release()));                    \
+    it ->second = nullptr; return extraction; }
 
 #endif // DART_COMMON_DETAIL_ADDONMANAGER_H_

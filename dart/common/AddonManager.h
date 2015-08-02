@@ -50,7 +50,9 @@ class AddonManager
 {
 public:
 
-
+  /// MapHolder is a templated wrapper class that is used to allow maps of
+  /// Addon::State and Addon::Properties to be handled in a semantically
+  /// palatable way.
   template <typename MapType>
   class MapHolder final
   {
@@ -130,11 +132,14 @@ public:
   T* construct(Args&&... args);
 
   /// Remove an Addon from this AddonManager.
-  ///
-  /// Note that this does not remove the entry from the AddonManager, but it
-  /// sets the entry to a nullptr.
   template <class T>
   void erase();
+
+  /// Remove an Addon from this AddonManager, but return its unique_ptr instead
+  /// of letting it be deleted. This allows you to safely use move semantics to
+  /// transfer an Addon between two AddonManagers.
+  template <class T>
+  std::unique_ptr<T> release();
 
   /// Set the states of the addons in this AddonManager based on the given
   /// AddonManager::State. The states of any Addon types that do not exist
@@ -153,6 +158,8 @@ public:
   Properties getAddonProperties() const;
 
 protected:
+
+  void becomeManager(Addon* addon);
 
   typedef std::map< std::type_index, std::unique_ptr<Addon> > AddonMap;
 

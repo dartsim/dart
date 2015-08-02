@@ -66,6 +66,8 @@ public:
   {
   public:
 
+    State() = default;
+
     /// Virtual destructor
     virtual ~State() = default;
 

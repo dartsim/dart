@@ -72,10 +72,66 @@ void AddonManager::setAddonStates(const State& newStates)
 //==============================================================================
 AddonManager::State AddonManager::getAddonStates() const
 {
-  // TODO
+  StateMap states;
+  for(const auto& addon : mAddonMap)
+  {
+    std::unique_ptr<Addon::State> state = addon.second->getState();
+    if(state)
+      states[addon.first] = std::move(state);
+  }
+
+  return states;
 }
 
+//==============================================================================
+void AddonManager::setAddonProperties(const Properties& newProperties)
+{
+  const PropertiesMap& propertiesMap = newProperties.getMap();
 
+  AddonMap::iterator addons = mAddonMap.begin();
+  PropertiesMap::const_iterator props = propertiesMap.begin();
+
+  while( mAddonMap.end() != addons && propertiesMap.end() != props )
+  {
+    if( addons->first == props->first )
+    {
+      Addon* addon = addons->second.get();
+      if(addon)
+        addon->setProperties(props->second);
+
+      ++addons;
+      ++props;
+    }
+    else if( addons->first < props->first )
+    {
+      ++addons;
+    }
+    else
+    {
+      ++props;
+    }
+  }
+}
+
+//==============================================================================
+AddonManager::Properties AddonManager::getAddonProperties() const
+{
+  PropertiesMap properties;
+  for(const auto& addon : mAddonMap)
+  {
+    std::unique_ptr<Addon::Properties> prop = addon.second->getProperties();
+    if(prop)
+      properties[addon.first] = std::move(prop);
+  }
+
+  return properties;
+}
+
+//==============================================================================
+void AddonManager::becomeManager(Addon* addon)
+{
+  addon->changeManager(this);
+}
 
 
 

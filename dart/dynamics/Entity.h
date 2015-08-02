@@ -43,6 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
+#include "dart/common/AddonManager.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -66,7 +67,7 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity : public virtual common::Subject
+class Entity : public virtual common::Subject/*, public common::AddonManager*/
 {
 public:
   friend class Frame;
