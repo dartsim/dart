@@ -698,6 +698,12 @@ const BodyNode* BodyNode::getParentBodyNode() const
 }
 
 //==============================================================================
+void BodyNode::registerNode(EndEffector* ee)
+{
+  getSkeleton()->registerEndEffector(ee);
+}
+
+//==============================================================================
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
   assert(_body != nullptr);

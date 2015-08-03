@@ -60,6 +60,12 @@ NodeCleaner::~NodeCleaner()
 }
 
 //==============================================================================
+Node* NodeCleaner::getNode() const
+{
+  return mNode;
+}
+
+//==============================================================================
 BodyNodePtr Node::getBodyNodePtr()
 {
   return mBodyNode;
@@ -80,9 +86,7 @@ bool Node::isRemoved() const
     return true;
   }
 
-  // const_cast is okay here, because absolutely no data gets modified
-  Node* node = const_cast<Node*>(this);
-  return (mBodyNode->mNodeMap.find(node) == mBodyNode->mNodeMap.end());
+  return !mAmAttached;
 }
 
 //==============================================================================
@@ -100,20 +104,20 @@ std::shared_ptr<NodeCleaner> Node::generateCleaner()
 
 //==============================================================================
 Node::Node(ConstructNode_t, BodyNode* _bn)
-  : mBodyNode(_bn)
+  : mBodyNode(_bn),
+    mAmAttached(false)
 {
   if(nullptr == mBodyNode)
   {
     REPORT_INVALID_NODE(Node);
     return;
   }
-
-  attach();
 }
 
 //==============================================================================
 Node::Node(ConstructBodyNode_t)
-  : mBodyNode(nullptr)
+  : mBodyNode(nullptr),
+    mAmAttached(true)
 {
   // BodyNodes do not get "attached" to themselves, so we do nothing here
 }
@@ -135,11 +139,15 @@ void Node::attach()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
 
-  if(mBodyNode->mNodeMap.end() == it)
-    mBodyNode->mNodeMap[this] = generateCleaner();
+  std::vector<NodeCleanerPtr>& cleaners = it->second;
+
+  NodeCleanerPtr cleaner = generateCleaner();
+  if(std::find(cleaners.begin(), cleaners.end(), cleaner) == cleaners.end())
+    cleaners.push_back(cleaner);
+
+  mAmAttached = true;
 }
 
 //==============================================================================
@@ -151,13 +159,21 @@ void Node::stageForRemoval()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
 
-  if(mBodyNode->mNodeMap.end() == it)
+  std::vector<NodeCleanerPtr>& cleaners = it->second;
+
+  NodeCleanerPtr cleaner = generateCleaner();
+
+  std::vector<NodeCleanerPtr>::iterator entry =
+      std::find(cleaners.begin(), cleaners.end(), cleaner);
+
+  if(cleaners.end() == entry)
     return;
 
-  mBodyNode->mNodeMap.erase(it);
+  cleaners.erase(entry);
+
+  mAmAttached = false;
 }
 
 //==============================================================================

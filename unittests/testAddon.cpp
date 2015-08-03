@@ -90,6 +90,8 @@ public:
 
     State(const State& other) : val(other.val) { }
 
+    State(const T& otherVal) : val(otherVal) { }
+
     T val;
 
     std::unique_ptr<Addon::State> clone() const override
@@ -111,6 +113,8 @@ public:
 
     Properties(const Properties& other) : val(other.val) { }
 
+    Properties(const T& otherVal) : val(otherVal) { }
+
     T val;
 
     std::unique_ptr<Addon::Properties> clone() const override
@@ -130,6 +134,13 @@ public:
   StatefulAddon(AddonManager* mgr, const StatefulAddon& other)
     : Addon(mgr, "StatefulAddon"),
       mState(other.mState), mProperties(other.mProperties) { }
+
+  StatefulAddon(AddonManager* mgr, const T& state)
+    : Addon(mgr, "StatefulAddon"), mState(state) { }
+
+  StatefulAddon(AddonManager* mgr, const T& state, const T& properties)
+    : Addon(mgr, "StatefulAddon"),
+      mState(state), mProperties(properties) { }
 
   std::unique_ptr<Addon> clone(AddonManager* newManager) const override final
   {
@@ -443,6 +454,21 @@ TEST(Addon, StateAndProperties)
 
   EXPECT_TRUE( nullptr == mgr2.get<CharAddon>() );
   EXPECT_TRUE( nullptr == mgr2.get<IntAddon>() );
+}
+
+TEST(Addon, Construction)
+{
+  AddonManager mgr;
+
+  mgr.construct<DoubleAddon>();
+
+  double s = dart::math::random(0, 100);
+  mgr.construct<DoubleAddon>(s);
+  EXPECT_EQ(mgr.get<DoubleAddon>()->mState.val, s);
+
+  double p = dart::math::random(0, 100);
+  mgr.construct<DoubleAddon>(dart::math::random(0, 100), p);
+  EXPECT_EQ(mgr.get<DoubleAddon>()->mProperties.val, p);
 }
 
 int main(int argc, char* argv[])

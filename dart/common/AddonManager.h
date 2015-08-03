@@ -123,11 +123,11 @@ public:
     MapType mMap;
   };
 
-  typedef std::map< std::type_index, std::unique_ptr<Addon::State> > StateMap;
-  typedef MapHolder<StateMap> State;
+  using StateMap = std::map< std::type_index, std::unique_ptr<Addon::State> >;
+  using State = MapHolder<StateMap>;
 
-  typedef std::map< std::type_index, std::unique_ptr<Addon::Properties> > PropertiesMap;
-  typedef MapHolder<PropertiesMap> Properties;
+  using PropertiesMap = std::map< std::type_index, std::unique_ptr<Addon::Properties> >;
+  using Properties = MapHolder<PropertiesMap>;
 
   /// Virtual destructor
   virtual ~AddonManager() = default;
@@ -190,7 +190,7 @@ protected:
 
   void becomeManager(Addon* addon);
 
-  typedef std::map< std::type_index, std::unique_ptr<Addon> > AddonMap;
+  using AddonMap = std::map< std::type_index, std::unique_ptr<Addon> >;
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;

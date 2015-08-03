@@ -40,7 +40,7 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <typeindex>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -491,6 +491,11 @@ public:
   /// Return an EndEffector attached to this BodyNode
   const EndEffector* getEndEffector(size_t _index) const;
 
+  /// Create a generic Node type and attach it to this BodyNode. Note that this
+  /// should not be used on the EndEffector class, or else
+  template <class NodeType, typename ...Args>
+  NodeType* createNode(Args&&... args);
+
   /// Create an EndEffector attached to this BodyNode
   template <class EndEffectorT=EndEffector>
   EndEffectorT* createEndEffector(
@@ -769,6 +774,15 @@ protected:
   /// Initialize the vector members with proper sizes.
   virtual void init(const SkeletonPtr& _skeleton);
 
+  /// We use function overloads to allow for special handling of certain types
+  /// of Nodes. If a Node is not a special type, then it will be passed into
+  /// this templated overload, which will do nothing with it.
+  template<class NodeType>
+  void registerNode(NodeType* node);
+
+  /// If the Node is an EndEffector, register it with the Skeleton.
+  void registerNode(EndEffector* ee);
+
   /// Add a child bodynode into the bodynode
   void addChildBodyNode(BodyNode* _body);
 
@@ -967,8 +981,10 @@ protected:
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
+  using NodeMap = std::map<std::type_index, std::vector<NodeCleanerPtr> >;
+
   /// Map that retrieves the cleaners for a given Node
-  std::unordered_map<Node*, std::shared_ptr<NodeCleaner> > mNodeMap;
+  NodeMap mNodeMap;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1122,9 +1138,9 @@ private:
 
 };
 
-#include "dart/dynamics/detail/BodyNode.h"
-
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/BodyNode.h"
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

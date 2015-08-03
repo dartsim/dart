@@ -37,6 +37,13 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODE_H_
 #define DART_DYNAMICS_DETAIL_BODYNODE_H_
 
+#include <utility>
+
+#include "dart/dynamics/BodyNode.h"
+
+namespace dart {
+namespace dynamics {
+
 //==============================================================================
 template <class JointType>
 JointType* BodyNode::moveTo(BodyNode* _newParent,
@@ -127,14 +134,23 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
 }
 
 //==============================================================================
+template <class NodeType, typename ...Args>
+NodeType* BodyNode::createNode(Args&&... args)
+{
+  NodeType* node = new NodeType(this, std::forward<Args>(args)...);
+  node->attach();
+
+  registerNode(node);
+
+  return node;
+}
+
+//==============================================================================
 template <class EndEffectorT>
 EndEffectorT* BodyNode::createEndEffector(
     const typename EndEffectorT::Properties& _properties)
 {
-  EndEffectorT* ee = new EndEffectorT(this, _properties);
-  getSkeleton()->registerEndEffector(ee);
-
-  return ee;
+  return createNode<EndEffectorT>(_properties);
 }
 
 //==============================================================================
@@ -143,10 +159,18 @@ EndEffectorT* BodyNode::createEndEffector(const std::string& _name)
 {
   typename EndEffectorT::Properties properties;
   properties.mName = _name;
-  EndEffectorT* ee = new EndEffectorT(this, properties);
-  getSkeleton()->registerEndEffector(ee);
 
-  return ee;
+  return createNode<EndEffectorT>(properties);
 }
+
+//==============================================================================
+template <class NodeType>
+void BodyNode::registerNode(NodeType* node)
+{
+  // Do nothing
+}
+
+} // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_BODYNODE_H_

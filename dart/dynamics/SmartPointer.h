@@ -196,6 +196,9 @@ DART_DYNAMICS_MAKE_NODEPTR(Node)
 // TemplateWeakNodePtr<Node>        --> WeakNodePtr
 // TemplateWeakNodePtr<const Node>  --> WeakConstNodePtr
 
+class NodeCleaner;
+DART_DYNAMICS_MAKE_SHARED_WEAK(NodeCleaner)
+
 class JacobianNode;
 DART_DYNAMICS_MAKE_NODEPTR(JacobianNode)
 

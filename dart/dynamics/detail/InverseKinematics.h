@@ -39,6 +39,8 @@
 
 #include <type_traits>
 
+#include "dart/dynamics/InverseKinematics.h"
+
 namespace dart {
 namespace dynamics {
 

@@ -202,7 +202,7 @@ void AddonManager::set(std::unique_ptr<T>&& addon)
 template <class T, typename ...Args>
 T* AddonManager::construct(Args&&... args)
 {
-  T* addon = new T(this, std::forward(args)...);
+  T* addon = new T(this, std::forward<Args>(args)...);
   mAddonMap[typeid(T)] = std::unique_ptr<T>(addon);
 
   return addon;

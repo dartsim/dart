@@ -61,6 +61,8 @@ public:
   /// Non-virtual destructor (this class cannot be inherited)
   ~NodeCleaner();
 
+  Node* getNode() const;
+
 private:
 
   /// Node that this Cleaner is responsible for
@@ -78,6 +80,30 @@ public:
   friend class BodyNode;
   template<class, class> friend class TemplateNodePtr;
   template<class, class> friend class TemplateWeakNodePtr;
+
+  class State
+  {
+  public:
+
+    /// Default constructor
+    State() = default;
+
+    /// Virtual destructor
+    virtual ~State() = default;
+
+    /// Do not copy this class directly, use clone() or copy() instead
+    State(const State& doNotCopy) = delete;
+
+    /// Do not copy this class directly, use clone() or copy() instead
+    State& operator=(const State& doNotCopy) = delete;
+
+    /// Implement this function to allow your State extension to be copied
+    /// safely.
+    virtual std::unique_ptr<State> clone() const = 0;
+
+    ///
+    virtual void copy(const State& anotherState) = 0;
+  };
 
   /// Virtual destructor
   virtual ~Node() = default;
@@ -133,6 +159,9 @@ protected:
 
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;
+
+  /// bool that tracks whether this Node is attached to its BodyNode
+  bool mAmAttached;
 };
 
 class AccessoryNode : public virtual Node
