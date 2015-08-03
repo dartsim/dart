@@ -66,6 +66,7 @@ public:
   {
   public:
 
+    /// Default constructor
     State() = default;
 
     /// Virtual destructor
@@ -100,6 +101,9 @@ public:
   class Properties
   {
   public:
+
+    /// Default constructor
+    Properties() = default;
 
     /// Virtual destructor
     virtual ~Properties() = default;

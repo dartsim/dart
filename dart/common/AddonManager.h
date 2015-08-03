@@ -46,6 +46,34 @@
 namespace dart {
 namespace common {
 
+/// AddonManager is a base class that should be virtually inherited by any class
+/// that wants to be able to manage Addons.
+///
+/// The base AddonManager class is completely agnostic to what kind of Addons it
+/// is given. Addons are stored in a std::map, so access to its Addons happens
+/// on average in log(N) time. Most often, a class that accepts Addons will have
+/// certain Addon types that it will need to access frequently, and it would be
+/// beneficial to have constant-time access to those Addon types. To get
+/// constant-time access to specific Addon types, there are FOUR macros that you
+/// should use in your derived class:
+///
+/// DART_ENABLE_ADDON_SPECIALIZATION() must be declared once in the derived
+/// class's definition, under a 'public:' declaration range.
+///
+/// DART_SPECIALIZE_ADDON_INTERNAL( AddonType ) must be declared once for each
+/// AddonType that you want to specialize. It should be placed in the derived
+/// class's definition, under a 'public:' declaration range.
+///
+/// DART_SPECIALIZE_ADDON_EXTERNAL( AddonType ) must be declared once for each
+/// AddonType that you want to specialize. It should be placed immediately after
+/// the class's definition in the same header file as the derived class, inside
+/// of the same namespace as the derived class. This macro defines a series of
+/// templated functions, so it should go in a header, and not in a source file.
+///
+/// DART_INSTANTIATE_SPECIALIZED_ADDON( AddonType ) must be declared once for
+/// each AddonType that you want to specialize. It should be placed inside the
+/// constructor of the derived class, preferably before anything else is done
+/// inside the body of the constructor.
 class AddonManager
 {
 public:
@@ -119,7 +147,7 @@ public:
   /// an Addon of the same type already exists in this AddonManager, the
   /// existing Addon will be destroyed.
   template <class T>
-  void set(const std::unique_ptr<T>& addon);
+  void set(const T* addon);
 
   /// Use move semantics to place addon into this AddonManager. If an Addon of
   /// the same type already exists in this AddonManager, the existing Addon will

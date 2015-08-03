@@ -53,7 +53,7 @@ AddonManager::MapHolder<MapType>::MapHolder(const MapHolder& otherHolder)
 template <typename MapType>
 AddonManager::MapHolder<MapType>::MapHolder(MapHolder&& otherHolder)
 {
-  *this = otherHolder;
+  *this = std::move(otherHolder);
 }
 
 //==============================================================================
@@ -67,7 +67,7 @@ AddonManager::MapHolder<MapType>::MapHolder(const MapType& otherMap)
 template <typename MapType>
 AddonManager::MapHolder<MapType>::MapHolder(MapType&& otherMap)
 {
-  *this = otherMap;
+  *this = std::move(otherMap);
 }
 
 //==============================================================================
@@ -98,9 +98,16 @@ AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
   typename MapType::iterator receiver = mMap.begin();
   typename MapType::const_iterator sender = otherMap.begin();
 
-  while( mMap.end() != receiver && otherMap.end() != sender)
+  while( otherMap.end() != sender )
   {
-    if( receiver->first == sender->first )
+    if( mMap.end() == receiver )
+    {
+      // If we've reached the end of this MapHolder's map, then we should just
+      // add each entry
+      mMap[sender->first] = sender->second->clone();
+      ++sender;
+    }
+    else if( receiver->first == sender->first )
     {
       // We should copy the incoming object when possible so we can avoid the
       // memory allocation overhead of cloning.
@@ -114,14 +121,21 @@ AddonManager::MapHolder<MapType>& AddonManager::MapHolder<MapType>::operator=(
     }
     else if( receiver->first < sender->first )
     {
-      // Erase this entry in the map, because it does not have an analog in the
+      // Clear this entry in the map, because it does not have an analog in the
       // map that we are copying
-      mMap.erase(receiver++);
+      receiver->second = nullptr;
+      ++receiver;
     }
     else
     {
+      mMap[sender->first] = sender->second->clone();
       ++sender;
     }
+  }
+
+  while( mMap.end() != receiver )
+  {
+    mMap.erase(receiver++);
   }
 
   return *this;
@@ -171,7 +185,7 @@ const T* AddonManager::get() const
 
 //==============================================================================
 template <class T>
-void AddonManager::set(const std::unique_ptr<T>& addon)
+void AddonManager::set(const T* addon)
 {
   mAddonMap[typeid(T)] = addon->clone(this);
 }
@@ -219,15 +233,31 @@ std::unique_ptr<T> AddonManager::release()
 } // namespace dart
 
 //==============================================================================
-#define DART_INSTANTIATE_ADDON( AddonName, it )                                 \
+#define DART_ENABLE_ADDON_SPECIALIZATION()                                                            \
+  public:                                                                                             \
+  template <class T> bool has() const { return AddonManager::has<T>(); }                              \
+  template <class T> T* get() { return AddonManager::get<T>(); }                                      \
+  template <class T> const T* get() const { return AddonManager::get<T>(); }                          \
+  template <class T> void set(const T* addon) { AddonManager::set<T>(addon); }                        \
+  template <class T> void set(std::unique_ptr<T>&& addon) { AddonManager::set<T>(std::move(addon)); } \
+  template <class T> void erase() { AddonManager::erase<T>(); }                                       \
+  template <class T> std::unique_ptr<T> release() { return AddonManager::release<T>(); }
+
+//==============================================================================
+#define DETAIL_DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName, it )              \
   mAddonMap[typeid( AddonName )] = nullptr;                                     \
   it = mAddonMap.find(typeid( AddonName ));
 
 //==============================================================================
-#define DART_SPECIALIZED_ADDON( AddonName, it )                                 \
+#define DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName )                               \
+  DETAIL_DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName, m ## AddonName ## Iterator );
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZE_ADDON_INTERNAL( AddonName, it )                  \
+  private: AddonMap::iterator it ; public:                                      \
                                                                                 \
   inline bool has ## AddonName () const                                         \
-  { return (get< AddonName >() != nullptr); }                                   \
+  { return (get ## AddonName () != nullptr); }                                  \
                                                                                 \
   inline AddonName * get ## AddonName ()                                        \
   { return static_cast< AddonName *>( it ->second.get() ); }                    \
@@ -235,7 +265,7 @@ std::unique_ptr<T> AddonManager::release()
   inline const AddonName* get ## AddonName () const                             \
   { return static_cast< AddonName *>( it ->second.get() ); }                    \
                                                                                 \
-  inline void set ## AddonName (const std::unique_ptr< AddonName >& addon)      \
+  inline void set ## AddonName (const AddonName * addon)                        \
   { it ->second = addon->clone(this); }                                         \
                                                                                 \
   inline void set ## AddonName (std::unique_ptr< AddonName >&& addon)           \
@@ -254,5 +284,19 @@ std::unique_ptr<T> AddonManager::release()
   { std::unique_ptr< AddonName > extraction = std::unique_ptr< AddonName >(     \
           static_cast< AddonName *>(it ->second.release()));                    \
     it ->second = nullptr; return extraction; }
+
+//==============================================================================
+#define DART_SPECIALIZE_ADDON_INTERNAL( AddonName )                             \
+  DETAIL_DART_SPECIALIZE_ADDON_INTERNAL( AddonName, m ## AddonName ## Iterator )
+
+//==============================================================================
+#define DART_SPECIALIZE_ADDON_EXTERNAL( Manager, Addon )                                                          \
+  template <> bool Manager :: has< Addon >() const { return has ## Addon (); }                                    \
+  template <> Addon * Manager :: get< Addon >() { return get ## Addon (); }                                       \
+  template <> const Addon * Manager :: get< Addon >() const { return get ## Addon (); }                           \
+  template <> void Manager :: set< Addon >(const Addon * addon) { set ## Addon (addon); }                         \
+  template <> void Manager :: set< Addon >(std::unique_ptr< Addon >&& addon) { set ## Addon (std::move(addon)); } \
+  template <> void Manager :: erase< Addon >() { erase ## Addon (); }                                             \
+  template <> std::unique_ptr< Addon > Manager :: release< Addon >() { return release ## Addon (); }
 
 #endif // DART_COMMON_DETAIL_ADDONMANAGER_H_

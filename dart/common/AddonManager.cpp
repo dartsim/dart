@@ -36,6 +36,9 @@
 
 #include "dart/common/AddonManager.h"
 
+
+#include <iostream>
+
 namespace dart {
 namespace common {
 
@@ -77,7 +80,9 @@ AddonManager::State AddonManager::getAddonStates() const
   {
     std::unique_ptr<Addon::State> state = addon.second->getState();
     if(state)
+    {
       states[addon.first] = std::move(state);
+    }
   }
 
   return states;
