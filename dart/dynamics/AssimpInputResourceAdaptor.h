@@ -49,7 +49,7 @@ class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 public:
   AssimpInputResourceRetrieverAdaptor(
     const common::ResourceRetrieverPtr& _resourceRetriever);
-  virtual ~AssimpInputResourceRetrieverAdaptor() = default;
+  virtual ~AssimpInputResourceRetrieverAdaptor();
 
   /// \brief Tests for the existence of a file at the given path. 
   /// 
@@ -87,7 +87,7 @@ class AssimpInputResourceAdaptor : public Assimp::IOStream
 {
 public:
   AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
-  virtual ~AssimpInputResourceAdaptor() = default;
+  virtual ~AssimpInputResourceAdaptor();
 
   /// \brief Read from the file
   ///

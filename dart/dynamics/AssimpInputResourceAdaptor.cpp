@@ -14,6 +14,12 @@ AssimpInputResourceRetrieverAdaptor::AssimpInputResourceRetrieverAdaptor(
       const common::ResourceRetrieverPtr& _resourceRetriever)
   : mResourceRetriever(_resourceRetriever)
 {
+  // do nothing
+}
+
+AssimpInputResourceRetrieverAdaptor::~AssimpInputResourceRetrieverAdaptor()
+{
+  // do nothing
 }
 
 bool AssimpInputResourceRetrieverAdaptor::Exists(const char* pFile) const
@@ -60,6 +66,11 @@ AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
   : mResource(_resource)
 {
   assert(_resource);
+}
+
+AssimpInputResourceAdaptor::~AssimpInputResourceAdaptor()
+{
+  // do nothing
 }
 
 size_t AssimpInputResourceAdaptor::Read(
