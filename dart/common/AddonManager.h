@@ -64,11 +64,12 @@ namespace common {
 /// AddonType that you want to specialize. It should be placed in the derived
 /// class's definition, under a 'public:' declaration range.
 ///
-/// DART_SPECIALIZE_ADDON_EXTERNAL( AddonType ) must be declared once for each
-/// AddonType that you want to specialize. It should be placed immediately after
-/// the class's definition in the same header file as the derived class, inside
-/// of the same namespace as the derived class. This macro defines a series of
-/// templated functions, so it should go in a header, and not in a source file.
+/// DART_SPECIALIZE_ADDON_EXTERNAL( Derived, AddonType ) must be declared once
+/// for each AddonType that you want to specialize. It should be placed
+/// immediately after the class's definition in the same header file as the
+/// derived class, inside of the same namespace as the derived class. This macro
+/// defines a series of templated functions, so it should go in a header, and
+/// not in a source file.
 ///
 /// DART_INSTANTIATE_SPECIALIZED_ADDON( AddonType ) must be declared once for
 /// each AddonType that you want to specialize. It should be placed inside the
