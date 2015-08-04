@@ -122,9 +122,7 @@ private:
   common::ResourcePtr mResource;
 };
 
-
 aiFileIO createFileIO(Assimp::IOSystem* adaptor);
-aiFile createFile(Assimp::IOStream* adaptor);
 
 } // namespace dynamics
 } // namespace dart
