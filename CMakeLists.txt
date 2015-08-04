@@ -2,6 +2,7 @@
 # CMake settings
 #===============================================================================
 cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
+cmake_policy(SET CMP0042 NEW)
 
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
