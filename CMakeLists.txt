@@ -519,7 +519,7 @@ endif()
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
 message(STATUS ${PC_CONFIG_OUT})
-configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
+configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
