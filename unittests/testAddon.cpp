@@ -129,18 +129,34 @@ public:
   };
 
   StatefulAddon(AddonManager* mgr)
-    : Addon(mgr, "StatefulAddon") { }
+    : Addon(mgr, "StatefulAddon")
+  {
+    setStatePtr(&mState);
+    setPropertiesPtr(&mProperties);
+  }
 
   StatefulAddon(AddonManager* mgr, const StatefulAddon& other)
     : Addon(mgr, "StatefulAddon"),
-      mState(other.mState), mProperties(other.mProperties) { }
+      mState(other.mState), mProperties(other.mProperties)
+  {
+    setStatePtr(&mState);
+    setPropertiesPtr(&mProperties);
+  }
 
   StatefulAddon(AddonManager* mgr, const T& state)
-    : Addon(mgr, "StatefulAddon"), mState(state) { }
+    : Addon(mgr, "StatefulAddon"), mState(state)
+  {
+    setStatePtr(&mState);
+    setPropertiesPtr(&mProperties);
+  }
 
   StatefulAddon(AddonManager* mgr, const T& state, const T& properties)
     : Addon(mgr, "StatefulAddon"),
-      mState(state), mProperties(properties) { }
+      mState(state), mProperties(properties)
+  {
+    setStatePtr(&mState);
+    setPropertiesPtr(&mProperties);
+  }
 
   std::unique_ptr<Addon> clone(AddonManager* newManager) const override final
   {
@@ -152,19 +168,9 @@ public:
     mState.val = static_cast<State*>(otherState.get())->val;
   }
 
-  std::unique_ptr<Addon::State> getState() const override
-  {
-    return std::unique_ptr<Addon::State>(new State(mState));
-  }
-
   void setProperties(const std::unique_ptr<Addon::Properties>& someProperties) override
   {
     mProperties.val = static_cast<Properties*>(someProperties.get())->val;
-  }
-
-  std::unique_ptr<Addon::Properties> getProperties() const override
-  {
-    return std::unique_ptr<Addon::Properties>(new Properties(mProperties));
   }
 
   void randomize()

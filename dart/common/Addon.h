@@ -62,6 +62,9 @@ public:
   /// stored in AddonManager::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
+  ///
+  /// If your Addon has a State, be sure to call setStatePtr() during
+  /// the construction of your Addon.
   class State
   {
   public:
@@ -98,6 +101,9 @@ public:
   /// stored in AddonManager::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
+  ///
+  /// If your Addon has Properties, be sure to call setPropertiesPtr()
+  /// during the construction of your Addon.
   class Properties
   {
   public:
@@ -133,14 +139,14 @@ public:
 
   /// Get the State of this Addon. By default, this returns a nullptr which
   /// implies that the Addon is stateless.
-  virtual std::unique_ptr<State> getState() const;
+  const State* getState() const;
 
   /// Set the Properties of this Addon. By default, this does nothing.
   virtual void setProperties(const std::unique_ptr<Properties>& someProperties);
 
   /// Get the Properties of this Addon. By default, this returns a nullptr
   /// which implies that the Addon has no properties.
-  virtual std::unique_ptr<Properties> getProperties() const;
+  const Properties* getProperties() const;
 
   /// Get the type of this Addon
   const std::string& getType() const;
@@ -154,12 +160,32 @@ protected:
   // constructors.
   Addon(AddonManager* manager, const std::string& type);
 
+  /// Set the State pointer for this Addon
+  ///
+  /// This should be called during construction of your Addon, if your Addon has
+  /// a State.
+  void setStatePtr(State* ptr = nullptr);
+
+  /// Set the Properties pointer for this Addon
+  ///
+  /// This should be called during construction of your Addon, if your Addon has
+  /// a Properties structure.
+  void setPropertiesPtr(Properties* ptr = nullptr);
+
   /// This function should be overriden if your Addon needs to do any special
   /// handling when its AddonManager gets changed.
   virtual void changeManager(AddonManager* newManager);
 
   /// Type of this Addon
   std::string mType;
+
+private:
+
+  /// Pointer to the State object of this Addon
+  State* mStatePtr;
+
+  /// Pointer to the Properties object of this Addon
+  Properties* mPropertiesPtr;
 };
 
 } // namespace common

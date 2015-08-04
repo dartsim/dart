@@ -55,7 +55,7 @@ void AddonManager::setAddonStates(const State& newStates)
     if( addons->first == states->first )
     {
       Addon* addon = addons->second.get();
-      if(addon)
+      if(addon && states->second)
         addon->setState(states->second);
 
       ++addons;
@@ -78,10 +78,10 @@ AddonManager::State AddonManager::getAddonStates() const
   StateMap states;
   for(const auto& addon : mAddonMap)
   {
-    std::unique_ptr<Addon::State> state = addon.second->getState();
+    const Addon::State* state = addon.second->getState();
     if(state)
     {
-      states[addon.first] = std::move(state);
+      states[addon.first] = state->clone();
     }
   }
 
@@ -124,9 +124,9 @@ AddonManager::Properties AddonManager::getAddonProperties() const
   PropertiesMap properties;
   for(const auto& addon : mAddonMap)
   {
-    std::unique_ptr<Addon::Properties> prop = addon.second->getProperties();
+    const Addon::Properties* prop = addon.second->getProperties();
     if(prop)
-      properties[addon.first] = std::move(prop);
+      properties[addon.first] = prop->clone();
   }
 
   return properties;
@@ -137,19 +137,6 @@ void AddonManager::becomeManager(Addon* addon)
 {
   addon->changeManager(this);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 } // namespace common
 } // namespace dart

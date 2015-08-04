@@ -51,9 +51,9 @@ void Addon::setState(const std::unique_ptr<State>& /*otherState*/)
 }
 
 //==============================================================================
-std::unique_ptr<Addon::State> Addon::getState() const
+const Addon::State* Addon::getState() const
 {
-  return nullptr;
+  return mStatePtr;
 }
 
 //==============================================================================
@@ -63,9 +63,9 @@ void Addon::setProperties(const std::unique_ptr<Properties>& /*someProperties*/)
 }
 
 //==============================================================================
-std::unique_ptr<Addon::Properties> Addon::getProperties() const
+const Addon::Properties* Addon::getProperties() const
 {
-  return nullptr;
+  return mPropertiesPtr;
 }
 
 //==============================================================================
@@ -84,6 +84,21 @@ Addon::Addon(AddonManager* manager, const std::string& type)
           << "outside of an AddonManager!\n";
     assert(false);
   }
+
+  setStatePtr();
+  setPropertiesPtr();
+}
+
+//==============================================================================
+void Addon::setStatePtr(State* ptr)
+{
+  mStatePtr = ptr;
+}
+
+//==============================================================================
+void Addon::setPropertiesPtr(Properties* ptr)
+{
+  mPropertiesPtr = ptr;
 }
 
 //==============================================================================
