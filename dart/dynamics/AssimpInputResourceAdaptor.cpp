@@ -10,6 +10,8 @@ namespace dynamics {
 /*
  * AssimpInputResourceRetrieverWrapper
  */
+
+//==============================================================================
 AssimpInputResourceRetrieverAdaptor::AssimpInputResourceRetrieverAdaptor(
       const common::ResourceRetrieverPtr& _resourceRetriever)
   : mResourceRetriever(_resourceRetriever)
@@ -17,22 +19,26 @@ AssimpInputResourceRetrieverAdaptor::AssimpInputResourceRetrieverAdaptor(
   // do nothing
 }
 
+//==============================================================================
 AssimpInputResourceRetrieverAdaptor::~AssimpInputResourceRetrieverAdaptor()
 {
   // do nothing
 }
 
+//==============================================================================
 bool AssimpInputResourceRetrieverAdaptor::Exists(const char* pFile) const
 {
   return mResourceRetriever->exists(pFile);
 }
 
+//==============================================================================
 char AssimpInputResourceRetrieverAdaptor::getOsSeparator() const
 {
   // URIs always use forward slash as a delimeter.
   return '/';
 }
 
+//==============================================================================
 Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
   const char* pFile, const char* pMode)
 {
@@ -51,6 +57,7 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
     return nullptr;
 }
 
+//==============================================================================
 void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
 {
   if(pFile)
@@ -61,6 +68,8 @@ void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
 /*
  * AssimpInputResourceAdaptor
  */
+
+//==============================================================================
 AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
       const common::ResourcePtr& _resource)
   : mResource(_resource)
@@ -68,17 +77,20 @@ AssimpInputResourceAdaptor::AssimpInputResourceAdaptor(
   assert(_resource);
 }
 
+//==============================================================================
 AssimpInputResourceAdaptor::~AssimpInputResourceAdaptor()
 {
   // do nothing
 }
 
+//==============================================================================
 size_t AssimpInputResourceAdaptor::Read(
   void* pvBuffer, size_t psize, size_t pCount)
 {
   return mResource->read(pvBuffer, psize, pCount);
 }
 
+//==============================================================================
 size_t AssimpInputResourceAdaptor::Write(
   const void* pvBuffer, size_t pSize, size_t pCount)
 {
@@ -87,6 +99,7 @@ size_t AssimpInputResourceAdaptor::Write(
   return 0;
 }
 
+//==============================================================================
 aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
 {
   using common::Resource;
@@ -118,16 +131,19 @@ aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
     return aiReturn_FAILURE;
 }
 
+//==============================================================================
 size_t AssimpInputResourceAdaptor::Tell() const
 {
   return mResource->tell();
 }
 
+//==============================================================================
 size_t AssimpInputResourceAdaptor::FileSize() const
 {
   return mResource->getSize();
 }
 
+//==============================================================================
 void AssimpInputResourceAdaptor::Flush()
 {
   dtwarn << "[AssimpInputResourceAdaptor::Flush] Flush is not implemented."
@@ -140,47 +156,56 @@ void AssimpInputResourceAdaptor::Flush()
  */
 namespace {
 
+//==============================================================================
 inline Assimp::IOSystem *getIOSystem(aiFileIO *_io)
 {
   return reinterpret_cast<Assimp::IOSystem *>(_io->UserData);
 }
 
+//==============================================================================
 inline Assimp::IOStream *getIOStream(aiFile *_file)
 {
   return reinterpret_cast<Assimp::IOStream *>(_file->UserData);
 }
 
+//==============================================================================
 void fileFlushProc(aiFile *_file)
 {
   getIOStream(_file)->Flush();
 }
 
+//==============================================================================
 size_t fileReadProc(aiFile *_file, char *_buffer, size_t _size, size_t _count)
 {
   return getIOStream(_file)->Read(_buffer, _size, _count);
 }
 
+//==============================================================================
 aiReturn fileSeekProc(aiFile *_file, size_t _offset, aiOrigin _origin)
 {
   return getIOStream(_file)->Seek(_offset, _origin);
 }
 
+//==============================================================================
 size_t fileSizeProc(aiFile *_file)
 {
   return getIOStream(_file)->FileSize();
 }
 
+//==============================================================================
 size_t fileTellProc(aiFile *_file)
 {
   return getIOStream(_file)->Tell();
 }
 
+//==============================================================================
 size_t fileWriteProc(
   aiFile *_file, const char *_buffer, size_t _size, size_t _count)
 {
   return getIOStream(_file)->Write(_buffer, _size, _count);
 }
 
+//==============================================================================
 aiFile *fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 {
   Assimp::IOStream* stream = getIOSystem(_io)->Open(_path, _mode);
@@ -198,6 +223,7 @@ aiFile *fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
   return out;
 }
 
+//==============================================================================
 void fileCloseProc(aiFileIO *_io, aiFile *_file)
 {
   getIOSystem(_io)->Close(getIOStream(_file));
@@ -205,6 +231,7 @@ void fileCloseProc(aiFileIO *_io, aiFile *_file)
 
 }
 
+//==============================================================================
 aiFileIO createFileIO(Assimp::IOSystem* _system)
 {
   aiFileIO out;
