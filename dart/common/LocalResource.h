@@ -33,8 +33,10 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_COMMON_LOCALRESOURCE_H_
 #define DART_COMMON_LOCALRESOURCE_H_
+
 #include "dart/common/Resource.h"
 
 namespace dart {
@@ -43,7 +45,7 @@ namespace common {
 class LocalResource : public virtual Resource
 {
 public:
-  LocalResource(const std::string& _path);
+  explicit LocalResource(const std::string& _path);
   virtual ~LocalResource();
 
   LocalResource(const LocalResource& _other) = delete;
@@ -62,7 +64,7 @@ public:
   bool seek(ptrdiff_t _origin, SeekType _mode) override;
 
   // Documentation inherited.
-  size_t read(void *_buffer, size_t _size, size_t _count) override;
+  size_t read(void* _buffer, size_t _size, size_t _count) override;
 
 private:
   std::FILE* mFile;
@@ -71,4 +73,4 @@ private:
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#endif // ifndef DART_COMMON_LOCALRESOURCE_H_

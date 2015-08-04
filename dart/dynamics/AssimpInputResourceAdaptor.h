@@ -33,8 +33,10 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
 #define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
+
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
@@ -47,7 +49,7 @@ namespace dynamics {
 class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
 {
 public:
-  AssimpInputResourceRetrieverAdaptor(
+  explicit AssimpInputResourceRetrieverAdaptor(
     const common::ResourceRetrieverPtr& _resourceRetriever);
   virtual ~AssimpInputResourceRetrieverAdaptor();
 
@@ -86,7 +88,7 @@ private:
 class AssimpInputResourceAdaptor : public Assimp::IOStream
 {
 public:
-  AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
+  explicit AssimpInputResourceAdaptor(const common::ResourcePtr& _resource);
   virtual ~AssimpInputResourceAdaptor();
 
   /// \brief Read from the file

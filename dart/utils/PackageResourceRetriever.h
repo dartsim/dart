@@ -33,8 +33,10 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_H_
 #define DART_UTILS_PACKAGERESOURCERETRIEVER_H_
+
 #include <unordered_map>
 #include <vector>
 #include "dart/common/ResourceRetriever.h"
@@ -52,7 +54,7 @@ class PackageResourceRetriever : public virtual common::ResourceRetriever
 public:
   /// Construct a PackageResourceRetriever that uses the specified \a
   /// _localRetriever to load resolved URIs.
-  PackageResourceRetriever(
+  explicit PackageResourceRetriever(
     const common::ResourceRetrieverPtr& _localRetriever = nullptr);
 
   virtual ~PackageResourceRetriever() = default;

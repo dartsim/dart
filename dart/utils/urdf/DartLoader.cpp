@@ -25,25 +25,14 @@
 
 using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 
-static std::string getBasePath(const std::string& _uri)
-{
-  const size_t index = _uri.find_last_of('/');
-  if (index != std::string::npos)
-    return _uri.substr(0, index);
-  else
-    return "";
-}
-
 namespace dart {
 namespace utils {
 
 DartLoader::DartLoader()
-  : mLocalRetriever(new common::LocalResourceRetriever)
-  , mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever))
-  , mRetriever(new utils::SchemaResourceRetriever)
+  : mLocalRetriever(new common::LocalResourceRetriever),
+    mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever)),
+    mRetriever(new utils::SchemaResourceRetriever)
 {
-  using namespace std::placeholders;
-
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
 }

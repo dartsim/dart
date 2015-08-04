@@ -33,6 +33,7 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_COMMON_RESOURCERETRIEVER_H_
 #define DART_COMMON_RESOURCERETRIEVER_H_
 
@@ -45,7 +46,8 @@ namespace common {
 
 /// ResourceRetriever provides methods for testing for the existance of and
 /// accessing the content of a resource specified by URI.
-struct ResourceRetriever {
+class ResourceRetriever {
+public:
   virtual ~ResourceRetriever() = default;
 
   /// \brief Return whether the resource specified by a URI exists.
@@ -55,9 +57,9 @@ struct ResourceRetriever {
   virtual ResourcePtr retrieve(const std::string& _uri) = 0;
 };
 
-typedef std::shared_ptr<ResourceRetriever> ResourceRetrieverPtr;
+using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;
 
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_UTILS_RESOURCERETRIEVER_H_
+#endif // ifndef DART_COMMON_RESOURCERETRIEVER_H_

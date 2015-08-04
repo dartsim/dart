@@ -33,8 +33,10 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
 #define DART_COMMON_LOCALRESOURCERETRIEVER_H_
+
 #include "dart/common/ResourceRetriever.h"
 
 namespace dart {
@@ -54,7 +56,7 @@ public:
   ResourcePtr retrieve(const std::string& _uri) override;
 };
 
-typedef std::shared_ptr<LocalResourceRetriever> LocalResourceRetrieverPtr;
+using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 
 } // namespace common
 } // namespace dart

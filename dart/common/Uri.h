@@ -33,6 +33,7 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_COMMON_URI_H_
 #define DART_COMMON_URI_H_
 
@@ -135,4 +136,4 @@ private:
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_UTILS_URI_H_
+#endif // ifndef DART_COMMON_URI_H_

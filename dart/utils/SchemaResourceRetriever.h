@@ -33,8 +33,10 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef DART_UTILS_SCHEMARESOURCERETRIEVER_H_
 #define DART_UTILS_SCHEMARESOURCERETRIEVER_H_
+
 #include <unordered_map>
 #include <vector>
 #include "dart/common/ResourceRetriever.h"
