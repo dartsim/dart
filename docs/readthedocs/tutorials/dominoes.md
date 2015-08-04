@@ -534,3 +534,16 @@ mManipulator->setForces(mForces);
 ```
 
 **Now you're ready to try out the full dominoes app!**
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/dominoes/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+
+<div class="fb-comments" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/dominoes/" data-numposts="5" data-width="100%"></div>

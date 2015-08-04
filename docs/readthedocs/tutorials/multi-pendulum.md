@@ -386,3 +386,16 @@ Currently DART does not use smart pointers for dynamic constraints, so they
 need to be explicitly deleted. This may be revised in a later version of DART.
 
 **Now you are ready to run the demo!**
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/multi-pendulum/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+
+<div class="fb-comments" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/multi-pendulum/" data-numposts="5" data-width="100%"></div>

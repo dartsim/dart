@@ -500,3 +500,16 @@ This Lesson concludes the entire Biped tutorial. You should see a biped
 standing stably on the skateboard. With moderate
 acceleration/deceleration on the skateboard, the biped is able to
 maintain balance and hold the one-foot stance pose.
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.4";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<div class="fb-like" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/biped/" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+
+<div class="fb-comments" data-href="http://dart.readthedocs.org/en/release-5.1/tutorials/biped/" data-numposts="5" data-width="100%"></div>
