@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SCHEMARESOURCERETRIEVER_H_
-#define DART_UTILS_SCHEMARESOURCERETRIEVER_H_
+#ifndef DART_UTILS_COMPOSITERESOURCERETRIEVER_H_
+#define DART_UTILS_COMPOSITERESOURCERETRIEVER_H_
 
 #include <unordered_map>
 #include <vector>
@@ -44,14 +44,14 @@
 namespace dart {
 namespace utils {
 
-/// SchemaResourceRetriever allows multiple \ref ResourceRetriever to be used
-/// interchangably by: (1) associating each \ref ResourceRetriever with a
+/// CompositeResourceRetriever allows multiple \ref ResourceRetriever to be
+/// used interchangably by: (1) associating each \ref ResourceRetriever with a
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
-class SchemaResourceRetriever : public virtual common::ResourceRetriever
+class CompositeResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
-  virtual ~SchemaResourceRetriever() = default;
+  virtual ~CompositeResourceRetriever() = default;
 
   /// \brief Add a default \ref ResourceRetriever for all URIs.
   /// This \ref ResourceRetriever will be called after all schema-specific
@@ -86,9 +86,9 @@ private:
   std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
 
-typedef std::shared_ptr<SchemaResourceRetriever> SchemaResourceRetrieverPtr;
+typedef std::shared_ptr<CompositeResourceRetriever> CompositeResourceRetrieverPtr;
 
 } // namespace utils
 } // namespace dart
 
-#endif // ifndef DART_UTILS_SCHEMARESOURCERETRIEVER_H_
+#endif // ifndef DART_UTILS_COMPOSITERESOURCERETRIEVER_H_

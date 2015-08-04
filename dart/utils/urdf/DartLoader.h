@@ -11,15 +11,15 @@
 #include <string>
 
 #include "dart/common/Deprecated.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
+#include "dart/common/Uri.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
-#include "dart/common/Uri.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/LocalResourceRetriever.h"
+#include "dart/utils/CompositeResourceRetriever.h"
 #include "dart/utils/PackageResourceRetriever.h"
-#include "dart/utils/SchemaResourceRetriever.h"
 
 namespace urdf
 {
@@ -147,7 +147,7 @@ private:
 
     common::LocalResourceRetrieverPtr mLocalRetriever;
     utils::PackageResourceRetrieverPtr mPackageRetriever;
-    utils::SchemaResourceRetrieverPtr mRetriever;
+    utils::CompositeResourceRetrieverPtr mRetriever;
 };
 
 }

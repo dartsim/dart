@@ -37,33 +37,33 @@
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/common/Uri.h"
-#include "dart/utils/SchemaResourceRetriever.h"
+#include "dart/utils/CompositeResourceRetriever.h"
 
 namespace dart {
 namespace utils {
 
 //==============================================================================
-void SchemaResourceRetriever::addDefaultRetriever(
+void CompositeResourceRetriever::addDefaultRetriever(
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   mDefaultResourceRetrievers.push_back(_resourceRetriever);
 }
 
 //==============================================================================
-bool SchemaResourceRetriever::addSchemaRetriever(
+bool CompositeResourceRetriever::addSchemaRetriever(
   const std::string& _schema,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(!_resourceRetriever)
   {
-    dterr << "[SchemaResourceRetriever::addSchemaRetriever] Recieved nullptr"
+    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Recieved nullptr"
              " ResourceRetriever; skipping this entry.\n"; 
     return false;
   }
 
   if(_schema.find("://") != std::string::npos)
   {
-    dterr << "[SchemaResourceRetriever::addSchemaRetriever] Schema '"
+    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Schema '"
           << _schema << "' contains '://'. Did you mistakenly include the"
              " '://' in the input of this function?\n";
     return false;
@@ -74,7 +74,7 @@ bool SchemaResourceRetriever::addSchemaRetriever(
 }
 
 //==============================================================================
-bool SchemaResourceRetriever::exists(const std::string& _uri)
+bool CompositeResourceRetriever::exists(const std::string& _uri)
 {
   for(const common::ResourceRetrieverPtr& resourceRetriever
       : getRetrievers(_uri))
@@ -86,7 +86,8 @@ bool SchemaResourceRetriever::exists(const std::string& _uri)
 }
 
 //==============================================================================
-common::ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr CompositeResourceRetriever::retrieve(
+  const std::string& _uri)
 {
   const std::vector<common::ResourceRetrieverPtr> &retrievers
     = getRetrievers(_uri);
@@ -96,7 +97,7 @@ common::ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
       return resource;
   }
 
-  dtwarn << "[SchemaResourceRetriever::retrieve] All ResourceRetrievers"
+  dtwarn << "[CompositeResourceRetriever::retrieve] All ResourceRetrievers"
             " registered for this schema failed to retrieve the URI '"
             << _uri << "' (tried " << retrievers.size() << ").\n";
 
@@ -105,7 +106,7 @@ common::ResourcePtr SchemaResourceRetriever::retrieve(const std::string& _uri)
 
 //==============================================================================
 std::vector<common::ResourceRetrieverPtr>
-  SchemaResourceRetriever::getRetrievers(const std::string& _uri)
+  CompositeResourceRetriever::getRetrievers(const std::string& _uri)
 {
   const std::string schema = getSchema(_uri);
 
@@ -125,7 +126,7 @@ std::vector<common::ResourceRetrieverPtr>
 
   if(retrievers.empty())
   {
-    dtwarn << "[SchemaResourceRetriever::retrieve] There are no resource"
+    dtwarn << "[CompositeResourceRetriever::retrieve] There are no resource"
               " retrievers registered for the schema '" << schema << "'"
               " that is necessary to retrieve URI '" << _uri << "'.\n";
   }
@@ -134,12 +135,12 @@ std::vector<common::ResourceRetrieverPtr>
 }
 
 //==============================================================================
-std::string SchemaResourceRetriever::getSchema(const std::string& _uri)
+std::string CompositeResourceRetriever::getSchema(const std::string& _uri)
 {
   common::Uri uri;
   if(!uri.fromString(_uri))
   {
-    dtwarn << "[SchemaResourceRetriever::retrieve] Failed parsing URI:"
+    dtwarn << "[CompositeResourceRetriever::retrieve] Failed parsing URI:"
            << _uri << "\n";
     return "";
   }

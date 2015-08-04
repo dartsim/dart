@@ -31,7 +31,7 @@ namespace utils {
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),
     mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever)),
-    mRetriever(new utils::SchemaResourceRetriever)
+    mRetriever(new utils::CompositeResourceRetriever)
 {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);

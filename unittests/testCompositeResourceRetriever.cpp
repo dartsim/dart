@@ -35,25 +35,25 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/utils/SchemaResourceRetriever.h"
+#include "dart/utils/CompositeResourceRetriever.h"
 #include "TestHelpers.h"
 
 using dart::common::Resource;
 using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
-using dart::utils::SchemaResourceRetriever;
+using dart::utils::CompositeResourceRetriever;
 
-TEST(SchemaResourceRetriever, exists_NothingRegistered_ReturnsFalse)
+TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
   EXPECT_FALSE(retriever.exists("package://test/foo"));
 }
 
-TEST(SchemaResourceRetriever, exists_AllRetrieversFail_ReturnsFalse)
+TEST(CompositeResourceRetriever, exists_AllRetrieversFail_ReturnsFalse)
 {
   auto retriever1 = std::make_shared<AbsentResourceRetriever>();
   auto retriever2 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
@@ -69,12 +69,12 @@ TEST(SchemaResourceRetriever, exists_AllRetrieversFail_ReturnsFalse)
   EXPECT_EQ("package://test/foo", retriever2->mExists.front());
 }
 
-TEST(SchemaResourceRetriever, exists_SchemaResourceRetrieverSucceeds_ReturnsTrue)
+TEST(CompositeResourceRetriever, exists_CompositeResourceRetrieverSucceeds_ReturnsTrue)
 {
   auto retriever1 = std::make_shared<PresentResourceRetriever>();
   auto retriever2 = std::make_shared<AbsentResourceRetriever>();
   auto retriever3 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever2));
@@ -92,12 +92,12 @@ TEST(SchemaResourceRetriever, exists_SchemaResourceRetrieverSucceeds_ReturnsTrue
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
 
-TEST(SchemaResourceRetriever, exists_DefaultResourceRetrieverSucceeds_ReturnsTrue)
+TEST(CompositeResourceRetriever, exists_DefaultResourceRetrieverSucceeds_ReturnsTrue)
 {
   auto retriever1 = std::make_shared<AbsentResourceRetriever>();
   auto retriever2 = std::make_shared<PresentResourceRetriever>();
   auto retriever3 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
@@ -116,17 +116,17 @@ TEST(SchemaResourceRetriever, exists_DefaultResourceRetrieverSucceeds_ReturnsTru
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
 
-TEST(SchemaResourceRetriever, retrieve_NothingRegistered_ReturnsNull)
+TEST(CompositeResourceRetriever, retrieve_NothingRegistered_ReturnsNull)
 {
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
   EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
 }
 
-TEST(SchemaResourceRetriever, retrieve_AllRetrieversFail_ReturnsNull)
+TEST(CompositeResourceRetriever, retrieve_AllRetrieversFail_ReturnsNull)
 {
   auto retriever1 = std::make_shared<AbsentResourceRetriever>();
   auto retriever2 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
@@ -142,12 +142,12 @@ TEST(SchemaResourceRetriever, retrieve_AllRetrieversFail_ReturnsNull)
   EXPECT_EQ("package://test/foo", retriever2->mRetrieve.front());
 }
 
-TEST(SchemaResourceRetriever, retrieve_SchemaResourceRetrieverSucceeds_ReturnsNonNull)
+TEST(CompositeResourceRetriever, retrieve_CompositeResourceRetrieverSucceeds_ReturnsNonNull)
 {
   auto retriever1 = std::make_shared<PresentResourceRetriever>();
   auto retriever2 = std::make_shared<AbsentResourceRetriever>();
   auto retriever3 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever2));
@@ -165,12 +165,12 @@ TEST(SchemaResourceRetriever, retrieve_SchemaResourceRetrieverSucceeds_ReturnsNo
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
 
-TEST(SchemaResourceRetriever, retrieve_DefaultResourceRetrieverSucceeds_ReturnsNonNull)
+TEST(CompositeResourceRetriever, retrieve_DefaultResourceRetrieverSucceeds_ReturnsNonNull)
 {
   auto retriever1 = std::make_shared<AbsentResourceRetriever>();
   auto retriever2 = std::make_shared<PresentResourceRetriever>();
   auto retriever3 = std::make_shared<AbsentResourceRetriever>();
-  SchemaResourceRetriever retriever;
+  CompositeResourceRetriever retriever;
 
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
