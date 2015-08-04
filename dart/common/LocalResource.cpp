@@ -179,7 +179,7 @@ size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
   if (std::ferror(mFile)) 
   {
     dtwarn << "[LocalResource::read] Failed reading file: "
-           << std::stderror(errno) << "\n";
+           << std::strerror(errno) << "\n";
   }
   return result;
 }

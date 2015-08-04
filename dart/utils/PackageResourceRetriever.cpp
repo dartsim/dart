@@ -126,15 +126,15 @@ bool PackageResourceRetriever::resolvePackageUri(
   const std::string& _uri, std::string& _packageName,
   std::string& _relativePath)
 {
-  Uri uri;
+  common::Uri uri;
   if(!uri.fromString(_uri))
   {
-    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed parsing
+    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed parsing"
               " URI '" << _uri << "'.\n";
     return false;
   }
 
-  if(uri.mSchema.get_or_default("file") != "package")
+  if(uri.mScheme.get_value_or("file") != "package")
     return false;
 
   if(!uri.mAuthority)
@@ -151,7 +151,7 @@ bool PackageResourceRetriever::resolvePackageUri(
               " relative path from URI '" << _uri << "'.\n";
     return false;
   }
-  _relativePath = uri.mPath.get_or_default("");
+  _relativePath = uri.mPath.get_value_or("");
 
   return true;
 }
