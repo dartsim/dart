@@ -3,6 +3,7 @@
 #include <iostream>
 #include "dart/common/Console.h"
 #include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Uri.h"
 #include "dart/utils/PackageResourceRetriever.h"
 
 namespace dart {
@@ -72,8 +73,8 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
     return it->second;
   else
   {
-    dtwarn << "[PackageResourceResolver::retrieve] Unable to resolve path to"
-              " package '" << _packageName << "'. Did you call"
+    dtwarn << "[PackageResourceResolver::getPackagePaths] Unable to resolve"
+              "path to package '" << _packageName << "'. Did you call"
               " addPackageDirectory(~) for this package name?\n";
     return empty_placeholder;
   }
@@ -83,25 +84,33 @@ bool PackageResourceRetriever::resolvePackageUri(
   const std::string& _uri, std::string& _packageName,
   std::string& _relativePath)
 {
-  static const std::string schema = "package://";
-
-  if (_uri.find(schema) != 0)
-    return false;
-
-  // Split the URI into package and relative path components.
-  const size_t packageIndex = schema.size();
-  const size_t pathIndex = _uri.find_first_of('/', packageIndex);
-
-  if(pathIndex == std::string::npos)
+  Uri uri;
+  if(!uri.fromString(_uri))
   {
-    dtwarn << "[PackageResourceRetriever::retrieve] Unable to find package"
-              " name in URI '" << _uri << "'.\n";
+    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed parsing
+              " URI '" << _uri << "'.\n";
     return false;
   }
 
-  assert(pathIndex >= packageIndex);
-  _packageName = _uri.substr(packageIndex, pathIndex - packageIndex);
-  _relativePath = _uri.substr(pathIndex);
+  if(uri.mSchema.get_or_default("file") != "package")
+    return false;
+
+  if(!uri.mAuthority)
+  {
+    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+              " package name from URI '" << _uri << "'.\n";
+    return false;
+  }
+  _packageName = *uri.mAuthority;
+
+  if(!uri.mPath)
+  {
+    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
+              " relative path from URI '" << _uri << "'.\n";
+    return false;
+  }
+  _relativePath = uri.mPath.get_or_default("");
+
   return true;
 }
 
