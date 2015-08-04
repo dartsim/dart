@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_ADDON_H_
 #define DART_COMMON_ADDON_H_
 
-#include <memory>
+#include "dart/common/Extensible.h"
 
 namespace dart {
 namespace common {
@@ -65,29 +65,7 @@ public:
   ///
   /// If your Addon has a State, be sure to call setStatePtr() during
   /// the construction of your Addon.
-  class State
-  {
-  public:
-
-    /// Default constructor
-    State() = default;
-
-    /// Virtual destructor
-    virtual ~State() = default;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    State(const State& doNotCopy) = delete;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    State& operator=(const State& doNotCopy) = delete;
-
-    /// Implement this function to allow your State extension to be copied
-    /// safely.
-    virtual std::unique_ptr<State> clone() const = 0;
-
-    /// Copy the contents of anotherState into this one
-    virtual void copy(const State& anotherState) = 0;
-  };
+  class State : public Extensible<State> { };
 
   /// If your Addon has a Properties class, then it should inherit this
   /// Addon::Properties class. This allows us to safely serialize, store, and
@@ -104,29 +82,7 @@ public:
   ///
   /// If your Addon has Properties, be sure to call setPropertiesPtr()
   /// during the construction of your Addon.
-  class Properties
-  {
-  public:
-
-    /// Default constructor
-    Properties() = default;
-
-    /// Virtual destructor
-    virtual ~Properties() = default;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    Properties(const Properties& doNotCopy) = delete;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    Properties& operator=(const Properties& doNotCopy) = delete;
-
-    /// Implement this function to allow your State extension to be copied
-    /// safely.
-    virtual std::unique_ptr<Properties> clone() const = 0;
-
-    /// Copy the contents of anotherState into this one
-    virtual void copy(const Properties& otherProperties) = 0;
-  };
+  class Properties : public Extensible<Properties> { };
 
   /// Virtual destructor
   virtual ~Addon() = default;
