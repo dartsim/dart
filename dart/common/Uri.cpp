@@ -78,75 +78,90 @@ namespace common {
 /*
  * UriComponent
  */
+
+//==============================================================================
 UriComponent::UriComponent()
 {
   reset();
 }
 
+//==============================================================================
 UriComponent::UriComponent(reference_const_type _value)
 {
   assign(_value);  
 }
 
+//==============================================================================
 UriComponent::operator bool() const
 {
   return mExists;
 }
 
+//==============================================================================
 bool UriComponent::operator !() const
 {
   return !mExists;
 }
 
+//==============================================================================
 auto UriComponent::operator =(reference_const_type _value) -> UriComponent&
 {
   assign(_value);
   return *this;
 }
 
+//==============================================================================
 auto UriComponent::operator*() -> reference_type
 {
   return get();
 }
 
+//==============================================================================
 auto UriComponent::operator*() const -> reference_const_type
 {
   return get();
 }
 
+//==============================================================================
 auto UriComponent::operator->() -> pointer_type
 {
   return &get();
 }
 
+//==============================================================================
 auto UriComponent::operator->() const -> pointer_const_type
 {
   return &get();
 }
 
+//==============================================================================
 void UriComponent::assign(reference_const_type _value)
 {
   mExists = true;
   mValue = _value;
 }
 
+//==============================================================================
 void UriComponent::reset()
 {
   mExists = false;
 }
 
+//==============================================================================
 auto UriComponent::get() -> reference_type
 {
   assert(mExists);
   return mValue;
 }
 
+//==============================================================================
 auto UriComponent::get() const -> reference_const_type
 {
   assert(mExists);
   return mValue;
 }
 
+//==============================================================================
 auto UriComponent::get_value_or(reference_type _default) -> reference_type
 {
   if(mExists)
@@ -155,7 +170,9 @@ auto UriComponent::get_value_or(reference_type _default) -> reference_type
     return _default;
 }
 
-auto UriComponent::get_value_or(reference_const_type _default) const -> reference_const_type
+//==============================================================================
+auto UriComponent::get_value_or(reference_const_type _default) const
+  -> reference_const_type
 {
   if(mExists)
     return mValue;
@@ -167,6 +184,8 @@ auto UriComponent::get_value_or(reference_const_type _default) const -> referenc
 /*
  * Uri
  */
+
+//==============================================================================
 void Uri::clear()
 {
   mScheme.reset();
@@ -176,7 +195,9 @@ void Uri::clear()
   mFragment.reset();
 }
 
-bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative, bool _strict)
+//==============================================================================
+bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative,
+                          bool _strict)
 {
   Uri relativeUri;
   if(!relativeUri.fromString(_relative))
@@ -185,6 +206,7 @@ bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative, bool _
   return fromRelativeUri(_base, relativeUri, _strict);
 }
 
+//==============================================================================
 bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
 {
   assert(_base.mPath && "The path component is always defined.");
@@ -240,6 +262,7 @@ bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
   return true;
 }
 
+//==============================================================================
 bool Uri::fromString(const std::string& _input)
 {
   // This is regex is from Appendix B of RFC 3986.
@@ -286,6 +309,7 @@ bool Uri::fromString(const std::string& _input)
   return true;
 }
 
+//==============================================================================
 std::string Uri::toString() const
 {
   // This function implements the pseudo-code from Section 5.3 of RFC 3986.
@@ -308,6 +332,7 @@ std::string Uri::toString() const
   return output.str();
 }
 
+//==============================================================================
 bool Uri::fromStringOrPath(const std::string& _input)
 {
   if (!fromString(_input))
@@ -325,6 +350,7 @@ bool Uri::fromStringOrPath(const std::string& _input)
   return true;
 }
 
+//==============================================================================
 std::string Uri::getUri(const std::string& _input)
 {
   Uri uri;
@@ -334,6 +360,7 @@ std::string Uri::getUri(const std::string& _input)
     return "";
 }
 
+//==============================================================================
 std::string Uri::getRelativeUri(
   const std::string& _base, const std::string& _relative, bool _strict)
 {
@@ -364,6 +391,7 @@ std::string Uri::getRelativeUri(
   return mergedUri.toString();
 }
 
+//==============================================================================
 std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
 {
   assert(_base.mPath && "The path component is always defined.");
@@ -382,6 +410,7 @@ std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
   }
 }
 
+//==============================================================================
 std::string Uri::removeDotSegments(const std::string& _path)
 {
   // 1.  The input buffer is initialized with the now-appended path
