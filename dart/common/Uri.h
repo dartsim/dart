@@ -39,7 +39,8 @@
 namespace dart {
 namespace common {
 
-class UriComponent {
+class UriComponent final
+{
 public:
   using value_type = std::string;
   using reference_type = value_type&;
@@ -77,7 +78,8 @@ private:
 };
 
 
-class Uri {
+class Uri final
+{
 public:
   /// Scheme, e.g. 'http', 'file', 'package'
   UriComponent mScheme;
