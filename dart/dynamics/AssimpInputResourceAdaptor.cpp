@@ -82,8 +82,8 @@ size_t AssimpInputResourceAdaptor::Read(
 size_t AssimpInputResourceAdaptor::Write(
   const void* pvBuffer, size_t pSize, size_t pCount)
 {
-  dterr << "[AssimpInputResourceAdaptor::Write] Write is not implemented. This"
-           " is a read-only stream.\n";
+  dtwarn << "[AssimpInputResourceAdaptor::Write] Write is not implemented."
+            " This is a read-only stream.\n";
   return 0;
 }
 
@@ -107,8 +107,8 @@ aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
     break;
 
   default:
-    dterr << "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
-             " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n";
+    dtwarn << "[AssimpInputResourceAdaptor::Seek] Invalid origin. Expected"
+              " aiOrigin_CUR, aiOrigin_END, or aiOrigin_SET.\n";
     return aiReturn_FAILURE;
   }
 
@@ -130,8 +130,8 @@ size_t AssimpInputResourceAdaptor::FileSize() const
 
 void AssimpInputResourceAdaptor::Flush()
 {
-  dterr << "[AssimpInputResourceAdaptor::Flush] Flush is not implemented. This"
-           " is a read-only stream.\n";
+  dtwarn << "[AssimpInputResourceAdaptor::Flush] Flush is not implemented."
+            " This is a read-only stream.\n";
 }
 
 
