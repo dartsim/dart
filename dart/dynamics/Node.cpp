@@ -141,6 +141,12 @@ void Node::attach()
 
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
 
+  if(mBodyNode->mNodeMap.end() == it)
+  {
+    mBodyNode->mNodeMap[typeid(*this)] = std::vector<NodeCleanerPtr>();
+    it = mBodyNode->mNodeMap.find(typeid(*this));
+  }
+
   std::vector<NodeCleanerPtr>& cleaners = it->second;
 
   NodeCleanerPtr cleaner = generateCleaner();
