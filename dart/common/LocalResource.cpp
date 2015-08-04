@@ -11,8 +11,9 @@ LocalResource::LocalResource(const std::string& _path)
 {
   if(!mFile)
   {
-    dtwarn << "[LocalResource::constructor] Failed opening file '" << _path
-          << "' for reading: " << std::strerror(errno) << "\n";
+    dtwarn << "[LocalResource::constructor] Failed opening file '"
+           << _path << "' for reading: "
+           << std::strerror(errno) << "\n";
   }
 }
 
@@ -23,7 +24,8 @@ LocalResource::~LocalResource()
 
   if (std::fclose(mFile) == EOF)
   {
-    dtwarn << "[LocalResource::destructor] Failed closing file.\n";
+    dtwarn << "[LocalResource::destructor] Failed closing file: "
+           << std::strerror(errno) << "\n";
   }
 }
 
@@ -41,17 +43,18 @@ size_t LocalResource::getSize()
   if(offset == -1L)
   {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-             " getting current offset: " << std::strerror(errno) << "\n";
+              " getting current offset: "
+           << std::strerror(errno) << "\n";
     return 0;
   }
 
   // The SEEK_END option is not required by the C standard. However, it is
   // required by POSIX.
-  // TODO: Does this work on Windows?
   if(std::fseek(mFile, 0, SEEK_END) || std::ferror(mFile))
   {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-             " seeking to the end of the file.\n";
+              " seeking to the end of the file: "
+           << std::strerror(errno) << "\n";
     return 0;
   }
 
@@ -59,14 +62,16 @@ size_t LocalResource::getSize()
   if(size == -1L)
   {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-             " getting end of file offset: " << std::strerror(errno) << "\n";
+              " getting end of file offset: "
+           << std::strerror(errno) << "\n";
     return 0;
   }
 
   if(std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile))
   {
     dtwarn << "[LocalResource::getSize] Unable to compute file size: Failed"
-             " seeking to the current position.\n";
+              " restoring offset: "
+           << std::strerror(errno) << "\n";
     return 0;
   }
 
@@ -79,10 +84,10 @@ size_t LocalResource::tell()
     return 0;
   
   const long offset = std::ftell(mFile);
-  if (offset == -1L)
+  if(offset == -1L)
   {
-    dtwarn << "[LocalResource::tell] Failed"
-             " seeking to the current position.\n";
+    dtwarn << "[LocalResource::tell] Failed getting current offset: "
+           << std::strerror(errno) << "\n";
   }
 
   // We return -1 to match the beahvior of DefaultIoStream in Assimp.
@@ -107,8 +112,8 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
     break;
 
   default:
-    dtwarn << "[LocalResource::Seek] Invalid origin. Expected"
-             " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n";
+    dtwarn << "[LocalResource::seek] Invalid origin. Expected"
+              " SEEKTYPE_CUR, SEEKTYPE_END, or SEEKTYPE_SET.\n";
     return false;
   }
 
@@ -116,7 +121,8 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
     return true;
   else
   {
-    dtwarn << "[LocalResource::seek] Seeking failed.\n";
+    dtwarn << "[LocalResource::seek] Failed seeking: "
+           << std::strerror(errno) << "\n";
     return false;
   }
 }
@@ -129,7 +135,8 @@ size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
   const size_t result = std::fread(_buffer, _size, _count, mFile);
   if (std::ferror(mFile)) 
   {
-    dtwarn << "[LocalResource::tell] Failed reading file.\n";
+    dtwarn << "[LocalResource::read] Failed reading file: "
+           << std::stderror(errno) << "\n";
   }
   return result;
 }
