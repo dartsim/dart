@@ -79,55 +79,11 @@ class AddonManager
 {
 public:
 
-  /// MapHolder is a templated wrapper class that is used to allow maps of
-  /// Addon::State and Addon::Properties to be handled in a semantically
-  /// palatable way.
-  template <typename MapType>
-  class MapHolder final
-  {
-  public:
-
-    /// Default constructor
-    MapHolder() = default;
-
-    /// Copy constructor
-    MapHolder(const MapHolder& otherStates);
-
-    /// Move constructor
-    MapHolder(MapHolder&& otherStates);
-
-    /// Map-based constructor
-    MapHolder(const MapType& otherMap);
-
-    /// Map-based move constructor
-    MapHolder(MapType&& otherMap);
-
-    /// Assignment operator
-    MapHolder& operator=(const MapHolder& otherStates);
-
-    /// Move assignment operator
-    MapHolder& operator=(MapHolder&& otherStates);
-
-    /// Map-based assignment operator
-    MapHolder& operator=(const MapType& otherMap);
-
-    /// Map-based move assignment operator
-    MapHolder& operator=(MapType&& otherMap);
-
-    /// Get the map of Addon::States
-    const MapType& getMap() const;
-
-  private:
-
-    /// A map containing the collection of States for the Addon
-    MapType mMap;
-  };
-
   using StateMap = std::map< std::type_index, std::unique_ptr<Addon::State> >;
-  using State = MapHolder<StateMap>;
+  using State = ExtensibleMapHolder<StateMap>;
 
   using PropertiesMap = std::map< std::type_index, std::unique_ptr<Addon::Properties> >;
-  using Properties = MapHolder<PropertiesMap>;
+  using Properties = ExtensibleMapHolder<PropertiesMap>;
 
   /// Virtual destructor
   virtual ~AddonManager() = default;

@@ -66,6 +66,30 @@ Node* NodeCleaner::getNode() const
 }
 
 //==============================================================================
+void Node::setNodeState(const std::unique_ptr<State>& /*otherState*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+const Node::State* Node::getNodeState() const
+{
+  return mNodeStatePtr;
+}
+
+//==============================================================================
+void Node::setNodeProperties(const std::unique_ptr<Properties>& properties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+const Node::Properties* Node::getNodeProperties() const
+{
+  return mNodePropertiesPtr;
+}
+
+//==============================================================================
 BodyNodePtr Node::getBodyNodePtr()
 {
   return mBodyNode;
@@ -113,6 +137,9 @@ Node::Node(ConstructNode_t, BodyNode* _bn)
     REPORT_INVALID_NODE(Node);
     return;
   }
+
+  setNodeStatePtr();
+  setNodePropertiesPtr();
 }
 
 //==============================================================================
@@ -121,7 +148,8 @@ Node::Node(ConstructBodyNode_t)
     mAmAttached(true),
     mIndexInBodyNode(INVALID_INDEX)
 {
-  // BodyNodes do not get "attached" to themselves, so we do nothing here
+  setNodeStatePtr();
+  setNodePropertiesPtr();
 }
 
 //==============================================================================
@@ -130,6 +158,18 @@ Node::Node(ConstructAbstract_t)
   dterr << "[Node::Node] Your class implementation is calling the Node "
         << "constructor that is meant to be reserved for abstract classes!\n";
   assert(false);
+}
+
+//==============================================================================
+void Node::setNodeStatePtr(State* ptr)
+{
+  mNodeStatePtr = ptr;
+}
+
+//==============================================================================
+void Node::setNodePropertiesPtr(Properties* ptr)
+{
+  mNodePropertiesPtr = ptr;
 }
 
 //==============================================================================

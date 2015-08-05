@@ -38,6 +38,7 @@
 #define DART_COMMON_EXTENSIBLE_H_
 
 #include <memory>
+#include <vector>
 
 namespace dart {
 namespace common {
@@ -69,11 +70,96 @@ public:
   /// Implement this function to allow your Extensible type to be copied safely.
   virtual std::unique_ptr<T> clone() const = 0;
 
-  /// Copy the contents of anotherExtensible into this one
+  /// Copy the contents of anotherExtensible into this one. We do not enforce
+  /// that the incoming type is const, but we trust you not to modify its
+  /// contents.
   virtual void copy(const T& anotherExtensible) = 0;
+};
+
+/// MapHolder is a templated wrapper class that is used to allow maps of
+/// Addon::State and Addon::Properties to be handled in a semantically
+/// palatable way.
+template <typename MapType>
+class ExtensibleMapHolder final
+{
+public:
+
+  /// Default constructor
+  ExtensibleMapHolder() = default;
+
+  /// Copy constructor
+  ExtensibleMapHolder(const ExtensibleMapHolder& otherStates);
+
+  /// Move constructor
+  ExtensibleMapHolder(ExtensibleMapHolder&& otherStates);
+
+  /// Map-based constructor
+  ExtensibleMapHolder(const MapType& otherMap);
+
+  /// Map-based move constructor
+  ExtensibleMapHolder(MapType&& otherMap);
+
+  /// Assignment operator
+  ExtensibleMapHolder& operator=(const ExtensibleMapHolder& otherStates);
+
+  /// Move assignment operator
+  ExtensibleMapHolder& operator=(ExtensibleMapHolder&& otherStates);
+
+  /// Map-based assignment operator
+  ExtensibleMapHolder& operator=(const MapType& otherMap);
+
+  /// Map-based move assignment operator
+  ExtensibleMapHolder& operator=(MapType&& otherMap);
+
+  /// Get the map of Addon::States
+  const MapType& getMap() const;
+
+private:
+
+  /// A map containing the collection of States for the Addon
+  MapType mMap;
+};
+
+/// The ExtensibleVector type wraps a std::vector of an Extensible type allowing
+/// it to be handled by an ExtensibleMapHolder
+template <typename T>
+class ExtensibleVector final
+{
+public:
+
+  /// Default constructor
+  ExtensibleVector() = default;
+
+  /// Construct from a regular vector
+  ExtensibleVector(const std::vector<T>& regularVector);
+
+  /// Construct from a regular vector using move semantics
+  ExtensibleVector(std::vector<T>&& regularVector);
+
+  /// Do not copy this class directly, use clone() or copy() instead
+  ExtensibleVector(const ExtensibleVector& doNotCopy) = delete;
+
+  /// Do not copy this class directly, use clone() or copy() instead
+  ExtensibleVector& operator=(const ExtensibleVector& doNotCopy) = delete;
+
+  /// Create a copy of this ExtensibleVector's contents
+  std::unique_ptr< ExtensibleVector<T> > clone() const;
+
+  /// Copy the contents of another extensible vector into this one.
+  void copy(const ExtensibleVector<T>& anotherVector);
+
+  /// Get a reference to the std::vector that this class is wrapping
+  const std::vector<T>& getVector() const;
+
+private:
+
+  /// The std::vector that this class is wrapping
+  std::vector<T> mVector;
 };
 
 } // namespace common
 } // namespace dart
+
+#include "dart/common/detail/Extensible.h"
 
 #endif // DART_COMMON_EXTENSIBLE_H_

@@ -146,6 +146,29 @@ public:
     virtual ~Properties() = default;
   };
 
+  using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
+  using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
+  using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
+  using AddonProperties = common::AddonManager::Properties;
+
+  struct ExtendedProperties : Properties
+  {
+    /// Composed constructor
+    ExtendedProperties(
+        const Properties& standardProperties = Entity::Properties("BodyNode"),
+        const NodeProperties& nodeProperties = NodeProperties(),
+        const AddonProperties& addonProperties = AddonProperties());
+
+    /// Composed move constructor
+    ExtendedProperties(
+        Properties&& standardProperties,
+        NodeProperties&& nodeProperties,
+        AddonProperties&& addonProperties);
+
+    NodeProperties mNodeProperties;
+    AddonProperties mAddonProperties;
+  };
+
   /// Destructor
   virtual ~BodyNode();
 
@@ -157,6 +180,13 @@ public:
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
+
+  /// Get the the Properties of the Nodes attached to this BodyNode
+  NodeProperties getAttachedNodeProperties() const;
+
+  /// The the full extended Properties of this BodyNode, including the
+  /// Properties of its Addons, its attached Nodes, and the BodyNode itself.
+  ExtendedProperties getExtendedProperties() const;
 
   /// Copy the Properties of another BodyNode
   void copy(const BodyNode& _otherBodyNode);

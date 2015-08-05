@@ -149,6 +149,29 @@ BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
 }
 
 //==============================================================================
+BodyNode::ExtendedProperties::ExtendedProperties(
+    const Properties& standardProperties,
+    const NodeProperties& nodeProperties,
+    const AddonProperties& addonProperties)
+  : Properties(standardProperties),
+    mNodeProperties(nodeProperties),
+    mAddonProperties(addonProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+BodyNode::ExtendedProperties::ExtendedProperties(
+    Properties&& standardProperties,
+    NodeProperties&& nodeProperties,
+    AddonProperties&& addonProperties)
+  : Properties(std::move(standardProperties))
+{
+  mNodeProperties = std::move(nodeProperties);
+  mAddonProperties = std::move(addonProperties);
+}
+
+//==============================================================================
 BodyNode::~BodyNode()
 {
   // Delete all Nodes
@@ -198,6 +221,37 @@ void BodyNode::setProperties(const UniqueProperties& _properties)
 BodyNode::Properties BodyNode::getBodyNodeProperties() const
 {
   return BodyNode::Properties(mEntityP, mBodyP);
+}
+
+//==============================================================================
+BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
+{
+  NodePropertiesMap nodeProperties;
+
+  for(const auto& entry : mNodeMap)
+  {
+    const std::vector<Node*>& nodes = entry.second;
+    std::vector< std::unique_ptr<Node::Properties> > vec;
+    for(size_t i=0; i < nodes.size(); ++i)
+    {
+      const Node::Properties* prop = nodes[i]->getNodeProperties();
+      if(prop)
+        vec.push_back(prop->clone());
+    }
+
+    nodeProperties[entry.first] = std::unique_ptr<NodePropertiesVector>(
+          new NodePropertiesVector(std::move(vec)));
+  }
+
+  return nodeProperties;
+}
+
+//==============================================================================
+BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
+{
+  return ExtendedProperties(getBodyNodeProperties(),
+                            getAttachedNodeProperties(),
+                            getAddonProperties());
 }
 
 //==============================================================================
