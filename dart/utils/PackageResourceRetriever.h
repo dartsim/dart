@@ -105,7 +105,7 @@ private:
     std::string& _packageName, std::string& _relativePath);
 };
 
-typedef std::shared_ptr<PackageResourceRetriever> PackageResourceRetrieverPtr;
+using PackageResourceRetrieverPtr = std::shared_ptr<PackageResourceRetriever>;
 
 } // namespace utils
 } // namespace dart

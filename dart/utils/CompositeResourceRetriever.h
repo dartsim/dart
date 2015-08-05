@@ -77,7 +77,8 @@ public:
   common::ResourcePtr retrieve(const std::string& _uri) override;
 
 private:
-  std::vector<common::ResourceRetrieverPtr> getRetrievers(const std::string& _uri);
+  std::vector<common::ResourceRetrieverPtr> getRetrievers(
+    const std::string& _uri);
 
   std::string getSchema(const std::string& _uri);
 
@@ -86,7 +87,8 @@ private:
   std::vector<common::ResourceRetrieverPtr> mDefaultResourceRetrievers;
 };
 
-typedef std::shared_ptr<CompositeResourceRetriever> CompositeResourceRetrieverPtr;
+using CompositeResourceRetrieverPtr
+  = std::shared_ptr<CompositeResourceRetriever>;
 
 } // namespace utils
 } // namespace dart
