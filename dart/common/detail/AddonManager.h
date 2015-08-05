@@ -84,7 +84,7 @@ void AddonManager::set(std::unique_ptr<T>&& addon)
 
 //==============================================================================
 template <class T, typename ...Args>
-T* AddonManager::construct(Args&&... args)
+T* AddonManager::create(Args&&... args)
 {
   T* addon = new T(this, std::forward<Args>(args)...);
   mAddonMap[typeid(T)] = std::unique_ptr<T>(addon);
@@ -174,13 +174,13 @@ std::unique_ptr<T> AddonManager::release()
   DETAIL_DART_SPECIALIZE_ADDON_INTERNAL( AddonName, m ## AddonName ## Iterator )
 
 //==============================================================================
-#define DART_SPECIALIZE_ADDON_EXTERNAL( Manager, Addon )                                                          \
-  template <> bool Manager :: has< Addon >() const { return has ## Addon (); }                                    \
-  template <> Addon * Manager :: get< Addon >() { return get ## Addon (); }                                       \
-  template <> const Addon * Manager :: get< Addon >() const { return get ## Addon (); }                           \
-  template <> void Manager :: set< Addon >(const Addon * addon) { set ## Addon (addon); }                         \
-  template <> void Manager :: set< Addon >(std::unique_ptr< Addon >&& addon) { set ## Addon (std::move(addon)); } \
-  template <> void Manager :: erase< Addon >() { erase ## Addon (); }                                             \
-  template <> std::unique_ptr< Addon > Manager :: release< Addon >() { return release ## Addon (); }
+#define DART_SPECIALIZE_ADDON_EXTERNAL( Manager, Addon )                                                                  \
+  template <> inline bool Manager :: has< Addon >() const { return has ## Addon (); }                                     \
+  template <> inline Addon * Manager :: get< Addon >() { return get ## Addon (); }                                        \
+  template <> inline const Addon * Manager :: get< Addon >() const { return get ## Addon (); }                            \
+  template <> inline void Manager :: set< Addon >(const Addon * addon) { set ## Addon (addon); }                          \
+  template <> inline void Manager :: set< Addon >(std::unique_ptr< Addon >&& addon) { set ## Addon (std::move(addon)); }  \
+  template <> inline void Manager :: erase< Addon >() { erase ## Addon (); }                                              \
+  template <> inline std::unique_ptr< Addon > Manager :: release< Addon >() { return release ## Addon (); }
 
 #endif // DART_COMMON_DETAIL_ADDONMANAGER_H_

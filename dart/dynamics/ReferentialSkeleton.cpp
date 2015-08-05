@@ -67,17 +67,6 @@ size_t ReferentialSkeleton::getNumBodyNodes() const
 }
 
 //==============================================================================
-template<typename T>
-static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
-{
-  if (_idx < _vec.size())
-    return _vec[_idx];
-
-  assert( _idx < _vec.size() );
-  return nullptr;
-}
-
-//==============================================================================
 BodyNode* ReferentialSkeleton::getBodyNode(size_t _idx)
 {
   return getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);

@@ -107,16 +107,6 @@ EndEffector::Properties::Properties(
 //==============================================================================
 EndEffector::~EndEffector()
 {
-  size_t index = mIndexInBodyNode;
-  assert(mBodyNode->mEndEffectors[index] == this);
-  mBodyNode->mEndEffectors.erase(mBodyNode->mEndEffectors.begin() + index);
-
-  for(size_t i=index; i<mBodyNode->mEndEffectors.size(); ++i)
-  {
-    EndEffector* ee = mBodyNode->mEndEffectors[i];
-    ee->mIndexInBodyNode = i;
-  }
-
   SkeletonPtr skel = getSkeleton();
   if(skel)
     skel->unregisterEndEffector(this);
@@ -401,27 +391,25 @@ void EndEffector::notifyVelocityUpdate()
 EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
   : Entity(ConstructFrame),
     Frame(_parent, ""),
-    Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
+    TemplatedJacobianNode<EndEffector>(_parent),
     mIndexInSkeleton(0),
-    mIndexInBodyNode(0),
     mIsEffectorJacobianDirty(true),
     mIsWorldJacobianDirty(true),
     mIsEffectorJacobianSpatialDerivDirty(true),
     mIsWorldJacobianClassicDerivDirty(true)
-
 {
   setProperties(_properties);
-
-  _parent->mEndEffectors.push_back(this);
-  mIndexInBodyNode = _parent->mEndEffectors.size()-1;
 }
 
 //==============================================================================
-EndEffector* EndEffector::clone(BodyNode* _parent) const
+Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
   EndEffector* ee = new EndEffector(_parent, Properties());
   ee->copy(this);
+
+  if(mIK)
+    ee->mIK = mIK->clone(ee);
 
   return ee;
 }

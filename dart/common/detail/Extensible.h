@@ -102,8 +102,8 @@ ExtensibleMapHolder<MapType>& ExtensibleMapHolder<MapType>::operator=(
   {
     if( mMap.end() == receiver )
     {
-      // If we've reached the end of this ExtensibleMapHolder's map, then we should just
-      // add each entry
+      // If we've reached the end of this ExtensibleMapHolder's map, then we
+      // should just add each entry
       mMap[sender->first] = sender->second->clone();
       ++sender;
     }

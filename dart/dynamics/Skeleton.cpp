@@ -160,25 +160,9 @@ SkeletonPtr Skeleton::clone() const
       newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
 
     skelClone->registerBodyNode(newBody);
-  }
 
-  for(size_t i=0; i<getNumEndEffectors(); ++i)
-  {
-    // Grab the EndEffector we want to clone
-    const EndEffector* originalEE = getEndEffector(i);
-
-    // Identify the original parent BodyNode
-    const BodyNode* originalParent = originalEE->getParentBodyNode();
-
-    // Grab the clone of the original parent
-    BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
-
-    EndEffector* newEE = originalEE->clone(parentClone);
-
-    if(originalEE->getIK())
-      newEE->mIK = originalEE->getIK()->clone(newEE);
-
-    skelClone->registerEndEffector(newEE);
+    for(size_t i=0; i < newBody->getNumEndEffectors(); ++i)
+      skelClone->registerEndEffector(newBody->getEndEffector(i));
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -391,17 +375,6 @@ size_t Skeleton::getNumSoftBodyNodes() const
 size_t Skeleton::getNumTrees() const
 {
   return mTreeCache.size();
-}
-
-//==============================================================================
-template<typename T>
-static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
-{
-  if (_idx < _vec.size())
-    return _vec[_idx];
-
-  assert( _idx < _vec.size() );
-  return nullptr;
 }
 
 //==============================================================================

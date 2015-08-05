@@ -34,10 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/AddonManager.h"
-
-
+#include <cassert>
 #include <iostream>
+
+#include "dart/common/Console.h"
+#include "dart/common/AddonManager.h"
 
 namespace dart {
 namespace common {
@@ -130,6 +131,67 @@ AddonManager::Properties AddonManager::getAddonProperties() const
   }
 
   return properties;
+}
+
+//==============================================================================
+void AddonManager::duplicateAddons(const AddonManager* otherManager)
+{
+  if(nullptr == otherManager)
+  {
+    dterr << "[AddonManager::duplicateAddons] You have asked to duplicate the "
+          << "Addons of a nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  const AddonMap& otherMap = otherManager->mAddonMap;
+
+  AddonMap::iterator receiving = mAddonMap.begin();
+  AddonMap::const_iterator incoming = otherMap.begin();
+
+  while( otherMap.end() != incoming )
+  {
+    if( mAddonMap.end() == receiving )
+    {
+      // If we've reached the end of this Manager's AddonMap, then we should
+      // just add each entry
+      mAddonMap[incoming->first] = incoming->second->clone(this);
+    }
+    else if( receiving->first == incoming->first )
+    {
+      receiving->second = incoming->second->clone(this);
+      ++receiving;
+      ++incoming;
+    }
+    else if( receiving->first < incoming->first)
+    {
+      ++receiving;
+    }
+    else
+    {
+      // If this Manager does not have an entry corresponding to the incoming
+      // Addon, then we must create it
+      mAddonMap[incoming->first] = incoming->second->clone(this);
+      ++incoming;
+    }
+  }
+}
+
+//==============================================================================
+void AddonManager::matchAddons(const AddonManager* otherManager)
+{
+  if(nullptr == otherManager)
+  {
+    dterr << "[AddonManager::matchAddons] You have asked to match the Addons "
+          << "of a nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  for(auto& addon : mAddonMap)
+    addon.second = nullptr;
+
+  duplicateAddons(otherManager);
 }
 
 //==============================================================================

@@ -39,7 +39,6 @@
 
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-//#include "dart/math/Geometry.h"
 
 namespace dart {
 namespace dynamics {
@@ -84,7 +83,7 @@ protected:
 };
 
 class EndEffector : public FixedFrame,
-                    public AccessoryNode,
+                    public AccessoryNode<EndEffector>,
                     public TemplatedJacobianNode<EndEffector>
 {
 public:
@@ -269,7 +268,7 @@ protected:
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
-  virtual EndEffector* clone(BodyNode* _parent) const;
+  virtual Node* cloneNode(BodyNode* _parent) const override;
 
   /// Update the Jacobian of this EndEffector. getJacobian() calls this function
   /// if mIsEffectorJacobianDirty is true.
@@ -293,9 +292,6 @@ protected:
 
   /// The index of this EndEffector within its Skeleton
   size_t mIndexInSkeleton;
-
-  /// The index of this EndEffector within its BodyNode
-  size_t mIndexInBodyNode;
 
   /// TODO(MXG): When Addons are implemented, this should be changed
   std::unique_ptr<Support> mSupport;

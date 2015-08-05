@@ -110,17 +110,6 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
-{
-  assert(_index < _vec.size());
-  if(_index < _vec.size())
-    return _vec[_index];
-
-  return nullptr;
-}
-
-//==============================================================================
 size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
@@ -333,6 +322,39 @@ BodyNode& BodyNode::operator=(const BodyNode& _otherBodyNode)
 {
   copy(_otherBodyNode);
   return *this;
+}
+
+//==============================================================================
+void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
+{
+  if(nullptr == otherBodyNode)
+  {
+    dterr << "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes "
+          << "of a nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  const NodeCleanerSet& otherCleaners = otherBodyNode->mNodeCleaners;
+  for(auto& cleaner : otherCleaners)
+    cleaner->getNode()->cloneNode(this)->attach();
+}
+
+//==============================================================================
+void BodyNode::matchNodes(const BodyNode* otherBodyNode)
+{
+  if(nullptr == otherBodyNode)
+  {
+    dterr << "[BodyNode::matchNodes] You have asked to match the Nodes of a "
+          << "nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  for(auto& cleaner : mNodeCleaners)
+    cleaner->getNode()->stageForRemoval();
+
+  duplicateNodes(otherBodyNode);
 }
 
 //==============================================================================
@@ -851,24 +873,6 @@ const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 }
 
 //==============================================================================
-size_t BodyNode::getNumEndEffectors() const
-{
-  return mEndEffectors.size();
-}
-
-//==============================================================================
-EndEffector* BodyNode::getEndEffector(size_t _index)
-{
-  return getVectorObjectIfAvailable(_index, mEndEffectors);
-}
-
-//==============================================================================
-const EndEffector* BodyNode::getEndEffector(size_t _index) const
-{
-  return getVectorObjectIfAvailable(_index, mEndEffectors);
-}
-
-//==============================================================================
 size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
@@ -1161,7 +1165,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
   : Entity(ConstructFrame),
     Frame(Frame::World(), ""), // Name gets set later by setProperties
-    Node(ConstructBodyNode),
+    TemplatedJacobianNode<BodyNode>(this),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
     mParentJoint(_parentJoint),
@@ -1195,10 +1199,13 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
 {
+  DART_INSTANTIATE_SPECALIZED_NODE( EndEffector );
+
   // Generate an inert cleaner to make sure that it will not try to
   // double-delete this BodyNode when it gets destroyed.
   mSelfCleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(nullptr));
   mCleaner = mSelfCleaner;
+  mAmAttached = true;
 
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
@@ -1210,7 +1217,21 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 //==============================================================================
 BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
 {
-  return new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+  BodyNode* clonedBn =
+      new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+
+  clonedBn->matchAddons(this);
+
+  return clonedBn;
+}
+
+//==============================================================================
+Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
+{
+  dterr << "[BodyNode::cloneNode] This function should never be called! Please "
+        << "report this as an error!\n";
+  assert(false);
+  return nullptr;
 }
 
 //==============================================================================

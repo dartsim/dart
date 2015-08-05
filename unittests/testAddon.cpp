@@ -213,12 +213,12 @@ TEST(Addon, Generic)
 
   EXPECT_TRUE( mgr.get<GenericAddon>() == nullptr );
 
-  sub_ptr<GenericAddon> addon = mgr.construct<GenericAddon>();
+  sub_ptr<GenericAddon> addon = mgr.create<GenericAddon>();
   GenericAddon* rawAddon = addon;
   EXPECT_FALSE( nullptr == addon );
   EXPECT_TRUE( mgr.get<GenericAddon>() == addon );
 
-  GenericAddon* newAddon = mgr.construct<GenericAddon>();
+  GenericAddon* newAddon = mgr.create<GenericAddon>();
   EXPECT_FALSE( nullptr == newAddon );
   EXPECT_TRUE( nullptr == addon );
   EXPECT_FALSE( rawAddon == newAddon );
@@ -231,7 +231,7 @@ TEST(Addon, Specialized)
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == nullptr );
   EXPECT_TRUE( mgr.getSpecializedAddon() == nullptr );
 
-  sub_ptr<SpecializedAddon> spec = mgr.construct<SpecializedAddon>();
+  sub_ptr<SpecializedAddon> spec = mgr.create<SpecializedAddon>();
   SpecializedAddon* rawSpec = spec;
 
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == spec );
@@ -258,7 +258,7 @@ TEST(Addon, Releasing)
     EXPECT_TRUE( sender.get<GenericAddon>() == nullptr );
     EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
 
-    sub_ptr<GenericAddon> addon = sender.construct<GenericAddon>();
+    sub_ptr<GenericAddon> addon = sender.create<GenericAddon>();
 
     EXPECT_TRUE( sender.get<GenericAddon>() == addon );
     EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
@@ -290,7 +290,7 @@ TEST(Addon, Releasing)
     EXPECT_TRUE( sender.get<SpecializedAddon>() == nullptr );
     EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
 
-    sub_ptr<SpecializedAddon> spec = sender.construct<SpecializedAddon>();
+    sub_ptr<SpecializedAddon> spec = sender.create<SpecializedAddon>();
 
     EXPECT_TRUE( sender.get<SpecializedAddon>() == spec );
     EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
@@ -322,7 +322,7 @@ TEST(Addon, Releasing)
     // The set() methods being used in this block of code will make clones of
     // the addons that are being passed in instead of transferring their
     // ownership like the previous blocks of code were.
-    sub_ptr<GenericAddon> addon = sender.construct<GenericAddon>();
+    sub_ptr<GenericAddon> addon = sender.create<GenericAddon>();
 
     // This should create a copy of the GenericAddon without taking the addon
     // away from 'sender'
@@ -391,14 +391,14 @@ void makePropertiesDifferent(AddonT* addon, const AddonT* differentFrom)
 TEST(Addon, StateAndProperties)
 {
   AddonManager mgr1;
-  mgr1.construct<DoubleAddon>();
-  mgr1.construct<FloatAddon>();
-  mgr1.construct<CharAddon>();
-  mgr1.construct<IntAddon>();
+  mgr1.create<DoubleAddon>();
+  mgr1.create<FloatAddon>();
+  mgr1.create<CharAddon>();
+  mgr1.create<IntAddon>();
 
   AddonManager mgr2;
-  mgr2.construct<DoubleAddon>();
-  mgr2.construct<FloatAddon>();
+  mgr2.create<DoubleAddon>();
+  mgr2.create<FloatAddon>();
 
   // ---- Test state transfer ----
 
@@ -466,14 +466,14 @@ TEST(Addon, Construction)
 {
   AddonManager mgr;
 
-  mgr.construct<DoubleAddon>();
+  mgr.create<DoubleAddon>();
 
   double s = dart::math::random(0, 100);
-  mgr.construct<DoubleAddon>(s);
+  mgr.create<DoubleAddon>(s);
   EXPECT_EQ(mgr.get<DoubleAddon>()->mState.val, s);
 
   double p = dart::math::random(0, 100);
-  mgr.construct<DoubleAddon>(dart::math::random(0, 100), p);
+  mgr.create<DoubleAddon>(dart::math::random(0, 100), p);
   EXPECT_EQ(mgr.get<DoubleAddon>()->mProperties.val, p);
 }
 

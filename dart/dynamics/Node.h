@@ -75,13 +75,14 @@ private:
 /// This base class handles ownership and reference counting for the classes
 /// that inherit it.
 ///
-/// In most cases, when creating your own custom Node class, you will want to
-/// inherit from AccessoryNode rather than the most basic Node class.
+/// In most cases, when creating your own custom Node class, you will also want
+/// to inherit from AccessoryNode using CRTP.
 class Node : public virtual common::Subject
 {
 public:
 
   friend class BodyNode;
+  template<class> friend class AccessoryNode;
   template<class, class> friend class TemplateNodePtr;
   template<class, class> friend class TemplateWeakNodePtr;
 
@@ -153,24 +154,11 @@ private:
 
 protected:
 
-  /// Construct a typical Node that will be attached to a BodyNode
-  enum ConstructNode_t { ConstructNode };
-
-  /// Construct the Node base of a BodyNode
-  enum ConstructBodyNode_t { ConstructBodyNode };
-
-  /// Used when constructing a pure abstract class, because calling the Node
-  /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
+  /// Allow your Node implementation to be cloned into a new BodyNode
+  virtual Node* cloneNode(BodyNode* bn) const = 0;
 
   /// Used when constructing a Node type that does NOT inherit from BodyNode
-  Node(ConstructNode_t, BodyNode* _bn);
-
-  /// Used when constructing a BodyNode
-  Node(ConstructBodyNode_t);
-
-  /// Used when constructing a pure abstract type
-  Node(ConstructAbstract_t);
+  Node(BodyNode* _bn);
 
   /// Set the State pointer for this Node.
   ///
@@ -213,7 +201,11 @@ protected:
   size_t mIndexInBodyNode;
 };
 
-class AccessoryNode : public virtual Node
+/// AccessoryNode provides an interface for Nodes to get their index within the
+/// list of Nodes, as well as detach and reattach. This uses CRTP to get around
+/// the diamond of death problem.
+template <class NodeType>
+class AccessoryNode
 {
 public:
 
@@ -234,14 +226,13 @@ public:
 protected:
 
   /// Prevent a non-inheriting class from constructing one
-  AccessoryNode();
+  AccessoryNode() = default;
 
 };
 
-//template <typename MapType>
-//class
-
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/Node.h"
 
 #endif // DART_DYNAMICS_NODE_H_

@@ -134,6 +134,36 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
 }
 
 //==============================================================================
+template <class NodeType>
+size_t BodyNode::getNumNodes() const
+{
+  NodeMap::iterator it = mNodeMap.find(typeid(NodeType));
+  if(mNodeMap.end() == it)
+    return 0;
+
+  return it->second.size();
+}
+
+//==============================================================================
+template <class NodeType>
+NodeType* BodyNode::getNode(size_t index)
+{
+  NodeMap::iterator it = mNodeMap.find(typeid(NodeType));
+  if(mNodeMap.end() == it)
+    return nullptr;
+
+  return static_cast<NodeType*>(
+        getVectorObjectIfAvailable(index, it->second));
+}
+
+//==============================================================================
+template <class NodeType>
+const NodeType* BodyNode::getNode(size_t index) const
+{
+  return const_cast<BodyNode*>(this)->getNode<NodeType>(index);
+}
+
+//==============================================================================
 template <class NodeType, typename ...Args>
 NodeType* BodyNode::createNode(Args&&... args)
 {

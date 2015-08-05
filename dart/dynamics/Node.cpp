@@ -127,7 +127,7 @@ std::shared_ptr<NodeCleaner> Node::generateCleaner()
 }
 
 //==============================================================================
-Node::Node(ConstructNode_t, BodyNode* _bn)
+Node::Node(BodyNode* _bn)
   : mBodyNode(_bn),
     mAmAttached(false),
     mIndexInBodyNode(INVALID_INDEX)
@@ -140,24 +140,6 @@ Node::Node(ConstructNode_t, BodyNode* _bn)
 
   setNodeStatePtr();
   setNodePropertiesPtr();
-}
-
-//==============================================================================
-Node::Node(ConstructBodyNode_t)
-  : mBodyNode(nullptr),
-    mAmAttached(true),
-    mIndexInBodyNode(INVALID_INDEX)
-{
-  setNodeStatePtr();
-  setNodePropertiesPtr();
-}
-
-//==============================================================================
-Node::Node(ConstructAbstract_t)
-{
-  dterr << "[Node::Node] Your class implementation is calling the Node "
-        << "constructor that is meant to be reserved for abstract classes!\n";
-  assert(false);
 }
 
 //==============================================================================
@@ -266,32 +248,8 @@ void Node::stageForRemoval()
 
   assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
 
+  mIndexInBodyNode = INVALID_INDEX;
   mAmAttached = false;
-}
-
-//==============================================================================
-size_t AccessoryNode::getIndexInBodyNode() const
-{
-  return mIndexInBodyNode;
-}
-
-//==============================================================================
-void AccessoryNode::remove()
-{
-  stageForRemoval();
-}
-
-//==============================================================================
-void AccessoryNode::reattach()
-{
-  attach();
-}
-
-//==============================================================================
-AccessoryNode::AccessoryNode()
-  : Node(ConstructAbstract)
-{
-  // Do nothing
 }
 
 } // namespace dynamics

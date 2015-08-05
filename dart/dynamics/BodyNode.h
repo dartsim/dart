@@ -50,6 +50,7 @@
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Node.h"
+#include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
@@ -96,6 +97,10 @@ public:
 
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
+
+  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+
+  using NodeCleanerSet = std::unordered_set<NodeCleanerPtr>;
 
   struct UniqueProperties
   {
@@ -205,6 +210,13 @@ public:
 
   /// Same as copy(const BodyNode&)
   BodyNode& operator=(const BodyNode& _otherBodyNode);
+
+  /// Give this BodyNode a copy of each Node from otherBodyNode
+  void duplicateNodes(const BodyNode* otherBodyNode);
+
+  /// Make the Nodes of this BodyNode match the Nodes of otherBodyNode. All
+  /// existing Nodes in this BodyNode will be removed.
+  void matchNodes(const BodyNode* otherBodyNode);
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
@@ -522,19 +534,24 @@ public:
   /// Return the (const) _index-th child Joint of this BodyNode
   const Joint* getChildJoint(size_t _index) const;
 
-  /// Return the number of EndEffectors attached to this BodyNode
-  size_t getNumEndEffectors() const;
+  /// Get the number of Nodes corresponding to the specified type
+  template <class NodeType>
+  size_t getNumNodes() const;
 
-  /// Return an EndEffector attached to this BodyNode
-  EndEffector* getEndEffector(size_t _index);
+  /// Get the Node of the specified type and the specified index
+  template <class NodeType>
+  NodeType* getNode(size_t index);
 
-  /// Return an EndEffector attached to this BodyNode
-  const EndEffector* getEndEffector(size_t _index) const;
+  /// Get the Node of the specified type and the specified index
+  template <class NodeType>
+  const NodeType* getNode(size_t index) const;
 
   /// Create a generic Node type and attach it to this BodyNode. Note that this
   /// should not be used on the EndEffector class, or else
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
+
+  DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
 
   /// Create an EndEffector attached to this BodyNode
   template <class EndEffectorT=EndEffector>
@@ -811,6 +828,9 @@ protected:
   /// class.
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
 
+  /// This is needed in order to inherit the Node class, but it does nothing
+  Node* cloneNode(BodyNode* bn) const override final;
+
   /// Initialize the vector members with proper sizes.
   virtual void init(const SkeletonPtr& _skeleton);
 
@@ -1015,15 +1035,8 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
-  /// List of EndEffectors that are attached to this BodyNode
-  std::vector<EndEffector*> mEndEffectors;
-
   /// List of markers associated
   std::vector<Marker*> mMarkers;
-
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
-
-  using NodeCleanerSet = std::unordered_set<NodeCleanerPtr>;
 
   /// Map that retrieves the cleaners for a given Node
   NodeMap mNodeMap;
@@ -1182,6 +1195,8 @@ private:
   std::shared_ptr<NodeCleaner> mSelfCleaner;
 
 };
+
+DART_SPECIALIZE_NODE_EXTERNAL( BodyNode, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart

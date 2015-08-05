@@ -114,7 +114,7 @@ public:
 
   /// Construct an Addon inside of this AddonManager
   template <class T, typename ...Args>
-  T* construct(Args&&... args);
+  T* create(Args&&... args);
 
   /// Remove an Addon from this AddonManager.
   template <class T>
@@ -142,8 +142,17 @@ public:
   /// Get the properties of the addons inside of this AddonManager
   Properties getAddonProperties() const;
 
+  /// Give this AddonManager a copy of each Addon from otherManager
+  void duplicateAddons(const AddonManager* otherManager);
+
+  /// Make the Addons of this AddonManager match the Addons of otherManager. Any
+  /// Addons in this AddonManager which do not exist in otherManager will be
+  /// erased.
+  void matchAddons(const AddonManager* otherManager);
+
 protected:
 
+  /// Become the manager of the specified Addon
   void becomeManager(Addon* addon);
 
   using AddonMap = std::map< std::type_index, std::unique_ptr<Addon> >;
