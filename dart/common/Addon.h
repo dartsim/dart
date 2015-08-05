@@ -37,6 +37,8 @@
 #ifndef DART_COMMON_ADDON_H_
 #define DART_COMMON_ADDON_H_
 
+#include <string>
+
 #include "dart/common/Extensible.h"
 
 namespace dart {
@@ -95,14 +97,14 @@ public:
 
   /// Get the State of this Addon. By default, this returns a nullptr which
   /// implies that the Addon is stateless.
-  const State* getState() const;
+  virtual const State* getState() const;
 
   /// Set the Properties of this Addon. By default, this does nothing.
   virtual void setProperties(const std::unique_ptr<Properties>& someProperties);
 
   /// Get the Properties of this Addon. By default, this returns a nullptr
   /// which implies that the Addon has no properties.
-  const Properties* getProperties() const;
+  virtual const Properties* getProperties() const;
 
   /// Get the type of this Addon
   const std::string& getType() const;
@@ -111,18 +113,18 @@ protected:
 
   /// Constructor
   ///
-  // We require the AddonManager requirement in this constructor to make it
-  // clear to extensions that they must have an AddonManager argument in their
+  // We require the AddonManager argument in this constructor to make it clear
+  // to extensions that they must have an AddonManager argument in their
   // constructors.
   Addon(AddonManager* manager, const std::string& type);
 
-  /// Set the State pointer for this Addon
+  /// Set the State pointer for this Addon.
   ///
   /// This should be called during construction of your Addon, if your Addon has
   /// a State.
   void setStatePtr(State* ptr = nullptr);
 
-  /// Set the Properties pointer for this Addon
+  /// Set the Properties pointer for this Addon.
   ///
   /// This should be called during construction of your Addon, if your Addon has
   /// a Properties structure.
