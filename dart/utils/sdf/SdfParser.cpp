@@ -20,27 +20,35 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Uri.h"
 #include "dart/utils/sdf/SdfParser.h"
 
 namespace dart {
 namespace utils {
 
-simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename)
+simulation::WorldPtr SdfParser::readSdfFile(
+  const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSdfFile(_filename,
-    static_cast<simulation::WorldPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readWorld));
+  return readSdfFile(_filename, getResourceRetriever(_retriever),
+    static_cast<simulation::WorldPtr (*)(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)>(&SdfParser::readWorld));
 }
 
-simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename,
-    std::function<simulation::WorldPtr (tinyxml2::XMLElement*,
-                                        const std::string&)> xmlReader)
+simulation::WorldPtr SdfParser::readSdfFile(
+    const std::string& _filename,
+    const common::ResourceRetrieverPtr& _retriever,
+    std::function<simulation::WorldPtr (
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)> xmlReader)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str());
+      openXMLFile(_dartFile, _filename.c_str(), _retriever);
   }
   catch(std::exception const& e)
   {
@@ -82,26 +90,31 @@ simulation::WorldPtr SdfParser::readSdfFile(const std::string& _filename,
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  return xmlReader(worldElement, skelPath);
+  return xmlReader(worldElement, skelPath, _retriever);
 }
 
-dynamics::SkeletonPtr SdfParser::readSkeleton(const std::string& _fileName)
+dynamics::SkeletonPtr SdfParser::readSkeleton(
+  const std::string& _fileName, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(_fileName,
-      static_cast<dynamics::SkeletonPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readSkeleton));
+  return readSkeleton(_fileName, getResourceRetriever(_retriever),
+    static_cast<dynamics::SkeletonPtr (*)(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)>(&SdfParser::readSkeleton));
 }
 
 dynamics::SkeletonPtr SdfParser::readSkeleton(
     const std::string& _filename,
-    std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
-                                        const std::string&)> xmlReader)
+    const common::ResourceRetrieverPtr& _retriever,
+    std::function<dynamics::SkeletonPtr(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)> xmlReader)
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str());
+      openXMLFile(_dartFile, _filename.c_str(), _retriever);
   }
   catch(std::exception const& e)
   {
@@ -142,24 +155,29 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
   std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
 
-  dynamics::SkeletonPtr newSkeleton = xmlReader(skelElement, skelPath);
+  dynamics::SkeletonPtr newSkeleton = xmlReader(skelElement, skelPath, _retriever);
 
   return newSkeleton;
 }
 
 simulation::WorldPtr SdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement,
-    const std::string& _skelPath)
+    const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever)
 {
-  return readWorld(_worldElement, _skelPath,
-      static_cast<dynamics::SkeletonPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SdfParser::readSkeleton));
+  return readWorld(_worldElement, _skelPath, _retriever,
+      static_cast<dynamics::SkeletonPtr (*)(
+        tinyxml2::XMLElement*, const std::string&,
+        const common::ResourceRetrieverPtr&)>(&SdfParser::readSkeleton));
 }
 
 simulation::WorldPtr SdfParser::readWorld(
     tinyxml2::XMLElement* _worldElement,
     const std::string& _skelPath,
-    std::function<dynamics::SkeletonPtr(tinyxml2::XMLElement*,
-                                        const std::string&)> skeletonReader)
+    const common::ResourceRetrieverPtr& _retriever,
+    std::function<dynamics::SkeletonPtr(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)> skeletonReader)
 {
   assert(_worldElement != nullptr);
 
@@ -185,7 +203,7 @@ simulation::WorldPtr SdfParser::readWorld(
   while (skeletonElements.next())
   {
     dynamics::SkeletonPtr newSkeleton
-            = skeletonReader(skeletonElements.get(), _skelPath);
+            = skeletonReader(skeletonElements.get(), _skelPath, _retriever);
 
     newWorld->addSkeleton(newSkeleton);
   }
@@ -223,18 +241,20 @@ void SdfParser::readPhysics(tinyxml2::XMLElement* _physicsElement,
 
 dynamics::SkeletonPtr SdfParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement,
-    const std::string& _skelPath)
+    const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(_skeletonElement, _skelPath, &readBodyNode, &createPair);
+  return readSkeleton(_skeletonElement, _skelPath, _retriever, &readBodyNode, &createPair);
 }
 
 dynamics::SkeletonPtr SdfParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement,
     const std::string& _skelPath,
-
+    const common::ResourceRetrieverPtr& _retriever,
     std::function<SDFBodyNode (tinyxml2::XMLElement*,
                    const Eigen::Isometry3d&,
-                   const std::string&)> bodyReader,
+                   const std::string&,
+                   const common::ResourceRetrieverPtr&)> bodyReader,
 
     std::function<bool(dynamics::SkeletonPtr,
                        dynamics::BodyNode*,
@@ -249,8 +269,8 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
 
   //--------------------------------------------------------------------------
   // Bodies
-  BodyMap sdfBodyNodes = readAllBodyNodes(_skeletonElement, _skelPath,
-                                          skeletonFrame, bodyReader);
+  BodyMap sdfBodyNodes = readAllBodyNodes(
+    _skeletonElement, _skelPath, _retriever, skeletonFrame, bodyReader);
 
   //--------------------------------------------------------------------------
   // Joints
@@ -397,27 +417,30 @@ dynamics::SkeletonPtr SdfParser::makeSkeleton(
 SdfParser::BodyMap SdfParser::readAllBodyNodes(
     tinyxml2::XMLElement* _skeletonElement,
     const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever, 
     const Eigen::Isometry3d& skeletonFrame)
 {
-  return readAllBodyNodes(_skeletonElement, _skelPath, skeletonFrame,
-                          &readBodyNode);
+  return readAllBodyNodes(_skeletonElement, _skelPath, _retriever,
+                          skeletonFrame, &readBodyNode);
 }
 
 SdfParser::BodyMap SdfParser::readAllBodyNodes(
     tinyxml2::XMLElement* _skeletonElement,
     const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever, 
     const Eigen::Isometry3d& skeletonFrame,
     std::function<SDFBodyNode (
       tinyxml2::XMLElement*,
       const Eigen::Isometry3d&,
-      const std::string&)> bodyReader)
+      const std::string&,
+      const common::ResourceRetrieverPtr&)> bodyReader)
 {
   ElementEnumerator bodies(_skeletonElement, "link");
   BodyMap sdfBodyNodes;
   while (bodies.next())
   {
     SDFBodyNode body = bodyReader(
-          bodies.get(), skeletonFrame, _skelPath);
+          bodies.get(), skeletonFrame, _skelPath, _retriever);
 
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if(it != sdfBodyNodes.end())
@@ -437,7 +460,8 @@ SdfParser::BodyMap SdfParser::readAllBodyNodes(
 SdfParser::SDFBodyNode SdfParser::readBodyNode(
         tinyxml2::XMLElement* _bodyNodeElement,
         const Eigen::Isometry3d& _skeletonFrame,
-        const std::string& _skelPath)
+        const std::string& _skelPath,
+        const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_bodyNodeElement != nullptr);
 
@@ -480,7 +504,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
   ElementEnumerator vizShapes(_bodyNodeElement, "visual");
   while (vizShapes.next())
   {
-    dynamics::ShapePtr newShape(readShape(vizShapes.get(), _skelPath));
+    dynamics::ShapePtr newShape(readShape(vizShapes.get(), _skelPath, _retriever));
     if (newShape)
       properties.mVizShapes.push_back(newShape);
   }
@@ -490,7 +514,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
   ElementEnumerator collShapes(_bodyNodeElement, "collision");
   while (collShapes.next())
   {
-    dynamics::ShapePtr newShape(readShape(collShapes.get(), _skelPath));
+    dynamics::ShapePtr newShape(readShape(collShapes.get(), _skelPath, _retriever));
 
     if (newShape)
       properties.mColShapes.push_back(newShape);
@@ -552,8 +576,10 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
   return sdfBodyNode;
 }
 
-dynamics::ShapePtr SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
-                                      const std::string& _skelPath)
+dynamics::ShapePtr SdfParser::readShape(
+  tinyxml2::XMLElement* _shapelement,
+  const std::string& _skelPath,
+  const common::ResourceRetrieverPtr& _retriever)
 {
   dynamics::ShapePtr newShape;
 
@@ -606,12 +632,15 @@ dynamics::ShapePtr SdfParser::readShape(tinyxml2::XMLElement* _shapelement,
     // TODO(JS): We assume that uri is just file name for the mesh
     std::string           uri     = getValueString(meshEle, "uri");
     Eigen::Vector3d       scale   = getValueVector3d(meshEle, "scale");
-    const aiScene* model = dynamics::MeshShape::loadMesh(_skelPath + uri);
+
+    const std::string meshUri = common::Uri::getRelativeUri(_skelPath, uri);
+    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
+
     if (model)
-      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model,
-                                                            _skelPath));
+      newShape = std::make_shared<dynamics::MeshShape>(
+        scale, model, meshUri, _retriever);
     else
-      dterr << "Fail to load model[" << uri << "]." << std::endl;
+      dterr << "Fail to load model[" << meshUri << "]." << std::endl;
   }
   else
   {
@@ -1053,6 +1082,15 @@ dynamics::FreeJoint::Properties SdfParser::readFreeJoint(
   assert(_jointElement != nullptr);
 
   return dynamics::FreeJoint::Properties();
+}
+
+common::ResourceRetrieverPtr SdfParser::getResourceRetriever(
+    const common::ResourceRetrieverPtr& _retriever)
+{
+  if(_retriever)
+    return _retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 } // namespace utils
