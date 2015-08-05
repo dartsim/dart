@@ -297,6 +297,9 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
     body = sdfBodyNodes.begin();
   }
 
+  // Set positions to their initial values
+  newSkeleton->resetPositions();
+
   return newSkeleton;
 }
 
@@ -799,7 +802,8 @@ static void reportMissingElement(const std::string& functionName,
 static void readAxisElement(
     tinyxml2::XMLElement* axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    Eigen::Vector3d& axis, double& lower, double& upper, double& damping)
+    Eigen::Vector3d& axis, double& lower, double& upper, double& initial,
+    double& damping)
 {
   // use_parent_model_frame
   bool useParentModelFrame = false;
@@ -845,6 +849,20 @@ static void readAxisElement(
       upper = getValueDouble(limitElement, "upper");
     }
   }
+
+  // If the zero position is out of our limits, we should change the initial
+  // position instead of assuming zero
+  if( 0.0 < lower || upper < 0.0 )
+  {
+    if( std::isfinite(lower) && std::isfinite(upper) )
+      initial = (lower + upper) / 2.0;
+    else if( std::isfinite(lower) )
+      initial = lower;
+    else if( std::isfinite(upper) )
+      initial = upper;
+
+    // Any other case means the limits are both +inf, both -inf, or one is a NaN
+  }
 }
 
 dart::dynamics::WeldJoint::Properties SdfParser::readWeldJoint(
@@ -877,6 +895,7 @@ dynamics::RevoluteJoint::Properties SdfParser::readRevoluteJoint(
                     newRevoluteJoint.mAxis,
                     newRevoluteJoint.mPositionLowerLimit,
                     newRevoluteJoint.mPositionUpperLimit,
+                    newRevoluteJoint.mInitialPosition,
                     newRevoluteJoint.mDampingCoefficient);
   }
   else
@@ -907,6 +926,7 @@ dynamics::PrismaticJoint::Properties SdfParser::readPrismaticJoint(
                     newPrismaticJoint.mAxis,
                     newPrismaticJoint.mPositionLowerLimit,
                     newPrismaticJoint.mPositionUpperLimit,
+                    newPrismaticJoint.mInitialPosition,
                     newPrismaticJoint.mDampingCoefficient);
   }
   else
@@ -937,6 +957,7 @@ dynamics::ScrewJoint::Properties SdfParser::readScrewJoint(
                     newScrewJoint.mAxis,
                     newScrewJoint.mPositionLowerLimit,
                     newScrewJoint.mPositionUpperLimit,
+                    newScrewJoint.mInitialPosition,
                     newScrewJoint.mDampingCoefficient);
   }
   else
@@ -974,6 +995,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[0],
                     newUniversalJoint.mPositionLowerLimits[0],
                     newUniversalJoint.mPositionUpperLimits[0],
+                    newUniversalJoint.mInitialPositions[0],
                     newUniversalJoint.mDampingCoefficients[0]);
   }
   else
@@ -992,6 +1014,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mAxis[1],
                     newUniversalJoint.mPositionLowerLimits[1],
                     newUniversalJoint.mPositionUpperLimits[1],
+                    newUniversalJoint.mInitialPositions[1],
                     newUniversalJoint.mDampingCoefficients[1]);
   }
   else

@@ -121,12 +121,6 @@ double DegreeOfFreedom::getPosition() const
 }
 
 //==============================================================================
-void DegreeOfFreedom::resetPosition()
-{
-  setPosition(0.0);
-}
-
-//==============================================================================
 void DegreeOfFreedom::setPositionLimits(double _lowerLimit, double _upperLimit)
 {
   setPositionLowerLimit(_lowerLimit);
@@ -184,6 +178,24 @@ bool DegreeOfFreedom::isCyclic() const
 }
 
 //==============================================================================
+void DegreeOfFreedom::resetPosition()
+{
+  mJoint->resetPosition(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setInitialPosition(double _initial)
+{
+  mJoint->setInitialPosition(mIndexInJoint, _initial);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getInitialPosition() const
+{
+  return mJoint->getInitialPosition(mIndexInJoint);
+}
+
+//==============================================================================
 void DegreeOfFreedom::setVelocity(double _velocity)
 {
   mJoint->setVelocity(mIndexInJoint, _velocity);
@@ -198,7 +210,7 @@ double DegreeOfFreedom::getVelocity() const
 //==============================================================================
 void DegreeOfFreedom::resetVelocity()
 {
-  setVelocity(0.0);
+  mJoint->resetVelocity(mIndexInJoint);
 }
 
 //==============================================================================
@@ -243,6 +255,18 @@ void DegreeOfFreedom::setVelocityUpperLimit(double _limit)
 double DegreeOfFreedom::getVelocityUpperLimit() const
 {
   return mJoint->getVelocityUpperLimit(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setInitialVelocity(double _initial)
+{
+  mJoint->setInitialVelocity(mIndexInJoint, _initial);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getInitialVelocity() const
+{
+  return mJoint->getInitialVelocity(mIndexInJoint);
 }
 
 //==============================================================================

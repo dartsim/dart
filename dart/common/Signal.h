@@ -41,6 +41,7 @@
 #include <memory>
 #include <set>
 
+#include "dart/common/Deprecated.h"
 #include "dart/common/detail/ConnectionBody.h"
 
 namespace dart {
@@ -142,7 +143,11 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections();
+  /// \warning Deprecated. Please use cleanupConnections() instead.
+  DEPRECATED(5.1) void clenaupConnections();
+
+  /// Cleanup all the disconnected connections
+  void cleanupConnections();
 
   /// Get the number of connections
   size_t getNumConnections() const;
@@ -192,7 +197,11 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  void clenaupConnections();
+  /// \warning Deprecated. Please use cleanupConnections() instead.
+  DEPRECATED(5.1) void clenaupConnections();
+
+  /// Cleanup all the disconnected connections
+  void cleanupConnections();
 
   /// Get the number of connections
   size_t getNumConnections() const;
