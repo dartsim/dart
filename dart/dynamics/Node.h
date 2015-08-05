@@ -40,6 +40,7 @@
 #include <memory>
 
 #include "dart/common/Subject.h"
+#include "dart/common/Extensible.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
@@ -73,6 +74,9 @@ private:
 /// The Node class is a base class for any object that attaches to a BodyNode.
 /// This base class handles ownership and reference counting for the classes
 /// that inherit it.
+///
+/// In most cases, when creating your own custom Node class, you will want to
+/// inherit from AccessoryNode rather than the most basic Node class.
 class Node : public virtual common::Subject
 {
 public:
@@ -81,29 +85,39 @@ public:
   template<class, class> friend class TemplateNodePtr;
   template<class, class> friend class TemplateWeakNodePtr;
 
-  class State
-  {
-  public:
+  /// If your Node has a State class, then that State class should inherit this
+  /// Node::State class. This allows us to safely serialize, store, and clone
+  /// the states of arbitrary Node extensions. If your Node is stateless, then
+  /// you do not have to worry about extending this class, because
+  /// Node::getNodeState() will simply return a nullptr by default, which is
+  /// taken to indicate that it is stateless.
+  ///
+  /// The distinction between the State class and the Properties class is that
+  /// State will get stored in BodyNode::ExtendedState whereas Properties will
+  /// get stored in BodyNode::ExtendedProperties. Typically Properties are
+  /// values that only change rarely if ever, whereas State contains values that
+  /// might change as often as every time step.
+  ///
+  /// If your Node has a State, be sure to call setNodeStatePtr() during the
+  /// construction of your Node.
+  class State : public common::Extensible<State> { };
 
-    /// Default constructor
-    State() = default;
-
-    /// Virtual destructor
-    virtual ~State() = default;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    State(const State& doNotCopy) = delete;
-
-    /// Do not copy this class directly, use clone() or copy() instead
-    State& operator=(const State& doNotCopy) = delete;
-
-    /// Implement this function to allow your State extension to be copied
-    /// safely.
-    virtual std::unique_ptr<State> clone() const = 0;
-
-    ///
-    virtual void copy(const State& anotherState) = 0;
-  };
+  /// If your Node has a Properties class, then that Properties class should
+  /// inherit this Node::Properties class. This allows us to safely serialize,
+  /// store, and clone the properties of arbitrary Node extensions. If your
+  /// Node has no properties, then you do not have to worry about extending
+  /// this class, because Node::getNodeProperties() will simply return a nullptr
+  /// by default, which is taken to indicate that it has no properties.
+  ///
+  /// The distinction between the State class and the Properties class is that
+  /// State will get stored in BodyNode::ExtendedState whereas Properties will
+  /// get stored in BodyNode::ExtendedProperties. Typically Properties are
+  /// values that only change rarely if ever, whereas State contains values that
+  /// might change as often as every time step.
+  ///
+  /// If your Node has Properties, then be sure to call setNodePropertiesPtr()
+  /// during the construction of your Node.
+  class Properties : public common::Extensible<Properties> { };
 
   /// Virtual destructor
   virtual ~Node() = default;
@@ -144,6 +158,18 @@ protected:
   /// Used when constructing a pure abstract type
   Node(ConstructAbstract_t);
 
+  /// Set the State pointer for this Node.
+  ///
+  /// This should be called during construction of your Node, if your Node has a
+  /// State.
+  void setNodeStatePtr(State* ptr = nullptr);
+
+  /// Set the Properties pointer for this Node.
+  ///
+  /// This should be called during construction of your Node, if your Node has a
+  /// set of Properties.
+  void setNodePropertiesPtr(Properties* ptr = nullptr);
+
   /// Attach the Node to its BodyNode
   void attach();
 
@@ -162,6 +188,9 @@ protected:
 
   /// bool that tracks whether this Node is attached to its BodyNode
   bool mAmAttached;
+
+  /// The index of this Node within its vector in the NodeMap
+  size_t mIndexInBodyNode;
 };
 
 class AccessoryNode : public virtual Node
@@ -170,6 +199,9 @@ public:
 
   /// Virtual destructor
   virtual ~AccessoryNode() = default;
+
+  /// Get the index of this Node within its BodyNode.
+  size_t getIndexInBodyNode() const;
 
   /// Stage the Node for removal. When all strong references to the Node expire,
   /// the Node will be removed from its BodyNode and deleted.

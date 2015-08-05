@@ -105,7 +105,8 @@ std::shared_ptr<NodeCleaner> Node::generateCleaner()
 //==============================================================================
 Node::Node(ConstructNode_t, BodyNode* _bn)
   : mBodyNode(_bn),
-    mAmAttached(false)
+    mAmAttached(false),
+    mIndexInBodyNode(INVALID_INDEX)
 {
   if(nullptr == mBodyNode)
   {
@@ -117,7 +118,8 @@ Node::Node(ConstructNode_t, BodyNode* _bn)
 //==============================================================================
 Node::Node(ConstructBodyNode_t)
   : mBodyNode(nullptr),
-    mAmAttached(true)
+    mAmAttached(true),
+    mIndexInBodyNode(INVALID_INDEX)
 {
   // BodyNodes do not get "attached" to themselves, so we do nothing here
 }
@@ -139,19 +141,42 @@ void Node::attach()
     return;
   }
 
+  // If we are in release mode, and the Node believes it is attached, then we
+  // can shortcut this procedure
+#ifdef NDEBUG
+  if(mAmAttached)
+    return;
+#endif
+
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
 
   if(mBodyNode->mNodeMap.end() == it)
   {
-    mBodyNode->mNodeMap[typeid(*this)] = std::vector<NodeCleanerPtr>();
+    mBodyNode->mNodeMap[typeid(*this)] = std::vector<Node*>();
     it = mBodyNode->mNodeMap.find(typeid(*this));
   }
 
-  std::vector<NodeCleanerPtr>& cleaners = it->second;
+  std::vector<Node*>& nodes = it->second;
+  BodyNode::NodeCleanerSet& cleaners = mBodyNode->mNodeCleaners;
 
   NodeCleanerPtr cleaner = generateCleaner();
-  if(std::find(cleaners.begin(), cleaners.end(), cleaner) == cleaners.end())
-    cleaners.push_back(cleaner);
+  if(INVALID_INDEX == mIndexInBodyNode)
+  {
+    // If the Node was not in the map, then its cleaner should not be in the set
+    assert(cleaners.find(cleaner) == cleaners.end());
+
+    // If this Node believes its index is invalid, then it should not exist
+    // anywhere in the vector
+    assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+
+    nodes.push_back(this);
+    mIndexInBodyNode = nodes.size()-1;
+
+    cleaners.insert(cleaner);
+  }
+
+  assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+  assert(cleaners.find(cleaner) != cleaners.end());
 
   mAmAttached = true;
 }
@@ -165,21 +190,49 @@ void Node::stageForRemoval()
     return;
   }
 
+  // If we are in release mode, and the Node believes it is detached, then we
+  // can shortcut this procedure.
+#ifdef NDEBUG
+  if(!mAmAttached)
+    return;
+#endif
+
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
-
-  std::vector<NodeCleanerPtr>& cleaners = it->second;
-
   NodeCleanerPtr cleaner = generateCleaner();
 
-  std::vector<NodeCleanerPtr>::iterator entry =
-      std::find(cleaners.begin(), cleaners.end(), cleaner);
+  BodyNode::NodeCleanerSet& cleaners = mBodyNode->mNodeCleaners;
 
-  if(cleaners.end() == entry)
+  if(mBodyNode->mNodeMap.end() == it)
+  {
+    // If the Node was not in the map, then its cleaner should not be in the set
+    assert(cleaners.find(cleaner) == cleaners.end());
     return;
+  }
 
-  cleaners.erase(entry);
+  BodyNode::NodeCleanerSet::iterator cleaner_iter = cleaners.find(cleaner);
+  // This Node's cleaner should be in the set of cleaners
+  assert(cleaners.end() != cleaner_iter);
+
+  std::vector<Node*>& nodes = it->second;
+
+  // This Node's index in the vector should be referring to this Node
+  assert(nodes[mIndexInBodyNode] == this);
+  nodes.erase(nodes.begin() + mIndexInBodyNode);
+  cleaners.erase(cleaner_iter);
+
+  // Reset all the Node indices that have been altered
+  for(size_t i=mIndexInBodyNode; i < nodes.size(); ++i)
+    nodes[i]->mIndexInBodyNode = i;
+
+  assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
 
   mAmAttached = false;
+}
+
+//==============================================================================
+size_t AccessoryNode::getIndexInBodyNode() const
+{
+  return mIndexInBodyNode;
 }
 
 //==============================================================================

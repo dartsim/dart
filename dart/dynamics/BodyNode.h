@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 #include <typeindex>
+#include <unordered_set>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -981,10 +982,15 @@ protected:
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
-  using NodeMap = std::map<std::type_index, std::vector<NodeCleanerPtr> >;
+  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+
+  using NodeCleanerSet = std::unordered_set<NodeCleanerPtr>;
 
   /// Map that retrieves the cleaners for a given Node
   NodeMap mNodeMap;
+
+  /// A set for storing the Node cleaners
+  NodeCleanerSet mNodeCleaners;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
