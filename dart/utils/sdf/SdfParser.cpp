@@ -831,7 +831,8 @@ static void reportMissingElement(const std::string& functionName,
 static void readAxisElement(
     tinyxml2::XMLElement* axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    Eigen::Vector3d& axis, double& lower, double& upper, double& initial,
+    Eigen::Vector3d& axis,
+    double& lower, double& upper, double& initial, double& rest,
     double& damping)
 {
   // use_parent_model_frame
@@ -891,6 +892,9 @@ static void readAxisElement(
       initial = upper;
 
     // Any other case means the limits are both +inf, both -inf, or one is a NaN
+
+    // Apply the same logic to the rest position.
+    rest = initial;
   }
 }
 
@@ -925,6 +929,7 @@ dynamics::RevoluteJoint::Properties SdfParser::readRevoluteJoint(
                     newRevoluteJoint.mPositionLowerLimit,
                     newRevoluteJoint.mPositionUpperLimit,
                     newRevoluteJoint.mInitialPosition,
+                    newRevoluteJoint.mRestPosition,
                     newRevoluteJoint.mDampingCoefficient);
   }
   else
@@ -956,6 +961,7 @@ dynamics::PrismaticJoint::Properties SdfParser::readPrismaticJoint(
                     newPrismaticJoint.mPositionLowerLimit,
                     newPrismaticJoint.mPositionUpperLimit,
                     newPrismaticJoint.mInitialPosition,
+                    newPrismaticJoint.mRestPosition,
                     newPrismaticJoint.mDampingCoefficient);
   }
   else
@@ -987,6 +993,7 @@ dynamics::ScrewJoint::Properties SdfParser::readScrewJoint(
                     newScrewJoint.mPositionLowerLimit,
                     newScrewJoint.mPositionUpperLimit,
                     newScrewJoint.mInitialPosition,
+                    newScrewJoint.mRestPosition,
                     newScrewJoint.mDampingCoefficient);
   }
   else
@@ -1025,6 +1032,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mPositionLowerLimits[0],
                     newUniversalJoint.mPositionUpperLimits[0],
                     newUniversalJoint.mInitialPositions[0],
+                    newUniversalJoint.mRestPositions[0],
                     newUniversalJoint.mDampingCoefficients[0]);
   }
   else
@@ -1044,6 +1052,7 @@ dynamics::UniversalJoint::Properties SdfParser::readUniversalJoint(
                     newUniversalJoint.mPositionLowerLimits[1],
                     newUniversalJoint.mPositionUpperLimits[1],
                     newUniversalJoint.mInitialPositions[1],
+                    newUniversalJoint.mRestPositions[1],
                     newUniversalJoint.mDampingCoefficients[1]);
   }
   else
