@@ -408,6 +408,8 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
   EndEffector* ee = new EndEffector(_parent, Properties());
   ee->copy(this);
 
+  ee->duplicateAddons(this);
+
   if(mIK)
     ee->mIK = mIK->clone(ee);
 
