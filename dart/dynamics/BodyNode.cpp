@@ -335,9 +335,12 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
     return;
   }
 
-  const NodeCleanerSet& otherCleaners = otherBodyNode->mNodeCleaners;
-  for(auto& cleaner : otherCleaners)
-    cleaner->getNode()->cloneNode(this)->attach();
+  const NodeMap& otherMap = otherBodyNode->mNodeMap;
+  for(const auto& vec : otherMap)
+  {
+    for(const Node* node : vec.second)
+      node->cloneNode(this)->attach();
+  }
 }
 
 //==============================================================================
