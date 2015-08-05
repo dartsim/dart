@@ -106,6 +106,12 @@ ConstSkeletonPtr Skeleton::getPtr() const
 }
 
 //==============================================================================
+std::mutex& Skeleton::getMutex() const
+{
+  return mMutex;
+}
+
+//==============================================================================
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)

@@ -66,7 +66,7 @@ public:
   virtual ~IpoptSolver();
 
   /// \copydoc Solver::solve
-  virtual bool solve();
+  virtual bool solve() override;
 
 private:
   /// \brief IPOPT nonlinear programming problem
@@ -92,7 +92,7 @@ public:
                             Ipopt::Index& m,
                             Ipopt::Index& nnz_jac_g,
                             Ipopt::Index& nnz_h_lag,
-                            Ipopt::TNLP::IndexStyleEnum& index_style);
+                            Ipopt::TNLP::IndexStyleEnum& index_style) override;
 
   /// \brief Method to return the bounds for my problem
   virtual bool get_bounds_info(Ipopt::Index n,
@@ -100,7 +100,7 @@ public:
                                Ipopt::Number* x_u,
                                Ipopt::Index m,
                                Ipopt::Number* g_l,
-                               Ipopt::Number* g_u);
+                               Ipopt::Number* g_u) override;
 
   /// \brief Method to return the starting point for the algorithm
   virtual bool get_starting_point(Ipopt::Index n,
@@ -111,27 +111,27 @@ public:
                                   Ipopt::Number* z_U,
                                   Ipopt::Index m,
                                   bool init_lambda,
-                                  Ipopt::Number* lambda);
+                                  Ipopt::Number* lambda) override;
 
   /// \brief Method to return the objective value
   virtual bool eval_f(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool _new_x,
                       Ipopt::Number&
-                      _obj_value);
+                      _obj_value) override;
 
   /// \brief Method to return the gradient of the objective
   virtual bool eval_grad_f(Ipopt::Index _n,
                            const Ipopt::Number* _x,
                            bool _new_x,
-                           Ipopt::Number* _grad_f);
+                           Ipopt::Number* _grad_f) override;
 
   /// \brief Method to return the constraint residuals
   virtual bool eval_g(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool _new_x,
                       Ipopt::Index _m,
-                      Ipopt::Number* _g);
+                      Ipopt::Number* _g) override;
 
   /// \brief Method to return:
   ///        1) The structure of the jacobian (if "values" is nullptr)
@@ -143,7 +143,7 @@ public:
                           Ipopt::Index _nele_jac,
                           Ipopt::Index* _iRow,
                           Ipopt::Index* _jCol,
-                          Ipopt::Number* _values);
+                          Ipopt::Number* _values) override;
 
   /// \brief Method to return:
   ///        1) The structure of the hessian of the lagrangian (if "values" is
@@ -160,7 +160,7 @@ public:
                       Ipopt::Index _nele_hess,
                       Ipopt::Index* _iRow,
                       Ipopt::Index* _jCol,
-                      Ipopt::Number* _values);
+                      Ipopt::Number* _values) override;
 
   /// \brief This method is called when the algorithm is complete so the TNLP
   ///        can store/write the solution
@@ -174,7 +174,7 @@ public:
                                  const Ipopt::Number* _lambda,
                                  Ipopt::Number _obj_value,
                                  const Ipopt::IpoptData* _ip_data,
-                                 Ipopt::IpoptCalculatedQuantities* _ip_cq);
+                                 Ipopt::IpoptCalculatedQuantities* _ip_cq) override;
 
 private:
   /// \brief DART optimization problem
@@ -194,4 +194,3 @@ private:
 }  // namespace dart
 
 #endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
-

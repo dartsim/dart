@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,27 +34,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#include <iostream>
+#include <gtest/gtest.h>
+#include "TestHelpers.h"
 
-#if WIN32
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/simulation/World.h"
+#include "dart/utils/sdf/SdfParser.h"
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+using namespace dart;
+using namespace math;
+using namespace dynamics;
+using namespace simulation;
+using namespace utils;
+
+//==============================================================================
+TEST(SdfParser, SDFSingleBodyWithoutJoint)
+{
+  // Regression test for #444
+  WorldPtr world
+      = SdfParser::readSdfFile(
+          DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
+  EXPECT_TRUE(world != nullptr);
+
+  SkeletonPtr skel = world->getSkeleton(0);
+  EXPECT_TRUE(skel != nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 1u);
+  EXPECT_EQ(skel->getNumJoints(), 1u);
+
+  BodyNodePtr bodyNode = skel->getBodyNode(0);
+  EXPECT_TRUE(bodyNode != nullptr);
+  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1u);
+  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1u);
+
+  JointPtr joint = skel->getJoint(0);
+  EXPECT_TRUE(joint != nullptr);
+  EXPECT_EQ(joint->getType(), FreeJoint::getStaticType());
+}
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

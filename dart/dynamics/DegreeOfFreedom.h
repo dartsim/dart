@@ -135,9 +135,6 @@ public:
   /// Get the position of this DegreeOfFreedom
   double getPosition() const;
 
-  /// Set the position of this DegreeOfFreedom to zero
-  void resetPosition();
-
   /// Set the position limits of this DegreeOfFreedom
   void setPositionLimits(double _lowerLimit, double _upperLimit);
 
@@ -168,6 +165,15 @@ public:
   /// Get whether the position of this DegreeOfFreedom has limits.
   bool hasPositionLimit() const;
 
+  /// Set the position of this DegreeOfFreedom to zero
+  void resetPosition();
+
+  /// Change the position that resetPosition() will give to this DegreeOfFreedom
+  void setInitialPosition(double _initial);
+
+  /// Get the position that resetPosition() will give to this DegreeOfFreedom
+  double getInitialPosition() const;
+
   /// \}
 
   //----------------------------------------------------------------------------
@@ -179,9 +185,6 @@ public:
 
   /// Get the velocity of this DegreeOfFreedom
   double getVelocity() const;
-
-  /// Set the velocity of this DegreeOfFreedom to zero
-  void resetVelocity();
 
   /// Set the velocity limits of this DegreeOfFreedom
   void setVelocityLimits(double _lowerLimit, double _upperLimit);
@@ -203,6 +206,15 @@ public:
 
   /// Get the upper Velocity limit of this DegreeOfFreedom
   double getVelocityUpperLimit() const;
+
+  /// Set the velocity of this DegreeOfFreedom to zero
+  void resetVelocity();
+
+  /// Change the velocity that resetVelocity() will give to this DegreeOfFreedom
+  void setInitialVelocity(double _initial);
+
+  /// Get the velocity that resetVelocity() will give to this DegreeOfFreedom
+  double getInitialVelocity() const;
 
   /// \}
 

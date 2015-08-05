@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,27 +34,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#include <iostream>
+#include <gtest/gtest.h>
+#include "dart/utils/urdf/DartLoader.h"
 
-#if WIN32
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+using dart::utils::DartLoader;
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"skel/test/does_not_exist.urdf"));
+}
+
+TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid.urdf"));
+}
+
+TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_mesh.urdf"));
+}
+
+TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid_mesh.urdf"));
+}
+
+TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
+{
+  DartLoader loader;
+  EXPECT_EQ(nullptr,
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_package.urdf"));
+}
+
+TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
+{
+  DartLoader loader;
+  EXPECT_TRUE(nullptr !=
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/primitive_geometry.urdf"));
+}
+
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

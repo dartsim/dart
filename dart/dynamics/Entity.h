@@ -96,6 +96,8 @@ public:
     /// Constructor
     Properties(const std::string& _name = "",
                const std::vector<ShapePtr>& _vizShapes=std::vector<ShapePtr>());
+
+    virtual ~Properties() = default;
   };
 
   /// Constructor for typical usage
