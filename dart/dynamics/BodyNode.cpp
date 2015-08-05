@@ -188,6 +188,62 @@ BodyNode::~BodyNode()
 }
 
 //==============================================================================
+void BodyNode::setProperties(const ExtendedProperties& _properties)
+{
+
+  setProperties(static_cast<const Properties&>(_properties));
+
+  setProperties(_properties.mNodeProperties);
+
+  setProperties(_properties.mAddonProperties);
+}
+
+//==============================================================================
+void BodyNode::setProperties(const NodeProperties& _properties)
+{
+  const NodePropertiesMap& propertiesMap = _properties.getMap();
+
+  NodeMap::iterator node_it = mNodeMap.begin();
+  NodePropertiesMap::const_iterator prop_it = propertiesMap.begin();
+
+  while( mNodeMap.end() != node_it && propertiesMap.end() != prop_it )
+  {
+    if( node_it->first == prop_it->first )
+    {
+      if( prop_it->second )
+      {
+        const std::vector<Node*>& node_vec = node_it->second;
+        const std::vector< std::unique_ptr<Node::Properties> >& prop_vec =
+            prop_it->second->getVector();
+        size_t stop = std::min(node_vec.size(), prop_vec.size());
+        for(size_t i=0; i < stop; ++i)
+        {
+          if(prop_vec[i])
+            node_vec[i]->setNodeProperties(prop_vec[i]);
+        }
+      }
+
+      ++node_it;
+      ++prop_it;
+    }
+    else if( node_it->first < prop_it->first )
+    {
+      ++node_it;
+    }
+    else
+    {
+      ++prop_it;
+    }
+  }
+}
+
+//==============================================================================
+void BodyNode::setProperties(const AddonProperties& _properties)
+{
+  setAddonProperties(_properties);
+}
+
+//==============================================================================
 void BodyNode::setProperties(const Properties& _properties)
 {
   Entity::setProperties(static_cast<const Entity::Properties&>(_properties));
@@ -260,7 +316,7 @@ void BodyNode::copy(const BodyNode& _otherBodyNode)
   if(this == &_otherBodyNode)
     return;
 
-  setProperties(_otherBodyNode.getBodyNodeProperties());
+  setProperties(_otherBodyNode.getExtendedProperties());
 }
 
 //==============================================================================

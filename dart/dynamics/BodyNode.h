@@ -172,10 +172,19 @@ public:
   /// Destructor
   virtual ~BodyNode();
 
+  /// Set the ExtendedProperties of this BodyNode
+  void setProperties(const ExtendedProperties& _properties);
+
+  /// Set the Properties of the attached Nodes
+  void setProperties(const NodeProperties& _properties);
+
+  /// Same as setAddonProperties()
+  void setProperties(const AddonProperties& _properties);
+
   /// Set the Properties of this BodyNode
   void setProperties(const Properties& _properties);
 
-  /// Set the Properties of this BodyNode
+  /// Set the UniqueProperties of this BodyNode
   void setProperties(const UniqueProperties& _properties);
 
   /// Get the Properties of this BodyNode
