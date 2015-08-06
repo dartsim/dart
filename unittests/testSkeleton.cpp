@@ -607,8 +607,13 @@ TEST(Skeleton, NodePersistence)
     // it will remain in the Skeleton for now
     EXPECT_EQ(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector(0), manip);
-    // But it will not remain in the BodyNode's indexing
+
+#ifdef NDEBUG // Release Mode
+    // But it will not remain in the BodyNode's indexing.
+    // Note: We should only run this test in release mode, because otherwise it
+    // will trigger an assertion.
     EXPECT_NE(skel->getBodyNode(0)->getEndEffector(0), manip);
+#endif        // Release Mode
 
     EXPECT_NE(weakManip.lock(), nullptr);
 
