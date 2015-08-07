@@ -137,7 +137,7 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
 template <class NodeType>
 size_t BodyNode::getNumNodes() const
 {
-  NodeMap::iterator it = mNodeMap.find(typeid(NodeType));
+  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
     return 0;
 
@@ -148,7 +148,7 @@ size_t BodyNode::getNumNodes() const
 template <class NodeType>
 NodeType* BodyNode::getNode(size_t index)
 {
-  NodeMap::iterator it = mNodeMap.find(typeid(NodeType));
+  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
     return nullptr;
 
