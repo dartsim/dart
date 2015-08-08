@@ -2,7 +2,13 @@
 # CMake settings
 #===============================================================================
 cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
-cmake_policy(SET CMP0042 NEW)
+
+# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
+# became default in CMake 3.0. Explicitly setting this policy is necessary to
+# suppress a warning in CMake 3.0 and above.
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
 
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
