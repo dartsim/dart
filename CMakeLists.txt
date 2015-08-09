@@ -3,6 +3,13 @@
 #===============================================================================
 cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
 
+# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
+# became default in CMake 3.0. Explicitly setting this policy is necessary to
+# suppress a warning in CMake 3.0 and above.
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
+
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4)
@@ -518,7 +525,7 @@ endif()
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
 message(STATUS ${PC_CONFIG_OUT})
-configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
+configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
