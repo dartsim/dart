@@ -411,6 +411,9 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 
       // Any other case means that the limits are both +inf, both -inf, or
       // either of them is NaN. This should generate warnings elsewhere.
+
+      // Apply the same logic to mRestPosition.
+      singleDof.mRestPosition = singleDof.mInitialPosition;
     }
   }
 
