@@ -99,7 +99,11 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   // glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
   // glutTimerFunc(mDisplayTimeout, runTimer, 0);
 
+#ifndef _WIN32
   glDisable(GL_MULTISAMPLE);
+#endif
+  // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
+  // detail.
 }
 
 void GlutWindow::reshape(int _w, int _h) {
