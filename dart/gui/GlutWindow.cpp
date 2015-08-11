@@ -37,7 +37,7 @@
 
 #include "dart/gui/GlutWindow.h"
 
-#ifndef WIN32
+#ifndef _WIN32
   #include <dirent.h>
 #endif
 #include <cstdio>
@@ -153,7 +153,7 @@ bool GlutWindow::screenshot() {
   char fileBase[32] = "frames/Capture";
   char fileName[64];
   // png
-#ifdef WIN32
+#ifdef _WIN32
   _snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
 #else
   std::snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
