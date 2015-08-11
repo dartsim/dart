@@ -37,7 +37,7 @@
 #ifndef DART_RENDERER_LOADOPENGL_H_
 #define DART_RENDERER_LOADOPENGL_H_
 
-#ifdef _WIN32
+#if defined(_WIN32)
   #ifdef NOMINMAX
     #include <windows.h>
   #else
