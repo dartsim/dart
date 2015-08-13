@@ -1013,12 +1013,6 @@ protected:
   // Structural Properties
   //--------------------------------------------------------------------------
 
-  /// Index of this BodyNode in its Skeleton
-  size_t mIndexInSkeleton;
-
-  /// Index of this BodyNode in its Tree
-  size_t mIndexInTree;
-
   /// Index of this BodyNode's tree
   size_t mTreeIndex;
 
@@ -1038,7 +1032,7 @@ protected:
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
-  /// Map that retrieves the cleaners for a given Node
+  /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
 
   /// A set for storing the Node cleaners

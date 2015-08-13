@@ -64,6 +64,27 @@ size_t AccessoryNode<NodeType>::getIndexInBodyNode() const
 
 //==============================================================================
 template <class NodeType>
+size_t AccessoryNode<NodeType>::getIndexInSkeleton() const
+{
+  return static_cast<const NodeType*>(this)->mIndexInSkeleton;
+}
+
+//==============================================================================
+template <class NodeType>
+size_t AccessoryNode<NodeType>::getIndexInTree() const
+{
+  return static_cast<const NodeType*>(this)->mIndexInTree;
+}
+
+//==============================================================================
+template <class NodeType>
+size_t AccessoryNode<NodeType>::getTreeIndex() const
+{
+  return static_cast<const NodeType*>(this)->getBodyNodePtr()->getTreeIndex();
+}
+
+//==============================================================================
+template <class NodeType>
 void AccessoryNode<NodeType>::remove()
 {
   return static_cast<NodeType*>(this)->stageForRemoval();

@@ -60,6 +60,9 @@ class Skeleton : public MetaSkeleton
 {
 public:
 
+  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+  using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
+
   struct Properties
   {
     /// Name
@@ -314,7 +317,7 @@ public:
   EndEffector* getEndEffector(const std::string& _name);
 
   /// Get EndEffector whose name is _name
-  const EndEffector* getEndEffector(const std::string &_name) const;
+  const EndEffector* getEndEffector(const std::string& _name) const;
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
@@ -795,6 +798,7 @@ public:
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
+  friend class Node;
   friend class EndEffector;
 
 protected:
@@ -812,8 +816,11 @@ protected:
   /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
-  /// Register an EndEffector with the Skeleton. Internal use only.
-  void registerEndEffector(EndEffector* _newEndEffector);
+  /// Register a Node with the Skeleton. Internal use only.
+  size_t registerNode(DataCache& cache, Node* _newNode, size_t& _index);
+
+  /// Register a Node with the Skeleton. Internal use only.
+  void registerNode(Node* _newNode);
 
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);
@@ -821,8 +828,11 @@ protected:
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
 
-  /// Remove an EndEffector from the Skeleton. Internal use only.
-  void unregisterEndEffector(EndEffector* _oldEndEffector);
+  /// Remove a Node from the Skeleton. Internal use only.
+  void unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index);
+
+  /// Remove a Node from the Skeleton. Internal use only.
+  void unregisterNode(Node* _oldNode);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
@@ -992,7 +1002,7 @@ protected:
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// NameManager for tracking EndEffectors
-  dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
+  NodeNameMgrMap mNodeNameMgrMap;
 
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;
@@ -1055,6 +1065,9 @@ protected:
 
     /// Cache for const Degrees of Freedom, for the sake of the API
     std::vector<const DegreeOfFreedom*> mConstDofs;
+
+    /// Map that retrieves the Nodes of a specified type
+    NodeMap mNodeMap;
 
     /// Mass matrix cache
     Eigen::MatrixXd mM;

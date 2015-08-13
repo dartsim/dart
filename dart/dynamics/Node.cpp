@@ -200,6 +200,10 @@ void Node::attach()
   assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
   assert(cleaners.find(cleaner) != cleaners.end());
 
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(skel)
+    skel->registerNode(this);
+
   mAmAttached = true;
 }
 
@@ -226,6 +230,9 @@ void Node::stageForRemoval()
 
   if(mBodyNode->mNodeMap.end() == it)
   {
+    // If the Node was not in the map, then its index should be invalid
+    assert(INVALID_INDEX == mIndexInBodyNode);
+
     // If the Node was not in the map, then its cleaner should not be in the set
     assert(cleaners.find(cleaner) == cleaners.end());
     return;
@@ -247,6 +254,10 @@ void Node::stageForRemoval()
     nodes[i]->mIndexInBodyNode = i;
 
   assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(skel)
+    skel->unregisterNode(this);
 
   mIndexInBodyNode = INVALID_INDEX;
   mAmAttached = false;

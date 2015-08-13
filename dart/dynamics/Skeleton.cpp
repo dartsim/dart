@@ -1484,30 +1484,39 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
+size_t Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
 {
-#ifndef NDEBUG // Debug mode
-  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
-                                                mEndEffectors.end(),
-                                                _newEndEffector);
+  NodeMap& nodeMap = cache.mNodeMap;
+  NodeMap::iterator it = nodeMap.find(typeid(_newNode));
 
-  if(it != mEndEffectors.end())
+  if(nodeMap.end() == it)
   {
-    dterr << "[Skeleton::registerEndEffector] Attempting to double-register "
-           << "an EndEffector named [" << _newEndEffector->getName() << "] ("
-           << _newEndEffector << ") in the Skeleton named [" << getName()
-           << "] (" << this << "). This is most likely a bug. Please report "
-           << "this!\n";
-    assert(false);
-    return;
+    nodeMap[typeid(*_newNode)] = std::vector<Node*>();
+    it = nodeMap.find(typeid(*this));
   }
-#endif // ------- Debug mode
 
-  mEndEffectors.push_back(_newEndEffector);
-  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+  std::vector<Node*>& nodes = it->second;
 
-  // The EndEffector name gets added when the EndEffector is constructed, so we
-  // don't need to add it here.
+  if(INVALID_INDEX == _index)
+  {
+    // If this Node believes its index is invalid, then it should not exist
+    // anywhere in the vector
+    assert(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
+
+    nodes.push_back(_newNode);
+    _index = nodes.size()-1;
+  }
+
+  assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+}
+
+//==============================================================================
+void Skeleton::registerNode(Node* _newNode)
+{
+  registerNode(mSkelCache, _newNode, _newNode->mIndexInSkeleton);
+
+  registerNode(mTreeCache[_newNode->getBodyNodePtr()->getTreeIndex()],
+      _newNode, _newNode->mIndexInTree);
 }
 
 //==============================================================================
@@ -1629,19 +1638,57 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
+void Skeleton::unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index)
 {
-  size_t index = _oldEndEffector->getIndexInSkeleton();
-  assert(mEndEffectors[index] == _oldEndEffector);
-  mEndEffectors.erase(mEndEffectors.begin() + index);
+  NodeMap& nodeMap = cache.mNodeMap;
+  NodeMap::iterator it = nodeMap.find(typeid(_newNode));
 
-  for(size_t i=index; i < mEndEffectors.size(); ++i)
+  if(nodeMap.end() == it)
   {
-    EndEffector* ee = mEndEffectors[i];
-    ee->mIndexInSkeleton = i;
+    // If the Node was not in the map, then its index should be invalid
+    assert(INVALID_INDEX == _index);
+    return;
   }
 
-  mNameMgrForEndEffectors.removeName(_oldEndEffector->getName());
+  std::vector<Node*>& nodes = it->second;
+
+  // This Node's index in the vector should be referring to this Node
+  assert(nodes[_index] == _oldNode);
+  nodes.erase(nodes.begin() + _index);
+
+  _index = INVALID_INDEX;
+}
+
+//==============================================================================
+void Skeleton::unregisterNode(Node* _oldNode)
+{
+  const size_t indexInSkel = _oldNode->mIndexInSkeleton;
+  unregisterNode(mSkelCache, _oldNode, _oldNode->mIndexInSkeleton);
+
+  const std::vector<Node*>& skelNodes =
+      mSkelCache.mNodeMap.find(typeid(*_oldNode));
+
+  for(size_t i=indexInSkel; i < skelNodes.size(); ++i)
+    skelNodes[i]->mIndexInSkeleton = i;
+
+  const size_t indexInTree = _oldNode->mIndexInTree;
+  const size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
+  unregisterNode(mTreeCache[treeIndex], _oldNode, _oldNode->mIndexInTree);
+
+  const std::vector<Node*>& treeNodes =
+      mTreeCache[treeIndex].mNodeMap.find(typeid(*_oldNode));
+
+  for(size_t i=indexInTree; i < treeNodes.size(); ++i)
+    treeNodes[i]->mIndexInTree = i;
+
+  // Remove it from the NameManager, if a NameManager is being used for this
+  // type.
+  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(typeid(*_oldNode));
+  if(mNodeNameMgrMap.end() != it)
+  {
+    common::NameManager& mgr = it->second;
+    mgr.removeObject(_oldNode);
+  }
 }
 
 //==============================================================================

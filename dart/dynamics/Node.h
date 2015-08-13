@@ -82,6 +82,7 @@ class Node : public virtual common::Subject
 public:
 
   friend class BodyNode;
+  friend class Skeleton;
   template<class> friend class AccessoryNode;
   template<class, class> friend class TemplateNodePtr;
   template<class, class> friend class TemplateWeakNodePtr;
@@ -197,8 +198,14 @@ protected:
   /// bool that tracks whether this Node is attached to its BodyNode
   bool mAmAttached;
 
-  /// The index of this Node within its vector in the NodeMap
+  /// The index of this Node within its vector in its BodyNode's NodeMap
   size_t mIndexInBodyNode;
+
+  /// The index of this Node within its vector in its Skeleton's NodeMap
+  size_t mIndexInSkeleton;
+
+  /// Index of this Node within its tree
+  size_t mIndexInTree;
 };
 
 /// AccessoryNode provides an interface for Nodes to get their index within the
@@ -214,6 +221,15 @@ public:
 
   /// Get the index of this Node within its BodyNode.
   size_t getIndexInBodyNode() const;
+
+  /// Get the index of this Node within its Skeleton.
+  size_t getIndexInSkeleton() const;
+
+  /// Get the index of this Node within its tree.
+  size_t getIndexInTree() const;
+
+  /// Get the index of this Node's tree within its Skeleton
+  size_t getTreeIndex() const;
 
   /// Stage the Node for removal. When all strong references to the Node expire,
   /// the Node will be removed from its BodyNode and deleted.

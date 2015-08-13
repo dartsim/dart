@@ -82,9 +82,9 @@ protected:
 
 };
 
-class EndEffector : public FixedFrame,
-                    public AccessoryNode<EndEffector>,
-                    public TemplatedJacobianNode<EndEffector>
+class EndEffector final : public FixedFrame,
+                          public AccessoryNode<EndEffector>,
+                          public TemplatedJacobianNode<EndEffector>
 {
 public:
 
