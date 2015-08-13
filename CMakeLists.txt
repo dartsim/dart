@@ -10,6 +10,13 @@ if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif()
 
+# Simplify variable reference and escape sequence evaluation. This was added in
+# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
+# in CMake 3.1 and above.
+if(POLICY CMP0053)
+  cmake_policy(SET CMP0053 NEW)
+endif()
+
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4)
