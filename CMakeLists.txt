@@ -332,7 +332,8 @@ endif()
 #===============================================================================
 # DART dependency variable settings
 #===============================================================================
-set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
+set(DART_CORE_DEPENDENCIES ${CCD_LIBRARIES}
+                           ${FCL_LIBRARIES}
                            ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
@@ -364,6 +365,7 @@ endif()
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
 include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
 include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
