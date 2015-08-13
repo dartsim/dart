@@ -1433,7 +1433,8 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   _newBodyNode->init(getPtr());
 
-  for(EndEffector* ee : mEndEffectors)
+  std::vector<EndEffector*>& endEffectors = _newBodyNode->mEndEffectors;
+  for(EndEffector* ee : endEffectors)
     registerEndEffector(ee);
 
   updateTotalMass();
@@ -1542,7 +1543,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
 
-  for(EndEffector* ee : mEndEffectors)
+  std::vector<EndEffector*>& endEffectors = _oldBodyNode->mEndEffectors;
+  for(EndEffector* ee : endEffectors)
     unregisterEndEffector(ee);
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
