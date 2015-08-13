@@ -81,6 +81,12 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
+  // Documentation inherited
+  const std::string& setName(const std::string& _name) override = 0;
+
+  // Documentation inherited
+  const std::string& getName() const override final;
+
   /// Return the Skeleton this JacobianNode is attached to
   virtual std::shared_ptr<Skeleton> getSkeleton() = 0;
 

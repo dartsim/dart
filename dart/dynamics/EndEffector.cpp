@@ -105,14 +105,6 @@ EndEffector::Properties::Properties(
 }
 
 //==============================================================================
-EndEffector::~EndEffector()
-{
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->unregisterEndEffector(this);
-}
-
-//==============================================================================
 void EndEffector::setProperties(const Properties& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);

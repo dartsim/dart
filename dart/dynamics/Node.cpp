@@ -152,8 +152,10 @@ std::string Node::registerNameChange(const std::string& newName)
   Skeleton::NodeNameMgrMap::iterator it =
       skel->mNodeNameMgrMap.find(typeid(*this));
 
-  common::NameManager& mgr = it->second;
+  if(skel->mNodeNameMgrMap.end() == it)
+    return newName;
 
+  common::NameManager<Node*>& mgr = it->second;
   return mgr.changeObjectName(this, newName);
 }
 

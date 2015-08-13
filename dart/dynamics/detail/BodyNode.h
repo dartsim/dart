@@ -193,13 +193,6 @@ EndEffectorT* BodyNode::createEndEffector(const std::string& _name)
   return createNode<EndEffectorT>(properties);
 }
 
-//==============================================================================
-template <class NodeType>
-void BodyNode::registerNode(NodeType* node)
-{
-  // Do nothing
-}
-
 } // namespace dynamics
 } // namespace dart
 

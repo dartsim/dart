@@ -124,6 +124,12 @@ public:
   /// Virtual destructor
   virtual ~Node() = default;
 
+  /// Set the name of this Node
+  virtual const std::string& setName(const std::string& newName) = 0;
+
+  /// Get the name of this Node
+  virtual const std::string& getName() const = 0;
+
   /// Set the State of this Node. By default, this does nothing.
   virtual void setNodeState(const std::unique_ptr<State>& otherState);
 

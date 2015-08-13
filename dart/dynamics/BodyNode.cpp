@@ -833,12 +833,6 @@ const BodyNode* BodyNode::getParentBodyNode() const
 }
 
 //==============================================================================
-void BodyNode::registerNode(EndEffector* ee)
-{
-  getSkeleton()->registerEndEffector(ee);
-}
-
-//==============================================================================
 void BodyNode::addChildBodyNode(BodyNode* _body)
 {
   assert(_body != nullptr);
@@ -1224,6 +1218,15 @@ BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
       new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
 
   clonedBn->matchAddons(this);
+
+  for(const auto& nodeType : mNodeMap)
+  {
+    for(const auto& node : nodeType.second)
+    {
+      Node* clonedNode = node->cloneNode(clonedBn);
+      clonedNode->attach();
+    }
+  }
 
   return clonedBn;
 }

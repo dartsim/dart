@@ -834,15 +834,6 @@ protected:
   /// Initialize the vector members with proper sizes.
   virtual void init(const SkeletonPtr& _skeleton);
 
-  /// We use function overloads to allow for special handling of certain types
-  /// of Nodes. If a Node is not a special type, then it will be passed into
-  /// this templated overload, which will do nothing with it.
-  template<class NodeType>
-  void registerNode(NodeType* node);
-
-  /// If the Node is an EndEffector, register it with the Skeleton.
-  void registerNode(EndEffector* ee);
-
   /// Add a child bodynode into the bodynode
   void addChildBodyNode(BodyNode* _body);
 

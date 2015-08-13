@@ -160,9 +160,6 @@ SkeletonPtr Skeleton::clone() const
       newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
 
     skelClone->registerBodyNode(newBody);
-
-    for(size_t i=0; i < newBody->getNumEndEffectors(); ++i)
-      skelClone->registerEndEffector(newBody->getEndEffector(i));
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -209,8 +206,10 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
-  mNameMgrForEndEffectors.setManagerName(
-        "Skeleton::EndEffector | "+mSkeletonP.mName);
+
+  for(auto& mgr : mNodeNameMgrMap)
+    mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
+                               + " | " + mSkeletonP.mName );
 
   ConstMetaSkeletonPtr me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
@@ -1399,9 +1398,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   _newBodyNode->init(getPtr());
 
-  std::vector<EndEffector*>& endEffectors = _newBodyNode->mEndEffectors;
-  for(EndEffector* ee : endEffectors)
-    registerEndEffector(ee);
+  BodyNode::NodeMap& nodeMap = _newBodyNode->mNodeMap;
+  for(auto& nodeType : nodeMap)
+    for(auto& node : nodeType.second)
+      registerNode(node);
 
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
@@ -1481,7 +1481,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
 size_t Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
 {
   NodeMap& nodeMap = cache.mNodeMap;
-  NodeMap::iterator it = nodeMap.find(typeid(_newNode));
+  NodeMap::iterator it = nodeMap.find(typeid(*_newNode));
 
   if(nodeMap.end() == it)
   {
@@ -1511,6 +1511,20 @@ void Skeleton::registerNode(Node* _newNode)
 
   registerNode(mTreeCache[_newNode->getBodyNodePtr()->getTreeIndex()],
       _newNode, _newNode->mIndexInTree);
+
+  const std::type_info& info = typeid(*_newNode);
+  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(info);
+  if(mNodeNameMgrMap.end() == it)
+  {
+    mNodeNameMgrMap[info] = common::NameManager<Node*>(
+          std::string("Skeleton::") + info.name() + " | " + mSkeletonP.mName,
+          info.name() );
+
+    it = mNodeNameMgrMap.find(info);
+  }
+
+  common::NameManager<Node*>& mgr = it->second;
+  _newNode->setName(mgr.issueNewNameAndAdd(_newNode->getName(), _newNode));
 }
 
 //==============================================================================
@@ -1518,9 +1532,10 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
 
-  std::vector<EndEffector*>& endEffectors = _oldBodyNode->mEndEffectors;
-  for(EndEffector* ee : endEffectors)
-    unregisterEndEffector(ee);
+  BodyNode::NodeMap& nodeMap = _oldBodyNode->mNodeMap;
+  for(auto& nodeType : nodeMap)
+    for(auto& node : nodeType.second)
+      unregisterNode(node);
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
@@ -1636,7 +1651,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 void Skeleton::unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index)
 {
   NodeMap& nodeMap = cache.mNodeMap;
-  NodeMap::iterator it = nodeMap.find(typeid(_newNode));
+  NodeMap::iterator it = nodeMap.find(typeid(*_oldNode));
 
   if(nodeMap.end() == it)
   {
@@ -1660,9 +1675,10 @@ void Skeleton::unregisterNode(Node* _oldNode)
   const size_t indexInSkel = _oldNode->mIndexInSkeleton;
   unregisterNode(mSkelCache, _oldNode, _oldNode->mIndexInSkeleton);
 
-  const std::vector<Node*>& skelNodes =
-      mSkelCache.mNodeMap.find(typeid(*_oldNode));
+  NodeMap::iterator node_it = mSkelCache.mNodeMap.find(typeid(*_oldNode));
+  assert(mSkelCache.mNodeMap.end() != node_it);
 
+  const std::vector<Node*>& skelNodes = node_it->second;
   for(size_t i=indexInSkel; i < skelNodes.size(); ++i)
     skelNodes[i]->mIndexInSkeleton = i;
 
@@ -1670,18 +1686,19 @@ void Skeleton::unregisterNode(Node* _oldNode)
   const size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
   unregisterNode(mTreeCache[treeIndex], _oldNode, _oldNode->mIndexInTree);
 
-  const std::vector<Node*>& treeNodes =
-      mTreeCache[treeIndex].mNodeMap.find(typeid(*_oldNode));
+  node_it = mTreeCache[treeIndex].mNodeMap.find(typeid(*_oldNode));
+  assert(mTreeCache[treeIndex].mNodeMap.end() != node_it);
 
+  const std::vector<Node*>& treeNodes = node_it->second;
   for(size_t i=indexInTree; i < treeNodes.size(); ++i)
     treeNodes[i]->mIndexInTree = i;
 
   // Remove it from the NameManager, if a NameManager is being used for this
   // type.
-  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(typeid(*_oldNode));
-  if(mNodeNameMgrMap.end() != it)
+  NodeNameMgrMap::iterator name_it = mNodeNameMgrMap.find(typeid(*_oldNode));
+  if(mNodeNameMgrMap.end() != name_it)
   {
-    common::NameManager& mgr = it->second;
+    common::NameManager<Node*>& mgr = name_it->second;
     mgr.removeObject(_oldNode);
   }
 }

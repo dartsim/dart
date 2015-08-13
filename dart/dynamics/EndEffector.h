@@ -113,7 +113,7 @@ public:
   };
 
   /// Destructor
-  virtual ~EndEffector();
+  virtual ~EndEffector() = default;
 
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
