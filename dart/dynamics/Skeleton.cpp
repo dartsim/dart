@@ -247,13 +247,6 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
 }
 
 //==============================================================================
-void Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
-{
-  _ee->mEntityP.mName =
-      mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
-}
-
-//==============================================================================
 void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 {
   // Note: This doesn't need the same checks as BodyNode and Joint, because

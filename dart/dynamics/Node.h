@@ -158,8 +158,14 @@ protected:
   /// Allow your Node implementation to be cloned into a new BodyNode
   virtual Node* cloneNode(BodyNode* bn) const = 0;
 
-  /// Used when constructing a Node type that does NOT inherit from BodyNode
+  /// Constructor
   Node(BodyNode* _bn);
+
+  /// Inform the Skeleton that the name of this Node has changed. If the name is
+  /// already taken by another Node of the same type, then this function will
+  /// return a modified version which is unique. If the name is not already
+  /// taken, then it will just return the same name that the function was given.
+  std::string registerNameChange(const std::string& newName);
 
   /// Set the State pointer for this Node.
   ///

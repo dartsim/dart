@@ -957,9 +957,6 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint, bool _updateDofNames=true);
 
-  /// Add an EndEffector to the EndEffector NameManager
-  void addEntryToEndEffectorNameMgr(EndEffector* _ee);
-
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 

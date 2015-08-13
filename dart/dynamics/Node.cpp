@@ -143,6 +143,21 @@ Node::Node(BodyNode* _bn)
 }
 
 //==============================================================================
+std::string Node::registerNameChange(const std::string& newName)
+{
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(nullptr == skel)
+    return newName;
+
+  Skeleton::NodeNameMgrMap::iterator it =
+      skel->mNodeNameMgrMap.find(typeid(*this));
+
+  common::NameManager& mgr = it->second;
+
+  return mgr.changeObjectName(this, newName);
+}
+
+//==============================================================================
 void Node::setNodeStatePtr(State* ptr)
 {
   mNodeStatePtr = ptr;

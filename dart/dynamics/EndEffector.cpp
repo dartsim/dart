@@ -168,10 +168,7 @@ const std::string& EndEffector::setName(const std::string& _name)
   if(mEntityP.mName == _name && !_name.empty())
     return mEntityP.mName;
 
-  // Remove the current name entry and add a new name entry
-  getSkeleton()->mNameMgrForEndEffectors.removeName(mEntityP.mName);
-  mEntityP.mName = _name;
-  getSkeleton()->addEntryToEndEffectorNameMgr(this);
+  mEntityP.mName = registerNameChange(_name);
 
   // Return the resulting name, after it has been checked for uniqueness
   return mEntityP.mName;
