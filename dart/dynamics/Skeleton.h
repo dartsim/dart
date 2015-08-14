@@ -820,7 +820,7 @@ protected:
   void registerJoint(Joint* _newJoint);
 
   /// Register a Node with the Skeleton. Internal use only.
-  size_t registerNode(DataCache& cache, Node* _newNode, size_t& _index);
+  void registerNode(DataCache& cache, Node* _newNode, size_t& _index);
 
   /// Register a Node with the Skeleton. Internal use only.
   void registerNode(Node* _newNode);

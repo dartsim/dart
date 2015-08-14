@@ -511,6 +511,16 @@ size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 //==============================================================================
 const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
 {
+  if(_treeIdx >= mTreeCache.size())
+  {
+    size_t count = mTreeCache.size();
+    dterr << "[Skeleton::getTreeBodyNodes] Requesting an invalid tree ("
+          << _treeIdx << ") "
+          << (count > 0? (std::string("when the max tree index is (") + std::to_string(count-1) + ")\n" ) :
+                         std::string("when there are no trees in this Skeleton\n") );
+    assert(false);
+  }
+
   return mTreeCache[_treeIdx].mBodyNodes;
 }
 
@@ -1499,7 +1509,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-size_t Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
+void Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
 {
   NodeMap& nodeMap = cache.mNodeMap;
   NodeMap::iterator it = nodeMap.find(typeid(*_newNode));
@@ -1551,8 +1561,7 @@ void Skeleton::registerNode(Node* _newNode)
 //==============================================================================
 void Skeleton::destructOldTree(size_t tree)
 {
-  DataCache& cache = mTreeCache[tree];
-  assert(cache.mBodyNodes.size() == 0);
+  assert(mTreeCache[tree].mBodyNodes.size() == 0);
 
   mTreeCache.erase(mTreeCache.begin() + tree);
 
