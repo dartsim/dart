@@ -603,16 +603,22 @@ TEST(Skeleton, NodePersistence)
 
     manip->remove();
 
-    // The Node has been removed, but a strong reference to it still exists, so
-    // it will remain in the Skeleton for now
-    EXPECT_EQ(skel->getEndEffector("manip"), manip);
-    EXPECT_EQ(skel->getEndEffector(0), manip);
+    // The Node has been removed, so no reference to it will exist in the
+    // Skeleton
+#ifdef NDEBUG // Release Mode
+    EXPECT_NE(skel->getEndEffector("manip"), manip);
+    EXPECT_EQ(skel->getEndEffector("manip"), nullptr);
+
+    EXPECT_NE(skel->getEndEffector(0), manip);
+    EXPECT_EQ(skel->getEndEffector(0), nullptr);
+#endif        // Release Mode
 
 #ifdef NDEBUG // Release Mode
     // But it will not remain in the BodyNode's indexing.
     // Note: We should only run this test in release mode, because otherwise it
     // will trigger an assertion.
     EXPECT_NE(skel->getBodyNode(0)->getEndEffector(0), manip);
+    EXPECT_EQ(skel->getBodyNode(0)->getEndEffector(0), nullptr);
 #endif        // Release Mode
 
     EXPECT_NE(weakManip.lock(), nullptr);

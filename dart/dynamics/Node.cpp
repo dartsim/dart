@@ -130,7 +130,9 @@ std::shared_ptr<NodeCleaner> Node::generateCleaner()
 Node::Node(BodyNode* _bn)
   : mBodyNode(_bn),
     mAmAttached(false),
-    mIndexInBodyNode(INVALID_INDEX)
+    mIndexInBodyNode(INVALID_INDEX),
+    mIndexInSkeleton(INVALID_INDEX),
+    mIndexInTree(INVALID_INDEX)
 {
   if(nullptr == mBodyNode)
   {

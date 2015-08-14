@@ -1503,7 +1503,7 @@ void Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
     _index = nodes.size()-1;
   }
 
-  assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+  assert(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
 }
 
 //==============================================================================
@@ -1532,8 +1532,6 @@ void Skeleton::registerNode(Node* _newNode)
 //==============================================================================
 void Skeleton::destructOldTree(size_t tree)
 {
-  assert(mTreeCache[tree].mBodyNodes.size() == 0);
-
   mTreeCache.erase(mTreeCache.begin() + tree);
 
   // Decrease the tree index of every BodyNode whose tree index is higher than
