@@ -810,6 +810,9 @@ protected:
   /// Setup this Skeleton with its shared_ptr
   void setPtr(const SkeletonPtr& _ptr);
 
+  /// Construct a new tree in the Skeleton
+  void constructNewTree();
+
   /// Register a BodyNode with the Skeleton. Internal use only.
   void registerBodyNode(BodyNode* _newBodyNode);
 
@@ -821,6 +824,9 @@ protected:
 
   /// Register a Node with the Skeleton. Internal use only.
   void registerNode(Node* _newNode);
+
+  /// Remove an old tree from the Skeleton
+  void destructOldTree(size_t tree);
 
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);
@@ -1115,6 +1121,10 @@ protected:
   mutable std::vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
+
+  using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+
+  SpecializedTreeNodes mSpecializedTreeNodes;
 
   /// Total mass.
   double mTotalMass;

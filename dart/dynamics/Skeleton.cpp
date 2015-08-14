@@ -1350,6 +1350,26 @@ void Skeleton::setPtr(const SkeletonPtr& _ptr)
 }
 
 //==============================================================================
+void Skeleton::constructNewTree()
+{
+  mTreeCache.push_back(DataCache());
+  DataCache& cache = mTreeCache.back();
+
+  // Create the machinery needed to directly call on specialized node types
+  for(auto& nodeType : mSpecializedTreeNodes)
+  {
+    NodeMap& nodeMap = cache.mNodeMap;
+    const std::type_index& index = nodeType.first;
+    nodeMap[index] = std::vector<Node*>();
+
+    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
+    nodeRepo->push_back(nodeMap.find(index));
+
+    assert(nodeRepo->size() == mTreeCache.size());
+  }
+}
+
+//==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
 #ifndef NDEBUG  // Debug mode
@@ -1370,8 +1390,9 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   mSkelCache.mBodyNodes.push_back(_newBodyNode);
   if(nullptr == _newBodyNode->getParentBodyNode())
   {
+    // Create a new tree and add the new BodyNode to it
     _newBodyNode->mIndexInTree = 0;
-    mTreeCache.push_back(DataCache());
+    constructNewTree();
     mTreeCache.back().mBodyNodes.push_back(_newBodyNode);
     _newBodyNode->mTreeIndex = mTreeCache.size()-1;
   }
@@ -1528,6 +1549,31 @@ void Skeleton::registerNode(Node* _newNode)
 }
 
 //==============================================================================
+void Skeleton::destructOldTree(size_t tree)
+{
+  DataCache& cache = mTreeCache[tree];
+  assert(cache.mBodyNodes.size() == 0);
+
+  mTreeCache.erase(mTreeCache.begin() + tree);
+
+  // Decrease the tree index of every BodyNode whose tree index is higher than
+  // the one which is being removed. None of the BodyNodes that predate the
+  // current one can have a higher tree index, so they can be ignored.
+  for(size_t i=tree; i < mTreeCache.size(); ++i)
+  {
+    DataCache& loweredTree = mTreeCache[i];
+    for(size_t j=0; j < loweredTree.mBodyNodes.size(); ++j)
+      loweredTree.mBodyNodes[j]->mTreeIndex = i;
+  }
+
+  for(auto& nodeType : mSpecializedTreeNodes)
+  {
+    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
+    nodeRepo->erase(nodeRepo->begin() + tree);
+  }
+}
+
+//==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
@@ -1561,18 +1607,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     size_t tree = _oldBodyNode->getTreeIndex();
     assert(mTreeCache[tree].mBodyNodes.size() == 1);
     assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
-    mTreeCache.erase(mTreeCache.begin() + tree);
 
-    // Decrease the tree index of every BodyNode whose tree index is higher than
-    // the one which is being removed. None of the BodyNodes that predate the
-    // current one can have a higher tree index, so they can be ignored.
-    for(size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
-    {
-      BodyNode* bn = mSkelCache.mBodyNodes[i];
-      if(bn->mTreeIndex > tree)
-        --bn->mTreeIndex;
-    }
-
+    destructOldTree(tree);
     updateCacheDimensions(mSkelCache);
   }
   else
