@@ -207,13 +207,13 @@ void AccessoryNode<NodeType>::reattach()
                                                                                                               \
   inline NodeName * get ## NodeName (size_t index)                                                            \
   { return static_cast< NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }                    \
-  inline NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex)                                      \
+  inline NodeName * get ## NodeName (size_t treeIndex, size_t nodeIndex)                                      \
   { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
   return static_cast< NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }       \
                                                                                                               \
   inline const NodeName * get ## NodeName (size_t index) const                                                \
   { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }               \
-  inline const NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex) const                          \
+  inline const NodeName * get ## NodeName (size_t treeIndex, size_t nodeIndex) const                          \
   { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
   return static_cast<const NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }  \
                                                                                                               \
@@ -235,9 +235,9 @@ void AccessoryNode<NodeType>::reattach()
   template <> inline size_t SkelType :: getNumNodes< NodeName >() const { return getNum ## PluralName (); }                                                       \
   template <> inline size_t SkelType :: getNumNodes< NodeName >(size_t index) const { return getNum ## PluralName(index); }                                       \
   template <> inline NodeName* SkelType :: getNode< NodeName >(size_t index) { return get ## NodeName (index); }                                                  \
-  template <> inline NodeName* SkelType :: getNode< NodeName >(size_t nodeIndex, size_t treeIndex) { return get ## NodeName(nodeIndex, treeIndex); }              \
+  template <> inline NodeName* SkelType :: getNode< NodeName >(size_t treeIndex, size_t nodeIndex) { return get ## NodeName(treeIndex, nodeIndex); }              \
   template <> inline const NodeName* SkelType :: getNode< NodeName >(size_t index) const { return get ## NodeName (index); }                                      \
-  template <> inline const NodeName* SkelType :: getNode< NodeName >(size_t nodeIndex, size_t treeIndex) const { return get ## NodeName(nodeIndex, treeIndex); }  \
+  template <> inline const NodeName* SkelType :: getNode< NodeName >(size_t treeIndex, size_t nodeIndex) const { return get ## NodeName(treeIndex, nodeIndex); }  \
   template <> inline NodeName* SkelType::getNode< NodeName >(const std::string& name) { return get ## NodeName (name); }                                          \
   template <> inline const NodeName* SkelType::getNode< NodeName >(const std::string& name) const { return get ## NodeName (name); }
 
