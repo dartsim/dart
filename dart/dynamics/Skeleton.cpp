@@ -640,36 +640,6 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
-size_t Skeleton::getNumEndEffectors() const
-{
-  return mEndEffectors.size();
-}
-
-//==============================================================================
-EndEffector* Skeleton::getEndEffector(size_t _idx)
-{
-  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
-}
-
-//==============================================================================
-const EndEffector* Skeleton::getEndEffector(size_t _idx) const
-{
-  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
-}
-
-//==============================================================================
-EndEffector* Skeleton::getEndEffector(const std::string& _name)
-{
-  return mNameMgrForEndEffectors.getObject(_name);
-}
-
-//==============================================================================
-const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
-{
-  return mNameMgrForEndEffectors.getObject(_name);
-}
-
-//==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
 {
   if(nullptr == mWholeBodyIK && _createIfNull)
@@ -1349,6 +1319,7 @@ Skeleton::Skeleton(const Properties& _properties)
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
+  DART_SKEL_INSTANTIATE_SPECIALIZED_NODE( EndEffector )
   setProperties(_properties);
 }
 

@@ -37,6 +37,141 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETON_H_
 #define DART_DYNAMICS_DETAIL_SKELETON_H_
 
+#include "dart/dynamics/Skeleton.h"
+
+namespace dart {
+namespace dynamics {
+
+//==============================================================================
+template <class NodeType>
+size_t Skeleton::getNumNodes() const
+{
+  NodeMap::const_iterator it = mSkelCache.mNodeMap.find(typeid(NodeType));
+  if(mSkelCache.mNodeMap.end() == it)
+    return 0;
+
+  return it->second.size();
+}
+
+//==============================================================================
+template <class NodeType>
+size_t Skeleton::getNumNodes(size_t treeIndex) const
+{
+  if(treeIndex >= mTreeCache.size())
+  {
+    dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
+          << "Requested tree index (" << treeIndex << "), but there are only ("
+          << mTreeCache.size() << ") trees available\n";
+    assert(false);
+    return 0;
+  }
+
+  const DataCache& cache = mTreeCache[treeIndex];
+
+  NodeMap::const_iterator it = cache.mNodeMap.find(typeid(NodeType));
+
+  if(cache.mNodeMap.end() == it)
+    return 0;
+
+  return it->second.size();
+}
+
+//==============================================================================
+template <class NodeType>
+NodeType* Skeleton::getNode(size_t index)
+{
+  NodeMap::iterator it = mSkelCache.mNodeMap.find(typeid(NodeType));
+  if(mSkelCache.mNodeMap.end() == it)
+  {
+    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
+          << "Requested index (" << index << "), but there are no Nodes of the "
+          << "requested type in this Skeleton\n";
+    assert(false);
+    return nullptr;
+  }
+
+  if(index >= it->second.size())
+  {
+    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
+          << "Requested index (" << index << "), but there are only ("
+          << it->second.size() << ") Nodes of the requested type in this "
+          << "Skeleton\n";
+    assert(false);
+    return nullptr;
+  }
+
+  return static_cast<NodeType*>(it->second[index]);
+}
+
+//==============================================================================
+template <class NodeType>
+NodeType* Skeleton::getNode(size_t nodeIndex, size_t treeIndex)
+{
+  if(treeIndex >= mTreeCache.size())
+  {
+    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
+          << "Requested tree index (" << treeIndex << "), but there are only ("
+          << mTreeCache.size() << ") trees available\n";
+    assert(false);
+    return nullptr;
+  }
+
+  DataCache& cache = mTreeCache[treeIndex];
+  NodeMap::iterator it = cache.mNodeMap.find(typeid(NodeType));
+  if(cache.mNodeMap.end() == it)
+  {
+    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
+          << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
+          << "), but there are no Nodes of the requested type in this tree\n";
+    assert(false);
+    return nullptr;
+  }
+
+  if(nodeIndex >= it->second.size())
+  {
+    dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
+          << "Requested index (" << nodeIndex << ") within tree (" << treeIndex
+          << "), but there are only (" << it->second.size() << ") Nodes of the "
+          << "requested type within that tree\n";
+    assert(false);
+    return nullptr;
+  }
+
+  return static_cast<NodeType*>(it->second[nodeIndex]);
+}
+
+//==============================================================================
+template <class NodeType>
+const NodeType* Skeleton::getNode(size_t index) const
+{
+  return const_cast<Skeleton*>(this)->getNode<NodeType>(index);
+}
+
+//==============================================================================
+template <class NodeType>
+const NodeType* Skeleton::getNode(size_t nodeIndex, size_t treeIndex) const
+{
+  return const_cast<Skeleton*>(this)->getNode<NodeType>(nodeIndex, treeIndex);
+}
+
+//==============================================================================
+template <class NodeType>
+NodeType* Skeleton::getNode(const std::string& name)
+{
+  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(typeid(NodeType));
+  if(mNodeNameMgrMap.end() == it)
+    return nullptr;
+
+  return static_cast<NodeType*>(it->second.getObject(name));
+}
+
+//==============================================================================
+template <class NodeType>
+const NodeType* Skeleton::getNode(const std::string& name) const
+{
+  return const_cast<Skeleton*>(this)->getNode<NodeType>(name);
+}
+
 //==============================================================================
 template <class JointType>
 JointType* Skeleton::moveBodyNodeTree(
@@ -84,5 +219,8 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
 
   return std::pair<JointType*, NodeType*>(joint, node);
 }
+
+} // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_SKELETON_H_

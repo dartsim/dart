@@ -43,6 +43,7 @@
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/HierarchicalIK.h"
+#include "dart/dynamics/EndEffector.h"
 
 namespace dart {
 namespace renderer {
@@ -52,8 +53,6 @@ class RenderInterface;
 
 namespace dart {
 namespace dynamics {
-
-class EndEffector;
 
 /// class Skeleton
 class Skeleton : public MetaSkeleton
@@ -304,20 +303,44 @@ public:
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
 
-  /// Get the number of EndEffectors on this Skeleton
-  size_t getNumEndEffectors() const;
+  /// Get the number of Nodes of the specified type in this Skeleton
+  template <class NodeType>
+  size_t getNumNodes() const;
 
-  /// Get EndEffector whose index is _idx
-  EndEffector* getEndEffector(size_t _idx);
+  /// Get the number of Nodes of the specified type that are in a tree within
+  /// this Skeleton
+  template <class NodeType>
+  size_t getNumNodes(size_t treeIndex) const;
 
-  /// Get EndEffector whose index is _idx
-  const EndEffector* getEndEffector(size_t _idx) const;
+  /// Get the indexth Node of the specified type within this Skeleton
+  template <class NodeType>
+  NodeType* getNode(size_t index);
 
-  /// Get EndEffector whose name is _name
-  EndEffector* getEndEffector(const std::string& _name);
+  /// Get the nodeIndexth Node of the specified type within the the tree of
+  /// treeIndex
+  template <class NodeType>
+  NodeType* getNode(size_t nodeIndex, size_t treeIndex);
 
-  /// Get EndEffector whose name is _name
-  const EndEffector* getEndEffector(const std::string& _name) const;
+  /// Get the indexth Node of the specified type within this Skeleton
+  template <class NodeType>
+  const NodeType* getNode(size_t index) const;
+
+  /// Get the nodeIndexth Node of the specified type within the the tree of
+  /// treeIndex
+  template <class NodeType>
+  const NodeType* getNode(size_t nodeIndex, size_t treeIndex) const;
+
+  /// Get the Node of the specified type within this Skeleton that has the
+  /// specified name
+  template <class NodeType>
+  NodeType* getNode(const std::string& name);
+
+  /// Get the Node of the specified type within this Skeleton that has the
+  /// specified name
+  template <class NodeType>
+  const NodeType* getNode(const std::string& name) const;
+
+  DART_SKEL_SPECIALIZE_NODE_INTERNAL( EndEffector )
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
@@ -1160,9 +1183,11 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-#include "dart/dynamics/detail/Skeleton.h"
+DART_SKEL_SPECIALIZE_NODE_EXTERNAL( Skeleton, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/Skeleton.h"
 
 #endif  // DART_DYNAMICS_SKELETON_H_

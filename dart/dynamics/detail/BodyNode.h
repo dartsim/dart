@@ -170,8 +170,6 @@ NodeType* BodyNode::createNode(Args&&... args)
   NodeType* node = new NodeType(this, std::forward<Args>(args)...);
   node->attach();
 
-  registerNode(node);
-
   return node;
 }
 

@@ -546,8 +546,7 @@ public:
   template <class NodeType>
   const NodeType* getNode(size_t index) const;
 
-  /// Create a generic Node type and attach it to this BodyNode. Note that this
-  /// should not be used on the EndEffector class, or else
+  /// Create some Node type and attach it to this BodyNode.
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
 

@@ -193,34 +193,34 @@ void AccessoryNode<NodeType>::reattach()
   assert(false); return 0; }
 
 //==============================================================================
-#define DETAIL_DART_SKEL_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, skelIt, treeIts, NameMgr )       \
-  private:                                                                                                \
-  dart::dynamics::Skeleton::NodeMap::iterator skelIt;                                                     \
-  std::vector<dart::dynamics::Skeleton::NodeMap::iterator> treeIts;                                       \
-  dart::common::NameManager<dart::dynamics::Node*>* NameMgr;                                              \
-  public:                                                                                                 \
-  inline size_t getNum ## PluralName () const                                                             \
-  { return skelIt->second.size(); }                                                                       \
-  inline size_t getNum ## PluralName (size_t treeIndex) const                                             \
-  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, getNum ## PluralName);                                \
-  treeIts [treeIndex].size(); }                                                                           \
-                                                                                                          \
-  inline NodeName * get ## NodeName (size_t index)                                                        \
-  { return static_cast< NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }                \
-  inline NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex)                                  \
-  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                     \
-  return static_cast< NodeName *>(getVectorObjectIfAvailable(index, treeIts[treeIndex]->second)); }       \
-                                                                                                          \
-  inline const NodeName * get ## NodeName (size_t index) const                                            \
-  { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }           \
-  inline const NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex)                            \
-  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                     \
-  return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, treeIts[treeIndex]->second)); }  \
-                                                                                                          \
-  inline NodeName * get ## NodeName (const std::string& name)                                             \
-  { NameMgr->getObject(name); }                                                                           \
-  inline const NodeName * get ## NodeName (const std::string& name)                                       \
-  { NameMgr->getObject(name); }
+#define DETAIL_DART_SKEL_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, skelIt, treeIts, NameMgr )           \
+  private:                                                                                                    \
+  dart::dynamics::Skeleton::NodeMap::iterator skelIt;                                                         \
+  std::vector<dart::dynamics::Skeleton::NodeMap::iterator> treeIts;                                           \
+  dart::common::NameManager<dart::dynamics::Node*>* NameMgr;                                                  \
+  public:                                                                                                     \
+  inline size_t getNum ## PluralName () const                                                                 \
+  { return skelIt->second.size(); }                                                                           \
+  inline size_t getNum ## PluralName (size_t treeIndex) const                                                 \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, getNum ## PluralName);                                    \
+  treeIts [treeIndex]->second.size(); }                                                                       \
+                                                                                                              \
+  inline NodeName * get ## NodeName (size_t index)                                                            \
+  { return static_cast< NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }                    \
+  inline NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex)                                      \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
+  return static_cast< NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }       \
+                                                                                                              \
+  inline const NodeName * get ## NodeName (size_t index) const                                                \
+  { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }               \
+  inline const NodeName * get ## NodeName (size_t nodeIndex, size_t treeIndex) const                          \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
+  return static_cast<const NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }  \
+                                                                                                              \
+  inline NodeName * get ## NodeName (const std::string& name)                                                 \
+  { return static_cast< NodeName *>(NameMgr->getObject(name)); }                                              \
+  inline const NodeName * get ## NodeName (const std::string& name) const                                     \
+  { return static_cast<const NodeName *>(NameMgr->getObject(name)); }
 
 //==============================================================================
 #define DART_SKEL_SPECIALIZE_NODE_INTERNAL_IRREGULAR( NodeName, PluralName )                                                                                  \
@@ -239,7 +239,7 @@ void AccessoryNode<NodeType>::reattach()
   template <> inline const NodeName* SkelType :: getNode< NodeName >(size_t index) const { return get ## NodeName (index); }                                      \
   template <> inline const NodeName* SkelType :: getNode< NodeName >(size_t nodeIndex, size_t treeIndex) const { return get ## NodeName(nodeIndex, treeIndex); }  \
   template <> inline NodeName* SkelType::getNode< NodeName >(const std::string& name) { return get ## NodeName (name); }                                          \
-  template <> inline const NodeName* SkelType::getNode< NodeName >(const std::string& name) { return get ## NodeName (name); }
+  template <> inline const NodeName* SkelType::getNode< NodeName >(const std::string& name) const { return get ## NodeName (name); }
 
 //==============================================================================
 #define DART_SKEL_SPECIALIZE_NODE_EXTERNAL_IRREGULAR( SkelType, NodeName, PluralName ) \
