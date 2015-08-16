@@ -319,7 +319,7 @@ void Linkage::Criteria::expandToTarget(
   }
 
   // If we have successfully reached the target, expand from there
-  if(newBns.back() == _target.mNode.lock())
+  if(newBns.size() > 0 && newBns.back() == _target.mNode.lock())
     expansionPolicy(_target.mNode.lock(), _target.mPolicy, newBns);
 
   _bns.insert(_bns.end(), newBns.begin(), newBns.end());
