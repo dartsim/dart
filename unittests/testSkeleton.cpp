@@ -829,6 +829,11 @@ TEST(Skeleton, Linkage)
       skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
 
+#ifdef _WIN32
+  dtmsg << "Aborting test for Windows. Please see #489.\n";
+  return;
+#endif
+
   ChainPtr emptyChain = Chain::create(skel->getBodyNode("c1b1"),
       skel->getBodyNode("c1b3"), "emptyChain");
   checkForBodyNodes(emptyChain, skel, true);

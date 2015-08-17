@@ -39,7 +39,7 @@
 
 #include <string>
 
-#if WIN32
+#ifdef _WIN32
   #ifdef NOMINMAX
     #include <windows.h>
   #else
@@ -100,7 +100,7 @@ public:
 private:
   int mCount;
 
-#if WIN32
+#ifdef _WIN32
   stopWatch mTimer;
 #else
   timeval mTimeVal;
@@ -113,7 +113,7 @@ private:
   std::string mName;
   bool mIsStarted;
 
-#if WIN32
+#ifdef _WIN32
   LARGE_INTEGER  mFrequency;
   double _convLIToSecs(const LARGE_INTEGER& _L);
 #endif
