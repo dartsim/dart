@@ -43,6 +43,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
+#include "dart/common/ResourceRetriever.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -91,7 +92,8 @@ Eigen::VectorXd   getValueVectorXd  (tinyxml2::XMLElement* _parentElement, const
 Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
-void openXMLFile(tinyxml2::XMLDocument& doc, const char* const filename);
+void openXMLFile(tinyxml2::XMLDocument& doc, const char* const filename,
+                 const common::ResourceRetrieverPtr& _retriever = nullptr);
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 bool hasAttribute(tinyxml2::XMLElement* element, const char* const name);

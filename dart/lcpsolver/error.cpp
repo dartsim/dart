@@ -81,7 +81,7 @@ static void printMessage (int num, const char *msg1, const char *msg2,
 //****************************************************************************
 // unix
 
-#ifndef WIN32
+#ifndef _WIN32
 
 extern "C" void dError (int num, const char *msg, ...)
 {
@@ -117,7 +117,7 @@ extern "C" void dMessage (int num, const char *msg, ...)
 //****************************************************************************
 // windows
 
-#ifdef WIN32
+#ifdef _WIN32
 
 // isn't cygwin annoying!
 #ifdef CYGWIN
@@ -126,7 +126,13 @@ extern "C" void dMessage (int num, const char *msg, ...)
 #endif
 
 
-#include "windows.h"
+#ifdef NOMINMAX
+  #include <windows.h>
+#else
+  #define NOMINMAX
+  #include <windows.h>
+  #undef NOMINMAX
+#endif
 
 
 extern "C" void dError (int num, const char *msg, ...)

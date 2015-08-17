@@ -37,7 +37,7 @@
 #ifndef DART_GUI_LOADGLUT_H_
 #define DART_GUI_LOADGLUT_H_
 
-#if WIN32
+#if defined(_WIN32)
   #include <cstdlib> // To disable glut::exit() function
   #include <GL/glut.h>
 #elif defined(__linux__)

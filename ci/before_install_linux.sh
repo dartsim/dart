@@ -51,6 +51,7 @@ freeglut3-dev
 libxi-dev
 libxmu-dev
 libflann-dev
+coinor-libipopt-dev
 libtinyxml-dev
 libtinyxml2-dev
 liburdfdom-dev
