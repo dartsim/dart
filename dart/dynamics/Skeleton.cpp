@@ -1488,7 +1488,7 @@ void Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
   if(nodeMap.end() == it)
   {
     nodeMap[typeid(*_newNode)] = std::vector<Node*>();
-    it = nodeMap.find(typeid(*this));
+    it = nodeMap.find(typeid(*_newNode));
   }
 
   std::vector<Node*>& nodes = it->second;
