@@ -156,7 +156,7 @@ std::unique_ptr<T> AddonManager::release()
   { becomeManager(addon.get()); it ->second = std::move(addon); }               \
                                                                                 \
   template <typename ...Args>                                                   \
-  inline AddonName * construct ## AddonName (Args&&... args)                    \
+  inline AddonName * create ## AddonName (Args&&... args)                       \
   { it ->second = std::unique_ptr< AddonName >(                                 \
           new AddonName (this, std::forward(args)...));                         \
     return static_cast< AddonName *>( it ->second.get() ); }                    \

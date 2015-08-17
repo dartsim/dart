@@ -237,7 +237,7 @@ TEST(Addon, Specialized)
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == spec );
   EXPECT_TRUE( mgr.getSpecializedAddon() == spec );
 
-  SpecializedAddon* newSpec = mgr.constructSpecializedAddon();
+  SpecializedAddon* newSpec = mgr.createSpecializedAddon();
 
   EXPECT_TRUE( nullptr == spec );
 

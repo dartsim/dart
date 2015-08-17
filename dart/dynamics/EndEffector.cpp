@@ -43,22 +43,154 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+Support::State::State(bool active)
+  : mActive(active)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Support::State::State(const State& otherState)
+{
+  *this = otherState;
+}
+
+//==============================================================================
+Support::State& Support::State::operator =(const State& otherState)
+{
+  mActive = otherState.mActive;
+  return *this;
+}
+
+//==============================================================================
+std::unique_ptr<common::Addon::State> Support::State::clone() const
+{
+  return std::unique_ptr<common::Addon::State>(new State(*this));
+}
+
+//==============================================================================
+void Support::State::copy(const common::Addon::State& anotherState)
+{
+  *this = static_cast<const State&>(anotherState);
+}
+
+//==============================================================================
+Support::Properties::Properties(const math::SupportGeometry& geometry)
+  : mGeometry(geometry)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Support::Properties::Properties(const Properties& otherProperties)
+{
+  *this = otherProperties;
+}
+
+//==============================================================================
+Support::Properties::Properties(Properties&& otherProperties)
+{
+  *this = std::move(otherProperties);
+}
+
+//==============================================================================
+Support::Properties& Support::Properties::operator =(
+    const Properties& otherProperties)
+{
+  mGeometry = otherProperties.mGeometry;
+  return *this;
+}
+
+//==============================================================================
+Support::Properties& Support::Properties::operator =(
+    Properties&& otherProperties)
+{
+  mGeometry = std::move(otherProperties.mGeometry);
+  return *this;
+}
+
+//==============================================================================
+std::unique_ptr<common::Addon::Properties> Support::Properties::clone() const
+{
+  return std::unique_ptr<common::Addon::Properties>(new Properties(*this));
+}
+
+//==============================================================================
+void Support::Properties::copy(const common::Addon::Properties& otherProperties)
+{
+  *this = static_cast<const Properties&>(otherProperties);
+}
+
+//==============================================================================
 Support::Support(EndEffector* _ee)
-  : mActive(false),
+  : common::Addon(_ee, "Support"),
     mEndEffector(_ee)
 {
   if(nullptr == mEndEffector)
   {
-    dterr << "[Support::Support] It is not permissible to construct a Support "
-          << "with a nullptr EndEffector!\n";
+    dterr << "[Support::constructor] It is not permissible to construct a "
+          << "Support with a nullptr EndEffector!\n";
     assert(false);
   }
+
+  setStatePtr(&mState);
+  setPropertiesPtr(&mProperties);
+}
+
+//==============================================================================
+Support::Support(EndEffector *_ee, const Support& otherSupport)
+  : common::Addon(_ee, "Support"),
+    mEndEffector(_ee)
+{
+  if(nullptr == mEndEffector)
+  {
+    dterr << "[Support::constructor] It is not permissible to construct a "
+          << "Support with a nullptr EndEffector!\n";
+    assert(false);
+  }
+
+  mState = otherSupport.mState;
+  mProperties = otherSupport.mProperties;
+
+  setStatePtr(&mState);
+  setPropertiesPtr(&mProperties);
+}
+
+//==============================================================================
+std::unique_ptr<common::Addon> Support::clone(
+    common::AddonManager* newManager) const
+{
+  EndEffector* ee = dynamic_cast<EndEffector*>(newManager);
+  if(nullptr == ee)
+  {
+    dterr << "[Support::clone] Attempting to clone a Support class into an "
+          << "AddonManager which is not an EndEffector. This is not allowed!\n";
+    assert(false);
+    return nullptr;
+  }
+
+  return std::unique_ptr<common::Addon>(new Support(ee, *this));
+}
+
+//==============================================================================
+void Support::setState(const std::unique_ptr<common::Addon::State>& otherState)
+{
+  if(otherState)
+    mState = *static_cast<const State*>(otherState.get());
+}
+
+//==============================================================================
+void Support::setProperties(
+    const std::unique_ptr<common::Addon::Properties>& otherProperties)
+{
+  if(otherProperties)
+    mProperties = *static_cast<const Properties*>(otherProperties.get());
 }
 
 //==============================================================================
 void Support::setGeometry(const math::SupportGeometry& _newSupport)
 {
-  mGeometry = _newSupport;
+  mProperties.mGeometry = _newSupport;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -66,16 +198,16 @@ void Support::setGeometry(const math::SupportGeometry& _newSupport)
 //==============================================================================
 const math::SupportGeometry& Support::getGeometry() const
 {
-  return mGeometry;
+  return mProperties.mGeometry;
 }
 
 //==============================================================================
 void Support::setActive(bool _supporting)
 {
-  if(mActive == _supporting)
+  if(mState.mActive == _supporting)
     return;
 
-  mActive = _supporting;
+  mState.mActive = _supporting;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -83,7 +215,7 @@ void Support::setActive(bool _supporting)
 //==============================================================================
 bool Support::isActive() const
 {
-  return mActive;
+  return mState.mActive;
 }
 
 //==============================================================================
@@ -192,29 +324,10 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 Support* EndEffector::getSupport(bool _createIfNull)
 {
-  if(nullptr == mSupport && _createIfNull)
-    constructSupport();
+  if(nullptr == getSupport() && _createIfNull)
+    createSupport();
 
-  return mSupport.get();
-}
-
-//==============================================================================
-const Support* EndEffector::getSupport() const
-{
-  return mSupport.get();
-}
-
-//==============================================================================
-Support* EndEffector::constructSupport()
-{
-  mSupport = std::unique_ptr<Support>(new Support(this));
-  return mSupport.get();
-}
-
-//==============================================================================
-void EndEffector::eraseSupport()
-{
-  mSupport = nullptr;
+  return getSupport();
 }
 
 //==============================================================================
@@ -388,6 +501,7 @@ EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
     mIsEffectorJacobianSpatialDerivDirty(true),
     mIsWorldJacobianClassicDerivDirty(true)
 {
+  DART_INSTANTIATE_SPECIALIZED_ADDON(Support)
   setProperties(_properties);
 }
 

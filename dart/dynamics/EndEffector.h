@@ -47,12 +47,90 @@ class BodyNode;
 class Skeleton;
 class EndEffector;
 
-class Support // Inherit the Addon class once it is implemented
+class Support final : public common::Addon
 {
 public:
 
+  class State final : public Addon::State
+  {
+  public:
+
+    friend class Support;
+
+    /// Constructor
+    State(bool active=false);
+
+    /// Copy constructor
+    State(const State& otherState);
+
+    /// Assignment operator
+    State& operator =(const State& otherState);
+
+    // Documentation inherited
+    std::unique_ptr<common::Addon::State> clone() const override final;
+
+    // Documentation inherited
+    void copy(const common::Addon::State& anotherState) override final;
+
+  protected:
+
+    /// True if this EndEffector is currently usable for support
+    bool mActive;
+  };
+
+  class Properties final : public Addon::Properties
+  {
+  public:
+
+    friend class Support;
+
+    /// Constructor
+    Properties(const math::SupportGeometry& geometry = math::SupportGeometry());
+
+    /// Copy constructor
+    Properties(const Properties& otherProperties);
+
+    /// Move constructor
+    Properties(Properties&& otherProperties);
+
+    /// Assignment operator
+    Properties& operator =(const Properties& otherProperties);
+
+    /// Move assignment
+    Properties& operator =(Properties&& otherProperties);
+
+    // Documentation inherited
+    std::unique_ptr<common::Addon::Properties> clone() const override final;
+
+    // Documentation inherited
+    void copy(const common::Addon::Properties& otherProperties) override final;
+
+  protected:
+
+    /// The geometry attached to this EndEffector that is meant to be used for
+    /// support.
+    math::SupportGeometry mGeometry;
+  };
+
   /// Constructor
   Support(EndEffector* _ee);
+
+  /// Copy constructor
+  Support(EndEffector* _ee, const Support& otherSupport);
+
+  Support(const Support&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<common::Addon> clone(
+      common::AddonManager* newManager) const override final;
+
+  // Documentation inherited
+  void setState(
+      const std::unique_ptr<common::Addon::State>& otherState) override final;
+
+  // Documentation inherited
+  void setProperties(const std::unique_ptr<common::Addon::Properties>&
+                     otherProperties) override final;
 
   /// Set the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
@@ -71,11 +149,11 @@ public:
 
 protected:
 
-  /// The support geometry that this EndEffector is designed to use
-  math::SupportGeometry mGeometry;
+  /// State of this EndEffector Support
+  State mState;
 
-  /// True if this EndEffector is currently usable for support
-  bool mActive;
+  /// Properties of this EndEffector Support
+  Properties mProperties;
 
   /// EndEffector that this support is associated with
   EndEffector* mEndEffector;
@@ -90,6 +168,8 @@ public:
 
   friend class Skeleton;
   friend class BodyNode;
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
 
   struct UniqueProperties
   {
@@ -157,19 +237,11 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
+  DART_SPECIALIZE_ADDON_INTERNAL(Support)
+
   /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
   /// is true, then the Support will be generated if one does not already exist.
-  Support* getSupport(bool _createIfNull = false);
-
-  /// Get a pointer to the Support Addon for this EndEffector.
-  const Support* getSupport() const;
-
-  /// Create a new Support Addon for this EndEffector. If a Support Addon
-  /// already exists for this EndEffector, it will be deleted and replaced.
-  Support* constructSupport();
-
-  /// Erase the Support Addon from this EndEffector
-  void eraseSupport();
+  Support* getSupport(bool _createIfNull);
 
   // Documentation inherited
   std::shared_ptr<Skeleton> getSkeleton() override;
@@ -293,9 +365,6 @@ protected:
   /// The index of this EndEffector within its Skeleton
   size_t mIndexInSkeleton;
 
-  /// TODO(MXG): When Addons are implemented, this should be changed
-  std::unique_ptr<Support> mSupport;
-
   /// Cached Jacobian of this EndEffector
   ///
   /// Do not use directly! Use getJacobian() to access this quantity
@@ -328,6 +397,8 @@ protected:
   /// Dirty flag for the classic time derivative of the Jacobian
   mutable bool mIsWorldJacobianClassicDerivDirty;
 };
+
+DART_SPECIALIZE_ADDON_EXTERNAL(EndEffector, Support)
 
 } // namespace dynamics
 } // namespace dart
