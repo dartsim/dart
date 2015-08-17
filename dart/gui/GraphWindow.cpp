@@ -91,7 +91,7 @@ void GraphWindow::draw() {
   while (xPos < 1.0) {
     char buff[64];
     int v = xPos * nPoints;
-#ifdef WIN32
+#ifdef _WIN32
     _snprintf(buff, sizeof(buff), "%d", v);
 #else
     std::snprintf(buff, sizeof(buff), "%d", v);
@@ -106,7 +106,7 @@ void GraphWindow::draw() {
   while (yPos < 1.0) {
     char buff[64];
     double v = yPos * (upperBound - lowerBound) + lowerBound;
-#ifdef WIN32
+#ifdef _WIN32
     _snprintf(buff, sizeof(buff), "%.2e", v);
 #else
     std::snprintf(buff, sizeof(buff), "%.2e", v);

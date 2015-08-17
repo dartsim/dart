@@ -67,9 +67,23 @@ using namespace dart::simulation;
 class JOINTS : public testing::Test
 {
 public:
+#ifdef _WIN32
   template <typename JointType>
-  void kinematicsTest(const typename JointType::Properties& _properties =
-                                              typename JointType::Properties());
+  static typename JointType::Properties createJointProperties()
+  {
+    return typename JointType::Properties();
+  }
+#endif
+
+  template <typename JointType>
+  void kinematicsTest(
+#ifdef _WIN32
+      const typename JointType::Properties& _joint
+          = BodyNode::createJointProperties<JointType>());
+#else
+      const typename JointType::Properties& _joint
+          = typename JointType::Properties());
+#endif
 };
 
 //==============================================================================

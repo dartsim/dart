@@ -10,6 +10,13 @@ if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif()
 
+# Simplify variable reference and escape sequence evaluation. This was added in
+# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
+# in CMake 3.1 and above.
+if(POLICY CMP0053)
+  cmake_policy(SET CMP0053 NEW)
+endif()
+
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4)
@@ -53,7 +60,7 @@ message(STATUS "============================================")
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
 option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(MSVC)
-  set(DART_RUNTIME_LIBRARY "/MT" CACHE STRING "BaseName chosen by the user at CMake configure time")
+  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
@@ -332,7 +339,8 @@ endif()
 #===============================================================================
 # DART dependency variable settings
 #===============================================================================
-set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
+set(DART_CORE_DEPENDENCIES ${CCD_LIBRARIES}
+                           ${FCL_LIBRARIES}
                            ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
@@ -364,6 +372,7 @@ endif()
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
 include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
 include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
