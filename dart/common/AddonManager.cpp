@@ -74,19 +74,63 @@ void AddonManager::setAddonStates(const State& newStates)
 }
 
 //==============================================================================
-AddonManager::State AddonManager::getAddonStates() const
+template <typename MapType, class DataType, const DataType* (Addon::*getData)() const>
+void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap)
 {
-  StateMap states;
-  for(const auto& addon : mAddonMap)
+  // TODO(MXG): Consider placing this function in a header so it can be utilized
+  // by anything that needs to transfer data between maps of extensibles
+
+  // This method allows us to avoid dynamic allocation (cloning) whenever possible.
+  for(const auto& addon : addonMap)
   {
-    const Addon::State* state = addon.second->getState();
-    if(state)
+    const DataType* data = (addon.second.get()->*getData)();
+    if(data)
     {
-      states[addon.first] = state->clone();
+      // Attempt to insert a nullptr to see whether this entry exists while also
+      // creating an itertor to it if it did not already exist.
+      std::pair<typename MapType::iterator, bool> insertion =
+          outgoingMap.insert(typename MapType::value_type(addon.first, nullptr));
+
+      typename MapType::iterator& it = insertion.first;
+      bool existed = !insertion.second;
+
+      if(existed)
+      {
+        // The entry already existed
+        if(it->second)
+        {
+          // The entry was not a nullptr
+          it->second->copy(*data);
+        }
+        else
+        {
+          // The entry was a nullptr, so we need to clone
+          it->second = data->clone();
+        }
+      }
+      else
+      {
+        // The entry did not already exist, so we need to clone
+        it->second = data->clone();
+      }
     }
   }
+}
+
+//==============================================================================
+AddonManager::State AddonManager::getAddonStates() const
+{
+  State states;
+  getAddonStates(states);
 
   return states;
+}
+
+//==============================================================================
+void AddonManager::getAddonStates(State& outgoingStates) const
+{
+  StateMap& states = outgoingStates.getMap();
+  extractMapData<StateMap, Addon::State, &Addon::getState>(states, mAddonMap);
 }
 
 //==============================================================================
@@ -122,15 +166,18 @@ void AddonManager::setAddonProperties(const Properties& newProperties)
 //==============================================================================
 AddonManager::Properties AddonManager::getAddonProperties() const
 {
-  PropertiesMap properties;
-  for(const auto& addon : mAddonMap)
-  {
-    const Addon::Properties* prop = addon.second->getProperties();
-    if(prop)
-      properties[addon.first] = prop->clone();
-  }
+  Properties properties;
+  getAddonProperties(properties);
 
   return properties;
+}
+
+//==============================================================================
+void AddonManager::getAddonProperties(Properties& outgoingProperties) const
+{
+  PropertiesMap& properties = outgoingProperties.getMap();
+  extractMapData<PropertiesMap, Addon::Properties, &Addon::getProperties>(
+        properties, mAddonMap);
 }
 
 //==============================================================================

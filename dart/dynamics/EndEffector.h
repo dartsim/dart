@@ -51,65 +51,43 @@ class Support final : public common::Addon
 {
 public:
 
-  class State final : public Addon::State
+  class State final : public common::Addon::State
   {
   public:
 
     friend class Support;
 
-    /// Constructor
-    State(bool active=false);
+    struct Data
+    {
+      Data(bool active=false);
 
-    /// Copy constructor
-    State(const State& otherState);
+      /// True if this EndEffector is currently usable for support
+      bool mActive;
+    };
 
-    /// Assignment operator
-    State& operator =(const State& otherState);
+    /// Optional constructor (mActive will be set to false if the default
+    /// constructor is used)
+    State(bool active);
 
-    // Documentation inherited
-    std::unique_ptr<common::Addon::State> clone() const override final;
-
-    // Documentation inherited
-    void copy(const common::Addon::State& anotherState) override final;
-
-  protected:
-
-    /// True if this EndEffector is currently usable for support
-    bool mActive;
+    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::State, State, Data)
+    // Created by the macro:
+    // Data mData;
   };
 
-  class Properties final : public Addon::Properties
+  class Properties final : public common::Addon::Properties
   {
   public:
 
     friend class Support;
 
-    /// Constructor
-    Properties(const math::SupportGeometry& geometry = math::SupportGeometry());
+    struct Data
+    {
+      math::SupportGeometry mGeometry;
+    };
 
-    /// Copy constructor
-    Properties(const Properties& otherProperties);
-
-    /// Move constructor
-    Properties(Properties&& otherProperties);
-
-    /// Assignment operator
-    Properties& operator =(const Properties& otherProperties);
-
-    /// Move assignment
-    Properties& operator =(Properties&& otherProperties);
-
-    // Documentation inherited
-    std::unique_ptr<common::Addon::Properties> clone() const override final;
-
-    // Documentation inherited
-    void copy(const common::Addon::Properties& otherProperties) override final;
-
-  protected:
-
-    /// The geometry attached to this EndEffector that is meant to be used for
-    /// support.
-    math::SupportGeometry mGeometry;
+    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::Properties, Properties, Data)
+    // Created by the macro:
+    // Data mData;
   };
 
   /// Constructor
@@ -171,6 +149,22 @@ public:
 
   DART_ENABLE_ADDON_SPECIALIZATION()
 
+  struct State : public Node::State
+  {
+    struct Data
+    {
+      Data(const Eigen::Isometry3d& relativeTransform =
+          Eigen::Isometry3d::Identity());
+
+      Eigen::Isometry3d mRelativeTransform;
+      common::AddonManager::State mAddonStates;
+    };
+
+    DART_EXTENSIBLE_WITH_MEMBER_DATA(Node::State, State, Data)
+    // Created by the macro:
+    // Data mData;
+  };
+
   struct UniqueProperties
   {
     /// The relative transform will be set to this whenever
@@ -221,6 +215,12 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  void setNodeState(const std::unique_ptr<Node::State>& otherState) override final;
+
+  // Documentation inherited
+  const Node::State* getNodeState() const override final;
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
@@ -364,6 +364,10 @@ protected:
 
   /// The index of this EndEffector within its Skeleton
   size_t mIndexInSkeleton;
+
+  /// Data structure that serializes the state of the EndEffector when
+  /// getNodeState() is called.
+  mutable State mStateCache;
 
   /// Cached Jacobian of this EndEffector
   ///

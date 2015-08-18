@@ -43,82 +43,17 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Support::State::State(bool active)
+Support::State::Data::Data(bool active)
   : mActive(active)
 {
   // Do nothing
 }
 
 //==============================================================================
-Support::State::State(const State& otherState)
-{
-  *this = otherState;
-}
-
-//==============================================================================
-Support::State& Support::State::operator =(const State& otherState)
-{
-  mActive = otherState.mActive;
-  return *this;
-}
-
-//==============================================================================
-std::unique_ptr<common::Addon::State> Support::State::clone() const
-{
-  return std::unique_ptr<common::Addon::State>(new State(*this));
-}
-
-//==============================================================================
-void Support::State::copy(const common::Addon::State& anotherState)
-{
-  *this = static_cast<const State&>(anotherState);
-}
-
-//==============================================================================
-Support::Properties::Properties(const math::SupportGeometry& geometry)
-  : mGeometry(geometry)
+Support::State::State(bool active)
+  : mData(active)
 {
   // Do nothing
-}
-
-//==============================================================================
-Support::Properties::Properties(const Properties& otherProperties)
-{
-  *this = otherProperties;
-}
-
-//==============================================================================
-Support::Properties::Properties(Properties&& otherProperties)
-{
-  *this = std::move(otherProperties);
-}
-
-//==============================================================================
-Support::Properties& Support::Properties::operator =(
-    const Properties& otherProperties)
-{
-  mGeometry = otherProperties.mGeometry;
-  return *this;
-}
-
-//==============================================================================
-Support::Properties& Support::Properties::operator =(
-    Properties&& otherProperties)
-{
-  mGeometry = std::move(otherProperties.mGeometry);
-  return *this;
-}
-
-//==============================================================================
-std::unique_ptr<common::Addon::Properties> Support::Properties::clone() const
-{
-  return std::unique_ptr<common::Addon::Properties>(new Properties(*this));
-}
-
-//==============================================================================
-void Support::Properties::copy(const common::Addon::Properties& otherProperties)
-{
-  *this = static_cast<const Properties&>(otherProperties);
 }
 
 //==============================================================================
@@ -190,7 +125,7 @@ void Support::setProperties(
 //==============================================================================
 void Support::setGeometry(const math::SupportGeometry& _newSupport)
 {
-  mProperties.mGeometry = _newSupport;
+  mProperties.mData.mGeometry = _newSupport;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -198,16 +133,16 @@ void Support::setGeometry(const math::SupportGeometry& _newSupport)
 //==============================================================================
 const math::SupportGeometry& Support::getGeometry() const
 {
-  return mProperties.mGeometry;
+  return mProperties.mData.mGeometry;
 }
 
 //==============================================================================
 void Support::setActive(bool _supporting)
 {
-  if(mState.mActive == _supporting)
+  if(mState.mData.mActive == _supporting)
     return;
 
-  mState.mActive = _supporting;
+  mState.mData.mActive = _supporting;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -215,12 +150,21 @@ void Support::setActive(bool _supporting)
 //==============================================================================
 bool Support::isActive() const
 {
-  return mState.mActive;
+  return mState.mData.mActive;
 }
 
 //==============================================================================
-EndEffector::UniqueProperties::UniqueProperties(const Eigen::Isometry3d& _defaultTransform,
-    const math::SupportGeometry& _supportGeometry, bool _supporting)
+EndEffector::State::Data::Data(const Eigen::Isometry3d& relativeTransform)
+  : mRelativeTransform(relativeTransform)
+{
+  // Do nothing
+}
+
+//==============================================================================
+EndEffector::UniqueProperties::UniqueProperties(
+    const Eigen::Isometry3d& _defaultTransform,
+    const math::SupportGeometry& _supportGeometry,
+    bool _supporting)
   : mDefaultTransform(_defaultTransform)
 {
   // Do nothing
@@ -296,6 +240,25 @@ const std::string& EndEffector::setName(const std::string& _name)
 
   // Return the resulting name, after it has been checked for uniqueness
   return mEntityP.mName;
+}
+
+//==============================================================================
+void EndEffector::setNodeState(
+    const std::unique_ptr<Node::State>& otherState)
+{
+  const State* state = static_cast<const State*>(otherState.get());
+
+  setRelativeTransform(state->mData.mRelativeTransform);
+  setAddonStates(state->mData.mAddonStates);
+}
+
+//==============================================================================
+const Node::State* EndEffector::getNodeState() const
+{
+  mStateCache.mData.mRelativeTransform = getRelativeTransform();
+  getAddonStates(mStateCache.mData.mAddonStates);
+
+  return &mStateCache;
 }
 
 //==============================================================================

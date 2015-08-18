@@ -111,7 +111,10 @@ public:
   /// Map-based move assignment operator
   ExtensibleMapHolder& operator=(MapType&& otherMap);
 
-  /// Get the map of Addon::States
+  /// Get the map that is being held
+  MapType& getMap();
+
+  /// Get the map that is being held
   const MapType& getMap() const;
 
 private:

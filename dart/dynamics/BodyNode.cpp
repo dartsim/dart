@@ -271,6 +271,8 @@ BodyNode::Properties BodyNode::getBodyNodeProperties() const
 //==============================================================================
 BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
 {
+  // TODO(MXG): Make a version of this function that will fill in a
+  // NodeProperties instance instead of creating a new one
   NodePropertiesMap nodeProperties;
 
   for(const auto& entry : mNodeMap)

@@ -153,6 +153,13 @@ ExtensibleMapHolder<MapType>& ExtensibleMapHolder<MapType>::operator=(
 
 //==============================================================================
 template <typename MapType>
+MapType& ExtensibleMapHolder<MapType>::getMap()
+{
+  return mMap;
+}
+
+//==============================================================================
+template <typename MapType>
 const MapType& ExtensibleMapHolder<MapType>::getMap() const
 {
   return mMap;
@@ -211,6 +218,21 @@ const std::vector<T>& ExtensibleVector<T>::getVector() const
 {
   return mVector;
 }
+
+//==============================================================================
+//#define DART_STANDARD_MIXIN_EXTENSIBLE( BaseName, ExtensionName, Data )
+
+//==============================================================================
+#define DART_EXTENSIBLE_WITH_MEMBER_DATA( BaseName, ExtensionName, Data )                                                             \
+  public: Data m ## Data;                                                                                                             \
+  inline ExtensionName () = default;                                                                                                  \
+  inline ExtensionName (const ExtensionName & other) { *this = other; }                                                               \
+  inline ExtensionName ( ExtensionName && other) { *this = std::move(other); }                                                        \
+  inline ExtensionName & operator =(const ExtensionName & other) { m ## Data = other.m ## Data ; return *this; }                      \
+  inline ExtensionName & operator =( ExtensionName && other ) { m ## Data = std::move(other.m ## Data ); return *this; }              \
+  inline std::unique_ptr< BaseName > clone() const override final { return std::unique_ptr< BaseName >(new ExtensionName (*this)); }  \
+  inline void copy(const BaseName & other) { *this = static_cast<const ExtensionName &>(other); }
+
 
 } // namespace common
 } // namespace dart

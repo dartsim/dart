@@ -134,6 +134,9 @@ public:
   /// Get the states of the addons inside of this AddonManager
   State getAddonStates() const;
 
+  /// Fill outgoingStates with the states of the addons inside this AddonManager
+  void getAddonStates(State& outgoingStates) const;
+
   /// Set the properties of the addons in this AddonManager based on the given
   /// AddonManager::Properties. The properties of any Addon types that do not
   /// exist within this manager will be ignored.
@@ -141,6 +144,10 @@ public:
 
   /// Get the properties of the addons inside of this AddonManager
   Properties getAddonProperties() const;
+
+  /// Fill outgoingProperties with the properties of the addons inside this
+  /// AddonManager
+  void getAddonProperties(Properties& outgoingProperties) const;
 
   /// Give this AddonManager a copy of each Addon from otherManager
   void duplicateAddons(const AddonManager* otherManager);
