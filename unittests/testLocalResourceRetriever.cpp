@@ -116,11 +116,11 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 
   // Relative seek.
   ASSERT_TRUE(resource->seek(2, Resource::SEEKTYPE_CUR));
-  EXPECT_EQ(2, resource->tell());
+  EXPECT_EQ(2u, resource->tell());
 
   // Absolute seek.
   ASSERT_TRUE(resource->seek(5, Resource::SEEKTYPE_SET));
-  EXPECT_EQ(5, resource->tell());
+  EXPECT_EQ(5u, resource->tell());
 
   // Seek to the end of the file.
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_END));
@@ -132,24 +132,24 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 
   // Reading a block that's too large should do nothing.
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
-  ASSERT_EQ(0, resource->read(buffer.data(), content.size() + 1, 1));
+  ASSERT_EQ(0u, resource->read(buffer.data(), content.size() + 1, 1));
 
   // Reading should only return full blocks.
   buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
-  ASSERT_EQ(1, resource->read(buffer.data(), 8, 1));
+  ASSERT_EQ(1u, resource->read(buffer.data(), 8, 1));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading multiple blocks
   buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
-  ASSERT_EQ(2, resource->read(buffer.data(), 4, 2));
+  ASSERT_EQ(2u, resource->read(buffer.data(), 4, 2));
   EXPECT_STREQ(content.substr(0, 8).c_str(), buffer.data());
 
   // Reading the whole file at once.
   buffer.assign(buffer.size(), '\0');
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
-  ASSERT_EQ(1, resource->read(buffer.data(), content.size(), 1));
+  ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
 }
 
