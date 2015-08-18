@@ -37,8 +37,14 @@
 #ifndef DART_RENDERER_LOADOPENGL_H_
 #define DART_RENDERER_LOADOPENGL_H_
 
-#if WIN32
-  #include <windows.h>
+#if defined(_WIN32)
+  #ifdef NOMINMAX
+    #include <windows.h>
+  #else
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+  #endif
   #include <GL/gl.h>
   #include <GL/glu.h>
 #elif defined(__linux__)

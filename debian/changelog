@@ -1,3 +1,17 @@
+dart (5.0.1) unstable; urgency=low
+
+  * Improved app indexing for bipedStand and atlasSimbicon
+  * Added clipping command when it exceeds the limits
+  * Improved CollisionNode's index validity check
+  * Standardized warning messages for Joints
+  * Fixed bug in SDF parser -- correct child for a joint
+  * Fixed SDF parsing for single link model without joint
+  * Added missing virtual destructors to Properties in Entity and [Soft]BodyNode
+  * Limited maximum required version of Assimp less than 3.0~dfsg-4
+  * Fixed SEGFAULTs in DartLoader
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Tue, 28 Jul 2015 03:00:00 -0500
+
 dart (5.0.0) unstable; urgency=low
 
   * Fixed aligned memory allocation with Eigen objects

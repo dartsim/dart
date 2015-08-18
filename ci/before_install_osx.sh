@@ -15,6 +15,7 @@ brew install tinyxml   # 2.6.2
 brew install tinyxml2  # 2.2.0
 brew install libccd    #
 brew install nlopt     # 2.4.2
+brew install ipopt
 brew install ros/deps/urdfdom
 brew install ros/deps/urdfdom_headers
 brew install ros/deps/console_bridge
