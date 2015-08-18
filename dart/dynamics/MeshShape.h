@@ -43,6 +43,13 @@
 #include <assimp/scene.h>
 
 #include "dart/dynamics/Shape.h"
+#include "dart/common/ResourceRetriever.h"
+
+namespace Assimp {
+
+class IOSystem;
+
+} // namespace Assimp
 
 namespace dart {
 namespace dynamics {
@@ -59,8 +66,11 @@ public:
   };
 
   /// \brief Constructor.
-  MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-            const std::string &path = std::string());
+  MeshShape(
+    const Eigen::Vector3d& _scale,
+    const aiScene* _mesh,
+    const std::string& _path = "",
+    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
   /// \brief Destructor.
   virtual ~MeshShape();
@@ -78,7 +88,13 @@ public:
   virtual void setAlpha(double _alpha) override;
 
   /// \brief
-  void setMesh(const aiScene* _mesh, const std::string &path = std::string());
+  void setMesh(
+    const aiScene* _mesh,
+    const std::string& path = "",
+    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+
+  /// \brief URI to the mesh; an empty string if unavailable.
+  const std::string &getMeshUri() const;
 
   /// \brief Path to the mesh on disk; an empty string if unavailable.
   const std::string& getMeshPath() const;
@@ -118,6 +134,10 @@ public:
   /// \brief
   static const aiScene* loadMesh(const std::string& _fileName);
 
+  /// \brief 
+  static const aiScene* loadMesh(
+    const std::string& _uri, const common::ResourceRetrieverPtr& _retriever);
+
   // Documentation inherited.
   virtual Eigen::Matrix3d computeInertia(double _mass) const;
 
@@ -133,8 +153,14 @@ protected:
   /// \brief
   const aiScene* mMesh;
 
-  /// \brief
+  /// \brief URI the mesh, if available).
+  std::string mMeshUri;
+
+  /// \brief Path the mesh on disk, if available.
   std::string mMeshPath;
+
+  /// \brief Optional method of loading resources by URI.
+  common::ResourceRetrieverPtr mResourceRetriever;
 
   /// \brief OpenGL DisplayList id for rendering
   int mDisplayList;

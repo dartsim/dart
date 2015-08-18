@@ -37,7 +37,7 @@
 
 #include "dart/gui/GlutWindow.h"
 
-#ifndef WIN32
+#ifndef _WIN32
   #include <dirent.h>
 #endif
 #include <cstdio>
@@ -99,7 +99,11 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   // glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
   // glutTimerFunc(mDisplayTimeout, runTimer, 0);
 
+#ifndef _WIN32
   glDisable(GL_MULTISAMPLE);
+#endif
+  // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
+  // detail.
 }
 
 void GlutWindow::reshape(int _w, int _h) {
@@ -153,7 +157,7 @@ bool GlutWindow::screenshot() {
   char fileBase[32] = "frames/Capture";
   char fileName[64];
   // png
-#ifdef WIN32
+#ifdef _WIN32
   _snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
 #else
   std::snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
