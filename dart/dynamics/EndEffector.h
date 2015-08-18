@@ -167,7 +167,7 @@ public:
 
   /// Create a new Support Addon for this EndEffector. If a Support Addon
   /// already exists for this EndEffector, it will be deleted and replaced.
-  Support* constructSupport();
+  Support* createSupport();
 
   /// Erase the Support Addon from this EndEffector
   void eraseSupport();

@@ -214,7 +214,7 @@ void EndEffector::resetRelativeTransform()
 Support* EndEffector::getSupport(bool _createIfNull)
 {
   if(nullptr == mSupport && _createIfNull)
-    constructSupport();
+    createSupport();
 
   return mSupport.get();
 }
@@ -226,7 +226,7 @@ const Support* EndEffector::getSupport() const
 }
 
 //==============================================================================
-Support* EndEffector::constructSupport()
+Support* EndEffector::createSupport()
 {
   mSupport = std::unique_ptr<Support>(new Support(this));
   return mSupport.get();
