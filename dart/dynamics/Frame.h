@@ -82,6 +82,11 @@ public:
   Eigen::Isometry3d getTransform(
       const Frame* _withRespectTo = Frame::World()) const;
 
+  /// Get the transform of this Frame with respect to some other Frame. It can
+  /// be expressed in the coordinates of any Frame.
+  Eigen::Isometry3d getTransform(const Frame* withRespectTo,
+                                 const Frame* inCoordinatesOf) const;
+
   //-------------------------------------------------------------------------
   // Velocity
   //-------------------------------------------------------------------------

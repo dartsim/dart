@@ -68,17 +68,22 @@
 namespace dart {
 namespace utils {
 
-simulation::WorldPtr SoftSdfParser::readSoftSdfFile(const std::string& _filename)
+simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
+  const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSdfFile(_filename,
-    static_cast<simulation::WorldPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SoftSdfParser::readWorld));
+  return SdfParser::readSdfFile(_filename, getResourceRetriever(_retriever),
+    static_cast<simulation::WorldPtr (*)(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readWorld));
 }
 
 dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
-    const std::string& _filename)
+    const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSkeleton(_filename,
-    static_cast<dynamics::SkeletonPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SoftSdfParser::readSkeleton));
+  return SdfParser::readSkeleton(_filename, getResourceRetriever(_retriever),
+    static_cast<dynamics::SkeletonPtr (*)(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readSkeleton));
 }
 
 bool SoftSdfParser::createSoftPair(
@@ -108,23 +113,30 @@ bool SoftSdfParser::createSoftPair(
 }
 
 simulation::WorldPtr SoftSdfParser::readWorld(
-    tinyxml2::XMLElement* _worldElement, const std::string& _skelPath)
+    tinyxml2::XMLElement* _worldElement,
+    const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readWorld(_worldElement, _skelPath,
-    static_cast<dynamics::SkeletonPtr (*)(tinyxml2::XMLElement*, const std::string&)>(&SoftSdfParser::readSkeleton));
+  return SdfParser::readWorld(_worldElement, _skelPath, _retriever,
+    static_cast<dynamics::SkeletonPtr (*)(
+      tinyxml2::XMLElement*, const std::string&,
+      const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readSkeleton));
 }
 
 dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
-    tinyxml2::XMLElement* _skeletonElement, const std::string& _skelPath)
+    tinyxml2::XMLElement* _skeletonElement,
+    const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSkeleton(_skeletonElement, _skelPath,
+  return SdfParser::readSkeleton(_skeletonElement, _skelPath, _retriever,
                                  &readSoftBodyNode, &createSoftPair);
 }
 
 SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
     const Eigen::Isometry3d& _skeletonFrame,
-    const std::string& _skelPath)
+    const std::string& _skelPath,
+    const common::ResourceRetrieverPtr& _retriever)
 {
   //---------------------------------- Note ------------------------------------
   // SoftBodyNode is created if _softBodyNodeElement has <soft_shape>.
@@ -137,11 +149,11 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
   if (!hasElement(_softBodyNodeElement, "soft_shape"))
   {
     return SdfParser::readBodyNode(
-          _softBodyNodeElement, _skeletonFrame, _skelPath);
+          _softBodyNodeElement, _skeletonFrame, _skelPath, _retriever);
   }
 
   SDFBodyNode standardSDF =
-      SdfParser::readBodyNode(_softBodyNodeElement, _skeletonFrame, _skelPath);
+      SdfParser::readBodyNode(_softBodyNodeElement, _skeletonFrame, _skelPath, _retriever);
 
   BodyPropPtr standardProperties = standardSDF.properties;
 
@@ -225,6 +237,9 @@ SdfParser::SDFBodyNode SoftSdfParser::readSoftBodyNode(
 
   return sdfBodyNode;
 }
+
+common::ResourceRetrieverPtr getResourceRetriever(
+    const common::ResourceRetrieverPtr& _retriever);
 
 }  // namespace utils
 }  // namespace dart

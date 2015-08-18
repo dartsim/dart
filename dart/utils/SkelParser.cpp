@@ -71,6 +71,8 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Uri.h"
 
 namespace dart {
 namespace utils {
@@ -104,14 +106,18 @@ static tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
-simulation::WorldPtr SkelParser::readWorld(const std::string& _filename)
+simulation::WorldPtr SkelParser::readWorld(
+  const std::string& _filename,
+  const common::ResourceRetrieverPtr& _retriever)
 {
+  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str());
+    openXMLFile(_dartFile, _filename.c_str(), retriever);
   }
   catch(std::exception const& e)
   {
@@ -128,12 +134,17 @@ simulation::WorldPtr SkelParser::readWorld(const std::string& _filename)
     return nullptr;
   }
 
-  return readWorld(worldElement);
+  return readWorld(worldElement, _filename, retriever);
 }
 
 //==============================================================================
-simulation::WorldPtr SkelParser::readWorldXML(const std::string& _xmlString)
+simulation::WorldPtr SkelParser::readWorldXML(
+  const std::string& _xmlString,
+  const std::string& _baseUri,
+  const common::ResourceRetrieverPtr& _retriever)
 {
+  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   tinyxml2::XMLDocument _dartXML;
   if(_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS)
   {
@@ -148,18 +159,22 @@ simulation::WorldPtr SkelParser::readWorldXML(const std::string& _xmlString)
     return nullptr;
   }
 
-  return readWorld(worldElement);
+  return readWorld(worldElement, _baseUri, retriever);
 }
 
 //==============================================================================
-dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
+dynamics::SkeletonPtr SkelParser::readSkeleton(
+  const std::string& _filename,
+  const common::ResourceRetrieverPtr& _retriever)
 {
+  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str());
+    openXMLFile(_dartFile, _filename.c_str(), retriever);
   }
   catch(std::exception const& e)
   {
@@ -191,13 +206,17 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(const std::string& _filename)
     return nullptr;
   }
 
-  dynamics::SkeletonPtr newSkeleton = readSkeleton(skeletonElement);
+  dynamics::SkeletonPtr newSkeleton = readSkeleton(
+    skeletonElement, _filename, retriever);
 
   return newSkeleton;
 }
 
 //==============================================================================
-simulation::WorldPtr SkelParser::readWorld(tinyxml2::XMLElement* _worldElement)
+simulation::WorldPtr SkelParser::readWorld(
+  tinyxml2::XMLElement* _worldElement,
+  const std::string& _baseUri,
+  const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_worldElement != nullptr);
 
@@ -276,7 +295,7 @@ simulation::WorldPtr SkelParser::readWorld(tinyxml2::XMLElement* _worldElement)
   while (SkeletonElements.next())
   {
     dynamics::SkeletonPtr newSkeleton
-        = readSkeleton(SkeletonElements.get());
+        = readSkeleton(SkeletonElements.get(), _baseUri, _retriever);
 
     newWorld->addSkeleton(newSkeleton);
   }
@@ -436,7 +455,9 @@ bool createJointAndNodePair(dynamics::SkeletonPtr skeleton,
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
-    tinyxml2::XMLElement* _skeletonElement)
+    tinyxml2::XMLElement* _skeletonElement,
+    const std::string& _baseUri,
+    const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_skeletonElement != nullptr);
 
@@ -472,7 +493,8 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   ElementEnumerator xmlBodies(_skeletonElement, "body");
   while (xmlBodies.next())
   {
-    SkelBodyNode newBodyNode = readSoftBodyNode(xmlBodies.get(), skeletonFrame);
+    SkelBodyNode newBodyNode = readSoftBodyNode(
+      xmlBodies.get(), skeletonFrame, _baseUri, _retriever);
 
     BodyMap::const_iterator it = bodyNodes.find(newBodyNode.properties->mName);
     if(it != bodyNodes.end())
@@ -552,7 +574,9 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 //==============================================================================
 SkelParser::SkelBodyNode SkelParser::readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame)
+    const Eigen::Isometry3d& _skeletonFrame,
+    const std::string& _baseUri,
+    const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_bodyNodeElement != nullptr);
 
@@ -594,8 +618,8 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   ElementEnumerator vizShapes(_bodyNodeElement, "visualization_shape");
   while (vizShapes.next())
   {
-    dynamics::ShapePtr newShape = readShape(vizShapes.get(),
-                                            newBodyNode->mName);
+    dynamics::ShapePtr newShape = readShape(
+      vizShapes.get(), newBodyNode->mName, _baseUri, _retriever);
 
     if(newShape)
       newBodyNode->mVizShapes.push_back(newShape);
@@ -606,8 +630,8 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   ElementEnumerator collShapes(_bodyNodeElement, "collision_shape");
   while (collShapes.next())
   {
-    dynamics::ShapePtr newShape = readShape(collShapes.get(),
-                                            newBodyNode->mName);
+    dynamics::ShapePtr newShape = readShape(
+      collShapes.get(), newBodyNode->mName, _baseUri, _retriever);
 
     if(newShape)
       newBodyNode->mColShapes.push_back(newShape);
@@ -674,7 +698,9 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
 //==============================================================================
 SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
-    const Eigen::Isometry3d& _skeletonFrame)
+    const Eigen::Isometry3d& _skeletonFrame,
+    const std::string& _baseUri,
+    const common::ResourceRetrieverPtr& _retriever)
 {
   //---------------------------------- Note ------------------------------------
   // SoftBodyNode is created if _softBodyNodeElement has <soft_shape>.
@@ -683,8 +709,8 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
   //----------------------------------------------------------------------------
   assert(_softBodyNodeElement != nullptr);
 
-  SkelBodyNode standardBodyNode = readBodyNode(_softBodyNodeElement,
-                                               _skeletonFrame);
+  SkelBodyNode standardBodyNode = readBodyNode(
+    _softBodyNodeElement, _skeletonFrame, _baseUri, _retriever);
 
   // If _softBodyNodeElement has no <soft_shape>, return rigid body node
   if (!hasElement(_softBodyNodeElement, "soft_shape"))
@@ -784,7 +810,9 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 
 //==============================================================================
 dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
-                                         const std::string& bodyName)
+                                         const std::string& bodyName,
+                                         const std::string& _baseUri,
+                                         const common::ResourceRetrieverPtr& _retriever)
 {
   dynamics::ShapePtr newShape;
 
@@ -835,12 +863,13 @@ dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
     tinyxml2::XMLElement* meshEle      = getElement(geometryEle, "mesh");
     std::string           filename     = getValueString(meshEle, "file_name");
     Eigen::Vector3d       scale        = getValueVector3d(meshEle, "scale");
-    // TODO(JS): Do we assume that all mesh files place at DART_DATA_PATH?
-    const aiScene* model = dynamics::MeshShape::loadMesh(DART_DATA_PATH +
-                                                         filename);
+
+    const std::string meshUri = common::Uri::getRelativeUri(_baseUri, filename);
+    const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
     if (model)
     {
-      newShape = dynamics::ShapePtr(new dynamics::MeshShape(scale, model));
+      newShape = std::make_shared<dynamics::MeshShape>(
+        scale, model, meshUri, _retriever);
     }
     else
     {
@@ -1955,6 +1984,15 @@ SkelParser::JointPropPtr SkelParser::readFreeJoint(
 
   return Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
       properties);
+}
+
+common::ResourceRetrieverPtr SkelParser::getRetriever(
+  const common::ResourceRetrieverPtr& _retriever)
+{
+  if(_retriever)
+    return _retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 }  // namespace utils

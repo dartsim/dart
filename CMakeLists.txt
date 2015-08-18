@@ -3,6 +3,20 @@
 #===============================================================================
 cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
 
+# Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
+# became default in CMake 3.0. Explicitly setting this policy is necessary to
+# suppress a warning in CMake 3.0 and above.
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
+
+# Simplify variable reference and escape sequence evaluation. This was added in
+# CMake 3.1. Explicitly setting this policy is necessary to suppress a warning
+# in CMake 3.1 and above.
+if(POLICY CMP0053)
+  cmake_policy(SET CMP0053 NEW)
+endif()
+
 # Disables a warning about a change in Cygwin Cmake
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 set(CMAKE_CXX_WARNING_LEVEL 4)
@@ -26,7 +40,7 @@ endif()
 project(dart)
 
 set(DART_MAJOR_VERSION "5")
-set(DART_MINOR_VERSION "0")
+set(DART_MINOR_VERSION "1")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -46,7 +60,7 @@ message(STATUS "============================================")
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
 option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(MSVC)
-  set(DART_RUNTIME_LIBRARY "/MT" CACHE STRING "BaseName chosen by the user at CMake configure time")
+  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
@@ -159,7 +173,7 @@ endif()
 add_definitions(-DBOOST_TEST_DYN_LINK)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost ${DART_MIN_BOOST_VERSION} COMPONENTS system QUIET)
+find_package(Boost ${DART_MIN_BOOST_VERSION} COMPONENTS regex system QUIET)
 if(Boost_FOUND)
   message(STATUS "Looking for Boost - ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION} found")
 else()
@@ -326,7 +340,8 @@ endif()
 #===============================================================================
 # DART dependency variable settings
 #===============================================================================
-set(DART_CORE_DEPENDENCIES ${FCL_LIBRARIES}
+set(DART_CORE_DEPENDENCIES ${CCD_LIBRARIES}
+                           ${FCL_LIBRARIES}
                            ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
                            ${OPENGL_LIBRARIES}
@@ -349,6 +364,7 @@ endif()
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
 include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
 include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -511,7 +527,7 @@ endif()
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
 message(STATUS ${PC_CONFIG_OUT})
-configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @only)
+configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
@@ -604,42 +620,6 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
     endif()
   endif()
 endif()
-
-#===============================================================================
-# Package Installer
-#===============================================================================
-set(CPACK_PACKAGE_NAME "dart")
-set(CPACK_SYSTEM_NAME "i386")
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-    set(CPACK_SYSTEM_NAME "amd64")
-endif()
-set(CPACK_PACKAGE_VERSION_MAJOR ${DART_MAJOR_VERSION})
-set(CPACK_PACKAGE_VERSION_MINOR ${DART_MINOR_VERSION})
-set(CPACK_PACKAGE_VERSION_PATCH ${DART_PATCH_VERSION})
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "freeglut3, freeglut3-dev, libboost1.46-all-dev, libccd (>=1.4.2),
-     fcl (>=0.2.7), libeigen3-dev, libxmu-dev, libxi-dev,
-     libtinyxml-dev, libtinyxml2-dev, libassimp3, libassimp-dev (>=3.0~dfsg-1),
-     urdfdom")
-if(HAVE_BULLET_COLLISION)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libbullet-dev (>=2.8.0)")
-endif()
-if(HAVE_NLOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "libnlopt-dev")
-endif()
-if(HAVE_IPOPT)
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_PACKAGE_DEPENDS} "coinor-libipopt-dev")
-endif()
-
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_SYSTEM_NAME}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Karen Liu (www.cc.gatech.edu/~karenliu/)")
-
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${DART_PKG_DESC}")
-set(CPACK_PACKAGE_VENDOR "Computer Graphics Lab at GT")
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-
-include(CPack)
 
 #===============================================================================
 # END
