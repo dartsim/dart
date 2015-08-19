@@ -206,7 +206,9 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     }
     else if( receiving->first == incoming->first )
     {
-      receiving->second = incoming->second->clone(this);
+      if(incoming->second)
+        receiving->second = incoming->second->clone(this);
+
       ++receiving;
       ++incoming;
     }
