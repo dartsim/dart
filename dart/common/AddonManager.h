@@ -85,6 +85,8 @@ public:
   using PropertiesMap = std::map< std::type_index, std::unique_ptr<Addon::Properties> >;
   using Properties = ExtensibleMapHolder<PropertiesMap>;
 
+  using AddonMap = std::map< std::type_index, std::unique_ptr<Addon> >;
+
   /// Virtual destructor
   virtual ~AddonManager() = default;
 
@@ -161,8 +163,6 @@ protected:
 
   /// Become the manager of the specified Addon
   void becomeManager(Addon* addon);
-
-  using AddonMap = std::map< std::type_index, std::unique_ptr<Addon> >;
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;
