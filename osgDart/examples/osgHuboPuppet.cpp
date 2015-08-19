@@ -180,6 +180,7 @@ public:
 
   HuboArmIK(InverseKinematics* _ik, const std::string& baseLinkName)
     : Analytical(_ik, "HuboArmIK_"+baseLinkName),
+      configured(false),
       mBaseLinkName(baseLinkName)
   {
     // Do nothing
@@ -210,10 +211,18 @@ public:
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if(nullptr == base || nullptr == mWristEnd)
+    if(nullptr == base)
     {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform an IK on a "
-            << "limb that no longer exists!\n";
+            << "limb that no longer exists [" << getMethodName() << "]!\n";
+      assert(false);
+      return mSolutions;
+    }
+
+    if(nullptr == mWristEnd)
+    {
+      dterr << "[HuboArmIK::computeSolutions] Attempting to perform IK without "
+            << "a wrist!\n";
       assert(false);
       return mSolutions;
     }
@@ -459,6 +468,7 @@ public:
   /// baseLink should be Body_LHY or Body_RHY
   HuboLegIK(InverseKinematics* _ik, const std::string& baseLinkName)
     : Analytical(_ik, "HuboLegIK_"+baseLinkName),
+      configured(false),
       mBaseLinkName(baseLinkName)
   {
     // Do nothing
