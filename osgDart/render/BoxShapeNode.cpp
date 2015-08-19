@@ -138,7 +138,6 @@ BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 
