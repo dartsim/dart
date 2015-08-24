@@ -230,6 +230,12 @@ protected:
   /// Distribution
   std::uniform_real_distribution<double> mDistribution;
 
+  /// Cache to track the costs of equality constraints
+  Eigen::VectorXd mEqConstraintCostCache;
+
+  /// Cache to track the costs of inequality constraints
+  Eigen::VectorXd mIneqConstraintCostCache;
+
   /// The last config reached by this Solver
   Eigen::VectorXd mLastConfig;
 };
