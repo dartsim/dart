@@ -106,6 +106,12 @@ GradientDescentSolver::~GradientDescentSolver()
 }
 
 //==============================================================================
+static double sign(double value)
+{
+  return value > 0? 1.0 : (value < 0? -1.0 : 0.0);
+}
+
+//==============================================================================
 bool GradientDescentSolver::solve()
 {
   bool minimized = false;
@@ -122,7 +128,9 @@ bool GradientDescentSolver::solve()
   Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
   Eigen::VectorXd grad(x.size());
-  std::vector<bool> ineqViolated(problem->getNumIneqConstraints());
+
+  mEqConstraintCostCache.resize(problem->getNumEqConstraints());
+  mIneqConstraintCostCache.resize(problem->getNumIneqConstraints());
 
   mLastNumIterations = 0;
   size_t attemptCount = 0;
@@ -132,8 +140,6 @@ bool GradientDescentSolver::solve()
     do
     {
       ++mLastNumIterations;
-
-//      Eigen::Map<const Eigen::VectorXd> xMap(x.data(), dim);
 
       // Perturb the configuration if we have reached an iteration where we are
       // supposed to perturb it.
@@ -153,25 +159,17 @@ bool GradientDescentSolver::solve()
       satisfied = true;
       for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
       {
-        if(std::abs(problem->getEqConstraint(i)->eval(x)) > tol)
-        {
+        mEqConstraintCostCache[i] = problem->getEqConstraint(i)->eval(x);
+        if(std::abs(mEqConstraintCostCache[i]) > tol)
           satisfied = false;
-          break; // If we already know that at least one constraint is violated,
-                 // then don't bother checking the rest.
-        }
       }
 
       // Check if the inequality constraints are satisfied
       for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
       {
-        double ineqCost = problem->getIneqConstraint(i)->eval(x);
-        if(ineqCost > std::abs(tol))
-        {
-          ineqViolated[i] = true;
+        mIneqConstraintCostCache[i] = problem->getIneqConstraint(i)->eval(x);
+        if(mIneqConstraintCostCache[i] > std::abs(tol))
           satisfied = false;
-        }
-        else
-          ineqViolated[i] = false;
       }
 
       Eigen::Map<Eigen::VectorXd> dxMap(dx.data(), dim);
@@ -181,9 +179,9 @@ bool GradientDescentSolver::solve()
       problem->getObjective()->evalGradient(x, dxMap);
       for(int i=0; i < static_cast<int>(problem->getNumEqConstraints()); ++i)
       {
-        // TODO: Should we ignore the gradients of equality constraints that are
-        // already satisfied, the way we do for inequality constraints? It might
-        // save some operations.
+        if(std::abs(mEqConstraintCostCache[i]) < tol)
+          continue;
+
         problem->getEqConstraint(i)->evalGradient(x, gradMap);
 
         // Get the user-specified weight if available, otherwise use the default
@@ -192,23 +190,27 @@ bool GradientDescentSolver::solve()
               mGradientP.mEqConstraintWeights[i] :
               mGradientP.mDefaultConstraintWeight;
 
-        dx += weight * grad;
+        // We treat the constraint function as though we are minimizing its
+        // absolute value. We do not want to treat it as though we are
+        // minimizing its square, because that could adversely affect the
+        // curvature of its derivative.
+        dx += weight * grad * sign(mEqConstraintCostCache[i]);
       }
 
       for(int i=0; i < static_cast<int>(problem->getNumIneqConstraints()); ++i)
       {
-        if(ineqViolated[i])
-        {
-          problem->getIneqConstraint(i)->evalGradient(x, gradMap);
+        if(mIneqConstraintCostCache[i] < tol)
+          continue;
 
-          // Get the user-specified weight if available, otherwise use the
-          // default weight value
-          double weight = mGradientP.mIneqConstraintWeights.size() > i?
-                mGradientP.mIneqConstraintWeights[i] :
-                mGradientP.mDefaultConstraintWeight;
+        problem->getIneqConstraint(i)->evalGradient(x, gradMap);
 
-          dx += weight * grad;
-        }
+        // Get the user-specified weight if available, otherwise use the
+        // default weight value
+        double weight = mGradientP.mIneqConstraintWeights.size() > i?
+              mGradientP.mIneqConstraintWeights[i] :
+              mGradientP.mDefaultConstraintWeight;
+
+        dx += weight * grad;
       }
 
       x -= gamma*dx;
