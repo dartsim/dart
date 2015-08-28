@@ -118,6 +118,13 @@ bool GradientDescentSolver::solve()
   bool satisfied = false;
 
   std::shared_ptr<Problem> problem = mProperties.mProblem;
+  if(nullptr == problem)
+  {
+    dtwarn << "[GradientDescentSolver::solve] Attempting to solve a nullptr "
+           << "problem! We will return false.\n";
+    return false;
+  }
+
   double tol = std::abs(mProperties.mTolerance);
   double gamma = mGradientP.mStepSize;
   size_t dim = problem->getDimension();
