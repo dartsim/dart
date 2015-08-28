@@ -186,11 +186,14 @@ bool GradientDescentSolver::solve()
           satisfied = false;
       }
 
+      dx.setZero();
       Eigen::Map<Eigen::VectorXd> dxMap(dx.data(), dim);
       Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), dim);
       // Compute the gradient of the objective, combined with the weighted
       // gradients of the softened constraints
-      problem->getObjective()->evalGradient(x, dxMap);
+      const FunctionPtr& objective = problem->getObjective();
+      if(objective)
+        objective->evalGradient(x, dxMap);
       for(int i=0; i < static_cast<int>(problem->getNumEqConstraints()); ++i)
       {
         if(std::abs(mEqConstraintCostCache[i]) < tol)
@@ -244,7 +247,7 @@ bool GradientDescentSolver::solve()
         // TODO(MXG): Allow the user to specify the stream for the output
         std::cout << "[GradientDescentSolver] Progress (attempt #"
                   << attemptCount << " | iteration #" << stepCount << ")\n"
-                  << "cost: " << problem->getObjective()->eval(x) << " | "
+                  << "cost: " << (objective? objective->eval(x) : 0) << " | "
                   << (minimized? "minimized | " : "not minimized | ")
                   << (satisfied? "constraints satisfied | "
                                : "constraints unsatisfied | ")
@@ -278,7 +281,10 @@ bool GradientDescentSolver::solve()
 
   mLastConfig = x;
   problem->setOptimalSolution(x);
-  problem->setOptimumValue(problem->getObjective()->eval(x));
+  if(problem->getObjective())
+    problem->setOptimumValue(problem->getObjective()->eval(x));
+  else
+    problem->setOptimumValue(0.0);
 
   return minimized && satisfied;
 }
