@@ -133,8 +133,8 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  std::shared_ptr<urdf::World> worldInterface =
-      urdf::parseWorldURDF(_urdfString, _baseUri, _resourceRetriever);
+  std::shared_ptr<urdf_parsing::World> worldInterface =
+      urdf_parsing::parseWorldURDF(_urdfString, _baseUri);
 
   if(!worldInterface)
   {
@@ -142,31 +142,13 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  // Store paths from world to entities
-  std::map<std::string, std::string> worldToEntityPaths;
-  if(!parseWorldToEntityPaths(_urdfString, worldToEntityPaths))
-    return nullptr;
-
   simulation::WorldPtr world(new simulation::World);
 
   for(size_t i = 0; i < worldInterface->models.size(); ++i)
   {
-    std::string model_name = worldInterface->models[i].model->getName();
-    std::map<std::string, std::string>::const_iterator it =
-        worldToEntityPaths.find(model_name);
-
-    if(it == worldToEntityPaths.end())
-    {
-      dtwarn << "[DartLoader::parseWorldString] Could not find file path for ["
-             << model_name << "]. We will not parse it!\n";
-      continue;
-    }
-
-    // TODO: Where does this come from? What is it used for?
-    //mRootToSkelPath = mRootToWorldPath + it->second;
-
+    const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-      worldInterface->models[i].model.get(), _baseUri, resourceRetriever);
+      entity.model.get(), entity.uri, resourceRetriever);
 
     if(!skeleton)
     {

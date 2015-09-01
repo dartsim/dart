@@ -44,9 +44,44 @@
 #include <dart/common/Uri.h>
 #include <dart/common/ResourceRetriever.h>
 
-namespace urdf{
-  std::shared_ptr<World> parseWorldURDF(
-      const std::string &xml_string,
-      const dart::common::Uri& _baseUri,
-      const dart::common::ResourceRetrieverPtr& _resourceRetriever);
-}
+#include <urdf_model/model.h>
+#include <urdf_model/pose.h>
+#include <urdf_model/twist.h>
+
+namespace dart {
+namespace utils {
+namespace urdf_parsing {
+
+/// We need a customized version of the Entity class, because we need to keep
+/// track of a Skeleton's uri in order to correctly handle relative file paths.
+class Entity
+{
+public:
+
+  Entity() = default;
+
+  /// Copy over a standard urdfEntity
+  Entity(const urdf::Entity& urdfEntity);
+
+  boost::shared_ptr<urdf::ModelInterface> model;
+  urdf::Pose origin;
+  urdf::Twist twist;
+
+  dart::common::Uri uri;
+
+};
+
+class World
+{
+public:
+
+  std::string name;
+  std::vector<Entity> models;
+};
+
+std::shared_ptr<World> parseWorldURDF(const std::string &xml_string,
+    const dart::common::Uri& _baseUri);
+
+} // namespace urdf
+} // namespace utils
+} // namespace dart
