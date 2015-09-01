@@ -59,8 +59,10 @@ bool parsePose(Pose &pose, TiXmlElement* xml);
 /**
  * @function parseWorldURDF
  */
-std::shared_ptr<World> parseWorldURDF(const std::string& _xml_string,
-                                      std::string _root_to_world_path)
+std::shared_ptr<World> parseWorldURDF(
+    const std::string& _xml_string,
+    const dart::common::Uri& _baseUri,
+    const dart::common::ResourceRetrieverPtr& _resourceRetriever)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse( _xml_string.c_str() );
@@ -124,10 +126,17 @@ std::shared_ptr<World> parseWorldURDF(const std::string& _xml_string,
       else
       {
         std::string fileName = includedFiles.find( string_entity_model )->second;
-        std::string fileFullName = _root_to_world_path;
-        fileFullName.append( fileName );
-        if(debug) std::cout<< "Entity full filename: "<< fileFullName << std::endl;
 
+        dart::common::Uri absoluteUri;
+        if(absoluteUri.fromRelativeUri(_baseUri, fileName))
+        {
+          dtwarn << "[parseWorldURDF] Failed resolving mesh URI '"
+                 << fileName << "' relative to '" << _baseUri.toString()
+                 << "'. We will exit without loading!\n";
+          return nullptr;
+        }
+
+        const std::string fileFullName = absoluteUri.toString();
         // Parse model
         std::string xml_model_string;
         std::fstream xml_file( fileFullName.c_str(), std::fstream::in );

@@ -133,11 +133,8 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  // TODO: Where does this come from?
-  std::string mRootToWorldPath;
-
   std::shared_ptr<urdf::World> worldInterface =
-      urdf::parseWorldURDF(_urdfString, mRootToWorldPath);
+      urdf::parseWorldURDF(_urdfString, _baseUri, _resourceRetriever);
 
   if(!worldInterface)
   {
