@@ -41,6 +41,12 @@
 
 #include <urdf_world/world.h>
 
+#include <dart/common/Uri.h>
+#include <dart/common/ResourceRetriever.h>
+
 namespace urdf{
-  std::shared_ptr<World> parseWorldURDF(const std::string &xml_string, std::string _path );
+  std::shared_ptr<World> parseWorldURDF(
+      const std::string &xml_string,
+      const dart::common::Uri& _baseUri,
+      const dart::common::ResourceRetrieverPtr& _resourceRetriever);
 }
