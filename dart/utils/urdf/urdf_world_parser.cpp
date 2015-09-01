@@ -128,7 +128,7 @@ std::shared_ptr<World> parseWorldURDF(
         std::string fileName = includedFiles.find( string_entity_model )->second;
 
         dart::common::Uri absoluteUri;
-        if(absoluteUri.fromRelativeUri(_baseUri, fileName))
+        if(!absoluteUri.fromRelativeUri(_baseUri, fileName))
         {
           dtwarn << "[parseWorldURDF] Failed resolving mesh URI '"
                  << fileName << "' relative to '" << _baseUri.toString()
