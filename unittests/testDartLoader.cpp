@@ -82,6 +82,13 @@ TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
     loader.parseSkeleton(DART_DATA_PATH"urdf/test/primitive_geometry.urdf"));
 }
 
+TEST(DartLoader, parseWorld)
+{
+  DartLoader loader;
+  EXPECT_TRUE(nullptr !=
+      loader.parseWorld(DART_DATA_PATH"urdf/test/testWorld.urdf"));
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

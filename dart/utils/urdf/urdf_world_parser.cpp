@@ -129,7 +129,9 @@ std::shared_ptr<World> parseWorldURDF(
       // Find the model
       if( includedFiles.find( string_entity_model ) == includedFiles.end() )
       {
-        dtwarn << "[parseWorldURDF] ERROR: I cannot find the model you want to use, did you provide the correct name? Exiting and not loading! \n"<<std::endl;
+        dtwarn << "[parseWorldURDF] Cannot find the model ["
+               << string_entity_model << "], did you provide the correct name? "
+               << "We will return a nullptr.\n"<<std::endl;
         return nullptr;
       }
       else
@@ -141,7 +143,7 @@ std::shared_ptr<World> parseWorldURDF(
         {
           dtwarn << "[parseWorldURDF] Failed resolving mesh URI '"
                  << fileName << "' relative to '" << _baseUri.toString()
-                 << "'. We will exit without loading!\n";
+                 << "'. We will return a nullptr.\n";
           return nullptr;
         }
 
@@ -150,6 +152,14 @@ std::shared_ptr<World> parseWorldURDF(
         // Parse model
         std::string xml_model_string;
         std::fstream xml_file( fileFullName.c_str(), std::fstream::in );
+
+        if(!xml_file.is_open())
+        {
+          dtwarn << "[parseWorldURDF] Could not open the file [" << fileFullName
+                 << "]. Returning a nullptr.\n";
+          return nullptr;
+        }
+
         while( xml_file.good() )
         {
           std::string line;
@@ -161,8 +171,9 @@ std::shared_ptr<World> parseWorldURDF(
 
         if( !entity.model )
         {
-          dtwarn << "[parseWorldURDF] Model in " << fileFullName
-                 << " not found. Exiting and not loading!\n";
+          dtwarn << "[parseWorldURDF] Could not find a model named ["
+                 << xml_model_string << "] in file [" <<  fileFullName
+                 << "]. We will return a nullptr.\n";
           return nullptr;
         }
         else
