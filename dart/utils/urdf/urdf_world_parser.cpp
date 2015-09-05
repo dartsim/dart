@@ -63,9 +63,6 @@ Entity::Entity(const urdf::Entity& urdfEntity)
   // Do nothing
 }
 
-// Implemented in urdf_parser/src/pose.cpp, for some reason nobody thought of putting it in the header
-//bool parsePose(urdf::Pose& pose, TiXmlElement* xml);
-
 /**
  * @function parseWorldURDF
  */
@@ -218,6 +215,6 @@ std::shared_ptr<World> parseWorldURDF(
   return world;
 }
 
-} // namesapce dart
+} // namesapce urdf_parsing
 } // namespace utils
-} // namespace urdf_parsing
+} // namespace dart
