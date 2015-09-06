@@ -222,9 +222,30 @@ ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 }
 
 //==============================================================================
-const std::vector<ShapePtr>& Entity::getVisualizationShapes() const
+template <class T>
+static std::vector<std::shared_ptr<const T>>& convertToConstSharedPtrVector(
+    const std::vector<std::shared_ptr<T>>& vec,
+          std::vector<std::shared_ptr<const T>>& const_vec)
+{
+  const_vec.resize(vec.size());
+  for(size_t i=0; i<vec.size(); ++i)
+    const_vec[i] = vec[i];
+  return const_vec;
+}
+
+//==============================================================================
+const std::vector<ShapePtr>& Entity::getVisualizationShapes()
 {
   return mEntityP.mVizShapes;
+}
+
+//==============================================================================
+const std::vector<ConstShapePtr>& Entity::getVisualizationShapes() const
+{
+  static std::vector<ConstShapePtr> constVizShapes;
+
+  return convertToConstSharedPtrVector<Shape>(
+        mEntityP.mVizShapes, constVizShapes);
 }
 
 //==============================================================================
