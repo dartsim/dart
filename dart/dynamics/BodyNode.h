@@ -1042,7 +1042,7 @@ protected:
   std::vector<Marker*> mMarkers;
 
   /// Map that retrieves the cleaners for a given Node
-  std::unordered_map<Node*, std::shared_ptr<NodeCleaner> > mNodeMap;
+  std::unordered_map<const Node*, std::shared_ptr<NodeCleaner>> mNodeMap;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;

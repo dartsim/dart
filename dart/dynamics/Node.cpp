@@ -80,9 +80,7 @@ bool Node::isRemoved() const
     return true;
   }
 
-  // const_cast is okay here, because absolutely no data gets modified
-  Node* node = const_cast<Node*>(this);
-  return (mBodyNode->mNodeMap.find(node) == mBodyNode->mNodeMap.end());
+  return (mBodyNode->mNodeMap.find(this) == mBodyNode->mNodeMap.end());
 }
 
 //==============================================================================
@@ -135,13 +133,8 @@ void Node::attach()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
-
-  if(mBodyNode->mNodeMap.end() == it)
-  {
+  if(mBodyNode->mNodeMap.end() == mBodyNode->mNodeMap.find(this))
     mBodyNode->mNodeMap[this] = generateCleaner();
-  }
 }
 
 //==============================================================================
@@ -153,8 +146,7 @@ void Node::stageForRemoval()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
+  const auto it = mBodyNode->mNodeMap.find(this);
 
   if(mBodyNode->mNodeMap.end() == it)
     return;
