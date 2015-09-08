@@ -56,7 +56,7 @@ public:
 
   template<class, class> friend class TemplateNodePtr;
 
-  typedef NodeT element_type;
+  using element_type = NodeT;
 
   /// Default constructor
   TemplateNodePtr() : mNode(nullptr) { }
