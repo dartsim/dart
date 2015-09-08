@@ -68,9 +68,9 @@ private:
 
 };
 
-/// The Node class is a base class for any object that attaches to a BodyNode.
-/// This base class handles ownership and reference counting for the classes
-/// that inherit it.
+/// The Node class is a base class for BodyNode and any object that attaches to
+/// a BodyNode. This base class handles ownership and reference counting for the
+/// classes that inherit it.
 class Node : public virtual common::Subject
 {
 public:
