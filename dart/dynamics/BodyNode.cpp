@@ -1079,10 +1079,10 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
 {
-  // Generate an inert cleaner to make sure that it will not try to
+  // Generate an inert destructor to make sure that it will not try to
   // double-delete this BodyNode when it gets destroyed.
-  mSelfCleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(nullptr));
-  mCleaner = mSelfCleaner;
+  mSelfDestructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(nullptr));
+  mDestructor = mSelfDestructor;
 
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
