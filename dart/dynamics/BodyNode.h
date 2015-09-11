@@ -627,13 +627,11 @@ public:
   DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
 
   /// Create an EndEffector attached to this BodyNode
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(
-      const typename EndEffectorT::Properties& _properties);
+  EndEffector* createEndEffector(
+      const typename EndEffector::Properties& _properties);
 
   /// Create an EndEffector with the specified name
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(const std::string& _name = "EndEffector");
+  EndEffector* createEndEffector(const std::string& _name = "EndEffector");
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);

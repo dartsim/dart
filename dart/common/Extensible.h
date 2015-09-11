@@ -76,6 +76,50 @@ public:
   virtual void copy(const T& anotherExtensible) = 0;
 };
 
+/// The ExtensibleMixer class is used to easily create an Extensible (such as
+/// Node::State) which simply takes an existing class (Mixin) and creates an
+/// Extensible that wraps it. This creates all the appropriate copy, move, and
+/// clone members, allowing you to follow the Rule Of Zero.
+template <class T, class Mixin>
+class ExtensibleMixer : public T, public Mixin
+{
+public:
+
+  /// Default constructor. Uses the default constructor of Mixin
+  ExtensibleMixer();
+
+  /// Constructs using a Mixin instance
+  ExtensibleMixer(const Mixin& mixin);
+
+  /// Constructs using a Mixin rvalue
+  ExtensibleMixer(Mixin&& mixin);
+
+  /// Copy constructor
+  ExtensibleMixer(const ExtensibleMixer& other);
+
+  /// Move constructor
+  ExtensibleMixer(ExtensibleMixer&& other);
+
+  /// Copy assignment operator that uses a Mixin instance
+  ExtensibleMixer& operator=(const Mixin& mixin);
+
+  /// Move assignment operator that uses a Mixin rvalue
+  ExtensibleMixer& operator=(Mixin&& mixin);
+
+  /// Copy assignment operator
+  ExtensibleMixer& operator=(const ExtensibleMixer& other);
+
+  /// Move assignment operator
+  ExtensibleMixer& operator=(ExtensibleMixer&& other);
+
+  // Documentation inherited
+  std::unique_ptr<T> clone() const override final;
+
+  // Documentation inherited
+  void copy(const T& other) override final;
+
+};
+
 /// MapHolder is a templated wrapper class that is used to allow maps of
 /// Addon::State and Addon::Properties to be handled in a semantically
 /// palatable way.

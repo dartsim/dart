@@ -43,15 +43,104 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer()
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(const Mixin& mixin)
+  : Mixin(mixin)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(Mixin&& mixin)
+  : Mixin(std::move(mixin))
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(const ExtensibleMixer& other)
+  : Mixin(other)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(ExtensibleMixer&& other)
+  : Mixin(other)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>& ExtensibleMixer<T, Mixin>::operator=(
+    const Mixin& mixin)
+{
+  static_cast<Mixin&>(*this) = mixin;
+  return *this;
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>& ExtensibleMixer<T, Mixin>::operator=(Mixin&& mixin)
+{
+  static_cast<Mixin&>(*this) = std::move(mixin);
+  return *this;
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>& ExtensibleMixer<T, Mixin>::operator=(
+    const ExtensibleMixer& other)
+{
+  static_cast<Mixin&>(*this) = static_cast<const Mixin&>(other);
+  return *this;
+}
+
+//==============================================================================
+template <class T, class Mixin>
+ExtensibleMixer<T, Mixin>& ExtensibleMixer<T, Mixin>::operator=(
+    ExtensibleMixer&& other)
+{
+  static_cast<Mixin&>(*this) = std::move(static_cast<Mixin&&>(other));
+}
+
+//==============================================================================
+template <class T, class Mixin>
+std::unique_ptr<T> ExtensibleMixer<T, Mixin>::clone() const
+{
+  return std::unique_ptr<T>(new ExtensibleMixer<T, Mixin>(*this));
+}
+
+//==============================================================================
+template <class T, class Mixin>
+void ExtensibleMixer<T, Mixin>::copy(const T& other)
+{
+  *this = static_cast<const ExtensibleMixer<T, Mixin>&>(other);
+}
+
+//==============================================================================
 template <typename MapType>
-ExtensibleMapHolder<MapType>::ExtensibleMapHolder(const ExtensibleMapHolder& otherHolder)
+ExtensibleMapHolder<MapType>::ExtensibleMapHolder(
+    const ExtensibleMapHolder& otherHolder)
 {
   *this = otherHolder;
 }
 
 //==============================================================================
 template <typename MapType>
-ExtensibleMapHolder<MapType>::ExtensibleMapHolder(ExtensibleMapHolder&& otherHolder)
+ExtensibleMapHolder<MapType>::ExtensibleMapHolder(
+    ExtensibleMapHolder&& otherHolder)
 {
   *this = std::move(otherHolder);
 }
@@ -218,21 +307,6 @@ const std::vector<T>& ExtensibleVector<T>::getVector() const
 {
   return mVector;
 }
-
-//==============================================================================
-//#define DART_STANDARD_MIXIN_EXTENSIBLE( BaseName, ExtensionName, Data )
-
-//==============================================================================
-#define DART_EXTENSIBLE_WITH_MEMBER_DATA( BaseName, ExtensionName, Data )                                                             \
-  public: Data m ## Data;                                                                                                             \
-  inline ExtensionName () = default;                                                                                                  \
-  inline ExtensionName (const ExtensionName & other) { *this = other; }                                                               \
-  inline ExtensionName ( ExtensionName && other) { *this = std::move(other); }                                                        \
-  inline ExtensionName & operator =(const ExtensionName & other) { m ## Data = other.m ## Data ; return *this; }                      \
-  inline ExtensionName & operator =( ExtensionName && other ) { m ## Data = std::move(other.m ## Data ); return *this; }              \
-  inline std::unique_ptr< BaseName > clone() const override final { return std::unique_ptr< BaseName >(new ExtensionName (*this)); }  \
-  inline void copy(const BaseName & other) { *this = static_cast<const ExtensionName &>(other); }
-
 
 } // namespace common
 } // namespace dart

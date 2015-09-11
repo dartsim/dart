@@ -51,44 +51,29 @@ class Support final : public common::Addon
 {
 public:
 
-  class State final : public common::Addon::State
+  struct StateData
   {
-  public:
+    StateData(bool mActive = false);
 
-    friend class Support;
+    bool mActive;
+  };
 
-    struct Data
-    {
-      Data(bool active=false);
-
-      /// True if this EndEffector is currently usable for support
-      bool mActive;
-    };
+  struct State final : public common::Addon::StateMixer<StateData>
+  {
+    /// Default constructor
+    State() = default;
 
     /// Optional constructor (mActive will be set to false if the default
     /// constructor is used)
     State(bool active);
-
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::State, State, Data)
-    // Created by the macro:
-    // Data mData;
   };
 
-  class Properties final : public common::Addon::Properties
+  struct PropertiesData
   {
-  public:
-
-    friend class Support;
-
-    struct Data
-    {
-      math::SupportGeometry mGeometry;
-    };
-
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::Properties, Properties, Data)
-    // Created by the macro:
-    // Data mData;
+    math::SupportGeometry mGeometry;
   };
+
+  using Properties = common::Addon::PropertiesMixer<PropertiesData>;
 
   /// Constructor
   Support(EndEffector* _ee);
@@ -149,21 +134,16 @@ public:
 
   DART_ENABLE_ADDON_SPECIALIZATION()
 
-  struct State : public Node::State
+  struct StateData
   {
-    struct Data
-    {
-      Data(const Eigen::Isometry3d& relativeTransform =
-          Eigen::Isometry3d::Identity());
+    StateData(const Eigen::Isometry3d& relativeTransform =
+        Eigen::Isometry3d::Identity());
 
-      Eigen::Isometry3d mRelativeTransform;
-      common::AddonManager::State mAddonStates;
-    };
-
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(Node::State, State, Data)
-    // Created by the macro:
-    // Data mData;
+    Eigen::Isometry3d mRelativeTransform;
+    common::AddonManager::State mAddonStates;
   };
+
+  using State = Node::StateMixer<StateData>;
 
   struct UniqueProperties
   {
@@ -173,18 +153,17 @@ public:
 
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
-            Eigen::Isometry3d::Identity(),
-        const math::SupportGeometry& _supportGeometry =
-            math::SupportGeometry(),
-        bool _supporting = false);
+            Eigen::Isometry3d::Identity());
   };
 
-  struct Properties : Entity::Properties, UniqueProperties
+  struct PropertiesData : Entity::Properties, UniqueProperties
   {
-    Properties(
+    PropertiesData(
         const Entity::Properties& _entityProperties = Entity::Properties(),
         const UniqueProperties& _effectorProperties = UniqueProperties() );
   };
+
+  using Properties = Node::PropertiesMixer<PropertiesData>;
 
   /// Destructor
   virtual ~EndEffector() = default;
@@ -195,13 +174,13 @@ public:
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const Properties& _properties, bool _useNow=true);
+  void setProperties(const PropertiesData& _properties, bool _useNow=true);
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
   void setProperties(const UniqueProperties& _properties, bool _useNow=true);
 
-  Properties getEndEffectorProperties() const;
+  PropertiesData getEndEffectorProperties() const;
 
   /// Copy the Properties of another EndEffector
   void copy(const EndEffector& _otherEndEffector);
@@ -336,7 +315,7 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  explicit EndEffector(BodyNode* _parent, const Properties& _properties);
+  explicit EndEffector(BodyNode* _parent, const PropertiesData& _properties);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.

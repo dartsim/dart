@@ -598,8 +598,7 @@ TEST(Skeleton, NodePersistence)
   // Testing EndEffector, which is a specialized Node type
   //--------------------------------------------------------------------------
   {
-    EndEffector* manip =
-        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+    EndEffector* manip = skel->getBodyNode(0)->createEndEffector("manip");
 
     EXPECT_EQ(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector(0), manip);
@@ -621,8 +620,7 @@ TEST(Skeleton, NodePersistence)
   }
 
   {
-    EndEffector* manip =
-        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+    EndEffector* manip = skel->getBodyNode(0)->createEndEffector("manip");
 
     EXPECT_EQ(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector(0), manip);

@@ -895,6 +895,22 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 }
 
 //==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::Properties& _properties)
+{
+  return createNode<EndEffector>(_properties);
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(const std::string& _name)
+{
+  typename EndEffector::Properties properties;
+  properties.mName = _name;
+
+  return createNode<EndEffector>(properties);
+}
+
+//==============================================================================
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);

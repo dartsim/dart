@@ -104,6 +104,11 @@ public:
   /// construction of your Node.
   class State : public common::Extensible<State> { };
 
+  /// Use the StateMixer class to easily create a State extension from an
+  /// existing class or struct
+  template <class Mixin>
+  using StateMixer = common::ExtensibleMixer<State, Mixin>;
+
   /// If your Node has a Properties class, then that Properties class should
   /// inherit this Node::Properties class. This allows us to safely serialize,
   /// store, and clone the properties of arbitrary Node extensions. If your
@@ -120,6 +125,11 @@ public:
   /// If your Node has Properties, then be sure to call setNodePropertiesPtr()
   /// during the construction of your Node.
   class Properties : public common::Extensible<Properties> { };
+
+  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// from an existing class or struct.
+  template <class Mixin>
+  using PropertiesMixer = common::ExtensibleMixer<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Node() = default;

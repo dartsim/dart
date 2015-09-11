@@ -69,6 +69,11 @@ public:
   /// the construction of your Addon.
   class State : public Extensible<State> { };
 
+  /// Use the StateMixer class to easily create a State extension from an
+  /// existing class or struct.
+  template <class Mixin>
+  using StateMixer = ExtensibleMixer<State, Mixin>;
+
   /// If your Addon has a Properties class, then it should inherit this
   /// Addon::Properties class. This allows us to safely serialize, store, and
   /// clone the properties of arbitrary Addon extensions. If your Addon has no
@@ -85,6 +90,11 @@ public:
   /// If your Addon has Properties, be sure to call setPropertiesPtr()
   /// during the construction of your Addon.
   class Properties : public Extensible<Properties> { };
+
+  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// from an existing class or struct.
+  template <class Mixin>
+  using PropertiesMixer = ExtensibleMixer<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Addon() = default;
