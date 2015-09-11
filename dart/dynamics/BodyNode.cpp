@@ -340,7 +340,7 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
   const NodeMap& otherMap = otherBodyNode->mNodeMap;
   for(const auto& vec : otherMap)
   {
-    for(const Node* node : vec.second)
+    for(const auto& node : vec.second)
       node->cloneNode(this)->attach();
   }
 }
@@ -1230,21 +1230,16 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 }
 
 //==============================================================================
-BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const
 {
   BodyNode* clonedBn =
       new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
 
   clonedBn->matchAddons(this);
 
-  for(const auto& nodeType : mNodeMap)
-  {
-    for(const auto& node : nodeType.second)
-    {
-      Node* clonedNode = node->cloneNode(clonedBn);
-      clonedNode->attach();
-    }
-  }
+  if(cloneNodes)
+    clonedBn->matchNodes(this);
 
   return clonedBn;
 }

@@ -149,7 +149,7 @@ SkeletonPtr Skeleton::clone() const
             << "a bug!\n";
     }
 
-    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint);
+    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
 
     // The IK module gets cloned by the Skeleton and not by the BodyNode,
     // because IK modules rely on the Skeleton's structure and indexing. If the
@@ -160,6 +160,18 @@ SkeletonPtr Skeleton::clone() const
       newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
 
     skelClone->registerBodyNode(newBody);
+  }
+
+  // Clone over the nodes in such a way that their indexing will match up with
+  // the original
+  for(const auto& nodeType : mSkelCache.mNodeMap)
+  {
+    for(const auto& node : nodeType.second)
+    {
+      const BodyNode* originalBn = node->getBodyNodePtr();
+      BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
+      node->cloneNode(newBn)->attach();
+    }
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -1854,7 +1866,7 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     BodyNode* newParent = i==0 ? _parentNode :
         nameMap[original->getParentBodyNode()->getName()];
 
-    BodyNode* clone = original->clone(newParent, joint);
+    BodyNode* clone = original->clone(newParent, joint, true);
     clones.push_back(clone);
     nameMap[clone->getName()] = clone;
 

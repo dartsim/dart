@@ -897,7 +897,8 @@ protected:
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const;
 
   /// This is needed in order to inherit the Node class, but it does nothing
   Node* cloneNode(BodyNode* bn) const override final;
