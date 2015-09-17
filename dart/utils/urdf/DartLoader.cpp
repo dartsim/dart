@@ -133,8 +133,8 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  std::shared_ptr<urdf::World> worldInterface =
-      urdf::parseWorldURDF(_urdfString, _baseUri, _resourceRetriever);
+  std::shared_ptr<urdf_parsing::World> worldInterface =
+      urdf_parsing::parseWorldURDF(_urdfString, _baseUri);
 
   if(!worldInterface)
   {
@@ -142,31 +142,13 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  // Store paths from world to entities
-  std::map<std::string, std::string> worldToEntityPaths;
-  if(!parseWorldToEntityPaths(_urdfString, worldToEntityPaths))
-    return nullptr;
-
   simulation::WorldPtr world(new simulation::World);
 
   for(size_t i = 0; i < worldInterface->models.size(); ++i)
   {
-    std::string model_name = worldInterface->models[i].model->getName();
-    std::map<std::string, std::string>::const_iterator it =
-        worldToEntityPaths.find(model_name);
-
-    if(it == worldToEntityPaths.end())
-    {
-      dtwarn << "[DartLoader::parseWorldString] Could not find file path for ["
-             << model_name << "]. We will not parse it!\n";
-      continue;
-    }
-
-    // TODO: Where does this come from? What is it used for?
-    //mRootToSkelPath = mRootToWorldPath + it->second;
-
+    const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
-      worldInterface->models[i].model.get(), _baseUri, resourceRetriever);
+      entity.model.get(), entity.uri, resourceRetriever);
 
     if(!skeleton)
     {
@@ -188,72 +170,6 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   return world;
-}
-
-/**
- * @function parseWorldToEntityPaths
- */
-
-bool DartLoader::parseWorldToEntityPaths(
-  const std::string& _xml_string,
-  std::map<std::string, std::string>& _worldToEntityPaths
-)
-{
-  TiXmlDocument xml_doc;
-  xml_doc.Parse(_xml_string.c_str());
-
-  TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
-
-  if( !world_xml ) {
-    return false;
-  }
-
-  // Get all include filenames
-  std::map<std::string, std::string> includedFiles;
-
-  for( TiXmlElement* include_xml = world_xml->FirstChildElement("include");
-    include_xml; include_xml = include_xml->NextSiblingElement("include") ) {
-
-    const char* filename = include_xml->Attribute("filename");
-    const char* model_name = include_xml->Attribute("model_name");
-    includedFiles[model_name] = filename;
-  }
-
-  // Get all entities
-  for( TiXmlElement* entity_xml = world_xml->FirstChildElement("entity");
-    entity_xml; entity_xml = entity_xml->NextSiblingElement("entity") ) {
-
-    // Find model and name for entity, if not, error
-    const char* entity_model = entity_xml->Attribute("model");
-    const char* entity_name = entity_xml->Attribute("name");
-
-    if( entity_name && entity_model )
-    {
-      std::string string_entity_model( entity_model );
-      std::string string_entity_name( entity_name );
-      // Find the model
-      if( includedFiles.find( string_entity_model ) == includedFiles.end() )
-      {
-        dtwarn <<"[DartLoader::parseWorldToEntityPaths] Did not find entity model ["
-               << string_entity_model << "] included. We might fail to load some Skeletons!\n";
-        return false;
-      }
-      // Add it
-      else
-      {
-        _worldToEntityPaths[string_entity_name] =
-            includedFiles.find( string_entity_model )->second;
-      }
-    }
-    // If no name or model is defined
-    else
-    {
-      dtwarn << "[DartLoader::parseWorldToEntityPaths] Entity was not defined. Weird things will happen" << std::endl;
-    }
-
-  } // for all entities
-
-  return true;
 }
 
 /**

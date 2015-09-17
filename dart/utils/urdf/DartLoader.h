@@ -99,10 +99,6 @@ private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    static bool parseWorldToEntityPaths(
-      const std::string& _xml_string,
-      std::map<std::string, std::string>& _worldToEntityPaths);
-
     static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
       const common::Uri& _baseUri,
