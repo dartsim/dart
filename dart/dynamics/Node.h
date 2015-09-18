@@ -143,12 +143,21 @@ public:
   /// Set the State of this Node. By default, this does nothing.
   virtual void setNodeState(const std::unique_ptr<State>& otherState);
 
+  /// Set the State of this Node using move semantics. By default, this calls
+  /// the version of setNodeState that accepts a const-reference argument.
+  virtual void setNodeState(std::unique_ptr<State>&& otherState);
+
   /// Get the State of this Node. By default, this returns a nullptr which
   /// implies that the Node is stateless.
   virtual const State* getNodeState() const;
 
   /// Set the Properties of this Node. By default, this does nothing.
   virtual void setNodeProperties(const std::unique_ptr<Properties>& properties);
+
+  /// Set the Properties of this Node using move semantics. By default, this
+  /// calls the version of setNodeProperties that accepts a const-reference
+  /// argument.
+  virtual void setNodeProperties(std::unique_ptr<Properties>&& properties);
 
   /// Get the Properties of this Node. By default, this returns a nullptr which
   /// implies that the Node has no properties.
@@ -183,18 +192,6 @@ protected:
   /// taken, then it will just return the same name that the function was given.
   std::string registerNameChange(const std::string& newName);
 
-  /// Set the State pointer for this Node.
-  ///
-  /// This should be called during construction of your Node, if your Node has a
-  /// State.
-  void setNodeStatePtr(State* ptr = nullptr);
-
-  /// Set the Properties pointer for this Node.
-  ///
-  /// This should be called during construction of your Node, if your Node has a
-  /// set of Properties.
-  void setNodePropertiesPtr(Properties* ptr = nullptr);
-
   /// Attach the Node to its BodyNode
   void attach();
 
@@ -207,12 +204,6 @@ protected:
   /// the mNode member of the Cleaner to a nullptr. That way the BodyNode can
   /// never be deleted by its Cleaner.
   std::weak_ptr<NodeCleaner> mCleaner;
-
-  /// Pointer to the State of this Node
-  State* mNodeStatePtr;
-
-  /// Pointer to the Properties of this Node
-  Properties* mNodePropertiesPtr;
 
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;
