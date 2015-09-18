@@ -79,7 +79,9 @@ public:
 /// The ExtensibleMixer class is used to easily create an Extensible (such as
 /// Node::State) which simply takes an existing class (Mixin) and creates an
 /// Extensible that wraps it. This creates all the appropriate copy, move, and
-/// clone members, allowing you to follow the Rule Of Zero.
+/// clone members, allowing you to follow the Rule Of Zero. You can also
+/// construct an instance in the exact same way that you would construct a Mixin
+/// instance.
 template <class T, class Mixin>
 class ExtensibleMixer : public T, public Mixin
 {
@@ -87,6 +89,11 @@ public:
 
   /// Default constructor. Uses the default constructor of Mixin
   ExtensibleMixer();
+
+  /// Templated constructor. Uses whichever Mixin constructor is able to match
+  /// the arguments.
+  template <typename ... Args>
+  ExtensibleMixer(Args&&... args);
 
   /// Constructs using a Mixin instance
   ExtensibleMixer(const Mixin& mixin);

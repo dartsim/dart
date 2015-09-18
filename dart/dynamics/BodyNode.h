@@ -633,6 +633,9 @@ public:
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const std::string& _name = "EndEffector");
 
+  /// Create an EndEffector with the specified name
+  EndEffector* createEndEffector(const char* _name);
+
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
 

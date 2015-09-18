@@ -50,13 +50,6 @@ Support::StateData::StateData(bool active)
 }
 
 //==============================================================================
-Support::State::State(bool active)
-  : common::Addon::StateMixer<StateData>(StateData(active))
-{
-  // Do nothing
-}
-
-//==============================================================================
 Support::Support(EndEffector* _ee)
   : common::Addon(_ee, "Support"),
     mEndEffector(_ee)
@@ -154,8 +147,11 @@ bool Support::isActive() const
 }
 
 //==============================================================================
-EndEffector::StateData::StateData(const Eigen::Isometry3d& relativeTransform)
-  : mRelativeTransform(relativeTransform)
+EndEffector::StateData::StateData(
+    const Eigen::Isometry3d& relativeTransform,
+    const common::AddonManager::State& addonStates)
+  : mRelativeTransform(relativeTransform),
+    mAddonStates(addonStates)
 {
   // Do nothing
 }
@@ -171,11 +167,26 @@ EndEffector::UniqueProperties::UniqueProperties(
 //==============================================================================
 EndEffector::PropertiesData::PropertiesData(
     const Entity::Properties& _entityProperties,
-    const UniqueProperties& _effectorProperties)
+    const UniqueProperties& _effectorProperties,
+    const common::AddonManager::Properties& _addonProperties)
   : Entity::Properties(_entityProperties),
-    UniqueProperties(_effectorProperties)
+    UniqueProperties(_effectorProperties),
+    mAddonProperties(_addonProperties)
 {
   // Do nothing
+}
+
+//==============================================================================
+void EndEffector::setState(const StateData& _state)
+{
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(_state.mAddonStates);
+}
+
+//==============================================================================
+EndEffector::StateData EndEffector::getEndEffectorState() const
+{
+  return StateData(mRelativeTf, getAddonStates());
 }
 
 //==============================================================================
@@ -195,7 +206,8 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
 //==============================================================================
 EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
-  return PropertiesData(getEntityProperties(), mEndEffectorP);
+  return PropertiesData(getEntityProperties(), mEndEffectorP,
+                        getAddonProperties());
 }
 
 //==============================================================================
@@ -204,11 +216,8 @@ void EndEffector::copy(const EndEffector& _otherEndEffector)
   if(this == &_otherEndEffector)
     return;
 
+  setState(_otherEndEffector.getEndEffectorState());
   setProperties(_otherEndEffector.getEndEffectorProperties());
-
-  // We should also copy the relative transform, because it could be different
-  // than the default relative transform
-  setRelativeTransform(_otherEndEffector.getRelativeTransform());
 }
 
 //==============================================================================
@@ -246,17 +255,33 @@ void EndEffector::setNodeState(
 {
   const State* state = static_cast<const State*>(otherState.get());
 
-  setRelativeTransform(state->mRelativeTransform);
-  setAddonStates(state->mAddonStates);
+  setState(*state);
 }
 
 //==============================================================================
 const Node::State* EndEffector::getNodeState() const
 {
-  mStateCache.mRelativeTransform = getRelativeTransform();
-  getAddonStates(mStateCache.mAddonStates);
+  mStateCache = getEndEffectorState();
 
   return &mStateCache;
+}
+
+//==============================================================================
+void EndEffector::setNodeProperties(
+    const std::unique_ptr<Node::Properties>& otherProperties)
+{
+  const Properties* properties =
+      static_cast<const Properties*>(otherProperties.get());
+
+  setProperties(*properties);
+}
+
+//==============================================================================
+const Node::Properties* EndEffector::getNodeProperties() const
+{
+  mPropertiesCache = getEndEffectorProperties();
+
+  return &mPropertiesCache;
 }
 
 //==============================================================================
@@ -470,9 +495,9 @@ EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
 Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
   EndEffector* ee = new EndEffector(_parent, PropertiesData());
-  ee->copy(this);
-
   ee->duplicateAddons(this);
+
+  ee->copy(this);
 
   if(mIK)
     ee->mIK = mIK->clone(ee);

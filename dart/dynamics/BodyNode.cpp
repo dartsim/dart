@@ -911,6 +911,12 @@ EndEffector* BodyNode::createEndEffector(const std::string& _name)
 }
 
 //==============================================================================
+EndEffector* BodyNode::createEndEffector(const char* _name)
+{
+  return createEndEffector(std::string(_name));
+}
+
+//==============================================================================
 void BodyNode::addMarker(Marker* _marker)
 {
   mMarkers.push_back(_marker);

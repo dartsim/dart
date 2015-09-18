@@ -138,6 +138,9 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 
   newIK->mErrorMethod = mErrorMethod->clone(newIK.get());
   newIK->mGradientMethod = mGradientMethod->clone(newIK.get());
+  newIK->mAnalytical = dynamic_cast<Analytical*>(newIK->mGradientMethod.get());
+  if(nullptr != newIK->mAnalytical)
+    newIK->mAnalytical->constructDofMap();
 
   newIK->setSolver(mSolver->clone());
 

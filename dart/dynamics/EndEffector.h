@@ -58,15 +58,7 @@ public:
     bool mActive;
   };
 
-  struct State final : public common::Addon::StateMixer<StateData>
-  {
-    /// Default constructor
-    State() = default;
-
-    /// Optional constructor (mActive will be set to false if the default
-    /// constructor is used)
-    State(bool active);
-  };
+  using State = common::Addon::StateMixer<StateData>;
 
   struct PropertiesData
   {
@@ -137,9 +129,14 @@ public:
   struct StateData
   {
     StateData(const Eigen::Isometry3d& relativeTransform =
-        Eigen::Isometry3d::Identity());
+                  Eigen::Isometry3d::Identity(),
+              const common::AddonManager::State& addonStates =
+                  common::AddonManager::State());
 
+    /// The current relative transform of the EndEffector
     Eigen::Isometry3d mRelativeTransform;
+
+    /// The current states of the EndEffector's Addons
     common::AddonManager::State mAddonStates;
   };
 
@@ -151,6 +148,7 @@ public:
     /// resetRelativeTransform() is called
     Eigen::Isometry3d mDefaultTransform;
 
+    /// Default constructor
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
             Eigen::Isometry3d::Identity());
@@ -160,7 +158,12 @@ public:
   {
     PropertiesData(
         const Entity::Properties& _entityProperties = Entity::Properties(),
-        const UniqueProperties& _effectorProperties = UniqueProperties() );
+        const UniqueProperties& _effectorProperties = UniqueProperties(),
+        const common::AddonManager::Properties& _addonProperties =
+            common::AddonManager::Properties());
+
+    /// The properties of the EndEffector's Addons
+    common::AddonManager::Properties mAddonProperties;
   };
 
   using Properties = Node::PropertiesMixer<PropertiesData>;
@@ -172,23 +175,30 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-  /// Set the Properties of this EndEffector. If _useNow is true, the current
-  /// Transform will be set to the new default transform.
-  void setProperties(const PropertiesData& _properties, bool _useNow=true);
+  /// Set the State of this EndEffector.
+  void setState(const StateData& _state);
+
+  /// Get the State of this EndEffector
+  StateData getEndEffectorState() const;
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const UniqueProperties& _properties, bool _useNow=true);
+  void setProperties(const PropertiesData& _properties, bool _useNow=false);
 
+  /// Set the Properties of this EndEffector. If _useNow is true, the current
+  /// Transform will be set to the new default transform.
+  void setProperties(const UniqueProperties& _properties, bool _useNow=false);
+
+  /// Get the Properties of this EndEffector
   PropertiesData getEndEffectorProperties() const;
 
-  /// Copy the Properties of another EndEffector
+  /// Copy the State and Properties of another EndEffector
   void copy(const EndEffector& _otherEndEffector);
 
-  /// Copy the Properties of another EndEffector
+  /// Copy the State and Properties of another EndEffector
   void copy(const EndEffector* _otherEndEffector);
 
-  /// Copy the Properties of another EndEffector
+  /// Copy the State and Properties of another EndEffector
   EndEffector& operator=(const EndEffector& _otherEndEffector);
 
   /// Set name. If the name is already taken, this will return an altered
@@ -200,6 +210,13 @@ public:
 
   // Documentation inherited
   const Node::State* getNodeState() const override final;
+
+  // Documentation inherited
+  void setNodeProperties(
+      const std::unique_ptr<Node::Properties>& otherProperties) override final;
+
+  // Documentation inherited
+  const Node::Properties* getNodeProperties() const override final;
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
@@ -347,6 +364,10 @@ protected:
   /// Data structure that serializes the state of the EndEffector when
   /// getNodeState() is called.
   mutable State mStateCache;
+
+  /// Data structure that serializes the Properties of the EndEffector when
+  /// getNodeProperties() is called.
+  mutable Properties mPropertiesCache;
 
   /// Cached Jacobian of this EndEffector
   ///

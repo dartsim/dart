@@ -125,7 +125,13 @@ Skeleton::~Skeleton()
 //==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
-  SkeletonPtr skelClone = Skeleton::create(getName());
+  return clone(getName());
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::clone(const std::string& cloneName) const
+{
+  SkeletonPtr skelClone = Skeleton::create(cloneName);
 
   for(size_t i=0; i<getNumBodyNodes(); ++i)
   {
@@ -175,6 +181,7 @@ SkeletonPtr Skeleton::clone() const
   }
 
   skelClone->setProperties(getSkeletonProperties());
+  skelClone->setName(cloneName);
 
   return skelClone;
 }

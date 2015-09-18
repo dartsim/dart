@@ -184,6 +184,7 @@ public:
       mBaseLinkName(baseLinkName)
   {
     // Do nothing
+    std::cout << "CONSTRUCTED ARM IK" << std::endl;
   }
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
@@ -363,6 +364,8 @@ protected:
 
   void configure() const
   {
+    std::cout << "CONFIGURING ARM IK FOR " << mIK->getNode()->getSkeleton()->getName() << std::endl;
+
     configured = false;
 
     mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
@@ -1382,9 +1385,13 @@ int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
-  const SkeletonPtr& hubo = createHubo();
+  SkeletonPtr hubo = createHubo();
   setStartupConfiguration(hubo);
   setupEndEffectors(hubo);
+
+  Eigen::VectorXd positions = hubo->getPositions();
+  hubo = hubo->clone("hubo_copy");
+  hubo->setPositions(positions);
 
   world->addSkeleton(hubo);
   world->addSkeleton(createGround());

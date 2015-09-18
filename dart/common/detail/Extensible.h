@@ -51,6 +51,15 @@ ExtensibleMixer<T, Mixin>::ExtensibleMixer()
 
 //==============================================================================
 template <class T, class Mixin>
+template <typename ... Args>
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(Args&&... args)
+  : Mixin(std::forward<Args>(args)...)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class Mixin>
 ExtensibleMixer<T, Mixin>::ExtensibleMixer(const Mixin& mixin)
   : Mixin(mixin)
 {
