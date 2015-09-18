@@ -178,6 +178,9 @@ public:
   /// Set the State of this EndEffector.
   void setState(const StateData& _state);
 
+  /// Set the State of this EndEffector using move semantics
+  void setState(StateData&& _state);
+
   /// Get the State of this EndEffector
   StateData getEndEffectorState() const;
 

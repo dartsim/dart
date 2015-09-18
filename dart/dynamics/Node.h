@@ -143,21 +143,12 @@ public:
   /// Set the State of this Node. By default, this does nothing.
   virtual void setNodeState(const std::unique_ptr<State>& otherState);
 
-  /// Set the State of this Node using move semantics. By default, this calls
-  /// the version of setNodeState that accepts a const-reference argument.
-  virtual void setNodeState(std::unique_ptr<State>&& otherState);
-
   /// Get the State of this Node. By default, this returns a nullptr which
   /// implies that the Node is stateless.
   virtual const State* getNodeState() const;
 
   /// Set the Properties of this Node. By default, this does nothing.
   virtual void setNodeProperties(const std::unique_ptr<Properties>& properties);
-
-  /// Set the Properties of this Node using move semantics. By default, this
-  /// calls the version of setNodeProperties that accepts a const-reference
-  /// argument.
-  virtual void setNodeProperties(std::unique_ptr<Properties>&& properties);
 
   /// Get the Properties of this Node. By default, this returns a nullptr which
   /// implies that the Node has no properties.

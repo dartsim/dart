@@ -184,6 +184,13 @@ void EndEffector::setState(const StateData& _state)
 }
 
 //==============================================================================
+void EndEffector::setState(StateData&& _state)
+{
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(std::move(_state.mAddonStates));
+}
+
+//==============================================================================
 EndEffector::StateData EndEffector::getEndEffectorState() const
 {
   return StateData(mRelativeTf, getAddonStates());

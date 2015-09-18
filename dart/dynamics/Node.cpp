@@ -72,12 +72,6 @@ void Node::setNodeState(const std::unique_ptr<State>& /*otherState*/)
 }
 
 //==============================================================================
-void Node::setNodeState(std::unique_ptr<State>&& otherState)
-{
-  setNodeState(static_cast<const std::unique_ptr<State>&>(otherState));
-}
-
-//==============================================================================
 const Node::State* Node::getNodeState() const
 {
   return nullptr;
@@ -87,12 +81,6 @@ const Node::State* Node::getNodeState() const
 void Node::setNodeProperties(const std::unique_ptr<Properties>& /*properties*/)
 {
   // Do nothing
-}
-
-//==============================================================================
-void Node::setNodeProperties(std::unique_ptr<Properties>&& properties)
-{
-  setNodeProperties(static_cast<const std::unique_ptr<Properties>&>(properties));
 }
 
 //==============================================================================
