@@ -1339,6 +1339,14 @@ void BodyNode::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
+  // Jacobian calculations are dependent on the parent's world transform, but
+  // not on the world transform of their own BodyNode, so they must be dirtied
+  // regardless of whether the world transform of this BodyNode is already dirty
+  mIsBodyJacobianDirty = true;
+  mIsWorldJacobianDirty = true;
+  mIsBodyJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
   if(mNeedTransformUpdate)
     return;
 

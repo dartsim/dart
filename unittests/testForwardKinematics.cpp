@@ -38,6 +38,8 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
+#include "dart/utils/urdf/DartLoader.h"
+
 std::vector<size_t> twoLinkIndices;
 
 //==============================================================================
@@ -122,6 +124,84 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
       std::cout << "Expected pos: " <<  expectedPos[i].transpose() << std::endl;
     }
   }
+}
+
+//==============================================================================
+Eigen::MatrixXd finiteDifferenceJacobian(
+    const SkeletonPtr& skeleton,
+    const Eigen::VectorXd& q,
+    const std::vector<size_t>& active_indices)
+{
+  Eigen::MatrixXd J(3, q.size());
+  for(int i=0; i < q.size(); ++i)
+  {
+    const double dq = 1e-4;
+
+    Eigen::VectorXd q_up = q;
+    Eigen::VectorXd q_down = q;
+
+    q_up[i] += 0.5*dq;
+    q_down[i] -= 0.5*dq;
+
+    BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
+
+    skeleton->setPositions(active_indices, q_up);
+    Eigen::Vector3d x_up = last_bn->getTransform().translation();
+
+    skeleton->setPositions(active_indices, q_down);
+    Eigen::Vector3d x_down = last_bn->getTransform().translation();
+
+    J.col(i) = (x_up - x_down) / dq;
+  }
+
+  return J;
+}
+
+//==============================================================================
+Eigen::MatrixXd standardJacobian(
+    const SkeletonPtr& skeleton,
+    const Eigen::VectorXd& q,
+    const std::vector<size_t>& active_indices)
+{
+  skeleton->setPositions(active_indices, q);
+  BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
+
+  Eigen::MatrixXd J = skeleton->getLinearJacobian(last_bn);
+
+  Eigen::MatrixXd reduced_J(3, q.size());
+  for(int i=0; i < q.size(); ++i)
+    reduced_J.col(i) = J.col(active_indices[i]);
+
+  return reduced_J;
+}
+
+//==============================================================================
+TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
+{
+  // This is a regression test for issue #499
+  const double tolerance = 1e-8;
+
+  dart::utils::DartLoader loader;
+  SkeletonPtr skeleton =
+      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+
+  std::vector<size_t> active_indices;
+  for(size_t i=0; i < 3; ++i)
+    active_indices.push_back(i);
+
+  Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
+  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(skeleton, q, active_indices);
+  Eigen::MatrixXd J = standardJacobian(skeleton, q, active_indices);
+
+
+  EXPECT_TRUE((fd_J - J).norm() < tolerance);
+
+
+  q = Eigen::VectorXd::Random(active_indices.size());
+  fd_J = finiteDifferenceJacobian(skeleton, q, active_indices);
+  J = standardJacobian(skeleton, q, active_indices);
+
+  EXPECT_TRUE((fd_J - J).norm() < tolerance);
 }
 
 //==============================================================================
