@@ -337,7 +337,7 @@ size_t EndEffector::getTreeIndex() const
 //==============================================================================
 const math::Jacobian& EndEffector::getJacobian() const
 {
-  if (mIsEffectorJacobianDirty)
+  if (mIsBodyJacobianDirty)
     updateEffectorJacobian();
 
   return mEffectorJacobian;
@@ -355,7 +355,7 @@ const math::Jacobian& EndEffector::getWorldJacobian() const
 //==============================================================================
 const math::Jacobian& EndEffector::getJacobianSpatialDeriv() const
 {
-  if(mIsEffectorJacobianSpatialDerivDirty)
+  if(mIsBodyJacobianSpatialDerivDirty)
     updateEffectorJacobianSpatialDeriv();
 
   return mEffectorJacobianSpatialDeriv;
@@ -375,15 +375,12 @@ void EndEffector::notifyTransformUpdate()
 {
   if(!mNeedTransformUpdate)
   {
-    mIsEffectorJacobianDirty = true;
-    mIsWorldJacobianDirty = true;
-    mIsEffectorJacobianSpatialDerivDirty = true;
-    mIsWorldJacobianClassicDerivDirty = true;
-
     const SkeletonPtr& skel = getSkeleton();
     if(skel)
       skel->notifySupportUpdate(getTreeIndex());
   }
+
+  notifyJacobianUpdate();
 
   Frame::notifyTransformUpdate();
 }
@@ -391,8 +388,7 @@ void EndEffector::notifyTransformUpdate()
 //==============================================================================
 void EndEffector::notifyVelocityUpdate()
 {
-  mIsEffectorJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
+  notifyJacobianDerivUpdate();
 
   Frame::notifyVelocityUpdate();
 }
@@ -404,11 +400,7 @@ EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
     Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
     mIndexInSkeleton(0),
-    mIndexInBodyNode(0),
-    mIsEffectorJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsEffectorJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true)
+    mIndexInBodyNode(0)
 
 {
   setProperties(_properties);
@@ -431,7 +423,7 @@ void EndEffector::updateEffectorJacobian() const
 {
   mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
                                       mBodyNode->getJacobian());
-  mIsEffectorJacobianDirty = false;
+  mIsBodyJacobianDirty = false;
 }
 
 //==============================================================================
@@ -449,7 +441,7 @@ void EndEffector::updateEffectorJacobianSpatialDeriv() const
       math::AdInvTJac(getRelativeTransform(),
                       mBodyNode->getJacobianSpatialDeriv());
 
-  mIsEffectorJacobianSpatialDerivDirty = false;
+  mIsBodyJacobianSpatialDerivDirty = false;
 }
 
 //==============================================================================

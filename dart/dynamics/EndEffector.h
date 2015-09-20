@@ -305,32 +305,20 @@ protected:
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mEffectorJacobian;
 
-  /// Dirty flag for end effector Jacobian
-  mutable bool mIsEffectorJacobianDirty;
-
   /// Cached World Jacobian of this EndEffector
   ///
   /// Do not use directly! Use getWorldJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mEffectorJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of the end effector Jacobian
-  mutable bool mIsEffectorJacobianSpatialDerivDirty;
-
   /// Classic time derivative of the end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 };
 
 } // namespace dynamics

@@ -714,6 +714,8 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
+
+  mChildJacobianNodes.insert(_body);
 }
 
 //==============================================================================
@@ -750,6 +752,26 @@ EndEffector* BodyNode::getEndEffector(size_t _index)
 const EndEffector* BodyNode::getEndEffector(size_t _index) const
 {
   return getVectorObjectIfAvailable(_index, mEndEffectors);
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::Properties& _properties)
+{
+  EndEffector* ee = new EndEffector(this, _properties);
+  getSkeleton()->registerEndEffector(ee);
+  mChildJacobianNodes.insert(ee);
+
+  return ee;
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(const std::string& _name)
+{
+  EndEffector::Properties properties;
+  properties.mName = _name;
+
+  return createEndEffector(properties);
 }
 
 //==============================================================================
@@ -1050,10 +1072,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
-    mIsBodyJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsBodyJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
@@ -1223,36 +1241,6 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
     mChildBodyNodes[i]->drawMarkers(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
-}
-
-//==============================================================================
-void BodyNode::notifyJacobianUpdate()
-{
-  // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
-  // check mIsBodyJacobianDirty if we want to terminate.
-  if(mIsBodyJacobianDirty)
-    return;
-
-  mIsBodyJacobianDirty = true;
-  mIsWorldJacobianDirty = true;
-
-  for(BodyNode* child : mChildBodyNodes)
-    child->notifyJacobianUpdate();
-}
-
-//==============================================================================
-void BodyNode::notifyJacobianDerivUpdate()
-{
-  // These two flags are independent of each other, so we must check that both
-  // are true if we want to terminate early.
-  if(mIsBodyJacobianSpatialDerivDirty && mIsWorldJacobianClassicDerivDirty)
-    return;
-
-  mIsBodyJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
-
-  for(BodyNode* child : mChildBodyNodes)
-    child->notifyJacobianDerivUpdate();
 }
 
 //==============================================================================
