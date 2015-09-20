@@ -55,6 +55,7 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/EndEffector.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -566,13 +567,10 @@ public:
   const EndEffector* getEndEffector(size_t _index) const;
 
   /// Create an EndEffector attached to this BodyNode
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(
-      const typename EndEffectorT::Properties& _properties);
+  EndEffector* createEndEffector(const EndEffector::Properties& _properties);
 
   /// Create an EndEffector with the specified name
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(const std::string& _name = "EndEffector");
+  EndEffector* createEndEffector(const std::string& _name = "EndEffector");
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -1063,32 +1061,20 @@ protected:
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mBodyJacobian;
 
-  /// Dirty flag for body Jacobian.
-  mutable bool mIsBodyJacobianDirty;
-
   /// Cached World Jacobian
   ///
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of body Jacobian.
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mBodyJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of body Jacobian.
-  mutable bool mIsBodyJacobianSpatialDerivDirty;
-
   /// Classic time derivative of Body Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
