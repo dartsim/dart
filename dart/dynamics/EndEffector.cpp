@@ -396,33 +396,9 @@ const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
 }
 
 //==============================================================================
-BodyNode* EndEffector::getParentBodyNode()
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-const BodyNode* EndEffector::getParentBodyNode() const
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-size_t EndEffector::getIndexInSkeleton() const
-{
-  return mIndexInSkeleton;
-}
-
-//==============================================================================
-size_t EndEffector::getTreeIndex() const
-{
-  return mBodyNode->getTreeIndex();
-}
-
-//==============================================================================
 const math::Jacobian& EndEffector::getJacobian() const
 {
-  if (mIsEffectorJacobianDirty)
+  if (mIsBodyJacobianDirty)
     updateEffectorJacobian();
 
   return mEffectorJacobian;
@@ -440,7 +416,7 @@ const math::Jacobian& EndEffector::getWorldJacobian() const
 //==============================================================================
 const math::Jacobian& EndEffector::getJacobianSpatialDeriv() const
 {
-  if(mIsEffectorJacobianSpatialDerivDirty)
+  if(mIsBodyJacobianSpatialDerivDirty)
     updateEffectorJacobianSpatialDeriv();
 
   return mEffectorJacobianSpatialDeriv;
@@ -460,15 +436,12 @@ void EndEffector::notifyTransformUpdate()
 {
   if(!mNeedTransformUpdate)
   {
-    mIsEffectorJacobianDirty = true;
-    mIsWorldJacobianDirty = true;
-    mIsEffectorJacobianSpatialDerivDirty = true;
-    mIsWorldJacobianClassicDerivDirty = true;
-
     const SkeletonPtr& skel = getSkeleton();
     if(skel)
       skel->notifySupportUpdate(getTreeIndex());
   }
+
+  notifyJacobianUpdate();
 
   Frame::notifyTransformUpdate();
 }
@@ -476,8 +449,7 @@ void EndEffector::notifyTransformUpdate()
 //==============================================================================
 void EndEffector::notifyVelocityUpdate()
 {
-  mIsEffectorJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
+  notifyJacobianDerivUpdate();
 
   Frame::notifyVelocityUpdate();
 }
@@ -487,12 +459,7 @@ EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
   : Entity(ConstructFrame),
     Frame(_parent, ""),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
-    TemplatedJacobianNode<EndEffector>(_parent),
-    mIndexInSkeleton(0),
-    mIsEffectorJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsEffectorJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true)
+    TemplatedJacobianNode<EndEffector>(_parent)
 {
   DART_INSTANTIATE_SPECIALIZED_ADDON(Support)
   setProperties(_properties);
@@ -517,7 +484,7 @@ void EndEffector::updateEffectorJacobian() const
 {
   mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
                                       mBodyNode->getJacobian());
-  mIsEffectorJacobianDirty = false;
+  mIsBodyJacobianDirty = false;
 }
 
 //==============================================================================
@@ -535,7 +502,7 @@ void EndEffector::updateEffectorJacobianSpatialDeriv() const
       math::AdInvTJac(getRelativeTransform(),
                       mBodyNode->getJacobianSpatialDeriv());
 
-  mIsEffectorJacobianSpatialDerivDirty = false;
+  mIsBodyJacobianSpatialDerivDirty = false;
 }
 
 //==============================================================================

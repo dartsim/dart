@@ -85,9 +85,43 @@ const std::string& JacobianNode::getName() const
 JacobianNode::JacobianNode(BodyNode* bn)
   : Entity(Entity::ConstructAbstract),
     Frame(Frame::ConstructAbstract),
-    Node(bn)
+    Node(bn),
+    mIsBodyJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true)
 {
   // Do nothing
+}
+
+//==============================================================================
+void JacobianNode::notifyJacobianUpdate()
+{
+  // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
+  // check mIsBodyJacobianDirty if we want to terminate.
+  if(mIsBodyJacobianDirty)
+    return;
+
+  mIsBodyJacobianDirty = true;
+  mIsWorldJacobianDirty = true;
+
+  for(JacobianNode* child : mChildJacobianNodes)
+    child->notifyJacobianUpdate();
+}
+
+//==============================================================================
+void JacobianNode::notifyJacobianDerivUpdate()
+{
+  // These two flags are independent of each other, so we must check that both
+  // are true if we want to terminate early.
+  if(mIsBodyJacobianSpatialDerivDirty && mIsWorldJacobianClassicDerivDirty)
+    return;
+
+  mIsBodyJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
+  for(JacobianNode* child : mChildJacobianNodes)
+    child->notifyJacobianDerivUpdate();
 }
 
 } // namespace dynamics

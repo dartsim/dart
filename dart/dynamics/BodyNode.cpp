@@ -851,6 +851,8 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
+
+  mChildJacobianNodes.insert(_body);
 }
 
 //==============================================================================
@@ -1191,10 +1193,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
-    mIsBodyJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsBodyJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
@@ -1392,6 +1390,11 @@ void BodyNode::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
+  // Jacobian calculations are dependent on the parent's world transform, but
+  // not on the world transform of their own BodyNode, so they must be dirtied
+  // regardless of whether the world transform of this BodyNode is already dirty
+  notifyJacobianUpdate();
+
   if(mNeedTransformUpdate)
     return;
 
@@ -1400,6 +1403,10 @@ void BodyNode::notifyTransformUpdate()
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
+    // All of these depend on the world transform of this BodyNode, so they must
+    // be dirtied whenever mNeedTransformUpdate is dirtied, and if
+    // mTransformUpdate is already dirty, then these must already be dirty as
+    // well
     SET_FLAGS(mCoriolisForces);
     SET_FLAGS(mGravityForces);
     SET_FLAGS(mCoriolisAndGravityForces);
@@ -1419,13 +1426,12 @@ void BodyNode::notifyTransformUpdate()
 void BodyNode::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+  notifyJacobianDerivUpdate();
 
   if(mNeedVelocityUpdate)
     return;
 
   mNeedVelocityUpdate = true;
-  mIsBodyJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
   const SkeletonPtr& skel = getSkeleton();

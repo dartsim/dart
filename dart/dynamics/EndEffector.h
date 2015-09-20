@@ -278,18 +278,6 @@ public:
   // Documentation inherited
   const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
-  /// Get the BodyNode that this EndEffector is rigidly attached to
-  BodyNode* getParentBodyNode();
-
-  /// Get the BodyNode that this EndEffector is rigidly attached to
-  const BodyNode* getParentBodyNode() const;
-
-  /// Get the index of this EndEffector within the Skeleton
-  size_t getIndexInSkeleton() const;
-
-  /// Get the tree index of the BodyNode that this EndEffector is attached to
-  size_t getTreeIndex() const;
-
   /// \}
 
   //----------------------------------------------------------------------------
@@ -361,9 +349,6 @@ protected:
   /// Properties of this EndEffector
   UniqueProperties mEndEffectorP;
 
-  /// The index of this EndEffector within its Skeleton
-  size_t mIndexInSkeleton;
-
   /// Data structure that serializes the state of the EndEffector when
   /// getNodeState() is called.
   mutable State mStateCache;
@@ -377,32 +362,20 @@ protected:
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mEffectorJacobian;
 
-  /// Dirty flag for end effector Jacobian
-  mutable bool mIsEffectorJacobianDirty;
-
   /// Cached World Jacobian of this EndEffector
   ///
   /// Do not use directly! Use getWorldJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mEffectorJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of the end effector Jacobian
-  mutable bool mIsEffectorJacobianSpatialDerivDirty;
-
   /// Classic time derivative of the end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 };
 
 DART_SPECIALIZE_ADDON_EXTERNAL(EndEffector, Support)

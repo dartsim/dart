@@ -209,6 +209,9 @@ void Node::attach()
     skel->registerNode(this);
 
   mAmAttached = true;
+
+  if(JacobianNode* jac = dynamic_cast<JacobianNode*>(this))
+    mBodyNode->mChildJacobianNodes.insert(jac);
 }
 
 //==============================================================================
