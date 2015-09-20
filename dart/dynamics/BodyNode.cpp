@@ -851,8 +851,6 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
   mChildBodyNodes.push_back(_body);
   _body->mParentBodyNode = this;
   _body->changeParentFrame(this);
-
-  mChildJacobianNodes.insert(_body);
 }
 
 //==============================================================================
@@ -906,7 +904,7 @@ EndEffector* BodyNode::createEndEffector(
 //==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
-  typename EndEffector::Properties properties;
+  EndEffector::Properties properties;
   properties.mName = _name;
 
   return createNode<EndEffector>(properties);
@@ -1327,6 +1325,10 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 //==============================================================================
 void BodyNode::processNewEntity(Entity* _newChildEntity)
 {
+  // If the Entity is a JacobianNode, add it to the list of JacobianNodes
+  if(JacobianNode* node = dynamic_cast<JacobianNode*>(_newChildEntity))
+    mChildJacobianNodes.insert(node);
+
   // Here we want to sort out whether the Entity that has been added is a child
   // BodyNode or not
 
@@ -1357,6 +1359,15 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
                                              _oldChildEntity);
   if(it != mChildBodyNodes.end())
     mChildBodyNodes.erase(it);
+
+  if(JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
+  {
+    std::unordered_set<JacobianNode*>::iterator node_it =
+        mChildJacobianNodes.find(node);
+
+    if(node_it != mChildJacobianNodes.end())
+      mChildJacobianNodes.erase(node_it);
+  }
 
   if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
           _oldChildEntity) != mNonBodyNodeEntities.end())
