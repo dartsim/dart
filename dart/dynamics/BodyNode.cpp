@@ -1335,6 +1335,36 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
+void BodyNode::notifyJacobianUpdate()
+{
+  // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
+  // check mIsBodyJacobianDirty if we want to terminate.
+  if(mIsBodyJacobianDirty)
+    return;
+
+  mIsBodyJacobianDirty = true;
+  mIsWorldJacobianDirty = true;
+
+  for(BodyNode* child : mChildBodyNodes)
+    child->notifyJacobianUpdate();
+}
+
+//==============================================================================
+void BodyNode::notifyJacobianDerivUpdate()
+{
+  // These two flags are independent of each other, so we must check that both
+  // are true if we want to terminate early.
+  if(mIsBodyJacobianSpatialDerivDirty && mIsWorldJacobianClassicDerivDirty)
+    return;
+
+  mIsBodyJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
+  for(BodyNode* child : mChildBodyNodes)
+    child->notifyJacobianDerivUpdate();
+}
+
+//==============================================================================
 void BodyNode::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
@@ -1342,10 +1372,7 @@ void BodyNode::notifyTransformUpdate()
   // Jacobian calculations are dependent on the parent's world transform, but
   // not on the world transform of their own BodyNode, so they must be dirtied
   // regardless of whether the world transform of this BodyNode is already dirty
-  mIsBodyJacobianDirty = true;
-  mIsWorldJacobianDirty = true;
-  mIsBodyJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
+  notifyJacobianUpdate();
 
   if(mNeedTransformUpdate)
     return;
@@ -1355,6 +1382,10 @@ void BodyNode::notifyTransformUpdate()
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
+    // All of these depend on the world transform of this BodyNode, so they must
+    // be dirtied whenever mNeedTransformUpdate is dirtied, and if
+    // mTransformUpdate is already dirty, then these must already be dirty as
+    // well
     SET_FLAGS(mCoriolisForces);
     SET_FLAGS(mGravityForces);
     SET_FLAGS(mCoriolisAndGravityForces);
@@ -1374,13 +1405,12 @@ void BodyNode::notifyTransformUpdate()
 void BodyNode::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+  notifyJacobianDerivUpdate();
 
   if(mNeedVelocityUpdate)
     return;
 
   mNeedVelocityUpdate = true;
-  mIsBodyJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
   const SkeletonPtr& skel = getSkeleton();

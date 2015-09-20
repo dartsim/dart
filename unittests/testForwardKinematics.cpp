@@ -151,7 +151,8 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     skeleton->setPositions(active_indices, q_down);
     Eigen::Vector3d x_down = last_bn->getTransform().translation();
 
-    J.col(i) = (x_up - x_down) / dq;
+    skeleton->setPositions(active_indices, q);
+    J.col(i) = last_bn->getWorldTransform().linear().transpose() * (x_up - x_down) / dq;
   }
 
   return J;
@@ -166,7 +167,7 @@ Eigen::MatrixXd standardJacobian(
   skeleton->setPositions(active_indices, q);
   BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
 
-  Eigen::MatrixXd J = skeleton->getLinearJacobian(last_bn);
+  Eigen::MatrixXd J = skeleton->getJacobian(last_bn).bottomRows<3>();
 
   Eigen::MatrixXd reduced_J(3, q.size());
   for(int i=0; i < q.size(); ++i)
@@ -182,24 +183,24 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   const double tolerance = 1e-8;
 
   dart::utils::DartLoader loader;
-  SkeletonPtr skeleton =
+  SkeletonPtr skeleton1 =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+
+  SkeletonPtr skeleton2 = skeleton1->clone();
 
   std::vector<size_t> active_indices;
   for(size_t i=0; i < 3; ++i)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
-  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(skeleton, q, active_indices);
-  Eigen::MatrixXd J = standardJacobian(skeleton, q, active_indices);
-
+  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices);
+  Eigen::MatrixXd J = standardJacobian(skeleton2, q, active_indices);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 
-
   q = Eigen::VectorXd::Random(active_indices.size());
-  fd_J = finiteDifferenceJacobian(skeleton, q, active_indices);
-  J = standardJacobian(skeleton, q, active_indices);
+  fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices);
+  J = standardJacobian(skeleton2, q, active_indices);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 }

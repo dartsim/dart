@@ -781,6 +781,14 @@ public:
   // Notifications
   //----------------------------------------------------------------------------
 
+  /// Notify this BodyNode and all its descendents that their Jacobians need to
+  /// be updated.
+  void notifyJacobianUpdate();
+
+  /// Notify this BodyNode and all its descendents that their Jacobian
+  /// derivatives need to be updated.
+  void notifyJacobianDerivUpdate();
+
   // Documentation inherited
   void notifyTransformUpdate() override;
 
