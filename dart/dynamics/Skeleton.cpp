@@ -65,6 +65,102 @@ namespace dynamics {
 
 #define ON_ALL_TREES( X ) for(size_t i=0; i < mTreeCache.size(); ++i) X (i);
 
+
+#define CHECK_CONFIG_VECTOR_SIZE( V )                                           \
+  if( V .size() > 0 )                                                           \
+  {                                                                             \
+    if(nonzero_size != INVALID_INDEX                                            \
+       && V .size() != static_cast<int>(nonzero_size))                          \
+    {                                                                           \
+      dterr << "[Skeleton::Configuration] Mismatch in size of vector [" << #V   \
+            << "] (expected " << nonzero_size << " | found " << V . size()      \
+            << "\n";                                                            \
+      assert(false);                                                            \
+    }                                                                           \
+    else if(nonzero_size == INVALID_INDEX)                                      \
+      nonzero_size = V .size();                                                 \
+  }
+
+//==============================================================================
+Skeleton::Configuration::Configuration(
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities,
+    const Eigen::VectorXd& accelerations,
+    const Eigen::VectorXd& forces,
+    const Eigen::VectorXd& commands)
+  : mPositions(positions),
+    mVelocities(velocities),
+    mAccelerations(accelerations),
+    mForces(forces),
+    mCommands(commands)
+{
+  size_t nonzero_size = INVALID_INDEX;
+
+  CHECK_CONFIG_VECTOR_SIZE(positions);
+  CHECK_CONFIG_VECTOR_SIZE(velocities);
+  CHECK_CONFIG_VECTOR_SIZE(accelerations);
+  CHECK_CONFIG_VECTOR_SIZE(forces);
+  CHECK_CONFIG_VECTOR_SIZE(commands);
+
+  if(nonzero_size != INVALID_INDEX)
+  {
+    for(size_t i=0; i < nonzero_size; ++i)
+      mIndices.push_back(i);
+  }
+}
+
+//==============================================================================
+Skeleton::Configuration::Configuration(
+    const std::vector<size_t>& indices,
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities,
+    const Eigen::VectorXd& accelerations,
+    const Eigen::VectorXd& forces,
+    const Eigen::VectorXd& commands)
+  : mIndices(indices),
+    mPositions(positions),
+    mVelocities(velocities),
+    mAccelerations(accelerations),
+    mForces(forces),
+    mCommands(commands)
+{
+  size_t nonzero_size = indices.size();
+
+  CHECK_CONFIG_VECTOR_SIZE(positions);
+  CHECK_CONFIG_VECTOR_SIZE(velocities);
+  CHECK_CONFIG_VECTOR_SIZE(accelerations);
+  CHECK_CONFIG_VECTOR_SIZE(forces);
+  CHECK_CONFIG_VECTOR_SIZE(commands);
+}
+
+//==============================================================================
+#define RETURN_IF_CONFIG_VECTOR_INEQ( V )                                       \
+  if( V .size() != other. V .size() )                                           \
+    return false;                                                               \
+  if( V != other. V )                                                           \
+    return false;
+
+//==============================================================================
+bool Skeleton::Configuration::operator==(const Configuration& other) const
+{
+  if(mIndices != other.mIndices)
+    return false;
+
+  RETURN_IF_CONFIG_VECTOR_INEQ(mPositions);
+  RETURN_IF_CONFIG_VECTOR_INEQ(mVelocities);
+  RETURN_IF_CONFIG_VECTOR_INEQ(mAccelerations);
+  RETURN_IF_CONFIG_VECTOR_INEQ(mForces);
+  RETURN_IF_CONFIG_VECTOR_INEQ(mCommands);
+
+  return true;
+}
+
+//==============================================================================
+bool Skeleton::Configuration::operator!=(const Configuration& other) const
+{
+  return !(*this == other);
+}
+
 //==============================================================================
 Skeleton::Properties::Properties(
     const std::string& _name,
@@ -184,6 +280,68 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
   skelClone->setName(cloneName);
 
   return skelClone;
+}
+
+//==============================================================================
+#define SET_CONFIG_VECTOR( V )                                                  \
+  if(configuration.m ## V . size() > 0)                                         \
+  {                                                                             \
+    if(static_cast<int>(configuration.mIndices.size()) !=                       \
+        configuration.m ## V .size())                                           \
+    {                                                                           \
+      dterr << "[Skeleton::setConfiguration] Mismatch in size of vector ["      \
+            << #V << "] (expected " << configuration.mIndices.size()            \
+            << " | found " << configuration.m ## V .size() << "\n";             \
+      assert(false);                                                            \
+    }                                                                           \
+    else                                                                        \
+      set ## V ( configuration.mIndices, configuration.m ## V );                \
+  }
+
+//==============================================================================
+void Skeleton::setConfiguration(const Configuration& configuration)
+{
+  SET_CONFIG_VECTOR(Positions);
+  SET_CONFIG_VECTOR(Velocities);
+  SET_CONFIG_VECTOR(Accelerations);
+  SET_CONFIG_VECTOR(Forces);
+  SET_CONFIG_VECTOR(Commands);
+}
+
+//==============================================================================
+Skeleton::Configuration Skeleton::getConfiguration(int flags) const
+{
+  std::vector<size_t> indices;
+  for(size_t i=0; i < getNumDofs(); ++i)
+    indices.push_back(i);
+
+  return getConfiguration(indices, flags);
+}
+
+//==============================================================================
+Skeleton::Configuration Skeleton::getConfiguration(
+    const std::vector<size_t>& indices, int flags) const
+{
+  Configuration config(indices);
+  if(flags == CONFIG_NOTHING)
+    return config;
+
+  if( (flags & CONFIG_POSITIONS) == CONFIG_POSITIONS )
+    config.mPositions = getPositions(indices);
+
+  if( (flags & CONFIG_VELOCITIES) == CONFIG_VELOCITIES )
+    config.mVelocities = getVelocities(indices);
+
+  if( (flags & CONFIG_ACCELERATIONS) == CONFIG_ACCELERATIONS )
+    config.mAccelerations = getAccelerations(indices);
+
+  if( (flags & CONFIG_FORCES) == CONFIG_FORCES )
+    config.mForces = getForces(indices);
+
+  if( (flags & CONFIG_COMMANDS) == CONFIG_COMMANDS )
+    config.mCommands == getCommands(indices);
+
+  return config;
 }
 
 //==============================================================================

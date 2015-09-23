@@ -105,7 +105,7 @@ NodeType* Skeleton::getNode(size_t index)
 
 //==============================================================================
 template <class NodeType>
-NodeType* Skeleton::getNode(size_t nodeIndex, size_t treeIndex)
+NodeType* Skeleton::getNode(size_t treeIndex, size_t nodeIndex)
 {
   if(treeIndex >= mTreeCache.size())
   {
@@ -149,9 +149,9 @@ const NodeType* Skeleton::getNode(size_t index) const
 
 //==============================================================================
 template <class NodeType>
-const NodeType* Skeleton::getNode(size_t nodeIndex, size_t treeIndex) const
+const NodeType* Skeleton::getNode(size_t treeIndex, size_t nodeIndex) const
 {
-  return const_cast<Skeleton*>(this)->getNode<NodeType>(nodeIndex, treeIndex);
+  return const_cast<Skeleton*>(this)->getNode<NodeType>(treeIndex, nodeIndex);
 }
 
 //==============================================================================

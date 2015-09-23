@@ -1087,6 +1087,35 @@ TEST(Skeleton, Linkage)
                     "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
 }
 
+TEST(Skeleton, Configurations)
+{
+  SkeletonPtr twoLink = createTwoLinkRobot(Vector3d::Ones(), DOF_YAW,
+                                           Vector3d::Ones(), DOF_ROLL);
+
+  SkeletonPtr threeLink = createThreeLinkRobot(Vector3d::Ones(), DOF_PITCH,
+                                               Vector3d::Ones(), DOF_ROLL,
+                                               Vector3d::Ones(), DOF_YAW);
+
+  Skeleton::Configuration c2 = twoLink->getConfiguration();
+  Skeleton::Configuration c3 = threeLink->getConfiguration();
+
+  EXPECT_FALSE(c2 == c3);
+  EXPECT_TRUE(c2 == c2);
+  EXPECT_TRUE(c3 == c3);
+  EXPECT_TRUE(c2 != c3);
+
+  twoLink->setPosition(0, 1.0);
+  EXPECT_FALSE(c2 == twoLink->getConfiguration());
+
+  threeLink->setPosition(1, 2.0);
+  EXPECT_FALSE(c3 == twoLink->getConfiguration());
+
+  c2 = twoLink->getConfiguration(Skeleton::CONFIG_VELOCITIES);
+  EXPECT_TRUE(c2.mPositions.size() == 0);
+  EXPECT_TRUE(c2.mVelocities.size() == static_cast<int>(twoLink->getNumDofs()));
+  EXPECT_TRUE(c2.mAccelerations.size() == 0);
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

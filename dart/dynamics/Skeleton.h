@@ -62,6 +62,65 @@ public:
   using NodeMap = std::map<std::type_index, std::vector<Node*> >;
   using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
 
+  enum ConfigFlag_t
+  {
+    CONFIG_NOTHING       = 0,
+    CONFIG_POSITIONS     = 1 << 1,
+    CONFIG_VELOCITIES    = 1 << 2,
+    CONFIG_ACCELERATIONS = 1 << 3,
+    CONFIG_FORCES        = 1 << 4,
+    CONFIG_COMMANDS      = 1 << 5,
+    CONFIG_ALL           = 0xFF
+  };
+
+  /// The Configuration struct represents the joint configuration of a Skeleton.
+  /// The size of each Eigen::VectorXd member in this struct must be equal to
+  /// the number of degrees of freedom in the Skeleton or it must be zero. We
+  /// assume that any Eigen::VectorXd member with zero entries should be
+  /// ignored.
+  struct Configuration
+  {
+    Configuration(
+        const Eigen::VectorXd& positions = Eigen::VectorXd(),
+        const Eigen::VectorXd& velocities = Eigen::VectorXd(),
+        const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
+        const Eigen::VectorXd& forces = Eigen::VectorXd(),
+        const Eigen::VectorXd& commands = Eigen::VectorXd());
+
+    Configuration(
+        const std::vector<size_t>& indices,
+        const Eigen::VectorXd& positions = Eigen::VectorXd(),
+        const Eigen::VectorXd& velocities = Eigen::VectorXd(),
+        const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
+        const Eigen::VectorXd& forces = Eigen::VectorXd(),
+        const Eigen::VectorXd& commands = Eigen::VectorXd());
+
+    /// A list of degree of freedom indices that each entry in the
+    /// Eigen::VectorXd members correspond to.
+    std::vector<size_t> mIndices;
+
+    /// Joint positions
+    Eigen::VectorXd mPositions;
+
+    /// Joint velocities
+    Eigen::VectorXd mVelocities;
+
+    /// Joint accelerations
+    Eigen::VectorXd mAccelerations;
+
+    /// Joint forces
+    Eigen::VectorXd mForces;
+
+    /// Joint commands
+    Eigen::VectorXd mCommands;
+
+    /// Equality comparison operator
+    bool operator==(const Configuration& other) const;
+
+    /// Inequality comparison operator
+    bool operator!=(const Configuration& other) const;
+  };
+
   struct Properties
   {
     /// Name
@@ -134,6 +193,20 @@ public:
   SkeletonPtr clone(const std::string& cloneName) const;
 
   /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Configuration
+  //----------------------------------------------------------------------------
+
+  /// Set the configuration of this Skeleton
+  void setConfiguration(const Configuration& configuration);
+
+  /// Get the configuration of this Skeleton
+  Configuration getConfiguration(int flags = CONFIG_ALL) const;
+
+  /// Get the configuration of the specified indices in this Skeleton
+  Configuration getConfiguration(const std::vector<size_t>& indices,
+                                 int flags = CONFIG_ALL) const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Properties
@@ -350,7 +423,7 @@ public:
   /// Get the nodeIndexth Node of the specified type within the the tree of
   /// treeIndex
   template <class NodeType>
-  NodeType* getNode(size_t nodeIndex, size_t treeIndex);
+  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
 
   /// Get the indexth Node of the specified type within this Skeleton
   template <class NodeType>
@@ -359,7 +432,7 @@ public:
   /// Get the nodeIndexth Node of the specified type within the the tree of
   /// treeIndex
   template <class NodeType>
-  const NodeType* getNode(size_t nodeIndex, size_t treeIndex) const;
+  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
 
   /// Get the Node of the specified type within this Skeleton that has the
   /// specified name
