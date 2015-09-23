@@ -266,11 +266,27 @@ void EndEffector::setNodeState(
 }
 
 //==============================================================================
-const Node::State* EndEffector::getNodeState() const
+std::unique_ptr<Node::State> EndEffector::getNodeState() const
 {
-  mStateCache = getEndEffectorState();
+  return std::unique_ptr<EndEffector::State>(
+        new EndEffector::State(getEndEffectorState()));
+}
 
-  return &mStateCache;
+//==============================================================================
+void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const
+{
+  if(outputState)
+  {
+    EndEffector::State* state =
+        static_cast<EndEffector::State*>(outputState.get());
+
+    state->mRelativeTransform = mRelativeTf;
+    copyAddonStatesTo(state->mAddonStates);
+  }
+  else
+  {
+    outputState = getNodeState();
+  }
 }
 
 //==============================================================================
@@ -284,11 +300,29 @@ void EndEffector::setNodeProperties(
 }
 
 //==============================================================================
-const Node::Properties* EndEffector::getNodeProperties() const
+std::unique_ptr<Node::Properties> EndEffector::getNodeProperties() const
 {
-  mPropertiesCache = getEndEffectorProperties();
+  return std::unique_ptr<EndEffector::Properties>(
+        new EndEffector::Properties(getEndEffectorProperties()));
+}
 
-  return &mPropertiesCache;
+//==============================================================================
+void EndEffector::copyNodePropertiesTo(
+    std::unique_ptr<Node::Properties>& outputProperties) const
+{
+  if(outputProperties)
+  {
+    EndEffector::Properties* properties =
+        static_cast<EndEffector::Properties*>(outputProperties.get());
+
+    static_cast<Entity::Properties&>(*properties) = getEntityProperties();
+    static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
+    copyAddonPropertiesTo(properties->mAddonProperties);
+  }
+  else
+  {
+    outputProperties = getNodeProperties();
+  }
 }
 
 //==============================================================================

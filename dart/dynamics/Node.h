@@ -143,16 +143,32 @@ public:
   /// Set the State of this Node. By default, this does nothing.
   virtual void setNodeState(const std::unique_ptr<State>& otherState);
 
+  // TODO(MXG): Consider offering a setNodeState(std::unique_ptr<State>&&)
+
   /// Get the State of this Node. By default, this returns a nullptr which
   /// implies that the Node is stateless.
-  virtual const State* getNodeState() const;
+  virtual std::unique_ptr<State> getNodeState() const;
+
+  /// Copy the State of this Node into a unique_ptr. By default, this simply
+  /// calls getNodeState() and passes the result into the outputState, but this
+  /// function can be overriden to be more performant by avoiding allocations.
+  virtual void copyNodeStateTo(std::unique_ptr<State>& outputState) const;
 
   /// Set the Properties of this Node. By default, this does nothing.
   virtual void setNodeProperties(const std::unique_ptr<Properties>& properties);
 
+  // TODO(MXG): Consider offering a setNodeProperties(std::unique_ptr<Properties>&&)
+
   /// Get the Properties of this Node. By default, this returns a nullptr which
   /// implies that the Node has no properties.
-  virtual const Properties* getNodeProperties() const;
+  virtual std::unique_ptr<Properties> getNodeProperties() const;
+
+  /// Copy the Properties of this Node into a unique_ptr. By default, this
+  /// simply calls getNodeProperties() and passes the result into the
+  /// outputProperties, but this function can be overriden to be more
+  /// performant.
+  virtual void copyNodePropertiesTo(
+      std::unique_ptr<Properties>& outputProperties) const;
 
   /// Get a pointer to the BodyNode that this Node is associated with
   BodyNodePtr getBodyNodePtr();

@@ -72,9 +72,15 @@ void Node::setNodeState(const std::unique_ptr<State>& /*otherState*/)
 }
 
 //==============================================================================
-const Node::State* Node::getNodeState() const
+std::unique_ptr<Node::State> Node::getNodeState() const
 {
   return nullptr;
+}
+
+//==============================================================================
+void Node::copyNodeStateTo(std::unique_ptr<State>& outputState) const
+{
+  outputState = getNodeState();
 }
 
 //==============================================================================
@@ -84,9 +90,16 @@ void Node::setNodeProperties(const std::unique_ptr<Properties>& /*properties*/)
 }
 
 //==============================================================================
-const Node::Properties* Node::getNodeProperties() const
+std::unique_ptr<Node::Properties> Node::getNodeProperties() const
 {
   return nullptr;
+}
+
+//==============================================================================
+void Node::copyNodePropertiesTo(
+    std::unique_ptr<Properties>& outputProperties) const
+{
+  outputProperties = getNodeProperties();
 }
 
 //==============================================================================

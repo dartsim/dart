@@ -134,6 +134,8 @@ public:
                   common::AddonManager::State());
 
     /// The current relative transform of the EndEffector
+    // TODO(MXG): Consider moving this to a FixedFrame::State struct and then
+    // inheriting that struct
     Eigen::Isometry3d mRelativeTransform;
 
     /// The current states of the EndEffector's Addons
@@ -212,14 +214,21 @@ public:
   void setNodeState(const std::unique_ptr<Node::State>& otherState) override final;
 
   // Documentation inherited
-  const Node::State* getNodeState() const override final;
+  std::unique_ptr<Node::State> getNodeState() const override final;
+
+  // Documentation inherited
+  void copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const override final;
 
   // Documentation inherited
   void setNodeProperties(
       const std::unique_ptr<Node::Properties>& otherProperties) override final;
 
   // Documentation inherited
-  const Node::Properties* getNodeProperties() const override final;
+  std::unique_ptr<Node::Properties> getNodeProperties() const override final;
+
+  // Documentation inherited
+  void copyNodePropertiesTo(
+      std::unique_ptr<Node::Properties>& outputProperties) const override final;
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
@@ -348,14 +357,6 @@ protected:
 
   /// Properties of this EndEffector
   UniqueProperties mEndEffectorP;
-
-  /// Data structure that serializes the state of the EndEffector when
-  /// getNodeState() is called.
-  mutable State mStateCache;
-
-  /// Data structure that serializes the Properties of the EndEffector when
-  /// getNodeProperties() is called.
-  mutable Properties mPropertiesCache;
 
   /// Cached Jacobian of this EndEffector
   ///

@@ -281,9 +281,9 @@ BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
     std::vector< std::unique_ptr<Node::Properties> > vec;
     for(size_t i=0; i < nodes.size(); ++i)
     {
-      const Node::Properties* prop = nodes[i]->getNodeProperties();
+      std::unique_ptr<Node::Properties> prop = nodes[i]->getNodeProperties();
       if(prop)
-        vec.push_back(prop->clone());
+        vec.push_back(std::move(prop));
     }
 
     nodeProperties[entry.first] = std::unique_ptr<NodePropertiesVector>(
