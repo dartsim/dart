@@ -127,6 +127,12 @@ public:
   /// properties will be [TODO(MXG): copy the state as well]
   SkeletonPtr clone() const;
 
+  /// Create an identical clone of this Skeleton, except that it has a new name.
+  ///
+  /// Note: the state of the Skeleton will NOT be cloned, only the structure and
+  /// properties will be [TODO(MXG): copy the state as well]
+  SkeletonPtr clone(const std::string& cloneName) const;
+
   /// \}
 
   //----------------------------------------------------------------------------
@@ -1034,9 +1040,6 @@ protected:
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
-  /// List of EndEffectors in the Skeleton
-  std::vector<EndEffector*> mEndEffectors;
-
   /// NameManager for tracking BodyNodes
   dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
 
@@ -1052,7 +1055,7 @@ protected:
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
-  /// NameManager for tracking EndEffectors
+  /// NameManager for tracking Nodes
   NodeNameMgrMap mNodeNameMgrMap;
 
   /// WholeBodyIK module for this Skeleton

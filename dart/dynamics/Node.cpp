@@ -74,11 +74,11 @@ void Node::setNodeState(const std::unique_ptr<State>& /*otherState*/)
 //==============================================================================
 const Node::State* Node::getNodeState() const
 {
-  return mNodeStatePtr;
+  return nullptr;
 }
 
 //==============================================================================
-void Node::setNodeProperties(const std::unique_ptr<Properties>& properties)
+void Node::setNodeProperties(const std::unique_ptr<Properties>& /*properties*/)
 {
   // Do nothing
 }
@@ -86,7 +86,7 @@ void Node::setNodeProperties(const std::unique_ptr<Properties>& properties)
 //==============================================================================
 const Node::Properties* Node::getNodeProperties() const
 {
-  return mNodePropertiesPtr;
+  return nullptr;
 }
 
 //==============================================================================
@@ -139,9 +139,6 @@ Node::Node(BodyNode* _bn)
     REPORT_INVALID_NODE(Node);
     return;
   }
-
-  setNodeStatePtr();
-  setNodePropertiesPtr();
 }
 
 //==============================================================================
@@ -159,18 +156,6 @@ std::string Node::registerNameChange(const std::string& newName)
 
   common::NameManager<Node*>& mgr = it->second;
   return mgr.changeObjectName(this, newName);
-}
-
-//==============================================================================
-void Node::setNodeStatePtr(State* ptr)
-{
-  mNodeStatePtr = ptr;
-}
-
-//==============================================================================
-void Node::setNodePropertiesPtr(Properties* ptr)
-{
-  mNodePropertiesPtr = ptr;
 }
 
 //==============================================================================

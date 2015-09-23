@@ -104,6 +104,11 @@ public:
   /// construction of your Node.
   class State : public common::Extensible<State> { };
 
+  /// Use the StateMixer class to easily create a State extension from an
+  /// existing class or struct
+  template <class Mixin>
+  using StateMixer = common::ExtensibleMixer<State, Mixin>;
+
   /// If your Node has a Properties class, then that Properties class should
   /// inherit this Node::Properties class. This allows us to safely serialize,
   /// store, and clone the properties of arbitrary Node extensions. If your
@@ -120,6 +125,11 @@ public:
   /// If your Node has Properties, then be sure to call setNodePropertiesPtr()
   /// during the construction of your Node.
   class Properties : public common::Extensible<Properties> { };
+
+  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// from an existing class or struct.
+  template <class Mixin>
+  using PropertiesMixer = common::ExtensibleMixer<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Node() = default;
@@ -173,18 +183,6 @@ protected:
   /// taken, then it will just return the same name that the function was given.
   std::string registerNameChange(const std::string& newName);
 
-  /// Set the State pointer for this Node.
-  ///
-  /// This should be called during construction of your Node, if your Node has a
-  /// State.
-  void setNodeStatePtr(State* ptr = nullptr);
-
-  /// Set the Properties pointer for this Node.
-  ///
-  /// This should be called during construction of your Node, if your Node has a
-  /// set of Properties.
-  void setNodePropertiesPtr(Properties* ptr = nullptr);
-
   /// Attach the Node to its BodyNode
   void attach();
 
@@ -197,12 +195,6 @@ protected:
   /// the mNode member of the Cleaner to a nullptr. That way the BodyNode can
   /// never be deleted by its Cleaner.
   std::weak_ptr<NodeCleaner> mCleaner;
-
-  /// Pointer to the State of this Node
-  State* mNodeStatePtr;
-
-  /// Pointer to the Properties of this Node
-  Properties* mNodePropertiesPtr;
 
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;

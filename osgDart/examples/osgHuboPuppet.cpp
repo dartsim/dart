@@ -1382,9 +1382,13 @@ int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
-  const SkeletonPtr& hubo = createHubo();
+  SkeletonPtr hubo = createHubo();
   setStartupConfiguration(hubo);
   setupEndEffectors(hubo);
+
+  Eigen::VectorXd positions = hubo->getPositions();
+  hubo = hubo->clone("hubo_copy");
+  hubo->setPositions(positions);
 
   world->addSkeleton(hubo);
   world->addSkeleton(createGround());

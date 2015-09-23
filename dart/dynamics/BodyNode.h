@@ -42,6 +42,7 @@
 #include <vector>
 #include <typeindex>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -627,13 +628,13 @@ public:
   DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
 
   /// Create an EndEffector attached to this BodyNode
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(
-      const typename EndEffectorT::Properties& _properties);
+  EndEffector* createEndEffector(const EndEffector::Properties& _properties);
 
   /// Create an EndEffector with the specified name
-  template <class EndEffectorT=EndEffector>
-  EndEffectorT* createEndEffector(const std::string& _name = "EndEffector");
+  EndEffector* createEndEffector(const std::string& _name = "EndEffector");
+
+  /// Create an EndEffector with the specified name
+  EndEffector* createEndEffector(const char* _name);
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -899,7 +900,8 @@ protected:
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const;
 
   /// This is needed in order to inherit the Node class, but it does nothing
   Node* cloneNode(BodyNode* bn) const override final;
@@ -1077,6 +1079,12 @@ protected:
   // Structural Properties
   //--------------------------------------------------------------------------
 
+  /// Index of this BodyNode in its Skeleton
+  size_t mIndexInSkeleton;
+
+  /// Index of this BodyNode in its Tree
+  size_t mIndexInTree;
+
   /// Index of this BodyNode's tree
   size_t mTreeIndex;
 
@@ -1121,32 +1129,20 @@ protected:
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mBodyJacobian;
 
-  /// Dirty flag for body Jacobian.
-  mutable bool mIsBodyJacobianDirty;
-
   /// Cached World Jacobian
   ///
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of body Jacobian.
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mBodyJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of body Jacobian.
-  mutable bool mIsBodyJacobianSpatialDerivDirty;
-
   /// Classic time derivative of Body Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///

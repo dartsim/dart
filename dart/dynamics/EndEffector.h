@@ -51,44 +51,21 @@ class Support final : public common::Addon
 {
 public:
 
-  class State final : public common::Addon::State
+  struct StateData
   {
-  public:
+    StateData(bool mActive = false);
 
-    friend class Support;
-
-    struct Data
-    {
-      Data(bool active=false);
-
-      /// True if this EndEffector is currently usable for support
-      bool mActive;
-    };
-
-    /// Optional constructor (mActive will be set to false if the default
-    /// constructor is used)
-    State(bool active);
-
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::State, State, Data)
-    // Created by the macro:
-    // Data mData;
+    bool mActive;
   };
 
-  class Properties final : public common::Addon::Properties
+  using State = common::Addon::StateMixer<StateData>;
+
+  struct PropertiesData
   {
-  public:
-
-    friend class Support;
-
-    struct Data
-    {
-      math::SupportGeometry mGeometry;
-    };
-
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(common::Addon::Properties, Properties, Data)
-    // Created by the macro:
-    // Data mData;
+    math::SupportGeometry mGeometry;
   };
+
+  using Properties = common::Addon::PropertiesMixer<PropertiesData>;
 
   /// Constructor
   Support(EndEffector* _ee);
@@ -149,21 +126,21 @@ public:
 
   DART_ENABLE_ADDON_SPECIALIZATION()
 
-  struct State : public Node::State
+  struct StateData
   {
-    struct Data
-    {
-      Data(const Eigen::Isometry3d& relativeTransform =
-          Eigen::Isometry3d::Identity());
+    StateData(const Eigen::Isometry3d& relativeTransform =
+                  Eigen::Isometry3d::Identity(),
+              const common::AddonManager::State& addonStates =
+                  common::AddonManager::State());
 
-      Eigen::Isometry3d mRelativeTransform;
-      common::AddonManager::State mAddonStates;
-    };
+    /// The current relative transform of the EndEffector
+    Eigen::Isometry3d mRelativeTransform;
 
-    DART_EXTENSIBLE_WITH_MEMBER_DATA(Node::State, State, Data)
-    // Created by the macro:
-    // Data mData;
+    /// The current states of the EndEffector's Addons
+    common::AddonManager::State mAddonStates;
   };
+
+  using State = Node::StateMixer<StateData>;
 
   struct UniqueProperties
   {
@@ -171,20 +148,25 @@ public:
     /// resetRelativeTransform() is called
     Eigen::Isometry3d mDefaultTransform;
 
+    /// Default constructor
     UniqueProperties(
         const Eigen::Isometry3d& _defaultTransform =
-            Eigen::Isometry3d::Identity(),
-        const math::SupportGeometry& _supportGeometry =
-            math::SupportGeometry(),
-        bool _supporting = false);
+            Eigen::Isometry3d::Identity());
   };
 
-  struct Properties : Entity::Properties, UniqueProperties
+  struct PropertiesData : Entity::Properties, UniqueProperties
   {
-    Properties(
+    PropertiesData(
         const Entity::Properties& _entityProperties = Entity::Properties(),
-        const UniqueProperties& _effectorProperties = UniqueProperties() );
+        const UniqueProperties& _effectorProperties = UniqueProperties(),
+        const common::AddonManager::Properties& _addonProperties =
+            common::AddonManager::Properties());
+
+    /// The properties of the EndEffector's Addons
+    common::AddonManager::Properties mAddonProperties;
   };
+
+  using Properties = Node::PropertiesMixer<PropertiesData>;
 
   /// Destructor
   virtual ~EndEffector() = default;
@@ -193,23 +175,33 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-  /// Set the Properties of this EndEffector. If _useNow is true, the current
-  /// Transform will be set to the new default transform.
-  void setProperties(const Properties& _properties, bool _useNow=true);
+  /// Set the State of this EndEffector.
+  void setState(const StateData& _state);
+
+  /// Set the State of this EndEffector using move semantics
+  void setState(StateData&& _state);
+
+  /// Get the State of this EndEffector
+  StateData getEndEffectorState() const;
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const UniqueProperties& _properties, bool _useNow=true);
+  void setProperties(const PropertiesData& _properties, bool _useNow=false);
 
-  Properties getEndEffectorProperties() const;
+  /// Set the Properties of this EndEffector. If _useNow is true, the current
+  /// Transform will be set to the new default transform.
+  void setProperties(const UniqueProperties& _properties, bool _useNow=false);
 
-  /// Copy the Properties of another EndEffector
+  /// Get the Properties of this EndEffector
+  PropertiesData getEndEffectorProperties() const;
+
+  /// Copy the State and Properties of another EndEffector
   void copy(const EndEffector& _otherEndEffector);
 
-  /// Copy the Properties of another EndEffector
+  /// Copy the State and Properties of another EndEffector
   void copy(const EndEffector* _otherEndEffector);
 
-  /// Copy the Properties of another EndEffector
+  /// Copy the State and Properties of another EndEffector
   EndEffector& operator=(const EndEffector& _otherEndEffector);
 
   /// Set name. If the name is already taken, this will return an altered
@@ -221,6 +213,13 @@ public:
 
   // Documentation inherited
   const Node::State* getNodeState() const override final;
+
+  // Documentation inherited
+  void setNodeProperties(
+      const std::unique_ptr<Node::Properties>& otherProperties) override final;
+
+  // Documentation inherited
+  const Node::Properties* getNodeProperties() const override final;
 
   /// Set the current relative transform of this EndEffector
   void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
@@ -279,18 +278,6 @@ public:
   // Documentation inherited
   const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
-  /// Get the BodyNode that this EndEffector is rigidly attached to
-  BodyNode* getParentBodyNode();
-
-  /// Get the BodyNode that this EndEffector is rigidly attached to
-  const BodyNode* getParentBodyNode() const;
-
-  /// Get the index of this EndEffector within the Skeleton
-  size_t getIndexInSkeleton() const;
-
-  /// Get the tree index of the BodyNode that this EndEffector is attached to
-  size_t getTreeIndex() const;
-
   /// \}
 
   //----------------------------------------------------------------------------
@@ -336,7 +323,7 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  explicit EndEffector(BodyNode* _parent, const Properties& _properties);
+  explicit EndEffector(BodyNode* _parent, const PropertiesData& _properties);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
@@ -362,44 +349,33 @@ protected:
   /// Properties of this EndEffector
   UniqueProperties mEndEffectorP;
 
-  /// The index of this EndEffector within its Skeleton
-  size_t mIndexInSkeleton;
-
   /// Data structure that serializes the state of the EndEffector when
   /// getNodeState() is called.
   mutable State mStateCache;
+
+  /// Data structure that serializes the Properties of the EndEffector when
+  /// getNodeProperties() is called.
+  mutable Properties mPropertiesCache;
 
   /// Cached Jacobian of this EndEffector
   ///
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mEffectorJacobian;
 
-  /// Dirty flag for end effector Jacobian
-  mutable bool mIsEffectorJacobianDirty;
-
   /// Cached World Jacobian of this EndEffector
   ///
   /// Do not use directly! Use getWorldJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mEffectorJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of the end effector Jacobian
-  mutable bool mIsEffectorJacobianSpatialDerivDirty;
-
   /// Classic time derivative of the end effector Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 };
 
 DART_SPECIALIZE_ADDON_EXTERNAL(EndEffector, Support)

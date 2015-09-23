@@ -43,15 +43,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Support::State::Data::Data(bool active)
+Support::StateData::StateData(bool active)
   : mActive(active)
-{
-  // Do nothing
-}
-
-//==============================================================================
-Support::State::State(bool active)
-  : mData(active)
 {
   // Do nothing
 }
@@ -125,7 +118,7 @@ void Support::setProperties(
 //==============================================================================
 void Support::setGeometry(const math::SupportGeometry& _newSupport)
 {
-  mProperties.mData.mGeometry = _newSupport;
+  mProperties.mGeometry = _newSupport;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -133,16 +126,16 @@ void Support::setGeometry(const math::SupportGeometry& _newSupport)
 //==============================================================================
 const math::SupportGeometry& Support::getGeometry() const
 {
-  return mProperties.mData.mGeometry;
+  return mProperties.mGeometry;
 }
 
 //==============================================================================
 void Support::setActive(bool _supporting)
 {
-  if(mState.mData.mActive == _supporting)
+  if(mState.mActive == _supporting)
     return;
 
-  mState.mData.mActive = _supporting;
+  mState.mActive = _supporting;
   mEndEffector->getSkeleton()->notifySupportUpdate(
         mEndEffector->getTreeIndex());
 }
@@ -150,38 +143,61 @@ void Support::setActive(bool _supporting)
 //==============================================================================
 bool Support::isActive() const
 {
-  return mState.mData.mActive;
+  return mState.mActive;
 }
 
 //==============================================================================
-EndEffector::State::Data::Data(const Eigen::Isometry3d& relativeTransform)
-  : mRelativeTransform(relativeTransform)
+EndEffector::StateData::StateData(
+    const Eigen::Isometry3d& relativeTransform,
+    const common::AddonManager::State& addonStates)
+  : mRelativeTransform(relativeTransform),
+    mAddonStates(addonStates)
 {
   // Do nothing
 }
 
 //==============================================================================
 EndEffector::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& _defaultTransform,
-    const math::SupportGeometry& _supportGeometry,
-    bool _supporting)
+    const Eigen::Isometry3d& _defaultTransform)
   : mDefaultTransform(_defaultTransform)
 {
   // Do nothing
 }
 
 //==============================================================================
-EndEffector::Properties::Properties(
+EndEffector::PropertiesData::PropertiesData(
     const Entity::Properties& _entityProperties,
-    const UniqueProperties& _effectorProperties)
+    const UniqueProperties& _effectorProperties,
+    const common::AddonManager::Properties& _addonProperties)
   : Entity::Properties(_entityProperties),
-    UniqueProperties(_effectorProperties)
+    UniqueProperties(_effectorProperties),
+    mAddonProperties(_addonProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-void EndEffector::setProperties(const Properties& _properties, bool _useNow)
+void EndEffector::setState(const StateData& _state)
+{
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(_state.mAddonStates);
+}
+
+//==============================================================================
+void EndEffector::setState(StateData&& _state)
+{
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(std::move(_state.mAddonStates));
+}
+
+//==============================================================================
+EndEffector::StateData EndEffector::getEndEffectorState() const
+{
+  return StateData(mRelativeTf, getAddonStates());
+}
+
+//==============================================================================
+void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
@@ -195,9 +211,10 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
 }
 
 //==============================================================================
-EndEffector::Properties EndEffector::getEndEffectorProperties() const
+EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
-  return Properties(getEntityProperties(), mEndEffectorP);
+  return PropertiesData(getEntityProperties(), mEndEffectorP,
+                        getAddonProperties());
 }
 
 //==============================================================================
@@ -206,11 +223,8 @@ void EndEffector::copy(const EndEffector& _otherEndEffector)
   if(this == &_otherEndEffector)
     return;
 
+  setState(_otherEndEffector.getEndEffectorState());
   setProperties(_otherEndEffector.getEndEffectorProperties());
-
-  // We should also copy the relative transform, because it could be different
-  // than the default relative transform
-  setRelativeTransform(_otherEndEffector.getRelativeTransform());
 }
 
 //==============================================================================
@@ -248,17 +262,33 @@ void EndEffector::setNodeState(
 {
   const State* state = static_cast<const State*>(otherState.get());
 
-  setRelativeTransform(state->mData.mRelativeTransform);
-  setAddonStates(state->mData.mAddonStates);
+  setState(*state);
 }
 
 //==============================================================================
 const Node::State* EndEffector::getNodeState() const
 {
-  mStateCache.mData.mRelativeTransform = getRelativeTransform();
-  getAddonStates(mStateCache.mData.mAddonStates);
+  mStateCache = getEndEffectorState();
 
   return &mStateCache;
+}
+
+//==============================================================================
+void EndEffector::setNodeProperties(
+    const std::unique_ptr<Node::Properties>& otherProperties)
+{
+  const Properties* properties =
+      static_cast<const Properties*>(otherProperties.get());
+
+  setProperties(*properties);
+}
+
+//==============================================================================
+const Node::Properties* EndEffector::getNodeProperties() const
+{
+  mPropertiesCache = getEndEffectorProperties();
+
+  return &mPropertiesCache;
 }
 
 //==============================================================================
@@ -366,33 +396,9 @@ const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
 }
 
 //==============================================================================
-BodyNode* EndEffector::getParentBodyNode()
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-const BodyNode* EndEffector::getParentBodyNode() const
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-size_t EndEffector::getIndexInSkeleton() const
-{
-  return mIndexInSkeleton;
-}
-
-//==============================================================================
-size_t EndEffector::getTreeIndex() const
-{
-  return mBodyNode->getTreeIndex();
-}
-
-//==============================================================================
 const math::Jacobian& EndEffector::getJacobian() const
 {
-  if (mIsEffectorJacobianDirty)
+  if (mIsBodyJacobianDirty)
     updateEffectorJacobian();
 
   return mEffectorJacobian;
@@ -410,7 +416,7 @@ const math::Jacobian& EndEffector::getWorldJacobian() const
 //==============================================================================
 const math::Jacobian& EndEffector::getJacobianSpatialDeriv() const
 {
-  if(mIsEffectorJacobianSpatialDerivDirty)
+  if(mIsBodyJacobianSpatialDerivDirty)
     updateEffectorJacobianSpatialDeriv();
 
   return mEffectorJacobianSpatialDeriv;
@@ -430,15 +436,12 @@ void EndEffector::notifyTransformUpdate()
 {
   if(!mNeedTransformUpdate)
   {
-    mIsEffectorJacobianDirty = true;
-    mIsWorldJacobianDirty = true;
-    mIsEffectorJacobianSpatialDerivDirty = true;
-    mIsWorldJacobianClassicDerivDirty = true;
-
     const SkeletonPtr& skel = getSkeleton();
     if(skel)
       skel->notifySupportUpdate(getTreeIndex());
   }
+
+  notifyJacobianUpdate();
 
   Frame::notifyTransformUpdate();
 }
@@ -446,23 +449,17 @@ void EndEffector::notifyTransformUpdate()
 //==============================================================================
 void EndEffector::notifyVelocityUpdate()
 {
-  mIsEffectorJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
+  notifyJacobianDerivUpdate();
 
   Frame::notifyVelocityUpdate();
 }
 
 //==============================================================================
-EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
+EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
   : Entity(ConstructFrame),
     Frame(_parent, ""),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
-    TemplatedJacobianNode<EndEffector>(_parent),
-    mIndexInSkeleton(0),
-    mIsEffectorJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsEffectorJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true)
+    TemplatedJacobianNode<EndEffector>(_parent)
 {
   DART_INSTANTIATE_SPECIALIZED_ADDON(Support)
   setProperties(_properties);
@@ -471,10 +468,10 @@ EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
 //==============================================================================
 Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
-  EndEffector* ee = new EndEffector(_parent, Properties());
-  ee->copy(this);
-
+  EndEffector* ee = new EndEffector(_parent, PropertiesData());
   ee->duplicateAddons(this);
+
+  ee->copy(this);
 
   if(mIK)
     ee->mIK = mIK->clone(ee);
@@ -487,7 +484,7 @@ void EndEffector::updateEffectorJacobian() const
 {
   mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
                                       mBodyNode->getJacobian());
-  mIsEffectorJacobianDirty = false;
+  mIsBodyJacobianDirty = false;
 }
 
 //==============================================================================
@@ -505,7 +502,7 @@ void EndEffector::updateEffectorJacobianSpatialDeriv() const
       math::AdInvTJac(getRelativeTransform(),
                       mBodyNode->getJacobianSpatialDeriv());
 
-  mIsEffectorJacobianSpatialDerivDirty = false;
+  mIsBodyJacobianSpatialDerivDirty = false;
 }
 
 //==============================================================================

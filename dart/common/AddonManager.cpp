@@ -83,11 +83,17 @@ void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap
   // This method allows us to avoid dynamic allocation (cloning) whenever possible.
   for(const auto& addon : addonMap)
   {
+    if(nullptr == addon.second)
+      continue;
+
     const DataType* data = (addon.second.get()->*getData)();
     if(data)
     {
       // Attempt to insert a nullptr to see whether this entry exists while also
-      // creating an itertor to it if it did not already exist.
+      // creating an itertor to it if it did not already exist. This allows us
+      // to search for a spot in the map once, instead of searching the map to
+      // see if the entry already exists and then searching the map again in
+      // order to insert the entry if it didn't already exist.
       std::pair<typename MapType::iterator, bool> insertion =
           outgoingMap.insert(typename MapType::value_type(addon.first, nullptr));
 
@@ -99,7 +105,7 @@ void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap
         // The entry already existed
         if(it->second)
         {
-          // The entry was not a nullptr
+          // The entry was not a nullptr, so we can do an efficient copy
           it->second->copy(*data);
         }
         else
@@ -121,13 +127,13 @@ void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap
 AddonManager::State AddonManager::getAddonStates() const
 {
   State states;
-  getAddonStates(states);
+  copyAddonStatesTo(states);
 
   return states;
 }
 
 //==============================================================================
-void AddonManager::getAddonStates(State& outgoingStates) const
+void AddonManager::copyAddonStatesTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
   extractMapData<StateMap, Addon::State, &Addon::getState>(states, mAddonMap);
@@ -167,13 +173,14 @@ void AddonManager::setAddonProperties(const Properties& newProperties)
 AddonManager::Properties AddonManager::getAddonProperties() const
 {
   Properties properties;
-  getAddonProperties(properties);
+  copyAddonPropertiesTo(properties);
 
   return properties;
 }
 
 //==============================================================================
-void AddonManager::getAddonProperties(Properties& outgoingProperties) const
+void AddonManager::copyAddonPropertiesTo(
+    Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();
   extractMapData<PropertiesMap, Addon::Properties, &Addon::getProperties>(

@@ -173,24 +173,6 @@ NodeType* BodyNode::createNode(Args&&... args)
   return node;
 }
 
-//==============================================================================
-template <class EndEffectorT>
-EndEffectorT* BodyNode::createEndEffector(
-    const typename EndEffectorT::Properties& _properties)
-{
-  return createNode<EndEffectorT>(_properties);
-}
-
-//==============================================================================
-template <class EndEffectorT>
-EndEffectorT* BodyNode::createEndEffector(const std::string& _name)
-{
-  typename EndEffectorT::Properties properties;
-  properties.mName = _name;
-
-  return createNode<EndEffectorT>(properties);
-}
-
 } // namespace dynamics
 } // namespace dart
 

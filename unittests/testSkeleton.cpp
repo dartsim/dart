@@ -598,8 +598,7 @@ TEST(Skeleton, NodePersistence)
   // Testing EndEffector, which is a specialized Node type
   //--------------------------------------------------------------------------
   {
-    EndEffector* manip =
-        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+    EndEffector* manip = skel->getBodyNode(0)->createEndEffector("manip");
 
     EXPECT_EQ(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector(0), manip);
@@ -621,8 +620,7 @@ TEST(Skeleton, NodePersistence)
   }
 
   {
-    EndEffector* manip =
-        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+    EndEffector* manip = skel->getBodyNode(0)->createEndEffector("manip");
 
     EXPECT_EQ(skel->getEndEffector("manip"), manip);
     EXPECT_EQ(skel->getEndEffector(0), manip);
@@ -665,7 +663,6 @@ TEST(Skeleton, NodePersistence)
 
     EXPECT_EQ(weakManip.lock(), nullptr);
   }
-
 
   using GenericNodePtr = TemplateNodePtr<GenericNode, BodyNode>;
   using WeakGenericNodePtr = TemplateWeakNodePtr<GenericNode, BodyNode>;
@@ -739,6 +736,36 @@ TEST(Skeleton, NodePersistence)
     EXPECT_EQ(skel->getBodyNode(0)->getNumNodes<GenericNode>(), 0u);
 
     EXPECT_EQ(weakNode.lock(), nullptr);
+  }
+}
+
+TEST(Skeleton, CloneNodeOrdering)
+{
+  // This test checks that the ordering of Nodes in a cloned Skeleton will match
+  // the ordering of Nodes in the original that was copied.
+
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+
+  // Add Nodes in the reverse order, so that their indexing is different from
+  // the BodyNodes they are attached to
+  for(int i=skel->getNumBodyNodes()-1; i > 0; --i)
+  {
+    skel->getBodyNode(i)->createEndEffector("manip_"+std::to_string(i));
+  }
+
+  skel->getBodyNode(1)->createEndEffector("other_manip");
+  skel->getBodyNode(0)->createEndEffector("another_manip");
+  skel->getBodyNode(2)->createEndEffector("yet_another_manip");
+
+  SkeletonPtr clone = skel->clone();
+
+  for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
+  {
+    EXPECT_EQ(skel->getEndEffector(i)->getName(),
+              clone->getEndEffector(i)->getName());
   }
 }
 
