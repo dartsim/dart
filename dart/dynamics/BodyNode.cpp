@@ -753,6 +753,25 @@ const EndEffector* BodyNode::getEndEffector(size_t _index) const
 }
 
 //==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::Properties& _properties)
+{
+  EndEffector* ee = new EndEffector(this, _properties);
+  getSkeleton()->registerEndEffector(ee);
+
+  return ee;
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(const std::string& _name)
+{
+  EndEffector::Properties properties;
+  properties.mName = _name;
+
+  return createEndEffector(properties);
+}
+
+//==============================================================================
 size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
@@ -1050,10 +1069,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
-    mIsBodyJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsBodyJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
@@ -1167,6 +1182,10 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 //==============================================================================
 void BodyNode::processNewEntity(Entity* _newChildEntity)
 {
+  // If the Entity is a JacobianNode, add it to the list of JacobianNodes
+  if(JacobianNode* node = dynamic_cast<JacobianNode*>(_newChildEntity))
+    mChildJacobianNodes.insert(node);
+
   // Here we want to sort out whether the Entity that has been added is a child
   // BodyNode or not
 
@@ -1197,6 +1216,15 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
                                              _oldChildEntity);
   if(it != mChildBodyNodes.end())
     mChildBodyNodes.erase(it);
+
+  if(JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
+  {
+    std::unordered_set<JacobianNode*>::iterator node_it =
+        mChildJacobianNodes.find(node);
+
+    if(node_it != mChildJacobianNodes.end())
+      mChildJacobianNodes.erase(node_it);
+  }
 
   if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
           _oldChildEntity) != mNonBodyNodeEntities.end())
@@ -1230,6 +1258,11 @@ void BodyNode::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
+  // Jacobian calculations are dependent on the parent's world transform, but
+  // not on the world transform of their own BodyNode, so they must be dirtied
+  // regardless of whether the world transform of this BodyNode is already dirty
+  notifyJacobianUpdate();
+
   if(mNeedTransformUpdate)
     return;
 
@@ -1238,6 +1271,10 @@ void BodyNode::notifyTransformUpdate()
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
+    // All of these depend on the world transform of this BodyNode, so they must
+    // be dirtied whenever mNeedTransformUpdate is dirtied, and if
+    // mTransformUpdate is already dirty, then these must already be dirty as
+    // well
     SET_FLAGS(mCoriolisForces);
     SET_FLAGS(mGravityForces);
     SET_FLAGS(mCoriolisAndGravityForces);
@@ -1257,13 +1294,12 @@ void BodyNode::notifyTransformUpdate()
 void BodyNode::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+  notifyJacobianDerivUpdate();
 
   if(mNeedVelocityUpdate)
     return;
 
   mNeedVelocityUpdate = true;
-  mIsBodyJacobianSpatialDerivDirty = true;
-  mIsWorldJacobianClassicDerivDirty = true;
   mIsPartialAccelerationDirty = true;
 
   const SkeletonPtr& skel = getSkeleton();

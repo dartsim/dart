@@ -45,7 +45,11 @@ namespace dynamics {
 JacobianNode::JacobianNode()
   : Entity(nullptr, "", false),
     Frame(nullptr, ""),
-    Node(Node::ConstructAbstract)
+    Node(Node::ConstructAbstract),
+    mIsBodyJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true)
 {
   // Do nothing
 }
@@ -82,6 +86,36 @@ const std::shared_ptr<InverseKinematics>& JacobianNode::createIK()
 void JacobianNode::clearIK()
 {
   mIK = nullptr;
+}
+
+//==============================================================================
+void JacobianNode::notifyJacobianUpdate()
+{
+  // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
+  // check mIsBodyJacobianDirty if we want to terminate.
+  if(mIsBodyJacobianDirty)
+    return;
+
+  mIsBodyJacobianDirty = true;
+  mIsWorldJacobianDirty = true;
+
+  for(JacobianNode* child : mChildJacobianNodes)
+    child->notifyJacobianUpdate();
+}
+
+//==============================================================================
+void JacobianNode::notifyJacobianDerivUpdate()
+{
+  // These two flags are independent of each other, so we must check that both
+  // are true if we want to terminate early.
+  if(mIsBodyJacobianSpatialDerivDirty && mIsWorldJacobianClassicDerivDirty)
+    return;
+
+  mIsBodyJacobianSpatialDerivDirty = true;
+  mIsWorldJacobianClassicDerivDirty = true;
+
+  for(JacobianNode* child : mChildJacobianNodes)
+    child->notifyJacobianDerivUpdate();
 }
 
 } // namespace dynamics

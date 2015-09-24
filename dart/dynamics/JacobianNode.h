@@ -38,6 +38,7 @@
 #define DART_DYNAMICS_JACOBIANNODE_H_
 
 #include <memory>
+#include <unordered_set>
 
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Node.h"
@@ -269,10 +270,33 @@ public:
 
   /// \}
 
+  /// Notify this BodyNode and all its descendents that their Jacobians need to
+  /// be updated.
+  void notifyJacobianUpdate();
+
+  /// Notify this BodyNode and all its descendents that their Jacobian
+  /// derivatives need to be updated.
+  void notifyJacobianDerivUpdate();
+
 protected:
 
+  /// Dirty flag for body Jacobian.
+  mutable bool mIsBodyJacobianDirty;
+
+  /// Dirty flag for world Jacobian
+  mutable bool mIsWorldJacobianDirty;
+
+  /// Dirty flag for spatial time derivative of body Jacobian.
+  mutable bool mIsBodyJacobianSpatialDerivDirty;
+
+  /// Dirty flag for the classic time derivative of the Jacobian
+  mutable bool mIsWorldJacobianClassicDerivDirty;
+
   /// Inverse kinematics module which gets lazily created upon request
-  mutable std::shared_ptr<InverseKinematics> mIK;
+  std::shared_ptr<InverseKinematics> mIK;
+
+  /// JacobianNode children that descend from this JacobianNode
+  std::unordered_set<JacobianNode*> mChildJacobianNodes;
 
 };
 
