@@ -134,7 +134,7 @@ Skeleton::Configuration::Configuration(
 }
 
 //==============================================================================
-#define RETURN_IF_CONFIG_VECTOR_INEQ( V )                                       \
+#define RETURN_IF_CONFIG_VECTOR_IS_INEQ( V )                                    \
   if( V .size() != other. V .size() )                                           \
     return false;                                                               \
   if( V != other. V )                                                           \
@@ -146,11 +146,11 @@ bool Skeleton::Configuration::operator==(const Configuration& other) const
   if(mIndices != other.mIndices)
     return false;
 
-  RETURN_IF_CONFIG_VECTOR_INEQ(mPositions);
-  RETURN_IF_CONFIG_VECTOR_INEQ(mVelocities);
-  RETURN_IF_CONFIG_VECTOR_INEQ(mAccelerations);
-  RETURN_IF_CONFIG_VECTOR_INEQ(mForces);
-  RETURN_IF_CONFIG_VECTOR_INEQ(mCommands);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mPositions);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mVelocities);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mAccelerations);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mForces);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mCommands);
 
   return true;
 }
@@ -339,7 +339,7 @@ Skeleton::Configuration Skeleton::getConfiguration(
     config.mForces = getForces(indices);
 
   if( (flags & CONFIG_COMMANDS) == CONFIG_COMMANDS )
-    config.mCommands == getCommands(indices);
+    config.mCommands = getCommands(indices);
 
   return config;
 }
