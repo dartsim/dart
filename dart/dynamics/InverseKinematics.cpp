@@ -57,7 +57,7 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-bool InverseKinematics::solve(bool _resetConfiguration)
+bool InverseKinematics::solve(bool _applySolution)
 {
   if(nullptr == mSolver)
   {
@@ -92,20 +92,23 @@ bool InverseKinematics::solve(bool _resetConfiguration)
     bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
-  if(!_resetConfiguration)
-    return mSolver->solve();
+  if(_applySolution)
+  {
+    bool wasSolved = mSolver->solve();
+    setPositions(mProblem->getOptimalSolution());
+    return wasSolved;
+  }
 
-  Eigen::VectorXd positions = getPositions();
+  Eigen::VectorXd originalPositions = getPositions();
   bool wasSolved = mSolver->solve();
-  setPositions(positions);
+  setPositions(originalPositions);
   return wasSolved;
 }
 
 //==============================================================================
-bool InverseKinematics::solve(Eigen::VectorXd& positions,
-                              bool _resetConfiguration)
+bool InverseKinematics::solve(Eigen::VectorXd& positions, bool _applySolution)
 {
-  bool wasSolved = solve(_resetConfiguration);
+  bool wasSolved = solve(_applySolution);
   positions = mProblem->getOptimalSolution();
   return wasSolved;
 }

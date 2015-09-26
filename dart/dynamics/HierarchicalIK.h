@@ -71,14 +71,14 @@ public:
   virtual ~HierarchicalIK() = default;
 
   /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint positions. If you pass in true for _resetConfiguration,
-  /// then the joint positions will be return to their original positions
-  /// after the problem is solved.
-  bool solve(bool _resetConfiguration = false);
+  /// solved joint positions. If you pass in false for _applySolution, then the
+  /// joint positions will be return to their original positions after the
+  /// problem is solved.
+  bool solve(bool _applySolution = true);
 
   /// Same as solve(bool), but the positions vector will be filled with the
   /// solved positions.
-  bool solve(Eigen::VectorXd& positions, bool _resetConfiguration = false);
+  bool solve(Eigen::VectorXd& positions, bool _applySolution = true);
 
   /// Clone this HierarchicalIK module
   virtual std::shared_ptr<HierarchicalIK> clone(

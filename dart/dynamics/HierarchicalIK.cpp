@@ -44,7 +44,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-bool HierarchicalIK::solve(bool _resetConfiguration)
+bool HierarchicalIK::solve(bool _applySolution)
 {
   if(nullptr == mSolver)
   {
@@ -89,19 +89,23 @@ bool HierarchicalIK::solve(bool _resetConfiguration)
 
   refreshIKHierarchy();
 
-  if(!_resetConfiguration)
-    return mSolver->solve();
+  if(_applySolution)
+  {
+    bool wasSolved = mSolver->solve();
+    setPositions(mProblem->getOptimalSolution());
+    return wasSolved;
+  }
 
-  Eigen::VectorXd positions = skel->getPositions();
+  Eigen::VectorXd originalPositions = skel->getPositions();
   bool wasSolved = mSolver->solve();
-  setPositions(positions);
+  setPositions(originalPositions);
   return wasSolved;
 }
 
 //==============================================================================
-bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _resetConfiguration)
+bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _applySolution)
 {
-  bool wasSolved = solve(_resetConfiguration);
+  bool wasSolved = solve(_applySolution);
   positions = mProblem->getOptimalSolution();
   return wasSolved;
 }
