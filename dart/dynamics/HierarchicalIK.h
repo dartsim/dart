@@ -191,7 +191,7 @@ protected:
   /// HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the objective of the module's Problem to an HierarchicalIK::Objective.
-  class Objective : public Function, public optimizer::Function
+  class Objective final : public Function, public optimizer::Function
   {
   public:
 
@@ -226,7 +226,7 @@ protected:
   /// of this HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the constraint of the module's Problem to an HierarchicalIK::Constraint.
-  class Constraint : public Function, public optimizer::Function
+  class Constraint final : public Function, public optimizer::Function
   {
   public:
 
