@@ -382,7 +382,7 @@ InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
     InverseKinematics* _ik,
     const Properties& _properties,
     bool _computeFromCenter)
-  : ErrorMethod(_ik, "EulerAngleXYZ", _properties),
+  : ErrorMethod(_ik, "TaskSpaceRegion", _properties),
     mComputeErrorFromCenter(_computeFromCenter)
 {
   // Do nothing
