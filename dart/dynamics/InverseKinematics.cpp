@@ -445,7 +445,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     {
       if(mComputeErrorFromCenter)
       {
-        if(!std::isinf(max[i]))
+        if(std::isfinite(max[i]))
           error[i] = displacement[i] - (min[i]+max[i])/2.0;
         else
           error[i] = displacement[i] - (min[i]+tolerance);
@@ -457,9 +457,9 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     }
     else if( max[i] < displacement[i] )
     {
-      if(mComputeErrorFromCenter && !std::isinf(min[i]))
+      if(mComputeErrorFromCenter)
       {
-        if(!std::isinf(min[i]))
+        if(std::isfinite(min[i]))
           error[i] = displacement[i] - (min[i]+max[i])/2.0;
         else
           error[i] = displacement[i] - (max[i]-tolerance);
