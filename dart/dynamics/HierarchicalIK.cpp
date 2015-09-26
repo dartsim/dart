@@ -92,17 +92,17 @@ bool HierarchicalIK::solve(bool _resetConfiguration)
   if(!_resetConfiguration)
     return mSolver->solve();
 
-  Eigen::VectorXd config = skel->getPositions();
+  Eigen::VectorXd positions = skel->getPositions();
   bool wasSolved = mSolver->solve();
-  setConfiguration(config);
+  setPositions(positions);
   return wasSolved;
 }
 
 //==============================================================================
-bool HierarchicalIK::solve(Eigen::VectorXd& config, bool _resetConfiguration)
+bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _resetConfiguration)
 {
   bool wasSolved = solve(_resetConfiguration);
-  config = mProblem->getOptimalSolution();
+  positions = mProblem->getOptimalSolution();
   return wasSolved;
 }
 
@@ -214,7 +214,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
   const size_t nDofs = skel->getNumDofs();
-  if(static_cast<size_t>(mLastConfig.size()) != nDofs)
+  if(static_cast<size_t>(mLastPositions.size()) != nDofs)
   {
     recompute = true;
   }
@@ -222,7 +222,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   {
     for(size_t i=0; i < nDofs; ++i)
     {
-      if(mLastConfig[i] != skel->getDof(i)->getPosition())
+      if(mLastPositions[i] != skel->getDof(i)->getPosition())
       {
         recompute = true;
         break;
@@ -304,7 +304,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 }
 
 //==============================================================================
-Eigen::VectorXd HierarchicalIK::getConfiguration() const
+Eigen::VectorXd HierarchicalIK::getPositions() const
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if(skel)
@@ -314,7 +314,7 @@ Eigen::VectorXd HierarchicalIK::getConfiguration() const
 }
 
 //==============================================================================
-void HierarchicalIK::setConfiguration(const Eigen::VectorXd& _q)
+void HierarchicalIK::setPositions(const Eigen::VectorXd& _q)
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if(skel)
@@ -348,7 +348,7 @@ ConstSkeletonPtr HierarchicalIK::getAffiliation() const
 //==============================================================================
 void HierarchicalIK::clearCaches()
 {
-  mLastConfig.resize(0);
+  mLastPositions.resize(0);
 }
 
 //==============================================================================
@@ -414,7 +414,7 @@ void HierarchicalIK::Objective::evalGradient(
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
     hik->mNullSpaceObjective->evalGradient(_x, gradMap);
 
-    hik->setConfiguration(_x);
+    hik->setPositions(_x);
 
     const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
     if(nullspaces.size() > 0)
