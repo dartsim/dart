@@ -37,6 +37,7 @@
 #include <iostream>
 
 #include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 
@@ -465,10 +466,8 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 
   for(int i=0; i<_x.size(); ++i)
   {
-    if( _x[i] < mProperties.mProblem->getLowerBounds()[i] )
-      _x[i] = mProperties.mProblem->getLowerBounds()[i];
-    else if( mProperties.mProblem->getUpperBounds()[i] < _x[i] )
-      _x[i] = mProperties.mProblem->getUpperBounds()[i];
+    _x[i] = math::clip(_x[i], mProperties.mProblem->getLowerBounds()[i],
+                              mProperties.mProblem->getUpperBounds()[i]);
   }
 }
 
