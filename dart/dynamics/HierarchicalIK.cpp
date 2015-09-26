@@ -594,7 +594,7 @@ void HierarchicalIK::copyOverSetup(
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), _otherIK));
 
-  newProblem->getAllSeeds() = mProblem->getAllSeeds();
+  newProblem->getSeeds() = mProblem->getSeeds();
 }
 
 //==============================================================================

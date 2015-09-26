@@ -154,7 +154,7 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
 
-  newProblem->getAllSeeds() = mProblem->getAllSeeds();
+  newProblem->getSeeds() = mProblem->getSeeds();
 
   return newIK;
 }

@@ -257,7 +257,7 @@ bool GradientDescentSolver::solve()
       if(mGradientP.mMaxAttempts > 0 && attemptCount >= mGradientP.mMaxAttempts)
         break;
 
-      if(attemptCount-1 < problem->getAllSeeds().size())
+      if(attemptCount-1 < problem->getSeeds().size())
       {
         x = problem->getSeed(attemptCount-1);
       }
