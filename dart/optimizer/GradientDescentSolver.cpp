@@ -231,18 +231,19 @@ bool GradientDescentSolver::solve()
       lastx = x;
       ++stepCount;
 
-      if(mProperties.mIterationsPerPrint > 0 &&
+      if(nullptr != mProperties.mOutStream &&
+         mProperties.mIterationsPerPrint > 0 &&
          stepCount%mProperties.mIterationsPerPrint == 0)
       {
-        // TODO(MXG): Allow the user to specify the stream for the output
-        std::cout << "[GradientDescentSolver] Progress (attempt #"
-                  << attemptCount << " | iteration #" << stepCount << ")\n"
-                  << "cost: " << problem->getObjective()->eval(x) << " | "
-                  << (minimized? "minimized | " : "not minimized | ")
-                  << (satisfied? "constraints satisfied | "
-                               : "constraints unsatisfied | ")
-                  << "x: " << x.transpose() << "\n"
-                  << "grad: " << dx.transpose() << std::endl;
+        *mProperties.mOutStream
+            << "[GradientDescentSolver] Progress (attempt #"
+            << attemptCount << " | iteration #" << stepCount << ")\n"
+            << "cost: " << problem->getObjective()->eval(x) << " | "
+            << (minimized? "minimized | " : "not minimized | ")
+            << (satisfied? "constraints satisfied | "
+                         : "constraints unsatisfied | ")
+            << "x: " << x.transpose() << "\n"
+            << "grad: " << dx.transpose() << std::endl;
       }
 
       if(stepCount > mProperties.mNumMaxIterations)

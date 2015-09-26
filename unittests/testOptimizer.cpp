@@ -35,7 +35,10 @@
  */
 
 // For problem
+#include <cstdio>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
 #include "TestHelpers.h"
@@ -245,6 +248,63 @@ TEST(Optimizer, InverseKinematics)
 
   EXPECT_TRUE(equals(ik->getTarget()->getTransform().matrix(),
                      skel->getBodyNode(0)->getTransform().matrix(), 1e-8));
+}
+
+//==============================================================================
+bool isEqual(const std::string& content, const std::string& fileName)
+{
+  std::ifstream ifs(fileName, std::ifstream::in);
+  EXPECT_TRUE(ifs.is_open());
+
+  auto itr = content.begin();
+
+  char c = ifs.get();
+  while (ifs.good())
+  {
+    if (*itr != c)
+      return false;
+
+    c = ifs.get();
+    itr++;
+  }
+
+  ifs.close();
+
+  return true;
+}
+
+//==============================================================================
+TEST(Optimizer, OutStream)
+{
+  std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
+
+  prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
+  prob->setInitialGuess(Eigen::Vector2d(1.234, 5.678));
+
+  FunctionPtr obj = std::make_shared<SampleObjFunc>();
+  prob->setObjective(obj);
+
+  GradientDescentSolver solver(prob);
+  solver.setIterationsPerPrint(50);
+
+  // Print the progess to a std::string
+  std::stringstream ss;
+  solver.setOutStream(&ss);
+  EXPECT_TRUE(solver.solve());
+  std::string outputString = ss.str();
+
+  // Print the progress to a file
+  std::string outputFile = "test_optimizer_outstream.txt";
+  std::ofstream ofs(outputFile);
+  EXPECT_TRUE(ofs.is_open());
+  solver.setOutStream(&ofs);
+  EXPECT_TRUE(solver.solve());
+  ofs.close();
+
+  // Compare them
+  EXPECT_TRUE(isEqual(outputString, outputFile));
+
+  std::remove(outputFile.c_str());
 }
 
 //==============================================================================

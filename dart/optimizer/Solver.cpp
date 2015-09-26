@@ -47,12 +47,14 @@ Solver::Properties::Properties(
     double _tolerance,
     size_t _numMaxIterations,
     size_t _iterationsPerPrint,
+    std::ostream* _ostream,
     bool _printFinalResult,
     const std::string &_resultFile)
   : mProblem(_problem),
     mTolerance(_tolerance),
     mNumMaxIterations(_numMaxIterations),
     mIterationsPerPrint(_iterationsPerPrint),
+    mOutStream(_ostream),
     mPrintFinalResult(_printFinalResult),
     mResultFile(_resultFile)
 {
@@ -79,6 +81,7 @@ void Solver::setProperties(const Properties& _properties)
   setProblem(_properties.mProblem);
   setNumMaxIterations(_properties.mNumMaxIterations);
   setIterationsPerPrint(_properties.mIterationsPerPrint);
+  setOutStream(_properties.mOutStream);
   setPrintFinalResult(_properties.mPrintFinalResult);
   setResultFileName(_properties.mResultFile);
 }
@@ -145,6 +148,18 @@ size_t Solver::getNumMaxIterations() const
 void Solver::setIterationsPerPrint(size_t _newRatio)
 {
   mProperties.mIterationsPerPrint = _newRatio;
+}
+
+//==============================================================================
+void Solver::setOutStream(std::ostream* _os)
+{
+  mProperties.mOutStream = _os;
+}
+
+//==============================================================================
+std::ostream* Solver::getOutStream() const
+{
+  return mProperties.mOutStream;
 }
 
 //==============================================================================
