@@ -68,13 +68,22 @@ inline int delta(int _i, int _j) {
   return 0;
 }
 
-inline int sgn(double _a) {
-  if (_a < 0)
-    return -1;
-  else if (_a == 0)
-    return 0;
-  else
-    return 1;
+template <typename T> inline constexpr
+int sgn(T x, std::false_type)
+{
+  return static_cast<T>(0) < x;
+}
+
+template <typename T> inline constexpr
+int sgn(T x, std::true_type)
+{
+  return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
+}
+
+template <typename T> inline constexpr
+int sgn(T x)
+{
+  return sgn(x, std::is_signed<T>());
 }
 
 inline double sqr(double _x) {

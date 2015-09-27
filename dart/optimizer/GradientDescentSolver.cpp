@@ -107,12 +107,6 @@ GradientDescentSolver::~GradientDescentSolver()
 }
 
 //==============================================================================
-static double sign(double value)
-{
-  return value > 0? 1.0 : (value < 0? -1.0 : 0.0);
-}
-
-//==============================================================================
 bool GradientDescentSolver::solve()
 {
   bool minimized = false;
@@ -202,7 +196,7 @@ bool GradientDescentSolver::solve()
         // absolute value. We do not want to treat it as though we are
         // minimizing its square, because that could adversely affect the
         // curvature of its derivative.
-        dx += weight * grad * sign(mEqConstraintCostCache[i]);
+        dx += weight * grad * math::sgn(mEqConstraintCostCache[i]);
       }
 
       for(int i=0; i < static_cast<int>(problem->getNumIneqConstraints()); ++i)
