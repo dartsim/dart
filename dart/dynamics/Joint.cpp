@@ -406,6 +406,7 @@ void Joint::notifyPositionUpdate()
   {
     mChildBodyNode->notifyTransformUpdate();
     mChildBodyNode->notifyJacobianUpdate();
+    mChildBodyNode->notifyJacobianDerivUpdate();
   }
 
   mIsLocalJacobianDirty = true;
