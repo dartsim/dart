@@ -87,6 +87,13 @@ public:
   virtual void evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad);
 
+  /// \brief Evaluate and return the objective function at the point x.
+  ///
+  /// If you have a raw array that the gradient will be passed in, then use
+  /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
+  /// for better performance.
+  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad);
+
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalHessian(
       const Eigen::VectorXd& _x,
