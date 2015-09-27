@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 

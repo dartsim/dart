@@ -39,7 +39,6 @@
 #define DART_MATH_HELPERS_H_
 
 // Standard Libraries
-#include <cassert>
 #include <cfloat>
 #include <climits>
 #include <cmath>
@@ -47,12 +46,10 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <vector>
 
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/common/Console.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
