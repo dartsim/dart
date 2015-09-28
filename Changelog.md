@@ -1,3 +1,9 @@
+### Version 5.0.2 (2015-09-28)
+
+1. Fixed bug in Jacobian update notifications
+    * [Pull request #500](https://github.com/dartsim/dart/pull/500)
+    * [Issue #499](https://github.com/dartsim/dart/issues/499)
+
 ### Version 5.0.1 (2015-07-28)
 
 1. Improved app indexing for bipedStand and atlasSimbicon
