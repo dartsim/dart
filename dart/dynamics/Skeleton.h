@@ -144,7 +144,7 @@ public:
   const std::string& getName() const override;
 
   /// Enable self collision check
-  void enableSelfCollision(bool _enableAdjecentBodies = false);
+  void enableSelfCollision(bool _enableAdjacentBodyCheck = false);
 
   /// Disable self collision check
   void disableSelfCollision();
