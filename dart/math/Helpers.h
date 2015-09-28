@@ -50,6 +50,7 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -66,21 +67,27 @@ inline int delta(int _i, int _j) {
 }
 
 template <typename T> inline constexpr
-int sgn(T x, std::false_type)
+int sign(T x, std::false_type)
 {
   return static_cast<T>(0) < x;
 }
 
 template <typename T> inline constexpr
-int sgn(T x, std::true_type)
+int sign(T x, std::true_type)
 {
   return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
 }
 
 template <typename T> inline constexpr
-int sgn(T x)
+int sign(T x)
 {
-  return sgn(x, std::is_signed<T>());
+  return sign(x, std::is_signed<T>());
+}
+
+DEPRECATED(5.1)
+inline int sgn(double _a)
+{
+  return sign(_a);
 }
 
 inline double sqr(double _x) {
@@ -112,7 +119,7 @@ inline double asech(double _X) {
 }
 
 inline double acosech(double _X) {
-  return log((sgn(_X) * sqrt(_X * _X + 1) +1) / _X);
+  return log((sign(_X) * sqrt(_X * _X + 1) +1) / _X);
 }
 
 inline double acotanh(double _X) {

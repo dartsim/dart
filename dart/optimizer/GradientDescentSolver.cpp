@@ -196,7 +196,7 @@ bool GradientDescentSolver::solve()
         // absolute value. We do not want to treat it as though we are
         // minimizing its square, because that could adversely affect the
         // curvature of its derivative.
-        dx += weight * grad * math::sgn(mEqConstraintCostCache[i]);
+        dx += weight * grad * math::sign(mEqConstraintCostCache[i]);
       }
 
       for(int i=0; i < static_cast<int>(problem->getNumIneqConstraints()); ++i)
