@@ -298,13 +298,19 @@ void addAnkleStrategyForces()
 }
 ```
 
-The linear/angular velocity of any point in any coordinate frame can be
-easily accessed in DART. The following table summarizes the APIs for
-accessing various velocities.
+The linear/angular velocity/acceleration of any point in any coordinate
+frame can be easily accessed in DART. The full list of the APIs for accessing
+various velocities/accelerations can be found in the [API Documentation](http://dartsim.github.io/dart/). The 
+following table summarizes the essential APIs.
 
-| Function name |  Description |
-|-------------|-----------|
-|Content Cell  | Content Cell |
+| Function Name          | Description |
+|------------------------|-------------|
+| getSpatialVelocity     | Return the spatial velocity of this BodyNode in the coordinates of the BodyNode. |
+| getLinearVelocity      | Return the linear portion of classical velocity of the BodyNode relative to some other BodyNode. |
+| getAngularVelocity     | Return the angular portion of classical velocity of this BodyNode relative to some other BodyNode. |
+| getSpatialAcceleration | Return the spatial acceleration of this BodyNode in the coordinates of the BodyNode. |
+| getLinearAcceleration  | Return the linear portion of classical acceleration of the BodyNode relative to some other BodyNode. |
+| getAngularAcceleration | Return the angular portion of classical acceleration of this BodyNode relative to some other BodyNode. |
 
 The remaining of the ankle strategy implementation is just the matter
 of parameters tuning. We found that using different feedback rules for
@@ -358,12 +364,16 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 ```
 
 There are many other functions you can use to edit skeletons. Here is
-a table of relevant functions for quick references.
+a table of some relevant functions for quick references.
 
-| Function Name |      Example             | Description |
-|-------------|----------------|-----------|
-| moveTo             | bd1->moveTo<BallJoint>(bd2, BallJoint::Properties)| Move the body node bd1 and its subtree under the body node bd2 via a default ball joint. |
-| Content Cell | Content Cell  | Content Cell |
+| Function Name         |      Example                                  | Description |
+|-----------------------|-----------------------------------------------|-------------|
+| remove                | bd1->remove()                                 | Remove the BodyNode bd1 and its subtree from their Skeleton. |
+| moveTo                | bd1->moveTo(bd2)                              | Move the BodyNode bd1 and its subtree under the BodyNode bd2. |
+| split                 | auto newSkel = bd1->split("new skeleton")`    | Remove the BodyNode bd1 and its subtree from their current Skeleton and move them into a newly created Skeleton with "new skeleton" name. |
+| changeParentJointType | bd1->changeParentJointType&lt;BallJoint&gt;() | Change the Joint type of the BodyNode bd1's parent joint to BallJoint |
+| copyTo                | bd1->copyTo(bd2)                              | Create clones of the BodyNode bd1 and its subtree and attach the clones to the specified the BodyNode bd2. |
+| copyAs                | auto newSkel = bd1->copyAs("new skeleton")    | Create clones of the BodyNode bd1 and its subtree and create a new Skeleton with "new skeleton" name to attach them to. |
 
 
 # Lesson 6: Actuator types
@@ -371,10 +381,13 @@ a table of relevant functions for quick references.
 DART provides five types of actuator. Each joint can select its own
 actuator type.
 
-| Type |  Description |
-|-----|-----------|
-|Content Cell  | Content Cell |
-
+| Type         | Description |
+|--------------|-------------|
+| FORCE        | Take joint force and return the resulting joint acceleration. |
+| PASSIVE      | Take nothing (joint force = 0) and return the resulting joint acceleration. |
+| ACCELERATION | Take desired joint acceleration and return the joint force to achieve the acceleration.  |
+| VELOCITY     | Take desired joint velocity and return the joint force to achieve the velocity. |
+| LOCKED       | Lock the joint by setting the joint velocity and acceleration to zero and return the joint force to lock the joint. |
 
 In this Lesson, we will switch the actuator type of the wheels
 from the default FORCE type to VELOCITY type.
@@ -489,12 +502,18 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
 }
 ```
 
-The comprehensive list of Jacobian APIs can be found in the following
-table:
+The full list of Jacobian APIs can be found in the [API Documentation](http://dartsim.github.io/dart/). The 
+following table summarizes the essential APIs.
 
-| Function name |  Description |
-|-----|-----------|
-|Content Cell  | Content Cell |
+| Function Name           | Description |
+|-------------------------|-------------|
+| getJacobian             | Return the generalized Jacobian targeting the origin of the BodyNode. The Jacobian is expressed in the Frame of this BodyNode. |
+| getLinearJacobian       | Return the linear Jacobian targeting the origin of the BodyNode. You can specify a coordinate Frame to express the Jacobian in. |
+| getAngularJacobian      | Return the angular Jacobian targeting the origin of the BodyNode. You can specify a coordinate Frame to express the Jacobian in. |
+| getJacobianSpatialDeriv | Return the spatial time derivative of the generalized Jacobian targeting the origin of the BodyNode. The Jacobian is expressed in the BodyNode's coordinate Frame. |
+| getJacobianClassicDeriv | Return the classical time derivative of the generalized Jacobian targeting the origin of the BodyNode. The Jacobian is expressed in the World coordinate Frame. |
+| getLinearJacobianDeriv  | Return the linear Jacobian (classical) time derivative, in terms of any coordinate Frame. |
+| getAngularJacobianDeriv | Return the angular Jacobian (classical) time derivative, in terms of any coordinate Frame. |
 
 This Lesson concludes the entire Biped tutorial. You should see a biped
 standing stably on the skateboard. With moderate
