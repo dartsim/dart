@@ -508,7 +508,7 @@ void InverseKinematics::GradientMethod::evalGradient(
 {
   if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
-    dterr << "[InverseKinematics::GradientMethod::computeGradient] Mismatch "
+    dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
           << "between joint positions size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
           << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
@@ -1141,7 +1141,6 @@ InverseKinematics::InverseKinematics(JacobianNode* _node)
     mOffset(Eigen::Vector3d::Zero()),
     mHasOffset(false),
     mNode(_node)
-
 {
   initialize();
 }
