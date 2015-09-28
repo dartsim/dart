@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,27 +34,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#define DART_COMMON_LOCALRESOURCERETRIEVER_H_
 
-#if defined(_WIN32)
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+#include "dart/common/ResourceRetriever.h"
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+namespace dart {
+namespace common {
+
+/// LocalResourceRetriever provides access to local resources specified by
+/// file:// URIs by wrapping the standard C and C++ file manipulation routines.
+class LocalResourceRetriever : public virtual ResourceRetriever
+{
+public:
+  virtual ~LocalResourceRetriever() = default;
+
+  // Documentation inherited.
+  bool exists(const std::string& _uri) override;
+
+  // Documentation inherited.
+  ResourcePtr retrieve(const std::string& _uri) override;
+};
+
+using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
+
+} // namespace common
+} // namespace dart
+
+#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_

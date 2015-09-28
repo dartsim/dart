@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,27 +34,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#include <iostream>
+#include <fstream>
+#include "dart/common/Console.h"
+#include "dart/common/Uri.h"
+#include "LocalResourceRetriever.h"
+#include "LocalResource.h"
 
-#if defined(_WIN32)
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+namespace dart {
+namespace common {
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+//==============================================================================
+bool LocalResourceRetriever::exists(const std::string& _uri)
+{
+  common::Uri uri;
+  if(!uri.fromString(_uri))
+  {
+    dtwarn << "[LocalResourceRetriever::exists] Failed parsing URI '"
+           << _uri << "'.\n";
+    return false;
+  }
+
+  // Open and close the file to check if it exists. It would be more efficient
+  // to stat() it, but that is not portable.
+  if(uri.mScheme.get_value_or("file") != "file")
+    return false;
+  else if (!uri.mPath)
+    return false;
+
+  return std::ifstream(*uri.mPath, std::ios::binary).good();
+}
+
+//==============================================================================
+common::ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
+{
+  common::Uri uri;
+  if(!uri.fromString(_uri))
+  {
+    dtwarn << "[LocalResourceRetriever::retrieve] Failed parsing URI '"
+           << _uri << "'.\n";
+    return nullptr;
+  }
+
+  if(uri.mScheme.get_value_or("file") != "file")
+    return nullptr;
+  else if (!uri.mPath)
+    return nullptr;
+
+  const auto resource = std::make_shared<LocalResource>(*uri.mPath);
+  if(resource->isGood())
+    return resource;
+  else
+    return nullptr;
+}
+
+} // namespace common
+} // namespace dart

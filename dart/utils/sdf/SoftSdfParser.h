@@ -65,11 +65,14 @@ class SoftSdfParser : public SdfParser
 {
 public:
   /// \brief
-  static simulation::WorldPtr readSoftSdfFile(const std::string& _filename);
+  static simulation::WorldPtr readSoftSdfFile(
+      const std::string& _filename,
+      const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   /// \brief
   static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName);
+      const std::string& _fileName,
+      const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   static bool createSoftPair(dynamics::SkeletonPtr skeleton,
                              dynamics::BodyNode* parent,
@@ -79,18 +82,21 @@ public:
   /// \brief
   static simulation::WorldPtr readWorld(
       tinyxml2::XMLElement* _worldElement,
-      const std::string& _skelPath);
+      const std::string& _skelPath,
+      const common::ResourceRetrieverPtr& _retriever);
 
   /// \brief
   static dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
-      const std::string& _skelPath);
+      const std::string& _skelPath,
+      const common::ResourceRetrieverPtr& _retriever);
 
   /// \brief
   static SDFBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
       const Eigen::Isometry3d& _skeletonFrame,
-      const std::string& _skelPath);
+      const std::string& _skelPath,
+      const common::ResourceRetrieverPtr& _retriever);
 };
 
 } // namespace utils

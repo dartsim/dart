@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
+ * Author(s): Michael Koval <mkoval@cs.cmu.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,27 +34,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LOADOPENGL_H_
-#define DART_RENDERER_LOADOPENGL_H_
+#ifndef DART_COMMON_LOCALRESOURCE_H_
+#define DART_COMMON_LOCALRESOURCE_H_
 
-#if defined(_WIN32)
-  #ifdef NOMINMAX
-    #include <windows.h>
-  #else
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-  #endif
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-#elif defined(__APPLE__)
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+#include "dart/common/Resource.h"
 
-#endif  // DART_RENDERER_LOADOPENGL_H_
+namespace dart {
+namespace common {
+
+class LocalResource : public virtual Resource
+{
+public:
+  explicit LocalResource(const std::string& _path);
+  virtual ~LocalResource();
+
+  LocalResource(const LocalResource& _other) = delete;
+  LocalResource& operator=(const LocalResource& _other) = delete;
+
+  /// Return if the resource is open and in a valid state.
+  bool isGood() const;
+
+  // Documentation inherited.
+  size_t getSize() override;
+
+  // Documentation inherited.
+  size_t tell() override;
+
+  // Documentation inherited.
+  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+
+  // Documentation inherited.
+  size_t read(void* _buffer, size_t _size, size_t _count) override;
+
+private:
+  std::FILE* mFile;
+};
+
+} // namespace common
+} // namespace dart
+
+#endif // ifndef DART_COMMON_LOCALRESOURCE_H_

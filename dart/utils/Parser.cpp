@@ -43,6 +43,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
+#include "dart/common/LocalResourceRetriever.h"
 
 namespace dart {
 namespace utils {
@@ -585,25 +586,42 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement,
     return _parentElement->FirstChildElement(_name.c_str());
 }
 
-void openXMLFile(tinyxml2::XMLDocument& doc,
-                        const char* const filename)
+void openXMLFile(
+  tinyxml2::XMLDocument& doc, const char* const filename,
+  const common::ResourceRetrieverPtr& _retriever)
 {
-    int const result = doc.LoadFile(filename);
-    switch(result)
+    common::ResourceRetrieverPtr retriever;
+    if(_retriever)
+      retriever = _retriever;
+    else
+      retriever = std::make_shared<common::LocalResourceRetriever>();
+
+    const common::ResourcePtr resource = retriever->retrieve(filename);
+    if(!resource)
     {
-        case tinyxml2::XML_SUCCESS:
-            break;
-        case tinyxml2::XML_ERROR_FILE_NOT_FOUND:
-            throw std::runtime_error("File not found");
-        case tinyxml2::XML_ERROR_FILE_COULD_NOT_BE_OPENED:
-            throw std::runtime_error("File not found");
-        default:
-        {
-            std::ostringstream oss;
-            oss << "Parse error = " << result;
-            throw std::runtime_error(oss.str());
-        }
-    };
+      dtwarn << "[openXMLFile] Failed opening URI '"
+             << filename << "'.\n";
+      throw std::runtime_error("Failed opening URI.");
+    }
+
+    // C++11 guarantees that std::string has contiguous storage.
+    const size_t size = resource->getSize();
+    std::string content;
+    content.resize(size);
+    if(resource->read(&content.front(), size, 1) != 1)
+    {
+      dtwarn << "[openXMLFile] Failed reading from URI '"
+             << filename << "'.\n";
+      throw std::runtime_error("Failed reading from URI.");
+    }
+
+    int const result = doc.Parse(&content.front());
+    if(result != tinyxml2::XML_SUCCESS)
+    {
+      dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"
+                " code " << result << ".\n";
+      throw std::runtime_error("Failed parsing XML.");
+    }
 }
 
 bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)

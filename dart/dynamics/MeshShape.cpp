@@ -36,7 +36,6 @@
  */
 
 #include "dart/dynamics/MeshShape.h"
-
 #include <iostream>
 #include <limits>
 #include <string>
@@ -47,6 +46,9 @@
 
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
+#include "dart/dynamics/AssimpInputResourceAdaptor.h"
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Uri.h"
 
 // We define our own constructor for aiScene, because it seems to be missing
 // from the standard assimp library
@@ -130,16 +132,18 @@ namespace dart {
 namespace dynamics {
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string &_path)
+                     const std::string &_path,
+                     const common::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
-    mDisplayList(0),
-    mScale(_scale)
+    mResourceRetriever(_resourceRetriever),
+    mDisplayList(0)
 {
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
 
-  setMesh(_mesh, _path);
+  setMesh(_mesh, _path, _resourceRetriever);
+  setScale(_scale);
 }
 
 MeshShape::~MeshShape() {
@@ -150,20 +154,46 @@ const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
+const std::string &MeshShape::getMeshUri() const
+{
+  return mMeshUri;
+}
+
 const std::string &MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }
 
-void MeshShape::setMesh(const aiScene* _mesh, const std::string &_path) {
+void MeshShape::setMesh(
+  const aiScene* _mesh, const std::string &_path,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
+{
   mMesh = _mesh;
 
   if(nullptr == _mesh) {
     mMeshPath = "";
+    mMeshUri = "";
+    mResourceRetriever = nullptr;
     return;
   }
 
-  mMeshPath = _path;
+  common::Uri uri;
+  if(uri.fromString(_path))
+  {
+    mMeshUri = _path;
+
+    if(uri.mScheme.get_value_or("file") == "file")
+      mMeshPath = uri.mPath.get_value_or("");
+  }
+  else
+  {
+    dtwarn << "[MeshShape::setMesh] Failed parsing URI '" << _path << "'.\n";
+    mMeshUri = "";
+    mMeshPath = "";
+  }
+
+  mResourceRetriever = _resourceRetriever;
+
   _updateBoundingBoxDim();
   computeVolume();
 }
@@ -258,40 +288,72 @@ void MeshShape::_updateBoundingBoxDim() {
   mBoundingBoxDim[2] = max_Z - min_Z;
 }
 
-const aiScene* MeshShape::loadMesh(const std::string& _fileName) {
+const aiScene* MeshShape::loadMesh(
+  const std::string& _uri, const common::ResourceRetrieverPtr& _retriever)
+{
+  // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
-  // remove points and lines
   aiSetImportPropertyInteger(propertyStore,
-                             AI_CONFIG_PP_SBP_REMOVE,
-                             aiPrimitiveType_POINT | aiPrimitiveType_LINE);
-  const aiScene* scene =
-      aiImportFileExWithProperties(_fileName.c_str(),
-                                   aiProcess_GenNormals             |
-                                   aiProcess_Triangulate            |
-                                   aiProcess_JoinIdenticalVertices  |
-                                   aiProcess_SortByPType            |
-                                   aiProcess_OptimizeMeshes,
-                                   nullptr, propertyStore);
+    AI_CONFIG_PP_SBP_REMOVE,
+      aiPrimitiveType_POINT
+    | aiPrimitiveType_LINE
+  );
+
+  // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
+  // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
+  // completely ridiculous...
+  AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
+  aiFileIO fileIO = createFileIO(&systemIO);
+
+  // Import the file.
+  const aiScene* scene = aiImportFileExWithProperties(
+    _uri.c_str(), 
+      aiProcess_GenNormals
+    | aiProcess_Triangulate
+    | aiProcess_JoinIdenticalVertices
+    | aiProcess_SortByPType
+    | aiProcess_OptimizeMeshes,
+    &fileIO,
+    propertyStore
+  );
+
+  // If succeeded, store the importer in the scene to keep it alive. This is
+  // necessary because the importer owns the memory that it allocates.
   if(!scene)
   {
-    dtwarn << "[MeshShape::loadMesh] Assimp could not load file: '"
-           << _fileName << "'.\n";
+    dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
     return nullptr;
   }
-  aiReleasePropertyStore(propertyStore);
 
   // Assimp rotates collada files such that the up-axis (specified in the
   // collada file) aligns with assimp's y-axis. Here we are reverting this
   // rotation. We are only catching files with the .dae file ending here. We
   // might miss files with an .xml file ending, which would need to be looked
   // into to figure out whether they are collada files.
-  if (_fileName.length() >= 4
-     && _fileName.substr(_fileName.length() - 4, 4) == ".dae") {
+  std::string extension;
+  const size_t extensionIndex = _uri.find_last_of('.');
+  if(extensionIndex != std::string::npos)
+    extension = _uri.substr(extensionIndex);
+
+  std::transform(std::begin(extension), std::end(extension),
+                 std::begin(extension), ::tolower);
+
+  if(extension == ".dae" || extension == ".zae")
     scene->mRootNode->mTransformation = aiMatrix4x4();
-  }
+
+  // Finally, pre-transform the vertices. We can't do this as part of the
+  // import process, because we may have changed mTransformation above.
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
+  if(!scene)
+    dtwarn << "[MeshShape::loadMesh] Failed pre-transforming vertices.\n";
 
   return scene;
+}
+
+const aiScene* MeshShape::loadMesh(const std::string& _fileName)
+{
+  const auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  return loadMesh("file://" + _fileName, retriever);
 }
 
 }  // namespace dynamics

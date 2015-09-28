@@ -163,13 +163,13 @@ void SimWindow::draw() {
   // display the frame count in 2D text
   char buff[64];
   if (!mSimulating)
-#ifdef WIN32
+#ifdef _WIN32
     _snprintf(buff, sizeof(buff), "%d", mPlayFrame);
 #else
     std::snprintf(buff, sizeof(buff), "%d", mPlayFrame);
 #endif
   else
-#ifdef WIN32
+#ifdef _WIN32
     _snprintf(buff, sizeof(buff), "%d", mWorld->getSimFrames());
 #else
     std::snprintf(buff, sizeof(buff), "%d", mWorld->getSimFrames());
