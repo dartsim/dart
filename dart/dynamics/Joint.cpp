@@ -403,7 +403,11 @@ void Joint::updateArticulatedInertia() const
 void Joint::notifyPositionUpdate()
 {
   if(mChildBodyNode)
+  {
     mChildBodyNode->notifyTransformUpdate();
+    mChildBodyNode->notifyJacobianUpdate();
+    mChildBodyNode->notifyJacobianDerivUpdate();
+  }
 
   mIsLocalJacobianDirty = true;
   mIsLocalJacobianTimeDerivDirty = true;
@@ -427,7 +431,10 @@ void Joint::notifyPositionUpdate()
 void Joint::notifyVelocityUpdate()
 {
   if(mChildBodyNode)
+  {
     mChildBodyNode->notifyVelocityUpdate();
+    mChildBodyNode->notifyJacobianDerivUpdate();
+  }
 
   mIsLocalJacobianTimeDerivDirty = true;
 
