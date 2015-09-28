@@ -51,7 +51,7 @@ TEST(Common, Timer)
   for (int i = 0; i < 1e+3; ++i)
   {
     timer2.start();
-#ifdef WIN32
+#ifdef _WIN32
 	Sleep(2);  // 2 milliseconds
 #else
 	usleep(2000);  // 2 milliseconds
@@ -64,7 +64,7 @@ TEST(Common, Timer)
   timer2.print();
 
   // Both timer should have counted more than 2 seconds
-#ifdef WIN32
+#ifdef _WIN32
   // On Windows, Sleep(2) takes less than exact 2 milliseconds..
   EXPECT_GE(timer1.getTotalElapsedTime(), 1.99);
   EXPECT_GE(timer2.getTotalElapsedTime(), 1.99);

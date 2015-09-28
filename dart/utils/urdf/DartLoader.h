@@ -10,10 +10,16 @@
 #include <map>
 #include <string>
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Deprecated.h"
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
+#include "dart/common/Uri.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/CompositeResourceRetriever.h"
+#include "dart/utils/PackageResourceRetriever.h"
 
 namespace urdf
 {
@@ -44,8 +50,9 @@ namespace utils {
  * @class DartLoader
  */
 class DartLoader {
-  
-public:
+  public:
+    /// Constructor with the default ResourceRetriever.
+    DartLoader();
 
     /// Specify the directory of a ROS package. In your URDF files, you may see
     /// strings with a package URI pattern such as:
@@ -70,51 +77,73 @@ public:
                              const std::string& _packageDirectory);
 
     /// Parse a file to produce a Skeleton
-    dynamics::SkeletonPtr parseSkeleton(const std::string& _urdfFileName);
+    dynamics::SkeletonPtr parseSkeleton(
+      const std::string& _uri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a Skeleton
-    dynamics::SkeletonPtr parseSkeletonString(const std::string& _urdfString,
-                                              const std::string& _urdfFileDirectory);
+    dynamics::SkeletonPtr parseSkeletonString(
+      const std::string& _urdfString, const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
-    dart::simulation::WorldPtr parseWorld(const std::string& _urdfFileName);
+    dart::simulation::WorldPtr parseWorld(const std::string& _uri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a World
-    dart::simulation::WorldPtr parseWorldString(const std::string& _urdfString,
-                                        const std::string& _urdfFileDirectory);
+    dart::simulation::WorldPtr parseWorldString(
+      const std::string& _urdfString, const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
 private:
-
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    std::string getFullFilePath(const std::string& _filename) const;
-    void parseWorldToEntityPaths(const std::string& _xml_string);
+    static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
+      const urdf::ModelInterface* _model,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(const urdf::ModelInterface* _model);
-    bool createSkeletonRecursive(dynamics::SkeletonPtr _skel, const urdf::Link* _lk, dynamics::BodyNode* _parent);
+    static bool createSkeletonRecursive(
+      dynamics::SkeletonPtr _skel,
+      const urdf::Link* _lk,
+      dynamics::BodyNode* _parent,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
     template <class VisualOrCollision>
-    dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol);
+    static dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    dynamics::BodyNode* createDartJointAndNode(
-        const urdf::Joint* _jt,
-        const dynamics::BodyNode::Properties& _body,
-        dynamics::BodyNode* _parent,
-        dynamics::SkeletonPtr _skeleton);
+    static dynamics::BodyNode* createDartJointAndNode(
+      const urdf::Joint* _jt,
+      const dynamics::BodyNode::Properties& _body,
+      dynamics::BodyNode* _parent,
+      dynamics::SkeletonPtr _skeleton,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    bool createDartNodeProperties(
-        const urdf::Link* _lk, dynamics::BodyNode::Properties &properties);
+    static bool createDartNodeProperties(
+      const urdf::Link* _lk,
+      dynamics::BodyNode::Properties &properties,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
-    Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
-    std::string readFileToString(std::string _xmlFile);
+    common::ResourceRetrieverPtr getResourceRetriever(
+      const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    std::map<std::string, std::string> mWorld_To_Entity_Paths;
+    static Eigen::Isometry3d toEigen(const urdf::Pose& _pose);
+    static Eigen::Vector3d toEigen(const urdf::Vector3& _vector);
 
-    std::map<std::string, std::string> mPackageDirectories;
-    std::string mRootToSkelPath;
-    std::string mRootToWorldPath;
+    static bool readFileToString(
+      const common::ResourceRetrieverPtr& _resourceRetriever,
+      const std::string &_uri,
+      std::string &_output);
+
+    common::LocalResourceRetrieverPtr mLocalRetriever;
+    utils::PackageResourceRetrieverPtr mPackageRetriever;
+    utils::CompositeResourceRetrieverPtr mRetriever;
 };
 
 }

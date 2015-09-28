@@ -55,7 +55,7 @@ Timer::Timer(const std::string& _name)
     mName(_name),
     mIsStarted(false)
 {
-#if WIN32
+#ifdef _WIN32
   mTimer.start.QuadPart = 0;
   mTimer.stop.QuadPart = 0;
   QueryPerformanceFrequency(&mFrequency);
@@ -71,7 +71,7 @@ Timer::~Timer()
 }
 
 //==============================================================================
-#if WIN32
+#ifdef _WIN32
 double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
 {
   return (static_cast<double>(_L.QuadPart)
@@ -84,7 +84,7 @@ void Timer::start()
 {
   mIsStarted = true;
   mCount++;
-#if WIN32
+#ifdef _WIN32
   QueryPerformanceCounter(&mTimer.start);
 #else
   gettimeofday(&mTimeVal, nullptr);
@@ -96,7 +96,7 @@ void Timer::start()
 void Timer::stop()
 {
   mIsStarted = false;
-#if WIN32
+#ifdef _WIN32
   QueryPerformanceCounter(&mTimer.stop);
   LARGE_INTEGER time;
   time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
@@ -112,7 +112,7 @@ void Timer::stop()
 //==============================================================================
 double Timer::getElapsedTime()
 {
-#if WIN32
+#ifdef _WIN32
   LARGE_INTEGER timenow;
   QueryPerformanceCounter(&timenow);
   LARGE_INTEGER time;
@@ -166,7 +166,7 @@ void Timer::print()
 //==============================================================================
 double Timer::getWallTime()
 {
-#if WIN32
+#ifdef _WIN32
   LARGE_INTEGER ticksPerSecond;
   LARGE_INTEGER ticks;
   QueryPerformanceFrequency(&ticksPerSecond);

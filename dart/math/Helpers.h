@@ -153,7 +153,7 @@ inline bool isInt(double _x) {
 
 /// \brief Returns whether _v is a NaN (Not-A-Number) value
 inline bool isNan(double _v) {
-#ifdef WIN32
+#ifdef _WIN32
   return _isnan(_v);
 #else
   return std::isnan(_v);
@@ -173,7 +173,7 @@ inline bool isNan(const Eigen::MatrixXd& _m) {
 /// \brief Returns whether _v is an infinity value (either positive infinity or
 /// negative infinity).
 inline bool isInf(double _v) {
-#ifdef WIN32
+#ifdef _WIN32
   return !_finite(_v);
 #else
   return std::isinf(_v);
