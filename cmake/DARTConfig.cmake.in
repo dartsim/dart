@@ -25,7 +25,7 @@ set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 #===============================================================================
 get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include("${CURRENT_DIR}/DARTTargets.cmake")
-# Retrun absolute path of the library instead of just library name as
+# Return absolute path of the library instead of just library name as
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
 find_library(dart_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
