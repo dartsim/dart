@@ -251,7 +251,8 @@ TEST(Optimizer, InverseKinematics)
 }
 
 //==============================================================================
-bool isEqual(const std::string& content, const std::string& fileName)
+bool compareStringAndFile(const std::string& content,
+                          const std::string& fileName)
 {
   std::ifstream ifs(fileName, std::ifstream::in);
   EXPECT_TRUE(ifs.is_open());
@@ -302,7 +303,7 @@ TEST(Optimizer, OutStream)
   ofs.close();
 
   // Compare them
-  EXPECT_TRUE(isEqual(outputString, outputFile));
+  EXPECT_TRUE(compareStringAndFile(outputString, outputFile));
 
   std::remove(outputFile.c_str());
 }
