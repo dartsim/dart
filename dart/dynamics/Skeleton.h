@@ -346,6 +346,11 @@ public:
   /// exist.
   const std::shared_ptr<WholeBodyIK>& getIK(bool _createIfNull = false);
 
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. The IK module
+  /// will be generated if one does not already exist. This function is actually
+  /// the same as getIK(true).
+  const std::shared_ptr<WholeBodyIK>& getOrCreateIK();
+
   /// Get a pointer to a WholeBodyIK module for this Skeleton. Because this is a
   /// const function, a new IK module cannot be created if one does not already
   /// exist.

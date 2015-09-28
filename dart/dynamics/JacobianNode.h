@@ -71,6 +71,11 @@ public:
   /// true, then the IK module will be generated if one does not already exist.
   const std::shared_ptr<InverseKinematics>& getIK(bool _createIfNull = false);
 
+  /// Get a pointer to an IK module for this JacobianNode. The IK module will be
+  /// generated if one does not already exist. This function is actually the
+  /// same as getIK(true).
+  const std::shared_ptr<InverseKinematics>& getOrCreateIK();
+
   /// Get a pointer to an IK module for this JacobianNode. Because this is a
   /// const function, a new IK module cannot be created if one does not already
   /// exist.
