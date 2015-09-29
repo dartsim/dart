@@ -87,6 +87,29 @@ public:
   /// Convert a FreeJoint-style 6D vector into a transform
   static Eigen::Isometry3d convertToTransform(const Eigen::Vector6d& _positions);
 
+  /// If the given joint is a FreeJoint, then set the transform of the given
+  /// Joint's child BodyNode so that its transform with respect to
+  /// "withRespecTo" is equal to "tf".
+  static void setTransform(Joint* joint,
+                           const Eigen::Isometry3d& tf,
+                           const Frame* withRespectTo = Frame::World());
+
+  /// If the parent Joint of the given BodyNode is a FreeJoint, then set the
+  /// transform of the given BodyNode so that its transform with respect to
+  /// "withRespecTo" is equal to "tf".
+  static void setTransform(BodyNode* bodyNode,
+                           const Eigen::Isometry3d& tf,
+                           const Frame* withRespectTo = Frame::World());
+
+  /// Apply setTransform(bodyNode, tf, withRespecTo) for all the root BodyNodes
+  /// of the given Skeleton. If false is passed in "applyToAllRootBodies", then
+  /// it will be applied to only the default root BodyNode that will be obtained
+  /// by Skeleton::getRootBodyNode().
+  static void setTransform(Skeleton* skeleton,
+                           const Eigen::Isometry3d& tf,
+                           const Frame* withRespectTo = Frame::World(),
+                           bool applyToAllRootBodies = true);
+
   /// Set the transform, spatial velocity, and spatial acceleration of the child
   /// BodyNode relative to an arbitrary Frame. The reference frame can be
   /// arbitrarily specified.

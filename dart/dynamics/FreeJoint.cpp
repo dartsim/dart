@@ -84,6 +84,57 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
+void FreeJoint::setTransform(Joint* joint,
+                             const Eigen::Isometry3d& tf,
+                             const Frame* withRespectTo)
+{
+  if (nullptr == joint)
+    return;
+
+  FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
+
+  if (nullptr == freeJoint)
+    return;
+
+  freeJoint->setTransform(tf, withRespectTo);
+}
+
+//==============================================================================
+void FreeJoint::setTransform(BodyNode* bodyNode,
+                             const Eigen::Isometry3d& tf,
+                             const Frame* withRespectTo)
+{
+  if (nullptr == bodyNode)
+    return;
+
+  setTransform(bodyNode->getParentJoint(), tf, withRespectTo);
+}
+
+//==============================================================================
+void FreeJoint::setTransform(Skeleton* skeleton,
+                             const Eigen::Isometry3d& tf,
+                             const Frame* withRespectTo,
+                             bool applyToAllRootBodies)
+{
+  if (nullptr == skeleton)
+    return;
+
+  const size_t numTrees = skeleton->getNumTrees();
+
+  if (0 == numTrees)
+    return;
+
+  if (!applyToAllRootBodies)
+  {
+    setTransform(skeleton->getRootBodyNode(), tf, withRespectTo);
+    return;
+  }
+
+  for (size_t i = 0; i < numTrees; ++i)
+    setTransform(skeleton->getRootBodyNode(i), tf, withRespectTo);
+}
+
+//==============================================================================
 void FreeJoint::setSpatialMotion(const Eigen::Isometry3d* newTransform,
                                  const Frame* withRespectTo,
                                  const Eigen::Vector6d* newSpatialVelocity,
