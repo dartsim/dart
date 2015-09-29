@@ -42,7 +42,7 @@
 #include <osg/CullFace>
 
 #include "osgDart/render/MeshShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/MeshShape.h"
 #include "dart/common/Console.h"

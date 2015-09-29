@@ -38,7 +38,7 @@
 #include <osg/ShapeDrawable>
 
 #include "osgDart/render/BoxShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/BoxShape.h"
 
