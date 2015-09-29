@@ -161,7 +161,7 @@ public:
     /// Crawl through the list and cut it off anywhere that the criteria is
     /// violated
     void trimBodyNodes(std::vector<BodyNode*>& _bns, bool _chain,
-                       bool _upstream) const;
+                       bool _movingUpstream) const;
 
     /// Hashed set for terminals to allow quick lookup
     mutable std::unordered_map<BodyNode*, bool> mMapOfTerminals;

@@ -13,6 +13,7 @@ add_subdirectory(collision)
 add_subdirectory(common)
 add_subdirectory(constraint)
 add_subdirectory(dynamics)
+add_subdirectory(optimizer)
 add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(math)
@@ -20,7 +21,6 @@ add_subdirectory(renderer)
 add_subdirectory(simulation)
 if(NOT BUILD_CORE_ONLY)
   add_subdirectory(gui)
-  add_subdirectory(optimizer)
   add_subdirectory(planning)
   add_subdirectory(utils)
 endif()
@@ -33,6 +33,7 @@ set(dart_core_hdrs
   ${dart_integration_hdrs}
   ${dart_lcpsolver_hdrs}
   ${dart_dynamics_hdrs}
+  ${dart_optimizer_hdrs}
   ${dart_collision_hdrs}
   ${dart_constraint_hdrs}
   ${dart_simulation_hdrs}
@@ -43,6 +44,7 @@ set(dart_core_srcs
   ${dart_integration_srcs}
   ${dart_lcpsolver_srcs}
   ${dart_dynamics_srcs}
+  ${dart_optimizer_srcs}
   ${dart_collision_srcs}
   ${dart_constraint_srcs}
   ${dart_simulation_srcs}
@@ -51,14 +53,12 @@ if(NOT BUILD_CORE_ONLY)
   set(dart_hdrs
     dart.h
     ${dart_gui_hdrs}
-    ${dart_optimizer_hdrs}
     ${dart_planning_hdrs}
     ${dart_renderer_hdrs}
     ${dart_utils_hdrs}
   )
   set(dart_srcs
     ${dart_gui_srcs}
-    ${dart_optimizer_srcs}
     ${dart_planning_srcs}
     ${dart_renderer_srcs}
     ${dart_utils_srcs}

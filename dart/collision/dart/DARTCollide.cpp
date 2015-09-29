@@ -1096,9 +1096,9 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
   if ( dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad )
   {
     Contact contact;
-    contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sgn(center[2]) * center[2]);
+    contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sign(center[2]) * center[2]);
     contact.point = T0 * Eigen::Vector3d(center[0], center[1], half_height - contact.penetrationDepth);
-    contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sgn(center[2]));
+    contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
     result->push_back(contact);
     return 1;
   }
@@ -1111,7 +1111,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
       {
         Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
         point *= cyl_rad;
-        point[2] = math::sgn(center[2]) * half_height;
+        point[2] = math::sign(center[2]) * half_height;
         Eigen::Vector3d normal = point - center;
         penetration = sphere_rad - normal.norm();
         normal = (T0.linear() * normal).normalized();

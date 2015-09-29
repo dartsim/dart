@@ -42,6 +42,7 @@
 #include "dart/common/NameManager.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/HierarchicalIK.h"
 
 namespace dart {
 namespace renderer {
@@ -51,6 +52,8 @@ class RenderInterface;
 
 namespace dart {
 namespace dynamics {
+
+class EndEffector;
 
 /// class Skeleton
 class Skeleton : public MetaSkeleton
@@ -63,8 +66,8 @@ public:
     std::string mName;
 
     /// If the skeleton is not mobile, its dynamic effect is equivalent
-    /// to having infinite mass. If the configuration of an immobile skeleton
-    /// are manually changed, the collision results might not be correct.
+    /// to having infinite mass. If the configuration of an immobile skeleton is
+    /// manually changed, the collision results might not be correct.
     bool mIsMobile;
 
     /// Gravity vector.
@@ -323,6 +326,45 @@ public:
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
 
+  /// Get the number of EndEffectors on this Skeleton
+  size_t getNumEndEffectors() const;
+
+  /// Get EndEffector whose index is _idx
+  EndEffector* getEndEffector(size_t _idx);
+
+  /// Get EndEffector whose index is _idx
+  const EndEffector* getEndEffector(size_t _idx) const;
+
+  /// Get EndEffector whose name is _name
+  EndEffector* getEndEffector(const std::string& _name);
+
+  /// Get EndEffector whose name is _name
+  const EndEffector* getEndEffector(const std::string &_name) const;
+
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
+  /// is true, then the IK module will be generated if one does not already
+  /// exist.
+  const std::shared_ptr<WholeBodyIK>& getIK(bool _createIfNull = false);
+
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. The IK module
+  /// will be generated if one does not already exist. This function is actually
+  /// the same as getIK(true).
+  const std::shared_ptr<WholeBodyIK>& getOrCreateIK();
+
+  /// Get a pointer to a WholeBodyIK module for this Skeleton. Because this is a
+  /// const function, a new IK module cannot be created if one does not already
+  /// exist.
+  std::shared_ptr<const WholeBodyIK> getIK() const;
+
+  /// Create a new WholeBodyIK module for this Skeleton. If an IK module already
+  /// exists in this Skeleton, it will be destroyed and replaced by a brand new
+  /// one.
+  const std::shared_ptr<WholeBodyIK>& createIK();
+
+  /// Wipe away the WholeBodyIK module for this Skeleton, leaving it as a
+  /// nullptr
+  void clearIK();
+
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
 
@@ -363,6 +405,60 @@ public:
 
   /// Get the state of this skeleton described in generalized coordinates
   Eigen::VectorXd getState() const;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Support Polygon
+  //----------------------------------------------------------------------------
+
+  /// Get the support polygon of this Skeleton, which is computed based on the
+  /// gravitational projection of the support geometries of all EndEffectors
+  /// in this Skeleton that are currently in support mode.
+  const math::SupportPolygon& getSupportPolygon() const;
+
+  /// Same as getSupportPolygon(), but it will only use EndEffectors within the
+  /// specified tree within this Skeleton
+  const math::SupportPolygon& getSupportPolygon(size_t _treeIdx) const;
+
+  /// Get a list of the EndEffector indices that correspond to each of the
+  /// points in the support polygon.
+  const std::vector<size_t>& getSupportIndices() const;
+
+  /// Same as getSupportIndices(), but it corresponds to the support polygon of
+  /// the specified tree within this Skeleton
+  const std::vector<size_t>& getSupportIndices(size_t _treeIdx) const;
+
+  /// Get the axes that correspond to each component in the support polygon.
+  /// These axes are needed in order to map the points on a support polygon
+  /// into 3D space. If gravity is along the z-direction, then these axes will
+  /// simply be <1,0,0> and <0,1,0>.
+  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes() const;
+
+  /// Same as getSupportAxes(), but it corresponds to the support polygon of the
+  /// specified tree within this Skeleton
+  const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
+      size_t _treeIdx) const;
+
+  /// Get the centroid of the support polygon for this Skeleton. If the support
+  /// polygon is an empty set, the components of this vector will be nan.
+  const Eigen::Vector2d& getSupportCentroid() const;
+
+  /// Get the centroid of the support polygon for a tree in this Skeleton. If
+  /// the support polygon is an empty set, the components of this vector will be
+  /// nan.
+  const Eigen::Vector2d& getSupportCentroid(size_t _treeIdx) const;
+
+  /// The version number of a support polygon will be incremented each time the
+  /// support polygon needs to be recomputed. This number can be used to
+  /// immediately determine whether the support polygon has changed since the
+  /// last time you asked for it, allowing you to be more efficient in how you
+  /// handle the data.
+  size_t getSupportVersion() const;
+
+  /// Same as getSupportVersion(), but it corresponds to the support polygon of
+  /// the specified tree within this Skeleton
+  size_t getSupportVersion(size_t _treeIdx) const;
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Kinematics algorithms
@@ -461,95 +557,98 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  math::Jacobian getJacobian(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobian(const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getWorldJacobian(const BodyNode* _bodyNode) const override;
+  math::Jacobian getWorldJacobian(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getWorldJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobian(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianSpatialDeriv(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobianSpatialDeriv(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianSpatialDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
-  math::Jacobian getJacobianClassicDeriv(const BodyNode* _bodyNode) const override;
+  math::Jacobian getJacobianClassicDeriv(
+      const JacobianNode* _node) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf) const override;
 
   // Documentation inherited
   math::Jacobian getJacobianClassicDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited
   math::AngularJacobian getAngularJacobianDeriv(
-      const BodyNode* _bodyNode,
+      const JacobianNode* _node,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// \}
@@ -625,6 +724,13 @@ public:
 
   // Documentation inherited
   void clearInternalForces() override;
+
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
+
+  /// Notify that the support polygon of a tree needs to be updated
+  void notifySupportUpdate(size_t _treeIdx);
 
   // Documentation inherited
   double getKineticEnergy() const override;
@@ -719,6 +825,7 @@ public:
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
+  friend class EndEffector;
 
 protected:
   class DataCache;
@@ -735,11 +842,17 @@ protected:
   /// Register a Joint with the Skeleton. Internal use only.
   void registerJoint(Joint* _newJoint);
 
+  /// Register an EndEffector with the Skeleton. Internal use only.
+  void registerEndEffector(EndEffector* _newEndEffector);
+
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);
 
   /// Remove a Joint from the Skeleton. Internal use only.
   void unregisterJoint(Joint* _oldJoint);
+
+  /// Remove an EndEffector from the Skeleton. Internal use only.
+  void unregisterEndEffector(EndEffector* _oldEndEffector);
 
   /// Move a subtree of BodyNodes from this Skeleton to another Skeleton
   bool moveBodyNodeTree(Joint* _parentJoint, BodyNode* _bodyNode,
@@ -788,10 +901,6 @@ protected:
 
   /// Take in and register a subtree of BodyNodes
   void receiveBodyNodeTree(const std::vector<BodyNode*>& _tree);
-
-  /// Notify that the articulated inertia and everything that depends on it
-  /// needs to be updated
-  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
 
   /// Update the computation for total mass
   void updateTotalMass();
@@ -868,6 +977,9 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint, bool _updateDofNames=true);
 
+  /// Add an EndEffector to the EndEffector NameManager
+  void addEntryToEndEffectorNameMgr(EndEffector* _ee);
+
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
@@ -891,6 +1003,9 @@ protected:
   /// List of Soft body node list in the skeleton
   std::vector<SoftBodyNode*> mSoftBodyNodes;
 
+  /// List of EndEffectors in the Skeleton
+  std::vector<EndEffector*> mEndEffectors;
+
   /// NameManager for tracking BodyNodes
   dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
 
@@ -905,6 +1020,12 @@ protected:
 
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
+
+  /// NameManager for tracking EndEffectors
+  dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
+
+  /// WholeBodyIK module for this Skeleton
+  std::shared_ptr<WholeBodyIK> mWholeBodyIK;
 
   struct DirtyFlags
   {
@@ -940,6 +1061,13 @@ protected:
 
     /// Dirty flag for the damping force vector.
     bool mDampingForces;
+
+    /// Dirty flag for the support polygon
+    bool mSupport;
+
+    /// Increments each time a new support polygon is computed to help keep
+    /// track of changes in the support polygon
+    size_t mSupportVersion;
   };
 
   struct DataCache
@@ -985,6 +1113,23 @@ protected:
 
     /// Constraint force vector.
     Eigen::VectorXd mFc;
+
+    /// Support polygon
+    math::SupportPolygon mSupportPolygon;
+
+    /// A map of which EndEffectors correspond to the individual points in the
+    /// support polygon
+    std::vector<size_t> mSupportIndices;
+
+    /// A pair of vectors which map the 2D coordinates of the support polygon
+    /// into 3D space
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> mSupportAxes;
+
+    /// Support geometry -- only used for temporary storage purposes
+    math::SupportGeometry mSupportGeometry;
+
+    /// Centroid of the support polygon
+    Eigen::Vector2d mSupportCentroid;
   };
 
   mutable std::vector<DataCache> mTreeCache;

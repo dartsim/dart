@@ -57,9 +57,9 @@ class SimpleFrame : public Detachable, public Frame
 public:
 
   /// Constructor
-  explicit SimpleFrame(Frame* _refFrame, const std::string& _name,
-                       const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
+  explicit SimpleFrame(Frame* _refFrame,
+    const std::string& _name = "simple_frame",
+    const Eigen::Isometry3d& _relativeTransform = Eigen::Isometry3d::Identity());
 
   /// Copy constructor. Note that the parent frame of _otherFrame will not be
   /// copied as the reference frame for the newly created SimpleFrame.
@@ -99,7 +99,7 @@ public:
   /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
   void setTransform(const Eigen::Isometry3d& _newTransform,
-                    const Frame* _withRespectTo);
+                    const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const;
@@ -194,8 +194,6 @@ protected:
   mutable Eigen::Vector6d mPartialAcceleration;
 
 };
-
-typedef std::shared_ptr<SimpleFrame> SimpleFramePtr;
 
 } // namespace dart
 } // namespace dynamics

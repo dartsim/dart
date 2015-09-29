@@ -427,7 +427,7 @@ std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
 
 //==============================================================================
 void Linkage::Criteria::trimBodyNodes(std::vector<BodyNode *>& _bns,
-                                      bool _chain, bool _upstream) const
+                                      bool _chain, bool _movingUpstream) const
 {
   std::vector<BodyNode*>::iterator it = _bns.begin();
   while( it != _bns.end() )
@@ -452,13 +452,20 @@ void Linkage::Criteria::trimBodyNodes(std::vector<BodyNode *>& _bns,
       // follow it
       if( (*it)->getNumChildBodyNodes() > 1 )
       {
-        ++it;
-        break;
+        if(_movingUpstream)
+        {
+          break;
+        }
+        else
+        {
+          ++it;
+          break;
+        }
       }
 
       if( dynamic_cast<FreeJoint*>( (*it)->getParentJoint() ) )
       {
-        if(_upstream)
+        if(_movingUpstream)
         {
           ++it;
           break;

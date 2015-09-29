@@ -63,7 +63,7 @@ TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test");
 
   EXPECT_FALSE(retriever.exists("package://test/foo"));
-  ASSERT_EQ(1, mockRetriever->mExists.size());
+  ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -88,7 +88,7 @@ TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test/");
 
   EXPECT_TRUE(retriever.exists("package://test/foo"));
-  ASSERT_EQ(1, mockRetriever->mExists.size());
+  ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -103,7 +103,7 @@ TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
   EXPECT_TRUE(retriever.exists("package://test/foo"));
-  ASSERT_EQ(1, mockRetriever->mExists.size());
+  ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -119,7 +119,7 @@ TEST(PackageResourceRetriever, exists_FallsBackOnSecondUri)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
   EXPECT_FALSE(retriever.exists("package://test/foo"));
-  ASSERT_EQ(2, mockRetriever->mExists.size());
+  ASSERT_EQ(2u, mockRetriever->mExists.size());
   EXPECT_EQ(expected1, mockRetriever->mExists[0]);
   EXPECT_EQ(expected2, mockRetriever->mExists[1]);
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
@@ -146,7 +146,7 @@ TEST(PackageResourceRetriever, retrieve_DelegateFails_ReturnsNull)
 
   EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
   EXPECT_TRUE(mockRetriever->mExists.empty());
-  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
 }
 
@@ -171,7 +171,7 @@ TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
 
   EXPECT_TRUE(retriever.retrieve("package://test/foo") != nullptr);
   EXPECT_TRUE(mockRetriever->mExists.empty());
-  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
 }
 
@@ -186,7 +186,7 @@ TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
 
   EXPECT_TRUE(retriever.retrieve("package://test/foo") != nullptr);
   EXPECT_TRUE(mockRetriever->mExists.empty());
-  ASSERT_EQ(1, mockRetriever->mRetrieve.size());
+  ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
 }
 
@@ -202,7 +202,7 @@ TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
 
   EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
   EXPECT_TRUE(mockRetriever->mExists.empty());
-  ASSERT_EQ(2, mockRetriever->mRetrieve.size());
+  ASSERT_EQ(2u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected1, mockRetriever->mRetrieve[0]);
   EXPECT_EQ(expected2, mockRetriever->mRetrieve[1]);
 }

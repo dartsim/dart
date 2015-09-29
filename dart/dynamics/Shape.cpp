@@ -41,81 +41,166 @@
 
 namespace dart {
 namespace dynamics {
-
+//==============================================================================
 Shape::Shape(ShapeType _type)
   : mBoundingBoxDim(0, 0, 0),
     mVolume(0.0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0, 1.0),
     mTransform(Eigen::Isometry3d::Identity()),
+    mVariance(STATIC),
+    mHidden(false),
     mType(_type)
 {
 }
 
-Shape::~Shape() {
+//==============================================================================
+Shape::~Shape()
+{
+  // Do nothing
 }
 
+//==============================================================================
 void Shape::setColor(const Eigen::Vector3d& _color) {
   setRGB(_color);
 }
 
+//==============================================================================
 void Shape::setColor(const Eigen::Vector4d &_color) {
   setRGBA(_color);
 }
 
+//==============================================================================
 void Shape::setRGB(const Eigen::Vector3d& _rgb) {
   mColor << _rgb, mColor[3];
   setRGBA(mColor);
 }
 
+//==============================================================================
 void Shape::setRGBA(const Eigen::Vector4d& _rgba) {
   mColor = _rgba;
 }
 
+//==============================================================================
 Eigen::Vector3d Shape::getColor() const {
   return getRGB();
 }
 
+//==============================================================================
 Eigen::Vector3d Shape::getRGB() const {
   return Eigen::Vector3d(mColor[0], mColor[1], mColor[2]);
 }
 
+//==============================================================================
 const Eigen::Vector4d& Shape::getRGBA() const {
   return mColor;
 }
 
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const {
+//==============================================================================
+void Shape::setAlpha(double _alpha) {
+  mColor[3] = _alpha;
+}
+
+//==============================================================================
+const Eigen::Vector3d& Shape::getBoundingBoxDim() const
+{
   return mBoundingBoxDim;
 }
 
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform) {
+//==============================================================================
+void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
+{
   mTransform = _Transform;
 }
 
-const Eigen::Isometry3d& Shape::getLocalTransform() const {
+//==============================================================================
+const Eigen::Isometry3d& Shape::getLocalTransform() const
+{
   return mTransform;
 }
 
-void Shape::setOffset(const Eigen::Vector3d& _offset) {
+//==============================================================================
+void Shape::setOffset(const Eigen::Vector3d& _offset)
+{
   mTransform.translation() = _offset;
 }
 
-Eigen::Vector3d Shape::getOffset() const {
+//==============================================================================
+Eigen::Vector3d Shape::getOffset() const
+{
   return mTransform.translation();
 }
 
-double Shape::getVolume() const {
+//==============================================================================
+double Shape::getVolume() const
+{
   return mVolume;
 }
 
-int Shape::getID() const {
+//==============================================================================
+int Shape::getID() const
+{
   return mID;
 }
 
-Shape::ShapeType Shape::getShapeType() const {
+//==============================================================================
+Shape::ShapeType Shape::getShapeType() const
+{
   return mType;
 }
 
+//==============================================================================
+void Shape::setDataVariance(unsigned int _variance)
+{
+  mVariance = _variance;
+}
+
+//==============================================================================
+void Shape::addDataVariance(unsigned int _variance)
+{
+  mVariance |= _variance;
+}
+
+//==============================================================================
+void Shape::removeDataVariance(unsigned int _variance)
+{
+  mVariance &= ~_variance;
+}
+
+//==============================================================================
+unsigned int Shape::getDataVariance() const
+{
+  return mVariance;
+}
+
+//==============================================================================
+bool Shape::checkDataVariance(DataVariance type) const
+{
+  if(STATIC == type)
+    return STATIC == mVariance;
+
+  return (type & mVariance) != 0x00;
+}
+
+//==============================================================================
+void Shape::refreshData()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void Shape::setHidden(bool _hide)
+{
+  mHidden = _hide;
+}
+
+//==============================================================================
+bool Shape::isHidden() const
+{
+  return mHidden;
+}
+
+//==============================================================================
 int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
 
 }  // namespace dynamics

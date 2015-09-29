@@ -42,7 +42,7 @@
 namespace dart {
 namespace dynamics {
 
-/// TemplateJointPtr is a templated class that enables users to create a
+/// TemplateJointPtr is a templated class that enables users to create a strong
 /// reference-counting JointPtr. Holding onto a JointPtr will ensure that the
 /// child BodyNode (and by extension, Skeleton) corresponding to a Joint does
 /// not get deleted. If the child BodyNode of this Joint replaces its parent
@@ -205,9 +205,9 @@ public:
   }
 
   /// Constructor that takes in a strong JointPtr
-  template <class OtherJointPtr, class OtherBodyNodeT>
+  template <class OtherJointT, class OtherBodyNodeT>
   TemplateWeakJointPtr(
-      const TemplateJointPtr<OtherJointPtr, OtherBodyNodeT>& _strongPtr)
+      const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _strongPtr)
   {
     set(_strongPtr.get());
   }
@@ -222,13 +222,22 @@ public:
   /// Assignment operator for WeakJointPtrs
   template <class OtherJointT, class OtherBodyNodeT>
   TemplateWeakJointPtr& operator = (
+      const TemplateWeakJointPtr<OtherJointT, OtherBodyNodeT>& _weakPtr)
+  {
+    set(_weakPtr);
+    return *this;
+  }
+
+  /// Assignment operator for strong JointPtrs
+  template <class OtherJointT, class OtherBodyNodeT>
+  TemplateWeakJointPtr& operator = (
       const TemplateJointPtr<OtherJointT, OtherBodyNodeT>& _strongPtr)
   {
     set(_strongPtr.get());
     return *this;
   }
 
-  /// Locks the Joint reference to ensure that the references Joint is currently
+  /// Locks the Joint reference to ensure that the referenced Joint is currently
   /// still available. If the Joint is not available any longer (i.e. has been
   /// deleted), then this will return a nullptr.
   TemplateJointPtr<JointT, BodyNodeT> lock() const
@@ -252,8 +261,7 @@ public:
     mWeakBodyNode = _ptr->getChildBodyNode();
   }
 
-  /// Attempt to set the Joint for this WeakJointPtr based on another
-  /// WeakJointPtr
+  /// Set the Joint for this WeakJointPtr based on another WeakJointPtr
   template <class OtherJointT, class OtherBodyNodeT>
   void set(const TemplateWeakJointPtr<OtherJointT, OtherBodyNodeT>& _weakPtr)
   {

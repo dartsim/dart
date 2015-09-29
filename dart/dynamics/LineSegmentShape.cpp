@@ -57,6 +57,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
   }
 
   computeVolume();
+  mVariance = DYNAMIC_VERTICES;
 }
 
 //==============================================================================
@@ -77,6 +78,7 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
   addVertex(_v1);
   addVertex(_v2);
   computeVolume();
+  mVariance = DYNAMIC_VERTICES;
 }
 
 //==============================================================================
@@ -143,15 +145,16 @@ void LineSegmentShape::removeVertex(size_t _idx)
 {
   if(_idx >= mVertices.size())
   {
-    dtwarn << "[LineSegmentShape::removeVertex] Attempting to remove vertex #"
-           << _idx << ", but ";
-
     if(mVertices.size() == 0)
-      dtwarn << "this LineSegmentShape contains no vertices. ";
+      dtwarn << "[LineSegmentShape::removeVertex] Attempting to remove vertex #"
+             << _idx << ", but "
+             << "this LineSegmentShape contains no vertices. "
+             << "No vertex will be removed.\n";
     else
-      dtwarn << "vertex indices only go up to #" << mVertices.size()-1 << ". ";
-
-    dtwarn << "No vertex will be removed.\n";
+      dtwarn << "[LineSegmentShape::removeVertex] Attempting to remove vertex #"
+             << _idx << ", but "
+             << "vertex indices only go up to #" << mVertices.size()-1 << ". "
+             << "No vertex will be removed.\n";
 
     return;
   }
@@ -164,12 +167,14 @@ void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& _v)
 {
   if(_idx >= mVertices.size())
   {
-    dtwarn << "[LineSegmentShape::setVertex] Attempting to set vertex #" << _idx
-           << ", but ";
     if(mVertices.size() == 0)
-      dtwarn << "no vertices exist in this LineSegmentShape yet.\n";
+      dtwarn << "[LineSegmentShape::setVertex] Attempting to set vertex #" << _idx
+             << ", but "
+             << "no vertices exist in this LineSegmentShape yet.\n";
     else
-      dtwarn << "the vertices of this LineSegmentShape only go up to #"
+      dtwarn << "[LineSegmentShape::setVertex] Attempting to set vertex #" << _idx
+             << ", but "
+             << "the vertices of this LineSegmentShape only go up to #"
              << mVertices.size()-1 << ".\n";
 
     return;
@@ -205,15 +210,16 @@ void LineSegmentShape::addConnection(size_t _idx1, size_t _idx2)
 {
   if(_idx1 >= mVertices.size() || _idx2 >= mVertices.size())
   {
-    dtwarn << "[LineSegmentShape::createConnection] Attempted to create a "
-           << "connection between vertex #" << _idx1 << " and vertex #" << _idx2;
-
     if(mVertices.size() == 0)
-      dtwarn << ", but no vertices exist for this LineSegmentShape yet. ";
+      dtwarn << "[LineSegmentShape::createConnection] Attempted to create a "
+             << "connection between vertex #" << _idx1 << " and vertex #" << _idx2
+             << ", but no vertices exist for this LineSegmentShape yet. "
+             << "No connection will be made for these non-existent vertices.\n";
     else
-      dtwarn << ", but the vertices only go up to #" << mVertices.size() << ". ";
-
-    dtwarn << "No connection will be made for these non-existent vertices.\n";
+      dtwarn << "[LineSegmentShape::createConnection] Attempted to create a "
+             << "connection between vertex #" << _idx1 << " and vertex #" << _idx2
+             << ", but the vertices only go up to #" << mVertices.size() << ". "
+             << "No connection will be made for these non-existent vertices.\n";
 
     return;
   }
@@ -246,15 +252,16 @@ void LineSegmentShape::removeConnection(size_t _connectionIdx)
 {
   if(_connectionIdx >= mConnections.size())
   {
-    dtwarn << "[LineSegmentShape::removeConnection(size_t)] Attempting to "
-           << "remove connection #" << _connectionIdx << ", but ";
     if(mConnections.size() == 0)
-      dtwarn << "no connections exist yet. ";
+      dtwarn << "[LineSegmentShape::removeConnection(size_t)] Attempting to "
+             << "remove connection #" << _connectionIdx << ", but "
+             << "no connections exist yet. "
+             << "No connection will be removed.\n";
     else
-      dtwarn << "connection indices only go up to #" << mConnections.size()-1
-             << ". ";
-
-    dtwarn << "No connection will be removed.\n";
+      dtwarn << "[LineSegmentShape::removeConnection(size_t)] Attempting to "
+             << "remove connection #" << _connectionIdx << ", but "
+             << "connection indices only go up to #" << mConnections.size()-1
+             << ". " << "No connection will be removed.\n";
 
     return;
   }
@@ -275,6 +282,9 @@ void LineSegmentShape::draw(renderer::RenderInterface* _ri,
                             bool _useDefaultColor) const
 {
   if(!_ri)
+    return;
+
+  if(mHidden)
     return;
 
   if(!_useDefaultColor)

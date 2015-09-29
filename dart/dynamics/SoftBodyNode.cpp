@@ -266,7 +266,9 @@ const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            Joint* _parentJoint,
                            const Properties& _properties)
-  : Entity(_parentBodyNode, "", false),
+  : Entity(Frame::World(), "", false),
+    Frame(Frame::World(), ""),
+    Node(ConstructBodyNode),
     BodyNode(_parentBodyNode, _parentJoint, _properties)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
@@ -274,7 +276,8 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
 }
 
 //==============================================================================
-BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
+                              Joint* _parentJoint) const
 {
   return new SoftBodyNode(_parentBodyNode, _parentJoint,
                           getSoftBodyNodeProperties());
@@ -429,7 +432,7 @@ const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 }
 
 //==============================================================================
-size_t SoftBodyNode::getNumFaces()
+size_t SoftBodyNode::getNumFaces() const
 {
   return mSoftP.mFaces.size();
 }
@@ -2554,7 +2557,6 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
               Eigen::Vector3d(x * _size(0), y * _size(1), z * _size(2)), mass));
     }
   }
-
   // bottom
   properties.addPointMass(
       PointMass::Properties(Eigen::Vector3d(0.0, 0.0, -0.5 * _size(2)), mass));
@@ -2937,14 +2939,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
                                              nTopPointMasses + meshIdx3));
     }
 
-
     meshIdx1 = (i + 0) * _nSlices;
     meshIdx2 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx3 = (i + 1) * _nSlices;
     properties.addFace(Eigen::Vector3i(nTopPointMasses + meshIdx1,
                                            nTopPointMasses + meshIdx2,
                                            nTopPointMasses + meshIdx3));
-
 
     meshIdx1 = (i + 0) * _nSlices + _nSlices - 1;
     meshIdx2 = (i + 1) * _nSlices + _nSlices - 1;

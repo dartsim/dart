@@ -65,6 +65,7 @@ void PlaneShape::draw(renderer::RenderInterface* _ri,
 {
   // TODO(JS): Not implemented yet
   if (!_ri) return;
+  if (mHidden) return;
   if (!_useDefaultColor)
     _ri->setPenColor(_color);
   else

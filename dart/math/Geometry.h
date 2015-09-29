@@ -39,6 +39,7 @@
 #define DART_MATH_GEOMETRY_H_
 
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
 #include "dart/math/MathTypes.h"
 
@@ -424,6 +425,111 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// \brief Check if determinant of the rotational part of _T is equat to 1 and
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
+
+template <typename MatrixType, typename ReturnType>
+void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
+{
+  int rank = 0;
+  // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
+  if(_SVD.nonzeroSingularValues() > 0)
+  {
+    double thresh = std::max(_SVD.singularValues().coeff(0)*1e-10,
+                             std::numeric_limits<double>::min());
+    int i = _SVD.nonzeroSingularValues()-1;
+    while( i >= 0 && _SVD.singularValues().coeff(i) < thresh )
+      --i;
+    rank = i+1;
+  }
+
+  int cols = _SVD.matrixV().cols(), rows = _SVD.matrixV().rows();
+  _NS = _SVD.matrixV().block(0, rank, rows, cols-rank);
+}
+
+template <typename MatrixType, typename ReturnType>
+void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
+{
+  Eigen::JacobiSVD<MatrixType> svd(_M, Eigen::ComputeFullV);
+  extractNullSpace(svd, _NS);
+}
+
+typedef std::vector<Eigen::Vector3d> SupportGeometry;
+
+typedef Eigen::aligned_vector<Eigen::Vector2d> SupportPolygon;
+
+/// Project the support geometry points onto a plane with the given axes
+/// and then compute their convex hull, which will take the form of a polgyon.
+/// _axis1 and _axis2 must both have unit length for this function to work
+/// correctly.
+SupportPolygon computeSupportPolgyon(
+    const SupportGeometry& _geometry,
+    const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
+    const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+
+/// Same as computeSupportPolgyon, except you can pass in a std::vector<size_t>
+/// which will have the same size as the returned SupportPolygon, and each entry
+/// will contain the original index of each point in the SupportPolygon
+SupportPolygon computeSupportPolgyon(
+    std::vector<size_t>& _originalIndices,
+    const SupportGeometry& _geometry,
+    const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
+    const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
+
+/// Computes the convex hull of a set of 2D points
+SupportPolygon computeConvexHull(const SupportPolygon& _points);
+
+/// Computes the convex hull of a set of 2D points and fills in _originalIndices
+/// with the original index of each entry in the returned SupportPolygon
+SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
+                                 const SupportPolygon& _points);
+
+/// Compute the centroid of a polygon, assuming the polygon is a convex hull
+Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
+
+/// Intersection_t is returned by the computeIntersection() function to indicate
+/// whether there was a valid intersection between the two line segments
+enum Intersection_t {
+
+  INTERSECTING = 0,   ///< An intersection was found
+  PARALLEL,           ///< The line segments are parallel
+  BEYOND_ENDPOINTS    ///< There is no intersection because the end points do not expand far enough
+
+};
+
+/// Compute the intersection between a line segment that goes from a1 -> a2 and
+/// a line segment that goes from b1 -> b2.
+Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
+                                   const Eigen::Vector2d& a1,
+                                   const Eigen::Vector2d& a2,
+                                   const Eigen::Vector2d& b1,
+                                   const Eigen::Vector2d& b2);
+
+/// Compute a 2D cross product
+double cross(const Eigen::Vector2d& _v1, const Eigen::Vector2d& _v2);
+
+/// Returns true if the point _p is inside the support polygon
+bool isInsideSupportPolygon(const Eigen::Vector2d& _p,
+                            const SupportPolygon& _support,
+                            bool _includeEdge = true);
+
+/// Returns the point which is closest to _p that also lays on the line segment
+/// that goes from _s1 -> _s2
+Eigen::Vector2d computeClosestPointOnLineSegment(const Eigen::Vector2d& _p,
+                                                 const Eigen::Vector2d& _s1,
+                                                 const Eigen::Vector2d& _s2);
+
+/// Returns the point which is closest to _p that also lays on the edge of the
+/// support polygon
+Eigen::Vector2d computeClosestPointOnSupportPolygon(
+    const Eigen::Vector2d& _p,
+    const SupportPolygon& _support);
+
+/// Same as closestPointOnSupportPolygon, but also fills in _index1 and _index2
+/// with the indices of the line segment
+Eigen::Vector2d computeClosestPointOnSupportPolygon(
+    size_t& _index1,
+    size_t& _index2,
+    const Eigen::Vector2d& _p,
+    const SupportPolygon& _support);
 
 }  // namespace math
 }  // namespace dart

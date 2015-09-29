@@ -73,6 +73,7 @@ void BoxShape::draw(renderer::RenderInterface* _ri,
                     const Eigen::Vector4d& _color,
                     bool _useDefaultColor) const {
   if (!_ri) return;
+  if (mHidden) return;
   if (!_useDefaultColor)
     _ri->setPenColor(_color);
   else

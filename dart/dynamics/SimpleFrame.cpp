@@ -44,8 +44,7 @@ namespace dynamics {
 //==============================================================================
 SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
-  : Entity(nullptr, _name, false),
-    Detachable(nullptr, _name, false),
+  : Entity(ConstructFrame),
     Frame(_refFrame, _name),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
@@ -57,8 +56,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 
 //==============================================================================
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
-  : Entity(nullptr, "", false),
-    Detachable(nullptr, "", false),
+  : Entity(ConstructFrame),
     Frame(_refFrame, ""),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
@@ -106,7 +104,7 @@ void SimpleFrame::copy(const Frame& _otherFrame, Frame* _refFrame,
 void SimpleFrame::copy(const Frame* _otherFrame, Frame* _refFrame,
                        bool _copyProperties)
 {
-  if(nullptr == _otherFrame)
+  if(nullptr == _otherFrame || nullptr == _refFrame)
     return;
 
   copy(*_otherFrame, _refFrame, _copyProperties);

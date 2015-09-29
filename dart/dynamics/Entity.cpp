@@ -86,7 +86,8 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
     onTransformUpdated(mTransformUpdatedSignal),
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
-    mAmQuiet(_quiet)
+    mAmQuiet(_quiet),
+    mAmFrame(false)
 {
   changeParentFrame(_refFrame);
 }
@@ -221,6 +222,33 @@ ConstShapePtr Entity::getVisualizationShape(size_t _index) const
 }
 
 //==============================================================================
+template <class T>
+static std::vector<std::shared_ptr<const T>>& convertToConstSharedPtrVector(
+    const std::vector<std::shared_ptr<T>>& vec,
+          std::vector<std::shared_ptr<const T>>& const_vec)
+{
+  const_vec.resize(vec.size());
+  for(size_t i=0; i<vec.size(); ++i)
+    const_vec[i] = vec[i];
+  return const_vec;
+}
+
+//==============================================================================
+const std::vector<ShapePtr>& Entity::getVisualizationShapes()
+{
+  return mEntityP.mVizShapes;
+}
+
+//==============================================================================
+const std::vector<ConstShapePtr>& Entity::getVisualizationShapes() const
+{
+  static std::vector<ConstShapePtr> constVizShapes;
+
+  return convertToConstSharedPtrVector<Shape>(
+        mEntityP.mVizShapes, constVizShapes);
+}
+
+//==============================================================================
 void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
                   bool _useDefaultColor, int) const
 {
@@ -259,7 +287,7 @@ const Frame* Entity::getParentFrame() const
 bool Entity::descendsFrom(const Frame *_someFrame) const
 {
   if(nullptr == _someFrame)
-    return false;
+    return true;
 
   if(this == _someFrame)
     return true;
@@ -285,6 +313,12 @@ bool Entity::descendsFrom(const Frame *_someFrame) const
 bool Entity::isQuiet() const
 {
   return mAmQuiet;
+}
+
+//==============================================================================
+bool Entity::isFrame() const
+{
+  return mAmFrame;
 }
 
 //==============================================================================
@@ -336,6 +370,45 @@ bool Entity::needsAccelerationUpdate() const
 }
 
 //==============================================================================
+Entity::Entity(ConstructFrame_t)
+  : mParentFrame(nullptr),
+    mNeedTransformUpdate(true),
+    mNeedVelocityUpdate(true),
+    mNeedAccelerationUpdate(true),
+    mFrameChangedSignal(),
+    mNameChangedSignal(),
+    mVizShapeAddedSignal(),
+    mTransformUpdatedSignal(),
+    mVelocityChangedSignal(),
+    mAccelerationChangedSignal(),
+    onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
+    mAmQuiet(false),
+    mAmFrame(false) // The Frame class will change this to true
+{
+  // Do nothing. The Frame class will take care of changing the parent Frame.
+}
+
+//==============================================================================
+Entity::Entity(ConstructAbstract_t)
+  : onFrameChanged(mFrameChangedSignal),
+    onNameChanged(mNameChangedSignal),
+    onVizShapeAdded(mVizShapeAddedSignal),
+    onTransformUpdated(mTransformUpdatedSignal),
+    onVelocityChanged(mVelocityChangedSignal),
+    onAccelerationChanged(mAccelerationChangedSignal),
+    mAmQuiet(false)
+{
+  dterr << "[Entity::Entity] Your class implementation is calling the Entity "
+        << "constructor that is meant to be reserved for abstract classes!\n";
+  assert(false);
+}
+
+//==============================================================================
 void Entity::changeParentFrame(Frame* _newParentFrame)
 {
   if (mParentFrame == _newParentFrame)
@@ -345,6 +418,8 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   if (!mAmQuiet && nullptr != mParentFrame)
   {
+    // If this entity has a parent Frame, tell that parent that it is losing
+    // this child
     EntityPtrSet::iterator it = mParentFrame->mChildEntities.find(this);
     if (it != mParentFrame->mChildEntities.end())
     {
@@ -366,7 +441,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
-Detachable::Detachable(Frame *_refFrame, const std::string &_name, bool _quiet)
+Detachable::Detachable(Frame* _refFrame, const std::string& _name, bool _quiet)
   : Entity(_refFrame, _name, _quiet)
 {
 
@@ -378,6 +453,12 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
   changeParentFrame(_newParentFrame);
 }
 
+//==============================================================================
+Detachable::Detachable()
+  : Entity(ConstructAbstract)
+{
+
+}
 
 } // namespace dynamics
 } // namespace dart

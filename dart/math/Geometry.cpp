@@ -42,6 +42,7 @@
 #include <iostream>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 
@@ -113,7 +114,6 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(0, 2) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     z = atan2(_R(1, 0), _R(1, 1));
     y = DART_PI_HALF;
     x = 0.0;
@@ -121,7 +121,6 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(0, 2) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     z = atan2(_R(1, 0), _R(1, 1));
     y = -DART_PI_HALF;
     x = 0.0;
@@ -140,7 +139,6 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(2, 0) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     x = atan2(_R(0, 1), _R(0, 2));
     y = -DART_PI_HALF;
     z = 0.0;
@@ -148,7 +146,6 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(2, 0) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     x = atan2(_R(0, 1), _R(0, 2));
     y = DART_PI_HALF;
     z = 0.0;
@@ -167,7 +164,6 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(0, 1) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     y = atan2(_R(1, 2), _R(1, 0));
     z = -DART_PI_HALF;
     x = 0.0;
@@ -175,7 +171,6 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(0, 1) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     y = atan2(_R(1, 2), _R(1, 0));
     z = DART_PI_HALF;
     x = 0.0;
@@ -194,7 +189,6 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(1, 0) > (1.0 - DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     x = -atan2(_R(0, 2), _R(0, 1));
     z = DART_PI_HALF;
     y = 0.0;
@@ -202,7 +196,6 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(1, 0) < -(1.0 - DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     x = -atan2(_R(0, 2), _R(0, 1));
     z = -DART_PI_HALF;
     y = 0.0;
@@ -221,7 +214,6 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(2, 1) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     y = atan2(_R(0, 2), _R(0, 0));
     x = DART_PI_HALF;
     z = 0.0;
@@ -229,7 +221,6 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(2, 1) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     y = atan2(_R(0, 2), _R(0, 0));
     x = -DART_PI_HALF;
     z = 0.0;
@@ -248,7 +239,6 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
   if (_R(1, 2) > (1.0-DART_EPSILON)) {
-    std::cout << "North Pole" << std::endl;
     z = -atan2(_R(0, 1), _R(0, 0));
     x = -DART_PI_HALF;
     y = 0.0;
@@ -256,7 +246,6 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
   }
 
   if (_R(1, 2) < -(1.0-DART_EPSILON)) {
-    std::cout << "South Pole" << std::endl;
     z = -atan2(_R(0, 1), _R(0, 0));
     x = DART_PI_HALF;
     y = 0.0;
@@ -1418,8 +1407,8 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
   if (std::abs(_m(0, 0)) > DART_EPSILON
       || std::abs(_m(1, 1)) > DART_EPSILON
       || std::abs(_m(2, 2)) > DART_EPSILON) {
-    std::cout << "Not skew symmetric matrix" << std::endl;
-    std::cerr << _m << std::endl;
+    dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
+           << _m << "\n";
     return Eigen::Vector3d::Zero();
   }
 #endif
@@ -1466,6 +1455,484 @@ Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
 
   // Verification
   assert(verifyTransform(result));
+
+  return result;
+}
+
+//==============================================================================
+SupportPolygon computeSupportPolgyon(const SupportGeometry& _geometry,
+                                     const Eigen::Vector3d& _axis1,
+                                     const Eigen::Vector3d& _axis2)
+{
+  std::vector<size_t> indices;
+  indices.reserve(_geometry.size());
+  return computeSupportPolgyon(indices, _geometry, _axis1, _axis2);
+}
+
+//==============================================================================
+SupportPolygon computeSupportPolgyon(std::vector<size_t>& _originalIndices,
+                                     const SupportGeometry& _geometry,
+                                     const Eigen::Vector3d& _axis1,
+                                     const Eigen::Vector3d& _axis2)
+{
+  SupportPolygon polygon;
+  polygon.reserve(_geometry.size());
+  for(const Eigen::Vector3d& v : _geometry)
+    polygon.push_back(Eigen::Vector2d(v.dot(_axis1), v.dot(_axis2)));
+
+  return computeConvexHull(_originalIndices, polygon);
+}
+
+//==============================================================================
+// HullAngle is an internal struct used to facilitate the computation of 2D
+// convex hulls
+struct HullAngle
+{
+  HullAngle(double angle, double distance, size_t index)
+    : mAngle(angle),
+      mDistance(distance),
+      mIndex(index)
+  {
+    // Do nothing
+  }
+
+  double mAngle;
+  double mDistance;
+  size_t mIndex;
+};
+
+//==============================================================================
+// Comparison function to allow hull angles to be sorted
+static bool HullAngleComparison(const HullAngle& a, const HullAngle& b)
+{
+  return a.mAngle < b.mAngle;
+}
+
+//==============================================================================
+SupportPolygon computeConvexHull(const SupportPolygon& _points)
+{
+  std::vector<size_t> indices;
+  indices.reserve(_points.size());
+  return computeConvexHull(indices, _points);
+}
+
+//==============================================================================
+Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
+{
+  if(_convexHull.size() == 0)
+  {
+    Eigen::Vector2d invalid = Eigen::Vector2d::Constant(std::nan(""));
+    dtwarn << "[computeCentroidOfHull] Requesting the centroid of an empty set "
+           << "of points! We will return <" << invalid.transpose() << ">.\n";
+    return invalid;
+  }
+
+  if(_convexHull.size() == 1)
+    return _convexHull[0];
+
+  if(_convexHull.size() == 2)
+    return (_convexHull[0]+_convexHull[1])/2.0;
+
+  Eigen::Vector2d c(0,0);
+  Eigen::Vector2d intersect;
+  double area = 0;
+  double area_i;
+  Eigen::Vector2d midp12, midp01;
+
+  for(size_t i=2; i < _convexHull.size(); ++i)
+  {
+    const Eigen::Vector2d& p0 = _convexHull[0];
+    const Eigen::Vector2d& p1 = _convexHull[i-1];
+    const Eigen::Vector2d& p2 = _convexHull[i];
+
+    area_i = 0.5*( (p1[0]-p0[0])*(p2[1]-p0[1]) - (p1[1]-p0[1])*(p2[0]-p0[0]) );
+
+    midp12 = 0.5 * (p1+p2);
+    midp01 = 0.5 * (p0+p1);
+
+    Intersection_t result =
+        computeIntersection(intersect, p0, midp12, p2, midp01);
+
+    if(INTERSECTING != result)
+    {
+      double a1 = atan2( (p1-p0)[1], (p1-p0)[0] )*180.0/M_PI;
+      double a2 = atan2( (p2-p0)[1], (p2-p0)[0] )*180.0/M_PI;
+      double diff = a1-a2;
+      dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
+             << "which is not a proper convex hull! The invalid segment "
+             << "contains indices " << i-1 << " -> " << i << ":\n"
+             << i-1 << ") " << p1.transpose() << " (" << a1 << " degrees)" << "\n"
+             << i   << ") " << p2.transpose() << " (" << a2 << " degrees)" << "\n"
+             << "0) " << p0.transpose() << "\n"
+             << "(" << result << ") "
+             << (PARALLEL==result? "These segments are parallel!\n" :
+                                   "These segments are too short to intersect!\n")
+             << "Difference in angle: " << diff << "\n\n";
+      continue;
+    }
+
+    area += area_i;
+    c += area_i*intersect;
+  }
+
+  // A negative area means we have a bug in the code
+  assert(area >= 0.0);
+
+  if(area == 0.0)
+    return c;
+
+  return c/area;
+}
+
+//==============================================================================
+// Returns true if the path that goes from p1 -> p2 -> p3 turns left
+static bool isLeftTurn(const Eigen::Vector2d& p1,
+                       const Eigen::Vector2d& p2,
+                       const Eigen::Vector2d& p3)
+{
+  return (cross(p2-p1, p3-p1) > 0);
+}
+
+//==============================================================================
+SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
+                                 const SupportPolygon& _points)
+{
+  _originalIndices.clear();
+
+  if(_points.size() <= 3)
+  {
+    // Three or fewer points is already a convex hull
+    for(size_t i=0; i < _points.size(); ++i)
+      _originalIndices.push_back(i);
+
+    return _points;
+  }
+
+  // We'll use "Graham scan" to compute the convex hull in the general case
+  size_t lowestIndex = static_cast<size_t>(-1);
+  double lowestY = std::numeric_limits<double>::infinity();
+  for(size_t i=0; i < _points.size(); ++i)
+  {
+    if(_points[i][1] < lowestY)
+    {
+      lowestIndex = i;
+      lowestY = _points[i][1];
+    }
+    else if(_points[i][1] == lowestY)
+    {
+      if(_points[i][0] < _points[lowestIndex][0])
+      {
+        lowestIndex = i;
+      }
+    }
+  }
+
+  std::vector<HullAngle> angles;
+  const Eigen::Vector2d& bottom = _points[lowestIndex];
+  for(size_t i=0; i < _points.size(); ++i)
+  {
+    const Eigen::Vector2d& p = _points[i];
+    if( p != bottom )
+    {
+      const Eigen::Vector2d& v = p - bottom;
+      angles.push_back(HullAngle(atan2(v[1], v[0]), v.norm(), i));
+    }
+  }
+
+  std::sort(angles.begin(), angles.end(), HullAngleComparison);
+
+  if(angles.size() > 1)
+  {
+    for(size_t i=0; i<angles.size()-1; ++i)
+    {
+      if( std::abs(angles[i].mAngle - angles[i+1].mAngle) < 1e-12 )
+      {
+        // If two points have the same angle, throw out the one that is closer
+        // to the corner
+        size_t tossout = (angles[i].mDistance < angles[i+1].mDistance)? i : i+1;
+        angles.erase(angles.begin()+tossout);
+        --i;
+      }
+    }
+  }
+
+  if(angles.size() <= 3)
+  {
+    // There were so many repeated points in the given set that we only have
+    // three or fewer unique points
+    _originalIndices.reserve(angles.size()+1);
+    _originalIndices.push_back(lowestIndex);
+    for(size_t i=0; i < angles.size(); ++i)
+      _originalIndices.push_back(angles[i].mIndex);
+
+    SupportPolygon polygon;
+    polygon.reserve(_originalIndices.size());
+    for(size_t index : _originalIndices)
+      polygon.push_back(_points[index]);
+
+    return polygon;
+  }
+
+  std::vector<size_t>& edge = _originalIndices;
+  size_t lastIndex = lowestIndex;
+  size_t secondToLastIndex = angles[0].mIndex;
+  edge.reserve(angles.size()+1);
+
+  edge.push_back(lowestIndex);
+
+  for(size_t i=1; i < angles.size(); ++i)
+  {
+    size_t currentIndex = angles[i].mIndex;
+    const Eigen::Vector2d& p1 = _points[lastIndex];
+    const Eigen::Vector2d& p2 = _points[secondToLastIndex];
+    const Eigen::Vector2d& p3 = _points[currentIndex];
+
+    bool leftTurn = isLeftTurn(p1, p2, p3);
+
+    if(leftTurn)
+    {
+      edge.push_back(secondToLastIndex);
+      lastIndex = secondToLastIndex;
+      secondToLastIndex = currentIndex;
+    }
+    else
+    {
+      secondToLastIndex = edge.back();
+      edge.pop_back();
+      lastIndex = edge.back();
+      --i;
+    }
+  }
+
+  const Eigen::Vector2d& p1 = _points[edge.back()];
+  const Eigen::Vector2d& p2 = _points[angles.back().mIndex];
+  const Eigen::Vector2d& p3 = _points[lowestIndex];
+  if(isLeftTurn(p1, p2, p3))
+    edge.push_back(angles.back().mIndex);
+
+  SupportPolygon polygon;
+  polygon.reserve(edge.size());
+  for(size_t index : edge)
+    polygon.push_back(_points[index]);
+
+  // Note that we do not need to fill in _originalIndices, because "edge" is a
+  // non-const reference to _originalIndices and it has been filled in with the
+  // appropriate values.
+  return polygon;
+}
+
+//==============================================================================
+Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
+                                   const Eigen::Vector2d& a1,
+                                   const Eigen::Vector2d& a2,
+                                   const Eigen::Vector2d& b1,
+                                   const Eigen::Vector2d& b2)
+{
+  double dx_a = a2[0] - a1[0];
+  double dy_a = a2[1] - a1[1];
+
+  double dx_b = b2[0] - b1[0];
+  double dy_b = b2[1] - b1[1];
+
+  Eigen::Vector2d& point = _intersectionPoint;
+
+  if( std::abs(dx_b*dy_a - dx_a*dy_b) < 1e-12 )
+  {
+    // The line segments are parallel, so give back an average of all the points
+    point = (a1+a2+b1+b2)/4.0;
+    return PARALLEL;
+  }
+
+  point[0] = (dx_b*dy_a*a1[0] - dx_a*dy_b*b1[0] + dx_a*dx_b*(b1[1]-a1[1]))
+              /(dx_b*dy_a - dx_a*dy_b);
+
+  if( dx_a != 0.0 )
+    point[1] = dy_a/dx_a*(point[0]-a1[0]) + a1[1];
+  else
+    point[1] = dy_b/dx_b*(point[0]-b1[0]) + b1[1];
+
+  for(size_t i=0; i < 2; ++i)
+  {
+    if( (point[i] < std::min(a1[i], a2[i]))
+        || (std::max(a1[i], a2[i]) < point[i]) )
+    {
+      return BEYOND_ENDPOINTS;
+    }
+
+    if( (point[i] < std::min(b1[i], b2[i]))
+        || (std::max(b1[i], b2[i]) < point[i]))
+    {
+      return BEYOND_ENDPOINTS;
+    }
+  }
+
+  return INTERSECTING;
+}
+
+//==============================================================================
+double cross(const Eigen::Vector2d& _v1, const Eigen::Vector2d& _v2)
+{
+  return _v1[0]*_v2[1] - _v1[1]*_v2[0];
+}
+
+//==============================================================================
+bool isInsideSupportPolygon(const Eigen::Vector2d& _p,
+                            const SupportPolygon& _support,
+                            bool _includeEdge)
+{
+  if(_support.size() == 0)
+    return false;
+
+  if(_support.size() == 1)
+  {
+    if(!_includeEdge)
+      return false;
+
+    return (_support[0] == _p);
+  }
+
+  if(_support.size() == 2)
+  {
+    if(!_includeEdge)
+      return false;
+
+    const Eigen::Vector2d& p1 = _support[0];
+    const Eigen::Vector2d& p2 = _support[1];
+    const Eigen::Vector2d& p3 = _p;
+
+    if(cross(p2-p1, p3-p1) == 0)
+    {
+      if( p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0] )
+        return false;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  for(size_t i=0; i < _support.size(); ++i)
+  {
+    const Eigen::Vector2d& p1 = (i==0)? _support.back() : _support[i-1];
+    const Eigen::Vector2d& p2 = _support[i];
+    const Eigen::Vector2d& p3 = _p;
+
+    double crossProduct = cross(p2-p1, p3-p1);
+    if(crossProduct > 0.0)
+      continue;
+
+    if(crossProduct == 0)
+    {
+      if(!_includeEdge)
+        return false;
+
+      if( p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0] )
+        return false;
+
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+Eigen::Vector2d computeClosestPointOnLineSegment(const Eigen::Vector2d& _p,
+                                          const Eigen::Vector2d& _s1,
+                                          const Eigen::Vector2d& _s2)
+{
+  Eigen::Vector2d result;
+
+  if(_s1[0] - _s2[0] == 0)
+  {
+    result[0] = _s1[0];
+    result[1] = _p[1];
+
+    if( result[1] < std::min(_s1[1], _s2[1])
+        || std::max(_s1[1], _s2[1]) < result[1] )
+    {
+      if( std::abs(_p[1]-_s2[1]) < std::abs(_p[1]-_s1[1]) )
+        result[1] = _s2[1];
+      else
+        result[1] = _s1[1];
+    }
+  }
+  else
+  {
+    double m = (_s2[1]-_s1[1]) / (_s2[0]-_s1[0]);
+    double k = _s1[1] - m*_s1[0];
+    result[0] = (_p[0] + m*(_p[1] - k))/(m*m+1.0);
+    result[1] = m*result[0] + k;
+
+    if( result[0] < std::min(_s1[0], _s2[0])
+        || std::max(_s1[0], _s2[0]) < result[0] )
+    {
+      if( (_p - _s2).norm() < (_p - _s1).norm() )
+        result = _s2;
+      else
+        result = _s1;
+    }
+  }
+
+  return result;
+}
+
+//==============================================================================
+Eigen::Vector2d computeClosestPointOnSupportPolygon(const Eigen::Vector2d& _p,
+                                             const SupportPolygon& _support)
+{
+  size_t _index1;
+  size_t _index2;
+  return computeClosestPointOnSupportPolygon(_index1, _index2, _p, _support);
+}
+
+//==============================================================================
+Eigen::Vector2d computeClosestPointOnSupportPolygon(size_t& _index1, size_t& _index2,
+                                             const Eigen::Vector2d& _p,
+                                             const SupportPolygon& _support)
+{
+  if(_support.size() == 0)
+  {
+    _index1 = static_cast<size_t>(-1);
+    _index2 = _index1;
+    return _p;
+  }
+
+  if(_support.size() == 1)
+  {
+    _index1 = 0;
+    _index2 = 0;
+    return _support[0];
+  }
+
+  if(_support.size() == 2)
+  {
+    _index1 = 0;
+    _index2 = 1;
+    return computeClosestPointOnLineSegment(_p, _support[0], _support[1]);
+  }
+
+  double best = std::numeric_limits<double>::infinity(), check;
+  Eigen::Vector2d test, result;
+  for(size_t i=0; i < _support.size(); ++i)
+  {
+    const Eigen::Vector2d& p1 = (i==0)? _support.back() : _support[i-1];
+    const Eigen::Vector2d& p2 = _support[i];
+
+    test = computeClosestPointOnLineSegment(_p, p1, p2);
+    check = (test - _p).norm();
+    if(check < best)
+    {
+      best = check;
+      result = test;
+      _index1 = (i==0)? _support.size()-1 : i-1;
+      _index2 = i;
+    }
+  }
 
   return result;
 }

@@ -36,7 +36,7 @@
  */
 
 #include "dart/dynamics/MeshShape.h"
-#include <iostream>
+
 #include <limits>
 #include <string>
 
@@ -136,7 +136,9 @@ MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const common::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
-    mDisplayList(0)
+    mDisplayList(0),
+    mColorMode(MATERIAL_COLOR),
+    mColorIndex(0)
 {
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
@@ -154,9 +156,25 @@ const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
 
-const std::string &MeshShape::getMeshUri() const
+const std::string& MeshShape::getMeshUri() const
 {
   return mMeshUri;
+}
+
+void MeshShape::update()
+{
+  // Do nothing
+}
+
+void MeshShape::setAlpha(double _alpha) {
+
+  for(size_t i=0; i<mMesh->mNumMeshes; ++i)
+  {
+    aiMesh* mesh = mMesh->mMeshes[i];
+    for(size_t j=0; j<mesh->mNumVertices; ++j)
+      mesh->mColors[0][j][3] = _alpha;
+  }
+
 }
 
 const std::string &MeshShape::getMeshPath() const
@@ -210,6 +228,26 @@ const Eigen::Vector3d& MeshShape::getScale() const {
   return mScale;
 }
 
+void MeshShape::setColorMode(ColorMode _mode)
+{
+  mColorMode = _mode;
+}
+
+MeshShape::ColorMode MeshShape::getColorMode() const
+{
+  return mColorMode;
+}
+
+void MeshShape::setColorIndex(int _index)
+{
+  mColorIndex = _index;
+}
+
+int MeshShape::getColorIndex() const
+{
+  return mColorIndex;
+}
+
 int MeshShape::getDisplayList() const {
   return mDisplayList;
 }
@@ -222,6 +260,8 @@ void MeshShape::draw(renderer::RenderInterface* _ri,
                      const Eigen::Vector4d& _color,
                      bool _useDefaultColor) const {
   if (!_ri)
+    return;
+  if (mHidden)
     return;
 
   if (!_useDefaultColor)

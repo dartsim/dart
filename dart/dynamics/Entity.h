@@ -44,6 +44,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
 #include "dart/dynamics/Shape.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace renderer {
@@ -146,6 +147,12 @@ public:
   /// Return (const) _index-th visualization shape
   ConstShapePtr getVisualizationShape(size_t _index) const;
 
+  /// Get the visualization shapes of this Entity
+  const std::vector<ShapePtr>& getVisualizationShapes();
+
+  /// Get the (const) visualization shapes of this Entity
+  const std::vector<ConstShapePtr>& getVisualizationShapes() const;
+
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
@@ -157,9 +164,14 @@ public:
   /// Get the parent (reference) frame of this Entity
   const Frame* getParentFrame() const;
 
-  /// True iff this Entity depends on (i.e. kinematically descends from)
-  /// _someFrame. If _someFrame is nullptr, this returns false.
+  /// True if and only if this Entity depends on (i.e. kinematically descends
+  /// from) _someFrame. If _someFrame is nullptr, this returns true in order to
+  /// accommodate BodyNodes which always have a nullptr BodyNode as the parent
+  /// of a root BodyNode.
   bool descendsFrom(const Frame* _someFrame) const;
+
+  /// True iff this Entity is also a Frame.
+  bool isFrame() const;
 
   /// Returns true if this Entity is set to be quiet.
   ///
@@ -189,6 +201,19 @@ public:
   bool needsAccelerationUpdate() const;
 
 protected:
+
+  /// Used when constructing a Frame class, because the Frame constructor will
+  /// take care of setting up the parameters you pass into it
+  enum ConstructFrame_t { ConstructFrame };
+
+  explicit Entity(ConstructFrame_t);
+
+  /// Used when constructing a pure abstract class, because calling the Entity
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
+  explicit Entity(ConstructAbstract_t);
+
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
 
@@ -257,6 +282,8 @@ private:
   /// Whether or not this Entity is set to be quiet
   const bool mAmQuiet;
 
+  /// Whether or not this Entity is a Frame
+  bool mAmFrame;
 };
 
 /// The Detachable class is a special case of the Entity base class. Detachable
@@ -269,6 +296,11 @@ public:
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);
+
+protected:
+  /// Constructor for inheriting classes, so they do not need to fill in the
+  /// arguments
+  Detachable();
 
 };
 

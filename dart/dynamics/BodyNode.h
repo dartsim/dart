@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -47,12 +48,14 @@
 #include "dart/config.h"
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
-
+#include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/EndEffector.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -80,7 +83,9 @@ class Marker;
 ///
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
-class BodyNode : public Frame, public SkeletonRefCountingBase
+class BodyNode :
+    public SkeletonRefCountingBase,
+    public TemplatedJacobianNode<BodyNode>
 {
 public:
 
@@ -165,9 +170,6 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
-
-  /// Return the name of the bodynode
-  const std::string& getName() const override;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
@@ -480,7 +482,9 @@ public:
   // default argument. Please see #487 for detail
 
   /// Create clones of this BodyNode and all of its children (recursively) and
-  /// create a new Skeleton with the specified name to attach them to.
+  /// create a new Skeleton with the specified name to attach them to. The
+  /// Skeleton::Properties of the current Skeleton will also be copied into the
+  /// new Skeleton that gets created.
   SkeletonPtr copyAs(const std::string& _skeletonName,
                      bool _recursive=true) const;
 
@@ -499,6 +503,12 @@ public:
       bool _recursive=true) const;
   // TODO: Workaround for MSVC bug on template function specialization with
   // default argument. Please see #487 for detail
+
+  // Documentation inherited
+  SkeletonPtr getSkeleton() override;
+
+  // Documentation inherited
+  ConstSkeletonPtr getSkeleton() const override;
 
   /// Return the parent Joint of this BodyNode
   Joint* getParentJoint();
@@ -547,6 +557,21 @@ public:
   /// Return the (const) _index-th child Joint of this BodyNode
   const Joint* getChildJoint(size_t _index) const;
 
+  /// Return the number of EndEffectors attached to this BodyNode
+  size_t getNumEndEffectors() const;
+
+  /// Return an EndEffector attached to this BodyNode
+  EndEffector* getEndEffector(size_t _index);
+
+  /// Return an EndEffector attached to this BodyNode
+  const EndEffector* getEndEffector(size_t _index) const;
+
+  /// Create an EndEffector attached to this BodyNode
+  EndEffector* createEndEffector(const EndEffector::Properties& _properties);
+
+  /// Create an EndEffector with the specified name
+  EndEffector* createEndEffector(const std::string& _name = "EndEffector");
+
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
 
@@ -559,27 +584,35 @@ public:
   /// Return (const) _index-th marker of the bodynode
   const Marker* getMarker(size_t _index) const;
 
-  /// Return true if _genCoordIndex-th generalized coordinate
-  bool dependsOn(size_t _genCoordIndex) const;
+  // Documentation inherited
+  bool dependsOn(size_t _genCoordIndex) const override;
 
-  /// The number of the generalized coordinates by which this node is affected
-  size_t getNumDependentGenCoords() const;
+  // Documentation inherited
+  size_t getNumDependentGenCoords() const override;
 
-  /// Return a generalized coordinate index from the array index
-  /// (< getNumDependentDofs)
-  size_t getDependentGenCoordIndex(size_t _arrayIndex) const;
+  // Documentation inherited
+  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
 
-  /// Return a std::vector of generalized coordinate indices that this BodyNode
-  /// depends on.
-  const std::vector<size_t>& getDependentGenCoordIndices() const;
+  // Documentation inherited
+  const std::vector<size_t>& getDependentGenCoordIndices() const override;
 
-  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
-  /// depends on.
-  const std::vector<DegreeOfFreedom*>& getDependentDofs();
+  // Documentation inherited
+  size_t getNumDependentDofs() const override;
 
-  /// Return a std::vector of DegreeOfFreedom pointers that this BodyNode
-  /// depends on.
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const;
+  // Documentation inherited
+  DegreeOfFreedom* getDependentDof(size_t _index) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
+
+  // Documentation inherited
+  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
 
   //--------------------------------------------------------------------------
   // Properties updated by dynamics (kinematics)
@@ -603,44 +636,17 @@ public:
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the Frame of this BodyNode.
-  const math::Jacobian& getJacobian() const;
+  const math::Jacobian& getJacobian() const override;
 
-  /// A version of getJacobian() that lets you specify a coordinate Frame to
-  /// express the Jacobian in.
-  math::Jacobian getJacobian(const Frame* _inCoordinatesOf) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobian(const Eigen::Vector3d&) that lets you specify a
-  /// coordinate Frame to express the Jacobian in.
-  math::Jacobian getJacobian(const Eigen::Vector3d& _offset,
-                             const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobian functions from being shadowed
+  using TemplatedJacobianNode<BodyNode>::getJacobian;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the World Frame.
   const math::Jacobian& getWorldJacobian() const;
 
-  /// Return the generalized Jacobian targeting an offset in this BodyNode. The
-  /// _offset is expected in coordinates of this BodyNode Frame. The Jacobian is
-  /// expressed in the World Frame.
-  math::Jacobian getWorldJacobian(const Eigen::Vector3d& _offset) const;
-
-  /// Return the linear Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::LinearJacobian getLinearJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the generalized Jacobian targeting an offset within the Frame of
-  /// this BodyNode.
-  math::LinearJacobian getLinearJacobian(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian targeting the origin of this BodyNode. You can
-  /// specify a coordinate Frame to express the Jacobian in.
-  math::AngularJacobian getAngularJacobian(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getWorldJacobian functions from being shadowed
+  using TemplatedJacobianNode<BodyNode>::getWorldJacobian;
 
   /// Return the spatial time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in this BodyNode's
@@ -650,33 +656,10 @@ public:
   /// spatial vectors. If you are using classical linear and angular
   /// acceleration vectors, then use getJacobianClassicDeriv(),
   /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
-  const math::Jacobian& getJacobianSpatialDeriv() const;
+  const math::Jacobian& getJacobianSpatialDeriv() const override;
 
-  /// A version of getJacobianSpatialDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classical linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  math::Jacobian getJacobianSpatialDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// Return the spatial time derivative of the generalized Jacobian targeting
-  /// an offset in the Frame of this BodyNode. The Jacobian is expressed in
-  /// this BodyNode's coordinate Frame.
-  ///
-  /// NOTE: This Jacobian Derivative is only for use with spatial vectors. If
-  /// you are using classic linear and angular vectors, then use
-  /// getJacobianClassicDeriv(), getLinearJacobianDeriv(), or
-  /// getAngularJacobianDeriv() instead.
-  ///
-  /// \sa getJacobianSpatialDeriv()
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset) const;
-
-  /// A version of getJacobianSpatialDeriv(const Eigen::Vector3d&) that allows
-  /// an arbitrary coordinate Frame to be specified.
-  math::Jacobian getJacobianSpatialDeriv(const Eigen::Vector3d& _offset,
-                                         const Frame* _inCoordinatesOf) const;
+  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
+  using TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv;
 
   /// Return the classical time derivative of the generalized Jacobian targeting
   /// the origin of this BodyNode. The Jacobian is expressed in the World
@@ -685,50 +668,10 @@ public:
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
   /// use getJacobianSpatialDeriv() instead.
-  const math::Jacobian& getJacobianClassicDeriv() const;
+  const math::Jacobian& getJacobianClassicDeriv() const override;
 
-  /// A version of getJacobianClassicDeriv() that can return the Jacobian in
-  /// coordinates of any Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Frame* _inCoordinatesOf) const;
-
-  /// A version of getJacobianClassicDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in the coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear and angular vectors. If you are using spatial vectors,
-  /// use getJacobianSpatialDeriv() instead.
-  math::Jacobian getJacobianClassicDeriv(const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the linear Jacobian (classical) time derivative, in terms of any
-  /// coordinate Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// A version of getLinearJacobianDeriv() that can compute the Jacobian for
-  /// an offset within the Frame of this BodyNode. The offset must be expressed
-  /// in coordinates of this BodyNode Frame.
-  ///
-  /// NOTE: Since this is a classical time derivative, it should be used with
-  /// classical linear vectors. If you are using spatial vectors, use
-  /// getJacobianSpatialDeriv() instead.
-  math::LinearJacobian getLinearJacobianDeriv(
-                          const Eigen::Vector3d& _offset,
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
-
-  /// Return the angular Jacobian time derivative, in terms of any coordinate
-  /// Frame.
-  math::AngularJacobian getAngularJacobianDeriv(
-                          const Frame* _inCoordinatesOf = Frame::World()) const;
+  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
+  using TemplatedJacobianNode<BodyNode>::getJacobianClassicDeriv;
 
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
@@ -855,14 +798,6 @@ public:
   // Notifications
   //----------------------------------------------------------------------------
 
-  /// Notify this BodyNode and all its descendents that their Jacobians need to
-  /// be updated.
-  void notifyJacobianUpdate();
-
-  /// Notify this BodyNode and all its descendents that their Jacobian
-  /// derivatives need to be updated.
-  void notifyJacobianDerivUpdate();
-
   // Documentation inherited
   void notifyTransformUpdate() override;
 
@@ -888,8 +823,10 @@ public:
 
   friend class Skeleton;
   friend class Joint;
+  friend class EndEffector;
   friend class SoftBodyNode;
   friend class PointMass;
+  friend class Node;
 
 protected:
 
@@ -1032,7 +969,7 @@ protected:
   virtual void aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
                                              const Eigen::Vector6d& _spatial);
 
-  /// Update body Jacobian. getBodyJacobian() calls this function if
+  /// Update body Jacobian. getJacobian() calls this function if
   /// mIsBodyJacobianDirty is true.
   void updateBodyJacobian() const;
 
@@ -1046,7 +983,7 @@ protected:
   void updateBodyJacobianSpatialDeriv() const;
 
   /// Update classic time derivative of body Jacobian.
-  /// getJacobianClassicTimeDeriv() calls this function if
+  /// getJacobianClassicDeriv() calls this function if
   /// mIsWorldJacobianClassicDerivDirty is true.
   void updateWorldJacobianClassicDeriv() const;
 
@@ -1096,8 +1033,14 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
+  /// List of EndEffectors that are attached to this BodyNode
+  std::vector<EndEffector*> mEndEffectors;
+
   /// List of markers associated
   std::vector<Marker*> mMarkers;
+
+  /// Map that retrieves the destructors for a given Node
+  std::unordered_map<const Node*, std::shared_ptr<NodeDestructor>> mNodeMap;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1118,32 +1061,20 @@ protected:
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mBodyJacobian;
 
-  /// Dirty flag for body Jacobian.
-  mutable bool mIsBodyJacobianDirty;
-
   /// Cached World Jacobian
   ///
   /// Do not use directly! Use getJacobian() to access this quantity
   mutable math::Jacobian mWorldJacobian;
-
-  /// Dirty flag for world Jacobian
-  mutable bool mIsWorldJacobianDirty;
 
   /// Spatial time derivative of body Jacobian.
   ///
   /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
   mutable math::Jacobian mBodyJacobianSpatialDeriv;
 
-  /// Dirty flag for spatial time derivative of body Jacobian.
-  mutable bool mIsBodyJacobianSpatialDerivDirty;
-
   /// Classic time derivative of Body Jacobian
   ///
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Dirty flag for the classic time derivative of the Jacobian
-  mutable bool mIsWorldJacobianClassicDerivDirty;
 
   /// Partial spatial body acceleration due to parent joint's velocity
   ///
@@ -1242,6 +1173,13 @@ public:
   mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
 
   /// \}
+
+private:
+
+  /// Hold onto a reference to this BodyNode's own Destructor to make sure that
+  /// it never gets destroyed.
+  std::shared_ptr<NodeDestructor> mSelfDestructor;
+
 };
 
 #include "dart/dynamics/detail/BodyNode.h"

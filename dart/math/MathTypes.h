@@ -82,6 +82,14 @@ namespace Eigen {
 typedef Matrix<double, 6, 1> Vector6d;
 typedef Matrix<double, 6, 6> Matrix6d;
 
+inline Vector6d compose(const Eigen::Vector3d& _angular,
+                        const Eigen::Vector3d& _linear)
+{
+  Vector6d composition;
+  composition << _angular, _linear;
+  return composition;
+}
+
 typedef std::vector<Eigen::Vector3d> EIGEN_V_VEC3D;
 typedef std::vector<std::vector<Eigen::Vector3d > > EIGEN_VV_VEC3D;
 

@@ -39,7 +39,6 @@
 #define DART_MATH_HELPERS_H_
 
 // Standard Libraries
-#include <cassert>
 #include <cfloat>
 #include <climits>
 #include <cmath>
@@ -47,12 +46,11 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <vector>
 
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/common/Console.h"
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -68,13 +66,28 @@ inline int delta(int _i, int _j) {
   return 0;
 }
 
-inline int sgn(double _a) {
-  if (_a < 0)
-    return -1;
-  else if (_a == 0)
-    return 0;
-  else
-    return 1;
+template <typename T> inline constexpr
+int sign(T x, std::false_type)
+{
+  return static_cast<T>(0) < x;
+}
+
+template <typename T> inline constexpr
+int sign(T x, std::true_type)
+{
+  return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
+}
+
+template <typename T> inline constexpr
+int sign(T x)
+{
+  return sign(x, std::is_signed<T>());
+}
+
+DEPRECATED(5.1)
+inline int sgn(double _a)
+{
+  return sign(_a);
 }
 
 inline double sqr(double _x) {
@@ -106,7 +119,7 @@ inline double asech(double _X) {
 }
 
 inline double acosech(double _X) {
-  return log((sgn(_X) * sqrt(_X * _X + 1) +1) / _X);
+  return log((sign(_X) * sqrt(_X * _X + 1) +1) / _X);
 }
 
 inline double acotanh(double _X) {

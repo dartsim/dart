@@ -2,12 +2,9 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_optimizer_hdrs ${dart_optimizer_hdrs} ${hdrs} PARENT_SCOPE)
-set(dart_optimizer_srcs ${dart_optimizer_srcs} ${srcs} PARENT_SCOPE)
-
 # Library
-#dart_add_library(dart_optimizer_nlopt ${srcs} ${hdrs})
-#target_link_libraries(dart_optimizer_nlopt ${DART_DEPENDENCIES})
+dart_add_library(dart-optimizer-nlopt ${srcs} ${hdrs})
+target_link_libraries(dart-optimizer-nlopt dart-core ${NLOPT_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})
@@ -28,5 +25,4 @@ install(
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )
-#install(TARGETS dart_optimizer_nlopt EXPORT DARTTargets DESTINATION lib)
-
+install(TARGETS dart-optimizer-nlopt EXPORT DARTNLoptTargets DESTINATION lib)
