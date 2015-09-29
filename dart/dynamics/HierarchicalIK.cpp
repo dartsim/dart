@@ -543,8 +543,8 @@ void HierarchicalIK::Constraint::evalGradient(
 HierarchicalIK::HierarchicalIK(const SkeletonPtr& _skeleton)
   : mSkeleton(_skeleton)
 {
-  // initialize MUST be called from the constructors of any directly inheriting
-  // classes
+  // initialize MUST be called immediately after the construction of any
+  // directly inheriting classes.
 }
 
 //==============================================================================
