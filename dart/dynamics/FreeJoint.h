@@ -154,7 +154,7 @@ public:
   /// \param[in] newTransform Desired transform of the child BodyNode.
   /// \param[in] withRespectTo The relative Frame of "newTransform".
   void setTransform(const Eigen::Isometry3d& newTransform,
-                    const Frame* withRespectTo);
+                    const Frame* withRespectTo = Frame::World());
 
   /// Set the spatial velocity of the child BodyNode relative to the parent
   /// BodyNode.
