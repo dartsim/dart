@@ -94,7 +94,12 @@ void FreeJoint::setTransform(Joint* joint,
   FreeJoint* freeJoint = dynamic_cast<FreeJoint*>(joint);
 
   if (nullptr == freeJoint)
+  {
+    dtwarn << "[FreeJoint::setTransform] Invalid joint type. Setting transform "
+           << "is only allowed to FreeJoint. The joint type of given joint ["
+           << joint->getName() << "] is [" << joint->getType() << "].\n";
     return;
+  }
 
   freeJoint->setTransform(tf, withRespectTo);
 }
