@@ -467,10 +467,8 @@ void Joint::notifyPositionUpdate()
   if(mChildBodyNode)
   {
     mChildBodyNode->notifyTransformUpdate();
-    mChildBodyNode->mIsBodyJacobianDirty = true;
-    mChildBodyNode->mIsWorldJacobianDirty = true;
-    mChildBodyNode->mIsBodyJacobianSpatialDerivDirty = true;
-    mChildBodyNode->mIsWorldJacobianClassicDerivDirty = true;
+    mChildBodyNode->notifyJacobianUpdate();
+    mChildBodyNode->notifyJacobianDerivUpdate();
   }
 
   mIsLocalJacobianDirty = true;
@@ -495,7 +493,10 @@ void Joint::notifyPositionUpdate()
 void Joint::notifyVelocityUpdate()
 {
   if(mChildBodyNode)
+  {
     mChildBodyNode->notifyVelocityUpdate();
+    mChildBodyNode->notifyJacobianDerivUpdate();
+  }
 
   mIsLocalJacobianTimeDerivDirty = true;
 
