@@ -838,7 +838,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
 
     for (auto relativeTo : relFrames)
     {
-      joint1->setRelativeTransform(desiredTf, relativeTo);
+      joint1->setTransform(desiredTf, relativeTo);
       actualTf = bodyNode1->getTransform(relativeTo);
       EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
     }
@@ -855,8 +855,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialVelocity(
-              desiredVel, relativeTo, inCoordinatesOf);
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         actualVel = bodyNode1->getSpatialVelocity(
                       relativeTo, inCoordinatesOf);
 
@@ -870,12 +869,10 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialVelocity(
-              desiredVel, relativeTo, inCoordinatesOf);
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         oldAngVel
             = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
-        joint1->setRelativeLinearVelocity(
-              desiredLinVel, relativeTo, inCoordinatesOf);
+        joint1->setLinearVelocity(desiredLinVel, relativeTo, inCoordinatesOf);
 
         actualLinVel
             = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
@@ -893,12 +890,10 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialVelocity(
-              desiredVel, relativeTo, inCoordinatesOf);
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
         oldLinVel
             = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
-        joint1->setRelativeAngularVelocity(
-              desiredAngVel, relativeTo, inCoordinatesOf);
+        joint1->setAngularVelocity(desiredAngVel, relativeTo, inCoordinatesOf);
 
         actualLinVel =
             bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
@@ -922,7 +917,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialAcceleration(
+        joint1->setSpatialAcceleration(
               desiredAcc, relativeTo, inCoordinatesOf);
         actualAcc = bodyNode1->getSpatialAcceleration(
                       relativeTo, inCoordinatesOf);
@@ -936,7 +931,7 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialMotion(
+        joint1->setSpatialMotion(
               &desiredTf, relativeTo,
               &desiredVel, relativeTo, inCoordinatesOf,
               &desiredAcc, relativeTo, inCoordinatesOf);
@@ -959,11 +954,11 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialAcceleration(
+        joint1->setSpatialAcceleration(
               desiredAcc, relativeTo, inCoordinatesOf);
         oldAngAcc
             = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
-        joint1->setRelativeLinearAcceleration(
+        joint1->setLinearAcceleration(
               desiredLinAcc, relativeTo, inCoordinatesOf);
 
         actualLinAcc
@@ -982,11 +977,11 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     {
       for (auto inCoordinatesOf : refFrames)
       {
-        joint1->setRelativeSpatialAcceleration(
+        joint1->setSpatialAcceleration(
               desiredAcc, relativeTo, inCoordinatesOf);
         oldLinAcc
             = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
-        joint1->setRelativeAngularAcceleration(
+        joint1->setAngularAcceleration(
               desiredAngAcc, relativeTo, inCoordinatesOf);
 
         actualLinAcc =

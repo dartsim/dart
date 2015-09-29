@@ -113,7 +113,7 @@ public:
   /// \param[in] accrelativeTo The relative frame of "newSpatialAcceleration".
   /// \param[in] accinCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
-  void setRelativeSpatialMotion(
+  void setSpatialMotion(
       const Eigen::Isometry3d* newTransform,
       const Frame* withRespectTo,
       const Eigen::Vector6d* newSpatialVelocity,
@@ -130,8 +130,8 @@ public:
   /// Set the transform of the child BodyNode relative to an arbitrary Frame.
   /// \param[in] newTransform Desired transform of the child BodyNode.
   /// \param[in] withRespectTo The relative Frame of "newTransform".
-  void setRelativeTransform(const Eigen::Isometry3d& newTransform,
-                            const Frame* withRespectTo);
+  void setTransform(const Eigen::Isometry3d& newTransform,
+                    const Frame* withRespectTo);
 
   /// Set the spatial velocity of the child BodyNode relative to the parent
   /// BodyNode.
@@ -154,9 +154,9 @@ public:
   /// BodyNode.
   /// \param[in] relativeTo The relative frame of "newSpatialVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newSpatialVelocity".
-  void setRelativeSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
-                                  const Frame* relativeTo,
-                                  const Frame* inCoordinatesOf);
+  void setSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
+                          const Frame* relativeTo,
+                          const Frame* inCoordinatesOf);
 
   /// Set the linear portion of classical velocity of the child BodyNode
   /// relative to an arbitrary Frame.
@@ -166,10 +166,9 @@ public:
   ///
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
-  void setRelativeLinearVelocity(
-      const Eigen::Vector3d& newLinearVelocity,
-      const Frame* relativeTo = Frame::World(),
-      const Frame* inCoordinatesOf = Frame::World());
+  void setLinearVelocity(const Eigen::Vector3d& newLinearVelocity,
+                         const Frame* relativeTo = Frame::World(),
+                         const Frame* inCoordinatesOf = Frame::World());
 
   /// Set the angular portion of classical velocity of the child BodyNode
   /// relative to an arbitrary Frame.
@@ -179,10 +178,9 @@ public:
   ///
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
-  void setRelativeAngularVelocity(
-      const Eigen::Vector3d& newAngularVelocity,
-      const Frame* relativeTo = Frame::World(),
-      const Frame* inCoordinatesOf = Frame::World());
+  void setAngularVelocity(const Eigen::Vector3d& newAngularVelocity,
+                          const Frame* relativeTo = Frame::World(),
+                          const Frame* inCoordinatesOf = Frame::World());
 
   /// Set the spatial acceleration of the child BodyNode relative to the parent
   /// BodyNode.
@@ -209,10 +207,9 @@ public:
   /// \param[in] relativeTo The relative frame of "newSpatialAcceleration".
   /// \param[in] inCoordinatesOf The reference frame of
   /// "newSpatialAcceleration".
-  void setRelativeSpatialAcceleration(
-      const Eigen::Vector6d& newSpatialAcceleration,
-      const Frame* relativeTo,
-      const Frame* inCoordinatesOf);
+  void setSpatialAcceleration(const Eigen::Vector6d& newSpatialAcceleration,
+                              const Frame* relativeTo,
+                              const Frame* inCoordinatesOf);
 
   /// Set the linear portion of classical acceleration of the child BodyNode
   /// relative to an arbitrary Frame.
@@ -222,10 +219,9 @@ public:
   ///
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
-  void setRelativeLinearAcceleration(
-      const Eigen::Vector3d& newLinearAcceleration,
-      const Frame* relativeTo = Frame::World(),
-      const Frame* inCoordinatesOf = Frame::World());
+  void setLinearAcceleration(const Eigen::Vector3d& newLinearAcceleration,
+                             const Frame* relativeTo = Frame::World(),
+                             const Frame* inCoordinatesOf = Frame::World());
 
   /// Set the angular portion of classical acceleration of the child BodyNode
   /// relative to an arbitrary Frame.
@@ -235,10 +231,9 @@ public:
   ///
   /// \param[in] relativeTo The relative frame of "newLinearVelocity".
   /// \param[in] inCoordinatesOf The reference frame of "newLinearVelocity".
-  void setRelativeAngularAcceleration(
-      const Eigen::Vector3d& newAngularAcceleration,
-      const Frame* relativeTo = Frame::World(),
-      const Frame* inCoordinatesOf = Frame::World());
+  void setAngularAcceleration(const Eigen::Vector3d& newAngularAcceleration,
+                              const Frame* relativeTo = Frame::World(),
+                              const Frame* inCoordinatesOf = Frame::World());
 
   // Documentation inherited
   Eigen::Matrix6d getLocalJacobianStatic(

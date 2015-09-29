@@ -84,31 +84,26 @@ Eigen::Isometry3d FreeJoint::convertToTransform(
 }
 
 //==============================================================================
-void FreeJoint::setRelativeSpatialMotion(
-    const Eigen::Isometry3d* newTransform,
-    const Frame* withRespectTo,
-    const Eigen::Vector6d* newSpatialVelocity,
-    const Frame* velRelativeTo,
-    const Frame* velInCoordinatesOf,
-    const Eigen::Vector6d* newSpatialAcceleration,
-    const Frame* accRelativeTo,
-    const Frame* accInCoordinatesOf)
+void FreeJoint::setSpatialMotion(const Eigen::Isometry3d* newTransform,
+                                 const Frame* withRespectTo,
+                                 const Eigen::Vector6d* newSpatialVelocity,
+                                 const Frame* velRelativeTo,
+                                 const Frame* velInCoordinatesOf,
+                                 const Eigen::Vector6d* newSpatialAcceleration,
+                                 const Frame* accRelativeTo,
+                                 const Frame* accInCoordinatesOf)
 {
   if (newTransform)
-    setRelativeTransform(*newTransform, withRespectTo);
+    setTransform(*newTransform, withRespectTo);
 
   if (newSpatialVelocity)
-  {
-    setRelativeSpatialVelocity(*newSpatialVelocity,
-                               velRelativeTo,
-                               velInCoordinatesOf);
-  }
+    setSpatialVelocity(*newSpatialVelocity, velRelativeTo, velInCoordinatesOf);
 
   if (newSpatialAcceleration)
   {
-    setRelativeSpatialAcceleration(*newSpatialAcceleration,
-                                   accRelativeTo,
-                                   accInCoordinatesOf);
+    setSpatialAcceleration(*newSpatialAcceleration,
+                           accRelativeTo,
+                           accInCoordinatesOf);
   }
 }
 
@@ -122,8 +117,8 @@ void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 }
 
 //==============================================================================
-void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform,
-                                     const Frame* withRespectTo)
+void FreeJoint::setTransform(const Eigen::Isometry3d& newTransform,
+                             const Frame* withRespectTo)
 {
   assert(nullptr != withRespectTo);
 
@@ -159,17 +154,16 @@ void FreeJoint::setRelativeSpatialVelocity(
 }
 
 //==============================================================================
-void FreeJoint::setRelativeSpatialVelocity(
-    const Eigen::Vector6d& newSpatialVelocity,
-    const Frame* relativeTo,
-    const Frame* inCoordinatesOf)
+void FreeJoint::setSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
+                                   const Frame* relativeTo,
+                                   const Frame* inCoordinatesOf)
 {
   assert(nullptr != relativeTo);
   assert(nullptr != inCoordinatesOf);
 
   if (getChildBodyNode() == relativeTo)
   {
-    dtwarn << "[FreeJoint::setRelativeSpatialVelocity] Invalid reference frame "
+    dtwarn << "[FreeJoint::setSpatialVelocity] Invalid reference frame "
               "for newSpatialVelocity. It shouldn't be the child BodyNode.\n";
     return;
   }
@@ -213,10 +207,9 @@ void FreeJoint::setRelativeSpatialVelocity(
 }
 
 //==============================================================================
-void FreeJoint::setRelativeLinearVelocity(
-    const Eigen::Vector3d& newLinearVelocity,
-    const Frame* relativeTo,
-    const Frame* inCoordinatesOf)
+void FreeJoint::setLinearVelocity(const Eigen::Vector3d& newLinearVelocity,
+                                  const Frame* relativeTo,
+                                  const Frame* inCoordinatesOf)
 {
   assert(nullptr != relativeTo);
   assert(nullptr != inCoordinatesOf);
@@ -246,15 +239,13 @@ void FreeJoint::setRelativeLinearVelocity(
   //       * newLinearVelocity;
   // but faster.
 
-  setRelativeSpatialVelocity(
-        targetSpatialVelocity, relativeTo, getChildBodyNode());
+  setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
 }
 
 //==============================================================================
-void FreeJoint::setRelativeAngularVelocity(
-    const Eigen::Vector3d& newAngularVelocity,
-    const Frame* relativeTo,
-    const Frame* inCoordinatesOf)
+void FreeJoint::setAngularVelocity(const Eigen::Vector3d& newAngularVelocity,
+                                   const Frame* relativeTo,
+                                   const Frame* inCoordinatesOf)
 {
   assert(nullptr != relativeTo);
   assert(nullptr != inCoordinatesOf);
@@ -284,8 +275,7 @@ void FreeJoint::setRelativeAngularVelocity(
             relativeTo, getChildBodyNode()).tail<3>();
   }
 
-  setRelativeSpatialVelocity(
-        targetSpatialVelocity, relativeTo, getChildBodyNode());
+  setSpatialVelocity(targetSpatialVelocity, relativeTo, getChildBodyNode());
 }
 
 //==============================================================================
@@ -319,7 +309,7 @@ void FreeJoint::setRelativeSpatialAcceleration(
 }
 
 //==============================================================================
-void FreeJoint::setRelativeSpatialAcceleration(
+void FreeJoint::setSpatialAcceleration(
     const Eigen::Vector6d& newSpatialAcceleration,
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
@@ -329,7 +319,7 @@ void FreeJoint::setRelativeSpatialAcceleration(
 
   if (getChildBodyNode() == relativeTo)
   {
-    dtwarn << "[FreeJoint::setRelativeSpatialAcceleration] Invalid reference "
+    dtwarn << "[FreeJoint::setSpatialAcceleration] Invalid reference "
            << "frame for newSpatialAcceleration. It shouldn't be the child "
            << "BodyNode.\n";
     return;
@@ -383,7 +373,7 @@ void FreeJoint::setRelativeSpatialAcceleration(
 }
 
 //==============================================================================
-void FreeJoint::setRelativeLinearAcceleration(
+void FreeJoint::setLinearAcceleration(
     const Eigen::Vector3d& newLinearAcceleration,
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
@@ -418,12 +408,12 @@ void FreeJoint::setRelativeLinearAcceleration(
   //       * (newLinearAcceleration - V.head<3>().cross(V.tail<3>()));
   // but faster.
 
-  setRelativeSpatialAcceleration(
+  setSpatialAcceleration(
         targetSpatialAcceleration, relativeTo, getChildBodyNode());
 }
 
 //==============================================================================
-void FreeJoint::setRelativeAngularAcceleration(
+void FreeJoint::setAngularAcceleration(
     const Eigen::Vector3d& newAngularAcceleration,
     const Frame* relativeTo,
     const Frame* inCoordinatesOf)
@@ -456,7 +446,7 @@ void FreeJoint::setRelativeAngularAcceleration(
             relativeTo, getChildBodyNode()).tail<3>();
   }
 
-  setRelativeSpatialAcceleration(
+  setSpatialAcceleration(
         targetSpatialAcceleration, relativeTo, getChildBodyNode());
 }
 
