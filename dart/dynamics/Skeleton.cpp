@@ -704,6 +704,12 @@ const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
 }
 
 //==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::getOrCreateIK()
+{
+  return getIK(true);
+}
+
+//==============================================================================
 std::shared_ptr<const WholeBodyIK> Skeleton::getIK() const
 {
   return mWholeBodyIK;

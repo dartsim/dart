@@ -35,8 +35,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define NOMINMAX
-
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 #include <algorithm>

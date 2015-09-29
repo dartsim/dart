@@ -58,26 +58,26 @@ public:
   virtual ~FixedFrame();
 
   // Documentation inherited
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPartialAcceleration() const;
+  const Eigen::Vector6d& getPartialAcceleration() const override;
 
 protected:
   /// Relative Transform of this Frame
   Eigen::Isometry3d mRelativeTf;
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame
-  const Eigen::Vector6d mZero;
+  static const Eigen::Vector6d mZero;
 };
 
 } // namespace dynamics

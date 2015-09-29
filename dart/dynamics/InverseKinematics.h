@@ -91,14 +91,14 @@ public:
   virtual ~InverseKinematics();
 
   /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint configuration. If you pass in true for _resetConfiguration,
-  /// then the joint positions will be returned to their original configuration
-  /// after the problem is solved.
-  bool solve(bool _resetConfiguration = false);
+  /// solved joint positions. If you pass in false for _applySolution, then the
+  /// joint positions will be returned to their original positions after the
+  /// problem is solved.
+  bool solve(bool _applySolution = true);
 
-  /// Same as solve(bool), but the config vector will be filled with the solved
-  /// configuration.
-  bool solve(Eigen::VectorXd& config, bool _resetConfiguration = false);
+  /// Same as solve(bool), but the positions vector will be filled with the
+  /// solved positions.
+  bool solve(Eigen::VectorXd& positions, bool _applySolution = true);
 
   /// Clone this IK module, but targeted at a new Node. Any Functions in the
   /// Problem that inherit InverseKinematics::Function will be adapted to the
@@ -182,7 +182,7 @@ public:
     /// while the last three components correspond to translational error.
     ///
     /// When implementing this function, you should assume that the Skeleton's
-    /// current joint configuration corresponds to the configuration that you
+    /// current joint positions corresponds to the positions that you
     /// must use to compute the error. This function will only get called when
     /// an update is needed.
     virtual Eigen::Vector6d computeError() = 0;
@@ -282,8 +282,8 @@ public:
     /// Name of this error method
     std::string mMethodName;
 
-    /// The last configuration passed into this ErrorMethod
-    Eigen::VectorXd mLastConfig;
+    /// The last joint positions passed into this ErrorMethod
+    Eigen::VectorXd mLastPositions;
 
     /// The last error vector computed by this ErrorMethod
     Eigen::Vector6d mLastError;
@@ -343,7 +343,7 @@ public:
 
     /// Override this function with your implementation of the gradient
     /// computation. The direction that this gradient points in should make the
-    /// error **worse** if applied to the joint configuration, because the
+    /// error **worse** if applied to the joint positions, because the
     /// Problem is configured as a gradient **descent** error minimization
     /// Problem.
     ///
@@ -353,7 +353,7 @@ public:
     /// the last three components correspond to translational error.
     ///
     /// When implementing this function, you should assume that the Skeleton's
-    /// current joint configuration corresponds to the configuration that you
+    /// current joint positions corresponds to the positions that you
     /// must use to compute the error. This function will only get called when
     /// an update is needed.
     virtual void computeGradient(const Eigen::Vector6d& _error,
@@ -404,8 +404,8 @@ public:
     /// The name of this method
     std::string mMethodName;
 
-    /// The last configuration that was passed to this GradientMethod
-    Eigen::VectorXd mLastConfig;
+    /// The last positions that was passed to this GradientMethod
+    Eigen::VectorXd mLastPositions;
 
     /// The last gradient that was computed by this GradientMethod
     Eigen::VectorXd mLastGradient;
@@ -669,19 +669,19 @@ public:
   const JacobianNode* getAffiliation() const;
 
   /// Compute the Jacobian for this IK module's node, using the Skeleton's
-  /// current joint configuration and the DOFs that have been assigned to the
+  /// current joint positions and the DOFs that have been assigned to the
   /// module.
   const math::Jacobian& computeJacobian() const;
 
-  /// Get the current joint configuration of the Skeleton. This will only
-  /// include the DOFs that have been assigned to this IK module, and the
-  /// components of the vector will correspond to the components of getDofs().
-  Eigen::VectorXd getConfiguration() const;
+  /// Get the current joint positions of the Skeleton. This will only include
+  /// the DOFs that have been assigned to this IK module, and the components of
+  /// the vector will correspond to the components of getDofs().
+  Eigen::VectorXd getPositions() const;
 
-  /// Get the current joint configuration of the Skeleton. This must only
-  /// include the DOFs that have been assigned to this IK module, and the
-  /// components of the vector must correspond to the components of getDofs().
-  void setConfiguration(const Eigen::VectorXd& _q);
+  /// Set the current joint positions of the Skeleton. This must only include
+  /// the DOFs that have been assigned to this IK module, and the components of
+  /// the vector must correspond to the components of getDofs().
+  void setPositions(const Eigen::VectorXd& _q);
 
   /// Clear the caches of this IK module. It should generally not be necessary
   /// to call this function. However, if you have some non-standard external
@@ -697,7 +697,7 @@ protected:
   /// InverseKinematics module. This class is not meant to be extended or
   /// instantiated by a user. Call InverseKinematics::resetProblem() to set
   /// the objective of the module's Problem to an InverseKinematics::Objective.
-  class Objective : public Function, public optimizer::Function
+  class Objective final : public Function, public optimizer::Function
   {
   public:
 
@@ -740,7 +740,7 @@ protected:
   /// instantiated by a user. Call InverseKinematics::resetProblem() to set the
   /// first equality constraint of the module's Problem to an
   /// InverseKinematics::Constraint.
-  class Constraint : public Function, public optimizer::Function
+  class Constraint final : public Function, public optimizer::Function
   {
   public:
 

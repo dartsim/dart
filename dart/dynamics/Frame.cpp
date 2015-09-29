@@ -596,6 +596,9 @@ Frame::Frame(ConstructWorld_t)
 }
 
 //==============================================================================
+const Eigen::Vector6d WorldFrame::mZero = Eigen::Vector6d::Zero();
+
+//==============================================================================
 const Eigen::Isometry3d& WorldFrame::getRelativeTransform() const
 {
   return mRelativeTf;
@@ -629,8 +632,7 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 WorldFrame::WorldFrame()
   : Entity(nullptr, "World", true),
     Frame(ConstructWorld),
-    mRelativeTf(Eigen::Isometry3d::Identity()),
-    mZero(Eigen::Vector6d::Zero())
+    mRelativeTf(Eigen::Isometry3d::Identity())
 {
   changeParentFrame(this);
 }

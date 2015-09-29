@@ -57,7 +57,7 @@ InverseKinematics::~InverseKinematics()
 }
 
 //==============================================================================
-bool InverseKinematics::solve(bool _resetConfiguration)
+bool InverseKinematics::solve(bool _applySolution)
 {
   if(nullptr == mSolver)
   {
@@ -79,7 +79,7 @@ bool InverseKinematics::solve(bool _resetConfiguration)
 
   mProblem->setDimension(mDofs.size());
 
-  mProblem->setInitialGuess(getConfiguration());
+  mProblem->setInitialGuess(getPositions());
 
   const SkeletonPtr& skel = getNode()->getSkeleton();
 
@@ -92,20 +92,24 @@ bool InverseKinematics::solve(bool _resetConfiguration)
     bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
-  if(!_resetConfiguration)
-    return mSolver->solve();
+  if(_applySolution)
+  {
+    bool wasSolved = mSolver->solve();
+    setPositions(mProblem->getOptimalSolution());
+    return wasSolved;
+  }
 
-  Eigen::VectorXd config = getConfiguration();
+  Eigen::VectorXd originalPositions = getPositions();
   bool wasSolved = mSolver->solve();
-  setConfiguration(config);
+  setPositions(originalPositions);
   return wasSolved;
 }
 
 //==============================================================================
-bool InverseKinematics::solve(Eigen::VectorXd& config, bool _resetConfiguration)
+bool InverseKinematics::solve(Eigen::VectorXd& positions, bool _applySolution)
 {
-  bool wasSolved = solve(_resetConfiguration);
-  config = mProblem->getOptimalSolution();
+  bool wasSolved = solve(_applySolution);
+  positions = mProblem->getOptimalSolution();
   return wasSolved;
 }
 
@@ -154,7 +158,7 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), newIK.get()));
 
-  newProblem->getAllSeeds() = mProblem->getAllSeeds();
+  newProblem->getSeeds() = mProblem->getSeeds();
 
   return newIK;
 }
@@ -192,7 +196,7 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
   if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
     dterr << "[InverseKinematics::ErrorMethod::evalError] Mismatch between "
-          << "configuration size [" << _q.size() << "] and the available "
+          << "joint positions size [" << _q.size() << "] and the available "
           << "degrees of freedom [" << mIK->getDofs().size() <<"]."
           << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
           << "\nBody name: " << mIK->getNode()->getName()
@@ -207,12 +211,12 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
     return mLastError;
   }
 
-  if(_q.size() == mLastConfig.size())
+  if(_q.size() == mLastPositions.size())
   {
     bool repeat = true;
-    for(int i=0; i<mLastConfig.size(); ++i)
+    for(int i=0; i<mLastPositions.size(); ++i)
     {
-      if(_q[i] != mLastConfig[i])
+      if(_q[i] != mLastPositions[i])
       {
         repeat = false;
         break;
@@ -223,8 +227,8 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
       return mLastError;
   }
 
-  mIK->setConfiguration(_q);
-  mLastConfig = _q;
+  mIK->setPositions(_q);
+  mLastPositions = _q;
 
   mLastError = computeError();
   return mLastError;
@@ -370,7 +374,7 @@ void InverseKinematics::ErrorMethod::clearCache()
 {
   // This will force the error to be recomputed the next time computeError is
   // called
-  mLastConfig.resize(0);
+  mLastPositions.resize(0);
 }
 
 //==============================================================================
@@ -378,7 +382,7 @@ InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
     InverseKinematics* _ik,
     const Properties& _properties,
     bool _computeFromCenter)
-  : ErrorMethod(_ik, "EulerAngleXYZ", _properties),
+  : ErrorMethod(_ik, "TaskSpaceRegion", _properties),
     mComputeErrorFromCenter(_computeFromCenter)
 {
   // Do nothing
@@ -441,7 +445,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     {
       if(mComputeErrorFromCenter)
       {
-        if(!std::isinf(max[i]))
+        if(std::isfinite(max[i]))
           error[i] = displacement[i] - (min[i]+max[i])/2.0;
         else
           error[i] = displacement[i] - (min[i]+tolerance);
@@ -453,9 +457,9 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     }
     else if( max[i] < displacement[i] )
     {
-      if(mComputeErrorFromCenter && !std::isinf(min[i]))
+      if(mComputeErrorFromCenter)
       {
-        if(!std::isinf(min[i]))
+        if(std::isfinite(min[i]))
           error[i] = displacement[i] - (min[i]+max[i])/2.0;
         else
           error[i] = displacement[i] - (max[i]-tolerance);
@@ -504,8 +508,8 @@ void InverseKinematics::GradientMethod::evalGradient(
 {
   if(_q.size() != static_cast<int>(mIK->getDofs().size()))
   {
-    dterr << "[InverseKinematics::GradientMethod::computeGradient] Mismatch "
-          << "between configuration size [" << _q.size() << "] and the "
+    dterr << "[InverseKinematics::GradientMethod::evalGradient] Mismatch "
+          << "between joint positions size [" << _q.size() << "] and the "
           << "available degrees of freedom [" << mIK->getDofs().size() << "]."
           << "\nSkeleton name: " << mIK->getNode()->getSkeleton()->getName()
           << "\nBody name: " << mIK->getNode()->getName()
@@ -523,12 +527,12 @@ void InverseKinematics::GradientMethod::evalGradient(
     return;
   }
 
-  if(_q.size() == mLastConfig.size())
+  if(_q.size() == mLastPositions.size())
   {
     bool repeat = true;
-    for(int i=0; i<mLastConfig.size(); ++i)
+    for(int i=0; i<mLastPositions.size(); ++i)
     {
-      if(_q[i] != mLastConfig[i])
+      if(_q[i] != mLastPositions[i])
       {
         repeat = false;
         break;
@@ -543,7 +547,7 @@ void InverseKinematics::GradientMethod::evalGradient(
   }
 
   Eigen::Vector6d error = mIK->getErrorMethod().evalError(_q);
-  mIK->setConfiguration(_q);
+  mIK->setPositions(_q);
   mLastGradient.resize(_grad.size());
   computeGradient(error, mLastGradient);
   _grad = mLastGradient;
@@ -607,7 +611,7 @@ void InverseKinematics::GradientMethod::clearCache()
 {
   // This will force the gradient to be recomputed the next time computeGradient
   // is called
-  mLastConfig.resize(0);
+  mLastPositions.resize(0);
 }
 
 //==============================================================================
@@ -992,19 +996,19 @@ const math::Jacobian& InverseKinematics::computeJacobian() const
 }
 
 //==============================================================================
-Eigen::VectorXd InverseKinematics::getConfiguration() const
+Eigen::VectorXd InverseKinematics::getPositions() const
 {
   return mNode->getSkeleton()->getPositions(mDofs);
 }
 
 //==============================================================================
-void InverseKinematics::setConfiguration(const Eigen::VectorXd& _q)
+void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
 {
   if(_q.size() != static_cast<int>(mDofs.size()))
   {
-    dterr << "[InverseKinematics::setConfiguration] Mismatch between config "
-          << "size [" << _q.size() << "] and number of available degrees of "
-          << "freedom [" << mDofs.size() << "]\n";
+    dterr << "[InverseKinematics::setPositions] Mismatch between joint "
+          << "positions size [" << _q.size() << "] and number of available "
+          << "degrees of freedom [" << mDofs.size() << "]\n";
     return;
   }
 
@@ -1078,7 +1082,7 @@ void InverseKinematics::Objective::evalGradient(
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
     mIK->mNullSpaceObjective->evalGradient(_x, gradMap);
 
-    mIK->setConfiguration(_x);
+    mIK->setPositions(_x);
 
     const math::Jacobian& J = mIK->computeJacobian();
     mSVDCache.compute(J, Eigen::ComputeFullV);
@@ -1137,7 +1141,6 @@ InverseKinematics::InverseKinematics(JacobianNode* _node)
     mOffset(Eigen::Vector3d::Zero()),
     mHasOffset(false),
     mNode(_node)
-
 {
   initialize();
 }
