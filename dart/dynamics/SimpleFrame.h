@@ -99,7 +99,7 @@ public:
   /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
   void setTransform(const Eigen::Isometry3d& _newTransform,
-                    const Frame* _withRespectTo);
+                    const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const;
