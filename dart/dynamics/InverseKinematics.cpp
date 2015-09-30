@@ -578,7 +578,7 @@ void InverseKinematics::GradientMethod::evalGradient(
     }
   }
 
-  Eigen::Vector6d error = mIK->getErrorMethod().evalError(_q);
+  const Eigen::Vector6d& error = mIK->getErrorMethod().evalError(_q);
   mIK->setPositions(_q);
   mLastGradient.resize(_grad.size());
   computeGradient(error, mLastGradient);
