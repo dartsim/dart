@@ -39,12 +39,15 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
+const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
+
+//==============================================================================
 FixedFrame::FixedFrame(Frame* _refFrame, const std::string& _name,
                        const Eigen::Isometry3d& _relativeTransform)
   : Entity(_refFrame, _name, false),
     Frame(_refFrame, _name),
-    mRelativeTf(_relativeTransform),
-    mZero(Eigen::Vector6d::Zero())
+    mRelativeTf(_relativeTransform)
 {
 
 }

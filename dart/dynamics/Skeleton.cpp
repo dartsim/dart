@@ -301,10 +301,10 @@ const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 }
 
 //==============================================================================
-void Skeleton::enableSelfCollision(bool _enableAdjecentBodyCheck)
+void Skeleton::enableSelfCollision(bool _enableAdjacentBodyCheck)
 {
   mSkeletonP.mEnabledSelfCollisionCheck = true;
-  mSkeletonP.mEnabledAdjacentBodyCheck = _enableAdjecentBodyCheck;
+  mSkeletonP.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
 }
 
 //==============================================================================
@@ -701,6 +701,12 @@ const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
     createIK();
 
   return mWholeBodyIK;
+}
+
+//==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::getOrCreateIK()
+{
+  return getIK(true);
 }
 
 //==============================================================================

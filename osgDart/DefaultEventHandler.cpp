@@ -41,7 +41,7 @@
 #include "osgDart/Viewer.h"
 #include "osgDart/render/ShapeNode.h"
 #include "osgDart/EntityNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/Entity.h"
 

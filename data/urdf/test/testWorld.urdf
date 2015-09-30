@@ -1,0 +1,9 @@
+<world name="testWorld">
+
+    <include filename="../KR5/KR5 sixx R650.urdf" model_name="KR5sixxR650WP_description"/>
+
+    <entity model="KR5sixxR650WP_description" name="KR5sixxR650WP_description"/>
+        <origin xyz="5.0 0.0 0.0" rpy=0 0 0"/>
+    </entity>
+
+</world>

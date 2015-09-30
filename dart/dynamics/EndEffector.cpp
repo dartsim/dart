@@ -192,6 +192,8 @@ void EndEffector::setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf)
 {
   mRelativeTf = _newRelativeTf;
   notifyTransformUpdate();
+  notifyJacobianUpdate();
+  notifyJacobianDerivUpdate();
 }
 
 //==============================================================================
@@ -380,16 +382,12 @@ void EndEffector::notifyTransformUpdate()
       skel->notifySupportUpdate(getTreeIndex());
   }
 
-  notifyJacobianUpdate();
-
   Frame::notifyTransformUpdate();
 }
 
 //==============================================================================
 void EndEffector::notifyVelocityUpdate()
 {
-  notifyJacobianDerivUpdate();
-
   Frame::notifyVelocityUpdate();
 }
 

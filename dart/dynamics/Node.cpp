@@ -47,14 +47,14 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-NodeCleaner::NodeCleaner(Node* _node)
+NodeDestructor::NodeDestructor(Node* _node)
   : mNode(_node)
 {
   // Do nothing
 }
 
 //==============================================================================
-NodeCleaner::~NodeCleaner()
+NodeDestructor::~NodeDestructor()
 {
   delete mNode;
 }
@@ -80,22 +80,20 @@ bool Node::isRemoved() const
     return true;
   }
 
-  // const_cast is okay here, because absolutely no data gets modified
-  Node* node = const_cast<Node*>(this);
-  return (mBodyNode->mNodeMap.find(node) == mBodyNode->mNodeMap.end());
+  return (mBodyNode->mNodeMap.find(this) == mBodyNode->mNodeMap.end());
 }
 
 //==============================================================================
-std::shared_ptr<NodeCleaner> Node::generateCleaner()
+std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
-  std::shared_ptr<NodeCleaner> cleaner = mCleaner.lock();
-  if(nullptr == cleaner)
+  std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
+  if(nullptr == destructor)
   {
-    cleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(this));
-    mCleaner = cleaner;
+    destructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(this));
+    mDestructor = destructor;
   }
 
-  return cleaner;
+  return destructor;
 }
 
 //==============================================================================
@@ -135,11 +133,8 @@ void Node::attach()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
-
-  if(mBodyNode->mNodeMap.end() == it)
-    mBodyNode->mNodeMap[this] = generateCleaner();
+  if(mBodyNode->mNodeMap.end() == mBodyNode->mNodeMap.find(this))
+    mBodyNode->mNodeMap[this] = getOrCreateDestructor();
 }
 
 //==============================================================================
@@ -151,8 +146,7 @@ void Node::stageForRemoval()
     return;
   }
 
-  std::unordered_map< Node*, std::shared_ptr<NodeCleaner> >::iterator it =
-      mBodyNode->mNodeMap.find(this);
+  const auto it = mBodyNode->mNodeMap.find(this);
 
   if(mBodyNode->mNodeMap.end() == it)
     return;

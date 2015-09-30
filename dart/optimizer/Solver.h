@@ -39,6 +39,7 @@
 #ifndef DART_OPTIMIZER_SOLVER_H_
 #define DART_OPTIMIZER_SOLVER_H_
 
+#include <iostream>
 #include <memory>
 
 #include <Eigen/Dense>
@@ -78,6 +79,9 @@ public:
     /// terminal. Use 0 for no printing.
     size_t mIterationsPerPrint;
 
+    /// Stream for printing the Solver's progress. Default is std::cout.
+    std::ostream* mOutStream;
+
     /// Set to true if the final result should be printed to the terminal.
     bool mPrintFinalResult;
 
@@ -89,6 +93,7 @@ public:
                double _tolerance = 1e-9,
                size_t _numMaxIterations = 500,
                size_t _iterationsPerPrint = 0,
+               std::ostream* _ostream = &std::cout,
                bool _printFinalResult = false,
                const std::string& _resultFile = "");
   };
@@ -150,6 +155,12 @@ public:
   /// Get the number of iterations that should pass between printing progress to
   /// the terminal. A value of 0 means there will be no printing.
   size_t getIterationsPerPrint() const;
+
+  /// Set the output stream that prints the Solver's progress.
+  virtual void setOutStream(std::ostream* _os);
+
+  /// Get the output stream that prints the Solver's progress.
+  std::ostream* getOutStream() const;
 
   /// Set to true if the final result should be printed to the terminal
   virtual void setPrintFinalResult(bool _print);

@@ -42,27 +42,26 @@
 
 #include <osg/Matrix>
 
+//==============================================================================
 template<typename Scalar>
 osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
 {
-  // TODO(MXG): See if this can be made more efficient. osg::Matrix is
-  // automatically initialized to Identity, which is a waste.
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = tf(j,i);
-  return output;
+  return osg::Matrix(
+        tf(0, 0), tf(1, 0), tf(2, 0), tf(3, 0),
+        tf(0, 1), tf(1, 1), tf(2, 1), tf(3, 1),
+        tf(0, 2), tf(1, 2), tf(2, 2), tf(3, 2),
+        tf(0, 3), tf(1, 3), tf(2, 3), tf(3, 3));
 }
 
 //==============================================================================
 template<typename Derived>
-osg::Matrix eigToOsgMatrix(const Eigen::MatrixBase<Derived>& M)
+osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
 {
-  osg::Matrix output;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
-      output(i,j) = M(j,i);
-  return output;
+  return osg::Matrix(
+        M(0, 0), M(1, 0), M(2, 0), M(3, 0),
+        M(0, 1), M(1, 1), M(2, 1), M(3, 1),
+        M(0, 2), M(1, 2), M(2, 2), M(3, 2),
+        M(0, 3), M(1, 3), M(2, 3), M(3, 3));
 }
 
 //==============================================================================

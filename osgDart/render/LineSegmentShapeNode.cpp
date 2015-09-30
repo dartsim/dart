@@ -39,7 +39,7 @@
 #include <osg/LineWidth>
 
 #include "osgDart/render/LineSegmentShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/LineSegmentShape.h"
 

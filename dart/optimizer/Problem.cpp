@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 
@@ -155,13 +156,13 @@ const Eigen::VectorXd& Problem::getSeed(size_t _index) const
 }
 
 //==============================================================================
-std::vector<Eigen::VectorXd>& Problem::getAllSeeds()
+std::vector<Eigen::VectorXd>& Problem::getSeeds()
 {
   return mSeeds;
 }
 
 //==============================================================================
-const std::vector<Eigen::VectorXd>& Problem::getAllSeeds() const
+const std::vector<Eigen::VectorXd>& Problem::getSeeds() const
 {
   return mSeeds;
 }

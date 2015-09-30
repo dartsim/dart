@@ -37,6 +37,7 @@
 #include <iostream>
 
 #include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 
@@ -103,12 +104,6 @@ GradientDescentSolver::GradientDescentSolver(std::shared_ptr<Problem> _problem)
 GradientDescentSolver::~GradientDescentSolver()
 {
   // Do nothing
-}
-
-//==============================================================================
-static double sign(double value)
-{
-  return value > 0? 1.0 : (value < 0? -1.0 : 0.0);
 }
 
 //==============================================================================
@@ -208,7 +203,7 @@ bool GradientDescentSolver::solve()
         // absolute value. We do not want to treat it as though we are
         // minimizing its square, because that could adversely affect the
         // curvature of its derivative.
-        dx += weight * grad * sign(mEqConstraintCostCache[i]);
+        dx += weight * grad * math::sign(mEqConstraintCostCache[i]);
       }
 
       for(int i=0; i < static_cast<int>(problem->getNumIneqConstraints()); ++i)
@@ -238,18 +233,19 @@ bool GradientDescentSolver::solve()
       lastx = x;
       ++stepCount;
 
-      if(mProperties.mIterationsPerPrint > 0 &&
+      if(nullptr != mProperties.mOutStream &&
+         mProperties.mIterationsPerPrint > 0 &&
          stepCount%mProperties.mIterationsPerPrint == 0)
       {
-        // TODO(MXG): Allow the user to specify the stream for the output
-        std::cout << "[GradientDescentSolver] Progress (attempt #"
-                  << attemptCount << " | iteration #" << stepCount << ")\n"
-                  << "cost: " << problem->getObjective()->eval(x) << " | "
-                  << (minimized? "minimized | " : "not minimized | ")
-                  << (satisfied? "constraints satisfied | "
-                               : "constraints unsatisfied | ")
-                  << "x: " << x.transpose() << "\n"
-                  << "grad: " << dx.transpose() << std::endl;
+        *mProperties.mOutStream
+            << "[GradientDescentSolver] Progress (attempt #"
+            << attemptCount << " | iteration #" << stepCount << ")\n"
+            << "cost: " << problem->getObjective()->eval(x) << " | "
+            << (minimized? "minimized | " : "not minimized | ")
+            << (satisfied? "constraints satisfied | "
+                         : "constraints unsatisfied | ")
+            << "x: " << x.transpose() << "\n"
+            << "grad: " << dx.transpose() << std::endl;
       }
 
       if(stepCount > mProperties.mNumMaxIterations)
@@ -264,7 +260,7 @@ bool GradientDescentSolver::solve()
       if(mGradientP.mMaxAttempts > 0 && attemptCount >= mGradientP.mMaxAttempts)
         break;
 
-      if(attemptCount-1 < problem->getAllSeeds().size())
+      if(attemptCount-1 < problem->getSeeds().size())
       {
         x = problem->getSeed(attemptCount-1);
       }
@@ -472,10 +468,8 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 
   for(int i=0; i<_x.size(); ++i)
   {
-    if( _x[i] < mProperties.mProblem->getLowerBounds()[i] )
-      _x[i] = mProperties.mProblem->getLowerBounds()[i];
-    else if( mProperties.mProblem->getUpperBounds()[i] < _x[i] )
-      _x[i] = mProperties.mProblem->getUpperBounds()[i];
+    _x[i] = math::clip(_x[i], mProperties.mProblem->getLowerBounds()[i],
+                              mProperties.mProblem->getUpperBounds()[i]);
   }
 }
 

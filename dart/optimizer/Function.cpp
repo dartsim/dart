@@ -107,6 +107,13 @@ void Function::evalGradient(const Eigen::VectorXd& _x,
 }
 
 //==============================================================================
+void Function::evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad)
+{
+  Eigen::Map<Eigen::VectorXd> tmpGrad(_grad.data(), _grad.size());
+  evalGradient(_x, tmpGrad);
+}
+
+//==============================================================================
 void Function::evalHessian(const Eigen::VectorXd& _x,
                            Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
 {

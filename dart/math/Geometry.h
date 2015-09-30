@@ -38,8 +38,6 @@
 #ifndef DART_MATH_GEOMETRY_H_
 #define DART_MATH_GEOMETRY_H_
 
-#define NOMINMAX
-
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 

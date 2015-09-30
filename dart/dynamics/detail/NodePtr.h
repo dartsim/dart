@@ -42,7 +42,7 @@
 namespace dart {
 namespace dynamics {
 
-class NodeCleaner;
+class NodeDestructor;
 
 /// TemplateNodePtr is a templated class that enables users to create a strong
 /// reference-counting NodePtr. Holding onto a NodePtr will ensure that the
@@ -56,7 +56,7 @@ public:
 
   template<class, class> friend class TemplateNodePtr;
 
-  typedef NodeT element_type;
+  using element_type = NodeT;
 
   /// Default constructor
   TemplateNodePtr() : mNode(nullptr) { }
@@ -110,13 +110,13 @@ public:
     if(nullptr == _ptr)
     {
       mBodyNodePtr = nullptr;
-      mCleaner = nullptr;
+      mDestructor = nullptr;
       mNode = nullptr;
       return;
     }
 
     mBodyNodePtr = _ptr->getBodyNodePtr();
-    mCleaner = _ptr->mCleaner.lock();
+    mDestructor = _ptr->mDestructor.lock();
     mNode = _ptr;
   }
 
@@ -125,9 +125,9 @@ protected:
   /// Node that this NodePtr refers to
   NodeT* mNode;
 
-  /// Hold onto a shared_ptr to the Node's Cleaner to make sure the Node stays
+  /// Hold onto a shared_ptr to the Node's Destructor to make sure the Node stays
   /// alive.
-  std::shared_ptr<NodeCleaner> mCleaner;
+  std::shared_ptr<NodeDestructor> mDestructor;
 
   /// Hold onto a BodyNodePtr to the Node's associated BodyNode to make sure
   /// that the BodyNode stays alive.
@@ -203,8 +203,8 @@ public:
     if(nullptr == bodyNode)
       return nullptr;
 
-    std::shared_ptr<NodeCleaner> cleaner = mWeakCleaner.lock();
-    if(nullptr == cleaner)
+    std::shared_ptr<NodeDestructor> destructor = mWeakDestructor.lock();
+    if(nullptr == destructor)
       return nullptr;
 
     return TemplateNodePtr<NodeT, BodyNodeT>(mNode);
@@ -216,13 +216,13 @@ public:
     if(nullptr == _ptr)
     {
       mNode = nullptr;
-      mWeakCleaner.reset();
+      mWeakDestructor.reset();
       mWeakBodyNodePtr = nullptr;
       return;
     }
 
     mWeakBodyNodePtr = _ptr->getBodyNodePtr();
-    mWeakCleaner = _ptr->generateCleaner();
+    mWeakDestructor = _ptr->getOrCreateDestructor();
     mNode = _ptr;
   }
 
@@ -231,7 +231,7 @@ public:
   void set(const TemplateWeakNodePtr<OtherNodeT, OtherBodyNodeT>& _weakPtr)
   {
     mNode = _weakPtr.mNode;
-    mWeakCleaner = _weakPtr.mWeakCleaner;
+    mWeakDestructor = _weakPtr.mWeakDestructor;
     mWeakBodyNodePtr = _weakPtr.mWeakBodyNodePtr;
   }
 
@@ -240,8 +240,8 @@ protected:
   /// Node that this pointer references
   NodeT* mNode;
 
-  /// Cleaner for the Node
-  std::weak_ptr<NodeCleaner> mWeakCleaner;
+  /// Destructor for the Node
+  std::weak_ptr<NodeDestructor> mWeakDestructor;
 
   /// Pointer to the BodyNode that the Node is attached to
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNodePtr;

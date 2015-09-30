@@ -43,7 +43,7 @@ namespace dart {
 namespace dynamics {
 
 /// TemplatedJacobianNode provides a curiously recurring template pattern
-/// implementtion of the various JacobianNode non-caching functions. These
+/// implementation of the various JacobianNode non-caching functions. These
 /// functions are easily distinguished because they return by value instead of
 /// returning by const reference.
 ///
