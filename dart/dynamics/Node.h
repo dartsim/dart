@@ -49,31 +49,31 @@ namespace dynamics {
 class BodyNode;
 class Node;
 
-class NodeCleaner final
+class NodeDestructor final
 {
 public:
 
   /// Constructor
-  NodeCleaner(Node* _node);
+  NodeDestructor(Node* _node);
 
   /// Do not copy
-  NodeCleaner(const NodeCleaner& _cleaner) = delete;
+  NodeDestructor(const NodeDestructor& _other) = delete;
 
   /// Non-virtual destructor (this class cannot be inherited)
-  ~NodeCleaner();
+  ~NodeDestructor();
 
   Node* getNode() const;
 
 private:
 
-  /// Node that this Cleaner is responsible for
+  /// Node that this Destructor is responsible for
   Node* mNode;
 
 };
 
-/// The Node class is a base class for any object that attaches to a BodyNode.
-/// This base class handles ownership and reference counting for the classes
-/// that inherit it.
+/// The Node class is a base class for BodyNode and any object that attaches to
+/// a BodyNode. This base class handles ownership and reference counting for the
+/// classes that inherit it.
 ///
 /// In most cases, when creating your own custom Node class, you will also want
 /// to inherit from AccessoryNode using CRTP.
@@ -183,7 +183,7 @@ public:
 
 private:
 
-  std::shared_ptr<NodeCleaner> generateCleaner();
+  std::shared_ptr<NodeDestructor> getOrCreateDestructor();
 
 protected:
 
@@ -205,12 +205,12 @@ protected:
   /// When all external references to the Node disappear, it will be deleted
   void stageForRemoval();
 
-  /// weak pointer to the cleaner for this Node. We use a shared_ptr "cleaner"
-  /// class instead of managing Nodes directly with shared_ptrs because this
-  /// scheme allows BodyNodes to circumvent the shared_ptr management by setting
-  /// the mNode member of the Cleaner to a nullptr. That way the BodyNode can
-  /// never be deleted by its Cleaner.
-  std::weak_ptr<NodeCleaner> mCleaner;
+  /// weak pointer to the destructor for this Node. We use a shared_ptr
+  /// "destructor" class instead of managing Nodes directly with shared_ptrs
+  /// because this scheme allows BodyNodes to circumvent the shared_ptr
+  /// management by setting the mNode member of the Destructor to a nullptr.
+  /// That way the BodyNode can never be deleted by its Destructor.
+  std::weak_ptr<NodeDestructor> mDestructor;
 
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;

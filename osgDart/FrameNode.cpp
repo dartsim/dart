@@ -36,7 +36,7 @@
 
 #include "osgDart/FrameNode.h"
 #include "osgDart/EntityNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/Frame.h"
 

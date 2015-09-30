@@ -44,7 +44,7 @@
 #include "osgDart/DefaultEventHandler.h"
 #include "osgDart/DragAndDrop.h"
 #include "osgDart/WorldNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/simulation/World.h"
 

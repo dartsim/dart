@@ -356,7 +356,7 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
     return;
   }
 
-  for(auto& cleaner : mNodeCleaners)
+  for(auto& cleaner : mNodeDestructors)
     cleaner->getNode()->stageForRemoval();
 
   duplicateNodes(otherBodyNode);
@@ -1218,10 +1218,10 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 {
   DART_INSTANTIATE_SPECALIZED_NODE( EndEffector );
 
-  // Generate an inert cleaner to make sure that it will not try to
+  // Generate an inert destructor to make sure that it will not try to
   // double-delete this BodyNode when it gets destroyed.
-  mSelfCleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(nullptr));
-  mCleaner = mSelfCleaner;
+  mSelfDestructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(nullptr));
+  mDestructor = mSelfDestructor;
   mAmAttached = true;
 
   mParentJoint->mChildBodyNode = this;
@@ -1401,11 +1401,6 @@ void BodyNode::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
-  // Jacobian calculations are dependent on the parent's world transform, but
-  // not on the world transform of their own BodyNode, so they must be dirtied
-  // regardless of whether the world transform of this BodyNode is already dirty
-  notifyJacobianUpdate();
-
   if(mNeedTransformUpdate)
     return;
 
@@ -1437,7 +1432,6 @@ void BodyNode::notifyTransformUpdate()
 void BodyNode::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
-  notifyJacobianDerivUpdate();
 
   if(mNeedVelocityUpdate)
     return;

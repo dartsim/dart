@@ -71,14 +71,14 @@ public:
   virtual ~HierarchicalIK() = default;
 
   /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint configuration. If you pass in true for _resetConfiguration,
-  /// then the joint positions will be return to their original configuration
-  /// after the problem is solved.
-  bool solve(bool _resetConfiguration = false);
+  /// solved joint positions. If you pass in false for _applySolution, then the
+  /// joint positions will be return to their original positions after the
+  /// problem is solved.
+  bool solve(bool _applySolution = true);
 
-  /// Same as solve(bool), but the config vector will be filled with the solved
-  /// configuration.
-  bool solve(Eigen::VectorXd& config, bool _resetConfiguration = false);
+  /// Same as solve(bool), but the positions vector will be filled with the
+  /// solved positions.
+  bool solve(Eigen::VectorXd& positions, bool _applySolution = true);
 
   /// Clone this HierarchicalIK module
   virtual std::shared_ptr<HierarchicalIK> clone(
@@ -158,13 +158,13 @@ public:
   /// Compute the null spaces of each level of the hierarchy
   const std::vector<Eigen::MatrixXd>& computeNullSpaces() const;
 
-  /// Get the current joint configuration of the Skeleton associated with this
+  /// Get the current joint positions of the Skeleton associated with this
   /// IK module.
-  Eigen::VectorXd getConfiguration() const;
+  Eigen::VectorXd getPositions() const;
 
-  /// Set the current joint configuration of the Skeleton associated with this
+  /// Set the current joint positions of the Skeleton associated with this
   /// IK module. The vector must include all DOFs in the Skeleton.
-  void setConfiguration(const Eigen::VectorXd& _q);
+  void setPositions(const Eigen::VectorXd& _q);
 
   /// Get the Skeleton that this IK module is associated with
   SkeletonPtr getSkeleton();
@@ -191,7 +191,7 @@ protected:
   /// HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the objective of the module's Problem to an HierarchicalIK::Objective.
-  class Objective : public Function, public optimizer::Function
+  class Objective final : public Function, public optimizer::Function
   {
   public:
 
@@ -226,7 +226,7 @@ protected:
   /// of this HierarchicalIK module. This class is not meant to be extended or
   /// instantiated by a user. Call HierarchicalIK::resetProblem() to set
   /// the constraint of the module's Problem to an HierarchicalIK::Constraint.
-  class Constraint : public Function, public optimizer::Function
+  class Constraint final : public Function, public optimizer::Function
   {
   public:
 
@@ -290,8 +290,8 @@ protected:
   /// Weak pointer to self
   std::weak_ptr<HierarchicalIK> mPtr;
 
-  /// Cache for the last configuration
-  mutable Eigen::VectorXd mLastConfig;
+  /// Cache for the last positions
+  mutable Eigen::VectorXd mLastPositions;
 
   /// Cache for null space computations
   mutable std::vector<Eigen::MatrixXd> mNullSpaceCache;

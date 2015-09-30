@@ -38,7 +38,7 @@
 #include <osg/Geometry>
 
 #include "osgDart/render/SoftMeshShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"

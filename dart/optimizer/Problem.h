@@ -87,10 +87,10 @@ public:
 
   /// \brief Get a mutable reference to the full vector of seeds that this
   /// Problem currently contains
-  std::vector<Eigen::VectorXd>& getAllSeeds();
+  std::vector<Eigen::VectorXd>& getSeeds();
 
-  /// \brief An immutable version of getAllSeeds()
-  const std::vector<Eigen::VectorXd>& getAllSeeds() const;
+  /// \brief An immutable version of getSeeds()
+  const std::vector<Eigen::VectorXd>& getSeeds() const;
 
   /// \brief Clear the seeds that this Problem currently contains
   void clearAllSeeds();

@@ -38,7 +38,7 @@
 #include <osg/ShapeDrawable>
 
 #include "osgDart/render/PlaneShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/PlaneShape.h"
 

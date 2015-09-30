@@ -150,7 +150,10 @@ public:
   ConstShapePtr getVisualizationShape(size_t _index) const;
 
   /// Get the visualization shapes of this Entity
-  const std::vector<ShapePtr>& getVisualizationShapes() const;
+  const std::vector<ShapePtr>& getVisualizationShapes();
+
+  /// Get the (const) visualization shapes of this Entity
+  const std::vector<ConstShapePtr>& getVisualizationShapes() const;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* _ri = nullptr,

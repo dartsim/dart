@@ -40,7 +40,7 @@
 #include <osg/Material>
 
 #include "osgDart/render/EllipsoidShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/EllipsoidShape.h"
 

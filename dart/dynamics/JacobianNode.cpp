@@ -58,11 +58,18 @@ JacobianNode::getIK(bool _createIfNull)
 }
 
 //==============================================================================
+const std::shared_ptr<InverseKinematics>& JacobianNode::getOrCreateIK()
+{
+  return getIK(true);
+}
+
+//==============================================================================
 std::shared_ptr<const InverseKinematics> JacobianNode::getIK() const
 {
   return const_cast<JacobianNode*>(this)->getIK(false);
 }
 
+//==============================================================================
 const std::shared_ptr<InverseKinematics>& JacobianNode::createIK()
 {
   mIK = InverseKinematics::create(this);

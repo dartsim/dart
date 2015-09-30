@@ -38,7 +38,7 @@
 #include <osg/ShapeDrawable>
 
 #include "osgDart/render/CylinderShapeNode.h"
-#include "osgDart/utils.h"
+#include "osgDart/Utils.h"
 
 #include "dart/dynamics/CylinderShape.h"
 

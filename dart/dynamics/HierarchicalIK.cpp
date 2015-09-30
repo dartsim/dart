@@ -44,7 +44,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-bool HierarchicalIK::solve(bool _resetConfiguration)
+bool HierarchicalIK::solve(bool _applySolution)
 {
   if(nullptr == mSolver)
   {
@@ -89,20 +89,24 @@ bool HierarchicalIK::solve(bool _resetConfiguration)
 
   refreshIKHierarchy();
 
-  if(!_resetConfiguration)
-    return mSolver->solve();
+  if(_applySolution)
+  {
+    bool wasSolved = mSolver->solve();
+    setPositions(mProblem->getOptimalSolution());
+    return wasSolved;
+  }
 
-  Eigen::VectorXd config = skel->getPositions();
+  Eigen::VectorXd originalPositions = skel->getPositions();
   bool wasSolved = mSolver->solve();
-  setConfiguration(config);
+  setPositions(originalPositions);
   return wasSolved;
 }
 
 //==============================================================================
-bool HierarchicalIK::solve(Eigen::VectorXd& config, bool _resetConfiguration)
+bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _applySolution)
 {
-  bool wasSolved = solve(_resetConfiguration);
-  config = mProblem->getOptimalSolution();
+  bool wasSolved = solve(_applySolution);
+  positions = mProblem->getOptimalSolution();
   return wasSolved;
 }
 
@@ -214,7 +218,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
   const size_t nDofs = skel->getNumDofs();
-  if(static_cast<size_t>(mLastConfig.size()) != nDofs)
+  if(static_cast<size_t>(mLastPositions.size()) != nDofs)
   {
     recompute = true;
   }
@@ -222,7 +226,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
   {
     for(size_t i=0; i < nDofs; ++i)
     {
-      if(mLastConfig[i] != skel->getDof(i)->getPosition())
+      if(mLastPositions[i] != skel->getDof(i)->getPosition())
       {
         recompute = true;
         break;
@@ -304,7 +308,7 @@ const std::vector<Eigen::MatrixXd>& HierarchicalIK::computeNullSpaces() const
 }
 
 //==============================================================================
-Eigen::VectorXd HierarchicalIK::getConfiguration() const
+Eigen::VectorXd HierarchicalIK::getPositions() const
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if(skel)
@@ -314,7 +318,7 @@ Eigen::VectorXd HierarchicalIK::getConfiguration() const
 }
 
 //==============================================================================
-void HierarchicalIK::setConfiguration(const Eigen::VectorXd& _q)
+void HierarchicalIK::setPositions(const Eigen::VectorXd& _q)
 {
   const SkeletonPtr& skel = mSkeleton.lock();
   if(skel)
@@ -348,7 +352,7 @@ ConstSkeletonPtr HierarchicalIK::getAffiliation() const
 //==============================================================================
 void HierarchicalIK::clearCaches()
 {
-  mLastConfig.resize(0);
+  mLastPositions.resize(0);
 }
 
 //==============================================================================
@@ -414,7 +418,7 @@ void HierarchicalIK::Objective::evalGradient(
     Eigen::Map<Eigen::VectorXd> gradMap(mGradCache.data(), _grad.size());
     hik->mNullSpaceObjective->evalGradient(_x, gradMap);
 
-    hik->setConfiguration(_x);
+    hik->setPositions(_x);
 
     const std::vector<Eigen::MatrixXd>& nullspaces = hik->computeNullSpaces();
     if(nullspaces.size() > 0)
@@ -539,8 +543,8 @@ void HierarchicalIK::Constraint::evalGradient(
 HierarchicalIK::HierarchicalIK(const SkeletonPtr& _skeleton)
   : mSkeleton(_skeleton)
 {
-  // initialize MUST be called from the constructors of any directly inheriting
-  // classes
+  // initialize MUST be called immediately after the construction of any
+  // directly inheriting classes.
 }
 
 //==============================================================================
@@ -594,7 +598,7 @@ void HierarchicalIK::copyOverSetup(
     newProblem->addIneqConstraint(
           cloneIkFunc(mProblem->getIneqConstraint(i), _otherIK));
 
-  newProblem->getAllSeeds() = mProblem->getAllSeeds();
+  newProblem->getSeeds() = mProblem->getSeeds();
 }
 
 //==============================================================================

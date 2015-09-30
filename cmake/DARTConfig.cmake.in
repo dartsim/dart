@@ -7,21 +7,32 @@
 # DART_LIBRARY_DIRS - Directories that contain the DART libraries.
 # DART_VERSION      - DART version.
 
-get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-
+#===============================================================================
+# DART_INCLUDE_DIRS
+#===============================================================================
 set(DART_INCLUDE_DIRS
-  "@CMAKE_INSTALL_PREFIX@/include"
-  "@EIGEN3_INCLUDE_DIRS@"
-  "@BULLET_INCLUDE_DIRS@"
-)
+    "@CMAKE_INSTALL_PREFIX@/include"
+    "@EIGEN3_INCLUDE_DIRS@"
+    "@BULLET_INCLUDE_DIRS@")
 
+#===============================================================================
+# DART_LIBRARY_DIRS
+#===============================================================================
 set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 
+#===============================================================================
+# DART_LIBRARIES
+#===============================================================================
+get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include("${CURRENT_DIR}/DARTTargets.cmake")
-
+# Return absolute path of the library instead of just library name as
+# recommended in CMake documentation:
+# http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
 find_library(dart_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
 set(DART_LIBRARIES "${dart_location}")
 
+# Handle requested components in find_package(DART COMPONENTS [components]).
+# The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
     find_library(dart_${comp}_location
@@ -37,5 +48,7 @@ if(DART_FIND_COMPONENTS)
   endforeach(comp)
 endif(DART_FIND_COMPONENTS)
 
-
+#===============================================================================
+# DART_VERSION
+#===============================================================================
 set(DART_VERSION @DART_VERSION@)

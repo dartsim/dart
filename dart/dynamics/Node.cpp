@@ -47,20 +47,20 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-NodeCleaner::NodeCleaner(Node* _node)
+NodeDestructor::NodeDestructor(Node* _node)
   : mNode(_node)
 {
   // Do nothing
 }
 
 //==============================================================================
-NodeCleaner::~NodeCleaner()
+NodeDestructor::~NodeDestructor()
 {
   delete mNode;
 }
 
 //==============================================================================
-Node* NodeCleaner::getNode() const
+Node* NodeDestructor::getNode() const
 {
   return mNode;
 }
@@ -127,16 +127,16 @@ bool Node::isRemoved() const
 }
 
 //==============================================================================
-std::shared_ptr<NodeCleaner> Node::generateCleaner()
+std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
-  std::shared_ptr<NodeCleaner> cleaner = mCleaner.lock();
-  if(nullptr == cleaner)
+  std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
+  if(nullptr == destructor)
   {
-    cleaner = std::shared_ptr<NodeCleaner>(new NodeCleaner(this));
-    mCleaner = cleaner;
+    destructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(this));
+    mDestructor = destructor;
   }
 
-  return cleaner;
+  return destructor;
 }
 
 //==============================================================================
@@ -196,13 +196,13 @@ void Node::attach()
   }
 
   std::vector<Node*>& nodes = it->second;
-  BodyNode::NodeCleanerSet& cleaners = mBodyNode->mNodeCleaners;
+  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
-  NodeCleanerPtr cleaner = generateCleaner();
+  NodeDestructorPtr destructor = getOrCreateDestructor();
   if(INVALID_INDEX == mIndexInBodyNode)
   {
-    // If the Node was not in the map, then its cleaner should not be in the set
-    assert(cleaners.find(cleaner) == cleaners.end());
+    // If the Node was not in the map, then its destructor should not be in the set
+    assert(destructors.find(destructor) == destructors.end());
 
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
@@ -211,11 +211,11 @@ void Node::attach()
     nodes.push_back(this);
     mIndexInBodyNode = nodes.size()-1;
 
-    cleaners.insert(cleaner);
+    destructors.insert(destructor);
   }
 
   assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
-  assert(cleaners.find(cleaner) != cleaners.end());
+  assert(destructors.find(destructor) != destructors.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if(skel)
@@ -241,30 +241,30 @@ void Node::stageForRemoval()
 #endif
 
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
-  NodeCleanerPtr cleaner = generateCleaner();
+  NodeDestructorPtr destructor = getOrCreateDestructor();
 
-  BodyNode::NodeCleanerSet& cleaners = mBodyNode->mNodeCleaners;
+  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
   if(mBodyNode->mNodeMap.end() == it)
   {
     // If the Node was not in the map, then its index should be invalid
     assert(INVALID_INDEX == mIndexInBodyNode);
 
-    // If the Node was not in the map, then its cleaner should not be in the set
-    assert(cleaners.find(cleaner) == cleaners.end());
+    // If the Node was not in the map, then its destructor should not be in the set
+    assert(destructors.find(destructor) == destructors.end());
     return;
   }
 
-  BodyNode::NodeCleanerSet::iterator cleaner_iter = cleaners.find(cleaner);
-  // This Node's cleaner should be in the set of cleaners
-  assert(cleaners.end() != cleaner_iter);
+  BodyNode::NodeDestructorSet::iterator destructor_iter = destructors.find(destructor);
+  // This Node's destructor should be in the set of destructors
+  assert(destructors.end() != destructor_iter);
 
   std::vector<Node*>& nodes = it->second;
 
   // This Node's index in the vector should be referring to this Node
   assert(nodes[mIndexInBodyNode] == this);
   nodes.erase(nodes.begin() + mIndexInBodyNode);
-  cleaners.erase(cleaner_iter);
+  destructors.erase(destructor_iter);
 
   // Reset all the Node indices that have been altered
   for(size_t i=mIndexInBodyNode; i < nodes.size(); ++i)

@@ -51,13 +51,13 @@
 #include "dart/common/Signal.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Node.h"
-#include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/EndEffector.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -101,7 +101,7 @@ public:
 
   using NodeMap = std::map<std::type_index, std::vector<Node*> >;
 
-  using NodeCleanerSet = std::unordered_set<NodeCleanerPtr>;
+  using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
 
   struct UniqueProperties
   {
@@ -1101,14 +1101,17 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
+  /// List of EndEffectors that are attached to this BodyNode
+  std::vector<EndEffector*> mEndEffectors;
+
   /// List of markers associated
   std::vector<Marker*> mMarkers;
 
   /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
 
-  /// A set for storing the Node cleaners
-  NodeCleanerSet mNodeCleaners;
+  /// A set for storing the Node destructors
+  NodeDestructorSet mNodeDestructors;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1244,9 +1247,9 @@ public:
 
 private:
 
-  /// Hold onto a reference to this BodyNode's own Cleaner to make sure that it
-  /// never gets destroyed.
-  std::shared_ptr<NodeCleaner> mSelfCleaner;
+  /// Hold onto a reference to this BodyNode's own Destructor to make sure that
+  /// it never gets destroyed.
+  std::shared_ptr<NodeDestructor> mSelfDestructor;
 
 };
 
