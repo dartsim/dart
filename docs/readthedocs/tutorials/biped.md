@@ -9,14 +9,14 @@ consists of seven Lessons covering the following topics:
 - APIs for dynamic quantities.
 - Skeleton editing.
 
-Please reference the source code in **tutorialBiped.cpp** and **tutorialBiped-Finished.cpp**.
+Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp).
 
 # Lesson 1: Joint limits and self-collision
 Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
 and call ``loadBiped`` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
 describes a ``World`` with one or more ``Skeleton``s in it. Here we
-load in a World from **biped.skel** and assign the bipedal figure to a
+load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel) and assign the bipedal figure to a
 ``Skeleton`` pointer called *biped*.
 
 ```cpp
