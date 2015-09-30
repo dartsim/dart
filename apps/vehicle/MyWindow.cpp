@@ -51,8 +51,8 @@ void MyWindow::timeStepping() {
   dart::dynamics::SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
   assert(vehicle != 0);
 
-  size_t dof = vehicle->getNumDofs();  
-  
+  size_t dof = vehicle->getNumDofs();
+
   Eigen::VectorXd q   = vehicle->getPositions();
   Eigen::VectorXd dq  = vehicle->getVelocities();
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
