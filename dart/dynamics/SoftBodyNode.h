@@ -127,10 +127,10 @@ public:
   /// Set the Properties of this SoftBodyNode
   void setProperties(const UniqueProperties& _properties);
 
-  /// Remove any unwarranted SoftBodyShapes
+  /// Remove all SoftBodyShapes and return the last one that was encountered
   /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
   /// are implemented. Please see #394.
-  void removeSoftBodyShapes();
+  ShapePtr removeSoftBodyShapes();
 
   using SkeletonRefCountingBase::getSkeleton;
 

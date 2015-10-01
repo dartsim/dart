@@ -88,6 +88,12 @@ public:
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
 
+  /// Get the first BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode1() const;
+
+  /// Get the second BodyNode that this constraint is associated with
+  dynamics::BodyNode* getBodyNode2() const;
+
 protected:
   /// First body node
   dynamics::BodyNode* mBodyNode1;

@@ -61,10 +61,11 @@ int main(int argc, char* argv[])
     for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
     {
       dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
+      Eigen::Vector3d color = dart::Color::Random();
       for(size_t k=0; k<bn->getNumVisualizationShapes(); ++k)
       {
         dart::dynamics::ShapePtr vs = bn->getVisualizationShape(k);
-        vs->setColor(dart::Color::Random());
+        vs->setColor(color);
       }
     }
   }
