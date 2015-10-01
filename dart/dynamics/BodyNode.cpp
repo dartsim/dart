@@ -461,7 +461,7 @@ double BodyNode::getRestitutionCoeff() const
 }
 
 //==============================================================================
-void BodyNode::addCollisionShape(ShapePtr _shape)
+void BodyNode::addCollisionShape(const ShapePtr& _shape)
 {
   if(nullptr == _shape)
   {
@@ -491,7 +491,7 @@ void BodyNode::addCollisionShape(ShapePtr _shape)
 }
 
 //==============================================================================
-void BodyNode::removeCollisionShape(ShapePtr _shape)
+void BodyNode::removeCollisionShape(const ShapePtr& _shape)
 {
   if (nullptr == _shape)
     return;

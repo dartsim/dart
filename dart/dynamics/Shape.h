@@ -44,6 +44,7 @@
 
 #include "dart/math/Geometry.h"
 #include "dart/common/Subject.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace renderer {
@@ -175,9 +176,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-typedef std::shared_ptr<Shape> ShapePtr;
-typedef std::shared_ptr<const Shape> ConstShapePtr;
 
 }  // namespace dynamics
 }  // namespace dart

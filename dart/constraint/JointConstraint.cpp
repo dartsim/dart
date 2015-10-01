@@ -173,5 +173,17 @@ double JointConstraint::getConstraintForceMixing()
   return mConstraintForceMixing;
 }
 
+//==============================================================================
+dynamics::BodyNode* JointConstraint::getBodyNode1() const
+{
+  return mBodyNode1;
+}
+
+//==============================================================================
+dynamics::BodyNode* JointConstraint::getBodyNode2() const
+{
+  return mBodyNode2;
+}
+
 }  // namespace constraint
 }  // namespace dart

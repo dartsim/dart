@@ -160,7 +160,7 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(ShapePtr _shape)
+void Entity::addVisualizationShape(const ShapePtr& _shape)
 {
   if (nullptr == _shape)
     return;
@@ -179,7 +179,7 @@ void Entity::addVisualizationShape(ShapePtr _shape)
 }
 
 //==============================================================================
-void Entity::removeVisualizationShape(ShapePtr _shape)
+void Entity::removeVisualizationShape(const ShapePtr& _shape)
 {
   if (nullptr == _shape)
     return;

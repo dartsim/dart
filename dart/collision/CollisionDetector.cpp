@@ -300,6 +300,9 @@ bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
   if (!isValidIndex(mCollidablePairs, index1, index2))
     return false;
 
+  if (index1 == index2)
+    return false;
+  
   return mCollidablePairs[index1][index2];
 }
 
