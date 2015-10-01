@@ -495,6 +495,9 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
     return;
   }
 
+  if(mPositions[_index] == _position)
+    return;
+
   // Note: It would not make much sense to use setPositionsStatic() here
   mPositions[_index] = _position;
   notifyPositionUpdate();
@@ -675,6 +678,9 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
     return;
   }
 
+  if(mVelocities[_index] == _velocity)
+    return;
+
   // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
   notifyVelocityUpdate();
@@ -853,6 +859,9 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
     return;
   }
 
+  if(mAccelerations[_index] == _acceleration)
+    return;
+
   // Note: It would not make much sense to use setAccelerationsStatic() here
   mAccelerations[_index] = _acceleration;
   notifyAccelerationUpdate();
@@ -968,6 +977,9 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
 {
+  if(mPositions == _positions)
+    return;
+
   mPositions = _positions;
   notifyPositionUpdate();
 }
@@ -984,6 +996,9 @@ MultiDofJoint<DOF>::getPositionsStatic() const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
 {
+  if(mVelocities == _velocities)
+    return;
+
   mVelocities = _velocities;
   notifyVelocityUpdate();
 }
@@ -1000,6 +1015,9 @@ MultiDofJoint<DOF>::getVelocitiesStatic() const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerationsStatic(const Vector& _accels)
 {
+  if(mAccelerations == _accels)
+    return;
+
   mAccelerations = _accels;
   notifyAccelerationUpdate();
 }

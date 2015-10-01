@@ -672,7 +672,7 @@ void PointMass::updateTransform() const
   assert(!math::isNan(mX));
 
   // World translation
-  Eigen::Isometry3d parentW = mParentSoftBodyNode->getWorldTransform();
+  const Eigen::Isometry3d& parentW = mParentSoftBodyNode->getWorldTransform();
   mW = parentW.translation() + parentW.linear() * mX;
   assert(!math::isNan(mW));
 }

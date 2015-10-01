@@ -560,6 +560,69 @@ TEST(Skeleton, Persistence)
   EXPECT_TRUE(weakSkel.lock() == nullptr);
 }
 
+TEST(Skeleton, NodePersistence)
+{
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>(nullptr);
+
+  {
+    EndEffector* manip =
+        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+
+    WeakEndEffectorPtr weakManip = manip;
+
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    manip->remove();
+
+    // The Node has been removed, and no strong reference to it exists, so it
+    // should be gone from the Skeleton
+    EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+    EXPECT_TRUE(skel->getNumEndEffectors() == 0);
+    EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
+
+    EXPECT_TRUE(weakManip.lock() == nullptr);
+  }
+
+  {
+    EndEffector* manip =
+        skel->getBodyNode(0)->createEndEffector(Entity::Properties("manip"));
+
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+
+    EndEffectorPtr strongManip = manip;
+    WeakEndEffectorPtr weakManip = strongManip;
+
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    manip->remove();
+
+    // The Node has been removed, but a strong reference to it still exists, so
+    // it will remain in the Skeleton for now
+    EXPECT_TRUE(skel->getEndEffector("manip") == manip);
+    EXPECT_TRUE(skel->getEndEffector(0) == manip);
+    EXPECT_TRUE(skel->getBodyNode(0)->getEndEffector(0) == manip);
+
+    EXPECT_FALSE(weakManip.lock() == nullptr);
+
+    strongManip = nullptr;
+
+    // The Node has been removed, and no strong reference to it exists any
+    // longer, so it should be gone from the Skeleton
+    EXPECT_TRUE(skel->getEndEffector("manip") == nullptr);
+    EXPECT_TRUE(skel->getNumEndEffectors() == 0);
+    EXPECT_TRUE(skel->getBodyNode(0)->getNumEndEffectors() == 0);
+
+    EXPECT_TRUE(weakManip.lock() == nullptr);
+  }
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
@@ -840,6 +903,11 @@ TEST(Skeleton, Linkage)
   ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
+
+  // Using nullptr as the target should bring us towards the root of the tree
+  ChainPtr upTowardsRoot =
+      Chain::create(skel->getBodyNode("c1b3"), nullptr, "upTowardsRoot");
+  checkForBodyNodes(upTowardsRoot, skel, true, "c1b3", "c1b2");
 
   criteria.mTargets.clear();
   criteria.mTargets.push_back(skel->getBodyNode("c4b3"));

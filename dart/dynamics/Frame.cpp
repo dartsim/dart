@@ -46,17 +46,6 @@ typedef std::set<Entity*> EntityPtrSet;
 typedef std::set<Frame*> FramePtrSet;
 
 //==============================================================================
-Frame::Frame(Frame* _refFrame, const std::string& _name)
-  : Entity(nullptr, _name, false),
-    mWorldTransform(Eigen::Isometry3d::Identity()),
-    mVelocity(Eigen::Vector6d::Zero()),
-    mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(false)
-{
-  changeParentFrame(_refFrame);
-}
-
-//==============================================================================
 Frame::~Frame()
 {
   if(isWorld())
@@ -289,8 +278,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
       (getSpatialAcceleration()
        - math::AdT(_relativeTo->getTransform(this),
                    _relativeTo->getSpatialAcceleration())
-       - math::ad(getSpatialVelocity(),
-                  getSpatialVelocity(_relativeTo, this))).eval();
+       + math::ad(getSpatialVelocity(),
+                  math::AdT(_relativeTo->getTransform(this),
+                            _relativeTo->getSpatialVelocity()))).eval();
 
   if(this == _inCoordinatesOf)
     return result;
@@ -479,6 +469,10 @@ void Frame::notifyTransformUpdate()
 {
   notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
 
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mTransformUpdatedSignal.raise(this);
+
   // If we already know we need to update, just quit
   if(mNeedTransformUpdate)
     return;
@@ -487,14 +481,16 @@ void Frame::notifyTransformUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyTransformUpdate();
-
-  mTransformUpdatedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::notifyVelocityUpdate()
 {
   notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mVelocityChangedSignal.raise(this);
 
   // If we already know we need to update, just quit
   if(mNeedVelocityUpdate)
@@ -504,13 +500,15 @@ void Frame::notifyVelocityUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyVelocityUpdate();
-
-  mVelocityChangedSignal.raise(this);
 }
 
 //==============================================================================
 void Frame::notifyAccelerationUpdate()
 {
+  // Always trigger the signal, in case a new subscriber has registered in the
+  // time since the last signal
+  mAccelerationChangedSignal.raise(this);
+
   // If we already know we need to update, just quit
   if(mNeedAccelerationUpdate)
     return;
@@ -519,9 +517,21 @@ void Frame::notifyAccelerationUpdate()
 
   for(Entity* entity : mChildEntities)
     entity->notifyAccelerationUpdate();
-
-  mAccelerationChangedSignal.raise(this);
 }
+
+//==============================================================================
+Frame::Frame(Frame* _refFrame, const std::string& _name)
+  : Entity(ConstructFrame),
+    mWorldTransform(Eigen::Isometry3d::Identity()),
+    mVelocity(Eigen::Vector6d::Zero()),
+    mAcceleration(Eigen::Vector6d::Zero()),
+    mAmWorld(false)
+{
+  mAmFrame = true;
+  mEntityP.mName = _name;
+  changeParentFrame(_refFrame);
+}
+
 
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
@@ -576,15 +586,18 @@ void Frame::processRemovedEntity(Entity*)
 }
 
 //==============================================================================
-Frame::Frame()
+Frame::Frame(ConstructWorld_t)
   : Entity(this, "World", true),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
     mAmWorld(true)
 {
-
+  mAmFrame = true;
 }
+
+//==============================================================================
+const Eigen::Vector6d WorldFrame::mZero = Eigen::Vector6d::Zero();
 
 //==============================================================================
 const Eigen::Isometry3d& WorldFrame::getRelativeTransform() const
@@ -619,9 +632,8 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 //==============================================================================
 WorldFrame::WorldFrame()
   : Entity(nullptr, "World", true),
-    Frame(),
-    mRelativeTf(Eigen::Isometry3d::Identity()),
-    mZero(Eigen::Vector6d::Zero())
+    Frame(ConstructWorld),
+    mRelativeTf(Eigen::Isometry3d::Identity())
 {
   changeParentFrame(this);
 }

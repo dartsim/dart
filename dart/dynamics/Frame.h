@@ -63,9 +63,6 @@ public:
   friend class Entity;
   friend class WorldFrame;
 
-  /// Constructor for typical usage
-  explicit Frame(Frame* _refFrame, const std::string& _name);
-
   /// Destructor
   virtual ~Frame();
 
@@ -252,6 +249,17 @@ public:
   virtual void notifyAccelerationUpdate() override;
 
 protected:
+
+  /// Used when constructing a pure abstract class, because calling the Frame
+  /// constructor is just a formality
+  enum ConstructAbstract_t { ConstructAbstract };
+
+  /// Constructor for typical usage
+  explicit Frame(Frame* _refFrame, const std::string& _name);
+
+  /// Constructor for use by pure abstract classes
+  explicit Frame(ConstructAbstract_t);
+
   // Documentation inherited
   virtual void changeParentFrame(Frame* _newParentFrame) override;
 
@@ -265,8 +273,12 @@ protected:
   virtual void processRemovedEntity(Entity* _oldChildEntity);
 
 private:
+
+  /// Used when constructing the World
+  enum ConstructWorld_t { ConstructWorld };
+
   /// Constructor only to be used by the WorldFrame class
-  explicit Frame();
+  explicit Frame(ConstructWorld_t);
 
 protected:
   /// World transform of this Frame. This object is mutable to enable
@@ -310,19 +322,19 @@ public:
   friend class Frame;
 
   /// Always returns the Identity Transform
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
 
-  /// Always return a zero vector
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+  /// Always returns a zero vector
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
 
-  /// Always return a zero vector
-  const Eigen::Vector6d& getPartialAcceleration() const;
+  /// Always returns a zero vector
+  const Eigen::Vector6d& getPartialAcceleration() const override;
 
 private:
   /// This may only be constructed by the Frame class
@@ -333,7 +345,7 @@ private:
   const Eigen::Isometry3d mRelativeTf;
 
   /// This is set to a Zero vector and never changes
-  const Eigen::Vector6d mZero;
+  static const Eigen::Vector6d mZero;
 
 public:
   // To get byte-aligned Eigen vectors

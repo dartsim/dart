@@ -71,6 +71,18 @@ public:
     LINE_SEGMENT
   };
 
+  /// DataVariance can be used by renderers to determine whether it should
+  /// expect data for this shape to change during each update.
+  enum DataVariance {
+    STATIC=0,                   /// No data will ever change
+    DYNAMIC_TRANSFORM = 1 << 1, /// The relative transform of the Shape might change
+    DYNAMIC_PRIMITIVE = 1 << 2, /// The primitive properties (such as x/y/z scaling) of the shape might change
+    DYNAMIC_COLOR     = 1 << 3, /// The coloring or textures of the shape might change
+    DYNAMIC_VERTICES  = 1 << 4, /// Vertex positions of a mesh might change (this does not include adding or removing vertices) (this enum is not relevant for primitive shapes)
+    DYNAMIC_ELEMENTS  = 1 << 5, /// The number of elements and/or arrangement of elements might change (this includes adding and removing vertices)  (this enum is not relevant for primitive shapes)
+    DYNAMIC           = 0xFF    /// All data is subject to changing
+  };
+
   /// \brief Constructor
   explicit Shape(ShapeType _type);
 
@@ -98,6 +110,9 @@ public:
 
   /// \brief Get RGBA color components
   const Eigen::Vector4d& getRGBA() const;
+
+  /// \brief Set the transparency of this Shape
+  virtual void setAlpha(double _alpha);
 
   /// \brief Get dimensions of bounding box.
   ///        The dimension will be automatically determined by the sub-classes
@@ -138,10 +153,40 @@ public:
   /// \brief
   ShapeType getShapeType() const;
 
+  /// Set the data variance of this shape. Use the DataVariance to indicate what
+  /// kind of shape information might change during run time so that renderers
+  /// can optimize reliably.
+  void setDataVariance(unsigned int _variance);
+
+  /// Add a type of variance to this shape. All other variance types will remain
+  /// the same.
+  void addDataVariance(unsigned int _variance);
+
+  /// Remove a type of variance from this shape. All other variance types will
+  /// remain the same.
+  void removeDataVariance(unsigned int _variance);
+
+  /// Get the data variance of this shape
+  unsigned int getDataVariance() const;
+
+  /// True iff this Shape has the specified type of DataVariance
+  bool checkDataVariance(DataVariance type) const;
+
+  /// Instruct this shape to update its data
+  virtual void refreshData();
+
   /// \brief
   virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true) const = 0;
+
+  /// Pass in true to prevent this shape from being rendered. Pass in false to
+  /// allow it to render again.
+  void setHidden(bool _hide=true);
+
+  /// True iff this Shape is set to be hidden. Use hide(bool) to change this
+  /// setting
+  bool isHidden() const;
 
 protected:
   /// \brief
@@ -164,6 +209,12 @@ protected:
 
   /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
   Eigen::Isometry3d mTransform;
+
+  /// The DataVariance of this Shape
+  unsigned int mVariance;
+
+  /// True if this shape should be kept from rendering
+  bool mHidden;
 
   /// \brief
   static int mCounter;

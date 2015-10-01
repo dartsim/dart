@@ -819,6 +819,9 @@ double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositionStatic(const double& _position)
 {
+  if(mPosition == _position)
+    return;
+
   mPosition = _position;
   notifyPositionUpdate();
 }
@@ -832,6 +835,9 @@ const double& SingleDofJoint::getPositionStatic() const
 //==============================================================================
 void SingleDofJoint::setVelocityStatic(const double& _velocity)
 {
+  if(mVelocity == _velocity)
+    return;
+
   mVelocity = _velocity;
   notifyVelocityUpdate();
 }
@@ -845,6 +851,9 @@ const double& SingleDofJoint::getVelocityStatic() const
 //==============================================================================
 void SingleDofJoint::setAccelerationStatic(const double& _acceleration)
 {
+  if(mAcceleration == _acceleration)
+    return;
+
   mAcceleration = _acceleration;
   notifyAccelerationUpdate();
 }

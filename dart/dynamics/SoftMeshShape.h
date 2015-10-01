@@ -59,6 +59,9 @@ public:
   /// \brief
   const aiMesh* getAssimpMesh() const;
 
+  /// Get the SoftBodyNode that is associated with this SoftMeshShape
+  const SoftBodyNode* getSoftBodyNode() const;
+
   /// \brief Update positions of the vertices using the parent soft body node.
   void update();
 

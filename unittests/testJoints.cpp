@@ -67,6 +67,12 @@ using namespace dart::simulation;
 class JOINTS : public testing::Test
 {
 public:
+  // Get reference frames
+  const std::vector<SimpleFrame*>& getFrames() const;
+
+  // Randomize the properties of all the reference frames
+  void randomizeRefFrames();
+
 #ifdef _WIN32
   template <typename JointType>
   static typename JointType::Properties createJointProperties()
@@ -84,7 +90,51 @@ public:
       const typename JointType::Properties& _joint
           = typename JointType::Properties());
 #endif
+
+protected:
+  // Sets up the test fixture.
+  virtual void SetUp();
+
+  std::vector<SimpleFrame*> frames;
 };
+
+//==============================================================================
+void JOINTS::SetUp()
+{
+  // Create a list of reference frames to use during tests
+  frames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
+  frames.push_back(new SimpleFrame(frames.back(), "refFrame2"));
+  frames.push_back(new SimpleFrame(frames.back(), "refFrame3"));
+  frames.push_back(new SimpleFrame(frames.back(), "refFrame4"));
+  frames.push_back(new SimpleFrame(Frame::World(), "refFrame5"));
+  frames.push_back(new SimpleFrame(frames.back(), "refFrame6"));
+}
+
+//==============================================================================
+const std::vector<SimpleFrame*>& JOINTS::getFrames() const
+{
+  return frames;
+}
+
+//==============================================================================
+void JOINTS::randomizeRefFrames()
+{
+  for(size_t i=0; i<frames.size(); ++i)
+  {
+    SimpleFrame* F = frames[i];
+
+    Eigen::Vector3d p = randomVector<3>(100);
+    Eigen::Vector3d theta = randomVector<3>(2*M_PI);
+
+    Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+    tf.translate(p);
+    tf.linear() = math::eulerXYZToMatrix(theta);
+
+    F->setRelativeTransform(tf);
+    F->setRelativeSpatialVelocity(randomVector<6>(100));
+    F->setRelativeSpatialAcceleration(randomVector<6>(100));
+  }
+}
 
 //==============================================================================
 template <typename JointType>
@@ -593,6 +643,7 @@ Eigen::Isometry3d random_transform(double translation_limit=100,
   return tf;
 }
 
+//==============================================================================
 Eigen::Isometry3d predict_joint_transform(Joint* joint,
                                           const Eigen::Isometry3d& joint_tf)
 {
@@ -600,6 +651,7 @@ Eigen::Isometry3d predict_joint_transform(Joint* joint,
           * joint->getTransformFromChildBodyNode().inverse();
 }
 
+//==============================================================================
 Eigen::Isometry3d get_relative_transform(BodyNode* bn, BodyNode* relativeTo)
 {
   return relativeTo->getTransform().inverse() * bn->getTransform();
@@ -716,6 +768,229 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
         std::cout << "Desired:\n" << desired_tfs[i].matrix()
                   << "\n\nActual:\n" << actual_tfs[i].matrix()
                   << "\n\n";
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
+{
+  const std::size_t numTests = 50;
+
+  // Generate random reference frames
+  randomizeRefFrames();
+  auto refFrames = getFrames();
+
+  // Generate random relative frames
+  randomizeRefFrames();
+  auto relFrames = getFrames();
+
+  //-- Build a skeleton that contains two FreeJoints and two BodyNodes
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* rootJoint    = pair.first;
+  BodyNode*  rootBodyNode = pair.second;
+  rootJoint->setRelativeTransform(random_transform());
+  rootJoint->setRelativeSpatialVelocity(random_vec<6>());
+  rootJoint->setRelativeSpatialAcceleration(random_vec<6>());
+  rootJoint->setTransformFromParentBodyNode(random_transform());
+  rootJoint->setTransformFromChildBodyNode(random_transform());
+
+  pair = rootBodyNode->createChildJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint1    = pair.first;
+  BodyNode*  bodyNode1 = pair.second;
+  joint1->setTransformFromParentBodyNode(random_transform());
+  joint1->setTransformFromChildBodyNode(random_transform());
+
+  //-- Actual terms
+  Eigen::Isometry3d actualTf;
+  Eigen::Vector6d   actualVel;
+  Eigen::Vector6d   actualAcc;
+
+  Eigen::Vector3d   actualLinVel;
+  Eigen::Vector3d   actualAngVel;
+  Eigen::Vector3d   actualLinAcc;
+  Eigen::Vector3d   actualAngAcc;
+
+  Eigen::Vector3d   oldLinVel;
+  Eigen::Vector3d   oldAngVel;
+  Eigen::Vector3d   oldLinAcc;
+  Eigen::Vector3d   oldAngAcc;
+
+  //-- Test
+  for (std::size_t i = 0; i < numTests; ++i)
+  {
+    const Eigen::Isometry3d desiredTf     = random_transform();
+    const Eigen::Vector6d   desiredVel    = random_vec<6>();
+    const Eigen::Vector6d   desiredAcc    = random_vec<6>();
+    const Eigen::Vector3d   desiredLinVel = random_vec<3>();
+    const Eigen::Vector3d   desiredAngVel = random_vec<3>();
+    const Eigen::Vector3d   desiredLinAcc = random_vec<3>();
+    const Eigen::Vector3d   desiredAngAcc = random_vec<3>();
+
+    //-- Relative transformation
+
+    joint1->setRelativeTransform(desiredTf);
+    actualTf = bodyNode1->getTransform(bodyNode1->getParentBodyNode());
+    EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
+
+    for (auto relativeTo : relFrames)
+    {
+      joint1->setTransform(desiredTf, relativeTo);
+      actualTf = bodyNode1->getTransform(relativeTo);
+      EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
+    }
+
+    //-- Relative spatial velocity
+
+    joint1->setRelativeSpatialVelocity(desiredVel);
+    actualVel = bodyNode1->getSpatialVelocity(
+                  bodyNode1->getParentBodyNode(), bodyNode1);
+
+    EXPECT_TRUE(equals(desiredVel, actualVel));
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
+        actualVel = bodyNode1->getSpatialVelocity(
+                      relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredVel, actualVel));
+      }
+    }
+
+    //-- Relative classic linear velocity
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
+        oldAngVel
+            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+        joint1->setLinearVelocity(desiredLinVel, relativeTo, inCoordinatesOf);
+
+        actualLinVel
+            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        actualAngVel
+            = bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredLinVel, actualLinVel));
+        EXPECT_TRUE(equals(oldAngVel, actualAngVel));
+      }
+    }
+
+    //-- Relative classic angular velocity
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialVelocity(desiredVel, relativeTo, inCoordinatesOf);
+        oldLinVel
+            = bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        joint1->setAngularVelocity(desiredAngVel, relativeTo, inCoordinatesOf);
+
+        actualLinVel =
+            bodyNode1->getLinearVelocity(relativeTo, inCoordinatesOf);
+        actualAngVel =
+            bodyNode1->getAngularVelocity(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(oldLinVel, actualLinVel));
+        EXPECT_TRUE(equals(desiredAngVel, actualAngVel));
+      }
+    }
+
+    //-- Relative spatial acceleration
+
+    joint1->setRelativeSpatialAcceleration(desiredAcc);
+    actualAcc = bodyNode1->getSpatialAcceleration(
+                  bodyNode1->getParentBodyNode(), bodyNode1);
+
+    EXPECT_TRUE(equals(desiredAcc, actualAcc));
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialAcceleration(
+              desiredAcc, relativeTo, inCoordinatesOf);
+        actualAcc = bodyNode1->getSpatialAcceleration(
+                      relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredAcc, actualAcc));
+      }
+    }
+
+    //-- Relative transform, spatial velocity, and spatial acceleration
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialMotion(
+              &desiredTf, relativeTo,
+              &desiredVel, relativeTo, inCoordinatesOf,
+              &desiredAcc, relativeTo, inCoordinatesOf);
+        actualTf = bodyNode1->getTransform(relativeTo);
+        actualVel = bodyNode1->getSpatialVelocity(
+                      relativeTo, inCoordinatesOf);
+        actualAcc = bodyNode1->getSpatialAcceleration(
+                      relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredTf.matrix(), actualTf.matrix()));
+        EXPECT_TRUE(equals(desiredVel, actualVel));
+        EXPECT_TRUE(equals(desiredAcc, actualAcc));
+      }
+    }
+
+
+    //-- Relative classic linear acceleration
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialAcceleration(
+              desiredAcc, relativeTo, inCoordinatesOf);
+        oldAngAcc
+            = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+        joint1->setLinearAcceleration(
+              desiredLinAcc, relativeTo, inCoordinatesOf);
+
+        actualLinAcc
+            = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        actualAngAcc
+            = bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(desiredLinAcc, actualLinAcc));
+        EXPECT_TRUE(equals(oldAngAcc, actualAngAcc));
+      }
+    }
+
+    //-- Relative classic angular acceleration
+
+    for (auto relativeTo : relFrames)
+    {
+      for (auto inCoordinatesOf : refFrames)
+      {
+        joint1->setSpatialAcceleration(
+              desiredAcc, relativeTo, inCoordinatesOf);
+        oldLinAcc
+            = bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        joint1->setAngularAcceleration(
+              desiredAngAcc, relativeTo, inCoordinatesOf);
+
+        actualLinAcc =
+            bodyNode1->getLinearAcceleration(relativeTo, inCoordinatesOf);
+        actualAngAcc =
+            bodyNode1->getAngularAcceleration(relativeTo, inCoordinatesOf);
+
+        EXPECT_TRUE(equals(oldLinAcc, actualLinAcc));
+        EXPECT_TRUE(equals(desiredAngAcc, actualAngAcc));
       }
     }
   }

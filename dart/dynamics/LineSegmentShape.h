@@ -109,6 +109,8 @@ public:
   /// will be evenly distributed across all lines.
   virtual Eigen::Matrix3d computeInertia(double _mass) const override;
 
+  // TODO(MXG): Consider supporting colors-per-vertex
+
 protected:
 
   // Documentation inherited

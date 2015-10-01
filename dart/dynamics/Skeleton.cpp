@@ -48,6 +48,8 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -60,6 +62,8 @@ namespace dynamics {
 
 #define SET_FLAG( Y, X ) mTreeCache[ Y ].mDirty. X = true;                      \
                          mSkelCache.mDirty. X = true;
+
+#define ON_ALL_TREES( X ) for(size_t i=0; i < mTreeCache.size(); ++i) X (i);
 
 //==============================================================================
 Skeleton::Properties::Properties(
@@ -115,12 +119,7 @@ std::mutex& Skeleton::getMutex() const
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)
-  {
-    if(bn->getParentJoint())
-      delete bn->getParentJoint();
-
     delete bn;
-  }
 }
 
 //==============================================================================
@@ -138,7 +137,7 @@ SkeletonPtr Skeleton::clone() const
 
     // Grab the parent BodyNode clone (using its name, which is guaranteed to be
     // unique), or use nullptr if this is a root BodyNode
-    BodyNode* parentClone = originalParent == nullptr? nullptr :
+    BodyNode* parentClone = (originalParent == nullptr)? nullptr :
           skelClone->getBodyNode(originalParent->getName());
 
     if( (nullptr != originalParent) && (nullptr == parentClone) )
@@ -150,7 +149,36 @@ SkeletonPtr Skeleton::clone() const
             << "a bug!\n";
     }
 
-    skelClone->registerBodyNode(getBodyNode(i)->clone(parentClone, joint));
+    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint);
+
+    // The IK module gets cloned by the Skeleton and not by the BodyNode,
+    // because IK modules rely on the Skeleton's structure and indexing. If the
+    // IK was cloned by the BodyNode into a Skeleton that has a different
+    // structure, then there is no guarantee that it will continue to work
+    // correctly.
+    if(getBodyNode(i)->getIK())
+      newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
+
+    skelClone->registerBodyNode(newBody);
+  }
+
+  for(size_t i=0; i<getNumEndEffectors(); ++i)
+  {
+    // Grab the EndEffector we want to clone
+    const EndEffector* originalEE = getEndEffector(i);
+
+    // Identify the original parent BodyNode
+    const BodyNode* originalParent = originalEE->getParentBodyNode();
+
+    // Grab the clone of the original parent
+    BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
+
+    EndEffector* newEE = originalEE->clone(parentClone);
+
+    if(originalEE->getIK())
+      newEE->mIK = originalEE->getIK()->clone(newEE);
+
+    skelClone->registerEndEffector(newEE);
   }
 
   skelClone->setProperties(getSkeletonProperties());
@@ -181,7 +209,7 @@ const Skeleton::Properties& Skeleton::getSkeletonProperties() const
 //==============================================================================
 const std::string& Skeleton::setName(const std::string& _name)
 {
-  if(_name == mSkeletonP.mName)
+  if(_name == mSkeletonP.mName && !_name.empty())
     return mSkeletonP.mName;
 
   const std::string oldName = mSkeletonP.mName;
@@ -197,6 +225,8 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
+  mNameMgrForEndEffectors.setManagerName(
+        "Skeleton::EndEffector | "+mSkeletonP.mName);
 
   ConstMetaSkeletonPtr me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
@@ -230,6 +260,13 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
     _newJoint->updateDegreeOfFreedomNames();
 
   return _newJoint->mJointP.mName;
+}
+
+//==============================================================================
+void Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
+{
+  _ee->mEntityP.mName =
+      mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
 }
 
 //==============================================================================
@@ -323,6 +360,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
   mSkeletonP.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
+  ON_ALL_TREES(notifySupportUpdate);
 }
 
 //==============================================================================
@@ -627,6 +665,70 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
+size_t Skeleton::getNumEndEffectors() const
+{
+  return mEndEffectors.size();
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(size_t _idx)
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(size_t _idx) const
+{
+  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
+}
+
+//==============================================================================
+EndEffector* Skeleton::getEndEffector(const std::string& _name)
+{
+  return mNameMgrForEndEffectors.getObject(_name);
+}
+
+//==============================================================================
+const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
+{
+  return mNameMgrForEndEffectors.getObject(_name);
+}
+
+//==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
+{
+  if(nullptr == mWholeBodyIK && _createIfNull)
+    createIK();
+
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::getOrCreateIK()
+{
+  return getIK(true);
+}
+
+//==============================================================================
+std::shared_ptr<const WholeBodyIK> Skeleton::getIK() const
+{
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+const std::shared_ptr<WholeBodyIK>& Skeleton::createIK()
+{
+  mWholeBodyIK = WholeBodyIK::create(mPtr.lock());
+  return mWholeBodyIK;
+}
+
+//==============================================================================
+void Skeleton::clearIK()
+{
+  mWholeBodyIK = nullptr;
+}
+
+//==============================================================================
 Marker* Skeleton::getMarker(const std::string& _name)
 {
   return mNameMgrForMarkers.getObject(_name);
@@ -750,10 +852,10 @@ Eigen::VectorXd Skeleton::getVelocityDifferences(
 
 //==============================================================================
 static bool isValidBodyNode(const Skeleton* _skeleton,
-                            const BodyNode* _bodyNode,
+                            const JacobianNode* _node,
                             const std::string& _fname)
 {
-  if (nullptr == _bodyNode)
+  if (nullptr == _node)
   {
     dtwarn << "[Skeleton::" << _fname << "] Invalid BodyNode pointer: "
            << "nullptr. Returning zero Jacobian.\n";
@@ -762,10 +864,10 @@ static bool isValidBodyNode(const Skeleton* _skeleton,
   }
 
   // The given BodyNode should be in the Skeleton
-  if (_bodyNode->getSkeleton().get() != _skeleton)
+  if (_node->getSkeleton().get() != _skeleton)
   {
     dtwarn << "[Skeleton::" << _fname << "] Attempting to get a Jacobian for a "
-           "BodyNode [" << _bodyNode->getName() << "] (" << _bodyNode
+           "BodyNode [" << _node->getName() << "] (" << _node
            << ") that is not in this Skeleton [" << _skeleton->getName()
            << "] (" << _skeleton << "). Returning zero Jacobian.\n";
     assert(false);
@@ -778,16 +880,16 @@ static bool isValidBodyNode(const Skeleton* _skeleton,
 //==============================================================================
 template <typename JacobianType>
 void assignJacobian(JacobianType& _J,
-                    const BodyNode* _bodyNode,
+                    const JacobianNode* _node,
                     const JacobianType& _JBodyNode)
 {
   // Assign the BodyNode's Jacobian to the result Jacobian.
   size_t localIndex = 0;
-  const auto& indices = _bodyNode->getDependentGenCoordIndices();
+  const auto& indices = _node->getDependentGenCoordIndices();
   for (const auto& index : indices)
   {
     // Each index should be less than the number of dofs of this Skeleton.
-    assert(index < _bodyNode->getSkeleton()->getNumDofs());
+    assert(index < _node->getSkeleton()->getNumDofs());
 
     _J.col(index) = _JBodyNode.col(localIndex++);
   }
@@ -796,93 +898,93 @@ void assignJacobian(JacobianType& _J,
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetJacobian(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  if ( !isValidBodyNode(_skel, _bodyNode, "getJacobian") )
+  if ( !isValidBodyNode(_skel, _node, "getJacobian") )
     return J;
 
-  const math::Jacobian JBodyNode = _bodyNode->getJacobian(args...);
+  const math::Jacobian JBodyNode = _node->getJacobian(args...);
 
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::Jacobian>(J, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode) const
+math::Jacobian Skeleton::getJacobian(const JacobianNode* _node) const
 {
-  return variadicGetJacobian(this, _bodyNode);
+  return variadicGetJacobian(this, _node);
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+math::Jacobian Skeleton::getJacobian(const JacobianNode* _node,
                                      const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+math::Jacobian Skeleton::getJacobian(const JacobianNode* _node,
                                      const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetJacobian(this, _bodyNode, _localOffset);
+  return variadicGetJacobian(this, _node, _localOffset);
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getJacobian(const BodyNode* _bodyNode,
+math::Jacobian Skeleton::getJacobian(const JacobianNode* _node,
                                      const Eigen::Vector3d& _localOffset,
                                      const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobian(this, _bodyNode, _localOffset, _inCoordinatesOf);
+  return variadicGetJacobian(this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetWorldJacobian(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::Jacobian J = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  if( !isValidBodyNode(_skel, _bodyNode, "getWorldJacobian") )
+  if( !isValidBodyNode(_skel, _node, "getWorldJacobian") )
     return J;
 
-  const math::Jacobian JBodyNode = _bodyNode->getWorldJacobian(args...);
+  const math::Jacobian JBodyNode = _node->getWorldJacobian(args...);
 
-  assignJacobian<math::Jacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::Jacobian>(J, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
-math::Jacobian Skeleton::getWorldJacobian(const BodyNode* _bodyNode) const
+math::Jacobian Skeleton::getWorldJacobian(const JacobianNode* _node) const
 {
-  return variadicGetWorldJacobian(this, _bodyNode);
+  return variadicGetWorldJacobian(this, _node);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getWorldJacobian(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetWorldJacobian(this, _bodyNode, _localOffset);
+  return variadicGetWorldJacobian(this, _node, _localOffset);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::LinearJacobian variadicGetLinearJacobian(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::LinearJacobian J =
       math::LinearJacobian::Zero(3, _skel->getNumDofs());
 
-  if( !isValidBodyNode(_skel, _bodyNode, "getLinearJacobian") )
+  if( !isValidBodyNode(_skel, _node, "getLinearJacobian") )
     return J;
 
-  const math::LinearJacobian JBodyNode = _bodyNode->getLinearJacobian(args...);
+  const math::LinearJacobian JBodyNode = _node->getLinearJacobian(args...);
 
-  assignJacobian<math::LinearJacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::LinearJacobian>(J, _node, JBodyNode);
 
   return J;
 }
@@ -890,202 +992,202 @@ math::LinearJacobian variadicGetLinearJacobian(
 
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobian(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetLinearJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobian(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobian(
-        this, _bodyNode, _localOffset, _inCoordinatesOf);
+        this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::AngularJacobian variadicGetAngularJacobian(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::AngularJacobian J =
       math::AngularJacobian::Zero(3, _skel->getNumDofs());
 
-  if( !isValidBodyNode(_skel, _bodyNode, "getAngularJacobian") )
+  if( !isValidBodyNode(_skel, _node, "getAngularJacobian") )
     return J;
 
   const math::AngularJacobian JBodyNode =
-      _bodyNode->getAngularJacobian(args...);
+      _node->getAngularJacobian(args...);
 
-  assignJacobian<math::AngularJacobian>(J, _bodyNode, JBodyNode);
+  assignJacobian<math::AngularJacobian>(J, _node, JBodyNode);
 
   return J;
 }
 
 //==============================================================================
 math::AngularJacobian Skeleton::getAngularJacobian(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetAngularJacobian(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetAngularJacobian(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetJacobianSpatialDeriv(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  if( !isValidBodyNode(_skel, _bodyNode, "getJacobianSpatialDeriv") )
+  if( !isValidBodyNode(_skel, _node, "getJacobianSpatialDeriv") )
     return dJ;
 
-  const math::Jacobian dJBodyNode = _bodyNode->getJacobianSpatialDeriv(args...);
+  const math::Jacobian dJBodyNode = _node->getJacobianSpatialDeriv(args...);
 
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+  assignJacobian<math::Jacobian>(dJ, _node, dJBodyNode);
 
   return dJ;
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode) const
+    const JacobianNode* _node) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode);
+  return variadicGetJacobianSpatialDeriv(this, _node);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobianSpatialDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset) const
 {
-  return variadicGetJacobianSpatialDeriv(this, _bodyNode, _localOffset);
+  return variadicGetJacobianSpatialDeriv(this, _node, _localOffset);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianSpatialDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianSpatialDeriv(
-        this, _bodyNode, _localOffset, _inCoordinatesOf);
+        this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::Jacobian variadicGetJacobianClassicDeriv(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _skel->getNumDofs());
 
-  if( !isValidBodyNode(_skel, _bodyNode, "getJacobianClassicDeriv") )
+  if( !isValidBodyNode(_skel, _node, "getJacobianClassicDeriv") )
     return dJ;
 
-  const math::Jacobian dJBodyNode = _bodyNode->getJacobianClassicDeriv(args...);
+  const math::Jacobian dJBodyNode = _node->getJacobianClassicDeriv(args...);
 
-  assignJacobian<math::Jacobian>(dJ, _bodyNode, dJBodyNode);
+  assignJacobian<math::Jacobian>(dJ, _node, dJBodyNode);
 
   return dJ;
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode) const
+    const JacobianNode* _node) const
 {
-  return variadicGetJacobianClassicDeriv(this, _bodyNode);
+  return variadicGetJacobianClassicDeriv(this, _node);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetJacobianClassicDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetJacobianClassicDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::Jacobian Skeleton::getJacobianClassicDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetJacobianClassicDeriv(
-        this, _bodyNode, _localOffset, _inCoordinatesOf);
+        this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::LinearJacobian variadicGetLinearJacobianDeriv(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::LinearJacobian dJv =
       math::LinearJacobian::Zero(3, _skel->getNumDofs());
 
-  if ( !isValidBodyNode(_skel, _bodyNode, "getLinearJacobianDeriv") )
+  if ( !isValidBodyNode(_skel, _node, "getLinearJacobianDeriv") )
     return dJv;
 
   const math::LinearJacobian dJvBodyNode =
-      _bodyNode->getLinearJacobianDeriv(args...);
+      _node->getLinearJacobianDeriv(args...);
 
-  assignJacobian<math::LinearJacobian>(dJv, _bodyNode, dJvBodyNode);
+  assignJacobian<math::LinearJacobian>(dJv, _node, dJvBodyNode);
 
   return dJv;
 }
 
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobianDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Frame* _inCoordinatesOf) const
 {
-  return variadicGetLinearJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetLinearJacobianDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
 math::LinearJacobian Skeleton::getLinearJacobianDeriv(
-    const BodyNode* _bodyNode,
+    const JacobianNode* _node,
     const Eigen::Vector3d& _localOffset,
     const Frame* _inCoordinatesOf) const
 {
   return variadicGetLinearJacobianDeriv(
-        this, _bodyNode, _localOffset, _inCoordinatesOf);
+        this, _node, _localOffset, _inCoordinatesOf);
 }
 
 //==============================================================================
 template <typename ...Args>
 math::AngularJacobian variadicGetAngularJacobianDeriv(
-    const Skeleton* _skel, const BodyNode* _bodyNode, Args... args)
+    const Skeleton* _skel, const JacobianNode* _node, Args... args)
 {
   math::AngularJacobian dJw =
       math::AngularJacobian::Zero(3, _skel->getNumDofs());
 
-  if ( !isValidBodyNode(_skel, _bodyNode, "getAngularJacobianDeriv") )
+  if ( !isValidBodyNode(_skel, _node, "getAngularJacobianDeriv") )
     return dJw;
 
   const math::AngularJacobian dJwBodyNode =
-      _bodyNode->getAngularJacobianDeriv(args...);
+      _node->getAngularJacobianDeriv(args...);
 
-  assignJacobian<math::AngularJacobian>(dJw, _bodyNode, dJwBodyNode);
+  assignJacobian<math::AngularJacobian>(dJw, _node, dJwBodyNode);
 
   return dJw;
 }
 
 //==============================================================================
 math::AngularJacobian Skeleton::getAngularJacobianDeriv(
-    const BodyNode* _bodyNode, const Frame* _inCoordinatesOf) const
+    const JacobianNode* _node, const Frame* _inCoordinatesOf) const
 {
-  return variadicGetAngularJacobianDeriv(this, _bodyNode, _inCoordinatesOf);
+  return variadicGetAngularJacobianDeriv(this, _node, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -1273,7 +1375,8 @@ void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
 
 //==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
-  : mTotalMass(0.0),
+  : mSkeletonP(""),
+    mTotalMass(0.0),
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
@@ -1335,6 +1438,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 
   _newBodyNode->init(getPtr());
+
+  std::vector<EndEffector*>& endEffectors = _newBodyNode->mEndEffectors;
+  for(EndEffector* ee : endEffectors)
+    registerEndEffector(ee);
 
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
@@ -1411,9 +1518,40 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
+void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
+{
+#ifndef NDEBUG // Debug mode
+  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
+                                                mEndEffectors.end(),
+                                                _newEndEffector);
+
+  if(it != mEndEffectors.end())
+  {
+    dterr << "[Skeleton::registerEndEffector] Attempting to double-register "
+           << "an EndEffector named [" << _newEndEffector->getName() << "] ("
+           << _newEndEffector << ") in the Skeleton named [" << getName()
+           << "] (" << this << "). This is most likely a bug. Please report "
+           << "this!\n";
+    assert(false);
+    return;
+  }
+#endif // ------- Debug mode
+
+  mEndEffectors.push_back(_newEndEffector);
+  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+
+  // The EndEffector name gets added when the EndEffector is constructed, so we
+  // don't need to add it here.
+}
+
+//==============================================================================
 void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
+
+  std::vector<EndEffector*>& endEffectors = _oldBodyNode->mEndEffectors;
+  for(EndEffector* ee : endEffectors)
+    unregisterEndEffector(ee);
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
@@ -1523,6 +1661,22 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
     DegreeOfFreedom* dof = treeDofs[i];
     dof->mIndexInTree = i;
   }
+}
+
+//==============================================================================
+void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
+{
+  size_t index = _oldEndEffector->getIndexInSkeleton();
+  assert(mEndEffectors[index] == _oldEndEffector);
+  mEndEffectors.erase(mEndEffectors.begin() + index);
+
+  for(size_t i=index; i < mEndEffectors.size(); ++i)
+  {
+    EndEffector* ee = mEndEffectors[i];
+    ee->mIndexInSkeleton = i;
+  }
+
+  mNameMgrForEndEffectors.removeName(_oldEndEffector->getName());
 }
 
 //==============================================================================
@@ -1713,6 +1867,7 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 
   // Go backwards to minimize the number of shifts needed
   std::vector<BodyNode*>::reverse_iterator rit;
+  // Go backwards to minimize the amount of element shifting in the vectors
   for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
     unregisterBodyNode(*rit);
 
@@ -1727,19 +1882,6 @@ void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
 {
   for(BodyNode* bn : _tree)
     registerBodyNode(bn);
-}
-
-//==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
-{
-  SET_FLAG(_treeIdx, mArticulatedInertia);
-  SET_FLAG(_treeIdx, mMassMatrix);
-  SET_FLAG(_treeIdx, mAugMassMatrix);
-  SET_FLAG(_treeIdx, mInvMassMatrix);
-  SET_FLAG(_treeIdx, mInvAugMassMatrix);
-  SET_FLAG(_treeIdx, mCoriolisForces);
-  SET_FLAG(_treeIdx, mGravityForces);
-  SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
 }
 
 //==============================================================================
@@ -2456,6 +2598,167 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 }
 
 //==============================================================================
+static void computeSupportPolygon(
+    const Skeleton* skel, math::SupportPolygon& polygon,
+    math::SupportGeometry& geometry,  std::vector<size_t>& ee_indices,
+    Eigen::Vector3d& axis1, Eigen::Vector3d& axis2, Eigen::Vector2d& centroid,
+    size_t treeIndex)
+{
+  polygon.clear();
+  geometry.clear();
+  ee_indices.clear();
+
+  const Eigen::Vector3d& up = -skel->getGravity();
+  if(up.norm() == 0.0)
+  {
+    dtwarn << "[computeSupportPolygon] Requesting support polygon of a "
+           << "Skeleton with no gravity. The result will only be an empty "
+           << "set!\n";
+    axis1.setZero();
+    axis2.setZero();
+    centroid = Eigen::Vector2d::Constant(std::nan(""));
+    return;
+  }
+
+  std::vector<size_t> originalEE_map;
+  originalEE_map.reserve(skel->getNumEndEffectors());
+  for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
+  {
+    const EndEffector* ee = skel->getEndEffector(i);
+    if(ee->getSupport() && ee->getSupport()->isActive()
+       && (INVALID_INDEX == treeIndex || ee->getTreeIndex() == treeIndex))
+    {
+      const math::SupportGeometry& eeGeom = ee->getSupport()->getGeometry();
+      for(const Eigen::Vector3d& v : eeGeom)
+      {
+        geometry.push_back(ee->getWorldTransform()*v);
+        originalEE_map.push_back(ee->getIndexInSkeleton());
+      }
+    }
+  }
+
+  axis1 = (up-Eigen::Vector3d::UnitX()).norm() > 1e-6 ?
+        Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitY();
+
+  axis1 = axis1 - up.dot(axis1)*up/up.dot(up);
+  axis1.normalize();
+
+  axis2 = up.normalized().cross(axis1);
+
+  std::vector<size_t> vertex_indices;
+  polygon = math::computeSupportPolgyon(vertex_indices, geometry, axis1, axis2);
+
+  ee_indices.reserve(vertex_indices.size());
+  for(size_t i=0; i < vertex_indices.size(); ++i)
+    ee_indices[i] = originalEE_map[vertex_indices[i]];
+
+  if(polygon.size() > 0)
+    centroid = math::computeCentroidOfHull(polygon);
+  else
+    centroid = Eigen::Vector2d::Constant(std::nan(""));
+}
+
+//==============================================================================
+const math::SupportPolygon& Skeleton::getSupportPolygon() const
+{
+  math::SupportPolygon& polygon = mSkelCache.mSupportPolygon;
+
+  if(!mSkelCache.mDirty.mSupport)
+    return polygon;
+
+  computeSupportPolygon(this, polygon, mSkelCache.mSupportGeometry,
+                        mSkelCache.mSupportIndices,
+                        mSkelCache.mSupportAxes.first,
+                        mSkelCache.mSupportAxes.second,
+                        mSkelCache.mSupportCentroid, INVALID_INDEX);
+
+  mSkelCache.mDirty.mSupport = false;
+  ++mSkelCache.mDirty.mSupportVersion;
+  return polygon;
+}
+
+//==============================================================================
+const math::SupportPolygon& Skeleton::getSupportPolygon(size_t _treeIdx) const
+{
+  math::SupportPolygon& polygon = mTreeCache[_treeIdx].mSupportPolygon;
+
+  if(!mTreeCache[_treeIdx].mDirty.mSupport)
+    return polygon;
+
+  computeSupportPolygon(this, polygon, mTreeCache[_treeIdx].mSupportGeometry,
+                        mTreeCache[_treeIdx].mSupportIndices,
+                        mTreeCache[_treeIdx].mSupportAxes.first,
+                        mTreeCache[_treeIdx].mSupportAxes.second,
+                        mTreeCache[_treeIdx].mSupportCentroid, _treeIdx);
+
+  mTreeCache[_treeIdx].mDirty.mSupport = false;
+  ++mTreeCache[_treeIdx].mDirty.mSupportVersion;
+  return polygon;
+}
+
+//==============================================================================
+const std::vector<size_t>& Skeleton::getSupportIndices() const
+{
+  getSupportPolygon();
+  return mSkelCache.mSupportIndices;
+}
+
+//==============================================================================
+const std::vector<size_t>& Skeleton::getSupportIndices(size_t _treeIdx) const
+{
+  getSupportPolygon(_treeIdx);
+  return mTreeCache[_treeIdx].mSupportIndices;
+}
+
+//==============================================================================
+const std::pair<Eigen::Vector3d, Eigen::Vector3d>&
+Skeleton::getSupportAxes() const
+{
+  getSupportPolygon();
+  return mSkelCache.mSupportAxes;
+}
+
+//==============================================================================
+const std::pair<Eigen::Vector3d, Eigen::Vector3d>&
+Skeleton::getSupportAxes(size_t _treeIdx) const
+{
+  getSupportPolygon(_treeIdx);
+  return mTreeCache[_treeIdx].mSupportAxes;
+}
+
+//==============================================================================
+const Eigen::Vector2d& Skeleton::getSupportCentroid() const
+{
+  getSupportPolygon();
+  return mSkelCache.mSupportCentroid;
+}
+
+//==============================================================================
+const Eigen::Vector2d& Skeleton::getSupportCentroid(size_t _treeIdx) const
+{
+  getSupportPolygon(_treeIdx);
+  return mTreeCache[_treeIdx].mSupportCentroid;
+}
+
+//==============================================================================
+size_t Skeleton::getSupportVersion() const
+{
+  if(mSkelCache.mDirty.mSupport)
+    return mSkelCache.mDirty.mSupportVersion + 1;
+
+  return mSkelCache.mDirty.mSupportVersion;
+}
+
+//==============================================================================
+size_t Skeleton::getSupportVersion(size_t _treeIdx) const
+{
+  if(mTreeCache[_treeIdx].mDirty.mSupport)
+    return mTreeCache[_treeIdx].mDirty.mSupportVersion + 1;
+
+  return mTreeCache[_treeIdx].mDirty.mSupportVersion;
+}
+
+//==============================================================================
 void Skeleton::computeForwardKinematics(bool _updateTransforms,
                                         bool _updateVels,
                                         bool _updateAccs)
@@ -2540,6 +2843,25 @@ void Skeleton::clearInternalForces()
 {
   for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->clearInternalForces();
+}
+
+//==============================================================================
+void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
+{
+  SET_FLAG(_treeIdx, mArticulatedInertia);
+  SET_FLAG(_treeIdx, mMassMatrix);
+  SET_FLAG(_treeIdx, mAugMassMatrix);
+  SET_FLAG(_treeIdx, mInvMassMatrix);
+  SET_FLAG(_treeIdx, mInvAugMassMatrix);
+  SET_FLAG(_treeIdx, mCoriolisForces);
+  SET_FLAG(_treeIdx, mGravityForces);
+  SET_FLAG(_treeIdx, mCoriolisAndGravityForces);
+}
+
+//==============================================================================
+void Skeleton::notifySupportUpdate(size_t _treeIdx)
+{
+  SET_FLAG(_treeIdx, mSupport);
 }
 
 //==============================================================================
@@ -2856,7 +3178,8 @@ Eigen::Vector3d Skeleton::getCOMLinearAcceleration(const Frame* _relativeTo,
 // derivatives
 template <
     typename JacType, // JacType is the type of Jacobian we're computing
-    JacType (BodyNode::*getJacFn)(const Eigen::Vector3d&, const Frame*) const>
+    JacType (TemplatedJacobianNode<BodyNode>::*getJacFn)(
+        const Eigen::Vector3d&, const Frame*) const>
 JacType getCOMJacobianTemplate(const Skeleton* _skel,
                                const Frame* _inCoordinatesOf)
 {
@@ -2891,7 +3214,8 @@ JacType getCOMJacobianTemplate(const Skeleton* _skel,
 //==============================================================================
 math::Jacobian Skeleton::getCOMJacobian(const Frame* _inCoordinatesOf) const
 {
-  return getCOMJacobianTemplate<math::Jacobian, &BodyNode::getJacobian>(
+  return getCOMJacobianTemplate<math::Jacobian,
+          &TemplatedJacobianNode<BodyNode>::getJacobian>(
         this, _inCoordinatesOf);
 }
 
@@ -2900,7 +3224,8 @@ math::LinearJacobian Skeleton::getCOMLinearJacobian(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::LinearJacobian,
-           &BodyNode::getLinearJacobian>(this, _inCoordinatesOf);
+           &TemplatedJacobianNode<BodyNode>::getLinearJacobian>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -2908,7 +3233,8 @@ math::Jacobian Skeleton::getCOMJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::Jacobian,
-      &BodyNode::getJacobianSpatialDeriv>(this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -2916,7 +3242,8 @@ math::LinearJacobian Skeleton::getCOMLinearJacobianDeriv(
     const Frame* _inCoordinatesOf) const
 {
   return getCOMJacobianTemplate<math::LinearJacobian,
-      &BodyNode::getLinearJacobianDeriv>(this, _inCoordinatesOf);
+      &TemplatedJacobianNode<BodyNode>::getLinearJacobianDeriv>(
+              this, _inCoordinatesOf);
 }
 
 //==============================================================================
@@ -2930,7 +3257,9 @@ Skeleton::DirtyFlags::DirtyFlags()
     mCoriolisForces(true),
     mCoriolisAndGravityForces(true),
     mExternalForces(true),
-    mDampingForces(true)
+    mDampingForces(true),
+    mSupport(true),
+    mSupportVersion(0)
 {
   // Do nothing
 }

@@ -132,6 +132,7 @@ public:
   /// are implemented. Please see #394.
   ShapePtr removeSoftBodyShapes();
 
+  using SkeletonRefCountingBase::getSkeleton;
 
   /// Get the Properties of this SoftBodyNode
   Properties getSoftBodyNodeProperties() const;
@@ -197,7 +198,7 @@ public:
   const Eigen::Vector3i& getFace(size_t _idx) const;
 
   /// \brief
-  size_t getNumFaces();
+  size_t getNumFaces() const;
 
   // Documentation inherited.
   virtual void clearConstraintImpulse() override;

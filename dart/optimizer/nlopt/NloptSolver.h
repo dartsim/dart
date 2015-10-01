@@ -37,8 +37,9 @@
 #ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 #define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 
-#include <nlopt.h>
+#include <nlopt.hpp>
 
+#include "dart/common/Deprecated.h"
 #include "dart/optimizer/Solver.h"
 
 namespace dart {
@@ -50,20 +51,53 @@ class Problem;
 class NloptSolver : public Solver
 {
 public:
-  /// \brief Constructor
-  NloptSolver(Problem* _problem, nlopt_algorithm _alg = NLOPT_LN_COBYLA);
 
-  /// \brief Destructor
+  /// Default Constructor
+  NloptSolver(const Solver::Properties& _properties = Solver::Properties(),
+              nlopt::algorithm _alg = nlopt::LN_COBYLA);
+
+  /// Alternative Constructor
+  NloptSolver(std::shared_ptr<Problem> _problem,
+              nlopt::algorithm _alg = nlopt::LN_COBYLA);
+
+  /// Destructor
   virtual ~NloptSolver();
 
+  // Documentation inherited
+  virtual bool solve();
+
+  // Documentation inherited
+  Eigen::VectorXd getLastConfiguration() const;
+
+  // Documentation inherited
+  virtual std::string getType() const override;
+
+  // Documentation inherited
+  virtual std::shared_ptr<Solver> clone() const override;
+
+  /// Copy the Properties of another NloptSolver
+  void copy(const NloptSolver& _other);
+
+  /// Copy the Properties of another NloptSolver
+  NloptSolver& operator=(const NloptSolver& _other);
+
+  /// Set the algorithm that is to be used by the nlopt solver
+  void setAlgorithm(nlopt::algorithm _alg);
+
+  /// Get the algorithm that is to be used by the nlopt solver
+  nlopt::algorithm getAlgorithm() const;
+
   /// Set number of maximum evaluations
+  ///
+  /// Deprecated: Please use setNumMaxIterations() instead
+  DEPRECATED(5.0)
   virtual void setNumMaxEvaluations(size_t _numVal);
 
   /// Get number of maximum evaluations
+  ///
+  /// Deprecated: Please use getNumMaxIterations() instead
+  DEPRECATED(5.0)
   virtual size_t getNumEvaluationMax() const;
-
-  /// \copydoc Solver::solve
-  virtual bool solve();
 
 private:
   /// \brief Wrapping function for nlopt callback function, nlopt_func
@@ -81,10 +115,13 @@ private:
                            void* _func_data);
 
   /// \brief NLOPT data structure
-  nlopt_opt mOpt;
+  std::unique_ptr<nlopt::opt> mOpt;
+
+  /// Algorithm to be used by the nlopt::opt
+  nlopt::algorithm mAlg;
 
   /// \brief Optimization parameters
-  Eigen::VectorXd mX;
+  std::vector<double> mX;
 
   /// \brief Optimum value of the objective function
   double mMinF;
