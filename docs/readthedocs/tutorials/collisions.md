@@ -11,11 +11,11 @@ The tutorial consists of five Lessons covering the following topics:
 - Setting joint spring and damping properties
 - Creating a closed kinematic chain
 
-Please reference the source code in [**tutorialCollision.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollision.cpp) and [**tutorialCollision-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollision-Finished.cpp).
+Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions-Finished.cpp).
 
 # Lesson 1: Creating a rigid body
 
-Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollision.cpp).
+Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp).
 Find the function named ``addRigidBody``. You will notice that this is a templated
 function. If you're not familiar with templates, that's okay; we won't be doing
 anything too complicated with them. Different Joint types in DART are managed by
