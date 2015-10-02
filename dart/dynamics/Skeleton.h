@@ -1130,9 +1130,13 @@ protected:
 
     /// Centroid of the support polygon
     Eigen::Vector2d mSupportCentroid;
+
+  public:
+    // To get byte-aligned Eigen vectors
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  mutable std::vector<DataCache> mTreeCache;
+  mutable Eigen::aligned_vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
 
