@@ -278,6 +278,9 @@ public:
     /// error vector.
     Eigen::Vector3d getLinearErrorWeights() const;
 
+    /// Get the Properties of this ErrorMethod
+    Properties getErrorMethodProperties() const;
+
     /// Clear the cache to force the error to be recomputed. It should generally
     /// not be necessary to call this function.
     void clearCache();
@@ -297,7 +300,7 @@ public:
     Eigen::Vector6d mLastError;
 
     /// The properties of this ErrorMethod
-    Properties mProperties;
+    Properties mErrorP;
 
   };
 
@@ -307,10 +310,33 @@ public:
   {
   public:
 
-    /// Constructor
+    struct UniqueProperties
+    {
+      /// Setting this to true (which is default) will tell it to compute the
+      /// error based on the center of the Task Space Region instead of the edge
+      /// of the Task Space Region. This often results in faster convergence, as
+      /// the Node will enter the Task Space Region more aggressively.
+      ///
+      /// Once the Node is inside the Task Space Region, the error vector will
+      /// drop to zero, regardless of whether this flag is true or false.
+      bool mComputeErrorFromCenter;
+
+      /// Default constructor
+      UniqueProperties(bool computeErrorFromCenter = true);
+    };
+
+    struct Properties : ErrorMethod::Properties, UniqueProperties
+    {
+      /// Default constructor
+      Properties(
+          const ErrorMethod::Properties& errorProperties =
+              ErrorMethod::Properties(),
+          const UniqueProperties& taskSpaceProperties = UniqueProperties());
+    };
+
+    /// Default Constructor
     explicit TaskSpaceRegion(InverseKinematics* _ik,
-                             const Properties& _properties = Properties(),
-                             bool _computeFromCenter = true);
+                             const Properties& _properties = Properties());
 
     /// Virtual destructor
     virtual ~TaskSpaceRegion() = default;
@@ -326,14 +352,22 @@ public:
     // Documentation inherited
     virtual Eigen::Vector6d computeError() override;
 
-    /// Setting this to true (which is default) will tell it to compute the
-    /// error based on the center of the Task Space Region instead of the edge
-    /// of the Task Space Region. This often results in faster convergence, as
-    /// the Node will enter the Task Space Region more aggressively.
-    ///
-    /// Once the Node is inside the Task Space Region, the error vector will
-    /// drop to zero, regardless of whether this flag is true or false.
-    bool mComputeErrorFromCenter;
+    /// Set whether this TaskSpaceRegion should compute its error vector from
+    /// the center of the region.
+    void setComputeFromCenter(bool computeFromCenter);
+
+    /// Get whether this TaskSpaceRegion is set to compute its error vector from
+    /// the center of the region.
+    bool isComputingFromCenter() const;
+
+    /// Get the Properties of this TaskSpaceRegion
+    Properties getTaskSpaceRegionProperties() const;
+
+  protected:
+
+    /// Properties of this TaskSpaceRegion
+    UniqueProperties mTaskSpaceP;
+
   };
 
   /// GradientMethod is a base class for different ways of computing the
@@ -342,10 +376,23 @@ public:
   {
   public:
 
+    struct Properties
+    {
+      /// The component-wise clamp for this GradientMethod
+      double mComponentWiseClamp;
+
+      /// The weights for this GradientMethod
+      Eigen::VectorXd mComponentWeights;
+
+      /// Default constructor
+      Properties(double clamp = DefaultIKGradientComponentClamp,
+                 const Eigen::VectorXd& weights = Eigen::VectorXd());
+    };
+
     /// Constructor
     GradientMethod(InverseKinematics* _ik,
                    const std::string& _methodName,
-                   double _clamp = DefaultIKGradientComponentClamp);
+                   const Properties& _properties);
 
     /// Virtual destructor
     virtual ~GradientMethod() = default;
@@ -405,6 +452,9 @@ public:
     /// Get the weights of this GradientMethod.
     const Eigen::VectorXd& getComponentWeights() const;
 
+    /// Get the Properties of this GradientMethod
+    Properties getGradientMethodProperties() const;
+
     /// Clear the cache to force the gradient to be recomputed. It should
     /// generally not be necessary to call this function.
     void clearCache();
@@ -423,11 +473,8 @@ public:
     /// The last gradient that was computed by this GradientMethod
     Eigen::VectorXd mLastGradient;
 
-    /// The component-wise clamp for this GradientMethod
-    double mComponentWiseClamp;
-
-    /// The weights for this GradientMethod
-    Eigen::VectorXd mComponentWeights;
+    /// Properties for this GradientMethod
+    Properties mGradientP;
 
   };
 
@@ -443,10 +490,27 @@ public:
   {
   public:
 
+    struct UniqueProperties
+    {
+      /// Damping coefficient
+      double mDamping;
+
+      /// Default constructor
+      UniqueProperties(double damping = DefaultIKDLSCoefficient);
+    };
+
+    struct Properties : GradientMethod::Properties, UniqueProperties
+    {
+      /// Default constructor
+      Properties(
+          const GradientMethod::Properties& gradientProperties =
+              GradientMethod::Properties(),
+          const UniqueProperties& dlsProperties = UniqueProperties());
+    };
+
     /// Constructor
     explicit JacobianDLS(InverseKinematics* _ik,
-                         double _clamp = DefaultIKGradientComponentClamp,
-                         double _damping = DefaultIKDLSCoefficient);
+                         const Properties& properties = Properties());
 
     /// Virtual destructor
     virtual ~JacobianDLS() = default;
@@ -467,10 +531,14 @@ public:
     /// Get the damping coefficient.
     double getDampingCoefficient() const;
 
+    /// Get the Properties of this JacobianDLS
+    Properties getJacobianDLSProperties() const;
+
   protected:
 
-    /// Damping coefficient
-    double mDamping;
+    /// Properties of this Damped Least Squares method
+    UniqueProperties mDLSProperties;
+
   };
 
   /// JacobianTranspose will simply apply the transpose of the Jacobian to the
@@ -484,7 +552,7 @@ public:
 
     /// Constructor
     explicit JacobianTranspose(InverseKinematics* _ik,
-                               double _clamp = DefaultIKGradientComponentClamp);
+                               const Properties& properties = Properties());
 
     /// Virtual destructor
     virtual ~JacobianTranspose() = default;
@@ -562,10 +630,49 @@ public:
     // std::function template for comparing the quality of configurations
     typedef std::function<bool(
         const Eigen::VectorXd& _better,
-        const Eigen::VectorXd& _worse)> QualityComparison;
+        const Eigen::VectorXd& _worse,
+        const InverseKinematics* _ik)> QualityComparison;
+
+    struct UniqueProperties
+    {
+      /// Flag for how to use the extra DOFs in the IK module.
+      ExtraDofUtilization_t mExtraDofUtilization;
+
+      /// How much to clamp the extra error that gets applied to DOFs
+      double mExtraErrorLengthClamp;
+
+      /// Function for comparing the qualities of solutions
+      QualityComparison mQualityComparator;
+
+      /// Default constructor. Uses a default quality comparison function.
+      UniqueProperties(ExtraDofUtilization_t extraDofUtilization = UNUSED,
+                 double extraErrorLengthClamp = DefaultIKErrorClamp);
+
+      /// Constructor that allows you to set the quality comparison function.
+      UniqueProperties(ExtraDofUtilization_t extraDofUtilization,
+                 double extraErrorLengthClamp,
+                 QualityComparison qualityComparator);
+
+      /// Reset the quality comparison function to its default behavior.
+      void resetQualityComparisonFunction();
+    };
+
+    struct Properties : GradientMethod::Properties, UniqueProperties
+    {
+      // Default constructor
+      Properties(
+          const GradientMethod::Properties& gradientProperties =
+              GradientMethod::Properties(),
+          const UniqueProperties& analyticalProperties = UniqueProperties());
+
+      // Construct Properties by specifying the UniqueProperties. The
+      // GradientMethod::Properties components will be set to defaults.
+      Properties(const UniqueProperties& analyticalProperties);
+    };
 
     /// Constructor
-    Analytical(InverseKinematics* _ik, const std::string& _methodName);
+    Analytical(InverseKinematics* _ik, const std::string& _methodName,
+               const Properties& _properties);
 
     /// Virtual destructor
     virtual ~Analytical() = default;
@@ -609,11 +716,11 @@ public:
 
     /// Set the configuration of the DOFs. The components of _config must
     /// correspond to the DOFs provided by getDofs().
-    void setConfiguration(const Eigen::VectorXd& _config);
+    void setPositions(const Eigen::VectorXd& _config);
 
     /// Get the configuration of the DOFs. The components of this vector will
     /// correspond to the DOFs provided by getDofs().
-    Eigen::VectorXd getConfiguration() const;
+    Eigen::VectorXd getPositions() const;
 
     /// Set how you want extra DOFs to be utilized by the IK module
     void setExtraDofUtilization(ExtraDofUtilization_t _utilization);
@@ -647,6 +754,9 @@ public:
     /// Reset the quality comparison function to the default method.
     void resetQualityComparisonFunction();
 
+    /// Get the Properties for this Analytical class
+    Properties getAnalyticalProperties() const;
+
     /// Construct a mapping from the DOFs of getDofs() to their indices within
     /// the Node's list of dependent DOFs. This will be called immediately after
     /// the Analytical is constructed; this one call is sufficient as long as
@@ -665,16 +775,10 @@ public:
     /// Vector of solutions
     std::vector<Solution> mSolutions;
 
-    /// Function for comparing the qualities of solutions
-    QualityComparison mQualityComparator;
+    /// Properties for this Analytical IK solver
+    UniqueProperties mAnalyticalP;
 
   private:
-
-    /// Flag for how to use the extra DOFs in the IK module.
-    ExtraDofUtilization_t mExtraDofUtilization;
-
-    /// How much to clamp the extra error that gets applied to DOFs
-    double mExtraErrorLengthClamp;
 
     /// This maps the DOFs provided by getDofs() to their index in the Node's
     /// list of dependent DOFs. This map is constructed by constructDofMap().

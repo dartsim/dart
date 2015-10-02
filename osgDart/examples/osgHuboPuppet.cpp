@@ -178,8 +178,9 @@ class HuboArmIK : public InverseKinematics::Analytical
 {
 public:
 
-  HuboArmIK(InverseKinematics* _ik, BodyNode* baseLink)
-    : Analytical(_ik, "HuboArmIK_"+baseLink->getName()),
+  HuboArmIK(InverseKinematics* _ik, BodyNode* baseLink,
+            const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(_ik, "HuboArmIK_"+baseLink->getName(), properties),
       mBaseLink(BodyNodePtr(baseLink))
   {
     configure();
@@ -198,7 +199,7 @@ public:
 
     return std::unique_ptr<GradientMethod>(
           new HuboArmIK(_newIK, _newIK->getNode()->getSkeleton()->getBodyNode(
-                          base->getName())));
+                          base->getName()), getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
@@ -457,8 +458,9 @@ class HuboLegIK : public InverseKinematics::Analytical
 public:
 
   /// baseLink should be Body_LHY or Body_RHY
-  HuboLegIK(InverseKinematics* _ik, BodyNode* baseLink)
-    : Analytical(_ik, "HuboLegIK_"+baseLink->getName()),
+  HuboLegIK(InverseKinematics* _ik, BodyNode* baseLink,
+            const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(_ik, "HuboLegIK_"+baseLink->getName(), properties),
       mBaseLink(BodyNodePtr(baseLink))
   {
     configure();
@@ -477,7 +479,7 @@ public:
 
     return std::unique_ptr<GradientMethod>(
           new HuboLegIK(_newIK, _newIK->getNode()->getSkeleton()->getBodyNode(
-                          base->getName())));
+                          base->getName()), getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
