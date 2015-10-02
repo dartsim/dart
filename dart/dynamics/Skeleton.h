@@ -1131,7 +1131,6 @@ protected:
     /// Centroid of the support polygon
     Eigen::Vector2d mSupportCentroid;
 
-  public:
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
