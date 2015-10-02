@@ -178,8 +178,9 @@ class HuboArmIK : public InverseKinematics::Analytical
 {
 public:
 
-  HuboArmIK(InverseKinematics* _ik, const std::string& baseLinkName)
-    : Analytical(_ik, "HuboArmIK_"+baseLinkName),
+  HuboArmIK(InverseKinematics* _ik, const std::string& baseLinkName,
+            const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(_ik, "HuboArmIK_"+baseLinkName, properties),
       configured(false),
       mBaseLinkName(baseLinkName)
   {
@@ -188,7 +189,7 @@ public:
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    return std::unique_ptr<GradientMethod>(new HuboArmIK(_newIK, mBaseLinkName));
+    return std::unique_ptr<GradientMethod>(new HuboArmIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
@@ -466,8 +467,9 @@ class HuboLegIK : public InverseKinematics::Analytical
 public:
 
   /// baseLink should be Body_LHY or Body_RHY
-  HuboLegIK(InverseKinematics* _ik, const std::string& baseLinkName)
-    : Analytical(_ik, "HuboLegIK_"+baseLinkName),
+  HuboLegIK(InverseKinematics* _ik, const std::string& baseLinkName,
+            const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(_ik, "HuboLegIK_"+baseLinkName, properties),
       configured(false),
       mBaseLinkName(baseLinkName)
   {
@@ -476,7 +478,7 @@ public:
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    return std::unique_ptr<GradientMethod>(new HuboLegIK(_newIK, mBaseLinkName));
+    return std::unique_ptr<GradientMethod>(new HuboLegIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
