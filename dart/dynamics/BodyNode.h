@@ -700,14 +700,14 @@ public:
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the Frame of this BodyNode.
-  const math::Jacobian& getJacobian() const override;
+  const math::Jacobian& getJacobian() const override final;
 
   // Prevent the inherited getJacobian functions from being shadowed
   using TemplatedJacobianNode<BodyNode>::getJacobian;
 
   /// Return the generalized Jacobian targeting the origin of this BodyNode. The
   /// Jacobian is expressed in the World Frame.
-  const math::Jacobian& getWorldJacobian() const;
+  const math::Jacobian& getWorldJacobian() const override final;
 
   // Prevent the inherited getWorldJacobian functions from being shadowed
   using TemplatedJacobianNode<BodyNode>::getWorldJacobian;
@@ -720,7 +720,7 @@ public:
   /// spatial vectors. If you are using classical linear and angular
   /// acceleration vectors, then use getJacobianClassicDeriv(),
   /// getLinearJacobianDeriv(), or getAngularJacobianDeriv() instead.
-  const math::Jacobian& getJacobianSpatialDeriv() const override;
+  const math::Jacobian& getJacobianSpatialDeriv() const override final;
 
   // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
   using TemplatedJacobianNode<BodyNode>::getJacobianSpatialDeriv;
@@ -732,7 +732,7 @@ public:
   /// NOTE: Since this is a classical time derivative, it should be used with
   /// classical linear and angular vectors. If you are using spatial vectors,
   /// use getJacobianSpatialDeriv() instead.
-  const math::Jacobian& getJacobianClassicDeriv() const override;
+  const math::Jacobian& getJacobianClassicDeriv() const override final;
 
   // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
   using TemplatedJacobianNode<BodyNode>::getJacobianClassicDeriv;

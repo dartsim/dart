@@ -294,25 +294,25 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  const math::Jacobian& getJacobian() const override;
+  const math::Jacobian& getJacobian() const override final;
 
   // Prevent the inherited getJacobian functions from being shadowed
   using TemplatedJacobianNode<EndEffector>::getJacobian;
 
   // Documentation inherited
-  const math::Jacobian& getWorldJacobian() const override;
+  const math::Jacobian& getWorldJacobian() const override final;
 
   // Prevent the inherited getWorldJacobian functions from being shadowed
   using TemplatedJacobianNode<EndEffector>::getWorldJacobian;
 
   // Documentation inherited
-  const math::Jacobian& getJacobianSpatialDeriv() const override;
+  const math::Jacobian& getJacobianSpatialDeriv() const override final;
 
   // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
   using TemplatedJacobianNode<EndEffector>::getJacobianSpatialDeriv;
 
   // Documentation inherited
-  const math::Jacobian& getJacobianClassicDeriv() const override;
+  const math::Jacobian& getJacobianClassicDeriv() const override final;
 
   // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
   using TemplatedJacobianNode<EndEffector>::getJacobianClassicDeriv;
