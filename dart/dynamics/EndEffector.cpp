@@ -201,6 +201,7 @@ void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
+  setAddonProperties(_properties.mAddonProperties);
 }
 
 //==============================================================================

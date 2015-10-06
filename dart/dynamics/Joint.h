@@ -44,6 +44,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
+#include "dart/common/AddonManager.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -61,9 +62,13 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
-class Joint : public virtual common::Subject
+class Joint : public virtual common::Subject,
+              public virtual common::AddonManager
 {
 public:
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+
   /// Actuator type
   ///
   /// The command is taken by setCommand() or setCommands(), and the meaning of
@@ -154,6 +159,17 @@ public:
   public:
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
+  using AddonProperties = common::AddonManager::Properties;
+
+  struct ExtendedProperties : Properties
+  {
+    ExtendedProperties(
+        const Properties& standardProperties = Properties(),
+        const AddonProperties& addonProperties = AddonProperties());
+
+    AddonProperties mAddonProperties;
   };
 
   /// Default actuator type
@@ -672,6 +688,15 @@ public:
   /// forward dynamics algorithm, and it affects on the articulated inertia.
   /// \sa BodyNode::updateArticulatedInertia(double).
 //  Eigen::VectorXd getDampingForces() const;
+
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Standard Joint Addons
+  //----------------------------------------------------------------------------
+
+
+
+  /// \}
 
   //----------------------------------------------------------------------------
   // Rendering

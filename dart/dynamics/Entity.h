@@ -67,8 +67,7 @@ class Shape;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class Entity : public virtual common::Subject,
-               public virtual common::AddonManager
+class Entity : public virtual common::Subject
 {
 public:
   friend class Frame;
@@ -87,6 +86,8 @@ public:
 
   using VizShapeRemovedSignal = VizShapeAddedSignal;
 
+  // TODO(MXG): Deprecate this with class the next major version-up, and move
+  // mName into the properties of inheriting classes.
   struct Properties
   {
     /// Name of the Entity

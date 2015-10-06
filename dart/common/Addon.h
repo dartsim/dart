@@ -156,6 +156,42 @@ private:
   Properties* mPropertiesPtr;
 };
 
+//==============================================================================
+/// AddonWithProtectedState generates implementations of the State managing
+/// functions for an Addon class.
+template <class StateData>
+class AddonWithProtectedState : virtual public Addon
+{
+  using State = Addon::StateMixer<StateData>;
+
+  /// Constructor that can use an Addon with an identical State type
+  AddonWithProtectedState(
+      AddonManager* mgr, const AddonWithProtectedState<StateData>& otherAddon);
+
+  /// Construct using a State
+  AddonWithProtectedState(
+      AddonManager* mgr, const StateData& state = StateData());
+
+  AddonWithProtectedState(const AddonWithProtectedState&) = delete;
+
+  // Documentation inherited
+  void setState(const std::unique_ptr<Addon::State>& otherState) override;
+
+protected:
+
+  /// State of this Addon
+  State mState;
+};
+
+//==============================================================================
+/// AddonWithProtectedProperties generates implementations of the Property
+/// managing functions for an Addon class.
+//template <class PropertiesData>
+//class AddonWithProtectedProperties : virtual public Addon
+//{
+
+//};
+
 } // namespace common
 } // namespace dart
 
