@@ -57,7 +57,7 @@ void AddonManager::setAddonStates(const State& newStates)
     {
       Addon* addon = addons->second.get();
       if(addon && states->second)
-        addon->setState(states->second);
+        addon->setAddonState(states->second);
 
       ++addons;
       ++states;
@@ -136,7 +136,7 @@ AddonManager::State AddonManager::getAddonStates() const
 void AddonManager::copyAddonStatesTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
-  extractMapData<StateMap, Addon::State, &Addon::getState>(states, mAddonMap);
+  extractMapData<StateMap, Addon::State, &Addon::getAddonState>(states, mAddonMap);
 }
 
 //==============================================================================
@@ -153,7 +153,7 @@ void AddonManager::setAddonProperties(const Properties& newProperties)
     {
       Addon* addon = addons->second.get();
       if(addon)
-        addon->setProperties(props->second);
+        addon->setAddonProperties(props->second);
 
       ++addons;
       ++props;
@@ -183,7 +183,7 @@ void AddonManager::copyAddonPropertiesTo(
     Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();
-  extractMapData<PropertiesMap, Addon::Properties, &Addon::getProperties>(
+  extractMapData<PropertiesMap, Addon::Properties, &Addon::getAddonProperties>(
         properties, mAddonMap);
 }
 

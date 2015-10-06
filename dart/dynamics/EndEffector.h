@@ -80,11 +80,11 @@ public:
       common::AddonManager* newManager) const override final;
 
   // Documentation inherited
-  void setState(
+  void setAddonState(
       const std::unique_ptr<common::Addon::State>& otherState) override final;
 
   // Documentation inherited
-  void setProperties(const std::unique_ptr<common::Addon::Properties>&
+  void setAddonProperties(const std::unique_ptr<common::Addon::Properties>&
                      otherProperties) override final;
 
   /// Set the support geometry for this EndEffector. The SupportGeometry

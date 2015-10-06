@@ -45,31 +45,31 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-void Addon::setState(const std::unique_ptr<State>& /*otherState*/)
+void Addon::setAddonState(const std::unique_ptr<State>& /*otherState*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-const Addon::State* Addon::getState() const
+const Addon::State* Addon::getAddonState() const
 {
   return mStatePtr;
 }
 
 //==============================================================================
-void Addon::setProperties(const std::unique_ptr<Properties>& /*someProperties*/)
+void Addon::setAddonProperties(const std::unique_ptr<Properties>& /*someProperties*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-const Addon::Properties* Addon::getProperties() const
+const Addon::Properties* Addon::getAddonProperties() const
 {
   return mPropertiesPtr;
 }
 
 //==============================================================================
-const std::string& Addon::getType() const
+const std::string& Addon::getAddonType() const
 {
   return mType;
 }

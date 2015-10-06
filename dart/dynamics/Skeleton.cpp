@@ -222,6 +222,18 @@ ConstSkeletonPtr Skeleton::getPtr() const
 }
 
 //==============================================================================
+SkeletonPtr Skeleton::getSkeleton()
+{
+  return mPtr.lock();
+}
+
+//==============================================================================
+ConstSkeletonPtr Skeleton::getSkeleton() const
+{
+  return mPtr.lock();
+}
+
+//==============================================================================
 std::mutex& Skeleton::getMutex() const
 {
   return mMutex;

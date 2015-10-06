@@ -42,6 +42,13 @@
 #include "dart/common/Extensible.h"
 
 namespace dart {
+namespace dynamics {
+// Forward declare Skeleton for the sake of Skeleton-dependent Addons
+class Skeleton;
+} // namespace dart
+} // namespace dynamics
+
+namespace dart {
 namespace common {
 
 class AddonManager;
@@ -103,21 +110,22 @@ public:
   virtual std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const = 0;
 
   /// Set the State of this Addon. By default, this does nothing.
-  virtual void setState(const std::unique_ptr<State>& otherState);
+  virtual void setAddonState(const std::unique_ptr<State>& otherState);
 
   /// Get the State of this Addon. By default, this returns a nullptr which
   /// implies that the Addon is stateless.
-  virtual const State* getState() const;
+  virtual const State* getAddonState() const;
 
   /// Set the Properties of this Addon. By default, this does nothing.
-  virtual void setProperties(const std::unique_ptr<Properties>& someProperties);
+  virtual void setAddonProperties(
+      const std::unique_ptr<Properties>& someProperties);
 
   /// Get the Properties of this Addon. By default, this returns a nullptr
   /// which implies that the Addon has no properties.
-  virtual const Properties* getProperties() const;
+  virtual const Properties* getAddonProperties() const;
 
   /// Get the type of this Addon
-  const std::string& getType() const;
+  const std::string& getAddonType() const;
 
 protected:
 
@@ -162,20 +170,27 @@ private:
 template <class StateData>
 class AddonWithProtectedState : virtual public Addon
 {
+public:
+
   using State = Addon::StateMixer<StateData>;
+
+  AddonWithProtectedState() = delete;
+  AddonWithProtectedState(const AddonWithProtectedState&) = delete;
+
+  /// Construct using a StateData instance
+  AddonWithProtectedState(
+      AddonManager* mgr, const StateData& state = StateData());
 
   /// Constructor that can use an Addon with an identical State type
   AddonWithProtectedState(
       AddonManager* mgr, const AddonWithProtectedState<StateData>& otherAddon);
 
-  /// Construct using a State
-  AddonWithProtectedState(
-      AddonManager* mgr, const StateData& state = StateData());
-
-  AddonWithProtectedState(const AddonWithProtectedState&) = delete;
+  // Documentation inherited
+  void setAddonState(
+      const std::unique_ptr<Addon::State>& otherState) override final;
 
   // Documentation inherited
-  void setState(const std::unique_ptr<Addon::State>& otherState) override;
+  const Addon::State* getAddonState() const override final;
 
 protected:
 
@@ -186,11 +201,81 @@ protected:
 //==============================================================================
 /// AddonWithProtectedProperties generates implementations of the Property
 /// managing functions for an Addon class.
-//template <class PropertiesData>
-//class AddonWithProtectedProperties : virtual public Addon
-//{
+template <class PropertiesData>
+class AddonWithProtectedProperties : virtual public Addon
+{
+public:
 
-//};
+  using Properties = Addon::PropertiesMixer<PropertiesData>;
+
+  AddonWithProtectedProperties() = delete;
+  AddonWithProtectedProperties(const AddonWithProtectedProperties&) = delete;
+
+  /// Construct using a PropertiesData instance
+  AddonWithProtectedProperties(
+      AddonManager* mgr, const PropertiesData& properties = PropertiesData());
+
+  /// Constructor that can use an Addon with an identical Properties type
+  AddonWithProtectedProperties(
+      AddonManager* mgr,
+      const AddonWithProtectedProperties<PropertiesData>& otherAddon);
+
+  // Documentation inherited
+  void setAddonProperties(
+      const std::unique_ptr<Addon::Properties>& someProperties) override final;
+
+  // Documentation inherited
+  const Addon::Properties* getAddonProperties() const override final;
+
+protected:
+
+  /// Properties of this Addon
+  Properties mProperties;
+};
+
+//==============================================================================
+/// AddonWithProtectedPropertiesInSkeleton generates implementations of the
+/// Property managing functions for an Addon class which is embedded within a
+/// Skeleton or a component of a Skeleton (such as a BodyNode, Joint, or custom
+/// Node class). This will increment the version count any time the
+/// Addon::setProperties function is called.
+template <class PropertiesData, class ManagerType>
+class AddonWithProtectedPropertiesInSkeleton : virtual public Addon
+{
+public:
+
+  using Properties = Addon::PropertiesMixer<PropertiesData>;
+
+  AddonWithProtectedPropertiesInSkeleton() = delete;
+  AddonWithProtectedPropertiesInSkeleton(
+      const AddonWithProtectedPropertiesInSkeleton&) = delete;
+
+  /// Construct using a PropertiesData instance
+  AddonWithProtectedPropertiesInSkeleton(
+      ManagerType* mgr, const PropertiesData& properties = PropertiesData());
+
+  /// Constructor that can use an Addon with an identical Properties type
+  AddonWithProtectedPropertiesInSkeleton(
+      AddonManager* mgr,
+      const AddonWithProtectedPropertiesInSkeleton<Properties, ManagerType>&
+          someProperties) override final;
+
+  // Documentation inherited
+  void setAddonProperties(
+      const std::unique_ptr<Addon::Properties>& someProperties) override final;
+
+  // Documentation inherited
+  const Addon::Properties* getAddonProperties() const override final;
+
+protected:
+
+  /// Properties of this Addon
+  Properties mProperties;
+
+  /// Skeleton for this Addon
+  std::weak_ptr<dart::dynamics::Skeleton> mSkeleton;
+
+};
 
 } // namespace common
 } // namespace dart

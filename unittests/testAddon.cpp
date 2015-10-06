@@ -163,12 +163,12 @@ public:
     return std::unique_ptr<Addon>(new StatefulAddon(newManager, *this));
   }
 
-  void setState(const std::unique_ptr<Addon::State>& otherState) override
+  void setAddonState(const std::unique_ptr<Addon::State>& otherState) override
   {
     mState.val = static_cast<State*>(otherState.get())->val;
   }
 
-  void setProperties(const std::unique_ptr<Addon::Properties>& someProperties) override
+  void setAddonProperties(const std::unique_ptr<Addon::Properties>& someProperties) override
   {
     mProperties.val = static_cast<Properties*>(someProperties.get())->val;
   }

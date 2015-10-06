@@ -221,6 +221,14 @@ public:
   /// Get the shared_ptr that manages this Skeleton
   ConstSkeletonPtr getPtr() const;
 
+  /// Same as getPtr(), but this allows Skeleton to have a similar interface as
+  /// BodyNode and Joint for template programming.
+  SkeletonPtr getSkeleton();
+
+  /// Same as getPtr(), but this allows Skeleton to have a similar interface as
+  /// BodyNode and Joint for template programming.
+  ConstSkeletonPtr getSkeleton() const;
+
   /// Get the mutex that protects the state of this Skeleton
   std::mutex& getMutex() const;
 

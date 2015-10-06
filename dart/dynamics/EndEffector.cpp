@@ -101,14 +101,14 @@ std::unique_ptr<common::Addon> Support::cloneAddon(
 }
 
 //==============================================================================
-void Support::setState(const std::unique_ptr<common::Addon::State>& otherState)
+void Support::setAddonState(const std::unique_ptr<common::Addon::State>& otherState)
 {
   if(otherState)
     mState = *static_cast<const State*>(otherState.get());
 }
 
 //==============================================================================
-void Support::setProperties(
+void Support::setAddonProperties(
     const std::unique_ptr<common::Addon::Properties>& otherProperties)
 {
   if(otherProperties)
