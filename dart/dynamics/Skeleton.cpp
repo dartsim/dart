@@ -168,13 +168,29 @@ Skeleton::Properties::Properties(
     const Eigen::Vector3d& _gravity,
     double _timeStep,
     bool _enabledSelfCollisionCheck,
-    bool _enableAdjacentBodyCheck)
+    bool _enableAdjacentBodyCheck,
+    size_t _version)
   : mName(_name),
     mIsMobile(_isMobile),
     mGravity(_gravity),
     mTimeStep(_timeStep),
     mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
-    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck)
+    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck),
+    mVersion(_version)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Skeleton::ExtendedProperties::ExtendedProperties(
+    const BodyNodeProperties& bodyNodeProperties,
+    const JointProperties& jointProperties,
+    const std::vector<std::string>& parentNames,
+    const AddonProperties& addonProperties)
+  : mBodyNodeProperties(bodyNodeProperties),
+    mJointProperties(jointProperties),
+    mParentBodyNodeNames(parentNames),
+    mAddonProperties(addonProperties)
 {
   // Do nothing
 }
@@ -520,6 +536,18 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 const Eigen::Vector3d& Skeleton::getGravity() const
 {
   return mSkeletonP.mGravity;
+}
+
+//==============================================================================
+size_t Skeleton::incrementVersion()
+{
+  return ++mSkeletonP.mVersion;
+}
+
+//==============================================================================
+size_t Skeleton::getVersion() const
+{
+  return mSkeletonP.mVersion;
 }
 
 //==============================================================================

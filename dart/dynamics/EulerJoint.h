@@ -81,6 +81,8 @@ public:
     virtual ~Properties() = default;
   };
 
+
+
   /// Destructor
   virtual ~EulerJoint();
 

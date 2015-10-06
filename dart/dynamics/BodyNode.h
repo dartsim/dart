@@ -53,7 +53,7 @@
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
-#include "dart/dynamics/Skeleton.h"
+//#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
@@ -86,6 +86,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
+    public virtual common::AddonManager,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -161,7 +162,7 @@ public:
   {
     /// Composed constructor
     ExtendedProperties(
-        const Properties& standardProperties = Entity::Properties("BodyNode"),
+        const Properties& standardProperties = Properties(),
         const NodeProperties& nodeProperties = NodeProperties(),
         const AddonProperties& addonProperties = AddonProperties());
 
@@ -171,7 +172,10 @@ public:
         NodeProperties&& nodeProperties,
         AddonProperties&& addonProperties);
 
+    /// Properties of all the Nodes attached to this BodyNode
     NodeProperties mNodeProperties;
+
+    /// Properties of all the Addons attached to this BodyNode
     AddonProperties mAddonProperties;
   };
 

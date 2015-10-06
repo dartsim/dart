@@ -115,9 +115,11 @@ protected:
 
 };
 
-class EndEffector final : public FixedFrame,
-                          public AccessoryNode<EndEffector>,
-                          public TemplatedJacobianNode<EndEffector>
+class EndEffector final :
+    public virtual common::AddonManager,
+    public FixedFrame,
+    public AccessoryNode<EndEffector>,
+    public TemplatedJacobianNode<EndEffector>
 {
 public:
 
