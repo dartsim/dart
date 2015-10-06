@@ -54,7 +54,7 @@ public:
     // Do nothing
   }
 
-  std::unique_ptr<Addon> clone(AddonManager* newManager) const override final
+  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
     return std::unique_ptr<GenericAddon>(new GenericAddon(newManager));
   }
@@ -71,7 +71,7 @@ public:
     // Do nothing
   }
 
-  std::unique_ptr<Addon> clone(AddonManager* newManager) const override final
+  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
     return std::unique_ptr<SpecializedAddon>(new SpecializedAddon(newManager));
   }
@@ -158,7 +158,7 @@ public:
     setPropertiesPtr(&mProperties);
   }
 
-  std::unique_ptr<Addon> clone(AddonManager* newManager) const override final
+  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
     return std::unique_ptr<Addon>(new StatefulAddon(newManager, *this));
   }

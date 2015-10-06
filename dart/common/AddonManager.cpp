@@ -209,12 +209,12 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     {
       // If we've reached the end of this Manager's AddonMap, then we should
       // just add each entry
-      mAddonMap[incoming->first] = incoming->second->clone(this);
+      mAddonMap[incoming->first] = incoming->second->cloneAddon(this);
     }
     else if( receiving->first == incoming->first )
     {
       if(incoming->second)
-        receiving->second = incoming->second->clone(this);
+        receiving->second = incoming->second->cloneAddon(this);
 
       ++receiving;
       ++incoming;
@@ -227,7 +227,7 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     {
       // If this Manager does not have an entry corresponding to the incoming
       // Addon, then we must create it
-      mAddonMap[incoming->first] = incoming->second->clone(this);
+      mAddonMap[incoming->first] = incoming->second->cloneAddon(this);
       ++incoming;
     }
   }

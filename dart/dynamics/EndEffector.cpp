@@ -85,7 +85,7 @@ Support::Support(EndEffector *_ee, const Support& otherSupport)
 }
 
 //==============================================================================
-std::unique_ptr<common::Addon> Support::clone(
+std::unique_ptr<common::Addon> Support::cloneAddon(
     common::AddonManager* newManager) const
 {
   EndEffector* ee = dynamic_cast<EndEffector*>(newManager);

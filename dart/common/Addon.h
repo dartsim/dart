@@ -100,7 +100,7 @@ public:
   virtual ~Addon() = default;
 
   /// Clone this Addon into a new manager
-  virtual std::unique_ptr<Addon> clone(AddonManager* newManager) const = 0;
+  virtual std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const = 0;
 
   /// Set the State of this Addon. By default, this does nothing.
   virtual void setState(const std::unique_ptr<State>& otherState);

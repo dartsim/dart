@@ -76,7 +76,7 @@ public:
   Support(const Support&) = delete;
 
   // Documentation inherited
-  std::unique_ptr<common::Addon> clone(
+  std::unique_ptr<common::Addon> cloneAddon(
       common::AddonManager* newManager) const override final;
 
   // Documentation inherited

@@ -71,7 +71,7 @@ const T* AddonManager::get() const
 template <class T>
 void AddonManager::set(const T* addon)
 {
-  mAddonMap[typeid(T)] = addon->clone(this);
+  mAddonMap[typeid(T)] = addon->cloneAddon(this);
 }
 
 //==============================================================================
@@ -150,7 +150,7 @@ std::unique_ptr<T> AddonManager::release()
   { return static_cast< AddonName *>( it ->second.get() ); }                    \
                                                                                 \
   inline void set ## AddonName (const AddonName * addon)                        \
-  { it ->second = addon->clone(this); }                                         \
+  { it ->second = addon->cloneAddon(this); }                                    \
                                                                                 \
   inline void set ## AddonName (std::unique_ptr< AddonName >&& addon)           \
   { becomeManager(addon.get()); it ->second = std::move(addon); }               \
