@@ -84,8 +84,14 @@ public:
       const std::unique_ptr<common::Addon::State>& otherState) override final;
 
   // Documentation inherited
+  const common::Addon::State* getAddonState() const override final;
+
+  // Documentation inherited
   void setAddonProperties(const std::unique_ptr<common::Addon::Properties>&
                      otherProperties) override final;
+
+  // Documentation inherited
+  const common::Addon::Properties* getAddonProperties() const override final;
 
   /// Set the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact

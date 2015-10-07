@@ -71,9 +71,6 @@ public:
   /// stored in AddonManager::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  ///
-  /// If your Addon has a State, be sure to call setStatePtr() during
-  /// the construction of your Addon.
   class State : public Extensible<State> { };
 
   /// Use the StateMixer class to easily create a State extension from an
@@ -93,9 +90,6 @@ public:
   /// stored in AddonManager::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  ///
-  /// If your Addon has Properties, be sure to call setPropertiesPtr()
-  /// during the construction of your Addon.
   class Properties : public Extensible<Properties> { };
 
   /// Use the PropertiesMixer class to easily create a Properties extension
@@ -136,38 +130,18 @@ protected:
   // constructors.
   Addon(AddonManager* manager, const std::string& type);
 
-  /// Set the State pointer for this Addon.
-  ///
-  /// This should be called during construction of your Addon, if your Addon has
-  /// a State.
-  void setStatePtr(State* ptr = nullptr);
-
-  /// Set the Properties pointer for this Addon.
-  ///
-  /// This should be called during construction of your Addon, if your Addon has
-  /// a Properties structure.
-  void setPropertiesPtr(Properties* ptr = nullptr);
-
   /// This function should be overriden if your Addon needs to do any special
   /// handling when its AddonManager gets changed.
   virtual void changeManager(AddonManager* newManager);
 
   /// Type of this Addon
   std::string mType;
-
-private:
-
-  /// Pointer to the State object of this Addon
-  State* mStatePtr;
-
-  /// Pointer to the Properties object of this Addon
-  Properties* mPropertiesPtr;
 };
 
 //==============================================================================
 /// AddonWithProtectedState generates implementations of the State managing
 /// functions for an Addon class.
-template <class StateData>
+template <typename StateData>
 class AddonWithProtectedState : virtual public Addon
 {
 public:
@@ -201,7 +175,7 @@ protected:
 //==============================================================================
 /// AddonWithProtectedProperties generates implementations of the Property
 /// managing functions for an Addon class.
-template <class PropertiesData>
+template <typename PropertiesData>
 class AddonWithProtectedProperties : virtual public Addon
 {
 public:
@@ -239,7 +213,7 @@ protected:
 /// Skeleton or a component of a Skeleton (such as a BodyNode, Joint, or custom
 /// Node class). This will increment the version count any time the
 /// Addon::setProperties function is called.
-template <class PropertiesData, class ManagerType>
+template <typename PropertiesData, class ManagerType>
 class AddonWithProtectedPropertiesInSkeleton : virtual public Addon
 {
 public:
@@ -258,7 +232,7 @@ public:
   AddonWithProtectedPropertiesInSkeleton(
       AddonManager* mgr,
       const AddonWithProtectedPropertiesInSkeleton<Properties, ManagerType>&
-          someProperties) override final;
+          otherAddon);
 
   // Documentation inherited
   void setAddonProperties(
@@ -275,6 +249,86 @@ protected:
   /// Skeleton for this Addon
   std::weak_ptr<dart::dynamics::Skeleton> mSkeleton;
 
+};
+
+//==============================================================================
+/// AddonWithProtectedStateAndProperties combines the
+/// AddonWithProtectedState and AddonWithProtectedProperties classes into a
+/// single templated class
+template <typename StateData, typename PropertiesData>
+class AddonWithProtectedStateAndProperties :
+    public AddonWithProtectedState<StateData>,
+    public AddonWithProtectedProperties<PropertiesData>
+{
+public:
+
+  AddonWithProtectedStateAndProperties() = delete;
+  AddonWithProtectedStateAndProperties(
+      const AddonWithProtectedStateAndProperties&) = delete;
+
+  /// Construct using a StateData and a PropertiesData instance
+  AddonWithProtectedStateAndProperties(
+      AddonManager* mgr,
+      const StateData& state = StateData(),
+      const PropertiesData& properties = PropertiesData());
+
+  /// Construct using just a PropertiesData instance
+  AddonWithProtectedStateAndProperties(
+      AddonManager* mgr,
+      const PropertiesData& properties);
+
+  /// Construct using a StateData and a PropertiesData instance, flipped
+  AddonWithProtectedStateAndProperties(
+      AddonManager* mgr,
+      const PropertiesData& properties,
+      const StateData& state);
+
+  /// Constructor that can use an Addon with identical types
+  AddonWithProtectedStateAndProperties(
+      AddonManager* mgr,
+      const AddonWithProtectedStateAndProperties<StateData, PropertiesData>&
+          otherAddon);
+};
+
+//==============================================================================
+/// AddonWithProtectedStateAndPropertiesInSkeleton combines the
+/// AddonWithProtectedState and AddonWithProtectedPropertiesInSkeleton classes
+/// into a single templated class. This should be the base class of any Addon
+/// with both a State and Properties that will be embedded in a Skeleton or a
+/// component of a Skeleton (such as a BodyNode, Joint, or custom Node).
+template <typename StateData, typename PropertiesData, class ManagerType>
+class AddonWithProtectedStateAndPropertiesInSkeleton :
+    public AddonWithProtectedState<StateData>,
+    public AddonWithProtectedProperties<PropertiesData>
+{
+public:
+
+  AddonWithProtectedStateAndPropertiesInSkeleton() = delete;
+  AddonWithProtectedStateAndPropertiesInSkeleton(
+      const AddonWithProtectedStateAndPropertiesInSkeleton&) = delete;
+
+  /// Construct using a StateData and a PropertiesData instance
+  AddonWithProtectedStateAndPropertiesInSkeleton(
+      ManagerType* mgr,
+      const StateData& state = StateData(),
+      const PropertiesData& properties = PropertiesData());
+
+  /// Construct using just a PropertiesData instance
+  AddonWithProtectedStateAndPropertiesInSkeleton(
+      ManagerType* mgr,
+      const PropertiesData& properties);
+
+  /// Construct using a StateData and a PropertiesData instance, flipped
+  AddonWithProtectedStateAndPropertiesInSkeleton(
+      ManagerType* mgr,
+      const PropertiesData& properties,
+      const StateData& state);
+
+  /// Constructor that can use an Addon with identical types
+  AddonWithProtectedStateAndPropertiesInSkeleton(
+      ManagerType* mgr,
+      const AddonWithProtectedStateAndPropertiesInSkeleton<
+          StateData, PropertiesData, ManagerType>& otherAddon);
 };
 
 } // namespace common

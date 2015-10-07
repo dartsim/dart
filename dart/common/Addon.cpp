@@ -53,7 +53,7 @@ void Addon::setAddonState(const std::unique_ptr<State>& /*otherState*/)
 //==============================================================================
 const Addon::State* Addon::getAddonState() const
 {
-  return mStatePtr;
+  return nullptr;
 }
 
 //==============================================================================
@@ -65,7 +65,7 @@ void Addon::setAddonProperties(const std::unique_ptr<Properties>& /*someProperti
 //==============================================================================
 const Addon::Properties* Addon::getAddonProperties() const
 {
-  return mPropertiesPtr;
+  return nullptr;
 }
 
 //==============================================================================
@@ -84,29 +84,13 @@ Addon::Addon(AddonManager* manager, const std::string& type)
           << "outside of an AddonManager!\n";
     assert(false);
   }
-
-  setStatePtr();
-  setPropertiesPtr();
 }
 
 //==============================================================================
-void Addon::setStatePtr(State* ptr)
-{
-  mStatePtr = ptr;
-}
-
-//==============================================================================
-void Addon::setPropertiesPtr(Properties* ptr)
-{
-  mPropertiesPtr = ptr;
-}
-
-//==============================================================================
-void Addon::changeManager(AddonManager* newManager)
+void Addon::changeManager(AddonManager* /*newManager*/)
 {
   // Do nothing
 }
-
 
 } // namespace common
 } // namespace dart

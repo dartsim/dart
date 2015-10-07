@@ -60,9 +60,6 @@ Support::Support(EndEffector* _ee)
           << "Support with a nullptr EndEffector!\n";
     assert(false);
   }
-
-  setStatePtr(&mState);
-  setPropertiesPtr(&mProperties);
 }
 
 //==============================================================================
@@ -79,9 +76,6 @@ Support::Support(EndEffector *_ee, const Support& otherSupport)
 
   mState = otherSupport.mState;
   mProperties = otherSupport.mProperties;
-
-  setStatePtr(&mState);
-  setPropertiesPtr(&mProperties);
 }
 
 //==============================================================================
@@ -108,11 +102,23 @@ void Support::setAddonState(const std::unique_ptr<common::Addon::State>& otherSt
 }
 
 //==============================================================================
+const common::Addon::State* Support::getAddonState() const
+{
+  return &mState;
+}
+
+//==============================================================================
 void Support::setAddonProperties(
     const std::unique_ptr<common::Addon::Properties>& otherProperties)
 {
   if(otherProperties)
     mProperties = *static_cast<const Properties*>(otherProperties.get());
+}
+
+//==============================================================================
+const common::Addon::Properties* Support::getAddonProperties() const
+{
+  return &mProperties;
 }
 
 //==============================================================================

@@ -131,31 +131,27 @@ public:
   StatefulAddon(AddonManager* mgr)
     : Addon(mgr, "StatefulAddon")
   {
-    setStatePtr(&mState);
-    setPropertiesPtr(&mProperties);
+    // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const StatefulAddon& other)
     : Addon(mgr, "StatefulAddon"),
       mState(other.mState), mProperties(other.mProperties)
   {
-    setStatePtr(&mState);
-    setPropertiesPtr(&mProperties);
+    // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const T& state)
     : Addon(mgr, "StatefulAddon"), mState(state)
   {
-    setStatePtr(&mState);
-    setPropertiesPtr(&mProperties);
+    // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const T& state, const T& properties)
     : Addon(mgr, "StatefulAddon"),
       mState(state), mProperties(properties)
   {
-    setStatePtr(&mState);
-    setPropertiesPtr(&mProperties);
+    // Do nothing
   }
 
   std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
@@ -168,9 +164,19 @@ public:
     mState.val = static_cast<State*>(otherState.get())->val;
   }
 
+  const Addon::State* getAddonState() const override
+  {
+    return &mState;
+  }
+
   void setAddonProperties(const std::unique_ptr<Addon::Properties>& someProperties) override
   {
     mProperties.val = static_cast<Properties*>(someProperties.get())->val;
+  }
+
+  const Addon::Properties* getAddonProperties() const override
+  {
+    return &mProperties;
   }
 
   void randomize()
