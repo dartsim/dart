@@ -41,4 +41,13 @@
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"
 
+// Visual Studio does not have std::nextafter() under std namespace, and the
+// function name is different.
+#if defined(_MSC_VER)
+namespace std {
+template <typename T>
+T nextafter(T x, T y) { return _nextafter(x, y); }
+}
+#endif
+
 #endif // #ifndef DART_CONFIG_H_
