@@ -42,91 +42,36 @@
 namespace dart {
 namespace dynamics {
 
-//==============================================================================
-Support::StateData::StateData(bool active)
-  : mActive(active)
+namespace detail {
+
+void SupportUpdate(Support* support)
 {
+  EndEffector* ee = support->ee;
+  if(ee)
+  {
+    ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
+  }
+}
+
+} // namespace detail
+
+//==============================================================================
+Support::Support(EndEffector* _ee,
+                 const StateData& state,
+                 const PropertiesData& properties)
+  : common::AddonWithProtectedStateAndProperties<
+      Support, StateData, PropertiesData, EndEffector, &detail::SupportUpdate>(
+      _ee, state, properties)
+{
+  ee = _ee;
   // Do nothing
-}
-
-//==============================================================================
-Support::Support(EndEffector* _ee)
-  : common::Addon(_ee, "Support"),
-    mEndEffector(_ee)
-{
-  if(nullptr == mEndEffector)
-  {
-    dterr << "[Support::constructor] It is not permissible to construct a "
-          << "Support with a nullptr EndEffector!\n";
-    assert(false);
-  }
-}
-
-//==============================================================================
-Support::Support(EndEffector *_ee, const Support& otherSupport)
-  : common::Addon(_ee, "Support"),
-    mEndEffector(_ee)
-{
-  if(nullptr == mEndEffector)
-  {
-    dterr << "[Support::constructor] It is not permissible to construct a "
-          << "Support with a nullptr EndEffector!\n";
-    assert(false);
-  }
-
-  mState = otherSupport.mState;
-  mProperties = otherSupport.mProperties;
-}
-
-//==============================================================================
-std::unique_ptr<common::Addon> Support::cloneAddon(
-    common::AddonManager* newManager) const
-{
-  EndEffector* ee = dynamic_cast<EndEffector*>(newManager);
-  if(nullptr == ee)
-  {
-    dterr << "[Support::clone] Attempting to clone a Support class into an "
-          << "AddonManager which is not an EndEffector. This is not allowed!\n";
-    assert(false);
-    return nullptr;
-  }
-
-  return std::unique_ptr<common::Addon>(new Support(ee, *this));
-}
-
-//==============================================================================
-void Support::setAddonState(const std::unique_ptr<common::Addon::State>& otherState)
-{
-  if(otherState)
-    mState = *static_cast<const State*>(otherState.get());
-}
-
-//==============================================================================
-const common::Addon::State* Support::getAddonState() const
-{
-  return &mState;
-}
-
-//==============================================================================
-void Support::setAddonProperties(
-    const std::unique_ptr<common::Addon::Properties>& otherProperties)
-{
-  if(otherProperties)
-    mProperties = *static_cast<const Properties*>(otherProperties.get());
-}
-
-//==============================================================================
-const common::Addon::Properties* Support::getAddonProperties() const
-{
-  return &mProperties;
 }
 
 //==============================================================================
 void Support::setGeometry(const math::SupportGeometry& _newSupport)
 {
   mProperties.mGeometry = _newSupport;
-  mEndEffector->getSkeleton()->notifySupportUpdate(
-        mEndEffector->getTreeIndex());
+  ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
 }
 
 //==============================================================================
@@ -142,8 +87,7 @@ void Support::setActive(bool _supporting)
     return;
 
   mState.mActive = _supporting;
-  mEndEffector->getSkeleton()->notifySupportUpdate(
-        mEndEffector->getTreeIndex());
+  UpdateState(this);
 }
 
 //==============================================================================

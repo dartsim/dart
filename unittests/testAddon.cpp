@@ -49,7 +49,7 @@ class GenericAddon : public Addon, public Subject
 public:
 
   GenericAddon(AddonManager* manager)
-    : Addon(manager, "GenericAddon")
+    : Addon(manager)
   {
     // Do nothing
   }
@@ -66,7 +66,7 @@ class SpecializedAddon : public Addon, public Subject
 public:
 
   SpecializedAddon(AddonManager* manager)
-    : Addon(manager, "SpecializedAddon")
+    : Addon(manager)
   {
     // Do nothing
   }
@@ -129,26 +129,26 @@ public:
   };
 
   StatefulAddon(AddonManager* mgr)
-    : Addon(mgr, "StatefulAddon")
+    : Addon(mgr)
   {
     // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const StatefulAddon& other)
-    : Addon(mgr, "StatefulAddon"),
+    : Addon(mgr),
       mState(other.mState), mProperties(other.mProperties)
   {
     // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const T& state)
-    : Addon(mgr, "StatefulAddon"), mState(state)
+    : Addon(mgr), mState(state)
   {
     // Do nothing
   }
 
   StatefulAddon(AddonManager* mgr, const T& state, const T& properties)
-    : Addon(mgr, "StatefulAddon"),
+    : Addon(mgr),
       mState(state), mProperties(properties)
   {
     // Do nothing

@@ -47,51 +47,45 @@ class BodyNode;
 class Skeleton;
 class EndEffector;
 
-class Support final : public common::Addon
+class Support;
+namespace detail
+{
+
+struct SupportStateData
+{
+  inline SupportStateData(bool active = false) : mActive(active) { }
+
+  bool mActive;
+};
+
+struct SupportPropertiesData
+{
+  math::SupportGeometry mGeometry;
+};
+
+void SupportUpdate(Support* support);
+
+} // namespace detail
+
+class Support final :
+    public common::AddonWithProtectedStateAndProperties<
+        Support,
+        detail::SupportStateData,
+        detail::SupportPropertiesData,
+        EndEffector,
+        &detail::SupportUpdate>
 {
 public:
 
-  struct StateData
-  {
-    StateData(bool mActive = false);
+  using StateData = detail::SupportStateData;
+  using PropertiesData = detail::SupportPropertiesData;
 
-    bool mActive;
-  };
-
-  using State = common::Addon::StateMixer<StateData>;
-
-  struct PropertiesData
-  {
-    math::SupportGeometry mGeometry;
-  };
-
-  using Properties = common::Addon::PropertiesMixer<PropertiesData>;
-
-  /// Constructor
-  Support(EndEffector* _ee);
-
-  /// Copy constructor
-  Support(EndEffector* _ee, const Support& otherSupport);
+  /// Default Constructor
+  Support(EndEffector* _ee,
+          const StateData& state = StateData(),
+          const PropertiesData& properties = PropertiesData());
 
   Support(const Support&) = delete;
-
-  // Documentation inherited
-  std::unique_ptr<common::Addon> cloneAddon(
-      common::AddonManager* newManager) const override final;
-
-  // Documentation inherited
-  void setAddonState(
-      const std::unique_ptr<common::Addon::State>& otherState) override final;
-
-  // Documentation inherited
-  const common::Addon::State* getAddonState() const override final;
-
-  // Documentation inherited
-  void setAddonProperties(const std::unique_ptr<common::Addon::Properties>&
-                     otherProperties) override final;
-
-  // Documentation inherited
-  const common::Addon::Properties* getAddonProperties() const override final;
 
   /// Set the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
@@ -108,16 +102,7 @@ public:
   /// Get whether this EndEffector is currently being used for support
   bool isActive() const;
 
-protected:
-
-  /// State of this EndEffector Support
-  State mState;
-
-  /// Properties of this EndEffector Support
-  Properties mProperties;
-
-  /// EndEffector that this support is associated with
-  EndEffector* mEndEffector;
+  EndEffector* ee;
 
 };
 

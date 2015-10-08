@@ -34,56 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cassert>
-#include <string>
-#include <iostream>
-
-#include "dart/common/Addon.h"
-#include "dart/common/Console.h"
+#ifndef DART_COMMON_DETAIL_NOOP_H_
+#define DART_COMMON_DETAIL_NOOP_H_
 
 namespace dart {
 namespace common {
+namespace detail {
 
-//==============================================================================
-void Addon::setAddonState(const std::unique_ptr<State>& /*otherState*/)
+/// NoOp is short for "no operation". This is a placeholder function that can be
+/// used in places where a function needs to be provided but you do not actually
+/// want the function to do anything.
+template <typename ... Args>
+void NoOp(Args&&... /*args*/)
 {
   // Do nothing
 }
 
-//==============================================================================
-const Addon::State* Addon::getAddonState() const
-{
-  return nullptr;
-}
-
-//==============================================================================
-void Addon::setAddonProperties(const std::unique_ptr<Properties>& /*someProperties*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-const Addon::Properties* Addon::getAddonProperties() const
-{
-  return nullptr;
-}
-
-//==============================================================================
-Addon::Addon(AddonManager* manager)
-{
-  if(nullptr == manager)
-  {
-    dterr << "[Addon::constructor] You are not allowed to construct an Addon "
-          << "outside of an AddonManager!\n";
-    assert(false);
-  }
-}
-
-//==============================================================================
-void Addon::changeManager(AddonManager* /*newManager*/)
-{
-  // Do nothing
-}
-
+} // namespace detail
 } // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_DETAIL_NOOP_H_

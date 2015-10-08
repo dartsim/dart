@@ -39,6 +39,7 @@
 #define DART_COMMON_CONSOLE_H_
 
 #include <string>
+#include <ostream>
 
 /// \brief Output a message
 #define dtmsg (dart::common::colorMsg("Msg", 32))
