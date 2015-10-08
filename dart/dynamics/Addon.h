@@ -49,13 +49,14 @@ namespace dynamics {
 /// Skeleton or a component of a Skeleton (such as a BodyNode, Joint, or custom
 /// Node class). This will increment the version count any time the
 /// Addon::setProperties function is called.
-template <class Base, typename PropertiesData, class ManagerType,
+template <class Base, typename PropertiesData, class ManagerType = Node,
           void (*updateProperties)(Base*) = &common::detail::NoOp<Base*> >
 class AddonWithProtectedPropertiesInSkeleton : public common::Addon
 {
 public:
 
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
+  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
 
   AddonWithProtectedPropertiesInSkeleton() = delete;
   AddonWithProtectedPropertiesInSkeleton(
@@ -86,12 +87,12 @@ public:
 
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(
-      common::AddonManager* newManager) const override;
+      common::AddonManager* newManager) const override final;
 
 protected:
 
   // Documentation inherited
-  void changeManager(AddonManager* newManager) override;
+  void changeManager(common::AddonManager* newManager) override;
 
   /// Properties of this Addon
   Properties mProperties;
@@ -107,17 +108,18 @@ protected:
 /// into a single templated class. This should be the base class of any Addon
 /// with both a State and Properties that will be embedded in a Skeleton or a
 /// component of a Skeleton (such as a BodyNode, Joint, or custom Node).
-template <class Base, class ManagerType,
-          typename StateData, typename PropertiesData,
+template <class Base, typename StateData, typename PropertiesData,
+          class ManagerType = Node,
           void (*updateState)(Base*) = &common::detail::NoOp<Base*>,
           void (*updateProperties)(Base*) = updateState>
-class AddonWithProtectedStateAndPropertiesInSkeleton :
-    public common::AddonWithProtectedState<
-        Base, StateData, updateState>,
-    public AddonWithProtectedPropertiesInSkeleton<
-        Base, ManagerType, PropertiesData, updateProperties>
+class AddonWithProtectedStateAndPropertiesInSkeleton : public common::Addon
 {
 public:
+
+  using State = common::Addon::StateMixer<StateData>;
+  using Properties = common::Addon::PropertiesMixer<PropertiesData>;
+  constexpr static void (*UpdateState)(Base*) = updateState;
+  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
 
   AddonWithProtectedStateAndPropertiesInSkeleton() = delete;
   AddonWithProtectedStateAndPropertiesInSkeleton(
@@ -137,7 +139,19 @@ public:
 
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(
-      common::AddonManager* newManager) const override;
+      common::AddonManager* newManager) const override final;
+
+protected:
+
+  /// State of this Addon
+  State mState;
+
+  /// Properties of this Addon
+  Properties mProperties;
+
+  /// Manager that this Addon is embedded in
+  ManagerType* mManager;
+
 };
 
 } // namespace dynamics
