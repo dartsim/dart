@@ -153,6 +153,12 @@ public:
   // Documentation inherited
   const Addon::State* getAddonState() const override final;
 
+  /// Set the State of this Addon
+  void setState(const StateData& state);
+
+  /// Get the State of this Addon
+  const State& getState() const;
+
   // Documentation inherited
   std::unique_ptr<Addon> cloneAddon(
       AddonManager* newManager) const override final;
@@ -189,6 +195,12 @@ public:
 
   // Documentation inherited
   const Addon::Properties* getAddonProperties() const override final;
+
+  /// Set the Properties of this Addon
+  void setProperties(const PropertiesData& properties);
+
+  /// Get the Properties of this Addon
+  const Properties& getProperties() const;
 
   // Documentation inherited
   std::unique_ptr<Addon> cloneAddon(
@@ -240,12 +252,24 @@ public:
   // Documentation inherited
   const Addon::State* getAddonState() const override final;
 
+  /// Set the State of this Addon
+  void setState(const StateData& state);
+
+  /// Get the State of this Addon
+  const State& getState() const;
+
   // Documentation inherited
   void setAddonProperties(
       const std::unique_ptr<Addon::Properties>& otherProperties) override final;
 
   // Documentation inherited
   const Addon::Properties* getAddonProperties() const override final;
+
+  /// Set the Properties of this Addon
+  void setProperties(const PropertiesData& properties);
+
+  /// Get the Properties of this Addon
+  const Properties& getProperties() const;
 
   // Documentation inherited
   std::unique_ptr<Addon> cloneAddon(

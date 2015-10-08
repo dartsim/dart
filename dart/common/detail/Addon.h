@@ -82,8 +82,7 @@ template <class Base, typename StateData,
 void AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
     setAddonState(const std::unique_ptr<Addon::State>& otherState)
 {
-  mState = static_cast<const State&>(*otherState);
-  (*updateState)(static_cast<Base*>(this));
+  setState(static_cast<const State&>(*otherState));
 }
 
 //==============================================================================
@@ -94,6 +93,25 @@ AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
     getAddonState() const
 {
   return &mState;
+}
+
+//==============================================================================
+template <class Base, typename StateData,
+          class ManagerType, void (*updateState)(Base*)>
+void AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
+setState(const StateData& state)
+{
+  static_cast<StateData&>(mState) = state;
+  UpdateState(static_cast<Base*>(this));
+}
+
+//==============================================================================
+template <class Base, typename StateData,
+          class ManagerType, void (*updateState)(Base*)>
+auto AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
+getState() const -> const State&
+{
+  return mState;
 }
 
 //==============================================================================
@@ -128,8 +146,7 @@ void AddonWithProtectedProperties<Base, PropertiesData,
                                   ManagerType, updateProperties>::
 setAddonProperties(const std::unique_ptr<Addon::Properties>& someProperties)
 {
-  mProperties = static_cast<const Properties&>(*someProperties);
-  (*updateProperties)(static_cast<Base*>(this));
+  setProperties(static_cast<const Properties&>(*someProperties));
 }
 
 //==============================================================================
@@ -141,6 +158,27 @@ AddonWithProtectedProperties<Base, PropertiesData,
 getAddonProperties() const
 {
   return &mProperties;
+}
+
+//==============================================================================
+template <class Base, typename PropertiesData,
+          class ManagerType, void (*updateProperties)(Base*)>
+void AddonWithProtectedProperties<Base, PropertiesData,
+                                  ManagerType, updateProperties>::
+setProperties(const PropertiesData& properties)
+{
+  static_cast<PropertiesData&>(mProperties) = properties;
+  UpdateProperties(static_cast<Base*>(this));
+}
+
+//==============================================================================
+template <class Base, typename PropertiesData,
+          class ManagerType, void (*updateProperties)(Base*)>
+auto AddonWithProtectedProperties<Base, PropertiesData,
+                                  ManagerType, updateProperties>::
+getProperties() const -> const Properties&
+{
+  return mProperties;
 }
 
 //==============================================================================
@@ -196,8 +234,7 @@ void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
     ManagerType, updateState, updateProperties>::setAddonState(
     const std::unique_ptr<Addon::State>& otherState)
 {
-  mState = static_cast<const State&>(*otherState);
-  (*updateState)(static_cast<Base*>(this));
+  setState(static_cast<const State&>(*otherState));
 }
 
 //==============================================================================
@@ -215,12 +252,34 @@ const Addon::State* AddonWithProtectedStateAndProperties<
 template <class Base, typename StateData, typename PropertiesData,
           class ManagerType,
           void (*updateState)(Base*), void (*updateProperties)(Base*)>
+void AddonWithProtectedStateAndProperties<
+    Base, StateData, PropertiesData, ManagerType,
+    updateState, updateProperties>::setState(const StateData& state)
+{
+  static_cast<StateData&>(mState) = state;
+  UpdateState(static_cast<Base*>(this));
+}
+
+//==============================================================================
+template <class Base, typename StateData, typename PropertiesData,
+          class ManagerType,
+          void (*updateState)(Base*), void (*updateProperties)(Base*)>
+auto AddonWithProtectedStateAndProperties<
+    Base, StateData, PropertiesData, ManagerType,
+    updateState, updateProperties>::getState() const -> const State&
+{
+  return mState;
+}
+
+//==============================================================================
+template <class Base, typename StateData, typename PropertiesData,
+          class ManagerType,
+          void (*updateState)(Base*), void (*updateProperties)(Base*)>
 void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
     ManagerType, updateState, updateProperties>::setAddonProperties(
     const std::unique_ptr<Addon::Properties>& otherProperties)
 {
-  mProperties = static_cast<const Properties&>(*otherProperties);
-  (*updateState)(static_cast<Base*>(this));
+  setProperties(static_cast<const Properties&>(*otherProperties));
 }
 
 //==============================================================================
@@ -232,6 +291,31 @@ const Addon::Properties* AddonWithProtectedStateAndProperties<
     updateState, updateProperties>::getAddonProperties() const
 {
   return &mProperties;
+}
+
+//==============================================================================
+template <class Base, typename StateData, typename PropertiesData,
+          class ManagerType,
+          void (*updateState)(Base*), void (*updateProperties)(Base*)>
+void AddonWithProtectedStateAndProperties<
+    Base, StateData, PropertiesData, ManagerType,
+    updateState, updateProperties>::
+setProperties(const PropertiesData& properties)
+{
+  static_cast<PropertiesData&>(mProperties) = properties;
+  UpdateProperties(static_cast<Base*>(this));
+}
+
+//==============================================================================
+template <class Base, typename StateData, typename PropertiesData,
+          class ManagerType,
+          void (*updateState)(Base*), void (*updateProperties)(Base*)>
+auto AddonWithProtectedStateAndProperties<
+    Base, StateData, PropertiesData, ManagerType,
+    updateState, updateProperties>::
+getProperties() const -> const Properties&
+{
+  return mProperties;
 }
 
 //==============================================================================
