@@ -102,10 +102,10 @@ public:
   ExtensibleMixer(Mixin&& mixin);
 
   /// Copy constructor
-  ExtensibleMixer(const ExtensibleMixer& other);
+  ExtensibleMixer(const ExtensibleMixer<T, Mixin>& other);
 
   /// Move constructor
-  ExtensibleMixer(ExtensibleMixer&& other);
+  ExtensibleMixer(ExtensibleMixer<T, Mixin>&& other);
 
   /// Copy assignment operator that uses a Mixin instance
   ExtensibleMixer& operator=(const Mixin& mixin);

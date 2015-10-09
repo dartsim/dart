@@ -45,7 +45,7 @@ namespace detail {
 
 void SupportUpdate(Support* support)
 {
-  if(EndEffector* ee = support->ee)
+  if(EndEffector* ee = support->getManager())
     ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
 }
 
@@ -55,26 +55,12 @@ void SupportUpdate(Support* support)
 Support::Support(EndEffector* _ee,
                  const StateData& state,
                  const PropertiesData& properties)
-  : common::AddonWithProtectedStateAndProperties<
+  : AddonWithProtectedStateAndPropertiesInSkeleton<
       Support, StateData, PropertiesData, EndEffector, &detail::SupportUpdate>(
       _ee, state, properties)
 {
-  ee = _ee;
   // Do nothing
 }
-
-////==============================================================================
-//void Support::setGeometry(const math::SupportGeometry& _newSupport)
-//{
-//  mProperties.mGeometry = _newSupport;
-//  UpdateProperties(this);
-//}
-
-////==============================================================================
-//const math::SupportGeometry& Support::getGeometry() const
-//{
-//  return mProperties.mGeometry;
-//}
 
 //==============================================================================
 void Support::setActive(bool _supporting)

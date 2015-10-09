@@ -76,7 +76,8 @@ ExtensibleMixer<T, Mixin>::ExtensibleMixer(Mixin&& mixin)
 
 //==============================================================================
 template <class T, class Mixin>
-ExtensibleMixer<T, Mixin>::ExtensibleMixer(const ExtensibleMixer& other)
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(
+    const ExtensibleMixer<T, Mixin>& other)
   : Mixin(other)
 {
   // Do nothing
@@ -84,7 +85,7 @@ ExtensibleMixer<T, Mixin>::ExtensibleMixer(const ExtensibleMixer& other)
 
 //==============================================================================
 template <class T, class Mixin>
-ExtensibleMixer<T, Mixin>::ExtensibleMixer(ExtensibleMixer&& other)
+ExtensibleMixer<T, Mixin>::ExtensibleMixer(ExtensibleMixer<T, Mixin>&& other)
   : Mixin(other)
 {
   // Do nothing

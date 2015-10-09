@@ -69,7 +69,7 @@ void SupportUpdate(Support* support);
 } // namespace detail
 
 class Support final :
-    public common::AddonWithProtectedStateAndProperties<
+    public AddonWithProtectedStateAndPropertiesInSkeleton<
         Support,
         detail::SupportStateData,
         detail::SupportPropertiesData,
@@ -100,8 +100,6 @@ public:
 
   /// Get whether this EndEffector is currently being used for support
   bool isActive() const;
-
-  EndEffector* ee;
 
 };
 

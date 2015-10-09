@@ -263,7 +263,7 @@ void AddonWithProtectedStateAndPropertiesInSkeleton<
     ManagerType, updateState, updateProperties>::
 setAddonProperties(const std::unique_ptr<Addon::Properties>& properties)
 {
-  setProperties(static_cast<const Properties&>(properties));
+  setProperties(static_cast<const Properties&>(*properties));
 }
 
 //==============================================================================
