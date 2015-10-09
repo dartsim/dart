@@ -227,7 +227,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 
   for(const std::string& testPath : testPaths)
   {
-    const std::string testUri = "file://" + testUri;
+    const std::string testUri = "file://" + testPath;
     EXPECT_EQ(testUri, Uri::getUri(testUri));
   }
 }
