@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_ADDON_H_
 
 #include "dart/common/Addon.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {

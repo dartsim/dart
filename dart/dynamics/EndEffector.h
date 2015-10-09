@@ -39,7 +39,6 @@
 
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Addon.h"
 
 namespace dart {
