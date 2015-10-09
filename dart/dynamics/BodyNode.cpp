@@ -50,6 +50,7 @@
 #include "dart/dynamics/Chain.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/EndEffector.h"
 
 namespace dart {
 namespace dynamics {
@@ -895,11 +896,7 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 }
 
 //==============================================================================
-EndEffector* BodyNode::createEndEffector(
-    const EndEffector::Properties& _properties)
-{
-  return createNode<EndEffector>(_properties);
-}
+DART_SPECIALIZE_NODE_DEFINE( BodyNode, EndEffector )
 
 //==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)

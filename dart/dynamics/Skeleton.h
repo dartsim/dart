@@ -35,10 +35,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// This needs to be included outside of the include-guard in order to resolve
-// a circular dependency.
-#include "dart/dynamics/BodyNode.h"
-
 #ifndef DART_DYNAMICS_SKELETON_H_
 #define DART_DYNAMICS_SKELETON_H_
 
@@ -48,7 +44,7 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/HierarchicalIK.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace renderer {
@@ -509,7 +505,8 @@ public:
   template <class NodeType>
   const NodeType* getNode(const std::string& name) const;
 
-  DART_SKEL_SPECIALIZE_NODE_INTERNAL( EndEffector )
+//  DART_SKEL_SPECIALIZE_NODE_INTERNAL( EndEffector )
+  DART_SKEL_SPECIALIZE_NODE_DECLARE( EndEffector )
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
@@ -1354,11 +1351,12 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-DART_SKEL_SPECIALIZE_NODE_EXTERNAL( Skeleton, EndEffector )
+DART_SKEL_SPECIALIZE_NODE_TEMPLATE( Skeleton, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart
 
 #include "dart/dynamics/detail/Skeleton.h"
+#include "dart/dynamics/detail/BodyNode.h"
 
 #endif  // DART_DYNAMICS_SKELETON_H_

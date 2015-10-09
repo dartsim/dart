@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_ADDON_H_
 
 #include "dart/common/Addon.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
@@ -72,6 +72,12 @@ public:
 
   // Documentation inherited
   const Addon::Properties* getAddonProperties() const override final;
+
+  /// Set the Properties of this Addon
+  void setProperties(const PropertiesData& properties);
+
+  /// Get the Properties of this Addon
+  const Properties& getProperties() const;
 
   /// Get the Skeleton that this Addon is embedded in
   SkeletonPtr getSkeleton();
@@ -136,6 +142,44 @@ public:
       ManagerType* mgr,
       const PropertiesData& properties,
       const StateData& state = StateData());
+
+  // Documentation inherited
+  void setAddonState(
+      const std::unique_ptr<Addon::State>& otherState) override final;
+
+  // Documentation inherited
+  const Addon::State* getAddonState() const override final;
+
+  /// Set the State of this Addon
+  void setState(const StateData& state);
+
+  /// Get the State of this Addon
+  const State& getState() const;
+
+  // Documentation inherited
+  void setAddonProperties(
+      const std::unique_ptr<Addon::Properties>& properties) override final;
+
+  // Documentation inherited
+  const Addon::Properties* getAddonProperties() const override final;
+
+  /// Set the Properties of this Addon
+  void setProperties(const PropertiesData& properties);
+
+  /// Get the Properties of this Addon
+  const Properties& getProperties() const;
+
+  /// Get the Skeleton that this Addon is embedded in
+  SkeletonPtr getSkeleton();
+
+  /// Get the Skeleton that this Addon is embedded in
+  ConstSkeletonPtr getSkeleton() const;
+
+  /// Get the AddonManager that this Addon is embedded in
+  ManagerType* getManager();
+
+  /// Get the AddonManager that this Addon is embedded in
+  const ManagerType* getManager() const;
 
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(

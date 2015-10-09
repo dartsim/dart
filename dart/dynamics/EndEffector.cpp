@@ -37,7 +37,6 @@
 #include "dart/common/Console.h"
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
@@ -46,11 +45,8 @@ namespace detail {
 
 void SupportUpdate(Support* support)
 {
-  EndEffector* ee = support->ee;
-  if(ee)
-  {
+  if(EndEffector* ee = support->ee)
     ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
-  }
 }
 
 } // namespace detail
@@ -67,18 +63,18 @@ Support::Support(EndEffector* _ee,
   // Do nothing
 }
 
-//==============================================================================
-void Support::setGeometry(const math::SupportGeometry& _newSupport)
-{
-  mProperties.mGeometry = _newSupport;
-  ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
-}
+////==============================================================================
+//void Support::setGeometry(const math::SupportGeometry& _newSupport)
+//{
+//  mProperties.mGeometry = _newSupport;
+//  UpdateProperties(this);
+//}
 
-//==============================================================================
-const math::SupportGeometry& Support::getGeometry() const
-{
-  return mProperties.mGeometry;
-}
+////==============================================================================
+//const math::SupportGeometry& Support::getGeometry() const
+//{
+//  return mProperties.mGeometry;
+//}
 
 //==============================================================================
 void Support::setActive(bool _supporting)

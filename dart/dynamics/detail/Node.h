@@ -123,7 +123,7 @@ void AccessoryNode<NodeType>::reattach()
   DART_INSTANTIATE_SPECIALIZED_NODE_IRREGULAR( NodeName, NodeName ## s )
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, it )                    \
+#define DETAIL_DART_SPECIALIZE_NODE_INLINE( NodeName, PluralName, it )                    \
   private: dart::dynamics::BodyNode::NodeMap::iterator it ; public:                         \
                                                                                             \
   inline size_t getNum ## PluralName () const                                               \
@@ -136,27 +136,60 @@ void AccessoryNode<NodeType>::reattach()
   { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, it->second)); }
 
 //==============================================================================
-#define DART_SPECIALIZE_NODE_INTERNAL_IRREGULAR( NodeName, PluralName )                     \
-  DETAIL_DART_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, m ## PluralName ## Iterator )
+#define DART_SPECIALIZE_NODE_INLINE_IRREGULAR( NodeName, PluralName )                     \
+  DETAIL_DART_SPECIALIZE_NODE_INLINE( NodeName, PluralName, m ## PluralName ## Iterator )
 
 //==============================================================================
 #define DART_SPECIALIZE_NODE_INTERNAL( NodeName )                               \
-  DART_SPECIALIZE_NODE_INTERNAL_IRREGULAR( NodeName, NodeName ## s )
+  DART_SPECIALIZE_NODE_INLINE_IRREGULAR( NodeName, NodeName ## s )
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZE_NODE_EXTERNAL( BodyNodeType, NodeName, PluralName )                                                \
+#define DETAIL_DART_SPECIALIZE_NODE_DECLARE( NodeName, PluralName, it ) \
+  private: dart::dynamics::BodyNode::NodeMap::iterator it ; public:\
+  size_t getNum ## PluralName() const;\
+  NodeName * get ## NodeName (size_t index);\
+  const NodeName * get ## NodeName(size_t index) const;
+
+//==============================================================================
+#define DART_SPECIALIZE_NODE_DECLARE_IRREGULAR( NodeName, PluralName )\
+  DETAIL_DART_SPECIALIZE_NODE_DECLARE( NodeName, PluralName, m ## PluralName ## Iterator )
+
+//==============================================================================
+#define DART_SPECIALIZE_NODE_DECLARE( NodeName )\
+  DART_SPECIALIZE_NODE_DECLARE_IRREGULAR( NodeName, NodeName ## s )
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZE_NODE_DEFINE( BodyNodeType, NodeName, PluralName, it )\
+  size_t BodyNodeType :: getNum ## PluralName () const\
+  { return it->second.size(); }\
+  \
+  NodeName * BodyNodeType :: get ## NodeName (size_t index)\
+  { return static_cast<NodeName *>(getVectorObjectIfAvailable(index, it->second)); }\
+  \
+  const NodeName * BodyNodeType :: get ## NodeName (size_t index) const\
+  { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, it->second)); }
+
+//==============================================================================
+#define DART_SPECIALIZE_NODE_DEFINE_IRREGULAR( BodyNodeType, NodeName, PluralName )\
+  DETAIL_DART_SPECIALIZE_NODE_DEFINE( BodyNodeType, NodeName, PluralName, m ## PluralName ## Iterator )
+
+//==============================================================================
+#define DART_SPECIALIZE_NODE_DEFINE( BodyNodeType, NodeName )\
+  DART_SPECIALIZE_NODE_DEFINE_IRREGULAR( BodyNodeType, NodeName, NodeName ## s )
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZE_NODE_TEMPLATE( BodyNodeType, NodeName, PluralName )                                                \
   template <> inline size_t BodyNodeType :: getNumNodes< NodeName >() const { return getNum ## PluralName (); }                   \
   template <> inline NodeName * BodyNodeType :: getNode< NodeName >(size_t index) { return get ## NodeName (index); }             \
   template <> inline const NodeName * BodyNodeType :: getNode< NodeName >(size_t index) const { return get ## NodeName (index); }
 
 //==============================================================================
-#define DART_SPECIALIZE_NODE_EXTERNAL_IRREGULAR( BodyNodeType, NodeName, PluralName ) \
-  DETAIL_DART_SPECIALIZE_NODE_EXTERNAL( BodyNodeType, NodeName, PluralName )
+#define DART_SPECIALIZE_NODE_TEMPLATE_IRREGULAR( BodyNodeType, NodeName, PluralName ) \
+  DETAIL_DART_SPECIALIZE_NODE_TEMPLATE( BodyNodeType, NodeName, PluralName )
 
 //==============================================================================
-#define DART_SPECIALIZE_NODE_EXTERNAL( BodyNodeType, NodeName )                     \
-  DART_SPECIALIZE_NODE_EXTERNAL_IRREGULAR( BodyNodeType, NodeName, NodeName ## s )
-
+#define DART_SPECIALIZE_NODE_TEMPLATE( BodyNodeType, NodeName )                     \
+  DART_SPECIALIZE_NODE_TEMPLATE_IRREGULAR( BodyNodeType, NodeName, NodeName ## s )
 
 //==============================================================================
 // Macros for specializing Nodes within Skeletons
@@ -193,7 +226,7 @@ void AccessoryNode<NodeType>::reattach()
   assert(false); return 0; }
 
 //==============================================================================
-#define DETAIL_DART_SKEL_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, skelIt, treeIts, NameMgr )           \
+#define DETAIL_DART_SKEL_SPECIALIZE_NODE_INLINE( NodeName, PluralName, skelIt, treeIts, NameMgr )           \
   private:                                                                                                    \
   dart::dynamics::Skeleton::NodeMap::iterator skelIt;                                                         \
   std::vector<dart::dynamics::Skeleton::NodeMap::iterator> treeIts;                                           \
@@ -223,15 +256,79 @@ void AccessoryNode<NodeType>::reattach()
   { return static_cast<const NodeName *>(NameMgr->getObject(name)); }
 
 //==============================================================================
-#define DART_SKEL_SPECIALIZE_NODE_INTERNAL_IRREGULAR( NodeName, PluralName )                                                                                  \
-  DETAIL_DART_SKEL_SPECIALIZE_NODE_INTERNAL( NodeName, PluralName, m ## PluralName ## Iterator, mTree ## PluralName ## Iterators, mNameMgrFor ## PluralName );
+#define DART_SKEL_SPECIALIZE_NODE_INLINE_IRREGULAR( NodeName, PluralName )                                                                                  \
+  DETAIL_DART_SKEL_SPECIALIZE_NODE_INLINE( NodeName, PluralName, m ## PluralName ## Iterator, mTree ## PluralName ## Iterators, mNameMgrFor ## PluralName );
 
 //==============================================================================
-#define DART_SKEL_SPECIALIZE_NODE_INTERNAL( NodeName ) \
-  DART_SKEL_SPECIALIZE_NODE_INTERNAL_IRREGULAR( NodeName, NodeName ## s);
+#define DART_SKEL_SPECIALIZE_NODE_INLINE( NodeName ) \
+  DART_SKEL_SPECIALIZE_NODE_INLINE_IRREGULAR( NodeName, NodeName ## s);
 
 //==============================================================================
-#define DETAIL_DART_SKEL_SPECIALIZE_NODE_EXTERNAL( SkelType, NodeName, PluralName )                                                                               \
+#define DETAIL_DART_SKEL_SPECIALIZE_NODE_DECLARE( NodeName, PluralName, skelIt, treeIts, NameMgr )           \
+  private:\
+  dart::dynamics::Skeleton::NodeMap::iterator skelIt;                                                         \
+  std::vector<dart::dynamics::Skeleton::NodeMap::iterator> treeIts;                                           \
+  dart::common::NameManager<dart::dynamics::Node*>* NameMgr;                                                  \
+  public:                                                                                                     \
+  size_t getNum ## PluralName () const;                                                                 \
+  \
+  size_t getNum ## PluralName (size_t treeIndex) const;                                                 \
+  \
+  NodeName * get ## NodeName (size_t index);                                                            \
+  \
+  NodeName * get ## NodeName (size_t treeIndex, size_t nodeIndex);                                      \
+  \
+  const NodeName * get ## NodeName (size_t index) const;                                                \
+  \
+  const NodeName * get ## NodeName (size_t treeIndex, size_t nodeIndex) const;                          \
+  \
+  NodeName * get ## NodeName (const std::string& name);                                                 \
+  \
+  const NodeName * get ## NodeName (const std::string& name) const;
+
+//==============================================================================
+#define DART_SKEL_SPECIALIZE_NODE_DECLARE_IRREGULAR( NodeName, PluralName )\
+  DETAIL_DART_SKEL_SPECIALIZE_NODE_DECLARE( NodeName, PluralName, m ## PluralName ## Iterator, mTree ## PluralName ## Iterators, mNameMgrFor ## PluralName );
+
+//==============================================================================
+#define DART_SKEL_SPECIALIZE_NODE_DECLARE( NodeName )\
+  DART_SKEL_SPECIALIZE_NODE_DECLARE_IRREGULAR( NodeName, NodeName ## s );
+
+//==============================================================================
+#define DETAIL_DART_SKEL_SPECIALIZE_NODE_DEFINE( SkeletonType, NodeName, PluralName, skelIt, treeIts, NameMgr )\
+  size_t SkeletonType :: getNum ## PluralName () const                                                                 \
+  { return skelIt->second.size(); }                                                                           \
+  size_t SkeletonType :: getNum ## PluralName (size_t treeIndex) const                                                 \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, getNum ## PluralName);                                    \
+  return treeIts [treeIndex]->second.size(); }                                                                       \
+                                                                                                              \
+  NodeName * SkeletonType :: get ## NodeName (size_t index)                                                            \
+  { return static_cast< NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }                    \
+  NodeName * SkeletonType :: get ## NodeName (size_t treeIndex, size_t nodeIndex)                                      \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
+  return static_cast< NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }       \
+                                                                                                              \
+  const NodeName * SkeletonType :: get ## NodeName (size_t index) const                                                \
+  { return static_cast<const NodeName *>(getVectorObjectIfAvailable(index, skelIt ->second)); }               \
+  const NodeName * SkeletonType :: get ## NodeName (size_t treeIndex, size_t nodeIndex) const                          \
+  { DETAIL_DART_WARN_TREE_INDEX(treeIts, treeIndex, get ## NodeName);                                         \
+  return static_cast<const NodeName *>(getVectorObjectIfAvailable(nodeIndex, treeIts[treeIndex]->second)); }  \
+                                                                                                              \
+  NodeName * SkeletonType :: get ## NodeName (const std::string& name)                                                 \
+  { return static_cast< NodeName *>(NameMgr->getObject(name)); }                                              \
+  const NodeName * SkeletonType :: get ## NodeName (const std::string& name) const                                     \
+  { return static_cast<const NodeName *>(NameMgr->getObject(name)); }
+
+//==============================================================================
+#define DART_SKEL_SPECIALIZE_NODE_DEFINE_IRREGULAR( SkeletonType, NodeName, PluralName )\
+  DETAIL_DART_SKEL_SPECIALIZE_NODE_DEFINE( SkeletonType, NodeName, PluralName, m ## PluralName ## Iterator, mTree ## PluralName ## Iterators, mNameMgrFor ## PluralName );
+
+//==============================================================================
+#define DART_SKEL_SPECIALIZE_NODE_DEFINE( SkeletonType, NodeName )\
+  DART_SKEL_SPECIALIZE_NODE_DEFINE_IRREGULAR( SkeletonType, NodeName, NodeName ## s );
+
+//==============================================================================
+#define DETAIL_DART_SKEL_SPECIALIZE_NODE_TEMPLATE( SkelType, NodeName, PluralName )                                                                               \
   template <> inline size_t SkelType :: getNumNodes< NodeName >() const { return getNum ## PluralName (); }                                                       \
   template <> inline size_t SkelType :: getNumNodes< NodeName >(size_t index) const { return getNum ## PluralName(index); }                                       \
   template <> inline NodeName* SkelType :: getNode< NodeName >(size_t index) { return get ## NodeName (index); }                                                  \
@@ -242,12 +339,12 @@ void AccessoryNode<NodeType>::reattach()
   template <> inline const NodeName* SkelType::getNode< NodeName >(const std::string& name) const { return get ## NodeName (name); }
 
 //==============================================================================
-#define DART_SKEL_SPECIALIZE_NODE_EXTERNAL_IRREGULAR( SkelType, NodeName, PluralName ) \
-  DETAIL_DART_SKEL_SPECIALIZE_NODE_EXTERNAL( SkelType, NodeName, PluralName )
+#define DART_SKEL_SPECIALIZE_NODE_TEMPLATE_IRREGULAR( SkelType, NodeName, PluralName ) \
+  DETAIL_DART_SKEL_SPECIALIZE_NODE_TEMPLATE( SkelType, NodeName, PluralName )
 
 //==============================================================================
-#define DART_SKEL_SPECIALIZE_NODE_EXTERNAL( SkelType, NodeName )                      \
-  DART_SKEL_SPECIALIZE_NODE_EXTERNAL_IRREGULAR( SkelType, NodeName, NodeName ## s );
+#define DART_SKEL_SPECIALIZE_NODE_TEMPLATE( SkelType, NodeName )                      \
+  DART_SKEL_SPECIALIZE_NODE_TEMPLATE_IRREGULAR( SkelType, NodeName, NodeName ## s );
 
 
 #endif // DART_DYNAMICS_DETAIL_NODE_H_

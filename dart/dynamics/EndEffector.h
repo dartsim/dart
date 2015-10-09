@@ -39,6 +39,8 @@
 
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -80,20 +82,18 @@ public:
   using StateData = detail::SupportStateData;
   using PropertiesData = detail::SupportPropertiesData;
 
+  Support(const Support&) = delete;
+
   /// Default Constructor
   Support(EndEffector* _ee,
           const StateData& state = StateData(),
           const PropertiesData& properties = PropertiesData());
 
-  Support(const Support&) = delete;
-
-  /// Set the support geometry for this EndEffector. The SupportGeometry
+  /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
   /// when solving balancing or manipulation constraints.
-  void setGeometry(const math::SupportGeometry& _newSupport);
-
-  /// Get a const-reference to the SupportGeometry for this EndEffector
-  const math::SupportGeometry& getGeometry() const;
+  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
+//  const math::SupportGeometry& getGeometry() const;
 
   /// Pass in true if this EndEffector should be used to support the robot, like
   /// a foot

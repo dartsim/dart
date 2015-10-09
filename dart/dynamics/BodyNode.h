@@ -53,11 +53,9 @@
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
-//#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/EndEffector.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -75,6 +73,7 @@ class GenCoord;
 class Skeleton;
 class Joint;
 class DegreeOfFreedom;
+class EndEffector;
 class Shape;
 class Marker;
 
@@ -629,10 +628,13 @@ public:
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
 
-  DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
+//  DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
+  DART_SPECIALIZE_NODE_DECLARE( EndEffector )
 
-  /// Create an EndEffector attached to this BodyNode
-  EndEffector* createEndEffector(const EndEffector::Properties& _properties);
+  /// Create an EndEffector attached to this BodyNode. Pass an
+  /// EndEffector::Properties argument into this function.
+  template <class EndEffectorProperties>
+  EndEffector* createEndEffector(const EndEffectorProperties& _properties);
 
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const std::string& _name = "EndEffector");
@@ -1257,11 +1259,13 @@ private:
 
 };
 
-DART_SPECIALIZE_NODE_EXTERNAL( BodyNode, EndEffector )
+DART_SPECIALIZE_NODE_TEMPLATE( BodyNode, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/detail/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+// Developer's Note: Skeleton.h needs to be included after the BodyNode class is
+// defined in order for the header dependencies to work out correctly.
 
 #endif  // DART_DYNAMICS_BODYNODE_H_
