@@ -47,16 +47,15 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const std::string& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
+  return parseSkeleton(common::Uri(_uri), _resourceRetriever);
+}
+
+dynamics::SkeletonPtr DartLoader::parseSkeleton(
+  const common::Uri& _uri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
+{
   const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
-
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
-           << _uri << "\n";
-    return nullptr;
-  }
 
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
@@ -67,12 +66,11 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   if(!urdfInterface)
   {
     dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
-           << _uri << "'.\n";
+           << _uri.toString() << "'.\n";
     return nullptr;
   }
 
-  return modelInterfaceToSkeleton(
-    urdfInterface.get(), uri, resourceRetriever);
+  return modelInterfaceToSkeleton(urdfInterface.get(), _uri, resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
@@ -101,22 +99,21 @@ simulation::WorldPtr DartLoader::parseWorld(
   const std::string& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
+  return parseWorld(common::Uri(_uri), _resourceRetriever);
+}
+
+simulation::WorldPtr DartLoader::parseWorld(
+  const common::Uri& _uri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
+{
   const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
-
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
-           << _uri << "\n";
-    return nullptr;
-  }
 
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
     return nullptr;
 
-  return parseWorldString(content, uri, _resourceRetriever);
+  return parseWorldString(content, _uri, _resourceRetriever);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
@@ -267,11 +264,10 @@ bool DartLoader::createSkeletonRecursive(
  */
 bool DartLoader::readFileToString(
   const common::ResourceRetrieverPtr& _resourceRetriever,
-  const std::string &_uri,
+  const common::Uri& _uri,
   std::string &_output)
 {
-  const common::ResourcePtr resource
-      = _resourceRetriever->retrieve(common::Uri(_uri));
+  const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
   if (!resource)
     return false;
 

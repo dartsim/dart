@@ -50,8 +50,8 @@
 #include "dart/utils/utils.h"
 
 using namespace dart;
+using namespace common;
 using namespace math;
-//using namespace collision;
 using namespace dynamics;
 using namespace simulation;
 using namespace utils;
@@ -518,7 +518,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+      Uri(DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel"));
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

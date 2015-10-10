@@ -184,7 +184,8 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton(
+        dart::common::Uri(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf"));
 
   SkeletonPtr skeleton2 = skeleton1->clone();
 

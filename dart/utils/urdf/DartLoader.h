@@ -77,8 +77,14 @@ class DartLoader {
                              const std::string& _packageDirectory);
 
     /// Parse a file to produce a Skeleton
+    DEPRECATED(5.1)
     dynamics::SkeletonPtr parseSkeleton(
       const std::string& _uri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+
+    /// Parse a file to produce a Skeleton
+    dynamics::SkeletonPtr parseSkeleton(
+      const common::Uri& _uri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a Skeleton
@@ -87,7 +93,12 @@ class DartLoader {
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
+    DEPRECATED(5.1)
     dart::simulation::WorldPtr parseWorld(const std::string& _uri,
+      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+
+    /// Parse a file to produce a World
+    dart::simulation::WorldPtr parseWorld(const common::Uri& _uri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a World
@@ -138,7 +149,7 @@ private:
 
     static bool readFileToString(
       const common::ResourceRetrieverPtr& _resourceRetriever,
-      const std::string &_uri,
+      const common::Uri& _uri,
       std::string &_output);
 
     common::LocalResourceRetrieverPtr mLocalRetriever;
