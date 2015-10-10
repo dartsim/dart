@@ -37,6 +37,8 @@
 #ifndef DART_COMMON_URI_H_
 #define DART_COMMON_URI_H_
 
+#include <string>
+
 namespace dart {
 namespace common {
 
@@ -97,6 +99,13 @@ public:
   /// Fragment, e.g. the part of the URI after the #
   UriComponent mFragment;
 
+  /// Constructor
+  Uri() = default;
+
+  /// Implicit constructor that takes a string as a filename. Internally, this
+  /// is equivalent to calling fromString(_input) after default constructor.
+  Uri(const std::string& _input);
+
   /// Clear the URI by reset()ing all components.
   void clear();
 
@@ -124,6 +133,17 @@ public:
   static std::string getRelativeUri(const std::string& _base,
                                     const std::string& _relative,
                                     bool _strict = false);
+
+  /// Create URI from a string.
+  static Uri createFromString(const std::string& _input);
+
+  /// Create URI from a string.
+  static Uri createFromStringOrPath(const std::string& _input);
+
+  /// Create URI from a string.
+  static Uri createFromRelativeUri(const std::string& _base,
+                                   const std::string& _relative,
+                                   bool _strict = false);
 
 private:
   /// Implement section 5.2.3 of RFC 3986.

@@ -39,7 +39,9 @@
 
 #include <memory>
 #include <string>
-#include "Resource.h"
+#include "dart/common/Deprecated.h"
+#include "dart/common/Resource.h"
+#include "dart/common/Uri.h"
 
 namespace dart {
 namespace common {
@@ -52,10 +54,24 @@ public:
   virtual ~ResourceRetriever() = default;
 
   /// \brief Return whether the resource specified by a URI exists.
-  virtual bool exists(const std::string& _uri) = 0;
+  DEPRECATED(5.1)
+  bool exists(const std::string& _input)
+  {
+    return exists(Uri::createFromString(_input));
+  }
+
+  /// \brief Return whether the resource specified by a URI exists.
+  virtual bool exists(const Uri& _uri) const = 0;
 
   /// \brief Return the resource specified by a URI or nullptr on failure.
-  virtual ResourcePtr retrieve(const std::string& _uri) = 0;
+  DEPRECATED(5.1)
+  ResourcePtr retrieve(const std::string& _input)
+  {
+    return retrieve(Uri::createFromString(_input));
+  }
+
+  /// \brief Return the resource specified by a URI or nullptr on failure.
+  virtual ResourcePtr retrieve(const Uri& _uri) const = 0;
 };
 
 using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;

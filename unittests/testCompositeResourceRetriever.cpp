@@ -38,6 +38,7 @@
 #include "dart/utils/CompositeResourceRetriever.h"
 #include "TestHelpers.h"
 
+using dart::common::Uri;
 using dart::common::Resource;
 using dart::common::ResourcePtr;
 using dart::common::ResourceRetriever;
@@ -46,7 +47,7 @@ using dart::utils::CompositeResourceRetriever;
 TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {
   CompositeResourceRetriever retriever;
-  EXPECT_FALSE(retriever.exists("package://test/foo"));
+  EXPECT_FALSE(retriever.exists(Uri("package://test/foo")));
 }
 
 TEST(CompositeResourceRetriever, exists_AllRetrieversFail_ReturnsFalse)
@@ -58,7 +59,7 @@ TEST(CompositeResourceRetriever, exists_AllRetrieversFail_ReturnsFalse)
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
 
-  EXPECT_FALSE(retriever.exists("package://test/foo"));
+  EXPECT_FALSE(retriever.exists(Uri("package://test/foo")));
 
   EXPECT_TRUE(retriever1->mRetrieve.empty());
   ASSERT_EQ(1u, retriever1->mExists.size());
@@ -80,7 +81,7 @@ TEST(CompositeResourceRetriever, exists_CompositeResourceRetrieverSucceeds_Retur
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever2));
   retriever.addDefaultRetriever(retriever3);
 
-  EXPECT_TRUE(retriever.exists("package://test/foo"));
+  EXPECT_TRUE(retriever.exists(Uri("package://test/foo")));
 
   EXPECT_TRUE(retriever1->mRetrieve.empty());
   ASSERT_EQ(1u, retriever1->mExists.size());
@@ -103,7 +104,7 @@ TEST(CompositeResourceRetriever, exists_DefaultResourceRetrieverSucceeds_Returns
   retriever.addDefaultRetriever(retriever2);
   retriever.addDefaultRetriever(retriever3);
 
-  EXPECT_TRUE(retriever.exists("package://test/foo"));
+  EXPECT_TRUE(retriever.exists(Uri("package://test/foo")));
   EXPECT_TRUE(retriever1->mRetrieve.empty());
   ASSERT_EQ(1u, retriever1->mExists.size());
   EXPECT_EQ("package://test/foo", retriever1->mExists.front());
@@ -119,7 +120,7 @@ TEST(CompositeResourceRetriever, exists_DefaultResourceRetrieverSucceeds_Returns
 TEST(CompositeResourceRetriever, retrieve_NothingRegistered_ReturnsNull)
 {
   CompositeResourceRetriever retriever;
-  EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
+  EXPECT_EQ(nullptr, retriever.retrieve(Uri("package://test/foo")));
 }
 
 TEST(CompositeResourceRetriever, retrieve_AllRetrieversFail_ReturnsNull)
@@ -131,7 +132,8 @@ TEST(CompositeResourceRetriever, retrieve_AllRetrieversFail_ReturnsNull)
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever1));
   retriever.addDefaultRetriever(retriever2);
 
-  EXPECT_EQ(nullptr, retriever.retrieve("package://test/foo"));
+  EXPECT_EQ(nullptr,
+            retriever.retrieve(Uri("package://test/foo")));
 
   EXPECT_TRUE(retriever1->mExists.empty());
   ASSERT_EQ(1u, retriever1->mRetrieve.size());
@@ -153,7 +155,7 @@ TEST(CompositeResourceRetriever, retrieve_CompositeResourceRetrieverSucceeds_Ret
   EXPECT_TRUE(retriever.addSchemaRetriever("package", retriever2));
   retriever.addDefaultRetriever(retriever3);
 
-  EXPECT_TRUE(nullptr != retriever.retrieve("package://test/foo"));
+  EXPECT_TRUE(nullptr != retriever.retrieve(Uri("package://test/foo")));
 
   EXPECT_TRUE(retriever1->mExists.empty());
   ASSERT_EQ(1u, retriever1->mRetrieve.size());
@@ -176,7 +178,7 @@ TEST(CompositeResourceRetriever, retrieve_DefaultResourceRetrieverSucceeds_Retur
   retriever.addDefaultRetriever(retriever2);
   retriever.addDefaultRetriever(retriever3);
 
-  EXPECT_TRUE(nullptr != retriever.retrieve("package://test/foo"));
+  EXPECT_TRUE(nullptr != retriever.retrieve(Uri("package://test/foo")));
   EXPECT_TRUE(retriever1->mExists.empty());
   ASSERT_EQ(1u, retriever1->mRetrieve.size());
   EXPECT_EQ("package://test/foo", retriever1->mRetrieve.front());

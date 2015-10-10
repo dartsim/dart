@@ -45,43 +45,27 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-bool LocalResourceRetriever::exists(const std::string& _uri)
+bool LocalResourceRetriever::exists(const Uri& _uri) const
 {
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[LocalResourceRetriever::exists] Failed parsing URI '"
-           << _uri << "'.\n";
-    return false;
-  }
-
   // Open and close the file to check if it exists. It would be more efficient
   // to stat() it, but that is not portable.
-  if(uri.mScheme.get_value_or("file") != "file")
+  if(_uri.mScheme.get_value_or("file") != "file")
     return false;
-  else if (!uri.mPath)
+  else if (!_uri.mPath)
     return false;
 
-  return std::ifstream(*uri.mPath, std::ios::binary).good();
+  return std::ifstream(*_uri.mPath, std::ios::binary).good();
 }
 
 //==============================================================================
-common::ResourcePtr LocalResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri) const
 {
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[LocalResourceRetriever::retrieve] Failed parsing URI '"
-           << _uri << "'.\n";
+  if(_uri.mScheme.get_value_or("file") != "file")
     return nullptr;
-  }
-
-  if(uri.mScheme.get_value_or("file") != "file")
-    return nullptr;
-  else if (!uri.mPath)
+  else if (!_uri.mPath)
     return nullptr;
 
-  const auto resource = std::make_shared<LocalResource>(*uri.mPath);
+  const auto resource = std::make_shared<LocalResource>(*_uri.mPath);
   if(resource->isGood())
     return resource;
   else

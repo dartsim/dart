@@ -28,7 +28,7 @@ AssimpInputResourceRetrieverAdaptor::~AssimpInputResourceRetrieverAdaptor()
 //==============================================================================
 bool AssimpInputResourceRetrieverAdaptor::Exists(const char* pFile) const
 {
-  return mResourceRetriever->exists(pFile);
+  return mResourceRetriever->exists(common::Uri(pFile));
 }
 
 //==============================================================================
@@ -51,10 +51,15 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
     return nullptr;
   }
 
-  if(const common::ResourcePtr resource = mResourceRetriever->retrieve(pFile))
+  if(const common::ResourcePtr resource
+     = mResourceRetriever->retrieve(common::Uri(pFile)))
+  {
     return new AssimpInputResourceAdaptor(resource);
+  }
   else
+  {
     return nullptr;
+  }
 }
 
 //==============================================================================

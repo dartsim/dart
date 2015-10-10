@@ -71,16 +71,14 @@ public:
     const common::ResourceRetrieverPtr& _resourceRetriever);
 
   // Documentation inherited.
-  bool exists(const std::string& _uri) override;
+  bool exists(const common::Uri& _uri) const override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const std::string& _uri) override;
+  common::ResourcePtr retrieve(const common::Uri& _uri) const override;
 
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
-    const std::string& _uri);
-
-  std::string getSchema(const std::string& _uri);
+    const common::Uri& _uri) const;
 
   std::unordered_map<std::string,
     std::vector<common::ResourceRetrieverPtr> > mResourceRetrievers;

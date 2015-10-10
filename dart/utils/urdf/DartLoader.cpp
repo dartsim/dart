@@ -270,7 +270,8 @@ bool DartLoader::readFileToString(
   const std::string &_uri,
   std::string &_output)
 {
-  const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
+  const common::ResourcePtr resource
+      = _resourceRetriever->retrieve(common::Uri(_uri));
   if (!resource)
     return false;
 

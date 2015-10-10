@@ -190,6 +190,12 @@ auto UriComponent::get_value_or(reference_const_type _default) const
  */
 
 //==============================================================================
+Uri::Uri(const std::string& _input)
+{
+  fromString(_input);
+}
+
+//==============================================================================
 void Uri::clear()
 {
   mScheme.reset();
@@ -433,6 +439,34 @@ std::string Uri::getRelativeUri(
   }
 
   return mergedUri.toString();
+}
+
+//==============================================================================
+Uri Uri::createFromString(const std::string& _input)
+{
+  Uri uri;
+  uri.fromString(_input);
+
+  return uri;
+}
+
+//==============================================================================
+Uri Uri::createFromStringOrPath(const std::string& _input)
+{
+  Uri uri;
+  uri.fromStringOrPath(_input);
+
+  return uri;
+}
+
+//==============================================================================
+Uri Uri::createFromRelativeUri(const std::string& _base,
+                               const std::string& _relative, bool _strict)
+{
+  Uri uri;
+  uri.fromRelativeUri(_base, _relative, _strict);
+
+  return uri;
 }
 
 //==============================================================================

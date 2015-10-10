@@ -596,7 +596,8 @@ void openXMLFile(
     else
       retriever = std::make_shared<common::LocalResourceRetriever>();
 
-    const common::ResourcePtr resource = retriever->retrieve(filename);
+    const common::ResourcePtr resource
+        = retriever->retrieve(common::Uri(filename));
     if(!resource)
     {
       dtwarn << "[openXMLFile] Failed opening URI '"
