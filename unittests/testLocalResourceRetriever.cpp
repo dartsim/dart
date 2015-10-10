@@ -63,7 +63,11 @@ TEST(LocalResourceRetriever, exists_PathDoesNotExist_ReturnsFalse)
 TEST(LocalResourceRetriever, exists_FileUriDoesExists_ReturnsTrue)
 {
   LocalResourceRetriever retriever;
+#ifdef _WIN32
+  EXPECT_TRUE(retriever.exists(Uri("file:///" DART_DATA_PATH "skel/cube.skel")));
+#else
   EXPECT_TRUE(retriever.exists(Uri("file://" DART_DATA_PATH "skel/cube.skel")));
+#endif
 }
 
 TEST(LocalResourceRetriever, exists_FileUriDoesNotExists_ReturnsTrue)
@@ -93,7 +97,11 @@ TEST(LocalResourceRetriever, retrieve_PathDoesNotExist_ReturnsNull)
 TEST(LocalResourceRetriever, retrieve_FileUri)
 {
   LocalResourceRetriever retriever;
+#ifdef _WIN32
+  auto resource = retriever.retrieve(Uri("file:///" DART_DATA_PATH "test/hello_world.txt"));
+#else
   auto resource = retriever.retrieve(Uri("file://" DART_DATA_PATH "test/hello_world.txt"));
+#endif
   ASSERT_TRUE(resource != nullptr);
 }
 

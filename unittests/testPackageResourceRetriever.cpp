@@ -57,7 +57,11 @@ TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
 {
   // GTest breaks the string concatenation.
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test/foo";
+#endif
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -82,7 +86,11 @@ TEST(PackageResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
 
 TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
 {
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test/foo";
+#endif
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -96,7 +104,11 @@ TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
 
 TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
 {
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test1/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test1/foo";
+#endif
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -111,8 +123,13 @@ TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
 
 TEST(PackageResourceRetriever, exists_FallsBackOnSecondUri)
 {
+#ifdef _WIN32
+  const char* expected1 = "file:///" DART_DATA_PATH"test1/foo";
+  const char* expected2 = "file:///" DART_DATA_PATH"test2/foo";
+#else
   const char* expected1 = "file://" DART_DATA_PATH"test1/foo";
   const char* expected2 = "file://" DART_DATA_PATH"test2/foo";
+#endif
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -139,7 +156,11 @@ TEST(PackageResourceRetriever, retrieve_UnableToResolve_ReturnsNull)
 TEST(PackageResourceRetriever, retrieve_DelegateFails_ReturnsNull)
 {
   // GTest breaks the string concatenation.
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test/foo";
+#endif
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -164,7 +185,11 @@ TEST(PackageResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
 
 TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
 {
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test/foo";
+#endif
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -178,7 +203,11 @@ TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
 
 TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
 {
+#ifdef _WIN32
+  const char* expected = "file:///" DART_DATA_PATH"test1/foo";
+#else
   const char* expected = "file://" DART_DATA_PATH"test1/foo";
+#endif
 
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
@@ -193,8 +222,13 @@ TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
 
 TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
 {
+#ifdef _WIN32
+  const char* expected1 = "file:///" DART_DATA_PATH"test1/foo";
+  const char* expected2 = "file:///" DART_DATA_PATH"test2/foo";
+#else
   const char* expected1 = "file://" DART_DATA_PATH"test1/foo";
   const char* expected2 = "file://" DART_DATA_PATH"test2/foo";
+#endif
 
   auto mockRetriever = std::make_shared<AbsentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
