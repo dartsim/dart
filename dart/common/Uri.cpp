@@ -192,7 +192,7 @@ auto UriComponent::get_value_or(reference_const_type _default) const
 //==============================================================================
 Uri::Uri(const std::string& _input)
 {
-  fromString(_input);
+  fromStringOrPath(_input);
 }
 
 //==============================================================================

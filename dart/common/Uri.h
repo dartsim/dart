@@ -102,8 +102,9 @@ public:
   /// Constructor
   Uri() = default;
 
-  /// Implicit constructor that takes a string as a filename. Internally, this
-  /// is equivalent to calling fromString(_input) after default constructor.
+  /// Constructor that takes a string which can be either of URI or local path
+  /// (i.e. URI with no schema). Internally, this is equivalent to calling
+  /// fromStringOrPath(_input) after constructed.
   Uri(const std::string& _input);
 
   /// Clear the URI by reset()ing all components.
