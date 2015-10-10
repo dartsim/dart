@@ -134,6 +134,11 @@ public:
                                     const std::string& _relative,
                                     bool _strict = false);
 
+  /// Resolve a relative path reference; return an empty string on failure.
+  static std::string getRelativeUri(const Uri& _base,
+                                    const Uri& _relative,
+                                    bool _strict = false);
+
   /// Create URI from a string.
   static Uri createFromString(const std::string& _input);
 
@@ -143,6 +148,11 @@ public:
   /// Create URI from a string.
   static Uri createFromRelativeUri(const std::string& _base,
                                    const std::string& _relative,
+                                   bool _strict = false);
+
+  /// Create URI from a string.
+  static Uri createFromRelativeUri(const Uri& _base,
+                                   const Uri& _relative,
                                    bool _strict = false);
 
 private:

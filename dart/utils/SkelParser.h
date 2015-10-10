@@ -45,6 +45,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
+#include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
@@ -88,19 +89,38 @@ class SkelParser
 {
 public:
   /// Read World from skel file
+  DEPRECATED(5.1)
   static simulation::WorldPtr readWorld(
     const std::string& _filename,
     const common::ResourceRetrieverPtr& _retriever = nullptr);
 
+  /// Read World from skel file
+  static simulation::WorldPtr readWorld(
+    const common::Uri& _uri,
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
+
   /// Read World from an xml-formatted string
+  DEPRECATED(5.1)
   static simulation::WorldPtr readWorldXML(
     const std::string& _xmlString,
     const std::string& _baseUri = "",
     const common::ResourceRetrieverPtr& _retriever = nullptr);
 
+  /// Read World from an xml-formatted string
+  static simulation::WorldPtr readWorldXML(
+    const std::string& _xmlString,
+    const common::Uri& _baseUri = common::Uri(""),
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
+
   /// Read Skeleton from skel file
+  DEPRECATED(5.1)
   static dynamics::SkeletonPtr readSkeleton(
     const std::string& _filename,
+    const common::ResourceRetrieverPtr& _retriever = nullptr);
+
+  /// Read Skeleton from skel file
+  static dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& _fileUri,
     const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
@@ -140,37 +160,66 @@ public:
 
 protected:
 
-  ///
+  DEPRECATED(5.1)
   static simulation::WorldPtr readWorld(
       tinyxml2::XMLElement* _worldElement,
       const std::string& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
 
-  ///
+  static simulation::WorldPtr readWorld(
+      tinyxml2::XMLElement* _worldElement,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
+
+  DEPRECATED(5.1)
   static dart::dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const std::string& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
 
-  ///
+  static dart::dynamics::SkeletonPtr readSkeleton(
+      tinyxml2::XMLElement* _skeletonElement,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
+
+  DEPRECATED(5.1)
   static SkelBodyNode readBodyNode(
       tinyxml2::XMLElement* _bodyElement,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
 
-  ///
+  static SkelBodyNode readBodyNode(
+      tinyxml2::XMLElement* _bodyElement,
+      const Eigen::Isometry3d& _skeletonFrame,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
+
+  DEPRECATED(5.1)
   static SkelBodyNode readSoftBodyNode(
       tinyxml2::XMLElement* _softBodyNodeElement,
       const Eigen::Isometry3d& _skeletonFrame,
       const std::string& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
 
-  ///
-  static dynamics::ShapePtr readShape(tinyxml2::XMLElement* _shapeElement,
-                                      const std::string& bodyName,
-                                      const std::string& _baseUri,
-                                      const common::ResourceRetrieverPtr& _retriever);
+  static SkelBodyNode readSoftBodyNode(
+      tinyxml2::XMLElement* _softBodyNodeElement,
+      const Eigen::Isometry3d& _skeletonFrame,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
+
+  DEPRECATED(5.1)
+  static dynamics::ShapePtr readShape(
+      tinyxml2::XMLElement* _shapeElement,
+      const std::string& bodyName,
+      const std::string& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
+
+  static dynamics::ShapePtr readShape(
+      tinyxml2::XMLElement* _shapeElement,
+      const std::string& bodyName,
+      const common::Uri& _baseUri,
+      const common::ResourceRetrieverPtr& _retriever);
 
   /// Read marker
   static dynamics::Marker::Properties readMarker(

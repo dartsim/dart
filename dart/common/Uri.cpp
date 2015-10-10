@@ -425,7 +425,7 @@ std::string Uri::getRelativeUri(
   Uri relativeUri;
   if(!relativeUri.fromString(_relative))
   {
-    dtwarn << "[getRelativeUri] Failed parsing relative URI '"  
+    dtwarn << "[getRelativeUri] Failed parsing relative URI '"
            << _relative << "'.\n";
     return "";
   }
@@ -435,6 +435,21 @@ std::string Uri::getRelativeUri(
   {
     dtwarn << "[getRelativeUri] Failed merging URI '" << _relative
            << "' with base URI '" << _base << "'.\n";
+    return "";
+  }
+
+  return mergedUri.toString();
+}
+
+//==============================================================================
+std::string Uri::getRelativeUri(
+    const Uri& _baseUri, const Uri& _relativeUri, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict))
+  {
+    dtwarn << "[getRelativeUri] Failed merging URI '" << _relativeUri.toString()
+           << "' with base URI '" << _baseUri.toString() << "'.\n";
     return "";
   }
 
@@ -465,6 +480,16 @@ Uri Uri::createFromRelativeUri(const std::string& _base,
 {
   Uri uri;
   uri.fromRelativeUri(_base, _relative, _strict);
+
+  return uri;
+}
+
+//==============================================================================
+Uri Uri::createFromRelativeUri(const Uri& _baseUri,
+                               const Uri& _relativeUri, bool _strict)
+{
+  Uri uri;
+  uri.fromRelativeUri(_baseUri, _relativeUri, _strict);
 
   return uri;
 }

@@ -586,43 +586,51 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement,
     return _parentElement->FirstChildElement(_name.c_str());
 }
 
+//==============================================================================
 void openXMLFile(
   tinyxml2::XMLDocument& doc, const char* const filename,
   const common::ResourceRetrieverPtr& _retriever)
 {
-    common::ResourceRetrieverPtr retriever;
-    if(_retriever)
-      retriever = _retriever;
-    else
-      retriever = std::make_shared<common::LocalResourceRetriever>();
+  return openXMLFile(doc, common::Uri(filename), _retriever);
+}
 
-    const common::ResourcePtr resource
-        = retriever->retrieve(common::Uri(filename));
-    if(!resource)
-    {
-      dtwarn << "[openXMLFile] Failed opening URI '"
-             << filename << "'.\n";
-      throw std::runtime_error("Failed opening URI.");
-    }
+//==============================================================================
+void openXMLFile(
+    tinyxml2::XMLDocument& doc, const common::Uri& uri,
+    const common::ResourceRetrieverPtr& _retriever)
+{
+  common::ResourceRetrieverPtr retriever;
+  if(_retriever)
+    retriever = _retriever;
+  else
+    retriever = std::make_shared<common::LocalResourceRetriever>();
 
-    // C++11 guarantees that std::string has contiguous storage.
-    const size_t size = resource->getSize();
-    std::string content;
-    content.resize(size);
-    if(resource->read(&content.front(), size, 1) != 1)
-    {
-      dtwarn << "[openXMLFile] Failed reading from URI '"
-             << filename << "'.\n";
-      throw std::runtime_error("Failed reading from URI.");
-    }
+  const common::ResourcePtr resource = retriever->retrieve(uri);
+  if(!resource)
+  {
+    dtwarn << "[openXMLFile] Failed opening URI '"
+           << uri.toString() << "'.\n";
+    throw std::runtime_error("Failed opening URI.");
+  }
 
-    int const result = doc.Parse(&content.front());
-    if(result != tinyxml2::XML_SUCCESS)
-    {
-      dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"
-                " code " << result << ".\n";
-      throw std::runtime_error("Failed parsing XML.");
-    }
+  // C++11 guarantees that std::string has contiguous storage.
+  const size_t size = resource->getSize();
+  std::string content;
+  content.resize(size);
+  if(resource->read(&content.front(), size, 1) != 1)
+  {
+    dtwarn << "[openXMLFile] Failed reading from URI '"
+           << uri.toString() << "'.\n";
+    throw std::runtime_error("Failed reading from URI.");
+  }
+
+  int const result = doc.Parse(&content.front());
+  if(result != tinyxml2::XML_SUCCESS)
+  {
+    dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"
+              " code " << result << ".\n";
+    throw std::runtime_error("Failed parsing XML.");
+  }
 }
 
 bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)
