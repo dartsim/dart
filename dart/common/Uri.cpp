@@ -52,7 +52,9 @@
 #include <boost/regex.hpp>
 
 using boost::regex;
+using boost::regex_constants::match_continuous;
 using boost::regex_match;
+using boost::regex_search;
 using boost::smatch;
 using boost::ssub_match;
 
@@ -61,7 +63,9 @@ using boost::ssub_match;
 #include <regex>
 
 using std::regex;
+using std::regex_constants::match_continuous;
 using std::regex_match;
+using std::regex_search;
 using std::smatch;
 using std::ssub_match;
 
@@ -294,7 +298,17 @@ bool Uri::fromString(const std::string& _input)
   assert(matches.size() > pathIndex);
   const ssub_match& pathMatch = matches[pathIndex];
   if(pathMatch.matched)
+  {
     mPath = pathMatch;
+
+#ifdef _WIN32
+    if(mScheme && *mScheme == "file")
+    {
+      if(!mPath->empty() && mPath->at(0) == '/')
+        mPath = mPath->substr(1, mPath->size() - 1);
+    }
+#endif
+  }
 
   assert(matches.size() > queryIndex);
   const ssub_match& queryMatch = matches[queryIndex];
@@ -320,6 +334,13 @@ std::string Uri::toString() const
 
   if(mAuthority)
     output << "//" << *mAuthority;
+  else if(mScheme && *mScheme == "file")
+    output << "//";
+
+#ifdef _WIN32
+  if(mScheme == "file")
+    output << "/";
+#endif
 
   output << mPath.get_value_or("");
 
@@ -335,19 +356,42 @@ std::string Uri::toString() const
 //==============================================================================
 bool Uri::fromStringOrPath(const std::string& _input)
 {
-  if (!fromString(_input))
-    return false;
+  // We first determine whether the input string is a path or not before passing
+  // it to fromString() because Windows style path with a drive letter can be
+  // parsed incorrectly. For example, "C://foo/bar.txt" would be parsed as that
+  // "C" is the scheme, "foo" is the authority, and "/bar.txt" is the path.
 
-  // Assume that any URI without a scheme is a path.
-  if (!mScheme && mPath)
+  // Note that only absolute path is allowed. A relative path should be
+  // resolved to a corresponding absolute path before it's passed in this
+  // function.
+
+#ifdef _WIN32
+  // On Windows, we assume that any string begin with a
+  // [SINGLE_LETTER]:[/ or \\] is a absolute path.
+  static regex windowsPathRegex(R"END([a-zA-Z]:[/|\\])END");
+  bool isPath = regex_search(_input, windowsPathRegex, match_continuous);
+#else
+  // On Unix systems, we assume that a string begin with '/' is a path.
+  static regex unixPathRegex(R"END(/([^/\0]+(/)?)+)END");
+  bool isPath = regex_search(_input, unixPathRegex, match_continuous);
+#endif
+
+  if (isPath)
   {
-    mScheme = "file";
+    static const std::string fileScheme("file://");
+    std::string fileURI = _input;
 
     // Replace backslashes (from Windows paths) with forward slashes.
-    std::replace(std::begin(*mPath), std::end(*mPath), '\\', '/');
+    std::replace(std::begin(fileURI), std::end(fileURI), '\\', '/');
+
+#ifdef _WIN32
+    return fromString(fileScheme + "/" + _input);
+#else
+    return fromString(fileScheme + _input);
+#endif
   }
 
-  return true;
+  return fromString(_input);
 }
 
 //==============================================================================

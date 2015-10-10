@@ -123,63 +123,53 @@ TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
   EXPECT_EQ("oasis:names:specification:docbook:dtd:xml:4.1.2", *uri.mPath);
 }
 
-TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsOnlyPath)
+TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURI)
 {
+#ifdef _WIN32
+  std::vector<std::string> testPaths = {
+    "C:\\foo",
+    "C:\\foo\\",
+    "C:\\foo\\bar",
+  };
+#else
+  std::vector<std::string> testPaths = {
+    "/foo",
+    "/foo/",
+    "/foo/bar"
+  };
+#endif
+
   Uri uri;
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo"));
+  ASSERT_TRUE(uri.fromStringOrPath(testPaths[0]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[0], *uri.mPath);
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo/"));
+  ASSERT_TRUE(uri.fromStringOrPath(testPaths[1]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo/", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[1], *uri.mPath);
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo/bar"));
+  ASSERT_TRUE(uri.fromStringOrPath(testPaths[2]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo/bar", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo/"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo/", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo/bar"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo/bar", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[2], *uri.mPath);
 }
 
 TEST(UriHelpers, fromStringOrPath_InputIsUri_DoesNotChange)
