@@ -123,7 +123,7 @@ TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
   EXPECT_EQ("oasis:names:specification:docbook:dtd:xml:4.1.2", *uri.mPath);
 }
 
-TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURI)
+TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
 {
 #ifdef _WIN32
   std::vector<std::string> testPaths = {
@@ -206,19 +206,32 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
 
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 {
+#ifdef _WIN32
   std::vector<std::string> testPaths = {
-    "foo",
-    "foo/",
-    "foo/bar",
+    "C:\\foo",
+    "C:\\foo\\",
+    "C:\\foo\\bar",
+  };
+#else
+  std::vector<std::string> testPaths = {
     "/foo",
     "/foo/",
     "/foo/bar"
   };
+#endif
 
   for(const std::string& testPath : testPaths)
   {
+#ifdef _WIN32
+    // On Windows, an absolute path does not begin with forward slash but a 
+    // file URI needs it to represent an empty authority,
+    const std::string testUri = "file:///" + testPath;
+#else
+    // wherease on Unix systems the additional forward slash is not required
+    // since an absolute paht already has it.
     const std::string testUri = "file://" + testPath;
-    EXPECT_EQ(testUri, Uri::getUri(testUri));
+#endif
+    EXPECT_EQ(testUri, Uri::getUri(testPath));
   }
 }
 

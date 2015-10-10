@@ -338,7 +338,7 @@ std::string Uri::toString() const
     output << "//";
 
 #ifdef _WIN32
-  if(mScheme == "file")
+  if (mScheme && *mScheme == "file")
     output << "/";
 #endif
 
