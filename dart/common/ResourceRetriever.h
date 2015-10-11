@@ -54,21 +54,7 @@ public:
   virtual ~ResourceRetriever() = default;
 
   /// \brief Return whether the resource specified by a URI exists.
-  DEPRECATED(5.1)
-  bool exists(const std::string& _input)
-  {
-    return exists(Uri::createFromString(_input));
-  }
-
-  /// \brief Return whether the resource specified by a URI exists.
   virtual bool exists(const Uri& _uri) const = 0;
-
-  /// \brief Return the resource specified by a URI or nullptr on failure.
-  DEPRECATED(5.1)
-  ResourcePtr retrieve(const std::string& _input)
-  {
-    return retrieve(Uri::createFromString(_input));
-  }
 
   /// \brief Return the resource specified by a URI or nullptr on failure.
   virtual ResourcePtr retrieve(const Uri& _uri) const = 0;
