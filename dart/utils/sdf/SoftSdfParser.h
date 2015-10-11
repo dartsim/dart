@@ -64,18 +64,8 @@ namespace utils {
 class SoftSdfParser : public SdfParser
 {
 public:
-  DEPRECATED(5.1)
-  static simulation::WorldPtr readSoftSdfFile(
-      const std::string& _filename,
-      const common::ResourceRetrieverPtr& _retriever = nullptr);
-
   static simulation::WorldPtr readSoftSdfFile(
       const common::Uri& _fileUri,
-      const common::ResourceRetrieverPtr& _retriever = nullptr);
-
-  DEPRECATED(5.1)
-  static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName,
       const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   static dynamics::SkeletonPtr readSkeleton(

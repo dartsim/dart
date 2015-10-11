@@ -192,7 +192,13 @@ auto UriComponent::get_value_or(reference_const_type _default) const
 //==============================================================================
 Uri::Uri(const std::string& _input)
 {
-  fromString(_input);
+  fromStringOrPath(_input);
+}
+
+//==============================================================================
+Uri::Uri(const char* _input)
+{
+  fromStringOrPath(std::string(_input));
 }
 
 //==============================================================================
@@ -269,34 +275,28 @@ bool Uri::fromPath(const std::string& _path)
 
   static const std::string fileScheme("file://");
 
-  if (_path.compare(0, fileScheme.length(), fileScheme) != 0)
-  {
 #ifdef _WIN32
-    return fromString(fileScheme + "/" + _path);
-#else
-    return fromString(fileScheme + _path);
-#endif
-  }
+  // Replace backslashes (from Windows paths) with forward slashes.
+  std::string unixPath = _path;
+  std::replace(std::begin(*unixPath), std::end(*unixPath), '\\', '/');
 
-  return fromString(_path);
+  return fromString(fileScheme + "/" + _path);
+#else
+  return fromString(fileScheme + _path);
+#endif
 }
 
 //==============================================================================
 bool Uri::fromStringOrPath(const std::string& _input)
 {
-  if (!fromString(_input))
-    return false;
-
   // Assume that any URI without a scheme is a path.
-  if (!mScheme && mPath)
-  {
-    mScheme = "file";
+  static regex uriSchemeRegex(R"END(^(([^:/?#]+)://))END");
+  bool noScheme = !regex_search(_input, uriSchemeRegex, match_continuous);
 
-    // Replace backslashes (from Windows paths) with forward slashes.
-    std::replace(std::begin(*mPath), std::end(*mPath), '\\', '/');
-  }
+  if (noScheme)
+    return fromPath(_input);
 
-  return true;
+  return fromString(_input);
 }
 
 //==============================================================================
@@ -315,6 +315,13 @@ bool Uri::fromRelativeUri(const std::string& _base,
 }
 
 //==============================================================================
+bool Uri::fromRelativeUri(const char* _base,
+                          const char* _relative, bool _strict)
+{
+  return fromRelativeUri(std::string(_base), std::string(_relative), _strict);
+}
+
+//==============================================================================
 bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative,
                           bool _strict)
 {
@@ -327,6 +334,12 @@ bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative,
   }
 
   return fromRelativeUri(_base, relativeUri, _strict);
+}
+
+//==============================================================================
+bool Uri::fromRelativeUri(const Uri& _base, const char* _relative, bool _strict)
+{
+  return fromRelativeUri(_base, std::string(_relative), _strict);
 }
 
 //==============================================================================

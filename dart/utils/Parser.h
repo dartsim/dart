@@ -92,9 +92,6 @@ Eigen::VectorXd   getValueVectorXd  (tinyxml2::XMLElement* _parentElement, const
 Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
-DEPRECATED(5.1)
-void openXMLFile(tinyxml2::XMLDocument& doc, const char* const filename,
-                 const common::ResourceRetrieverPtr& _retriever = nullptr);
 void openXMLFile(tinyxml2::XMLDocument& doc, const common::Uri& uri,
                  const common::ResourceRetrieverPtr& retriever = nullptr);
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);

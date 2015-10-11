@@ -588,14 +588,6 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement,
 
 //==============================================================================
 void openXMLFile(
-  tinyxml2::XMLDocument& doc, const char* const filename,
-  const common::ResourceRetrieverPtr& _retriever)
-{
-  return openXMLFile(doc, common::Uri::createFromPath(filename), _retriever);
-}
-
-//==============================================================================
-void openXMLFile(
     tinyxml2::XMLDocument& doc, const common::Uri& uri,
     const common::ResourceRetrieverPtr& _retriever)
 {

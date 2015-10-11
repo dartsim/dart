@@ -51,23 +51,10 @@ namespace utils {
 class SdfParser
 {
 public:
-  DEPRECATED(5.1)
-  static dart::simulation::WorldPtr readSdfFile(
-      const std::string& _filename,
-      const common::ResourceRetrieverPtr& _retriever = nullptr);
-
   // TODO: Make common::ResourceRetriever optional.
   static dart::simulation::WorldPtr readSdfFile(
       const common::Uri& _fileUri,
       const common::ResourceRetrieverPtr& _retriever = nullptr);
-
-  DEPRECATED(5.1)
-  static simulation::WorldPtr readSdfFile(
-      const std::string& _filename,
-      const common::ResourceRetrieverPtr& _retriever,
-      std::function<simulation::WorldPtr (
-        tinyxml2::XMLElement*, const std::string&,
-        const common::ResourceRetrieverPtr&)> xmlReader);
 
   static simulation::WorldPtr readSdfFile(
       const common::Uri& _fileUri,
@@ -76,23 +63,10 @@ public:
         tinyxml2::XMLElement*, const std::string&,
         const common::ResourceRetrieverPtr&)> xmlReader);
 
-  DEPRECATED(5.1)
-  static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName,
-      const common::ResourceRetrieverPtr& _retriever = nullptr);
-
   // TODO: Make common::ResourceRetriever optional.
   static dynamics::SkeletonPtr readSkeleton(
       const common::Uri& _fileUri,
       const common::ResourceRetrieverPtr& _retriever = nullptr);
-
-  DEPRECATED(5.1)
-  static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName,
-      const common::ResourceRetrieverPtr& _retriever,
-      std::function<dynamics::SkeletonPtr(
-        tinyxml2::XMLElement*, const std::string&,
-        const common::ResourceRetrieverPtr&)> xmlReader);
 
   static dynamics::SkeletonPtr readSkeleton(
       const common::Uri& _fileUri,

@@ -228,7 +228,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
     const std::string testUri = "file:///" + testPath;
 #else
     // wherease on Unix systems the additional forward slash is not required
-    // since an absolute paht already has it.
+    // since an absolute path already has it.
     const std::string testUri = "file://" + testPath;
 #endif
     EXPECT_EQ(testUri, Uri::getFileUri(testPath));

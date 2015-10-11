@@ -29,31 +29,12 @@ namespace utils {
 
 //==============================================================================
 simulation::WorldPtr SdfParser::readSdfFile(
-  const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
-{
-  return readSdfFile(common::Uri::createFromPath(_filename), _retriever);
-}
-
-//==============================================================================
-simulation::WorldPtr SdfParser::readSdfFile(
   const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
 {
   return readSdfFile(_fileUri, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SdfParser::readWorld));
-}
-
-//==============================================================================
-simulation::WorldPtr SdfParser::readSdfFile(
-    const std::string& _filename,
-    const common::ResourceRetrieverPtr& _retriever,
-    std::function<simulation::WorldPtr (
-      tinyxml2::XMLElement*, const std::string&,
-      const common::ResourceRetrieverPtr&)> xmlReader)
-{
-  return readSdfFile(common::Uri::createFromPath(_filename), _retriever,
-                     xmlReader);
 }
 
 //==============================================================================
@@ -114,30 +95,12 @@ simulation::WorldPtr SdfParser::readSdfFile(
 
 //==============================================================================
 dynamics::SkeletonPtr SdfParser::readSkeleton(
-  const std::string& _fileName, const common::ResourceRetrieverPtr& _retriever)
-{
-  return readSkeleton(common::Uri::createFromPath(_fileName), _retriever);
-}
-
-//==============================================================================
-dynamics::SkeletonPtr SdfParser::readSkeleton(
   const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
 {
   return readSkeleton(_fileUri, getResourceRetriever(_retriever),
     static_cast<dynamics::SkeletonPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SdfParser::readSkeleton));
-}
-
-//==============================================================================
-dynamics::SkeletonPtr SdfParser::readSkeleton(
-    const std::string& _filename,
-    const common::ResourceRetrieverPtr& _retriever,
-    std::function<dynamics::SkeletonPtr(
-      tinyxml2::XMLElement*, const std::string&,
-      const common::ResourceRetrieverPtr&)> xmlReader)
-{
-  return readSkeleton(common::Uri::createFromPath(_filename), _retriever);
 }
 
 //==============================================================================

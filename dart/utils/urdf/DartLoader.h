@@ -77,12 +77,6 @@ class DartLoader {
                              const std::string& _packageDirectory);
 
     /// Parse a file to produce a Skeleton
-    DEPRECATED(5.1)
-    dynamics::SkeletonPtr parseSkeleton(
-      const std::string& _uri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
-
-    /// Parse a file to produce a Skeleton
     dynamics::SkeletonPtr parseSkeleton(
       const common::Uri& _uri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
@@ -90,11 +84,6 @@ class DartLoader {
     /// Parse a text string to produce a Skeleton
     dynamics::SkeletonPtr parseSkeletonString(
       const std::string& _urdfString, const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
-
-    /// Parse a file to produce a World
-    DEPRECATED(5.1)
-    dart::simulation::WorldPtr parseWorld(const std::string& _uri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World

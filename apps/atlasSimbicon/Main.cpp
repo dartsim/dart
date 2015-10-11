@@ -57,12 +57,11 @@ int main(int argc, char* argv[])
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
   SkeletonPtr ground = urdfLoader.parseSkeleton(
-        Uri::createFromPath(DART_DATA_PATH"sdf/atlas/ground.urdf"));
+        DART_DATA_PATH"sdf/atlas/ground.urdf");
 //  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
 //        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
   SkeletonPtr atlas = SoftSdfParser::readSkeleton(
-        Uri::createFromPath(
-          DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf"));
+        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);
 

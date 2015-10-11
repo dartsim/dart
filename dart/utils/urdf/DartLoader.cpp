@@ -44,13 +44,6 @@ void DartLoader::addPackageDirectory(const std::string& _packageName,
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
-  const std::string& _uri,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
-{
-  return parseSkeleton(common::Uri::createFromPath(_uri), _resourceRetriever);
-}
-
-dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
@@ -93,13 +86,6 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 
   return modelInterfaceToSkeleton(
     urdfInterface.get(), _baseUri, getResourceRetriever(_resourceRetriever));
-}
-
-simulation::WorldPtr DartLoader::parseWorld(
-  const std::string& _uri,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
-{
-  return parseWorld(common::Uri::createFromPath(_uri), _resourceRetriever);
 }
 
 simulation::WorldPtr DartLoader::parseWorld(
