@@ -38,6 +38,7 @@
 #define DART_COMMON_URI_H_
 
 #include <string>
+#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace common {
@@ -102,9 +103,8 @@ public:
   /// Constructor
   Uri() = default;
 
-  /// Constructor that takes a string which can be either of URI or local path
-  /// (i.e. URI with no schema). Internally, this is equivalent to calling
-  /// fromStringOrPath(_input) after constructed.
+  /// Constructor that takes a URI string. Internally, this is equivalent to
+  /// calling fromString(_input) after default constructor.
   Uri(const std::string& _input);
 
   /// Clear the URI by reset()ing all components.
@@ -113,8 +113,19 @@ public:
   /// Parse URI from a string; return success.
   bool fromString(const std::string& _input);
 
+  /// Parse file URI from a string. If the string does not have 'file://' at the
+  /// front, then we assume that the string is a raw path. In this caes, we set
+  /// the scheme to 'file' and the path to the whole string. Note that the input
+  /// path should be absolute path.
+  bool fromPath(const std::string& _path);
+
   /// Parse a URI or local path (i.e. URI with no schema) from a string.
+  DEPRECATED(5.1)
   bool fromStringOrPath(const std::string& _input);
+
+  /// Resolve a relative path reference; return success.
+  bool fromRelativeUri(const std::string& _base, const std::string& _relative,
+                       bool _strict = false);
 
   /// Resolve a relative path reference; return success.
   bool fromRelativeUri(const Uri& _base, const std::string& _relative,
@@ -127,8 +138,27 @@ public:
   /// Combine the parts of the URI into a string.
   std::string toString() const;
 
+  /// Create URI from a string.
+  static Uri createFromString(const std::string& _input);
+
+  /// Create file URI from a string.
+  static Uri createFromPath(const std::string& _input);
+
+  /// Create URI resolving a relative path reference.
+  static Uri createFromRelativeUri(const std::string& _base,
+                                   const std::string& _relative,
+                                   bool _strict = false);
+
+  /// Create URI resolving a relative path reference.
+  static Uri createFromRelativeUri(const Uri& _base,
+                                   const Uri& _relative,
+                                   bool _strict = false);
+
   /// Parse a URI from a string; return an empty string on failure.
   static std::string getUri(const std::string& _input);
+
+  /// Parse a file URI from a string; return an empty string on failure.
+  static std::string getFileUri(const std::string& _path);
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(const std::string& _base,
@@ -139,22 +169,6 @@ public:
   static std::string getRelativeUri(const Uri& _base,
                                     const Uri& _relative,
                                     bool _strict = false);
-
-  /// Create URI from a string.
-  static Uri createFromString(const std::string& _input);
-
-  /// Create URI from a string.
-  static Uri createFromStringOrPath(const std::string& _input);
-
-  /// Create URI from a string.
-  static Uri createFromRelativeUri(const std::string& _base,
-                                   const std::string& _relative,
-                                   bool _strict = false);
-
-  /// Create URI from a string.
-  static Uri createFromRelativeUri(const Uri& _base,
-                                   const Uri& _relative,
-                                   bool _strict = false);
 
 private:
   /// Implement section 5.2.3 of RFC 3986.

@@ -123,7 +123,7 @@ TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
   EXPECT_EQ("oasis:names:specification:docbook:dtd:xml:4.1.2", *uri.mPath);
 }
 
-TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
+TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
 {
 #ifdef _WIN32
   std::vector<std::string> testPaths = {
@@ -141,7 +141,7 @@ TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
 
   Uri uri;
 
-  ASSERT_TRUE(uri.fromStringOrPath(testPaths[0]));
+  ASSERT_TRUE(uri.fromPath(testPaths[0]));
   ASSERT_TRUE(uri.mScheme);
   ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
@@ -151,7 +151,7 @@ TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_EQ("", *uri.mAuthority);
   EXPECT_EQ(testPaths[0], *uri.mPath);
 
-  ASSERT_TRUE(uri.fromStringOrPath(testPaths[1]));
+  ASSERT_TRUE(uri.fromPath(testPaths[1]));
   ASSERT_TRUE(uri.mScheme);
   ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
@@ -161,7 +161,7 @@ TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_EQ("", *uri.mAuthority);
   EXPECT_EQ(testPaths[1], *uri.mPath);
 
-  ASSERT_TRUE(uri.fromStringOrPath(testPaths[2]));
+  ASSERT_TRUE(uri.fromPath(testPaths[2]));
   ASSERT_TRUE(uri.mScheme);
   ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
@@ -172,11 +172,11 @@ TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_EQ(testPaths[2], *uri.mPath);
 }
 
-TEST(UriHelpers, fromStringOrPath_InputIsUri_DoesNotChange)
+TEST(UriHelpers, fromString_InputIsUri_DoesNotChange)
 {
   Uri uri;
 
-  ASSERT_TRUE(uri.fromStringOrPath("ftp://ftp.is.co.za/rfc/rfc1808.txt"));
+  ASSERT_TRUE(uri.fromString("ftp://ftp.is.co.za/rfc/rfc1808.txt"));
   ASSERT_TRUE(uri.mScheme);
   ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
@@ -201,7 +201,7 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
   };
 
   for (const std::string& testUri : testUris)
-    EXPECT_EQ(testUri, Uri::getUri(testUri));
+    EXPECT_EQ(testUri, Uri::createFromString(testUri).toString());
 }
 
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
@@ -231,7 +231,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
     // since an absolute paht already has it.
     const std::string testUri = "file://" + testPath;
 #endif
-    EXPECT_EQ(testUri, Uri::getUri(testPath));
+    EXPECT_EQ(testUri, Uri::getFileUri(testPath));
   }
 }
 
