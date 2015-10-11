@@ -81,10 +81,18 @@ private:
   std::string mValue;
 };
 
-
+/// The Uri class provides URI parsing and merging functionality based on RFC
+/// 3986.
 class Uri final
 {
 public:
+
+  // We expose the URI components as public member because we hope to keep Uri
+  // class as close to a mutable struct as possible. Many ResourceRetreiver
+  // classes rewrite URIs to other types of URIs (e.g, resolve 'package://' URIs
+  // to 'file://' URIs), which is easier to implemet if you have direct access
+  // to the URI components.
+
   /// Scheme, e.g. 'http', 'file', 'package'
   UriComponent mScheme;
 
@@ -152,7 +160,7 @@ public:
   static Uri createFromString(const std::string& _input);
 
   /// Create file URI from a string.
-  static Uri createFromPath(const std::string& _input);
+  static Uri createFromPath(const std::string& _path);
 
   /// Create URI resolving a relative path reference.
   static Uri createFromRelativeUri(const std::string& _base,
