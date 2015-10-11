@@ -309,7 +309,7 @@ SkeletonPtr loadBiped()
 
   // Set joint limits
   for(size_t i = 0; i < biped->getNumJoints(); ++i)
-    biped->getJoint(i)->setPositionLimited(true);
+    biped->getJoint(i)->setPositionLimitEnforced(true);
   
   // Enable self collision check but ignore adjacent bodies
   biped->enableSelfCollision();
