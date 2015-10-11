@@ -34,6 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fstream>
 #include <gtest/gtest.h>
 #include "dart/common/LocalResourceRetriever.h"
 #include "TestHelpers.h"
@@ -115,10 +116,18 @@ TEST(LocalResourceRetriever, retrieve_Path)
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 {
   const std::string content = "Hello World\n";
+
+  // Create a test file contains the content.
+  std::string outputFile = DART_DATA_PATH"test/local_resource_retriever.txt";
+  std::ofstream ofs(outputFile);
+  EXPECT_TRUE(ofs.is_open());
+  ofs << content;
+  ofs.close();
+
   std::vector<char> buffer(100, '\0');
 
   LocalResourceRetriever retriever;
-  auto resource = retriever.retrieve(Uri::createFromPath(DART_DATA_PATH "test/hello_world.txt"));
+  auto resource = retriever.retrieve(Uri::createFromPath(outputFile));
   ASSERT_TRUE(resource != nullptr);
 
   EXPECT_EQ(content.size(), resource->getSize());
@@ -160,6 +169,8 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
   ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
+
+  std::remove(outputFile.c_str());
 }
 
 int main(int argc, char* argv[])
