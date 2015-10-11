@@ -236,8 +236,7 @@ SkeletonPtr loadBiped()
   
   // Create the world with a skeleton
   WorldPtr world
-  = SkelParser::readWorld(
-                          DART_DATA_PATH"skel/biped.skel");
+    = SkelParser::readWorld(dart::common::Uri(DART_DATA_PATH"skel/biped.skel"));
   assert(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");
