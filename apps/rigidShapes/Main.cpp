@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-        dart::common::Uri(DART_DATA_PATH"skel/shapes.skel"));
+        dart::common::Uri::createFromPath(DART_DATA_PATH"skel/shapes.skel"));
   assert(myWorld != NULL);
 #ifndef FCL_DART5
   myWorld->getConstraintSolver()->setCollisionDetector(

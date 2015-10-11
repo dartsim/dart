@@ -584,7 +584,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(common::Uri(_fileName));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   assert(world != nullptr);
   world->setGravity(gravity);
 
@@ -702,7 +702,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   double TOLERANCE = 5e-4;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(common::Uri(_fileName));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -804,7 +804,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   double timeStep = 1.0e-6;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(common::Uri(_fileName));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -967,7 +967,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1240,7 +1240,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1401,7 +1401,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1505,7 +1505,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1601,7 +1601,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1781,8 +1781,8 @@ TEST_F(DynamicsTest, HybridDynamics)
 #endif // ------- Debug mode
 
   // Load world and skeleton
-  WorldPtr world = utils::SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel"));
+  WorldPtr world = utils::SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel"));
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

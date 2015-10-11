@@ -62,8 +62,8 @@ TEST(FileInfoWorld, Basic)
   bool result = false;
   FileInfoWorld worldFile;
 
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"/skel/test/file_info_world_test.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"/skel/test/file_info_world_test.skel"));
   EXPECT_TRUE(world != nullptr);
 
   Recording* recording1 = nullptr;

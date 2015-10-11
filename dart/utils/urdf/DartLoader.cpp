@@ -47,7 +47,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const std::string& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  return parseSkeleton(common::Uri(_uri), _resourceRetriever);
+  return parseSkeleton(common::Uri::createFromPath(_uri), _resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
@@ -99,7 +99,7 @@ simulation::WorldPtr DartLoader::parseWorld(
   const std::string& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  return parseWorld(common::Uri(_uri), _resourceRetriever);
+  return parseWorld(common::Uri::createFromPath(_uri), _resourceRetriever);
 }
 
 simulation::WorldPtr DartLoader::parseWorld(

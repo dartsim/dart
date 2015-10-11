@@ -591,7 +591,7 @@ void openXMLFile(
   tinyxml2::XMLDocument& doc, const char* const filename,
   const common::ResourceRetrieverPtr& _retriever)
 {
-  return openXMLFile(doc, common::Uri(filename), _retriever);
+  return openXMLFile(doc, common::Uri::createFromPath(filename), _retriever);
 }
 
 //==============================================================================

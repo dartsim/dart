@@ -110,7 +110,7 @@ simulation::WorldPtr SkelParser::readWorld(
   const std::string& _filename,
   const common::ResourceRetrieverPtr& _retriever)
 {
-  return readWorld(common::Uri(_filename), _retriever);
+  return readWorld(common::Uri::createFromPath(_filename), _retriever);
 }
 
 //==============================================================================
@@ -151,7 +151,8 @@ simulation::WorldPtr SkelParser::readWorldXML(
   const std::string& _baseUri,
   const common::ResourceRetrieverPtr& _retriever)
 {
-  return readWorldXML(_xmlString, common::Uri(_baseUri), _retriever);
+  return readWorldXML(_xmlString, common::Uri::createFromPath(_baseUri),
+                      _retriever);
 }
 
 //==============================================================================
@@ -184,7 +185,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   const std::string& _filename,
   const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(common::Uri(_filename), _retriever);
+  return readSkeleton(common::Uri::createFromPath(_filename), _retriever);
 }
 
 //==============================================================================
@@ -243,7 +244,8 @@ simulation::WorldPtr SkelParser::readWorld(
   const std::string& _baseUri,
   const common::ResourceRetrieverPtr& _retriever)
 {
-  return readWorld(_worldElement, common::Uri(_baseUri), _retriever);
+  return readWorld(_worldElement, common::Uri::createFromPath(_baseUri),
+                   _retriever);
 }
 
 //==============================================================================
@@ -493,7 +495,8 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
     const std::string& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(_skeletonElement, common::Uri(_baseUri), _retriever);
+  return readSkeleton(_skeletonElement, common::Uri::createFromPath(_baseUri),
+                      _retriever);
 }
 
 //==============================================================================
@@ -622,7 +625,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
     const common::ResourceRetrieverPtr& _retriever)
 {
   return readBodyNode(_bodyNodeElement, _skeletonFrame,
-                      common::Uri(_baseUri), _retriever);
+                      common::Uri::createFromPath(_baseUri), _retriever);
 }
 
 //==============================================================================
@@ -757,7 +760,7 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     const common::ResourceRetrieverPtr& _retriever)
 {
   return readSoftBodyNode(_softBodyNodeElement, _skeletonFrame,
-                          common::Uri(_baseUri), _retriever);
+                          common::Uri::createFromPath(_baseUri), _retriever);
 }
 
 //==============================================================================
@@ -880,7 +883,8 @@ dynamics::ShapePtr SkelParser::readShape(
     const std::string& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  return readShape(vizEle, bodyName, common::Uri(_baseUri), _retriever);
+  return readShape(vizEle, bodyName, common::Uri::createFromPath(_baseUri),
+                   _retriever);
 }
 
 //==============================================================================
@@ -941,7 +945,8 @@ dynamics::ShapePtr SkelParser::readShape(
     Eigen::Vector3d       scale        = getValueVector3d(meshEle, "scale");
 
     const std::string meshUri
-        = common::Uri::getRelativeUri(_baseUri, common::Uri(filename));
+        = common::Uri::getRelativeUri(_baseUri,
+                                      common::Uri::createFromPath(filename));
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
     if (model)
     {

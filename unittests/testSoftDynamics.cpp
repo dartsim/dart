@@ -270,7 +270,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(common::Uri(_fileName));
+  myWorld = utils::SkelParser::readWorld(common::Uri::createFromPath(_fileName));
   EXPECT_TRUE(myWorld != nullptr);
 
   for (size_t i = 0; i < myWorld->getNumSkeletons(); ++i)

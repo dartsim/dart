@@ -109,7 +109,7 @@ public:
   /// Read World from an xml-formatted string
   static simulation::WorldPtr readWorldXML(
     const std::string& _xmlString,
-    const common::Uri& _baseUri = common::Uri(""),
+    const common::Uri& _baseUri = common::Uri::createFromPath(""),
     const common::ResourceRetrieverPtr& _retriever = nullptr);
 
   /// Read Skeleton from skel file

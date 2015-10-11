@@ -31,7 +31,7 @@ namespace utils {
 simulation::WorldPtr SdfParser::readSdfFile(
   const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSdfFile(common::Uri(_filename), _retriever);
+  return readSdfFile(common::Uri::createFromPath(_filename), _retriever);
 }
 
 //==============================================================================
@@ -52,7 +52,8 @@ simulation::WorldPtr SdfParser::readSdfFile(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)> xmlReader)
 {
-  return readSdfFile(common::Uri(_filename), _retriever, xmlReader);
+  return readSdfFile(common::Uri::createFromPath(_filename), _retriever,
+                     xmlReader);
 }
 
 //==============================================================================
@@ -115,7 +116,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
 dynamics::SkeletonPtr SdfParser::readSkeleton(
   const std::string& _fileName, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(common::Uri(_fileName), _retriever);
+  return readSkeleton(common::Uri::createFromPath(_fileName), _retriever);
 }
 
 //==============================================================================
@@ -136,7 +137,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)> xmlReader)
 {
-  return readSkeleton(common::Uri(_filename), _retriever);
+  return readSkeleton(common::Uri::createFromPath(_filename), _retriever);
 }
 
 //==============================================================================

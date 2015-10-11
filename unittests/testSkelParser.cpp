@@ -99,8 +99,8 @@ TEST(SkelParser, DataStructure)
 //==============================================================================
 TEST(SkelParser, EmptyWorld)
 {
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"skel/test/empty.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"skel/test/empty.skel"));
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -117,8 +117,8 @@ TEST(SkelParser, EmptyWorld)
 //==============================================================================
 TEST(SkelParser, SinglePendulum)
 {
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"skel/test/single_pendulum.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"skel/test/single_pendulum.skel"));
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -137,8 +137,8 @@ TEST(SkelParser, SinglePendulum)
 //==============================================================================
 TEST(SkelParser, SerialChain)
 {
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel"));
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -163,8 +163,8 @@ TEST(SkelParser, RigidAndSoftBodies)
   using namespace simulation;
   using namespace utils;
 
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"skel/test/test_articulated_bodies.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"skel/test/test_articulated_bodies.skel"));
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -188,8 +188,8 @@ TEST(SkelParser, PlanarJoint)
   using namespace simulation;
   using namespace utils;
 
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"skel/test/planar_joint.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"skel/test/planar_joint.skel"));
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton1");
@@ -298,8 +298,8 @@ TEST(SkelParser, PlanarJoint)
 //==============================================================================
 TEST(SKEL_PARSER, JointActuatorType)
 {
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel"));
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -331,8 +331,8 @@ TEST(SKEL_PARSER, JointActuatorType)
 //==============================================================================
 TEST(SkelParser, DofAttributes)
 {
-  WorldPtr world = SkelParser::readWorld(
-        common::Uri(DART_DATA_PATH"/skel/test/dof_attribute_test.skel"));
+  WorldPtr world = SkelParser::readWorld(common::Uri::createFromPath(
+      DART_DATA_PATH"/skel/test/dof_attribute_test.skel"));
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -409,7 +409,7 @@ TEST(SkelParser, DofAttributes)
 TEST(SkelParser, JointDynamicsElements)
 {
   WorldPtr world
-      = SkelParser::readWorld(common::Uri(
+      = SkelParser::readWorld(common::Uri::createFromPath(
         DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel"));
   EXPECT_TRUE(world != nullptr);
 

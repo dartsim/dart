@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 #include "dart/utils/urdf/DartLoader.h"
 
+using dart::common::Uri;
 using dart::utils::DartLoader;
 
 TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
@@ -45,7 +46,7 @@ TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
   DartLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"skel/test/does_not_exist.urdf")));
+      Uri::createFromPath(DART_DATA_PATH"skel/test/does_not_exist.urdf")));
 }
 
 TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
@@ -53,7 +54,7 @@ TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
   DartLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"urdf/test/invalid.urdf)")));
+      Uri::createFromPath(DART_DATA_PATH"urdf/test/invalid.urdf)")));
 }
 
 TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
@@ -61,7 +62,7 @@ TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
   DartLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"urdf/test/missing_mesh.urdf")));
+      Uri::createFromPath(DART_DATA_PATH"urdf/test/missing_mesh.urdf")));
 }
 
 TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
@@ -69,7 +70,7 @@ TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
   DartLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"urdf/test/invalid_mesh.urdf")));
+      Uri::createFromPath(DART_DATA_PATH"urdf/test/invalid_mesh.urdf")));
 }
 
 TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
@@ -77,7 +78,7 @@ TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
   DartLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"urdf/test/missing_package.urdf")));
+      Uri::createFromPath(DART_DATA_PATH"urdf/test/missing_package.urdf")));
 }
 
 TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
@@ -85,7 +86,7 @@ TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
   DartLoader loader;
   EXPECT_TRUE(nullptr !=
     loader.parseSkeleton(
-      dart::common::Uri(DART_DATA_PATH"urdf/test/primitive_geometry.urdf")));
+      Uri::createFromPath(DART_DATA_PATH"urdf/test/primitive_geometry.urdf")));
 }
 
 TEST(DartLoader, parseWorld)
@@ -93,7 +94,7 @@ TEST(DartLoader, parseWorld)
   DartLoader loader;
   EXPECT_TRUE(nullptr !=
       loader.parseWorld(
-        dart::common::Uri(DART_DATA_PATH"urdf/test/testWorld.urdf")));
+        Uri::createFromPath(DART_DATA_PATH"urdf/test/testWorld.urdf")));
 }
 
 int main(int argc, char* argv[])

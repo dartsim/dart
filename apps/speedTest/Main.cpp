@@ -199,7 +199,7 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
   for(size_t i=0; i<sceneFiles.size(); ++i)
   {
     worlds.push_back(dart::utils::SkelParser::readWorld(
-                       dart::common::Uri(sceneFiles[i])));
+                       dart::common::Uri::createFromPath(sceneFiles[i])));
   }
 
   return worlds;

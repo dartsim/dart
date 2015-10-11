@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
   // create and initialize the world
   WorldPtr myWorld = SkelParser::readWorld(
-        dart::common::Uri(DART_DATA_PATH"/skel/vehicle.skel"));
+        dart::common::Uri::createFromPath(DART_DATA_PATH"/skel/vehicle.skel"));
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

@@ -47,7 +47,8 @@ int main()
 
   dart::simulation::WorldPtr world =
       dart::utils::SkelParser::readWorld(
-        dart::common::Uri(DART_DATA_PATH"skel/softBodies.skel"));
+        dart::common::Uri::createFromPath(
+          DART_DATA_PATH"skel/softBodies.skel"));
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 

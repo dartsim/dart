@@ -57,7 +57,7 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
   // Regression test for #444
   WorldPtr world
       = SdfParser::readSdfFile(
-          common::Uri(
+          common::Uri::createFromPath(
             DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world"));
   EXPECT_TRUE(world != nullptr);
 

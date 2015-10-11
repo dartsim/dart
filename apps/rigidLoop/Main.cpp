@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
     = utils::SkelParser::readWorld(
-        dart::common::Uri(DART_DATA_PATH"/skel/chain.skel"));
+        dart::common::Uri::createFromPath(DART_DATA_PATH"/skel/chain.skel"));
   assert(myWorld != nullptr);
     
   // create and initialize the world

@@ -43,12 +43,13 @@ const double default_force =  50.0; // N
 const int default_countdown = 100;  // Number of timesteps for applying force
 
 #include "dart/dart.h"
+
+using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
-
 
 class Controller
 {
@@ -235,8 +236,8 @@ SkeletonPtr loadBiped()
   // Lesson 1
   
   // Create the world with a skeleton
-  WorldPtr world
-    = SkelParser::readWorld(dart::common::Uri(DART_DATA_PATH"skel/biped.skel"));
+  WorldPtr world = SkelParser::readWorld(
+        Uri::createFromPath(DART_DATA_PATH"skel/biped.skel"));
   assert(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");

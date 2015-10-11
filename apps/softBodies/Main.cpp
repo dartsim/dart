@@ -52,7 +52,8 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-          dart::common::Uri(DART_DATA_PATH"skel/softBodies.skel"));
+          dart::common::Uri::createFromPath(
+          DART_DATA_PATH"skel/softBodies.skel"));
   assert(myWorld != nullptr);
 
   for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)

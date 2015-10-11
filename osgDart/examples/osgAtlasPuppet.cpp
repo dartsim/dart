@@ -38,6 +38,7 @@
 
 #include "dart/dart.h"
 
+using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::utils;
@@ -516,7 +517,7 @@ SkeletonPtr createAtlas()
   DartLoader urdf;
   SkeletonPtr atlas =
       urdf.parseSkeleton(
-        dart::common::Uri(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf"));
+        Uri::createFromPath(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf"));
 
   // Add a box to the root node to make it easier to click and drag
   double scale = 0.25;
