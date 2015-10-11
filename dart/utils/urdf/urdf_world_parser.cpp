@@ -144,7 +144,7 @@ std::shared_ptr<World> parseWorldURDF(
           return nullptr;
         }
 
-        const std::string fileFullName = absoluteUri.toString();
+        const std::string fileFullName = *(absoluteUri.mPath);
         entity.uri = absoluteUri;
         // Parse model
         std::string xml_model_string;
