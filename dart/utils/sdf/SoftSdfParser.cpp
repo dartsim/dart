@@ -68,19 +68,37 @@
 namespace dart {
 namespace utils {
 
+//==============================================================================
 simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
   const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSdfFile(_filename, getResourceRetriever(_retriever),
+  return SoftSdfParser::readSoftSdfFile(
+        common::Uri::createFromPath(_filename), _retriever);
+}
+
+//==============================================================================
+simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
+  const common::Uri& _filUri, const common::ResourceRetrieverPtr& _retriever)
+{
+  return SdfParser::readSdfFile(_filUri, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readWorld));
 }
 
+//==============================================================================
 dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
     const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSkeleton(_filename, getResourceRetriever(_retriever),
+  return SoftSdfParser::readSkeleton(
+        common::Uri::createFromPath(_filename), _retriever);
+}
+
+//==============================================================================
+dynamics::SkeletonPtr SoftSdfParser::readSkeleton(
+    const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
+{
+  return SdfParser::readSkeleton(_fileUri, getResourceRetriever(_retriever),
     static_cast<dynamics::SkeletonPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readSkeleton));
