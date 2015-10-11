@@ -149,7 +149,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[0], *uri.mPath);
+  EXPECT_EQ(testPaths[0], uri.getFilesystemPath());
 
   ASSERT_TRUE(uri.fromPath(testPaths[1]));
   ASSERT_TRUE(uri.mScheme);
@@ -159,7 +159,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[1], *uri.mPath);
+  EXPECT_EQ(testPaths[1], uri.getFilesystemPath());
 
   ASSERT_TRUE(uri.fromPath(testPaths[2]));
   ASSERT_TRUE(uri.mScheme);
@@ -169,7 +169,7 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
   EXPECT_EQ("", *uri.mAuthority);
-  EXPECT_EQ(testPaths[2], *uri.mPath);
+  EXPECT_EQ(testPaths[2], uri.getFilesystemPath());
 }
 
 TEST(UriHelpers, fromString_InputIsUri_DoesNotChange)

@@ -87,7 +87,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
   if (worldElement == nullptr)
     return nullptr;
 
-  std::string fileName = *_fileUri.mPath;  // Uri's path is unix-style path
+  std::string fileName = _fileUri.getFilesystemPath();  // Uri's path is unix-style path
   std::string skelPath = fileName.substr(0, fileName.rfind("/") + 1);
 
   return xmlReader(worldElement, skelPath, _retriever);
@@ -151,7 +151,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   if (skelElement == nullptr)
     return nullptr;
 
-  std::string fileName = *_fileUri.mPath;  // Uri's path is unix-style path
+  std::string fileName = _fileUri.getFilesystemPath();  // Uri's path is unix-style path
   std::string skelPath = fileName.substr(0, fileName.rfind("/") + 1);
 
   dynamics::SkeletonPtr newSkeleton = xmlReader(skelElement, skelPath,

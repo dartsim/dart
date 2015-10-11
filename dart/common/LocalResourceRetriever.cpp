@@ -54,7 +54,7 @@ bool LocalResourceRetriever::exists(const Uri& _uri) const
   else if (!_uri.mPath)
     return false;
 
-  return std::ifstream(*_uri.mPath, std::ios::binary).good();
+  return std::ifstream(_uri.getFilesystemPath(), std::ios::binary).good();
 }
 
 //==============================================================================
@@ -65,7 +65,9 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri) const
   else if (!_uri.mPath)
     return nullptr;
 
-  const auto resource = std::make_shared<LocalResource>(*_uri.mPath);
+  const auto resource
+      = std::make_shared<LocalResource>(_uri.getFilesystemPath());
+
   if(resource->isGood())
     return resource;
   else

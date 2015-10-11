@@ -243,17 +243,7 @@ bool Uri::fromString(const std::string& _input)
   assert(matches.size() > pathIndex);
   const ssub_match& pathMatch = matches[pathIndex];
   if(pathMatch.matched)
-  {
     mPath = pathMatch;
-
-#ifdef _WIN32
-    if(mScheme && *mScheme == "file")
-    {
-      if(!mPath->empty() && mPath->at(0) == '/')
-        mPath = mPath->substr(1, mPath->size() - 1);
-    }
-#endif
-  }
 
   assert(matches.size() > queryIndex);
   const ssub_match& queryMatch = matches[queryIndex];
@@ -278,7 +268,7 @@ bool Uri::fromPath(const std::string& _path)
 #ifdef _WIN32
   // Replace backslashes (from Windows paths) with forward slashes.
   std::string unixPath = _path;
-  std::replace(std::begin(*unixPath), std::end(*unixPath), '\\', '/');
+  std::replace(std::begin(unixPath), std::end(unixPath), '\\', '/');
 
   return fromString(fileScheme + "/" + _path);
 #else
@@ -409,13 +399,6 @@ std::string Uri::toString() const
 
   if(mAuthority)
     output << "//" << *mAuthority;
-  else if(mScheme && *mScheme == "file")
-    output << "//";
-
-#ifdef _WIN32
-  if (mScheme && *mScheme == "file")
-    output << "/";
-#endif
 
   output << mPath.get_value_or("");
 
@@ -499,6 +482,28 @@ std::string Uri::getRelativeUri(
     const Uri& _baseUri, const Uri& _relativeUri, bool _strict)
 {
   return createFromRelativeUri(_baseUri, _relativeUri, _strict).toString();
+}
+
+//==============================================================================
+std::string Uri::getPath() const
+{
+  return mPath.get_value_or("");
+}
+
+//==============================================================================
+std::string Uri::getFilesystemPath() const
+{
+#ifdef _WIN32
+  if (mScheme.get_value_or("") == "file")
+  {
+    const std::string& filesystemPath = getPath();
+
+    if (!filesystemPath.empty() && filesystemPath[0] == '/')
+      return filesystemPath.substr(1);
+  }
+#endif
+
+  return getPath();
 }
 
 //==============================================================================

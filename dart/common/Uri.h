@@ -188,6 +188,15 @@ public:
                                     const Uri& _relative,
                                     bool _strict = false);
 
+  /// Get the path component of the URI as a string.
+  std::string getPath() const;
+
+  /// Get the path in the local filesystem as a string. You should use this
+  /// function rather than getPath() if you are trying to access a local file.
+  /// Note that this function is identical to getPath() for Unix systems, but
+  /// differ by the leading '/' on Windows.
+  std::string getFilesystemPath() const;
+
 private:
   /// Implement section 5.2.3 of RFC 3986.
   static std::string mergePaths(const Uri& _base, const Uri& _relative);
