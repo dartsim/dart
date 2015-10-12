@@ -509,7 +509,7 @@ dynamics::ShapePtr DartLoader::createShape(
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    shape = std::make_shared<dynamics::MeshShape>(
+    shape = Eigen::make_aligned_shared<dynamics::MeshShape>(
       scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type
