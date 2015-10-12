@@ -691,10 +691,17 @@ public:
 
 
   //----------------------------------------------------------------------------
-  /// \{ \name Standard Joint Addons
+  /// \{ \name Update Notifiers
   //----------------------------------------------------------------------------
 
+  /// Notify that a position update is needed
+  void notifyPositionUpdate();
 
+  /// Notify that a velocity update is needed
+  void notifyVelocityUpdate();
+
+  /// Notify that an acceleration update is needed
+  void notifyAccelerationUpdate();
 
   /// \}
 
@@ -915,15 +922,6 @@ protected:
 
   /// \}
 
-  /// Notify that a position update is needed
-  void notifyPositionUpdate();
-
-  /// Notify that a velocity update is needed
-  void notifyVelocityUpdate();
-
-  /// Notify that an acceleration update is needed
-  void notifyAccelerationUpdate();
-
 protected:
 
   /// Properties of this Joint
@@ -982,6 +980,16 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+namespace detail {
+
+template <class AddonType>
+void JointPropertyUpdate(AddonType* addon)
+{
+  addon->getManager()->notifyPositionUpdate();
+}
+
+} // namespace detail
 
 }  // namespace dynamics
 }  // namespace dart

@@ -79,13 +79,13 @@ void EulerJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void EulerJoint::setProperties(const UniqueProperties& _properties)
 {
-  setAxisOrder(_properties.mAxisOrder);
+  getEulerJointAddon()->setProperties(_properties);
 }
 
 //==============================================================================
 EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 {
-  return EulerJoint::Properties(getMultiDofJointProperties(), mEulerP);
+  return EulerJoint::Properties(getMultiDofJointProperties(), getEulerJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -135,16 +135,16 @@ bool EulerJoint::isCyclic(size_t _index) const
 //==============================================================================
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
-  mEulerP.mAxisOrder = _order;
+  getEulerJointAddon()->setAxisOrder(_order);
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  // The EulerJoint::Addon will take care of notifying a position update
 }
 
 //==============================================================================
 EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 {
-  return mEulerP.mAxisOrder;
+  return getEulerJointAddon()->getAxisOrder();
 }
 
 //==============================================================================
@@ -158,7 +158,7 @@ Eigen::Isometry3d EulerJoint::convertToTransform(
 Eigen::Isometry3d EulerJoint::convertToTransform(
     const Eigen::Vector3d &_positions) const
 {
-  return convertToTransform(_positions, mEulerP.mAxisOrder);
+  return convertToTransform(_positions, getAxisOrder());
 }
 
 //==============================================================================
@@ -184,7 +184,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
 Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
                                                                            const
 {
-  return convertToRotation(_positions, mEulerP.mAxisOrder);
+  return convertToRotation(_positions, getAxisOrder());
 }
 
 //==============================================================================
@@ -209,7 +209,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
   Eigen::Vector6d J1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
-  switch (mEulerP.mAxisOrder)
+  switch (getAxisOrder())
   {
     case AO_XYZ:
     {
@@ -299,7 +299,8 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 EulerJoint::EulerJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties)
 {
-  setProperties(_properties);
+  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(EulerJoint, Addon);
+  createEulerJointAddon(_properties);
   updateDegreeOfFreedomNames();
 }
 
@@ -313,7 +314,7 @@ Joint* EulerJoint::clone() const
 void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (mEulerP.mAxisOrder)
+  switch (getAxisOrder())
   {
     case AO_ZYX:
       affixes.push_back("_z");
@@ -327,7 +328,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
       break;
     default:
       dterr << "Unsupported axis order in EulerJoint named '" << mJointP.mName
-            << "' (" << mEulerP.mAxisOrder << ")\n";
+            << "' (" << getAxisOrder() << ")\n";
   }
 
   if (affixes.size() == 3)
@@ -380,7 +381,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
   Eigen::Vector6d dJ1 = Eigen::Vector6d::Zero();
   Eigen::Vector6d dJ2 = Eigen::Vector6d::Zero();
 
-  switch (mEulerP.mAxisOrder)
+  switch (getAxisOrder())
   {
     case AO_XYZ:
     {

@@ -857,7 +857,7 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
-DART_SKEL_SPECIALIZE_NODE_DEFINE(Skeleton, EndEffector)
+DART_SKEL_SPECIALIZED_NODE_DEFINE(Skeleton, EndEffector)
 
 //==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)

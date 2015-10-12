@@ -506,7 +506,7 @@ public:
   const NodeType* getNode(const std::string& name) const;
 
 //  DART_SKEL_SPECIALIZE_NODE_INTERNAL( EndEffector )
-  DART_SKEL_SPECIALIZE_NODE_DECLARE( EndEffector )
+  DART_SKEL_SPECIALIZED_NODE_DECLARE( EndEffector )
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
@@ -1351,7 +1351,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-DART_SKEL_SPECIALIZE_NODE_TEMPLATE( Skeleton, EndEffector )
+DART_SKEL_SPECIALIZED_NODE_TEMPLATE( Skeleton, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart

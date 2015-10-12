@@ -128,59 +128,80 @@ std::unique_ptr<T> AddonManager::release()
   template <class T> std::unique_ptr<T> release() { return AddonManager::release<T>(); }
 
 //==============================================================================
-#define DETAIL_DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName, it )              \
+#define DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName, it )              \
   mAddonMap[typeid( AddonName )] = nullptr;                                     \
   it = mAddonMap.find(typeid( AddonName ));
 
 //==============================================================================
-#define DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName )                               \
-  DETAIL_DART_INSTANTIATE_SPECIALIZED_ADDON( AddonName, m ## AddonName ## Iterator );
+#define DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName )                               \
+  DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName, m ## AddonName ## Iterator );
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZE_ADDON_INTERNAL( AddonName, it )                  \
+#define DETAIL_DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName, it )\
+  mAddonMap[typeid( ParentName :: AddonName )] = nullptr;\
+  it = mAddonMap.find(typeid( ParentName :: AddonName ));
+
+//==============================================================================
+#define DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName )      \
+  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName, m ## ParentName ## AddonName ## Iterator )
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZED_ADDON_INLINE( TypeName, AddonName, it )         \
   private: AddonMap::iterator it ; public:                                      \
                                                                                 \
   inline bool has ## AddonName () const                                         \
   { return (get ## AddonName () != nullptr); }                                  \
                                                                                 \
-  inline AddonName * get ## AddonName ()                                        \
-  { return static_cast< AddonName *>( it ->second.get() ); }                    \
+  inline TypeName * get ## AddonName ()                                         \
+  { return static_cast< TypeName *>( it ->second.get() ); }                     \
                                                                                 \
-  inline const AddonName* get ## AddonName () const                             \
-  { return static_cast< AddonName *>( it ->second.get() ); }                    \
+  inline const TypeName* get ## AddonName () const                              \
+  { return static_cast< TypeName *>( it ->second.get() ); }                     \
                                                                                 \
-  inline void set ## AddonName (const AddonName * addon)                        \
+  inline void set ## AddonName (const TypeName * addon)                         \
   { it ->second = addon->cloneAddon(this); }                                    \
                                                                                 \
-  inline void set ## AddonName (std::unique_ptr< AddonName >&& addon)           \
+  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)            \
   { becomeManager(addon.get()); it ->second = std::move(addon); }               \
                                                                                 \
   template <typename ...Args>                                                   \
-  inline AddonName * create ## AddonName (Args&&... args)                       \
-  { it ->second = std::unique_ptr< AddonName >(                                 \
-          new AddonName (this, std::forward(args)...));                         \
-    return static_cast< AddonName *>( it ->second.get() ); }                    \
+  inline TypeName * create ## AddonName (Args&&... args)                        \
+  { it ->second = std::unique_ptr< TypeName >(                                  \
+          new TypeName (this, std::forward<Args>(args)...));                    \
+    return static_cast< TypeName *>( it ->second.get() ); }                     \
                                                                                 \
   inline void erase ## AddonName ()                                             \
   { it ->second = nullptr; }                                                    \
                                                                                 \
-  inline std::unique_ptr< AddonName > release ## AddonName ()                   \
-  { std::unique_ptr< AddonName > extraction = std::unique_ptr< AddonName >(     \
-          static_cast< AddonName *>(it ->second.release()));                    \
+  inline std::unique_ptr< TypeName > release ## AddonName ()                    \
+  { std::unique_ptr< TypeName > extraction = std::unique_ptr< TypeName >(       \
+          static_cast< TypeName *>(it ->second.release()));                     \
     it ->second = nullptr; return extraction; }
 
 //==============================================================================
-#define DART_SPECIALIZE_ADDON_INTERNAL( AddonName )                             \
-  DETAIL_DART_SPECIALIZE_ADDON_INTERNAL( AddonName, m ## AddonName ## Iterator )
+#define DART_SPECIALIZED_ADDON_INLINE( AddonName )                              \
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName, AddonName, m ## AddonName ## Iterator )
 
 //==============================================================================
-#define DART_SPECIALIZE_ADDON_EXTERNAL( Manager, Addon )                                                                  \
-  template <> inline bool Manager :: has< Addon >() const { return has ## Addon (); }                                     \
-  template <> inline Addon * Manager :: get< Addon >() { return get ## Addon (); }                                        \
-  template <> inline const Addon * Manager :: get< Addon >() const { return get ## Addon (); }                            \
-  template <> inline void Manager :: set< Addon >(const Addon * addon) { set ## Addon (addon); }                          \
-  template <> inline void Manager :: set< Addon >(std::unique_ptr< Addon >&& addon) { set ## Addon (std::move(addon)); }  \
-  template <> inline void Manager :: erase< Addon >() { erase ## Addon (); }                                              \
-  template <> inline std::unique_ptr< Addon > Manager :: release< Addon >() { return release ## Addon (); }
+#define DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName, m ## ParentName ## AddonName ## Iterator )
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, TypeName, AddonName )                                                                  \
+  template <> inline bool Manager :: has< TypeName >() const { return has ## AddonName (); }\
+  template <> inline TypeName * Manager :: get< TypeName >() { return get ## AddonName (); }\
+  template <> inline const TypeName * Manager :: get< TypeName >() const { return get ## AddonName (); }\
+  template <> inline void Manager :: set< TypeName >(const TypeName * addon) { set ## AddonName (addon); }\
+  template <> inline void Manager :: set< TypeName >(std::unique_ptr< TypeName >&& addon) { set ## AddonName (std::move(addon)); }\
+  template <> inline void Manager :: erase< TypeName >() { erase ## AddonName (); }\
+  template <> inline std::unique_ptr< TypeName > Manager :: release< TypeName >() { return release ## AddonName (); }
+
+//==============================================================================
+#define DART_SPECIALIZED_ADDON_TEMPLATE( Manager, AddonName )\
+  DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, AddonName, AddonName )
+
+//==============================================================================
+#define DART_NESTED_SPECIALIZED_ADDON_TEMPLATE( Manager, ParentName, AddonName )\
+  DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, ParentName :: AddonName, ParentName ## AddonName )
 
 #endif // DART_COMMON_DETAIL_ADDONMANAGER_H_

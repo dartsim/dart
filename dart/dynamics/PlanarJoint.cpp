@@ -171,7 +171,8 @@ void PlanarJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mPlanarP);
+  return Properties(getMultiDofJointProperties(),
+                    getPlanarJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -221,7 +222,7 @@ bool PlanarJoint::isCyclic(size_t _index) const
 //==============================================================================
 void PlanarJoint::setXYPlane(bool _renameDofs)
 {
-  mPlanarP.setXYPlane();
+  getPlanarJointAddon()->setXYPlane();
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
@@ -231,7 +232,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 //==============================================================================
 void PlanarJoint::setYZPlane(bool _renameDofs)
 {
-  mPlanarP.setYZPlane();
+  getPlanarJointAddon()->setYZPlane();
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
@@ -241,7 +242,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 //==============================================================================
 void PlanarJoint::setZXPlane(bool _renameDofs)
 {
-  mPlanarP.setZXPlane();
+  getPlanarJointAddon()->setZXPlane();
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
@@ -253,7 +254,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
                                     const Eigen::Vector3d& _transAxis2,
                                     bool _renameDofs)
 {
-  mPlanarP.setArbitraryPlane(_transAxis1, _transAxis2);
+  getPlanarJointAddon()->setArbitraryPlane(_transAxis1, _transAxis2);
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
@@ -263,25 +264,25 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 //==============================================================================
 PlanarJoint::PlaneType PlanarJoint::getPlaneType() const
 {
-  return mPlanarP.mPlaneType;
+  return getPlanarJointAddon()->getPlaneType();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getRotationalAxis() const
 {
-  return mPlanarP.mRotAxis;
+  return getPlanarJointAddon()->getRotAxis();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis1() const
 {
-  return mPlanarP.mTransAxis1;
+  return getPlanarJointAddon()->getTransAxis1();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 {
-  return mPlanarP.mTransAxis2;
+  return getPlanarJointAddon()->getTransAxis2();
 }
 
 //==============================================================================
@@ -289,13 +290,14 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
-  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
-  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
+  J.block<3, 1>(3, 0) = getPlanarJointAddon()->getTransAxis1();
+  J.block<3, 1>(3, 1) = getPlanarJointAddon()->getTransAxis2();
+  J.block<3, 1>(0, 2) = getPlanarJointAddon()->getRotAxis();
 
   J.leftCols<2>()
       = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint
-                          * math::expAngular(mPlanarP.mRotAxis * -_positions[2]),
+                          * math::expAngular(getPlanarJointAddon()->getRotAxis()
+                                             * -_positions[2]),
                           J.leftCols<2>());
   J.col(2) = math::AdTJac(mJointP.mT_ChildBodyToJoint, J.col(2));
 
@@ -309,7 +311,8 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
 PlanarJoint::PlanarJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties)
 {
-  setProperties(_properties);
+  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PlanarJoint, Addon);
+  createPlanarJointAddon(_properties);
   updateDegreeOfFreedomNames();
 }
 
@@ -323,7 +326,7 @@ Joint* PlanarJoint::clone() const
 void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
-  switch (mPlanarP.mPlaneType)
+  switch (getPlanarJointAddon()->getPlaneType())
   {
     case PT_XY:
       affixes.push_back("_x");
@@ -343,7 +346,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       break;
     default:
       dterr << "Unsupported plane type in PlanarJoint named '" << mJointP.mName
-            << "' (" << mPlanarP.mPlaneType << ")\n";
+            << "' (" << getPlanarJointAddon()->getPlaneType() << ")\n";
   }
 
   if (affixes.size() == 2)
@@ -361,9 +364,9 @@ void PlanarJoint::updateLocalTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
   mT = mJointP.mT_ParentBodyToJoint
-       * Eigen::Translation3d(mPlanarP.mTransAxis1 * positions[0])
-       * Eigen::Translation3d(mPlanarP.mTransAxis2 * positions[1])
-       * math::expAngular    (mPlanarP.mRotAxis    * positions[2])
+       * Eigen::Translation3d(getPlanarJointAddon()->getTransAxis1() * positions[0])
+       * Eigen::Translation3d(getPlanarJointAddon()->getTransAxis2() * positions[1])
+       * math::expAngular    (getPlanarJointAddon()->getRotAxis()    * positions[2])
        * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -380,23 +383,23 @@ void PlanarJoint::updateLocalJacobian(bool) const
 void PlanarJoint::updateLocalJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
-  J.block<3, 1>(3, 0) = mPlanarP.mTransAxis1;
-  J.block<3, 1>(3, 1) = mPlanarP.mTransAxis2;
-  J.block<3, 1>(0, 2) = mPlanarP.mRotAxis;
+  J.block<3, 1>(3, 0) = getPlanarJointAddon()->getTransAxis1();
+  J.block<3, 1>(3, 1) = getPlanarJointAddon()->getTransAxis2();
+  J.block<3, 1>(0, 2) = getPlanarJointAddon()->getRotAxis();
 
   const Eigen::Matrix<double, 6, 3>& Jacobian = getLocalJacobianStatic();
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],
                   math::AdT(mJointP.mT_ChildBodyToJoint
-                            * math::expAngular(mPlanarP.mRotAxis
+                            * math::expAngular(getPlanarJointAddon()->getRotAxis()
                                                * -getPositionsStatic()[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
       = -math::ad(Jacobian.col(2) * velocities[2],
                   math::AdT(mJointP.mT_ChildBodyToJoint
-                            * math::expAngular(mPlanarP.mRotAxis
+                            * math::expAngular(getPlanarJointAddon()->getRotAxis()
                                                * -getPositionsStatic()[2]),
                             J.col(1)));
 

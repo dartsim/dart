@@ -896,7 +896,7 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 }
 
 //==============================================================================
-DART_SPECIALIZE_NODE_DEFINE( BodyNode, EndEffector )
+DART_SPECIALIZED_NODE_DEFINE( BodyNode, EndEffector )
 
 //==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)

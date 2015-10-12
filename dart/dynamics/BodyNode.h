@@ -629,7 +629,7 @@ public:
   NodeType* createNode(Args&&... args);
 
 //  DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
-  DART_SPECIALIZE_NODE_DECLARE( EndEffector )
+  DART_SPECIALIZED_NODE_DECLARE( EndEffector )
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
@@ -1259,7 +1259,7 @@ private:
 
 };
 
-DART_SPECIALIZE_NODE_TEMPLATE( BodyNode, EndEffector )
+DART_SPECIALIZED_NODE_TEMPLATE( BodyNode, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart

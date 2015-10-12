@@ -78,21 +78,14 @@ class Support final :
 {
 public:
 
-  using StateData = detail::SupportStateData;
-  using PropertiesData = detail::SupportPropertiesData;
-
-  Support(const Support&) = delete;
-
-  /// Default Constructor
-  Support(EndEffector* _ee,
-          const StateData& state = StateData(),
-          const PropertiesData& properties = PropertiesData());
+  DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support )
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
   /// when solving balancing or manipulation constraints.
   DART_DYNAMICS_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
-//  const math::SupportGeometry& getGeometry() const;
+  // void setGeometry(const math::SupportGeometry&);
+  // const math::SupportGeometry& getGeometry() const;
 
   /// Pass in true if this EndEffector should be used to support the robot, like
   /// a foot
@@ -235,7 +228,7 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  DART_SPECIALIZE_ADDON_INTERNAL(Support)
+  DART_SPECIALIZED_ADDON_INLINE(Support)
 
   /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
   /// is true, then the Support will be generated if one does not already exist.
@@ -369,7 +362,7 @@ protected:
   mutable math::Jacobian mWorldJacobianClassicDeriv;
 };
 
-DART_SPECIALIZE_ADDON_EXTERNAL(EndEffector, Support)
+DART_SPECIALIZED_ADDON_TEMPLATE(EndEffector, Support)
 
 } // namespace dynamics
 } // namespace dart

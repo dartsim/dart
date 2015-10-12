@@ -202,16 +202,16 @@ public:
 
   SpecializedManager()
   {
-    DART_INSTANTIATE_SPECIALIZED_ADDON( SpecializedAddon );
+    DART_SPECIALIZED_ADDON_INSTANTIATE( SpecializedAddon );
   }
 
   DART_ENABLE_ADDON_SPECIALIZATION()
 
-  DART_SPECIALIZE_ADDON_INTERNAL( SpecializedAddon )
+  DART_SPECIALIZED_ADDON_INLINE( SpecializedAddon )
 
 };
 
-DART_SPECIALIZE_ADDON_EXTERNAL( SpecializedManager, SpecializedAddon )
+DART_SPECIALIZED_ADDON_TEMPLATE( SpecializedManager, SpecializedAddon )
 
 TEST(Addon, Generic)
 {

@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -81,7 +82,18 @@ public:
     virtual ~Properties() = default;
   };
 
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, EulerJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
+  };
 
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE( EulerJoint, Addon )
 
   /// Destructor
   virtual ~EulerJoint();
@@ -151,7 +163,7 @@ public:
   template <typename RotationType>
   Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
   {
-    return convertToPositions(_rotation, mEulerP.mAxisOrder);
+    return convertToPositions(_rotation, getAxisOrder());
   }
 
   /// Convert a set of Euler angle positions into a transform
@@ -196,15 +208,12 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// EulerJoint Properties
-  UniqueProperties mEulerP;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE( EulerJoint, EulerJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

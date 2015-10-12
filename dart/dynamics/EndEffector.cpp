@@ -52,17 +52,6 @@ void SupportUpdate(Support* support)
 } // namespace detail
 
 //==============================================================================
-Support::Support(EndEffector* _ee,
-                 const StateData& state,
-                 const PropertiesData& properties)
-  : AddonWithProtectedStateAndPropertiesInSkeleton<
-      Support, StateData, PropertiesData, EndEffector, &detail::SupportUpdate>(
-      _ee, state, properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 void Support::setActive(bool _supporting)
 {
   if(mState.mActive == _supporting)
@@ -426,7 +415,7 @@ EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
     FixedFrame(_parent, "", _properties.mDefaultTransform),
     TemplatedJacobianNode<EndEffector>(_parent)
 {
-  DART_INSTANTIATE_SPECIALIZED_ADDON(Support)
+  DART_SPECIALIZED_ADDON_INSTANTIATE(Support)
   setProperties(_properties);
 }
 

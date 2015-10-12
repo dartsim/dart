@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -120,6 +121,32 @@ public:
 
     virtual ~Properties() = default;
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, PlanarJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+
+    inline void setXYPlane() { mProperties.setXYPlane(); }
+    inline void setYZPlane() { mProperties.setYZPlane(); }
+    inline void setZXPlane() { mProperties.setZXPlane(); }
+    inline void setArbitraryPlane(const Eigen::Vector3d& _axis1,
+                                  const Eigen::Vector3d& _axis2)
+    {
+      mProperties.setArbitraryPlane(_axis1, _axis2);
+    }
+
+    DART_DYNAMICS_GET_ADDON_PROPERTY( PlaneType, PlaneType )
+    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
+    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis2 )
+    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, RotAxis )
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(PlanarJoint, Addon)
 
   /// Destructor
   virtual ~PlanarJoint();
@@ -213,15 +240,12 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// PlanarJoint Properties
-  UniqueProperties mPlanarP;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(PlanarJoint, PlanarJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart
