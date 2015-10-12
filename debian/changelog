@@ -1,3 +1,32 @@
+dart (5.1.0) unstable; urgency=medium
+
+  * Fixed incorrect rotational motion of BallJoint and FreeJoint
+  * Removed old documents: dart-tutorial, programmingGuide
+  * Fixed aligned memory allocation with Eigen objects
+  * Fixed segfault in Linkage::Criteria
+  * Improved sdf/urdf parser
+  * Fixed CMake warnings
+  * Fixed build issues on Windows
+  * Fixed IpoptSolver bugs
+  * Added Frame::getTransform(withRespecTo, inCoordinatesOf)
+  * Improved API documentation -- set the SHOW_USED_FILES tag to NO
+  * Added convenience setters for generalized coordinates of FreeJoint
+  * Fixed compilation warnings
+  * Added a mutex to Skeleton
+  * Added generic URIs support
+  * Added End Effector, Inverse Kinematics, and osgDart
+  * Removed outdated packaging scripts
+  * Added initial position and initial velocity properties
+  * Added a package.xml file for REP-136 support
+  * Improved Linkage and Chain Criteria
+  * Added Joint::isCyclic to mark SO(2) topology
+  * Fixed SEGFAULTs in DartLoader
+  * Added the SYSTEM flag to include_directories
+  * Improved Joint warning
+  * Added tutorials (http://dart.readthedocs.org/)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 12 Oct 2015 12:00:00 -0500
+
 dart (5.0.2) unstable; urgency=medium
 
   * Fixed bug in Jacobian update notifications

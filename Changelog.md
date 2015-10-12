@@ -1,3 +1,99 @@
+### Version 5.1.0 (2015-10-12)
+
+1. Fixed incorrect rotational motion of BallJoint and FreeJoint
+    * [Pull request #518](https://github.com/dartsim/dart/pull/518)
+
+1. Removed old documents: dart-tutorial, programmingGuide
+    * [Pull request #515](https://github.com/dartsim/dart/pull/515)
+
+1. Fixed aligned memory allocation with Eigen objects
+    * [Pull request #513](https://github.com/dartsim/dart/pull/513)
+
+1. Fixed segfault in Linkage::Criteria
+    * [Pull request #491](https://github.com/dartsim/dart/pull/491)
+    * [Issue #489](https://github.com/dartsim/dart/issues/489)
+
+1. Improved sdf/urdf parser
+    * [Pull request #497](https://github.com/dartsim/dart/pull/497)
+    * [Pull request #485](https://github.com/dartsim/dart/pull/485)
+
+1. Fixed CMake warnings
+    * [Pull request #483](https://github.com/dartsim/dart/pull/483)
+
+1. Fixed build issues on Windows
+    * [Pull request #516](https://github.com/dartsim/dart/pull/516)
+    * [Pull request #509](https://github.com/dartsim/dart/pull/509)
+    * [Pull request #486](https://github.com/dartsim/dart/pull/486)
+    * [Pull request #482](https://github.com/dartsim/dart/pull/482)
+    * [Issue #487](https://github.com/dartsim/dart/issues/487)
+
+1. Fixed IpoptSolver bugs
+    * [Pull request #481](https://github.com/dartsim/dart/pull/481)
+
+1. Added Frame::getTransform(withRespecTo, inCoordinatesOf)
+    * [Pull request #475](https://github.com/dartsim/dart/pull/475)
+    * [Issue #471](https://github.com/dartsim/dart/issues/471)
+
+1. Improved API documentation -- set the SHOW_USED_FILES tag to NO
+    * [Pull request #474](https://github.com/dartsim/dart/pull/474)
+
+1. Added convenience setters for generalized coordinates of FreeJoint
+    * [Pull request #470](https://github.com/dartsim/dart/pull/470)
+    * [Pull request #507](https://github.com/dartsim/dart/pull/507)
+
+1. Fixed compilation warnings
+    * [Pull request #480](https://github.com/dartsim/dart/pull/480)
+    * [Pull request #469](https://github.com/dartsim/dart/pull/469)
+    * [Issue #418](https://github.com/dartsim/dart/issues/418)
+
+1. Added a mutex to Skeleton
+    * [Pull request #466](https://github.com/dartsim/dart/pull/466)
+
+1. Added generic URIs support
+    * [Pull request #464](https://github.com/dartsim/dart/pull/464)
+    * [Pull request #517](https://github.com/dartsim/dart/pull/517)
+
+1. Added End Effector, Inverse Kinematics, and osgDart
+    * [Pull request #461](https://github.com/dartsim/dart/pull/461)
+    * [Pull request #495](https://github.com/dartsim/dart/pull/495)
+    * [Pull request #502](https://github.com/dartsim/dart/pull/502)
+    * [Pull request #506](https://github.com/dartsim/dart/pull/506)
+    * [Pull request #514](https://github.com/dartsim/dart/pull/514)
+    * [Issue #381](https://github.com/dartsim/dart/issues/381)
+    * [Issue #454](https://github.com/dartsim/dart/issues/454)
+    * [Issue #478](https://github.com/dartsim/dart/issues/478)
+
+1. Removed outdated packaging scripts
+    * [Pull request #456](https://github.com/dartsim/dart/pull/456)
+
+1. Added initial position and initial velocity properties
+    * [Pull request #449](https://github.com/dartsim/dart/pull/449)
+
+1. Added a package.xml file for REP-136 support
+    * [Pull request #446](https://github.com/dartsim/dart/pull/446)
+
+1. Improved Linkage and Chain Criteria
+    * [Pull request #443](https://github.com/dartsim/dart/pull/443)
+    * [Issue #437](https://github.com/dartsim/dart/issues/437)
+
+1. Added Joint::isCyclic to mark SO(2) topology
+    * [Pull request #441](https://github.com/dartsim/dart/pull/441)
+
+1. Fixed SEGFAULTs in DartLoader
+    * [Pull request #439](https://github.com/dartsim/dart/pull/439)
+
+1. Added the SYSTEM flag to include_directories
+    * [Pull request #435](https://github.com/dartsim/dart/pull/435)
+
+1. Improved Joint warning
+    * [Pull request #430](https://github.com/dartsim/dart/pull/430)
+
+1. Added tutorials (http://dart.readthedocs.org/)
+    * [Pull request #504](https://github.com/dartsim/dart/pull/504)
+    * [Pull request #484](https://github.com/dartsim/dart/pull/484)
+    * [Pull request #423](https://github.com/dartsim/dart/pull/423)
+    * [Pull request #511](https://github.com/dartsim/dart/pull/511)
+
 ### Version 5.0.2 (2015-09-28)
 
 1. Fixed bug in Jacobian update notifications
