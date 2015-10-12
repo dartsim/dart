@@ -62,13 +62,16 @@ public:
   virtual ~BallJoint();
 
   // Documentation inherited
-  virtual const std::string& getType() const override;
+  const std::string& getType() const override;
 
   /// Get joint type for this class
   static const std::string& getStaticType();
 
   // Documentation inherited
-  virtual bool isCyclic(size_t _index) const override;
+  void setTransformFromChildBodyNode(const Eigen::Isometry3d& T) override;
+
+  // Documentation inherited
+  bool isCyclic(size_t _index) const override;
 
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;
@@ -105,24 +108,24 @@ protected:
   BallJoint(const Properties& _properties);
 
   // Documentation inherited
-  virtual Joint* clone() const override;
+  Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
-  virtual void integratePositions(double _dt) override;
+  void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames() override;
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const override;
+  void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const override;
+  void updateLocalJacobian(bool =true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const override;
+  void updateLocalJacobianTimeDeriv() const override;
 
 protected:
 
