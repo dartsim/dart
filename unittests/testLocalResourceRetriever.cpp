@@ -112,11 +112,8 @@ TEST(LocalResourceRetriever, retrieve_Path)
 
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 {
-#ifdef _WIN32
-  const std::string content = "Hello World\r\n";
-#else
-  const std::string content = "Hello World\n";
-#endif
+  const std::string content = "Hello World";
+
   std::vector<char> buffer(100, '\0');
 
   LocalResourceRetriever retriever;
