@@ -309,10 +309,14 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, BALL_JOINT)
-{
-  kinematicsTest<BallJoint>();
-}
+//TEST_F(JOINTS, BALL_JOINT)
+//{
+//  kinematicsTest<BallJoint>();
+//}
+// TODO(JS): Disabled the test compares analytical Jacobian and numerical
+// Jacobian since the meaning of BallJoint Jacobian is changed per
+// we now use angular velocity and angular accertions as BallJoint's generalized
+// velocities and accelerations, repectively.
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
@@ -339,10 +343,14 @@ TEST_F(JOINTS, PLANAR_JOINT)
 }
 
 // 6-dof joint
-TEST_F(JOINTS, FREE_JOINT)
-{
-  kinematicsTest<FreeJoint>();
-}
+//TEST_F(JOINTS, FREE_JOINT)
+//{
+//  kinematicsTest<FreeJoint>();
+//}
+// TODO(JS): Disabled the test compares analytical Jacobian and numerical
+// Jacobian since the meaning of FreeJoint Jacobian is changed per
+// we now use spatial velocity and spatial accertions as FreeJoint's generalized
+// velocities and accelerations, repectively.
 
 //==============================================================================
 template <void (Joint::*setX)(std::size_t, double),
