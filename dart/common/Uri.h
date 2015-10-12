@@ -123,34 +123,42 @@ struct Uri final
   /// Clear the URI by reset()ing all components.
   void clear();
 
-  /// Parse a URI from a string; return success.
+  /// Parse a URI from a string; return success. All the components will be
+  /// cleared on failure.
   bool fromString(const std::string& _input);
 
   /// Parse a local path (i.e. URI with no schema) from a string; return
-  /// success. Note that the input path should be absolute path.
+  /// success. Note that the input path should be absolute path. All the
+  /// components will be cleared on failure.
   bool fromPath(const std::string& _path);
 
   /// Parse a URI or local path (i.e. URI with no schema) from a string; return
-  /// success. We assume that any string without a scheme is a path.
+  /// success. We assume that any string without a scheme is a path. All the
+  /// components will be cleared on failure.
   bool fromStringOrPath(const std::string& _input);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const std::string& _base, const std::string& _relative,
                        bool _strict = false);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const char* _base, const char* _relative,
                        bool _strict = false);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const Uri& _base, const std::string& _relative,
                        bool _strict = false);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const Uri& _base, const char* _relative,
                        bool _strict = false);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const Uri& _base, const Uri& _relative,
                        bool _strict = false);
 

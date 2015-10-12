@@ -306,6 +306,7 @@ bool Uri::fromRelativeUri(const std::string& _base,
   {
     dtwarn << "[Uri::fromRelativeUri] Failed parsing base URI '"
            << _base << "'.\n";
+    clear();
     return false;
   }
 
@@ -328,6 +329,7 @@ bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative,
   {
     dtwarn << "[Uri::fromRelativeUri] Failed parsing relative URI '"
            << _relative << "'.\n";
+    clear();
     return false;
   }
 
