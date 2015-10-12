@@ -1421,8 +1421,8 @@ Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
   if (std::abs(_m(0, 0)) > DART_EPSILON
       || std::abs(_m(1, 1)) > DART_EPSILON
       || std::abs(_m(2, 2)) > DART_EPSILON) {
-    std::cout << "Not skew symmetric matrix" << std::endl;
-    std::cerr << _m << std::endl;
+    dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
+           << _m << "\n";
     return Eigen::Vector3d::Zero();
   }
 #endif
