@@ -81,18 +81,15 @@ private:
   std::string mValue;
 };
 
-/// The Uri class provides URI parsing and merging functionality based on RFC
+/// The Uri struct provides URI parsing and merging functionality based on RFC
 /// 3986.
-class Uri final
+///
+/// We have Uri as a struct rather than class to expose member variables. Many
+/// ResourceRetreiver classes rewrite URIs to other types of URIs (e.g, resolve
+/// 'package://' URIs to 'file://' URIs), which is easier to implemet if you
+/// have direct access to the URI components.
+struct Uri final
 {
-public:
-
-  // We expose the URI components as public member because we hope to keep Uri
-  // class as close to a mutable struct as possible. Many ResourceRetreiver
-  // classes rewrite URIs to other types of URIs (e.g, resolve 'package://' URIs
-  // to 'file://' URIs), which is easier to implemet if you have direct access
-  // to the URI components.
-
   /// Scheme, e.g. 'http', 'file', 'package'
   UriComponent mScheme;
 
