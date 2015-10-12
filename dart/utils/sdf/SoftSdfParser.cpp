@@ -70,9 +70,9 @@ namespace utils {
 
 //==============================================================================
 simulation::WorldPtr SoftSdfParser::readSoftSdfFile(
-  const common::Uri& _filUri, const common::ResourceRetrieverPtr& _retriever)
+  const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
 {
-  return SdfParser::readSdfFile(_filUri, getResourceRetriever(_retriever),
+  return SdfParser::readSdfFile(_fileUri, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SoftSdfParser::readWorld));
