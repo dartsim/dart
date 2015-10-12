@@ -108,12 +108,16 @@ struct Uri final
   /// Constructor
   Uri() = default;
 
-  /// Constructor that takes a URI string or a local path. Internally, this is
-  /// equivalent to calling fromStringOrPath(_input) after default constructor.
+  /// Constructor that takes a URI or local path. Internally, this is equivalent
+  /// to calling fromStringOrPath(_input) after default constructor.
+  ///
+  /// We don't declare this constructor as explicit in order to allow implicit
+  /// conversion from string so that you can pass in string parameter to a
+  /// function that takes Uri.
   Uri(const std::string& _input);
 
-  /// Constructor that takes a URI string or a local path. Internally, this is
-  /// equivalent to calling fromStringOrPath(_input) after default constructor.
+  /// Constructor that takes a URI or local path as const char*. The behavior is
+  /// identical to Uri(const std::string&).
   Uri(const char* _input);
 
   /// Clear the URI by reset()ing all components.
@@ -153,27 +157,26 @@ struct Uri final
   /// Combine the parts of the URI into a string.
   std::string toString() const;
 
-  /// Create URI from a string.
+  /// Create URI from a string; return an empty URI on failure.
   static Uri createFromString(const std::string& _input);
 
-  /// Create file URI from a string.
+  /// Create file URI from a string; return an empty URI on failure.
   static Uri createFromPath(const std::string& _path);
 
-  /// Create URI resolving a relative path reference.
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
   static Uri createFromRelativeUri(const std::string& _base,
                                    const std::string& _relative,
                                    bool _strict = false);
 
-  /// Create URI resolving a relative path reference.
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
   static Uri createFromRelativeUri(const Uri& _base,
                                    const Uri& _relative,
                                    bool _strict = false);
 
   /// Parse a URI from a string; return an empty string on failure.
   static std::string getUri(const std::string& _input);
-
-  /// Parse a file URI from a string; return an empty string on failure.
-  static std::string getFileUri(const std::string& _path);
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(const std::string& _base,

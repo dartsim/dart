@@ -231,7 +231,7 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
     // since an absolute path already has it.
     const std::string testUri = "file://" + testPath;
 #endif
-    EXPECT_EQ(testUri, Uri::getFileUri(testPath));
+    EXPECT_EQ(testUri, Uri::getUri(testPath));
   }
 }
 

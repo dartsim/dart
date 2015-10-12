@@ -192,13 +192,21 @@ auto UriComponent::get_value_or(reference_const_type _default) const
 //==============================================================================
 Uri::Uri(const std::string& _input)
 {
-  fromStringOrPath(_input);
+  if (!fromStringOrPath(_input))
+    dtwarn << "[Uri::Uri] Failed parsing URI '" << _input << "'.\n";
+
+  // We don't need to clear since fromStringOrPath() does not set any component
+  // on failure.
 }
 
 //==============================================================================
 Uri::Uri(const char* _input)
 {
-  fromStringOrPath(std::string(_input));
+  if (!fromStringOrPath(std::string(_input)))
+    dtwarn << "[Uri::Uri] Failed parsing URI '" << _input << "'.\n";
+
+  // We don't need to clear since fromStringOrPath() does not set any component
+  // on failure.
 }
 
 //==============================================================================
@@ -415,7 +423,14 @@ std::string Uri::toString() const
 Uri Uri::createFromString(const std::string& _input)
 {
   Uri uri;
-  uri.fromString(_input);
+  if(!uri.fromString(_input))
+  {
+    dtwarn << "[Uri::createFromString] Failed parsing URI '" << _input
+           << "'.\n";
+  }
+
+  // We don't need to clear since fromString() does not set any component
+  // on failure.
 
   return uri;
 }
@@ -423,10 +438,17 @@ Uri Uri::createFromString(const std::string& _input)
 //==============================================================================
 Uri Uri::createFromPath(const std::string& _path)
 {
-  Uri uri;
-  uri.fromPath(_path);
+  Uri fileUri;
+  if(!fileUri.fromPath(_path))
+  {
+    dtwarn << "[Uri::createFromPath] Failed parsing local path '" << _path
+           << "'.\n";
+  }
 
-  return uri;
+  // We don't need to clear since fromString() does not set any component
+  // on failure.
+
+  return fileUri;
 }
 
 //==============================================================================
@@ -439,6 +461,9 @@ Uri Uri::createFromRelativeUri(const std::string& _base,
     dtwarn << "[Uri::createFromRelativeUri] Failed merging URI '" << _relative
            << "' with base URI '" << _base << "'.\n";
   }
+
+  // We don't need to clear since fromRelativeUri() does not set any component
+  // on failure.
 
   return mergedUri;
 }
@@ -455,33 +480,42 @@ Uri Uri::createFromRelativeUri(const Uri& _baseUri,
            << _baseUri.toString() << "'.\n";
   }
 
+  // We don't need to clear since fromRelativeUri() does not set any component
+  // on failure.
+
   return mergedUri;
 }
 
 //==============================================================================
 std::string Uri::getUri(const std::string& _input)
 {
-  return createFromString(_input).toString();
-}
-
-//==============================================================================
-std::string Uri::getFileUri(const std::string& _path)
-{
-  return createFromPath(_path).toString();
+  Uri uri;
+  if(uri.fromStringOrPath(_input))
+    return uri.toString();
+  else
+    return "";
 }
 
 //==============================================================================
 std::string Uri::getRelativeUri(
   const std::string& _base, const std::string& _relative, bool _strict)
 {
-  return createFromRelativeUri(_base, _relative, _strict).toString();
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+    return "";
+  else
+    return mergedUri.toString();
 }
 
 //==============================================================================
 std::string Uri::getRelativeUri(
     const Uri& _baseUri, const Uri& _relativeUri, bool _strict)
 {
-  return createFromRelativeUri(_baseUri, _relativeUri, _strict).toString();
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict))
+    return "";
+  else
+    return mergedUri.toString();
 }
 
 //==============================================================================
