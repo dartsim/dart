@@ -86,7 +86,7 @@ private:
 ///
 /// We have Uri as a struct rather than class to expose member variables. Many
 /// ResourceRetreiver classes rewrite URIs to other types of URIs (e.g, resolve
-/// 'package://' URIs to 'file://' URIs), which is easier to implemet if you
+/// 'package://' URIs to 'file://' URIs), which is easier to implement if you
 /// have direct access to the URI components.
 struct Uri final
 {
