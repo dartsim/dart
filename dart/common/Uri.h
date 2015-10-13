@@ -86,7 +86,7 @@ private:
 ///
 /// We have Uri as a struct rather than class to expose member variables. Many
 /// ResourceRetreiver classes rewrite URIs to other types of URIs (e.g, resolve
-/// 'package://' URIs to 'file://' URIs), which is easier to implemet if you
+/// 'package://' URIs to 'file://' URIs), which is easier to implement if you
 /// have direct access to the URI components.
 struct Uri final
 {
@@ -170,6 +170,10 @@ struct Uri final
 
   /// Create file URI from a string; return an empty URI on failure.
   static Uri createFromPath(const std::string& _path);
+
+  /// Create general URI or file URI from a string; return an empty URI on
+  /// failure.
+  static Uri createFromStringOrPath(const std::string& _input);
 
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.

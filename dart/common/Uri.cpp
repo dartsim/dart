@@ -287,12 +287,28 @@ bool Uri::fromPath(const std::string& _path)
 //==============================================================================
 bool Uri::fromStringOrPath(const std::string& _input)
 {
+  // TODO(JS): Need to check if _input is an "absolute" path?
+
+#ifdef _WIN32
+
+  // Assume that any URI begin with pattern [SINGLE_LETTER]:[/ or \\] is an
+  // absolute path.
+  static regex windowsPathRegex(R"END([a-zA-Z]:[/|\\])END");
+  bool isPath = regex_search(_input, windowsPathRegex, match_continuous);
+
+  if (isPath)
+    return fromPath(_input);
+
+#else
+
   // Assume that any URI without a scheme is a path.
-  static regex uriSchemeRegex(R"END(^(([^:/?#]+)://))END");
+  static regex uriSchemeRegex(R"END(^(([^:/?#]+):))END");
   bool noScheme = !regex_search(_input, uriSchemeRegex, match_continuous);
 
   if (noScheme)
     return fromPath(_input);
+
+#endif
 
   return fromString(_input);
 }
@@ -431,7 +447,7 @@ Uri Uri::createFromString(const std::string& _input)
            << "'.\n";
   }
 
-  // We don't need to clear since fromString() does not set any component
+  // We don't need to clear uri since fromString() does not set any component
   // on failure.
 
   return uri;
@@ -447,10 +463,26 @@ Uri Uri::createFromPath(const std::string& _path)
            << "'.\n";
   }
 
-  // We don't need to clear since fromString() does not set any component
+  // We don't need to clear uri since fromString() does not set any component
   // on failure.
 
   return fileUri;
+}
+
+//==============================================================================
+Uri Uri::createFromStringOrPath(const std::string& _input)
+{
+  Uri uri;
+  if(!uri.fromStringOrPath(_input))
+  {
+    dtwarn << "[Uri::createFromString] Failed parsing URI '" << _input
+           << "'.\n";
+  }
+
+  // We don't need to clear uri since fromString() does not set any component
+  // on failure.
+
+  return uri;
 }
 
 //==============================================================================
@@ -464,8 +496,8 @@ Uri Uri::createFromRelativeUri(const std::string& _base,
            << "' with base URI '" << _base << "'.\n";
   }
 
-  // We don't need to clear since fromRelativeUri() does not set any component
-  // on failure.
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
 
   return mergedUri;
 }
@@ -482,8 +514,8 @@ Uri Uri::createFromRelativeUri(const Uri& _baseUri,
            << _baseUri.toString() << "'.\n";
   }
 
-  // We don't need to clear since fromRelativeUri() does not set any component
-  // on failure.
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
 
   return mergedUri;
 }

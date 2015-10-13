@@ -172,6 +172,30 @@ TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
   EXPECT_EQ(testPaths[2], uri.getFilesystemPath());
 }
 
+TEST(UriHelpers, fromStringOrPath_UriNotPathNorFileUri_ReturnsUriNotFileUri)
+{
+  std::vector<std::string> testUris = {
+    "ftp://ftp.is.co.za/rfc/rfc1808.txt",
+    "http://www.ietf.org/rfc/rfc2396.txt",
+    "ldap://[2001:db8::7]/c=GB?objectClass?one",
+    "mailto:John.Doe@example.com",
+    "news:comp.infosystems.www.servers.unix",
+    "tel:+1-816-555-1212",
+    "telnet://192.0.2.16:80/",
+    "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"
+  };
+
+  Uri uri;
+
+  for (const std::string& testUri : testUris)
+  {
+    uri.fromStringOrPath(testUri);
+
+    EXPECT_NE("file", *uri.mScheme);
+    EXPECT_EQ(testUri, uri.toString());
+  }
+}
+
 TEST(UriHelpers, fromString_InputIsUri_DoesNotChange)
 {
   Uri uri;
