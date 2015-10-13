@@ -68,9 +68,6 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  void setTransformFromChildBodyNode(const Eigen::Isometry3d& T) override;
-
-  // Documentation inherited
   bool isCyclic(size_t _index) const override;
 
   /// Get the Properties of this BallJoint
@@ -122,7 +119,7 @@ protected:
   void updateLocalTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool =true) const override;
+  void updateLocalJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
   void updateLocalJacobianTimeDeriv() const override;

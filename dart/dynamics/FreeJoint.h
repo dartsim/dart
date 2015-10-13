@@ -74,9 +74,6 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  void setTransformFromChildBodyNode(const Eigen::Isometry3d& T) override;
-
-  // Documentation inherited
   virtual bool isCyclic(size_t _index) const override;
 
   /// Convert a transform into a 6D vector that can be used to set the positions
@@ -289,7 +286,7 @@ protected:
   void updateLocalTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool =true) const override;
+  void updateLocalJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
   void updateLocalJacobianTimeDeriv() const override;

@@ -556,16 +556,6 @@ const std::string& FreeJoint::getStaticType()
 }
 
 //==============================================================================
-void FreeJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& T)
-{
-  Joint::setTransformFromChildBodyNode(T);
-
-  // We update Jacobian here since the Jacobian of FreeJoint is a function of
-  // "T" but not of joint positions.
-  mJacobian = math::getAdTMatrix(T);
-}
-
-//==============================================================================
 bool FreeJoint::isCyclic(size_t _index) const
 {
   return _index < 3
@@ -610,10 +600,10 @@ void FreeJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobian(bool) const
+void FreeJoint::updateLocalJacobian(bool _mandatory) const
 {
-  // Do nothing. Jacobian will be updated by
-  // FreeJoint::setTransformFromChildBodyNode() instead.
+  if (_mandatory)
+    mJacobian = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint);
 }
 
 //==============================================================================

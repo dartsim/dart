@@ -71,16 +71,6 @@ const std::string& BallJoint::getStaticType()
 }
 
 //==============================================================================
-void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& T)
-{
-  Joint::setTransformFromChildBodyNode(T);
-
-  // We update Jacobian here since the Jacobian of BallJoint is a function of
-  // "T" but not of joint positions.
-  mJacobian = math::getAdTMatrix(T).leftCols<3>();
-}
-
-//==============================================================================
 bool BallJoint::isCyclic(size_t _index) const
 {
   return _index < 3
@@ -174,10 +164,10 @@ void BallJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobian(bool) const
+void BallJoint::updateLocalJacobian(bool _mandatory) const
 {
-  // Do nothing. Jacobian will be updated by
-  // BallJoint::setTransformFromChildBodyNode() instead.
+  if (_mandatory)
+    mJacobian = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint).leftCols<3>();
 }
 
 //==============================================================================
