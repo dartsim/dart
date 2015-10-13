@@ -171,6 +171,10 @@ struct Uri final
   /// Create file URI from a string; return an empty URI on failure.
   static Uri createFromPath(const std::string& _path);
 
+  /// Create general URI or file URI from a string; return an empty URI on
+  /// failure.
+  static Uri createFromStringOrPath(const std::string& _input);
+
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
   static Uri createFromRelativeUri(const std::string& _base,
