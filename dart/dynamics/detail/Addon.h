@@ -415,7 +415,7 @@ cloneAddon(common::AddonManager* newManager) const
 //==============================================================================
 #define DART_DYNAMICS_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
   inline void set ## Name (const Type & value)\
-  { mProperties.m ## Name = value; Update(this); }
+  { mProperties.m ## Name = value; Update(this); incrementSkeletonVersion(); }
 
 //==============================================================================
 #define DART_DYNAMICS_SET_ADDON_PROPERTY( Type, Name )\
@@ -430,5 +430,36 @@ cloneAddon(common::AddonManager* newManager) const
 #define DART_DYNAMICS_SET_GET_ADDON_PROPERTY( Type, Name )\
   DART_DYNAMICS_SET_ADDON_PROPERTY( Type, Name )\
   DART_DYNAMICS_GET_ADDON_PROPERTY( Type, Name )
+
+//==============================================================================
+#define DART_DYNAMICS_SET_ADDON_PROPERTY_INDEX( Class, Type, Name, Size )\
+  inline void set ## Name (size_t index, const Type & value)\
+  {\
+    if( index >= Size )\
+    {\
+      dterr << "[" #Class << "::set" #Name << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); return;\
+    }\
+    mProperties.m ## Name [index] = value; Update(this); incrementSkeletonVersion();\
+  }
+
+//==============================================================================
+#define DART_DYNAMICS_GET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size)\
+  inline const Type& get ## Name (size_t index, const Type & value)\
+  {\
+    if(index >= Size)\
+    {\
+      dterr << "[" #Class << "::get" #Name << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); index = 0;\
+    }\
+    return mProperties.m ## Name [index];\
+  }
+
+//==============================================================================
+#define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_INDEX( Class, Type, Name, Size )\
+  DART_DYNAMICS_SET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);\
+  DART_DYNAMICS_GET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);
 
 #endif // DART_DYNAMICS_DETAIL_ADDON_H_
