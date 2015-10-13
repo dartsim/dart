@@ -49,7 +49,7 @@ TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
 
-  EXPECT_FALSE(retriever.exists(Uri("package://test/foo")));
+  EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -67,7 +67,7 @@ TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test");
 
-  EXPECT_FALSE(retriever.exists(Uri("package://test/foo")));
+  EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
@@ -79,7 +79,7 @@ TEST(PackageResourceRetriever, exists_UnsupportedUri_ReturnsFalse)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test");
 
-  EXPECT_FALSE(retriever.exists(Uri("foo://test/foo")));
+  EXPECT_FALSE(retriever.exists(Uri::createFromString("foo://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -96,7 +96,7 @@ TEST(PackageResourceRetriever, exists_StripsTrailingSlash)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test/");
 
-  EXPECT_TRUE(retriever.exists(Uri("package://test/foo")));
+  EXPECT_TRUE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
@@ -115,7 +115,7 @@ TEST(PackageResourceRetriever, exists_FirstUriSucceeds)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
-  EXPECT_TRUE(retriever.exists(Uri("package://test/foo")));
+  EXPECT_TRUE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(1u, mockRetriever->mExists.size());
   EXPECT_EQ(expected, mockRetriever->mExists.front());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
@@ -136,7 +136,7 @@ TEST(PackageResourceRetriever, exists_FallsBackOnSecondUri)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
-  EXPECT_FALSE(retriever.exists(Uri("package://test/foo")));
+  EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
   ASSERT_EQ(2u, mockRetriever->mExists.size());
   EXPECT_EQ(expected1, mockRetriever->mExists[0]);
   EXPECT_EQ(expected2, mockRetriever->mExists[1]);
@@ -148,7 +148,7 @@ TEST(PackageResourceRetriever, retrieve_UnableToResolve_ReturnsNull)
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();
   PackageResourceRetriever retriever(mockRetriever);
 
-  EXPECT_EQ(nullptr, retriever.retrieve(Uri("package://test/foo")));
+  EXPECT_EQ(nullptr, retriever.retrieve(Uri::createFromString("package://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -166,7 +166,7 @@ TEST(PackageResourceRetriever, retrieve_DelegateFails_ReturnsNull)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test");
 
-  EXPECT_EQ(nullptr, retriever.retrieve(Uri("package://test/foo")));
+  EXPECT_EQ(nullptr, retriever.retrieve(Uri::createFromString("package://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
@@ -178,7 +178,7 @@ TEST(PackageResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test");
 
-  EXPECT_EQ(nullptr, retriever.retrieve(Uri("foo://test/foo")));
+  EXPECT_EQ(nullptr, retriever.retrieve(Uri::createFromString("foo://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
@@ -195,7 +195,7 @@ TEST(PackageResourceRetriever, retrieve_StripsTrailingSlash)
   PackageResourceRetriever retriever(mockRetriever);
   retriever.addPackageDirectory("test", DART_DATA_PATH"test/");
 
-  EXPECT_TRUE(retriever.retrieve(Uri("package://test/foo")) != nullptr);
+  EXPECT_TRUE(retriever.retrieve(Uri::createFromString("package://test/foo")) != nullptr);
   EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
@@ -214,7 +214,7 @@ TEST(PackageResourceRetriever, retrieve_FirstUriSucceeds)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
-  EXPECT_TRUE(retriever.retrieve(Uri("package://test/foo")) != nullptr);
+  EXPECT_TRUE(retriever.retrieve(Uri::createFromString("package://test/foo")) != nullptr);
   EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(1u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected, mockRetriever->mRetrieve.front());
@@ -235,7 +235,7 @@ TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
   retriever.addPackageDirectory("test", DART_DATA_PATH"test1");
   retriever.addPackageDirectory("test", DART_DATA_PATH"test2");
 
-  EXPECT_EQ(nullptr, retriever.retrieve(Uri("package://test/foo")));
+  EXPECT_EQ(nullptr, retriever.retrieve(Uri::createFromString("package://test/foo")));
   EXPECT_TRUE(mockRetriever->mExists.empty());
   ASSERT_EQ(2u, mockRetriever->mRetrieve.size());
   EXPECT_EQ(expected1, mockRetriever->mRetrieve[0]);
