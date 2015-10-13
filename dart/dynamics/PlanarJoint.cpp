@@ -74,6 +74,26 @@ PlanarJoint::UniqueProperties::UniqueProperties(
 }
 
 //==============================================================================
+PlanarJoint::UniqueProperties::UniqueProperties(const UniqueProperties& other)
+{
+  switch(other.mPlaneType)
+  {
+    case PT_ARBITRARY:
+      setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
+      break;
+    case PT_XY:
+      setXYPlane();
+      break;
+    case PT_YZ:
+      setYZPlane();
+      break;
+    case PT_ZX:
+      setZXPlane();
+      break;
+  }
+}
+
+//==============================================================================
 void PlanarJoint::UniqueProperties::setXYPlane()
 {
   mPlaneType = PT_XY;
@@ -135,6 +155,39 @@ PlanarJoint::Properties::Properties(
 }
 
 //==============================================================================
+void PlanarJoint::Addon::setXYPlane()
+{
+  mProperties.setXYPlane();
+  UpdateProperties(this);
+  incrementSkeletonVersion();
+}
+
+//==============================================================================
+void PlanarJoint::Addon::setYZPlane()
+{
+  mProperties.setYZPlane();
+  UpdateProperties(this);
+  incrementSkeletonVersion();
+}
+
+//==============================================================================
+void PlanarJoint::Addon::setZXPlane()
+{
+  mProperties.setZXPlane();
+  UpdateProperties(this);
+  incrementSkeletonVersion();
+}
+
+//==============================================================================
+void PlanarJoint::Addon::setArbitraryPlane(const Eigen::Vector3d& _axis1,
+                                           const Eigen::Vector3d& _axis2)
+{
+  mProperties.setArbitraryPlane(_axis1, _axis2);
+  UpdateProperties(this);
+  incrementSkeletonVersion();
+}
+
+//==============================================================================
 PlanarJoint::~PlanarJoint()
 {
   // Do nothing
@@ -151,21 +204,7 @@ void PlanarJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void PlanarJoint::setProperties(const UniqueProperties& _properties)
 {
-  switch(_properties.mPlaneType)
-  {
-    case PT_XY:
-      setXYPlane();
-      break;
-    case PT_YZ:
-      setYZPlane();
-      break;
-    case PT_ZX:
-      setZXPlane();
-      break;
-    case PT_ARBITRARY:
-      setArbitraryPlane(_properties.mTransAxis1, _properties.mTransAxis2);
-      break;
-  }
+  getPlanarJointAddon()->setProperties(_properties);
 }
 
 //==============================================================================
@@ -313,6 +352,7 @@ PlanarJoint::PlanarJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PlanarJoint, Addon);
   createPlanarJointAddon(_properties);
+  setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
 

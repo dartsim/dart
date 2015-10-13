@@ -64,6 +64,20 @@ RevoluteJoint::Properties::Properties(
 }
 
 //==============================================================================
+void RevoluteJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
+{
+  mProperties.mAxis = _axis.normalized();
+  incrementSkeletonVersion();
+  UpdateProperties(this);
+}
+
+//==============================================================================
+const Eigen::Vector3d& RevoluteJoint::Addon::getAxis() const
+{
+  return mProperties.mAxis;
+}
+
+//==============================================================================
 RevoluteJoint::~RevoluteJoint()
 {
   // Do nothing
@@ -86,7 +100,8 @@ void RevoluteJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mRevoluteP);
+  return Properties(getSingleDofJointProperties(),
+                    getRevoluteJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -136,21 +151,21 @@ const std::string& RevoluteJoint::getStaticType()
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  mRevoluteP.mAxis = _axis.normalized();
-  updateLocalJacobian();
-  notifyPositionUpdate();
+  getRevoluteJointAddon()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& RevoluteJoint::getAxis() const
 {
-  return mRevoluteP.mAxis;
+  return getRevoluteJointAddon()->getAxis();
 }
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& _properties)
   : SingleDofJoint(_properties)
 {
+  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(RevoluteJoint, Addon);
+  createRevoluteJointAddon(_properties);
   setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
@@ -165,7 +180,7 @@ Joint* RevoluteJoint::clone() const
 void RevoluteJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint
-       * math::expAngular(mRevoluteP.mAxis * getPositionStatic())
+       * math::expAngular(getAxis() * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -177,7 +192,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, mRevoluteP.mAxis);
+    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

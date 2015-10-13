@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -77,6 +78,23 @@ public:
                                               ScrewJoint::UniqueProperties());
     virtual ~Properties() = default;
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, ScrewJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+
+    void setAxis(const Eigen::Vector3d& _axis);
+    const Eigen::Vector3d& getAxis() const;
+
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Pitch)
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(ScrewJoint, Addon)
 
   /// Destructor
   virtual ~ScrewJoint();
@@ -120,6 +138,8 @@ public:
   ///
   double getPitch() const;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -137,15 +157,12 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// ScrewJoint Properties
-  UniqueProperties mScrewP;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(ScrewJoint, ScrewJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

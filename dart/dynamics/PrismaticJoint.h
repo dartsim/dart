@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -71,6 +72,21 @@ public:
                                             PrismaticJoint::UniqueProperties());
     virtual ~Properties() = default;
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, PrismaticJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+
+    void setAxis(const Eigen::Vector3d& _axis);
+    const Eigen::Vector3d& getAxis() const;
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(PrismaticJoint, Addon)
 
   /// Destructor
   virtual ~PrismaticJoint();
@@ -108,6 +124,8 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -125,15 +143,12 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// PrismaticJoint Properties
-  UniqueProperties mPrismaticP;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(PrismaticJoint, PrismaticJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

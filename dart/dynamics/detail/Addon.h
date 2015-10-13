@@ -87,9 +87,7 @@ setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
 
-  if(const SkeletonPtr& skel = getSkeleton())
-    skel->incrementVersion();
-
+  incrementSkeletonVersion();
   UpdateProperties(static_cast<Base*>(this));
 }
 
@@ -143,6 +141,17 @@ const ManagerT* AddonWithProtectedPropertiesInSkeleton<
     BaseT, PropertiesDataT, ManagerT, updateProperties>::getManager() const
 {
   return mManager;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*)>
+void AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
+incrementSkeletonVersion()
+{
+  if(const SkeletonPtr& skel = getSkeleton())
+    skel->incrementVersion();
 }
 
 //==============================================================================
@@ -289,9 +298,7 @@ setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
 
-  if(const SkeletonPtr& skel = getSkeleton())
-    skel->incrementVersion();
-
+  incrementSkeletonVersion();
   UpdateProperties(static_cast<Base*>(this));
 }
 
@@ -359,6 +366,19 @@ const ManagerT* AddonWithProtectedStateAndPropertiesInSkeleton<
 getManager() const
 {
   return mManager;
+}
+
+//==============================================================================
+template <class BaseT, typename StateDataT, typename PropertiesDataT,
+          class ManagerT,
+          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+void AddonWithProtectedStateAndPropertiesInSkeleton<
+    BaseT, StateDataT, PropertiesDataT,
+    ManagerT, updateState, updateProperties>::
+incrementSkeletonVersion()
+{
+  if(const SkeletonPtr& skel = getSkeleton())
+    skel->incrementVersion();
 }
 
 //==============================================================================

@@ -977,6 +977,7 @@ protected:
   mutable bool mIsLocalJacobianTimeDerivDirty;
 
 public:
+
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -987,6 +988,7 @@ template <class AddonType>
 void JointPropertyUpdate(AddonType* addon)
 {
   addon->getManager()->notifyPositionUpdate();
+  addon->getManager()->updateLocalJacobian();
 }
 
 } // namespace detail

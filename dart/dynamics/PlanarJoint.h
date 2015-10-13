@@ -96,6 +96,9 @@ public:
     UniqueProperties(const Eigen::Vector3d& _transAxis1,
                      const Eigen::Vector3d& _transAxis2);
 
+    /// Copy-constructor, customized for robustness
+    UniqueProperties(const UniqueProperties& other);
+
     virtual ~UniqueProperties() = default;
 
     /// Set plane type as XY-plane
@@ -130,14 +133,11 @@ public:
   public:
     DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
 
-    inline void setXYPlane() { mProperties.setXYPlane(); }
-    inline void setYZPlane() { mProperties.setYZPlane(); }
-    inline void setZXPlane() { mProperties.setZXPlane(); }
-    inline void setArbitraryPlane(const Eigen::Vector3d& _axis1,
-                                  const Eigen::Vector3d& _axis2)
-    {
-      mProperties.setArbitraryPlane(_axis1, _axis2);
-    }
+    void setXYPlane();
+    void setYZPlane();
+    void setZXPlane();
+    void setArbitraryPlane(const Eigen::Vector3d& _axis1,
+                           const Eigen::Vector3d& _axis2);
 
     DART_DYNAMICS_GET_ADDON_PROPERTY( PlaneType, PlaneType )
     DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
@@ -216,6 +216,8 @@ public:
   // Documentation inherited
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
+
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
 
 protected:
 

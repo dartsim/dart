@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -73,6 +74,21 @@ public:
 
     virtual ~Properties() = default;
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, RevoluteJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+
+    void setAxis(const Eigen::Vector3d& _axis);
+    const Eigen::Vector3d& getAxis() const;
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(RevoluteJoint, Addon)
 
   /// Destructor
   virtual ~RevoluteJoint();
@@ -127,15 +143,15 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// RevoluteJoint Properties
-  UniqueProperties mRevoluteP;
-
 public:
+
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(RevoluteJoint, RevoluteJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

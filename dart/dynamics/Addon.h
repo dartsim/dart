@@ -94,6 +94,9 @@ public:
   /// Get the AddonManager that this Addon is embedded in
   const ManagerType* getManager() const;
 
+  /// Increment the version number of the Skeleton this Addon is attached to
+  void incrementSkeletonVersion();
+
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(
       common::AddonManager* newManager) const override final;
@@ -187,6 +190,9 @@ public:
 
   /// Get the AddonManager that this Addon is embedded in
   const ManagerType* getManager() const;
+
+  /// Increment the version number of the Skeleton this Addon is attached to
+  void incrementSkeletonVersion();
 
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(

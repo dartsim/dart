@@ -301,6 +301,7 @@ EulerJoint::EulerJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(EulerJoint, Addon);
   createEulerJointAddon(_properties);
+  setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
 

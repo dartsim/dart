@@ -42,6 +42,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -72,6 +73,22 @@ public:
                                             UniversalJoint::UniqueProperties());
     virtual ~Properties() = default;
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, UniversalJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    void setAxis1(const Eigen::Vector3d& _axis);
+    const Eigen::Vector3d& getAxis1() const;
+    void setAxis2(const Eigen::Vector3d& _axis);
+    const Eigen::Vector3d& getAxis2() const;
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(UniversalJoint, Addon)
 
   /// Destructor
   virtual ~UniversalJoint();
@@ -119,6 +136,8 @@ public:
   Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -141,15 +160,12 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// UniversalJoint Properties
-  UniqueProperties mUniversalP;
-
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(UniversalJoint, UniversalJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

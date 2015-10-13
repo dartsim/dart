@@ -63,6 +63,20 @@ PrismaticJoint::Properties::Properties(
 }
 
 //==============================================================================
+void PrismaticJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
+{
+  mProperties.mAxis = _axis.normalized();
+  incrementSkeletonVersion();
+  UpdateProperties(this);
+}
+
+//==============================================================================
+const Eigen::Vector3d& PrismaticJoint::Addon::getAxis() const
+{
+  return mProperties.mAxis;
+}
+
+//==============================================================================
 PrismaticJoint::~PrismaticJoint()
 {
   // Do nothing
@@ -85,7 +99,8 @@ void PrismaticJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mPrismaticP);
+  return Properties(getSingleDofJointProperties(),
+                    getPrismaticJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -135,21 +150,21 @@ bool PrismaticJoint::isCyclic(size_t _index) const
 //==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  mPrismaticP.mAxis = _axis.normalized();
-  updateLocalJacobian();
-  notifyPositionUpdate();
+  getPrismaticJointAddon()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& PrismaticJoint::getAxis() const
 {
-  return mPrismaticP.mAxis;
+  return getPrismaticJointAddon()->getAxis();
 }
 
 //==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& _properties)
   : SingleDofJoint(_properties)
 {
+  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PrismaticJoint, Addon);
+  createPrismaticJointAddon(_properties);
   setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
@@ -164,7 +179,7 @@ Joint* PrismaticJoint::clone() const
 void PrismaticJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint
-       * Eigen::Translation3d(mPrismaticP.mAxis * getPositionStatic())
+       * Eigen::Translation3d(getAxis() * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -176,7 +191,7 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTLinear(mJointP.mT_ChildBodyToJoint, mPrismaticP.mAxis);
+    mJacobian = math::AdTLinear(mJointP.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

@@ -185,6 +185,8 @@ public:
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
