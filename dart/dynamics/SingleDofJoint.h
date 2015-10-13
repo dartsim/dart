@@ -40,6 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -132,6 +133,32 @@ public:
         const UniqueProperties& _singleDofProperties = UniqueProperties());
 
     virtual ~Properties() = default;
+  };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, SingleDofJoint,
+          &detail::JointPropertyUpdate<Addon> >
+  {
+  public:
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialPosition)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityLowerLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityUpperLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialVelocity)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationLowerLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationUpperLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceLowerLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceUpperLimit)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, SpringStiffness)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, RestPosition)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Friction)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(std::string, DofName)
   };
 
   /// Destructor
@@ -470,6 +497,8 @@ public:
 
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
+
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
 
 protected:
 
