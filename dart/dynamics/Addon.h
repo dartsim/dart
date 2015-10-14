@@ -200,6 +200,9 @@ public:
 
 protected:
 
+  // Documentation inherited
+  void changeManager(common::AddonManager* newManager) override;
+
   /// State of this Addon
   State mState;
 

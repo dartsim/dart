@@ -55,6 +55,9 @@ AddonWithProtectedPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
+
+  UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -87,8 +90,8 @@ setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
 
-  incrementSkeletonVersion();
   UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -176,6 +179,9 @@ changeManager(common::AddonManager* newManager)
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, newManager, castedManager, changeManager);
   mManager = castedManager;
+
+  UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -194,6 +200,10 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
+
+  UpdateState(static_cast<Base*>(this));
+  UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -212,6 +222,10 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
+
+  UpdateState(static_cast<Base*>(this));
+  UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -298,8 +312,8 @@ setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
 
-  incrementSkeletonVersion();
   UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 //==============================================================================
@@ -393,6 +407,24 @@ cloneAddon(common::AddonManager* newManager) const
   DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
         Base, ManagerType, newManager, castedManager, clone);
   return std::unique_ptr<Base>(new Base(castedManager, mState, mProperties));
+}
+
+//==============================================================================
+template <class BaseT, typename StateDataT, typename PropertiesDataT,
+          class ManagerT,
+          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+void AddonWithProtectedStateAndPropertiesInSkeleton<
+    BaseT, StateDataT, PropertiesDataT,
+    ManagerT, updateState, updateProperties>::
+changeManager(common::AddonManager* newManager)
+{
+  DART_COMMON_CAST_NEW_MANAGER_TYPE(
+        Base, ManagerType, newManager, castedManager, changeManager);
+  mManager = castedManager;
+
+  UpdateState(static_cast<Base*>(this));
+  UpdateProperties(static_cast<Base*>(this));
+  incrementSkeletonVersion();
 }
 
 } // namespace dynamics
