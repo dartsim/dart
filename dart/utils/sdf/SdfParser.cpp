@@ -27,17 +27,19 @@
 namespace dart {
 namespace utils {
 
+//==============================================================================
 simulation::WorldPtr SdfParser::readSdfFile(
-  const std::string& _filename, const common::ResourceRetrieverPtr& _retriever)
+  const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSdfFile(_filename, getResourceRetriever(_retriever),
+  return readSdfFile(_fileUri, getResourceRetriever(_retriever),
     static_cast<simulation::WorldPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SdfParser::readWorld));
 }
 
+//==============================================================================
 simulation::WorldPtr SdfParser::readSdfFile(
-    const std::string& _filename,
+    const common::Uri& _fileUri,
     const common::ResourceRetrieverPtr& _retriever,
     std::function<simulation::WorldPtr (
       tinyxml2::XMLElement*, const std::string&,
@@ -48,13 +50,13 @@ simulation::WorldPtr SdfParser::readSdfFile(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str(), _retriever);
+    openXMLFile(_dartFile, _fileUri, _retriever);
   }
   catch(std::exception const& e)
   {
-      dtwarn << "[SdfParser::readSdfFile] Loading file [" << _filename
-             << "] failed: " << e.what() << "\n";
-      return nullptr;
+    dtwarn << "[SdfParser::readSdfFile] Loading file [" << _fileUri.toString()
+           << "] failed: " << e.what() << "\n";
+    return nullptr;
   }
 
   //--------------------------------------------------------------------------
@@ -62,7 +64,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
   tinyxml2::XMLElement* sdfElement = nullptr;
   sdfElement = _dartFile.FirstChildElement("sdf");
   if (sdfElement == nullptr)
-      return nullptr;
+    return nullptr;
 
   //--------------------------------------------------------------------------
   // version attribute
@@ -71,7 +73,8 @@ simulation::WorldPtr SdfParser::readSdfFile(
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
   {
-    dtwarn << "[SdfParser::readSdfFile] The file format of [" << _filename
+    dtwarn << "[SdfParser::readSdfFile] The file format of ["
+           << _fileUri.toString()
            << "] was found to be [" << version << "], but we only support SDF "
            << "1.4 and 1.5!\n";
     return nullptr;
@@ -82,28 +85,27 @@ simulation::WorldPtr SdfParser::readSdfFile(
   tinyxml2::XMLElement* worldElement = nullptr;
   worldElement = sdfElement->FirstChildElement("world");
   if (worldElement == nullptr)
-      return nullptr;
+    return nullptr;
 
-  // Change path to a Unix-style path if given a Windows one
-  // Windows can handle Unix-style paths (apparently)
-  std::string unixFileName = _filename;
-  std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
-  std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
+  std::string fileName = _fileUri.getFilesystemPath();  // Uri's path is unix-style path
+  std::string skelPath = fileName.substr(0, fileName.rfind("/") + 1);
 
   return xmlReader(worldElement, skelPath, _retriever);
 }
 
+//==============================================================================
 dynamics::SkeletonPtr SdfParser::readSkeleton(
-  const std::string& _fileName, const common::ResourceRetrieverPtr& _retriever)
+  const common::Uri& _fileUri, const common::ResourceRetrieverPtr& _retriever)
 {
-  return readSkeleton(_fileName, getResourceRetriever(_retriever),
+  return readSkeleton(_fileUri, getResourceRetriever(_retriever),
     static_cast<dynamics::SkeletonPtr (*)(
       tinyxml2::XMLElement*, const std::string&,
       const common::ResourceRetrieverPtr&)>(&SdfParser::readSkeleton));
 }
 
+//==============================================================================
 dynamics::SkeletonPtr SdfParser::readSkeleton(
-    const std::string& _filename,
+    const common::Uri& _fileUri,
     const common::ResourceRetrieverPtr& _retriever,
     std::function<dynamics::SkeletonPtr(
       tinyxml2::XMLElement*, const std::string&,
@@ -114,13 +116,13 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-      openXMLFile(_dartFile, _filename.c_str(), _retriever);
+    openXMLFile(_dartFile, _fileUri, _retriever);
   }
   catch(std::exception const& e)
   {
-      dtwarn << "[SdfParser::readSkeleton] Loading file [" << _filename
-             << "] failed: " << e.what() << "\n";
-      return nullptr;
+    dtwarn << "[SdfParser::readSkeleton] Loading file [" << _fileUri.toString()
+           << "] failed: " << e.what() << "\n";
+    return nullptr;
   }
 
   //--------------------------------------------------------------------------
@@ -128,7 +130,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   tinyxml2::XMLElement* sdfElement = nullptr;
   sdfElement = _dartFile.FirstChildElement("sdf");
   if (sdfElement == nullptr)
-      return nullptr;
+    return nullptr;
 
   //--------------------------------------------------------------------------
   // version attribute
@@ -137,9 +139,9 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
   {
-    dtwarn << "[SdfParser::readSdfFile] The file format of [" << _filename
-           << "] was found to be [" << version << "], but we only support SDF "
-           << "1.4 and 1.5!\n";
+    dtwarn << "[SdfParser::readSdfFile] The file format of ["
+           << _fileUri.toString() << "] was found to be [" << version
+           << "], but we only support SDF 1.4 and 1.5!\n";
     return nullptr;
   }
   //--------------------------------------------------------------------------
@@ -147,15 +149,13 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   tinyxml2::XMLElement* skelElement = nullptr;
   skelElement = sdfElement->FirstChildElement("model");
   if (skelElement == nullptr)
-      return nullptr;
+    return nullptr;
 
-  // Change path to a Unix-style path if given a Windows one
-  // Windows can handle Unix-style paths (apparently)
-  std::string unixFileName = _filename;
-  std::replace(unixFileName.begin(), unixFileName.end(), '\\' , '/' );
-  std::string skelPath = unixFileName.substr(0, unixFileName.rfind("/") + 1);
+  std::string fileName = _fileUri.getFilesystemPath();  // Uri's path is unix-style path
+  std::string skelPath = fileName.substr(0, fileName.rfind("/") + 1);
 
-  dynamics::SkeletonPtr newSkeleton = xmlReader(skelElement, skelPath, _retriever);
+  dynamics::SkeletonPtr newSkeleton = xmlReader(skelElement, skelPath,
+                                                _retriever);
 
   return newSkeleton;
 }

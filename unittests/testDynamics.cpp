@@ -1782,7 +1782,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
-                   DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
+      DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

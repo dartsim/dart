@@ -187,7 +187,7 @@ TEST(World, Cloning)
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for(size_t i=0; i<fileList.size(); ++i)
-    worlds.push_back(dart::utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
   for(size_t i=0; i<worlds.size(); ++i)
   {

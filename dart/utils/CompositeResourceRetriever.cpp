@@ -74,7 +74,7 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 }
 
 //==============================================================================
-bool CompositeResourceRetriever::exists(const std::string& _uri)
+bool CompositeResourceRetriever::exists(const common::Uri& _uri) const
 {
   for(const common::ResourceRetrieverPtr& resourceRetriever
       : getRetrievers(_uri))
@@ -87,7 +87,7 @@ bool CompositeResourceRetriever::exists(const std::string& _uri)
 
 //==============================================================================
 common::ResourcePtr CompositeResourceRetriever::retrieve(
-  const std::string& _uri)
+  const common::Uri& _uri) const
 {
   const std::vector<common::ResourceRetrieverPtr> &retrievers
     = getRetrievers(_uri);
@@ -99,16 +99,16 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 
   dtwarn << "[CompositeResourceRetriever::retrieve] All ResourceRetrievers"
             " registered for this schema failed to retrieve the URI '"
-            << _uri << "' (tried " << retrievers.size() << ").\n";
+            << _uri.toString() << "' (tried " << retrievers.size() << ").\n";
 
   return nullptr;
 }
 
 //==============================================================================
 std::vector<common::ResourceRetrieverPtr>
-  CompositeResourceRetriever::getRetrievers(const std::string& _uri)
+  CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
 {
-  const std::string schema = getSchema(_uri);
+  const std::string schema = _uri.mScheme.get_value_or("file");
 
   std::vector<common::ResourceRetrieverPtr> retrievers;
 
@@ -128,24 +128,11 @@ std::vector<common::ResourceRetrieverPtr>
   {
     dtwarn << "[CompositeResourceRetriever::retrieve] There are no resource"
               " retrievers registered for the schema '" << schema << "'"
-              " that is necessary to retrieve URI '" << _uri << "'.\n";
+              " that is necessary to retrieve URI '" << _uri.toString() <<
+              "'.\n";
   }
 
   return retrievers;
-}
-
-//==============================================================================
-std::string CompositeResourceRetriever::getSchema(const std::string& _uri)
-{
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[CompositeResourceRetriever::retrieve] Failed parsing URI:"
-           << _uri << "\n";
-    return "";
-  }
-
-  return uri.mScheme.get_value_or("file");
 }
 
 } // namespace utils

@@ -10,6 +10,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
+#include "dart/common/Deprecated.h"
 #include "dart/utils/Parser.h"
 #include "dart/common/ResourceRetriever.h"
 #include "dart/dynamics/BodyNode.h"
@@ -50,31 +51,29 @@ namespace utils {
 class SdfParser
 {
 public:
-    /// \brief
-    // TODO: Make common::ResourceRetriever optional.
-    static dart::simulation::WorldPtr readSdfFile(
-        const std::string& _filename,
-        const common::ResourceRetrieverPtr& _retriever = nullptr);
-
-    static simulation::WorldPtr readSdfFile(
-        const std::string& _filename,
-        const common::ResourceRetrieverPtr& _retriever,
-        std::function<simulation::WorldPtr (
-          tinyxml2::XMLElement*, const std::string&,
-          const common::ResourceRetrieverPtr&)> xmlReader);
-
-    /// \brief
-    // TODO: Make common::ResourceRetriever optional.
-    static dynamics::SkeletonPtr readSkeleton(
-      const std::string& _fileName,
+  // TODO: Make common::ResourceRetriever optional.
+  static dart::simulation::WorldPtr readSdfFile(
+      const common::Uri& _fileUri,
       const common::ResourceRetrieverPtr& _retriever = nullptr);
 
-    static dynamics::SkeletonPtr readSkeleton(
-        const std::string& _fileName,
-        const common::ResourceRetrieverPtr& _retriever,
-        std::function<dynamics::SkeletonPtr(
-          tinyxml2::XMLElement*, const std::string&,
-          const common::ResourceRetrieverPtr&)> xmlReader);
+  static simulation::WorldPtr readSdfFile(
+      const common::Uri& _fileUri,
+      const common::ResourceRetrieverPtr& _retriever,
+      std::function<simulation::WorldPtr (
+        tinyxml2::XMLElement*, const std::string&,
+        const common::ResourceRetrieverPtr&)> xmlReader);
+
+  // TODO: Make common::ResourceRetriever optional.
+  static dynamics::SkeletonPtr readSkeleton(
+      const common::Uri& _fileUri,
+      const common::ResourceRetrieverPtr& _retriever = nullptr);
+
+  static dynamics::SkeletonPtr readSkeleton(
+      const common::Uri& _fileUri,
+      const common::ResourceRetrieverPtr& _retriever,
+      std::function<dynamics::SkeletonPtr(
+        tinyxml2::XMLElement*, const std::string&,
+        const common::ResourceRetrieverPtr&)> xmlReader);
 
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
 

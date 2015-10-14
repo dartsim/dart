@@ -48,6 +48,7 @@
 #include <vector>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
+#include "dart/common/Uri.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/dynamics.h"
 #include "dart/collision/CollisionDetector.h"
@@ -403,39 +404,41 @@ struct TestResource : public dart::common::Resource
 //==============================================================================
 struct PresentResourceRetriever : public dart::common::ResourceRetriever
 {
-  bool exists(const std::string& _uri) override
+  bool exists(const dart::common::Uri& _uri) const override
   {
-    mExists.push_back(_uri);
+    mExists.push_back(_uri.toString());
     return true;
   }
 
-  dart::common::ResourcePtr retrieve(const std::string& _uri) override
+  dart::common::ResourcePtr retrieve(
+          const dart::common::Uri& _uri) const override
   {
-    mRetrieve.push_back(_uri);
+    mRetrieve.push_back(_uri.toString());
     return std::make_shared<TestResource>();
   }
 
-  std::vector<std::string> mExists;
-  std::vector<std::string> mRetrieve;
+  mutable std::vector<std::string> mExists;
+  mutable std::vector<std::string> mRetrieve;
 };
 
 //==============================================================================
 struct AbsentResourceRetriever : public dart::common::ResourceRetriever
 {
-  bool exists(const std::string& _uri) override
+  bool exists(const dart::common::Uri& _uri) const override
   {
-    mExists.push_back(_uri);
+    mExists.push_back(_uri.toString());
     return false;
   }
 
-  dart::common::ResourcePtr retrieve(const std::string& _uri) override
+  dart::common::ResourcePtr retrieve(
+          const dart::common::Uri& _uri) const override
   {
-    mRetrieve.push_back(_uri);
+    mRetrieve.push_back(_uri.toString());
     return nullptr;
   }
 
-  std::vector<std::string> mExists;
-  std::vector<std::string> mRetrieve;
+  mutable std::vector<std::string> mExists;
+  mutable std::vector<std::string> mRetrieve;
 };
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H
