@@ -45,7 +45,7 @@ namespace detail {
 /// used in places where a function needs to be provided but you do not actually
 /// want the function to do anything.
 template <typename ... Args>
-void NoOp(Args&&... /*args*/)
+void NoOp(Args... /*args*/)
 {
   // Do nothing
 }

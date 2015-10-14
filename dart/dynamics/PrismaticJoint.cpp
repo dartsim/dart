@@ -165,7 +165,6 @@ PrismaticJoint::PrismaticJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PrismaticJoint, Addon);
   createPrismaticJointAddon(_properties);
-  setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
 

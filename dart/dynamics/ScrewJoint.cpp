@@ -180,7 +180,6 @@ ScrewJoint::ScrewJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(ScrewJoint, Addon);
   createScrewJointAddon(_properties);
-  setProperties(_properties);
 }
 
 //==============================================================================

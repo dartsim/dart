@@ -137,8 +137,7 @@ public:
 
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, SingleDofJoint,
-          &detail::JointPropertyUpdate<Addon> >
+          Addon, UniqueProperties, SingleDofJoint>
   {
   public:
     DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
@@ -158,8 +157,16 @@ public:
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Friction)
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(std::string, DofName)
+
+    const std::string& setDofName(const std::string& name,
+                                  bool preserveName = true);
+    DART_DYNAMICS_GET_ADDON_PROPERTY(std::string, DofName)
+
+    friend class SingleDofJoint;
   };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_NESTED_SPECIALIZED_ADDON_INLINE(SingleDofJoint, Addon)
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -508,6 +515,9 @@ protected:
   // Documentation inherited
   void registerDofs() override;
 
+  ///
+  std::string changeDofName(const std::string& name);
+
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames() override;
 
@@ -681,8 +691,6 @@ protected:
   /// \}
 
 protected:
-
-  UniqueProperties mSingleDofP;
 
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
