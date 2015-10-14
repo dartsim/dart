@@ -529,7 +529,6 @@ FreeJoint::FreeJoint(const Properties& _properties)
   : MultiDofJoint<6>(_properties),
     mQ(Eigen::Isometry3d::Identity())
 {
-  mJacobian      = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint);
   mJacobianDeriv = Eigen::Matrix6d::Zero();
 
   setProperties(_properties);

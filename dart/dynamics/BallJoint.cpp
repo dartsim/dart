@@ -101,8 +101,6 @@ BallJoint::BallJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties),
     mR(Eigen::Isometry3d::Identity())
 {
-  mJacobian
-      = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint).leftCols<3>();
   mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();
 
   setProperties(_properties);
