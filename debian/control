@@ -13,7 +13,10 @@ Build-Depends: debhelper (>= 9),
                libflann-dev (>= 1.8),
                libtinyxml-dev,
                libtinyxml2-dev,
-               liburdfdom-dev
+               liburdfdom-dev,
+               libboost-dev (>= 1.54.0.1ubuntu1), 
+               libboost-system-dev (>= 1.54.0-4ubuntu3),
+               libboost-regex-dev (>= 1.54.0-4ubuntu3)
 Standards-Version: 3.9.6
 Section: libs
 Homepage: http://dartsim.github.io/
@@ -30,7 +33,8 @@ Depends: ${misc:Depends},
          libeigen3-dev,
          libassimp-dev (>= 3),
          libassimp-dev (<< 3.0~dfsg-4),
-         libfcl-dev
+         libfcl-dev,
+         libboost-dev (>= 1.54.0.1ubuntu1)
 Description: Dynamic Animation and Robotics Toolkit, core development files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
