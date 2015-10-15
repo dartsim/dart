@@ -56,6 +56,7 @@ const int default_push_duration = 1000;  // # iterations
 
 const double default_endeffector_offset = 0.05;
 
+using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::math;

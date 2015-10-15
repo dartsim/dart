@@ -635,6 +635,20 @@ Eigen::Vector6d AdT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V) {
   return res;
 }
 
+//==============================================================================
+Eigen::Matrix6d getAdTMatrix(const Eigen::Isometry3d& T)
+{
+  Eigen::Matrix6d AdT;
+
+  AdT.topLeftCorner<3, 3>() = T.linear();
+  AdT.topRightCorner<3, 3>().setZero();
+  AdT.bottomLeftCorner<3, 3>()
+      = makeSkewSymmetric(T.translation()) * T.linear();
+  AdT.bottomRightCorner<3, 3>() = T.linear();
+
+  return AdT;
+}
+
 Eigen::Vector6d AdR(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V) {
   //--------------------------------------------------------------------------
   // w' = R*w

@@ -38,6 +38,7 @@
 
 #include "dart/dart.h"
 
+using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::utils;

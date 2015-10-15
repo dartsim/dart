@@ -197,9 +197,7 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
   std::vector<std::string> sceneFiles = getSceneFiles();
   std::vector<dart::simulation::WorldPtr> worlds;
   for(size_t i=0; i<sceneFiles.size(); ++i)
-  {
     worlds.push_back(dart::utils::SkelParser::readWorld(sceneFiles[i]));
-  }
 
   return worlds;
 }
