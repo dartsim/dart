@@ -1,4 +1,4 @@
-### Version 5.1.0 (2015-10-12)
+### Version 5.1.0 (2015-10-15)
 
 1. Fixed incorrect rotational motion of BallJoint and FreeJoint
     * [Pull request #518](https://github.com/dartsim/dart/pull/518)
