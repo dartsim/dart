@@ -281,6 +281,23 @@ Eigen::Matrix<double, N, 1> randomVector(double _limit)
   return randomVector<N>(-std::abs(_limit), std::abs(_limit));
 }
 
+//==============================================================================
+inline Eigen::VectorXd randomVectorXd(size_t size, double min, double max)
+{
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(size);
+
+  for (size_t i = 0; i < size; ++i)
+    v[i] = random(min, max);
+
+  return v;
+}
+
+//==============================================================================
+inline Eigen::VectorXd randomVectorXd(size_t size, double limit)
+{
+  return randomVectorXd(size, -std::abs(limit), std::abs(limit));
+}
+
 }  // namespace math
 
 namespace Color

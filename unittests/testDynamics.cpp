@@ -83,9 +83,17 @@ public:
   // using finite differece method.
   void testFiniteDifferenceGeneralizedCoordinates(const std::string& _fileName);
 
+  // Compare spatial velocities computed by forward kinematics and finite
+  // difference.
+  void testFiniteDifferenceBodyNodeVelocity(const std::string& _fileName);
+
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
   void testFiniteDifferenceBodyNodeAcceleration(const std::string& _fileName);
+
+  // Test if the recursive forward kinematics algorithm computes
+  // transformations, spatial velocities, and spatial accelerations correctly.
+  void testForwardKinematics(const std::string& _fileName);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
@@ -776,6 +784,103 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 }
 
 //==============================================================================
+void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
+    const std::string& _fileName)
+{
+  using namespace std;
+  using namespace Eigen;
+  using namespace dart;
+  using namespace math;
+  using namespace dynamics;
+  using namespace simulation;
+  using namespace utils;
+
+  //----------------------------- Settings -------------------------------------
+#ifndef NDEBUG  // Debug mode
+  int nRandomItr = 2;
+  size_t numSteps = 1e+1;
+#else
+  int nRandomItr = 10;
+  size_t numSteps = 1e+3;
+#endif
+  double qLB   = -0.5 * DART_PI;
+  double qUB   =  0.5 * DART_PI;
+  double dqLB  = -0.5 * DART_PI;
+  double dqUB  =  0.5 * DART_PI;
+  double ddqLB = -0.5 * DART_PI;
+  double ddqUB =  0.5 * DART_PI;
+  Vector3d gravity(0.0, -9.81, 0.0);
+  double timeStep = 1.0e-6;
+  const double tol = timeStep * 1e+2;
+
+  // load skeleton
+  WorldPtr world = SkelParser::readWorld(_fileName);
+  assert(world != nullptr);
+  world->setGravity(gravity);
+  world->setTimeStep(timeStep);
+
+  //------------------------------ Tests ---------------------------------------
+  for (int i = 0; i < nRandomItr; ++i)
+  {
+    for (size_t j = 0; j < world->getNumSkeletons(); ++j)
+    {
+      SkeletonPtr skeleton = world->getSkeleton(j);
+      EXPECT_NE(skeleton, nullptr);
+
+      size_t dof       = skeleton->getNumDofs();
+      size_t numBodies = skeleton->getNumBodyNodes();
+
+      // Generate random states
+      VectorXd   q = randomVectorXd(dof,   qLB,   qUB);
+      VectorXd  dq = randomVectorXd(dof,  dqLB,  dqUB);
+      VectorXd ddq = randomVectorXd(dof, ddqLB, ddqUB);
+
+      skeleton->setPositions(q);
+      skeleton->setVelocities(dq);
+      skeleton->setAccelerations(ddq);
+
+      std::map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      for (auto k = 0u; k < numBodies; ++k)
+      {
+        auto body  = skeleton->getBodyNode(k);
+        Tmap[body] = body->getTransform();
+      }
+
+      for (size_t k = 0; k < numSteps; ++k)
+      {
+        skeleton->integrateVelocities(skeleton->getTimeStep());
+        skeleton->integratePositions(skeleton->getTimeStep());
+
+        for (size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
+        {
+          BodyNodePtr body  = skeleton->getBodyNode(l);
+
+          Isometry3d T1 = Tmap[body];
+          Isometry3d T2 = body->getTransform();
+
+          Vector6d V_diff = math::logMap(T1.inverse() * T2) / timeStep;
+          Vector6d V_actual = body->getSpatialVelocity();
+
+          bool checkSpatialVelocity = equals(V_diff, V_actual, tol);
+          EXPECT_TRUE(checkSpatialVelocity);
+          if (!checkSpatialVelocity)
+          {
+            std::cout << "[" << body->getName() << "]" << std::endl;
+            std::cout << "V_diff  : "
+                      << V_diff.transpose() << std::endl;
+            std::cout << "V_actual  : "
+                      << V_actual.transpose() << std::endl;
+            std::cout << std::endl;
+          }
+
+          Tmap[body] = body->getTransform();
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
 void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
     const std::string& _fileName)
 {
@@ -829,9 +934,6 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
         ddq[k] = math::random(ddqLB, ddqUB);
       }
 
-      VectorXd qNext  =  q +  dq * timeStep;
-      VectorXd dqNext = dq + ddq * timeStep;
-
       // For each body node
       for (size_t k = 0; k < skeleton->getNumBodyNodes(); ++k)
       {
@@ -855,9 +957,8 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
         Vector3d WorldAngAcc1 = bn->getAngularAcceleration();
 
         // Calculation of velocities and Jacobian at (k+1)-th time step
-        skeleton->setPositions(qNext);
-        skeleton->setVelocities(dqNext);
-        skeleton->setAccelerations(ddq);
+        skeleton->integrateVelocities(skeleton->getTimeStep());
+        skeleton->integratePositions(skeleton->getTimeStep());
 
         Vector3d BodyLinVel2 = bn->getLinearVelocity(Frame::World(), bn);
         Vector3d BodyAngVel2 = bn->getAngularVelocity(Frame::World(), bn);
@@ -930,6 +1031,146 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
         }
       }
     }
+  }
+}
+
+//==============================================================================
+void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
+{
+#ifndef NDEBUG  // Debug mode
+  size_t nRandomItr = 1e+1;
+  size_t numSteps = 1e+1;
+#else
+  size_t nRandomItr = 1e+2;
+  size_t numSteps = 1e+2;
+#endif
+  double qLB   = -0.5 * DART_PI;
+  double qUB   =  0.5 * DART_PI;
+  double dqLB  = -0.3 * DART_PI;
+  double dqUB  =  0.3 * DART_PI;
+  double ddqLB = -0.1 * DART_PI;
+  double ddqUB =  0.1 * DART_PI;
+  double timeStep = 1e-6;
+
+  EXPECT_NE(skel, nullptr);
+
+  skel->setTimeStep(timeStep);
+
+  auto dof       = skel->getNumDofs();
+  auto numBodies = skel->getNumBodyNodes();
+
+  Eigen::VectorXd q;
+  Eigen::VectorXd dq;
+  Eigen::VectorXd ddq;
+
+  std::map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
+  std::map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
+  std::map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
+
+  for (auto j = 0u; j < numBodies; ++j)
+  {
+    auto body  = skel->getBodyNode(j);
+
+     Tmap[body] = Eigen::Isometry3d::Identity();
+     Vmap[body] = Eigen::Vector6d::Zero();
+    dVmap[body] = Eigen::Vector6d::Zero();
+  }
+
+  for (auto i = 0u; i < nRandomItr; ++i)
+  {
+    q   = randomVectorXd(dof,   qLB,   qUB);
+    dq  = randomVectorXd(dof,  dqLB,  dqUB);
+    ddq = randomVectorXd(dof, ddqLB, ddqUB);
+
+    skel->setPositions(q);
+    skel->setVelocities(dq);
+    skel->setAccelerations(ddq);
+
+    for (auto j = 0u; j < numSteps; ++j)
+    {
+      for (auto k = 0u; k < numBodies; ++k)
+      {
+        auto body       = skel->getBodyNode(k);
+        auto joint      = skel->getJoint(k);
+        auto parentBody = body->getParentBodyNode();
+        Eigen::MatrixXd S  = joint->getLocalJacobian();
+        Eigen::MatrixXd dS = joint->getLocalJacobianTimeDeriv();
+        Eigen::VectorXd jointQ   = joint->getPositions();
+        Eigen::VectorXd jointDQ  = joint->getVelocities();
+        Eigen::VectorXd jointDDQ = joint->getAccelerations();
+
+        Eigen::Isometry3d relT  = body->getRelativeTransform();
+        Eigen::Vector6d   relV  =  S * jointDQ;
+        Eigen::Vector6d   relDV = dS * jointDQ + S * jointDDQ;
+
+        if (parentBody)
+        {
+          Tmap[body] = Tmap[parentBody] * relT;
+          Vmap[body] = math::AdInvT(relT,  Vmap[parentBody]) + relV;
+          dVmap[body] = math::AdInvT(relT, dVmap[parentBody])
+              + math::ad(Vmap[body], S * jointDQ)
+              + relDV;
+        }
+        else
+        {
+          Tmap[body] = relT;
+          Vmap[body] = relV;
+          dVmap[body] = relDV;
+        }
+
+        bool checkT  = equals(body->getTransform().matrix(), Tmap[body].matrix());
+        bool checkV  = equals(body->getSpatialVelocity(), Vmap[body]);
+        bool checkDV = equals(body->getSpatialAcceleration(), dVmap[body]);
+
+        EXPECT_TRUE(checkT);
+        EXPECT_TRUE(checkV);
+        EXPECT_TRUE(checkDV);
+
+        if (!checkT)
+        {
+          std::cout << "[" << body->getName() << "]" << std::endl;
+          std::cout << "actual T  : " << std::endl
+                    << body->getTransform().matrix() << std::endl;
+          std::cout << "expected T: " << std::endl
+                    << Tmap[body].matrix() << std::endl;
+          std::cout << std::endl;
+        }
+
+        if (!checkV)
+        {
+          std::cout << "[" << body->getName() << "]" << std::endl;
+          std::cout << "actual V  : "
+                    << body->getSpatialVelocity().transpose() << std::endl;
+          std::cout << "expected V: "
+                    << Vmap[body].transpose() << std::endl;
+          std::cout << std::endl;
+        }
+
+        if (!checkDV)
+        {
+          std::cout << "[" << body->getName() << "]" << std::endl;
+          std::cout << "actual DV  : "
+                    << body->getSpatialAcceleration().transpose() << std::endl;
+          std::cout << "expected DV: "
+                    << dVmap[body].transpose() << std::endl;
+          std::cout << std::endl;
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+void DynamicsTest::testForwardKinematics(const std::string& fileName)
+{
+  auto world = utils::SkelParser::readWorld(fileName);
+  EXPECT_TRUE(world != nullptr);
+
+  auto numSkeletons = world->getNumSkeletons();
+  for (auto i = 0u; i < numSkeletons; ++i)
+  {
+    auto skeleton  = world->getSkeleton(i);
+    testForwardKinematicsSkeleton(skeleton);
   }
 }
 
@@ -1686,11 +1927,24 @@ TEST_F(DynamicsTest, testFiniteDifference)
 {
   for (size_t i = 0; i < getList().size(); ++i)
   {
-#ifndef NDEBUG
+#ifdef BUILD_TYPE_DEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
     testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
+    testFiniteDifferenceBodyNodeVelocity(getList()[i]);
     testFiniteDifferenceBodyNodeAcceleration(getList()[i]);
+  }
+}
+
+//==============================================================================
+TEST_F(DynamicsTest, testForwardKinematics)
+{
+  for (size_t i = 0; i < getList().size(); ++i)
+  {
+#ifndef NDEBUG
+    dtdbg << getList()[i] << std::endl;
+#endif
+    testForwardKinematics(getList()[i]);
   }
 }
 
