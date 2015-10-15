@@ -503,6 +503,23 @@ Uri Uri::createFromRelativeUri(const std::string& _base,
 }
 
 //==============================================================================
+Uri Uri::createFromRelativeUri(const Uri& _base,
+                               const std::string& _relative, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+  {
+    dtwarn << "[Uri::createFromRelativeUri] Failed merging URI '" << _relative
+           << "' with base URI '" << _base.toString() << "'.\n";
+  }
+
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
+
+  return mergedUri;
+}
+
+//==============================================================================
 Uri Uri::createFromRelativeUri(const Uri& _baseUri,
                                const Uri& _relativeUri, bool _strict)
 {
@@ -533,6 +550,17 @@ std::string Uri::getUri(const std::string& _input)
 //==============================================================================
 std::string Uri::getRelativeUri(
   const std::string& _base, const std::string& _relative, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+    return "";
+  else
+    return mergedUri.toString();
+}
+
+//==============================================================================
+std::string Uri::getRelativeUri(
+  const Uri& _base, const std::string& _relative, bool _strict)
 {
   Uri mergedUri;
   if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
