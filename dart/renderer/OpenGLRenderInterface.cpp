@@ -345,7 +345,8 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
         const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 
         glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT);  // for applyMaterial()
-        applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
+        if(mesh->mMaterialIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
+            applyMaterial(sc->mMaterials[mesh->mMaterialIndex]);
 
         if(mesh->mNormals == nullptr) {
             glDisable(GL_LIGHTING);

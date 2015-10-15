@@ -132,7 +132,7 @@ namespace dart {
 namespace dynamics {
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string &_path,
+                     const std::string& _path,
                      const common::ResourceRetrieverPtr& _resourceRetriever)
   : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
@@ -183,7 +183,7 @@ const std::string &MeshShape::getMeshPath() const
 }
 
 void MeshShape::setMesh(
-  const aiScene* _mesh, const std::string &_path,
+  const aiScene* _mesh, const std::string& _path,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   mMesh = _mesh;
