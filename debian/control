@@ -26,7 +26,7 @@ Architecture: any
 Pre-Depends: multiarch-support
 Conflicts: libdart-core3-dev, libdart-core4-dev
 Depends: ${misc:Depends},
-         libdart-core5.0 (= ${binary:Version}),
+         libdart-core5.1 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
          libassimp-dev (<< 3.0~dfsg-4),
@@ -61,7 +61,7 @@ Architecture: any
 Pre-Depends: multiarch-support
 Depends: ${misc:Depends},
          libdart-core5-dev,
-         libdart5.0 (= ${binary:Version}),
+         libdart5.1 (= ${binary:Version}),
          freeglut3-dev,
          libxi-dev,
          libxmu-dev,
@@ -91,7 +91,7 @@ Description: Dynamic Animation and Robotics Toolkit, development files
  software created by the Georgia Tech Graphics Lab.
 
 
-Package: libdart-core5.0
+Package: libdart-core5.1
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
@@ -121,7 +121,7 @@ Description: Dynamic Animation and Robotics Toolkit, core library files
  Multibody dynamic simulation in DART is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
-Package: libdart5.0
+Package: libdart5.1
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
