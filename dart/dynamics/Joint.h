@@ -159,6 +159,8 @@ public:
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
 
+  Joint(const Joint&) = delete;
+
   /// Destructor
   virtual ~Joint();
 

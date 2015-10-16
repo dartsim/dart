@@ -146,6 +146,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  BodyNode(const BodyNode&) = delete;
+
   /// Destructor
   virtual ~BodyNode();
 
