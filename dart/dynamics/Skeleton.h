@@ -113,6 +113,8 @@ public:
   /// Get the mutex that protects the state of this Skeleton
   std::mutex& getMutex() const;
 
+  Skeleton(const Skeleton&) = delete;
+
   /// Destructor
   virtual ~Skeleton();
 
