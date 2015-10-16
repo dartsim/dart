@@ -103,6 +103,8 @@ public:
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
+  Entity(const Entity&) = delete;
+
   /// Destructor
   virtual ~Entity();
 
