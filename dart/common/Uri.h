@@ -184,6 +184,12 @@ struct Uri final
   /// Create URI resolving a relative path reference; return an empty URI on
   /// failure.
   static Uri createFromRelativeUri(const Uri& _base,
+                                   const std::string& _relative,
+                                   bool _strict = false);
+
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
+  static Uri createFromRelativeUri(const Uri& _base,
                                    const Uri& _relative,
                                    bool _strict = false);
 
@@ -192,6 +198,11 @@ struct Uri final
 
   /// Resolve a relative path reference; return an empty string on failure.
   static std::string getRelativeUri(const std::string& _base,
+                                    const std::string& _relative,
+                                    bool _strict = false);
+
+  /// Resolve a relative path reference; return an empty string on failure.
+  static std::string getRelativeUri(const Uri& _base,
                                     const std::string& _relative,
                                     bool _strict = false);
 
