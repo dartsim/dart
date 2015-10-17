@@ -39,6 +39,14 @@
 
 #include "dart/common/AddonManager.h"
 
+#define DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE( Func, it, ReturnType )\
+  if(it ->second && !it ->second->isOptional(this))\
+  {\
+    dterr << "[AddonManager::" #Func << "] Illegal request to remove Addon!\n";\
+    assert(false);\
+    return ReturnType ;\
+  }
+
 namespace dart {
 namespace common {
 
@@ -97,6 +105,7 @@ template <class T>
 void AddonManager::erase()
 {
   AddonMap::iterator it = mAddonMap.find( typeid(T) );
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, it, DART_BLANK)
   if(mAddonMap.end() != it)
     it->second = nullptr;
 }
@@ -107,6 +116,7 @@ std::unique_ptr<T> AddonManager::release()
 {
   std::unique_ptr<T> extraction = nullptr;
   AddonMap::iterator it = mAddonMap.find( typeid(T) );
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, it, nullptr)
   if(mAddonMap.end() != it)
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
 
@@ -117,15 +127,20 @@ std::unique_ptr<T> AddonManager::release()
 } // namespace dart
 
 //==============================================================================
-#define DART_ENABLE_ADDON_SPECIALIZATION()                                                            \
-  public:                                                                                             \
-  template <class T> bool has() const { return AddonManager::has<T>(); }                              \
-  template <class T> T* get() { return AddonManager::get<T>(); }                                      \
-  template <class T> const T* get() const { return AddonManager::get<T>(); }                          \
-  template <class T> void set(const T* addon) { AddonManager::set<T>(addon); }                        \
-  template <class T> void set(std::unique_ptr<T>&& addon) { AddonManager::set<T>(std::move(addon)); } \
-  template <class T> void erase() { AddonManager::erase<T>(); }                                       \
-  template <class T> std::unique_ptr<T> release() { return AddonManager::release<T>(); }
+#define DART_ENABLE_ADDON_SPECIALIZATION()\
+  public:\
+  template <class T> bool has() const { return AddonManager::has<T>(); }\
+  template <class T> T* get() { return AddonManager::get<T>(); }\
+  template <class T> const T* get() const { return AddonManager::get<T>(); }\
+  template <class T> void set(const T* addon) { AddonManager::set<T>(addon); }\
+  template <class T> void set(std::unique_ptr<T>&& addon) { AddonManager::set<T>(std::move(addon)); }\
+  template <class T> void erase() { AddonManager::erase<T>(); }\
+  template <class T> std::unique_ptr<T> release() { return AddonManager::release<T>(); }\
+  template <class T, typename ...Args> T* create(Args&&... args)\
+  {\
+    T* addon = new T(this, std::forward<Args>(args)...);\
+    mAddonMap[typeid(T)] = std::unique_ptr<T>(addon); return addon;\
+  }
 
 //==============================================================================
 #define DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName, it )              \
@@ -146,45 +161,56 @@ std::unique_ptr<T> AddonManager::release()
   DETAIL_DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName, m ## ParentName ## AddonName ## Iterator )
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZED_ADDON_INLINE( TypeName, AddonName, it )         \
-  private: AddonMap::iterator it ; public:                                      \
-                                                                                \
-  inline bool has ## AddonName () const                                         \
-  { return (get ## AddonName () != nullptr); }                                  \
-                                                                                \
-  inline TypeName * get ## AddonName ()                                         \
-  { return static_cast< TypeName *>( it ->second.get() ); }                     \
-                                                                                \
-  inline const TypeName* get ## AddonName () const                              \
-  { return static_cast< TypeName *>( it ->second.get() ); }                     \
-                                                                                \
-  inline void set ## AddonName (const TypeName * addon)                         \
-  { it ->second = addon->cloneAddon(this); }                                    \
-                                                                                \
-  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)            \
-  { becomeManager(addon.get()); it ->second = std::move(addon); }               \
-                                                                                \
-  template <typename ...Args>                                                   \
-  inline TypeName * create ## AddonName (Args&&... args)                        \
-  { it ->second = std::unique_ptr< TypeName >(                                  \
-          new TypeName (this, std::forward<Args>(args)...));                    \
-    return static_cast< TypeName *>( it ->second.get() ); }                     \
-                                                                                \
-  inline void erase ## AddonName ()                                             \
-  { it ->second = nullptr; }                                                    \
-                                                                                \
-  inline std::unique_ptr< TypeName > release ## AddonName ()                    \
-  { std::unique_ptr< TypeName > extraction = std::unique_ptr< TypeName >(       \
-          static_cast< TypeName *>(it ->second.release()));                     \
-    it ->second = nullptr; return extraction; }
+#define DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( TypeName, AddonName, it, CreationCallback )\
+  private: AddonMap::iterator it ; public:\
+  \
+  inline bool has ## AddonName () const\
+  { return (get ## AddonName () != nullptr);\
+  }\
+  inline TypeName * get ## AddonName ()\
+  { return static_cast< TypeName *>( it ->second.get() );\
+  }\
+  inline const TypeName* get ## AddonName () const\
+  { return static_cast< TypeName *>( it ->second.get() );\
+  }\
+  inline void set ## AddonName (const TypeName * addon)\
+  { it ->second = addon->cloneAddon(this); CreationCallback\
+  }\
+  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)\
+  { becomeManager(addon.get()); it ->second = std::move(addon); CreationCallback\
+  }\
+  template <typename ...Args>\
+  inline TypeName * create ## AddonName (Args&&... args)\
+  { it ->second = std::unique_ptr< TypeName >(\
+          new TypeName (this, std::forward<Args>(args)...));\
+    return static_cast< TypeName *>( it ->second.get() ); CreationCallback\
+  }\
+  inline void erase ## AddonName ()\
+  { DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase ## AddonName, it, DART_BLANK)\
+    it ->second = nullptr;\
+  }\
+  inline std::unique_ptr< TypeName > release ## AddonName ()\
+  { DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release ## AddonName, it, nullptr)\
+    std::unique_ptr< TypeName > extraction = std::unique_ptr< TypeName >(\
+          static_cast< TypeName *>(it ->second.release()));\
+    it ->second = nullptr; return extraction;\
+  }
+
+//==============================================================================
+#define DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName, CreationCallback )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( AddonName, AddonName, m ## AddonName ## Iterator, CreationCallback )
 
 //==============================================================================
 #define DART_SPECIALIZED_ADDON_INLINE( AddonName )                              \
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName, AddonName, m ## AddonName ## Iterator )
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName, DART_BLANK )
+
+//==============================================================================
+#define DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName, CreationCallback )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( ParentName :: AddonName, ParentName ## AddonName, m ## ParentName ## AddonName ## Iterator, CreationCallback )
 
 //==============================================================================
 #define DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName, m ## ParentName ## AddonName ## Iterator )
+  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName, DART_BLANK )
 
 //==============================================================================
 #define DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, TypeName, AddonName )                                                                  \

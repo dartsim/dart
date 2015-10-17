@@ -70,9 +70,7 @@ public:
   /// Implement this function to allow your Extensible type to be copied safely.
   virtual std::unique_ptr<T> clone() const = 0;
 
-  /// Copy the contents of anotherExtensible into this one. We do not enforce
-  /// that the incoming type is const, but we trust you not to modify its
-  /// contents.
+  /// Copy the contents of anotherExtensible into this one.
   virtual void copy(const T& anotherExtensible) = 0;
 };
 

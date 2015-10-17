@@ -50,7 +50,8 @@ namespace dynamics {
 /// Node class). This will increment the version count any time the
 /// Addon::setProperties function is called.
 template <class BaseT, typename PropertiesDataT, class ManagerT = Node,
-          void (*updateProperties)(BaseT*) = &common::detail::NoOp<BaseT*> >
+          void (*updateProperties)(BaseT*) = &common::detail::NoOp<BaseT*>,
+          bool OptionalT = true>
 class AddonWithProtectedPropertiesInSkeleton : public common::Addon
 {
 public:
@@ -60,6 +61,7 @@ public:
   using ManagerType = ManagerT;
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
+  constexpr static bool Optional = OptionalT;
 
   AddonWithProtectedPropertiesInSkeleton() = delete;
   AddonWithProtectedPropertiesInSkeleton(
@@ -68,6 +70,10 @@ public:
   /// Construct using a PropertiesData instance
   AddonWithProtectedPropertiesInSkeleton(
       ManagerType* mgr, const PropertiesData& properties = PropertiesData());
+
+  // Documentation inherited
+  std::unique_ptr<common::Addon> cloneAddon(
+      common::AddonManager* newManager) const override final;
 
   // Documentation inherited
   void setAddonProperties(
@@ -81,6 +87,9 @@ public:
 
   /// Get the Properties of this Addon
   const Properties& getProperties() const;
+
+  // Documentation inherited
+  bool isOptional(common::AddonManager* oldManager) override final;
 
   /// Get the Skeleton that this Addon is embedded in
   SkeletonPtr getSkeleton();
@@ -96,10 +105,6 @@ public:
 
   /// Increment the version number of the Skeleton this Addon is attached to
   void incrementSkeletonVersion();
-
-  // Documentation inherited
-  std::unique_ptr<common::Addon> cloneAddon(
-      common::AddonManager* newManager) const override final;
 
 protected:
 
@@ -123,7 +128,8 @@ protected:
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT = Node,
           void (*updateState)(BaseT*) = &common::detail::NoOp<BaseT*>,
-          void (*updateProperties)(BaseT*) = updateState>
+          void (*updateProperties)(BaseT*) = updateState,
+          bool OptionalT = true>
 class AddonWithProtectedStateAndPropertiesInSkeleton : public common::Addon
 {
 public:
@@ -136,6 +142,7 @@ public:
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateState)(Base*) = updateState;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
+  constexpr static bool Optional = OptionalT;
 
   AddonWithProtectedStateAndPropertiesInSkeleton() = delete;
   AddonWithProtectedStateAndPropertiesInSkeleton(
@@ -152,6 +159,10 @@ public:
       ManagerT* mgr,
       const PropertiesData& properties,
       const StateData& state = StateData());
+
+  // Documentation inherited
+  std::unique_ptr<common::Addon> cloneAddon(
+      common::AddonManager* newManager) const override final;
 
   // Documentation inherited
   void setAddonState(
@@ -179,6 +190,9 @@ public:
   /// Get the Properties of this Addon
   const Properties& getProperties() const;
 
+  // Documentation inherited
+  bool isOptional(common::AddonManager* oldManager) override final;
+
   /// Get the Skeleton that this Addon is embedded in
   SkeletonPtr getSkeleton();
 
@@ -193,10 +207,6 @@ public:
 
   /// Increment the version number of the Skeleton this Addon is attached to
   void incrementSkeletonVersion();
-
-  // Documentation inherited
-  std::unique_ptr<common::Addon> cloneAddon(
-      common::AddonManager* newManager) const override final;
 
 protected:
 

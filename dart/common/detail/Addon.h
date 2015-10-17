@@ -63,7 +63,6 @@ namespace common {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(Base, ManagerType, newManager, castedManager, func)\
   if(nullptr == castedManager) return nullptr;
 
-
 //==============================================================================
 template <class Base, typename StateData,
           class ManagerType, void (*updateState)(Base*)>

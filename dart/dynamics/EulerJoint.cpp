@@ -66,6 +66,7 @@ EulerJoint::Properties::Properties(
 //==============================================================================
 EulerJoint::~EulerJoint()
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -301,8 +302,10 @@ EulerJoint::EulerJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(EulerJoint, Addon);
   createEulerJointAddon(_properties);
-  setProperties(_properties);
-  updateDegreeOfFreedomNames();
+
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  MultiDofJoint<3>::setProperties(_properties);
 }
 
 //==============================================================================

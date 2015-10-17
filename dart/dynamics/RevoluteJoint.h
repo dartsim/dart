@@ -88,7 +88,7 @@ public:
   };
 
   DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_NESTED_SPECIALIZED_ADDON_INLINE(RevoluteJoint, Addon)
+  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(RevoluteJoint, Addon)
 
   /// Destructor
   virtual ~RevoluteJoint();

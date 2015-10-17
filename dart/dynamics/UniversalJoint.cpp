@@ -205,8 +205,10 @@ UniversalJoint::UniversalJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(UniversalJoint, Addon);
   createUniversalJointAddon(_properties);
-  setProperties(_properties);
-  updateDegreeOfFreedomNames();
+
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  MultiDofJoint<2>::setProperties(_properties);
 }
 
 //==============================================================================

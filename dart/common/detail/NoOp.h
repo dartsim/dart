@@ -54,4 +54,9 @@ void NoOp(Args... /*args*/)
 } // namespace common
 } // namespace dart
 
+// The DART_BLANK macro can be passed into macro arguments where you want the
+// argument to expand into blank space.
+#define DART_BLANK // leave blank
+
+
 #endif // DART_COMMON_DETAIL_NOOP_H_

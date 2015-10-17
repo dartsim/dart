@@ -552,7 +552,6 @@ FreeJoint::FreeJoint(const Properties& _properties)
     mQ(Eigen::Isometry3d::Identity())
 {
   setProperties(_properties);
-  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

@@ -69,6 +69,12 @@ const Addon::Properties* Addon::getAddonProperties() const
 }
 
 //==============================================================================
+bool Addon::isOptional(AddonManager* /*oldManager*/)
+{
+  return true;
+}
+
+//==============================================================================
 Addon::Addon(AddonManager* manager)
 {
   if(nullptr == manager)

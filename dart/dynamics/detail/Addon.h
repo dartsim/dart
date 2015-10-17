@@ -44,9 +44,9 @@ namespace dynamics {
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
 AddonWithProtectedPropertiesInSkeleton(
     ManagerType* mgr, const PropertiesData& properties)
   : Addon(mgr),
@@ -55,113 +55,13 @@ AddonWithProtectedPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
-
-  UpdateProperties(static_cast<Base*>(this));
-  incrementSkeletonVersion();
 }
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-setAddonProperties(
-    const std::unique_ptr<common::Addon::Properties>& someProperties)
-{
-  setProperties(static_cast<const Properties&>(*someProperties));
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-const common::Addon::Properties* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-getAddonProperties() const
-{
-  return &mProperties;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-setProperties(const PropertiesData& properties)
-{
-  static_cast<PropertiesData&>(mProperties) = properties;
-
-  UpdateProperties(static_cast<Base*>(this));
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-auto AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-getProperties() const -> const Properties&
-{
-  return mProperties;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-SkeletonPtr AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::getSkeleton()
-{
-  if(mManager)
-    return mManager->getSkeleton();
-
-  return nullptr;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-ConstSkeletonPtr AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::getSkeleton() const
-{
-  if(mManager)
-    return mManager->getSkeleton();
-
-  return nullptr;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-ManagerT* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::getManager()
-{
-  return mManager;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-const ManagerT* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::getManager() const
-{
-  return mManager;
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
-void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-incrementSkeletonVersion()
-{
-  if(const SkeletonPtr& skel = getSkeleton())
-    skel->incrementVersion();
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 std::unique_ptr<common::Addon> AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
 cloneAddon(common::AddonManager* newManager) const
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
@@ -171,26 +71,135 @@ cloneAddon(common::AddonManager* newManager) const
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties>::
-changeManager(common::AddonManager* newManager)
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+setAddonProperties(
+    const std::unique_ptr<common::Addon::Properties>& someProperties)
 {
-  DART_COMMON_CAST_NEW_MANAGER_TYPE(
-        Base, ManagerType, newManager, castedManager, changeManager);
-  mManager = castedManager;
+  setProperties(static_cast<const Properties&>(*someProperties));
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+const common::Addon::Properties* AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+getAddonProperties() const
+{
+  return &mProperties;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+void AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+setProperties(const PropertiesData& properties)
+{
+  static_cast<PropertiesData&>(mProperties) = properties;
 
   UpdateProperties(static_cast<Base*>(this));
   incrementSkeletonVersion();
 }
 
 //==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+auto AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+getProperties() const -> const Properties&
+{
+  return mProperties;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+bool AddonWithProtectedPropertiesInSkeleton<
+  BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+isOptional(common::AddonManager* oldManager)
+{
+  if(Optional)
+    return true;
+
+  // If the Addon is not optional, we should check whether the Manager type is
+  // the kind that this Addon belongs to.
+  return (nullptr == dynamic_cast<ManagerType*>(oldManager));
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+SkeletonPtr AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getSkeleton()
+{
+  if(mManager)
+    return mManager->getSkeleton();
+
+  return nullptr;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+ConstSkeletonPtr AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getSkeleton() const
+{
+  if(mManager)
+    return mManager->getSkeleton();
+
+  return nullptr;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+ManagerT* AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getManager()
+{
+  return mManager;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+const ManagerT* AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getManager() const
+{
+  return mManager;
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+void AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+incrementSkeletonVersion()
+{
+  if(const SkeletonPtr& skel = getSkeleton())
+    skel->incrementVersion();
+}
+
+//==============================================================================
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+void AddonWithProtectedPropertiesInSkeleton<
+    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+changeManager(common::AddonManager* newManager)
+{
+  DART_COMMON_CAST_NEW_MANAGER_TYPE(
+        Base, ManagerType, newManager, castedManager, changeManager);
+  mManager = castedManager;
+}
+
+//==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
     ManagerType* mgr, const StateData& state, const PropertiesData& properties)
   : common::Addon(mgr),
@@ -200,19 +209,15 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
-
-  UpdateState(static_cast<Base*>(this));
-  UpdateProperties(static_cast<Base*>(this));
-  incrementSkeletonVersion();
 }
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
     ManagerType* mgr, const PropertiesData& properties, const StateData& state)
   : common::Addon(mgr),
@@ -222,19 +227,29 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, mgr, castedManager, constructor);
   mManager = castedManager;
-
-  UpdateState(static_cast<Base*>(this));
-  UpdateProperties(static_cast<Base*>(this));
-  incrementSkeletonVersion();
 }
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
+std::unique_ptr<common::Addon> AddonWithProtectedStateAndPropertiesInSkeleton<
+    BaseT, StateDataT, PropertiesDataT,
+    ManagerT, updateState, updateProperties, OptionalT>::
+cloneAddon(common::AddonManager* newManager) const
+{
+  DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
+        Base, ManagerType, newManager, castedManager, clone);
+  return std::unique_ptr<Base>(new Base(castedManager, mState, mProperties));
+}
+
+//==============================================================================
+template <class BaseT, typename StateDataT, typename PropertiesDataT,
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 setAddonState(const std::unique_ptr<Addon::State>& otherState)
 {
   setState(static_cast<const State&>(*otherState));
@@ -242,11 +257,11 @@ setAddonState(const std::unique_ptr<Addon::State>& otherState)
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 const common::Addon::State* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getAddonState() const
 {
   return &mState;
@@ -254,11 +269,11 @@ getAddonState() const
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 setState(const StateData& state)
 {
   static_cast<StateData&>(mState) = state;
@@ -267,11 +282,11 @@ setState(const StateData& state)
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 auto AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getState() const -> const State&
 {
   return mState;
@@ -279,11 +294,11 @@ getState() const -> const State&
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 setAddonProperties(const std::unique_ptr<Addon::Properties>& properties)
 {
   setProperties(static_cast<const Properties&>(*properties));
@@ -291,11 +306,11 @@ setAddonProperties(const std::unique_ptr<Addon::Properties>& properties)
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 const common::Addon::Properties* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getAddonProperties() const
 {
   return &mProperties;
@@ -303,11 +318,11 @@ getAddonProperties() const
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
@@ -318,11 +333,11 @@ setProperties(const PropertiesData& properties)
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 auto AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getProperties() const -> const Properties&
 {
   return mProperties;
@@ -330,11 +345,28 @@ getProperties() const -> const Properties&
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
+bool AddonWithProtectedStateAndPropertiesInSkeleton<
+    BaseT, StateDataT, PropertiesDataT,
+    ManagerT, updateState, updateProperties, OptionalT>::
+isOptional(common::AddonManager* oldManager)
+{
+  if(Optional)
+    return true;
+
+  // If the Addon is not optional, we should check whether the Manager type is
+  // the kind that this Addon belongs to.
+  return (nullptr == dynamic_cast<ManagerType*>(oldManager));
+}
+
+//==============================================================================
+template <class BaseT, typename StateDataT, typename PropertiesDataT,
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 SkeletonPtr AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getSkeleton()
 {
   if(mManager)
@@ -345,11 +377,11 @@ getSkeleton()
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 ConstSkeletonPtr AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getSkeleton() const
 {
   if(mManager)
@@ -360,11 +392,11 @@ getSkeleton() const
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 ManagerT* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getManager()
 {
   return mManager;
@@ -372,11 +404,11 @@ getManager()
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 const ManagerT* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 getManager() const
 {
   return mManager;
@@ -384,11 +416,11 @@ getManager() const
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 incrementSkeletonVersion()
 {
   if(const SkeletonPtr& skel = getSkeleton())
@@ -397,34 +429,17 @@ incrementSkeletonVersion()
 
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
-std::unique_ptr<common::Addon> AddonWithProtectedStateAndPropertiesInSkeleton<
-    BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
-cloneAddon(common::AddonManager* newManager) const
-{
-  DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
-        Base, ManagerType, newManager, castedManager, clone);
-  return std::unique_ptr<Base>(new Base(castedManager, mState, mProperties));
-}
-
-//==============================================================================
-template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT,
-          void (*updateState)(BaseT*), void (*updateProperties)(BaseT*)>
+          class ManagerT, void (*updateState)(BaseT*),
+          void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties>::
+    ManagerT, updateState, updateProperties, OptionalT>::
 changeManager(common::AddonManager* newManager)
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
         Base, ManagerType, newManager, castedManager, changeManager);
-  mManager = castedManager;
 
-  UpdateState(static_cast<Base*>(this));
-  UpdateProperties(static_cast<Base*>(this));
-  incrementSkeletonVersion();
+  mManager = castedManager;
 }
 
 } // namespace dynamics
@@ -434,15 +449,15 @@ changeManager(common::AddonManager* newManager)
 #define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (ManagerType* mgr, const PropertiesData& properties)\
-    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdateProperties>(mgr, properties) { }
+    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdateProperties, Optional>(mgr, properties) { }
 
 //==============================================================================
 #define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (ManagerType* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties >(mgr, state, properties) { }\
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties, Optional >(mgr, state, properties) { }\
   inline ClassName (ManagerType* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties >(mgr, properties, state) { }
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties, Optional >(mgr, properties, state) { }
 
 //==============================================================================
 #define DART_DYNAMICS_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
@@ -493,5 +508,39 @@ changeManager(common::AddonManager* newManager)
 #define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_INDEX( Class, Type, Name, Size )\
   DART_DYNAMICS_SET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);\
   DART_DYNAMICS_GET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);
+
+//==============================================================================
+#define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
+  AddonName :: UpdateProperties( GetAddon () );\
+  GetAddon ()->incrementSkeletonVersion();
+
+//==============================================================================
+#define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\
+  AddonName :: UpdateState( GetAddon () );\
+  DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon );
+
+//==============================================================================
+// Used for Addons that have Properties (but no State) inside of a Skeleton
+#define DART_DYNAMICS_SKEL_PROPERTIES_ADDON_INLINE( AddonName )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
+      DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
+
+//==============================================================================
+// Used for Addons that have both State and Properties inside of a Skeleton
+#define DART_DYNAMICS_SKEL_ADDON_INLINE( AddonName )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
+      DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
+
+//==============================================================================
+// Used for nested-class Addons that have Properties (but no State) inside of a Skeleton
+#define DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( ParentName, AddonName )\
+  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName,\
+      DETAIL_DART_ADDON_PROPERTIES_UPDATE( ParentName :: AddonName, get ## ParentName ## AddonName ) )
+
+//==============================================================================
+// Used for nested-class Addons that have both State and Properties inside of a Skeleton
+#define DART_DYNAMICS_NESTED_SKEL_ADDON_INLINE( ParentName, AddonName )\
+  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName,\
+      DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( ParentName :: AddonName, get ## ParentName ## AddonName ) )
 
 #endif // DART_DYNAMICS_DETAIL_ADDON_H_

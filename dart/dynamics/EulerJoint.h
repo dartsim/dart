@@ -93,7 +93,7 @@ public:
   };
 
   DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_NESTED_SPECIALIZED_ADDON_INLINE( EulerJoint, Addon )
+  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( EulerJoint, Addon )
 
   /// Destructor
   virtual ~EulerJoint();

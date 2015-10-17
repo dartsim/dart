@@ -130,21 +130,7 @@ void SingleDofJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void SingleDofJoint::setProperties(const UniqueProperties& _properties)
 {
-  setDofName(0, _properties.mDofName, _properties.mPreserveDofName);
-  setPositionLowerLimit(0, _properties.mPositionLowerLimit);
-  setPositionUpperLimit(0, _properties.mPositionUpperLimit);
-  setInitialPosition(0, _properties.mInitialPosition);
-  setVelocityLowerLimit(0, _properties.mVelocityLowerLimit);
-  setVelocityUpperLimit(0, _properties.mVelocityUpperLimit);
-  setInitialVelocity(0, _properties.mInitialVelocity);
-  setAccelerationLowerLimit(0, _properties.mAccelerationLowerLimit);
-  setAccelerationUpperLimit(0, _properties.mAccelerationUpperLimit);
-  setForceLowerLimit(0, _properties.mForceLowerLimit);
-  setForceUpperLimit(0, _properties.mForceUpperLimit);
-  setSpringStiffness(0, _properties.mSpringStiffness);
-  setRestPosition(0, _properties.mRestPosition);
-  setDampingCoefficient(0, _properties.mDampingCoefficient);
-  setCoulombFriction(0, _properties.mFriction);
+  getSingleDofJointAddon()->setProperties(_properties);
 }
 
 //==============================================================================

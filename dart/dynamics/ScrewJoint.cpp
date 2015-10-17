@@ -180,6 +180,10 @@ ScrewJoint::ScrewJoint(const Properties& _properties)
 {
   DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(ScrewJoint, Addon);
   createScrewJointAddon(_properties);
+
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  SingleDofJoint::setProperties(_properties);
 }
 
 //==============================================================================
