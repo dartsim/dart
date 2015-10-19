@@ -140,7 +140,7 @@ public:
           Addon, UniqueProperties, SingleDofJoint, common::detail::NoOp, false>
   {
   public:
-    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon, &common::detail::NoOp )
 
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)

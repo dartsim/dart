@@ -162,7 +162,8 @@ public:
 
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, MultiDofJoint<NumDofs> >
+          Addon, UniqueProperties, MultiDofJoint<NumDofs>,
+          &common::detail::NoOp<Addon*>, false >
   {
   public:
     Addon(const Addon&) = delete;

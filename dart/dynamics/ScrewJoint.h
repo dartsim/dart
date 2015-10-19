@@ -85,7 +85,7 @@ public:
           &detail::JointPropertyUpdate<Addon>, false >
   {
   public:
-    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
 
     void setAxis(const Eigen::Vector3d& _axis);
     const Eigen::Vector3d& getAxis() const;

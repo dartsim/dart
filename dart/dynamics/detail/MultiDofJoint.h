@@ -148,7 +148,7 @@ MultiDofJoint<DOF>::Addon::Addon(
     const typename Addon::PropertiesData& properties)
   : AddonWithProtectedPropertiesInSkeleton<
         typename Addon::Base, typename Addon::PropertiesData,
-        typename Addon::ManagerType, Addon::UpdateProperties,
+        typename Addon::ManagerType, &common::detail::NoOp<typename Addon::Base*>,
         Addon::Optional>(mgr, properties)
 {
   // Do nothing

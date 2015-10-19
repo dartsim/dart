@@ -78,7 +78,7 @@ class Support final :
 {
 public:
 
-  DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support )
+  DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact

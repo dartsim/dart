@@ -131,7 +131,7 @@ public:
           &detail::JointPropertyUpdate<Addon>, false >
   {
   public:
-    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
 
     void setXYPlane();
     void setYZPlane();

@@ -445,18 +445,22 @@ changeManager(common::AddonManager* newManager)
 } // namespace dart
 
 //==============================================================================
-#define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName )\
+#define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (ManagerType* mgr, const PropertiesData& properties)\
-    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdateProperties, Optional>(mgr, properties) { }
+    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdatePropertiesMacro, Optional>(mgr, properties) { }
 
 //==============================================================================
-#define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName )\
+#define DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( ClassName )\
+  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate<Addon> )
+
+//==============================================================================
+#define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (ManagerType* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties, Optional >(mgr, state, properties) { }\
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, state, properties) { }\
   inline ClassName (ManagerType* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateState, UpdateProperties, Optional >(mgr, properties, state) { }
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, properties, state) { }
 
 //==============================================================================
 #define DART_DYNAMICS_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\

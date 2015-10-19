@@ -88,7 +88,7 @@ public:
           &detail::JointPropertyUpdate<Addon>, false >
   {
   public:
-    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
+    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
     DART_DYNAMICS_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
   };
 
