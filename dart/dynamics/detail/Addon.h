@@ -74,10 +74,9 @@ template <class BaseT, typename PropertiesDataT,
           class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedPropertiesInSkeleton<
     BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
-setAddonProperties(
-    const std::unique_ptr<common::Addon::Properties>& someProperties)
+setAddonProperties(const Addon::Properties& someProperties)
 {
-  setProperties(static_cast<const Properties&>(*someProperties));
+  setProperties(static_cast<const Properties&>(someProperties));
 }
 
 //==============================================================================
@@ -250,9 +249,9 @@ template <class BaseT, typename StateDataT, typename PropertiesDataT,
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
     ManagerT, updateState, updateProperties, OptionalT>::
-setAddonState(const std::unique_ptr<Addon::State>& otherState)
+setAddonState(const Addon::State& otherState)
 {
-  setState(static_cast<const State&>(*otherState));
+  setState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
@@ -299,9 +298,9 @@ template <class BaseT, typename StateDataT, typename PropertiesDataT,
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
     ManagerT, updateState, updateProperties, OptionalT>::
-setAddonProperties(const std::unique_ptr<Addon::Properties>& properties)
+setAddonProperties(const Addon::Properties& properties)
 {
-  setProperties(static_cast<const Properties&>(*properties));
+  setProperties(static_cast<const Properties&>(properties));
 }
 
 //==============================================================================

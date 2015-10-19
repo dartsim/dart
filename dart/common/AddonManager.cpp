@@ -57,7 +57,7 @@ void AddonManager::setAddonStates(const State& newStates)
     {
       Addon* addon = addons->second.get();
       if(addon && states->second)
-        addon->setAddonState(states->second);
+        addon->setAddonState(*states->second);
 
       ++addons;
       ++states;
@@ -153,7 +153,7 @@ void AddonManager::setAddonProperties(const Properties& newProperties)
     {
       Addon* addon = addons->second.get();
       if(addon)
-        addon->setAddonProperties(props->second);
+        addon->setAddonProperties(*props->second);
 
       ++addons;
       ++props;

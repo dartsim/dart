@@ -45,7 +45,7 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-void Addon::setAddonState(const std::unique_ptr<State>& /*otherState*/)
+void Addon::setAddonState(const State& /*otherState*/)
 {
   // Do nothing
 }
@@ -57,7 +57,7 @@ const Addon::State* Addon::getAddonState() const
 }
 
 //==============================================================================
-void Addon::setAddonProperties(const std::unique_ptr<Properties>& /*someProperties*/)
+void Addon::setAddonProperties(const Properties& /*someProperties*/)
 {
   // Do nothing
 }

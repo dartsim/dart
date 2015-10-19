@@ -98,15 +98,14 @@ public:
   virtual std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const = 0;
 
   /// Set the State of this Addon. By default, this does nothing.
-  virtual void setAddonState(const std::unique_ptr<State>& otherState);
+  virtual void setAddonState(const State& otherState);
 
   /// Get the State of this Addon. By default, this returns a nullptr which
   /// implies that the Addon is stateless.
   virtual const State* getAddonState() const;
 
   /// Set the Properties of this Addon. By default, this does nothing.
-  virtual void setAddonProperties(
-      const std::unique_ptr<Properties>& someProperties);
+  virtual void setAddonProperties(const Properties& someProperties);
 
   /// Get the Properties of this Addon. By default, this returns a nullptr
   /// which implies that the Addon has no properties.

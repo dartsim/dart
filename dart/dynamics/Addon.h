@@ -76,8 +76,7 @@ public:
       common::AddonManager* newManager) const override final;
 
   // Documentation inherited
-  void setAddonProperties(
-      const std::unique_ptr<Addon::Properties>& someProperties) override final;
+  void setAddonProperties(const Addon::Properties& someProperties) override final;
 
   // Documentation inherited
   const Addon::Properties* getAddonProperties() const override final;
@@ -165,8 +164,7 @@ public:
       common::AddonManager* newManager) const override final;
 
   // Documentation inherited
-  void setAddonState(
-      const std::unique_ptr<Addon::State>& otherState) override final;
+  void setAddonState(const Addon::State& otherState) override final;
 
   // Documentation inherited
   const Addon::State* getAddonState() const override final;
@@ -178,8 +176,7 @@ public:
   const State& getState() const;
 
   // Documentation inherited
-  void setAddonProperties(
-      const std::unique_ptr<Addon::Properties>& properties) override final;
+  void setAddonProperties(const Addon::Properties& properties) override final;
 
   // Documentation inherited
   const Addon::Properties* getAddonProperties() const override final;
