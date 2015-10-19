@@ -63,6 +63,8 @@ public:
   friend class Entity;
   friend class WorldFrame;
 
+  Frame(const Frame&) = delete;
+
   /// Destructor
   virtual ~Frame();
 

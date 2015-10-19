@@ -144,7 +144,7 @@ std::shared_ptr<World> parseWorldURDF(
           return nullptr;
         }
 
-        const std::string fileFullName = absoluteUri.toString();
+        const std::string fileFullName = absoluteUri.getFilesystemPath();
         entity.uri = absoluteUri;
         // Parse model
         std::string xml_model_string;
@@ -179,7 +179,7 @@ std::shared_ptr<World> parseWorldURDF(
           TiXmlElement* origin = entity_xml->FirstChildElement("origin");
           if( origin )
           {
-            if( !parsePose( entity.origin, origin ) )
+            if( !urdf::parsePose( entity.origin, origin ) )
             {
               dtwarn << "[ERROR] Missing origin tag for '" << entity.model->getName() << "'\n";
               return world;

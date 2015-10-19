@@ -107,7 +107,7 @@ static tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorld(
-  const std::string& _filename,
+  const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _retriever)
 {
   const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
@@ -117,11 +117,11 @@ simulation::WorldPtr SkelParser::readWorld(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str(), retriever);
+    openXMLFile(_dartFile, _uri, retriever);
   }
   catch(std::exception const& e)
   {
-    dterr << "[SkelParser::readWorld] LoadFile [" << _filename
+    dterr << "[SkelParser::readWorld] LoadFile [" << _uri.toString()
           << "] Failed: " << e.what() << "\n";
     return nullptr;
   }
@@ -129,18 +129,18 @@ simulation::WorldPtr SkelParser::readWorld(
   tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
   if(!worldElement)
   {
-    dterr << "[SkelParser::readWorld] File named [" << _filename << "] could "
-          << "not be parsed!\n";
+    dterr << "[SkelParser::readWorld] File named [" << _uri.toString()
+          << "] could not be parsed!\n";
     return nullptr;
   }
 
-  return readWorld(worldElement, _filename, retriever);
+  return readWorld(worldElement, _uri, retriever);
 }
 
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorldXML(
   const std::string& _xmlString,
-  const std::string& _baseUri,
+  const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _retriever)
 {
   const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
@@ -164,7 +164,7 @@ simulation::WorldPtr SkelParser::readWorldXML(
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
-  const std::string& _filename,
+  const common::Uri& _fileUri,
   const common::ResourceRetrieverPtr& _retriever)
 {
   const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
@@ -174,11 +174,11 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   tinyxml2::XMLDocument _dartFile;
   try
   {
-    openXMLFile(_dartFile, _filename.c_str(), retriever);
+    openXMLFile(_dartFile, _fileUri, retriever);
   }
   catch(std::exception const& e)
   {
-    std::cout << "LoadFile [" << _filename << "] Fails: "
+    std::cout << "LoadFile [" << _fileUri.toString() << "] Fails: "
               << e.what() << std::endl;
     return nullptr;
   }
@@ -189,8 +189,8 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   skelElement = _dartFile.FirstChildElement("skel");
   if (skelElement == nullptr)
   {
-    dterr << "Skel file[" << _filename << "] does not contain <skel> as the "
-          << "element.\n";
+    dterr << "Skel file[" << _fileUri.toString()
+          << "] does not contain <skel> as the element.\n";
     return nullptr;
   }
 
@@ -200,14 +200,14 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   skeletonElement = skelElement->FirstChildElement("skeleton");
   if (skeletonElement == nullptr)
   {
-    dterr << "Skel file[" << _filename
+    dterr << "Skel file[" << _fileUri.toString()
           << "] does not contain <skeleton> element "
           <<"under <skel> element.\n";
     return nullptr;
   }
 
   dynamics::SkeletonPtr newSkeleton = readSkeleton(
-    skeletonElement, _filename, retriever);
+    skeletonElement, _fileUri, retriever);
 
   return newSkeleton;
 }
@@ -215,7 +215,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 //==============================================================================
 simulation::WorldPtr SkelParser::readWorld(
   tinyxml2::XMLElement* _worldElement,
-  const std::string& _baseUri,
+  const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_worldElement != nullptr);
@@ -456,7 +456,7 @@ bool createJointAndNodePair(dynamics::SkeletonPtr skeleton,
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
     tinyxml2::XMLElement* _skeletonElement,
-    const std::string& _baseUri,
+    const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_skeletonElement != nullptr);
@@ -575,7 +575,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 SkelParser::SkelBodyNode SkelParser::readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
     const Eigen::Isometry3d& _skeletonFrame,
-    const std::string& _baseUri,
+    const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
   assert(_bodyNodeElement != nullptr);
@@ -699,7 +699,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
 SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
     tinyxml2::XMLElement* _softBodyNodeElement,
     const Eigen::Isometry3d& _skeletonFrame,
-    const std::string& _baseUri,
+    const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
   //---------------------------------- Note ------------------------------------
@@ -809,10 +809,11 @@ SkelParser::SkelBodyNode SkelParser::readSoftBodyNode(
 }
 
 //==============================================================================
-dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
-                                         const std::string& bodyName,
-                                         const std::string& _baseUri,
-                                         const common::ResourceRetrieverPtr& _retriever)
+dynamics::ShapePtr SkelParser::readShape(
+    tinyxml2::XMLElement* vizEle,
+    const std::string& bodyName,
+    const common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& _retriever)
 {
   dynamics::ShapePtr newShape;
 
@@ -857,8 +858,8 @@ dynamics::ShapePtr SkelParser::readShape(tinyxml2::XMLElement* vizEle,
              << "plane shape. DART will use 0.0." << std::endl;
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
     }
-  } 
-  else if (hasElement(geometryEle, "mesh")) 
+  }
+  else if (hasElement(geometryEle, "mesh"))
   {
     tinyxml2::XMLElement* meshEle      = getElement(geometryEle, "mesh");
     std::string           filename     = getValueString(meshEle, "file_name");

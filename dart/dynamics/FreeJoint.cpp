@@ -508,25 +508,9 @@ void FreeJoint::setAngularAcceleration(
 
 //==============================================================================
 Eigen::Matrix6d FreeJoint::getLocalJacobianStatic(
-    const Eigen::Vector6d& _positions) const
+    const Eigen::Vector6d& /*positions*/) const
 {
-  // Jacobian expressed in the Joint frame
-  Eigen::Matrix6d J = Eigen::Matrix6d::Identity();
-  J.topLeftCorner<3,3>() = math::expMapJac(-_positions.head<3>());
-
-  // Transform the reference frame to the child BodyNode frame
-  J.leftCols<3>()  = math::AdTJacFixed(mJointP.mT_ChildBodyToJoint,
-                                       J.leftCols<3>());
-  J.bottomRightCorner<3,3>()
-      = mJointP.mT_ChildBodyToJoint.linear()
-      * math::expMapRot(-_positions.head<3>());
-
-  // Note that the top right 3x3 block of J is always zero
-  assert((J.topRightCorner<3,3>()) == Eigen::Matrix3d::Zero());
-
-  assert(!math::isNan(J));
-
-  return J;
+  return mJacobian;
 }
 
 //==============================================================================
@@ -534,16 +518,10 @@ Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
     const Eigen::Vector6d& _q2,
     const Eigen::Vector6d& _q1) const
 {
-  Eigen::Vector6d dq;
+  const Eigen::Isometry3d T1 = convertToTransform(_q1);
+  const Eigen::Isometry3d T2 = convertToTransform(_q2);
 
-  const Eigen::Matrix3d Jw  = getLocalJacobianStatic(_q1).topLeftCorner<3,3>();
-  const Eigen::Matrix3d R1T = math::expMapRot(-_q1.head<3>());
-  const Eigen::Matrix3d R2  = math::expMapRot( _q2.head<3>());
-
-  dq.head<3>() = Jw.inverse() * math::logMap(R1T * R2);
-  dq.tail<3>() = _q2.tail<3>() - _q1.tail<3>();
-
-  return dq;
+  return convertToPositions(T1.inverse() * T2);
 }
 
 //==============================================================================
@@ -551,6 +529,8 @@ FreeJoint::FreeJoint(const Properties& _properties)
   : MultiDofJoint<6>(_properties),
     mQ(Eigen::Isometry3d::Identity())
 {
+  mJacobianDeriv = Eigen::Matrix6d::Zero();
+
   setProperties(_properties);
   updateDegreeOfFreedomNames();
 }
@@ -584,15 +564,8 @@ bool FreeJoint::isCyclic(size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Vector6d& velocities = getVelocitiesStatic();
-
-  const Eigen::Isometry3d& Q = getQ();
-  Eigen::Isometry3d Qnext(Eigen::Isometry3d::Identity());
-
-  Qnext.linear() = Q.linear()
-      * math::expMapRot(getLocalJacobianStatic().topLeftCorner<3,3>()
-                        * velocities.head<3>() * _dt);
-  Qnext.translation() = Q.translation() + velocities.tail<3>() * _dt;
+  const Eigen::Isometry3d Qnext
+      = getQ() * convertToTransform(getVelocitiesStatic() * _dt);
 
   setPositionsStatic(convertToPositions(Qnext));
 }
@@ -626,40 +599,16 @@ void FreeJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobian(bool) const
+void FreeJoint::updateLocalJacobian(bool _mandatory) const
 {
-  mJacobian = getLocalJacobian(getPositionsStatic());
+  if (_mandatory)
+    mJacobian = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint);
 }
 
 //==============================================================================
 void FreeJoint::updateLocalJacobianTimeDeriv() const
 {
-  Eigen::Matrix<double, 6, 3> J;
-  J.topRows<3>()    = Eigen::Matrix3d::Zero();
-  J.bottomRows<3>() = Eigen::Matrix3d::Identity();
-
-  const Eigen::Vector6d& positions = getPositionsStatic();
-  const Eigen::Vector6d& velocities = getVelocitiesStatic();
-  Eigen::Matrix<double, 6, 3> dJ;
-  dJ.topRows<3>()    = math::expMapJacDot(positions.head<3>(),
-                                          velocities.head<3>()).transpose();
-  dJ.bottomRows<3>() = Eigen::Matrix3d::Zero();
-
-  const Eigen::Isometry3d T = mJointP.mT_ChildBodyToJoint
-                              * math::expAngular(-positions.head<3>());
-
-  mJacobianDeriv.leftCols<3>() =
-      math::AdTJacFixed(mJointP.mT_ChildBodyToJoint, dJ);
-  const Eigen::Matrix<double, 6, 6>& Jacobian = getLocalJacobianStatic();
-  mJacobianDeriv.col(3)
-      = -math::ad(Jacobian.leftCols<3>() * velocities.head<3>(),
-                  math::AdT(T, J.col(0)));
-  mJacobianDeriv.col(4)
-      = -math::ad(Jacobian.leftCols<3>() * velocities.head<3>(),
-                  math::AdT(T, J.col(1)));
-  mJacobianDeriv.col(5)
-      = -math::ad(Jacobian.leftCols<3>() * velocities.head<3>(),
-                  math::AdT(T, J.col(2)));
+  assert(Eigen::Matrix6d::Zero() == mJacobianDeriv);
 }
 
 //==============================================================================

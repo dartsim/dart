@@ -55,18 +55,6 @@
   typedef unsigned char   uint8;
 #endif
 
-/* Visual C does not define these functions */
-#if defined(_MSC_VER)
-  #define copysignf(x, y) ((float)_copysign(x, y))
-  #define copysign(x, y) _copysign(x, y)
-  #define nextafterf(x, y) _nextafterf(x, y)
-  #define nextafter(x, y) _nextafter(x, y)
-  #if !defined(_WIN64)
-    #define _ODE__NEXTAFTERF_REQUIRED
-  #endif
-#endif
-
-
 
 /* Define the dInfinity macro */
 #ifdef INFINITY

@@ -37,6 +37,9 @@
 #ifndef DART_COMMON_URI_H_
 #define DART_COMMON_URI_H_
 
+#include <string>
+#include "dart/common/Deprecated.h"
+
 namespace dart {
 namespace common {
 
@@ -78,10 +81,15 @@ private:
   std::string mValue;
 };
 
-
-class Uri final
+/// The Uri struct provides URI parsing and merging functionality based on RFC
+/// 3986.
+///
+/// We have Uri as a struct rather than class to expose member variables. Many
+/// ResourceRetreiver classes rewrite URIs to other types of URIs (e.g, resolve
+/// 'package://' URIs to 'file://' URIs), which is easier to implement if you
+/// have direct access to the URI components.
+struct Uri final
 {
-public:
   /// Scheme, e.g. 'http', 'file', 'package'
   UriComponent mScheme;
 
@@ -97,25 +105,93 @@ public:
   /// Fragment, e.g. the part of the URI after the #
   UriComponent mFragment;
 
+  /// Constructor
+  Uri() = default;
+
+  /// Constructor that takes a URI or local path. Internally, this is equivalent
+  /// to calling fromStringOrPath(_input) after default constructor.
+  ///
+  /// We don't declare this constructor as explicit in order to allow implicit
+  /// conversion from string so that you can pass in string parameter to a
+  /// function that takes Uri.
+  Uri(const std::string& _input);
+
+  /// Constructor that takes a URI or local path as const char*. The behavior is
+  /// identical to Uri(const std::string&).
+  Uri(const char* _input);
+
   /// Clear the URI by reset()ing all components.
   void clear();
 
-  /// Parse URI from a string; return success.
+  /// Parse a URI from a string; return success. All the components will be
+  /// cleared on failure.
   bool fromString(const std::string& _input);
 
-  /// Parse a URI or local path (i.e. URI with no schema) from a string.
+  /// Parse a local path (i.e. URI with no schema) from a string; return
+  /// success. Note that the input path should be absolute path. All the
+  /// components will be cleared on failure.
+  bool fromPath(const std::string& _path);
+
+  /// Parse a URI or local path (i.e. URI with no schema) from a string; return
+  /// success. We assume that any string without a scheme is a path. All the
+  /// components will be cleared on failure.
   bool fromStringOrPath(const std::string& _input);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
+  bool fromRelativeUri(const std::string& _base, const std::string& _relative,
+                       bool _strict = false);
+
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
+  bool fromRelativeUri(const char* _base, const char* _relative,
+                       bool _strict = false);
+
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const Uri& _base, const std::string& _relative,
                        bool _strict = false);
 
-  /// Resolve a relative path reference; return success.
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
+  bool fromRelativeUri(const Uri& _base, const char* _relative,
+                       bool _strict = false);
+
+  /// Resolve a relative path reference; return success. All the components will
+  /// be cleared on failure.
   bool fromRelativeUri(const Uri& _base, const Uri& _relative,
                        bool _strict = false);
 
   /// Combine the parts of the URI into a string.
   std::string toString() const;
+
+  /// Create URI from a string; return an empty URI on failure.
+  static Uri createFromString(const std::string& _input);
+
+  /// Create file URI from a string; return an empty URI on failure.
+  static Uri createFromPath(const std::string& _path);
+
+  /// Create general URI or file URI from a string; return an empty URI on
+  /// failure.
+  static Uri createFromStringOrPath(const std::string& _input);
+
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
+  static Uri createFromRelativeUri(const std::string& _base,
+                                   const std::string& _relative,
+                                   bool _strict = false);
+
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
+  static Uri createFromRelativeUri(const Uri& _base,
+                                   const std::string& _relative,
+                                   bool _strict = false);
+
+  /// Create URI resolving a relative path reference; return an empty URI on
+  /// failure.
+  static Uri createFromRelativeUri(const Uri& _base,
+                                   const Uri& _relative,
+                                   bool _strict = false);
 
   /// Parse a URI from a string; return an empty string on failure.
   static std::string getUri(const std::string& _input);
@@ -124,6 +200,25 @@ public:
   static std::string getRelativeUri(const std::string& _base,
                                     const std::string& _relative,
                                     bool _strict = false);
+
+  /// Resolve a relative path reference; return an empty string on failure.
+  static std::string getRelativeUri(const Uri& _base,
+                                    const std::string& _relative,
+                                    bool _strict = false);
+
+  /// Resolve a relative path reference; return an empty string on failure.
+  static std::string getRelativeUri(const Uri& _base,
+                                    const Uri& _relative,
+                                    bool _strict = false);
+
+  /// Get the path component of the URI as a string.
+  std::string getPath() const;
+
+  /// Get the path in the local filesystem as a string. You should use this
+  /// function rather than getPath() if you are trying to access a local file.
+  /// Note that this function is identical to getPath() for Unix systems, but
+  /// differ by the leading '/' on Windows.
+  std::string getFilesystemPath() const;
 
 private:
   /// Implement section 5.2.3 of RFC 3986.

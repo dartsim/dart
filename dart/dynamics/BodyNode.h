@@ -146,6 +146,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  BodyNode(const BodyNode&) = delete;
+
   /// Destructor
   virtual ~BodyNode();
 
@@ -276,10 +278,10 @@ public:
   //--------------------------------------------------------------------------
 
   /// Add a collision Shape into the BodyNode
-  void addCollisionShape(ShapePtr _shape);
+  void addCollisionShape(const ShapePtr& _shape);
 
   /// Remove a collision Shape from this BodyNode
-  void removeCollisionShape(ShapePtr _shape);
+  void removeCollisionShape(const ShapePtr& _shape);
 
   /// Remove all collision Shapes from this BodyNode
   void removeAllCollisionShapes();

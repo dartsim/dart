@@ -167,10 +167,6 @@ typedef dReal dQuaternion[4];
 #define dCopySign(a,b) ((dReal)copysignf(a,b)) /* copy value sign */
 #define dNextAfter(x, y) nextafterf(x, y) /* next value after */
 
-#if defined(_ODE__NEXTAFTERF_REQUIRED)
-float _nextafterf(float x, float y);
-#endif
-
 #ifdef HAVE___ISNANF
 #define dIsNan(x) (__isnanf(x))
 #elif defined(HAVE__ISNANF)
@@ -205,8 +201,6 @@ float _nextafterf(float x, float y);
 #define dCeil(x) ceil(x)
 #define dCopySign(a,b) (copysign((a),(b)))
 #define dNextAfter(x, y) nextafter(x, y)
-
-#undef _ODE__NEXTAFTERF_REQUIRED
 
 #ifdef HAVE___ISNAN
 #define dIsNan(x) (__isnan(x))

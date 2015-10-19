@@ -123,70 +123,84 @@ TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
   EXPECT_EQ("oasis:names:specification:docbook:dtd:xml:4.1.2", *uri.mPath);
 }
 
-TEST(UriHelpers, fromStringOrPath_PathNotUri_ReturnsOnlyPath)
+TEST(UriHelpers, fromPath_PathNotUri_ReturnsFileURIwithEmptyAuthority)
 {
+#ifdef _WIN32
+  std::vector<std::string> testPaths = {
+    "C:\\foo",
+    "C:\\foo\\",
+    "C:\\foo\\bar",
+  };
+#else
+  std::vector<std::string> testPaths = {
+    "/foo",
+    "/foo/",
+    "/foo/bar"
+  };
+#endif
+
   Uri uri;
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo"));
+  ASSERT_TRUE(uri.fromPath(testPaths[0]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[0], uri.getFilesystemPath());
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo/"));
+  ASSERT_TRUE(uri.fromPath(testPaths[1]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo/", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[1], uri.getFilesystemPath());
 
-  ASSERT_TRUE(uri.fromStringOrPath("foo/bar"));
+  ASSERT_TRUE(uri.fromPath(testPaths[2]));
   ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
+  ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
   ASSERT_FALSE(uri.mQuery);
   EXPECT_FALSE(uri.mFragment);
   EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("foo/bar", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo/"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo/", *uri.mPath);
-
-  ASSERT_TRUE(uri.fromStringOrPath("/foo/bar"));
-  ASSERT_TRUE(uri.mScheme);
-  ASSERT_FALSE(uri.mAuthority);
-  ASSERT_TRUE(uri.mPath);
-  ASSERT_FALSE(uri.mQuery);
-  EXPECT_FALSE(uri.mFragment);
-  EXPECT_EQ("file", *uri.mScheme);
-  EXPECT_EQ("/foo/bar", *uri.mPath);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(testPaths[2], uri.getFilesystemPath());
 }
 
-TEST(UriHelpers, fromStringOrPath_InputIsUri_DoesNotChange)
+TEST(UriHelpers, fromStringOrPath_UriNotPathNorFileUri_ReturnsUriNotFileUri)
+{
+  std::vector<std::string> testUris = {
+    "ftp://ftp.is.co.za/rfc/rfc1808.txt",
+    "http://www.ietf.org/rfc/rfc2396.txt",
+    "ldap://[2001:db8::7]/c=GB?objectClass?one",
+    "mailto:John.Doe@example.com",
+    "news:comp.infosystems.www.servers.unix",
+    "tel:+1-816-555-1212",
+    "telnet://192.0.2.16:80/",
+    "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"
+  };
+
+  Uri uri;
+
+  for (const std::string& testUri : testUris)
+  {
+    uri.fromStringOrPath(testUri);
+
+    EXPECT_NE("file", *uri.mScheme);
+    EXPECT_EQ(testUri, uri.toString());
+  }
+}
+
+TEST(UriHelpers, fromString_InputIsUri_DoesNotChange)
 {
   Uri uri;
 
-  ASSERT_TRUE(uri.fromStringOrPath("ftp://ftp.is.co.za/rfc/rfc1808.txt"));
+  ASSERT_TRUE(uri.fromString("ftp://ftp.is.co.za/rfc/rfc1808.txt"));
   ASSERT_TRUE(uri.mScheme);
   ASSERT_TRUE(uri.mAuthority);
   ASSERT_TRUE(uri.mPath);
@@ -211,24 +225,37 @@ TEST(UriHelpers, getUri_InputIsUri_DoesNotChange)
   };
 
   for (const std::string& testUri : testUris)
-    EXPECT_EQ(testUri, Uri::getUri(testUri));
+    EXPECT_EQ(testUri, Uri::createFromString(testUri).toString());
 }
 
 TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
 {
+#ifdef _WIN32
   std::vector<std::string> testPaths = {
-    "foo",
-    "foo/",
-    "foo/bar",
+    "C:\\foo",
+    "C:\\foo\\",
+    "C:\\foo\\bar",
+  };
+#else
+  std::vector<std::string> testPaths = {
     "/foo",
     "/foo/",
     "/foo/bar"
   };
+#endif
 
   for(const std::string& testPath : testPaths)
   {
-    const std::string testUri = "file://" + testUri;
-    EXPECT_EQ(testUri, Uri::getUri(testUri));
+#ifdef _WIN32
+    // On Windows, an absolute path does not begin with forward slash but a 
+    // file URI needs it to represent an empty authority,
+    const std::string testUri = "file:///" + testPath;
+#else
+    // wherease on Unix systems the additional forward slash is not required
+    // since an absolute path already has it.
+    const std::string testUri = "file://" + testPath;
+#endif
+    EXPECT_EQ(testUri, Uri::getUri(testPath));
   }
 }
 

@@ -103,6 +103,8 @@ public:
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
+  Entity(const Entity&) = delete;
+
   /// Destructor
   virtual ~Entity();
 
@@ -130,10 +132,10 @@ public:
   virtual const std::string& getName() const;
 
   /// Add a visualization Shape for this Entity
-  virtual void addVisualizationShape(ShapePtr _shape);
+  virtual void addVisualizationShape(const ShapePtr& _shape);
 
   /// Remove a visualization Shape from this Entity
-  virtual void removeVisualizationShape(ShapePtr _shape);
+  virtual void removeVisualizationShape(const ShapePtr& _shape);
 
   /// Remove all visualization Shapes from this Entity
   virtual void removeAllVisualizationShapes();

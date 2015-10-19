@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 #include "dart/utils/urdf/DartLoader.h"
 
+using dart::common::Uri;
 using dart::utils::DartLoader;
 
 TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
@@ -51,7 +52,7 @@ TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid.urdf"));
+    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid.urdf)"));
 }
 
 TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
