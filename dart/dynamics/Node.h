@@ -99,9 +99,6 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  ///
-  /// If your Node has a State, be sure to call setNodeStatePtr() during the
-  /// construction of your Node.
   class State : public common::Extensible<State> { };
 
   /// Use the StateMixer class to easily create a State extension from an
@@ -121,9 +118,6 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  ///
-  /// If your Node has Properties, then be sure to call setNodePropertiesPtr()
-  /// during the construction of your Node.
   class Properties : public common::Extensible<Properties> { };
 
   /// Use the PropertiesMixer class to easily create a Properties extension
