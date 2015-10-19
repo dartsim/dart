@@ -143,7 +143,9 @@ MultiDofJoint<DOF>::Properties::~Properties()
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJoint<DOF>::Addon::Addon(typename Addon::ManagerType* mgr, const typename Addon::PropertiesData& properties)
+MultiDofJoint<DOF>::Addon::Addon(
+    typename Addon::ManagerType* mgr,
+    const typename Addon::PropertiesData& properties)
   : AddonWithProtectedPropertiesInSkeleton<
         typename Addon::Base, typename Addon::PropertiesData,
         typename Addon::ManagerType, Addon::UpdateProperties,

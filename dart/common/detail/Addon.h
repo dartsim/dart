@@ -79,9 +79,9 @@ AddonWithProtectedState(
 template <class Base, typename StateData,
           class ManagerType, void (*updateState)(Base*)>
 void AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
-    setAddonState(const std::unique_ptr<Addon::State>& otherState)
+setAddonState(const Addon::State& otherState)
 {
-  setState(static_cast<const State&>(*otherState));
+  setState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
@@ -89,7 +89,7 @@ template <class Base, typename StateData,
           class ManagerType, void (*updateState)(Base*)>
 const Addon::State*
 AddonWithProtectedState<Base, StateData, ManagerType, updateState>::
-    getAddonState() const
+getAddonState() const
 {
   return &mState;
 }
@@ -143,9 +143,9 @@ template <class Base, typename PropertiesData,
           class ManagerType, void (*updateProperties)(Base*)>
 void AddonWithProtectedProperties<Base, PropertiesData,
                                   ManagerType, updateProperties>::
-setAddonProperties(const std::unique_ptr<Addon::Properties>& someProperties)
+setAddonProperties(const Addon::Properties& someProperties)
 {
-  setProperties(static_cast<const Properties&>(*someProperties));
+  setProperties(static_cast<const Properties&>(someProperties));
 }
 
 //==============================================================================
@@ -230,10 +230,10 @@ template <class Base, typename StateData, typename PropertiesData,
           class ManagerType,
           void (*updateState)(Base*), void (*updateProperties)(Base*)>
 void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-    ManagerType, updateState, updateProperties>::setAddonState(
-    const std::unique_ptr<Addon::State>& otherState)
+    ManagerType, updateState, updateProperties>::
+setAddonState(const Addon::State& otherState)
 {
-  setState(static_cast<const State&>(*otherState));
+  setState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
@@ -275,10 +275,10 @@ template <class Base, typename StateData, typename PropertiesData,
           class ManagerType,
           void (*updateState)(Base*), void (*updateProperties)(Base*)>
 void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-    ManagerType, updateState, updateProperties>::setAddonProperties(
-    const std::unique_ptr<Addon::Properties>& otherProperties)
+    ManagerType, updateState, updateProperties>::
+setAddonProperties(const Addon::Properties& otherProperties)
 {
-  setProperties(static_cast<const Properties&>(*otherProperties));
+  setProperties(static_cast<const Properties&>(otherProperties));
 }
 
 //==============================================================================
