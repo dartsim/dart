@@ -143,22 +143,21 @@ std::unique_ptr<T> AddonManager::release()
   }
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName, it )              \
-  mAddonMap[typeid( AddonName )] = nullptr;                                     \
-  it = mAddonMap.find(typeid( AddonName ));
+#define DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE_IMPLEMENTATION( TypeName, it )              \
+  mAddonMap[typeid( TypeName )] = nullptr;                                     \
+  it = mAddonMap.find(typeid( TypeName ));
+
+//==============================================================================
+#define DART_IRREGULAR_SPECIALIZED_ADDON_INSTANTIATE( TypeName, HomogenizedName )\
+  DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE_IMPLEMENTATION( TypeName, m ## HomogenizedName ## Iterator )
 
 //==============================================================================
 #define DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName )                               \
-  DETAIL_DART_SPECIALIZED_ADDON_INSTANTIATE( AddonName, m ## AddonName ## Iterator );
-
-//==============================================================================
-#define DETAIL_DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName, it )\
-  mAddonMap[typeid( ParentName :: AddonName )] = nullptr;\
-  it = mAddonMap.find(typeid( ParentName :: AddonName ));
+  DART_IRREGULAR_SPECIALIZED_ADDON_INSTANTIATE( AddonName, AddonName );
 
 //==============================================================================
 #define DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName )      \
-  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE( ParentName, AddonName, m ## ParentName ## AddonName ## Iterator )
+  DART_IRREGULAR_SPECIALIZED_ADDON_INSTANTIATE( ParentName :: AddonName, ParentName ## AddonName )
 
 //==============================================================================
 #define DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( TypeName, AddonName, it, CreationCallback )\
@@ -197,8 +196,16 @@ std::unique_ptr<T> AddonManager::release()
   }
 
 //==============================================================================
+#define DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName, CreationCallback )\
+  DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( TypeName, HomogenizedName, m ## HomogenizedName ## Iterator, CreationCallback )
+
+//==============================================================================
+#define DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, AddonName )\
+  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, AddonName, DART_BLANK )
+
+//==============================================================================
 #define DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName, CreationCallback )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( AddonName, AddonName, m ## AddonName ## Iterator, CreationCallback )
+  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( AddonName, AddonName, CreationCallback )
 
 //==============================================================================
 #define DART_SPECIALIZED_ADDON_INLINE( AddonName )                              \
@@ -206,28 +213,28 @@ std::unique_ptr<T> AddonManager::release()
 
 //==============================================================================
 #define DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName, CreationCallback )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE_IMPLEMENTATION( ParentName :: AddonName, ParentName ## AddonName, m ## ParentName ## AddonName ## Iterator, CreationCallback )
+  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName, CreationCallback )
 
 //==============================================================================
 #define DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName )\
   DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName, DART_BLANK )
 
 //==============================================================================
-#define DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, TypeName, AddonName )                                                                  \
-  template <> inline bool Manager :: has< TypeName >() const { return has ## AddonName (); }\
-  template <> inline TypeName * Manager :: get< TypeName >() { return get ## AddonName (); }\
-  template <> inline const TypeName * Manager :: get< TypeName >() const { return get ## AddonName (); }\
-  template <> inline void Manager :: set< TypeName >(const TypeName * addon) { set ## AddonName (addon); }\
-  template <> inline void Manager :: set< TypeName >(std::unique_ptr< TypeName >&& addon) { set ## AddonName (std::move(addon)); }\
-  template <> inline void Manager :: erase< TypeName >() { erase ## AddonName (); }\
-  template <> inline std::unique_ptr< TypeName > Manager :: release< TypeName >() { return release ## AddonName (); }
+#define DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( Manager, TypeName, HomogenizedName, LinePrefix )\
+  LinePrefix template <> inline bool Manager :: has< TypeName >() const { return has ## HomogenizedName (); }\
+  LinePrefix template <> inline TypeName * Manager :: get< TypeName >() { return get ## HomogenizedName (); }\
+  LinePrefix template <> inline const TypeName * Manager :: get< TypeName >() const { return get ## HomogenizedName (); }\
+  LinePrefix template <> inline void Manager :: set< TypeName >(const TypeName * addon) { set ## HomogenizedName (addon); }\
+  LinePrefix template <> inline void Manager :: set< TypeName >(std::unique_ptr< TypeName >&& addon) { set ## HomogenizedName (std::move(addon)); }\
+  LinePrefix template <> inline void Manager :: erase< TypeName >() { erase ## HomogenizedName (); }\
+  LinePrefix template <> inline std::unique_ptr< TypeName > Manager :: release< TypeName >() { return release ## HomogenizedName (); }
 
 //==============================================================================
 #define DART_SPECIALIZED_ADDON_TEMPLATE( Manager, AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, AddonName, AddonName )
+  DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( Manager, AddonName, AddonName, DART_BLANK )
 
 //==============================================================================
 #define DART_NESTED_SPECIALIZED_ADDON_TEMPLATE( Manager, ParentName, AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_TEMPLATE( Manager, ParentName :: AddonName, ParentName ## AddonName )
+  DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( Manager, ParentName :: AddonName, ParentName ## AddonName, DART_BLANK )
 
 #endif // DART_COMMON_DETAIL_ADDONMANAGER_H_

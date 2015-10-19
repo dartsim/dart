@@ -137,7 +137,7 @@ public:
 
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, SingleDofJoint>
+          Addon, UniqueProperties, SingleDofJoint, common::detail::NoOp, false>
   {
   public:
     DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
@@ -166,7 +166,7 @@ public:
   };
 
   DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_NESTED_SPECIALIZED_ADDON_INLINE(SingleDofJoint, Addon)
+  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(SingleDofJoint, Addon)
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -885,6 +885,8 @@ private:
 
   /// \}
 };
+
+DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(SingleDofJoint, SingleDofJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

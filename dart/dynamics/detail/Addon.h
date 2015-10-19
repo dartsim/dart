@@ -479,35 +479,51 @@ changeManager(common::AddonManager* newManager)
   DART_DYNAMICS_GET_ADDON_PROPERTY( Type, Name )
 
 //==============================================================================
-#define DART_DYNAMICS_SET_ADDON_PROPERTY_INDEX( Class, Type, Name, Size )\
-  inline void set ## Name (size_t index, const Type & value)\
+#define DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  inline void set ## SingleName (size_t index, const SingleType & value)\
   {\
     if( index >= Size )\
     {\
-      dterr << "[" #Class << "::set" #Name << "] Invalid index (" << index << "). "\
+      dterr << "[" #Class << "::set" #SingleName << "] Invalid index (" << index << "). "\
             << "The specified index must be less than " #Size << "!\n";\
       assert(false); return;\
     }\
-    mProperties.m ## Name [index] = value; Update(this); incrementSkeletonVersion();\
+    this->mProperties.m ## PluralName [index] = value;\
+    this->UpdateProperties(this);\
+    this->incrementSkeletonVersion();\
+  }\
+  inline void set ## PluralName (const VectorType & vec)\
+  {\
+    this->mProperties.m ## PluralName = vec;\
+    this->UpdateProperties(this);\
+    this->incrementSkeletonVersion();\
   }
 
 //==============================================================================
-#define DART_DYNAMICS_GET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size)\
-  inline const Type& get ## Name (size_t index, const Type & value)\
+#define DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
+  inline const SingleType& get ## SingleName (size_t index) const\
   {\
     if(index >= Size)\
     {\
-      dterr << "[" #Class << "::get" #Name << "] Invalid index (" << index << "). "\
+      dterr << "[" #Class << "::get" #SingleName << "] Invalid index (" << index << "). "\
             << "The specified index must be less than " #Size << "!\n";\
       assert(false); index = 0;\
     }\
-    return mProperties.m ## Name [index];\
+    return this->mProperties.m ## PluralName [index];\
+  }\
+  inline const VectorType& get ## PluralName () const\
+  {\
+    return this->mProperties.m ## PluralName;\
   }
 
 //==============================================================================
-#define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_INDEX( Class, Type, Name, Size )\
-  DART_DYNAMICS_SET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);\
-  DART_DYNAMICS_GET_ADDON_PROPERTY_INDEX(Class, Type, Name, Size);
+#define DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
+
+//==============================================================================
+#define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
+  DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
 
 //==============================================================================
 #define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
@@ -532,15 +548,27 @@ changeManager(common::AddonManager* newManager)
       DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
 
 //==============================================================================
+// Used for edge cases, such as nested template classes, that have Properties
+// (but no State) inside of a Skeleton
+#define DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( TypeName, HomogenizedName )\
+  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
+    DETAIL_DART_ADDON_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
+
+//==============================================================================
+// Used for edge cases, such as nested template classes, that have both State
+// and Properties inside of a Skeleton
+#define DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( TypeName, HomogenizedName )\
+  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
+    DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
+
+//==============================================================================
 // Used for nested-class Addons that have Properties (but no State) inside of a Skeleton
 #define DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( ParentName, AddonName )\
-  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName,\
-      DETAIL_DART_ADDON_PROPERTIES_UPDATE( ParentName :: AddonName, get ## ParentName ## AddonName ) )
+  DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
 
 //==============================================================================
 // Used for nested-class Addons that have both State and Properties inside of a Skeleton
 #define DART_DYNAMICS_NESTED_SKEL_ADDON_INLINE( ParentName, AddonName )\
-  DETAIL_DART_NESTED_SPECIALIZED_ADDON_INLINE( ParentName, AddonName,\
-      DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( ParentName :: AddonName, get ## ParentName ## AddonName ) )
+  DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
 
 #endif // DART_DYNAMICS_DETAIL_ADDON_H_

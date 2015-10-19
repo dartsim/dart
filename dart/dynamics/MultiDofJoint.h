@@ -47,6 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -60,7 +61,10 @@ class MultiDofJoint : public Joint
 {
 public:
 
-  typedef Eigen::Matrix<double, DOF, 1> Vector;
+  constexpr static size_t NumDofs = DOF;
+  using Vector = Eigen::Matrix<double, DOF, 1>;
+  using BoolArray = std::array<bool, DOF>;
+  using StringArray = std::array<std::string, DOF>;
 
   struct UniqueProperties
   {
@@ -108,10 +112,10 @@ public:
 
     /// True if the name of the corresponding DOF is not allowed to be
     /// overwritten
-    std::array<bool, DOF> mPreserveDofNames;
+    BoolArray mPreserveDofNames;
 
     /// The name of the DegreesOfFreedom for this Joint
-    std::array<std::string, DOF> mDofNames;
+    StringArray mDofNames;
 
     /// Default constructor
     UniqueProperties(
@@ -155,6 +159,41 @@ public:
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
+
+  class Addon final :
+      public AddonWithProtectedPropertiesInSkeleton<
+          Addon, UniqueProperties, MultiDofJoint<NumDofs> >
+  {
+  public:
+    Addon(const Addon&) = delete;
+
+    Addon(typename Addon::ManagerType* mgr,
+          const typename Addon::PropertiesData& properties);
+
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, PositionLowerLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, PositionUpperLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, InitialPosition, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, VelocityLowerLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, VelocityUpperLimit, DOF)
+    DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, InitialVelocity, InitialVelocities, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, AccelerationLowerLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, AccelerationUpperLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, ForceLowerLimit, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, ForceUpperLimit, DOF)
+    DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, SpringStiffness, SpringStiffnesses, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, RestPosition, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, DampingCoefficient, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, Friction, DOF)
+    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, bool, BoolArray, PreserveDofName, DOF)
+
+    const std::string& setDofName(size_t index, const std::string& name, bool preserveName);
+    DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, std::string, StringArray, DofName, DofNames, DOF)
+
+    friend class MultiDofJoint<DOF>;
+  };
+
+  DART_ENABLE_ADDON_SPECIALIZATION()
+  DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
 
   /// Destructor
   virtual ~MultiDofJoint();
@@ -676,9 +715,6 @@ protected:
 
 protected:
 
-  /// Properties of this MultiDofJoint
-  typename MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
-
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
 
@@ -871,9 +907,13 @@ private:
   /// \}
 };
 
-#include "dart/dynamics/detail/MultiDofJoint.h"
+DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( MultiDofJoint<2>, MultiDofJoint<2>::Addon, MultiDofJointAddon, template <> )
+DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( MultiDofJoint<3>, MultiDofJoint<3>::Addon, MultiDofJointAddon, template <> )
+DART_IRREGULAR_SPECIALIZED_ADDON_TEMPLATE( MultiDofJoint<6>, MultiDofJoint<6>::Addon, MultiDofJointAddon, template <> )
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/MultiDofJoint.h"
 
 #endif  // DART_DYNAMICS_MULTIDOFJOINT_H_

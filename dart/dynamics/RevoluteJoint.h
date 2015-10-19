@@ -78,7 +78,7 @@ public:
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
           Addon, UniqueProperties, RevoluteJoint,
-          &detail::JointPropertyUpdate<Addon> >
+          &detail::JointPropertyUpdate<Addon>, false >
   {
   public:
     DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon )
