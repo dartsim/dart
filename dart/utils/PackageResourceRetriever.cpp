@@ -71,32 +71,37 @@ void PackageResourceRetriever::addPackageDirectory(
 }
 
 //==============================================================================
-bool PackageResourceRetriever::exists(const std::string& _uri)
+bool PackageResourceRetriever::exists(const common::Uri& _uri) const
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))
     return false;
 
-  for(const std::string &packagePath : getPackagePaths(packageName))
+  for(const std::string& packagePath : getPackagePaths(packageName))
   {
-    const std::string localUri = "file://" + packagePath + relativePath;
-    if (mLocalRetriever->exists(localUri))
+    common::Uri fileUri;
+    fileUri.fromPath(packagePath + relativePath);
+
+    if (mLocalRetriever->exists(fileUri))
       return true;
   }
   return false;
 }
 
 //==============================================================================
-common::ResourcePtr PackageResourceRetriever::retrieve(const std::string& _uri)
+common::ResourcePtr PackageResourceRetriever::retrieve(
+    const common::Uri& _uri) const
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))
     return nullptr;
 
-  for(const std::string &packagePath : getPackagePaths(packageName))
+  for(const std::string& packagePath : getPackagePaths(packageName))
   {
-    const std::string localUri = "file://" + packagePath + relativePath;
-    if(const auto resource = mLocalRetriever->retrieve(localUri))
+    common::Uri fileUri;
+    fileUri.fromPath(packagePath + relativePath);
+
+    if(const auto resource = mLocalRetriever->retrieve(fileUri))
       return resource;
   }
   return nullptr;
@@ -104,7 +109,7 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const std::string& _uri)
 
 //==============================================================================
 const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
-  const std::string& _packageName)
+  const std::string& _packageName) const
 {
   static const std::vector<std::string> empty_placeholder;
 
@@ -123,35 +128,27 @@ const std::vector<std::string>& PackageResourceRetriever::getPackagePaths(
 
 //==============================================================================
 bool PackageResourceRetriever::resolvePackageUri(
-  const std::string& _uri, std::string& _packageName,
-  std::string& _relativePath)
+  const common::Uri& _uri, std::string& _packageName,
+  std::string& _relativePath) const
 {
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed parsing"
-              " URI '" << _uri << "'.\n";
-    return false;
-  }
-
-  if(uri.mScheme.get_value_or("file") != "package")
+  if(_uri.mScheme.get_value_or("file") != "package")
     return false;
 
-  if(!uri.mAuthority)
+  if(!_uri.mAuthority)
   {
     dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-              " package name from URI '" << _uri << "'.\n";
+              " package name from URI '" << _uri.toString() << "'.\n";
     return false;
   }
-  _packageName = *uri.mAuthority;
+  _packageName = *_uri.mAuthority;
 
-  if(!uri.mPath)
+  if(!_uri.mPath)
   {
     dtwarn << "[PackageResourceRetriever::resolvePackageUri] Failed extracting"
-              " relative path from URI '" << _uri << "'.\n";
+              " relative path from URI '" << _uri.toString() << "'.\n";
     return false;
   }
-  _relativePath = uri.mPath.get_value_or("");
+  _relativePath = _uri.mPath.get_value_or("");
 
   return true;
 }

@@ -386,13 +386,13 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
-const Eigen::Isometry3d&Joint::getTransformFromParentBodyNode() const
+const Eigen::Isometry3d& Joint::getTransformFromParentBodyNode() const
 {
   return mJointP.mT_ParentBodyToJoint;
 }
 
 //==============================================================================
-const Eigen::Isometry3d&Joint::getTransformFromChildBodyNode() const
+const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
 {
   return mJointP.mT_ChildBodyToJoint;
 }

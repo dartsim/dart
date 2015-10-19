@@ -39,7 +39,6 @@
 #define DART_MATH_GEOMETRY_H_
 
 #include <Eigen/Dense>
-#include <Eigen/SVD>
 
 #include "dart/math/MathTypes.h"
 
@@ -199,6 +198,9 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T);
 /// \note @f$Ad_TV = ( Rw@,, ~p @times Rw + Rv)@f$,
 /// where @f$T=(R,p)@in SE(3), @quad V=(w,v)@in se(3) @f$.
 Eigen::Vector6d AdT(const Eigen::Isometry3d& _T, const Eigen::Vector6d& _V);
+
+/// \brief Get linear transformation matrix of Adjoint mapping
+Eigen::Matrix6d getAdTMatrix(const Eigen::Isometry3d& T);
 
 /// Adjoint mapping for dynamic size Jacobian
 template<typename Derived>

@@ -52,7 +52,9 @@
 #include <boost/regex.hpp>
 
 using boost::regex;
+using boost::regex_constants::match_continuous;
 using boost::regex_match;
+using boost::regex_search;
 using boost::smatch;
 using boost::ssub_match;
 
@@ -61,7 +63,9 @@ using boost::ssub_match;
 #include <regex>
 
 using std::regex;
+using std::regex_constants::match_continuous;
 using std::regex_match;
+using std::regex_search;
 using std::smatch;
 using std::ssub_match;
 
@@ -186,6 +190,26 @@ auto UriComponent::get_value_or(reference_const_type _default) const
  */
 
 //==============================================================================
+Uri::Uri(const std::string& _input)
+{
+  if (!fromStringOrPath(_input))
+    dtwarn << "[Uri::Uri] Failed parsing URI '" << _input << "'.\n";
+
+  // We don't need to clear since fromStringOrPath() does not set any component
+  // on failure.
+}
+
+//==============================================================================
+Uri::Uri(const char* _input)
+{
+  if (!fromStringOrPath(std::string(_input)))
+    dtwarn << "[Uri::Uri] Failed parsing URI '" << _input << "'.\n";
+
+  // We don't need to clear since fromStringOrPath() does not set any component
+  // on failure.
+}
+
+//==============================================================================
 void Uri::clear()
 {
   mScheme.reset();
@@ -196,14 +220,142 @@ void Uri::clear()
 }
 
 //==============================================================================
+bool Uri::fromString(const std::string& _input)
+{
+  // This is regex is from Appendix B of RFC 3986.
+  static regex uriRegex(
+    R"END(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)END",
+    regex::extended | regex::optimize);
+  static const size_t schemeIndex = 2;
+  static const size_t authorityIndex = 4;
+  static const size_t pathIndex = 5;
+  static const size_t queryIndex = 7;
+  static const size_t fragmentIndex = 9;
+
+  clear();
+
+  smatch matches;
+  if(!regex_match(_input, matches, uriRegex))
+    return false;
+
+  assert(matches.size() > schemeIndex);
+  const ssub_match& schemeMatch = matches[schemeIndex];
+  if(schemeMatch.matched)
+    mScheme = schemeMatch;
+
+  assert(matches.size() > authorityIndex);
+  const ssub_match& authorityMatch = matches[authorityIndex];
+  if(authorityMatch.matched)
+    mAuthority = authorityMatch;
+
+  assert(matches.size() > pathIndex);
+  const ssub_match& pathMatch = matches[pathIndex];
+  if(pathMatch.matched)
+    mPath = pathMatch;
+
+  assert(matches.size() > queryIndex);
+  const ssub_match& queryMatch = matches[queryIndex];
+  if(queryMatch.matched)
+    mQuery = queryMatch;
+
+  assert(matches.size() > fragmentIndex);
+  const ssub_match& fragmentMatch = matches[fragmentIndex];
+  if (fragmentMatch.matched)
+    mFragment = fragmentMatch;
+
+  return true;
+}
+
+//==============================================================================
+bool Uri::fromPath(const std::string& _path)
+{
+  // TODO(JS): We might want to check validity of _path.
+
+  static const std::string fileScheme("file://");
+
+#ifdef _WIN32
+  // Replace backslashes (from Windows paths) with forward slashes.
+  std::string unixPath = _path;
+  std::replace(std::begin(unixPath), std::end(unixPath), '\\', '/');
+
+  return fromString(fileScheme + "/" + _path);
+#else
+  return fromString(fileScheme + _path);
+#endif
+}
+
+//==============================================================================
+bool Uri::fromStringOrPath(const std::string& _input)
+{
+  // TODO(JS): Need to check if _input is an "absolute" path?
+
+#ifdef _WIN32
+
+  // Assume that any URI begin with pattern [SINGLE_LETTER]:[/ or \\] is an
+  // absolute path.
+  static regex windowsPathRegex(R"END([a-zA-Z]:[/|\\])END");
+  bool isPath = regex_search(_input, windowsPathRegex, match_continuous);
+
+  if (isPath)
+    return fromPath(_input);
+
+#else
+
+  // Assume that any URI without a scheme is a path.
+  static regex uriSchemeRegex(R"END(^(([^:/?#]+):))END");
+  bool noScheme = !regex_search(_input, uriSchemeRegex, match_continuous);
+
+  if (noScheme)
+    return fromPath(_input);
+
+#endif
+
+  return fromString(_input);
+}
+
+//==============================================================================
+bool Uri::fromRelativeUri(const std::string& _base,
+                          const std::string& _relative, bool _strict)
+{
+  Uri baseUri;
+  if(!baseUri.fromString(_base))
+  {
+    dtwarn << "[Uri::fromRelativeUri] Failed parsing base URI '"
+           << _base << "'.\n";
+    clear();
+    return false;
+  }
+
+  return fromRelativeUri(baseUri, _relative, _strict);
+}
+
+//==============================================================================
+bool Uri::fromRelativeUri(const char* _base,
+                          const char* _relative, bool _strict)
+{
+  return fromRelativeUri(std::string(_base), std::string(_relative), _strict);
+}
+
+//==============================================================================
 bool Uri::fromRelativeUri(const Uri& _base, const std::string& _relative,
                           bool _strict)
 {
   Uri relativeUri;
   if(!relativeUri.fromString(_relative))
+  {
+    dtwarn << "[Uri::fromRelativeUri] Failed parsing relative URI '"
+           << _relative << "'.\n";
+    clear();
     return false;
+  }
 
   return fromRelativeUri(_base, relativeUri, _strict);
+}
+
+//==============================================================================
+bool Uri::fromRelativeUri(const Uri& _base, const char* _relative, bool _strict)
+{
+  return fromRelativeUri(_base, std::string(_relative), _strict);
 }
 
 //==============================================================================
@@ -263,53 +415,6 @@ bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
 }
 
 //==============================================================================
-bool Uri::fromString(const std::string& _input)
-{
-  // This is regex is from Appendix B of RFC 3986.
-  static regex uriRegex(
-    R"END(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)END",
-    regex::extended | regex::optimize);
-  static const size_t schemeIndex = 2;
-  static const size_t authorityIndex = 4;
-  static const size_t pathIndex = 5;
-  static const size_t queryIndex = 7;
-  static const size_t fragmentIndex = 9;
-
-  clear();
-
-  smatch matches;
-  if(!regex_match(_input, matches, uriRegex))
-    return false;
-
-  assert(matches.size() > schemeIndex);
-  const ssub_match& schemeMatch = matches[schemeIndex];
-  if(schemeMatch.matched)
-    mScheme = schemeMatch;
-
-  assert(matches.size() > authorityIndex);
-  const ssub_match& authorityMatch = matches[authorityIndex];
-  if(authorityMatch.matched)
-    mAuthority = authorityMatch;
-
-  assert(matches.size() > pathIndex);
-  const ssub_match& pathMatch = matches[pathIndex];
-  if(pathMatch.matched)
-    mPath = pathMatch;
-
-  assert(matches.size() > queryIndex);
-  const ssub_match& queryMatch = matches[queryIndex];
-  if(queryMatch.matched)
-    mQuery = queryMatch;
-
-  assert(matches.size() > fragmentIndex);
-  const ssub_match& fragmentMatch = matches[fragmentIndex];
-  if (fragmentMatch.matched)
-    mFragment = fragmentMatch;
-
-  return true;
-}
-
-//==============================================================================
 std::string Uri::toString() const
 {
   // This function implements the pseudo-code from Section 5.3 of RFC 3986.
@@ -333,21 +438,103 @@ std::string Uri::toString() const
 }
 
 //==============================================================================
-bool Uri::fromStringOrPath(const std::string& _input)
+Uri Uri::createFromString(const std::string& _input)
 {
-  if (!fromString(_input))
-    return false;
-
-  // Assume that any URI without a scheme is a path.
-  if (!mScheme && mPath)
+  Uri uri;
+  if(!uri.fromString(_input))
   {
-    mScheme = "file";
-
-    // Replace backslashes (from Windows paths) with forward slashes.
-    std::replace(std::begin(*mPath), std::end(*mPath), '\\', '/');
+    dtwarn << "[Uri::createFromString] Failed parsing URI '" << _input
+           << "'.\n";
   }
 
-  return true;
+  // We don't need to clear uri since fromString() does not set any component
+  // on failure.
+
+  return uri;
+}
+
+//==============================================================================
+Uri Uri::createFromPath(const std::string& _path)
+{
+  Uri fileUri;
+  if(!fileUri.fromPath(_path))
+  {
+    dtwarn << "[Uri::createFromPath] Failed parsing local path '" << _path
+           << "'.\n";
+  }
+
+  // We don't need to clear uri since fromString() does not set any component
+  // on failure.
+
+  return fileUri;
+}
+
+//==============================================================================
+Uri Uri::createFromStringOrPath(const std::string& _input)
+{
+  Uri uri;
+  if(!uri.fromStringOrPath(_input))
+  {
+    dtwarn << "[Uri::createFromString] Failed parsing URI '" << _input
+           << "'.\n";
+  }
+
+  // We don't need to clear uri since fromString() does not set any component
+  // on failure.
+
+  return uri;
+}
+
+//==============================================================================
+Uri Uri::createFromRelativeUri(const std::string& _base,
+                               const std::string& _relative, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+  {
+    dtwarn << "[Uri::createFromRelativeUri] Failed merging URI '" << _relative
+           << "' with base URI '" << _base << "'.\n";
+  }
+
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
+
+  return mergedUri;
+}
+
+//==============================================================================
+Uri Uri::createFromRelativeUri(const Uri& _base,
+                               const std::string& _relative, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+  {
+    dtwarn << "[Uri::createFromRelativeUri] Failed merging URI '" << _relative
+           << "' with base URI '" << _base.toString() << "'.\n";
+  }
+
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
+
+  return mergedUri;
+}
+
+//==============================================================================
+Uri Uri::createFromRelativeUri(const Uri& _baseUri,
+                               const Uri& _relativeUri, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict))
+  {
+    dtwarn << "[Uri::createFromRelativeUri] Failed merging URI '"
+           << _relativeUri.toString() << "' with base URI '"
+           << _baseUri.toString() << "'.\n";
+  }
+
+  // We don't need to clear mergedUri since fromRelativeUri() does not set any
+  // component on failure.
+
+  return mergedUri;
 }
 
 //==============================================================================
@@ -364,31 +551,55 @@ std::string Uri::getUri(const std::string& _input)
 std::string Uri::getRelativeUri(
   const std::string& _base, const std::string& _relative, bool _strict)
 {
-  Uri baseUri;
-  if(!baseUri.fromString(_base))
-  {
-    dtwarn << "[getRelativeUri] Failed parsing base URI '"
-           << _base << "'.\n";
-    return "";
-  }
-
-  Uri relativeUri;
-  if(!relativeUri.fromString(_relative))
-  {
-    dtwarn << "[getRelativeUri] Failed parsing relative URI '"  
-           << _relative << "'.\n";
-    return "";
-  }
-
   Uri mergedUri;
-  if(!mergedUri.fromRelativeUri(baseUri, relativeUri, _strict))
-  {
-    dtwarn << "[getRelativeUri] Failed merging URI '" << _relative
-           << "' with base URI '" << _base << "'.\n";
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
     return "";
-  }
+  else
+    return mergedUri.toString();
+}
 
-  return mergedUri.toString();
+//==============================================================================
+std::string Uri::getRelativeUri(
+  const Uri& _base, const std::string& _relative, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_base, _relative, _strict))
+    return "";
+  else
+    return mergedUri.toString();
+}
+
+//==============================================================================
+std::string Uri::getRelativeUri(
+    const Uri& _baseUri, const Uri& _relativeUri, bool _strict)
+{
+  Uri mergedUri;
+  if(!mergedUri.fromRelativeUri(_baseUri, _relativeUri, _strict))
+    return "";
+  else
+    return mergedUri.toString();
+}
+
+//==============================================================================
+std::string Uri::getPath() const
+{
+  return mPath.get_value_or("");
+}
+
+//==============================================================================
+std::string Uri::getFilesystemPath() const
+{
+#ifdef _WIN32
+  if (mScheme.get_value_or("") == "file")
+  {
+    const std::string& filesystemPath = getPath();
+
+    if (!filesystemPath.empty() && filesystemPath[0] == '/')
+      return filesystemPath.substr(1);
+  }
+#endif
+
+  return getPath();
 }
 
 //==============================================================================

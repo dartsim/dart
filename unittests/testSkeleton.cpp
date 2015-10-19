@@ -83,7 +83,7 @@ std::vector<SkeletonPtr> getSkeletons()
 
   std::vector<WorldPtr> worlds;
   for(size_t i=0; i<fileList.size(); ++i)
-    worlds.push_back(dart::utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
   for(size_t i=0; i<worlds.size(); ++i)

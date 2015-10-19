@@ -70,6 +70,8 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
 
+  MetaSkeleton(const MetaSkeleton&) = delete;
+
   /// Default destructor
   virtual ~MetaSkeleton() = default;
 

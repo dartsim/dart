@@ -44,19 +44,11 @@ void DartLoader::addPackageDirectory(const std::string& _packageName,
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeleton(
-  const std::string& _uri,
+  const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
-
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
-           << _uri << "\n";
-    return nullptr;
-  }
 
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
@@ -67,12 +59,11 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   if(!urdfInterface)
   {
     dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
-           << _uri << "'.\n";
+           << _uri.toString() << "'.\n";
     return nullptr;
   }
 
-  return modelInterfaceToSkeleton(
-    urdfInterface.get(), uri, resourceRetriever);
+  return modelInterfaceToSkeleton(urdfInterface.get(), _uri, resourceRetriever);
 }
 
 dynamics::SkeletonPtr DartLoader::parseSkeletonString(
@@ -98,25 +89,17 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
 }
 
 simulation::WorldPtr DartLoader::parseWorld(
-  const std::string& _uri,
+  const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   const common::ResourceRetrieverPtr resourceRetriever
     = getResourceRetriever(_resourceRetriever);
 
-  common::Uri uri;
-  if(!uri.fromString(_uri))
-  {
-    dtwarn << "[DartLoader::parseSkeleton] Failed parsing URI: "
-           << _uri << "\n";
-    return nullptr;
-  }
-
   std::string content;
   if (!readFileToString(resourceRetriever, _uri, content))
     return nullptr;
 
-  return parseWorldString(content, uri, _resourceRetriever);
+  return parseWorldString(content, _uri, _resourceRetriever);
 }
 
 simulation::WorldPtr DartLoader::parseWorldString(
@@ -267,7 +250,7 @@ bool DartLoader::createSkeletonRecursive(
  */
 bool DartLoader::readFileToString(
   const common::ResourceRetrieverPtr& _resourceRetriever,
-  const std::string &_uri,
+  const common::Uri& _uri,
   std::string &_output)
 {
   const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
@@ -509,7 +492,7 @@ dynamics::ShapePtr DartLoader::createShape(
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    shape = std::make_shared<dynamics::MeshShape>(
+    shape = Eigen::make_aligned_shared<dynamics::MeshShape>(
       scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type

@@ -5,7 +5,6 @@ syntax: glob
 CPack*
 CTest*
 Testing/
-docs/
 TAGS
 .DS_Store
 .cproject
@@ -24,3 +23,4 @@ TAGS
 .idea/*
 /nbproject/
 /doxygen/html/
+docs/readthedocs/site

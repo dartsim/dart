@@ -90,19 +90,19 @@ public:
                            const std::string& _packageDirectory);
 
   // Documentation inherited.
-  bool exists(const std::string& _uri) override;
+  bool exists(const common::Uri& _uri) const override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const std::string& _uri) override;
+  common::ResourcePtr retrieve(const common::Uri& _uri) const override;
 
 private:
   common::ResourceRetrieverPtr mLocalRetriever;
   std::unordered_map<std::string, std::vector<std::string> > mPackageMap;
 
   const std::vector<std::string>& getPackagePaths(
-    const std::string& _packageName);
-  bool resolvePackageUri(const std::string& _uri,
-    std::string& _packageName, std::string& _relativePath);
+    const std::string& _packageName) const;
+  bool resolvePackageUri(const common::Uri& _uri,
+    std::string& _packageName, std::string& _relativePath) const;
 };
 
 using PackageResourceRetrieverPtr = std::shared_ptr<PackageResourceRetriever>;

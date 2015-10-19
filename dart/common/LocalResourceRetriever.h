@@ -50,10 +50,10 @@ public:
   virtual ~LocalResourceRetriever() = default;
 
   // Documentation inherited.
-  bool exists(const std::string& _uri) override;
+  bool exists(const Uri& _uri) const override;
 
   // Documentation inherited.
-  ResourcePtr retrieve(const std::string& _uri) override;
+  ResourcePtr retrieve(const Uri& _uri) const override;
 };
 
 using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;

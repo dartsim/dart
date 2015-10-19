@@ -309,10 +309,14 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, BALL_JOINT)
-{
-  kinematicsTest<BallJoint>();
-}
+//TEST_F(JOINTS, BALL_JOINT)
+//{
+//  kinematicsTest<BallJoint>();
+//}
+// TODO(JS): Disabled the test compares analytical Jacobian and numerical
+// Jacobian since the meaning of BallJoint Jacobian is changed per
+// we now use angular velocity and angular accertions as BallJoint's generalized
+// velocities and accelerations, repectively.
 
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
@@ -339,10 +343,14 @@ TEST_F(JOINTS, PLANAR_JOINT)
 }
 
 // 6-dof joint
-TEST_F(JOINTS, FREE_JOINT)
-{
-  kinematicsTest<FreeJoint>();
-}
+//TEST_F(JOINTS, FREE_JOINT)
+//{
+//  kinematicsTest<FreeJoint>();
+//}
+// TODO(JS): Disabled the test compares analytical Jacobian and numerical
+// Jacobian since the meaning of FreeJoint Jacobian is changed per
+// we now use spatial velocity and spatial accertions as FreeJoint's generalized
+// velocities and accelerations, repectively.
 
 //==============================================================================
 template <void (Joint::*setX)(std::size_t, double),
@@ -383,7 +391,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 {
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-          DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -425,7 +433,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-          DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -500,7 +508,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-          DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
