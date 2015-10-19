@@ -180,7 +180,6 @@ BodyNode::~BodyNode()
 //==============================================================================
 void BodyNode::setProperties(const ExtendedProperties& _properties)
 {
-
   setProperties(static_cast<const Properties&>(_properties));
 
   setProperties(_properties.mNodeProperties);
@@ -209,7 +208,7 @@ void BodyNode::setProperties(const NodeProperties& _properties)
         for(size_t i=0; i < stop; ++i)
         {
           if(prop_vec[i])
-            node_vec[i]->setNodeProperties(prop_vec[i]);
+            node_vec[i]->setNodeProperties(*prop_vec[i]);
         }
       }
 

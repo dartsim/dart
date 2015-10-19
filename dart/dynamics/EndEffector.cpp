@@ -179,12 +179,9 @@ const std::string& EndEffector::setName(const std::string& _name)
 }
 
 //==============================================================================
-void EndEffector::setNodeState(
-    const std::unique_ptr<Node::State>& otherState)
+void EndEffector::setNodeState(const Node::State& otherState)
 {
-  const State* state = static_cast<const State*>(otherState.get());
-
-  setState(*state);
+  setState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
@@ -212,13 +209,9 @@ void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) con
 }
 
 //==============================================================================
-void EndEffector::setNodeProperties(
-    const std::unique_ptr<Node::Properties>& otherProperties)
+void EndEffector::setNodeProperties(const Node::Properties& otherProperties)
 {
-  const Properties* properties =
-      static_cast<const Properties*>(otherProperties.get());
-
-  setProperties(*properties);
+  setProperties(static_cast<const Properties&>(otherProperties));
 }
 
 //==============================================================================

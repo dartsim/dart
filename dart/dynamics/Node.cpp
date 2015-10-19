@@ -66,7 +66,7 @@ Node* NodeDestructor::getNode() const
 }
 
 //==============================================================================
-void Node::setNodeState(const std::unique_ptr<State>& /*otherState*/)
+void Node::setNodeState(const State& /*otherState*/)
 {
   // Do nothing
 }
@@ -84,7 +84,7 @@ void Node::copyNodeStateTo(std::unique_ptr<State>& outputState) const
 }
 
 //==============================================================================
-void Node::setNodeProperties(const std::unique_ptr<Properties>& /*properties*/)
+void Node::setNodeProperties(const Properties& /*properties*/)
 {
   // Do nothing
 }

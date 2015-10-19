@@ -135,9 +135,7 @@ public:
   virtual const std::string& getName() const = 0;
 
   /// Set the State of this Node. By default, this does nothing.
-  virtual void setNodeState(const std::unique_ptr<State>& otherState);
-
-  // TODO(MXG): Consider offering a setNodeState(std::unique_ptr<State>&&)
+  virtual void setNodeState(const State& otherState);
 
   /// Get the State of this Node. By default, this returns a nullptr which
   /// implies that the Node is stateless.
@@ -149,9 +147,7 @@ public:
   virtual void copyNodeStateTo(std::unique_ptr<State>& outputState) const;
 
   /// Set the Properties of this Node. By default, this does nothing.
-  virtual void setNodeProperties(const std::unique_ptr<Properties>& properties);
-
-  // TODO(MXG): Consider offering a setNodeProperties(std::unique_ptr<Properties>&&)
+  virtual void setNodeProperties(const Properties& properties);
 
   /// Get the Properties of this Node. By default, this returns a nullptr which
   /// implies that the Node has no properties.

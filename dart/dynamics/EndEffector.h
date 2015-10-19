@@ -194,7 +194,7 @@ public:
   const std::string& setName(const std::string& _name) override;
 
   // Documentation inherited
-  void setNodeState(const std::unique_ptr<Node::State>& otherState) override final;
+  void setNodeState(const Node::State& otherState) override final;
 
   // Documentation inherited
   std::unique_ptr<Node::State> getNodeState() const override final;
@@ -203,8 +203,7 @@ public:
   void copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const override final;
 
   // Documentation inherited
-  void setNodeProperties(
-      const std::unique_ptr<Node::Properties>& otherProperties) override final;
+  void setNodeProperties(const Node::Properties& otherProperties) override final;
 
   // Documentation inherited
   std::unique_ptr<Node::Properties> getNodeProperties() const override final;
