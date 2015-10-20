@@ -482,8 +482,8 @@ changeManager(common::AddonManager* newManager)
   DART_DYNAMICS_GET_ADDON_PROPERTY( Type, Name )
 
 //==============================================================================
-#define DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  inline void set ## SingleName (size_t index, const SingleType & value)\
+#define DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+  void set ## SingleName (size_t index, const SingleType & value)\
   {\
     if( index >= Size )\
     {\
@@ -492,13 +492,13 @@ changeManager(common::AddonManager* newManager)
       assert(false); return;\
     }\
     this->mProperties.m ## PluralName [index] = value;\
-    this->UpdateProperties(this);\
+    UpdatePrefix :: UpdateProperties(this);\
     this->incrementSkeletonVersion();\
   }\
-  inline void set ## PluralName (const VectorType & vec)\
+  void set ## PluralName (const VectorType & vec)\
   {\
     this->mProperties.m ## PluralName = vec;\
-    this->UpdateProperties(this);\
+    UpdatePrefix :: UpdateProperties(this);\
     this->incrementSkeletonVersion();\
   }
 
@@ -520,13 +520,21 @@ changeManager(common::AddonManager* newManager)
   }
 
 //==============================================================================
-#define DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+#define DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+  DART_DYNAMICS_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
   DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
 
 //==============================================================================
-#define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
-  DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
+#define DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size, UpdatePrefix )\
+  DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size, UpdatePrefix )
+
+//==============================================================================
+#define DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, PluralName )\
+  DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF, MultiDofJoint<DOF>::Addon )
+
+//==============================================================================
+#define DART_DYNAMICS_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
+  DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
 
 //==============================================================================
 #define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\

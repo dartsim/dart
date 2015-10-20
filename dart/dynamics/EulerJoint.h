@@ -85,7 +85,7 @@ public:
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
           Addon, UniqueProperties, EulerJoint,
-          &detail::JointPropertyUpdate<Addon>, false >
+          detail::JointPropertyUpdate<Addon>, false >
   {
   public:
     DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )

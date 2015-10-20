@@ -50,7 +50,7 @@ namespace dynamics {
 /// Node class). This will increment the version count any time the
 /// Addon::setProperties function is called.
 template <class BaseT, typename PropertiesDataT, class ManagerT = Node,
-          void (*updateProperties)(BaseT*) = &common::detail::NoOp<BaseT*>,
+          void (*updateProperties)(BaseT*) = common::detail::NoOp<BaseT*>,
           bool OptionalT = true>
 class AddonWithProtectedPropertiesInSkeleton : public common::Addon
 {
@@ -62,6 +62,9 @@ public:
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
   constexpr static bool Optional = OptionalT;
+
+  using Implementation = AddonWithProtectedPropertiesInSkeleton<
+      BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>;
 
   AddonWithProtectedPropertiesInSkeleton() = delete;
   AddonWithProtectedPropertiesInSkeleton(

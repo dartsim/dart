@@ -163,7 +163,7 @@ public:
   class Addon final :
       public AddonWithProtectedPropertiesInSkeleton<
           Addon, UniqueProperties, MultiDofJoint<NumDofs>,
-          &common::detail::NoOp<Addon*>, false >
+          common::detail::NoOp<Addon*>, false >
   {
   public:
     Addon(const Addon&) = delete;
@@ -171,21 +171,26 @@ public:
     Addon(typename Addon::ManagerType* mgr,
           const typename Addon::PropertiesData& properties);
 
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, PositionLowerLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, PositionUpperLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, InitialPosition, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, VelocityLowerLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, VelocityUpperLimit, DOF)
-    DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, InitialVelocity, InitialVelocities, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, AccelerationLowerLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, AccelerationUpperLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, ForceLowerLimit, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, ForceUpperLimit, DOF)
-    DART_DYNAMICS_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, SpringStiffness, SpringStiffnesses, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, RestPosition, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, DampingCoefficient, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, double, Vector, Friction, DOF)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, bool, BoolArray, PreserveDofName, DOF)
+//    void setPositionLowerLimit(size_t index, const double& value)
+//    {
+//      MultiDofJoint<DOF>::Addon::UpdateProperties(this);
+//    }
+
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, PositionLowerLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, PositionUpperLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, InitialPosition)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityLowerLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityUpperLimit)
+    DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, InitialVelocity, InitialVelocities)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationLowerLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationUpperLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, ForceLowerLimit)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, ForceUpperLimit)
+    DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, SpringStiffness, SpringStiffnesses)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, RestPosition)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, DampingCoefficient)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, Friction)
+    DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(bool, BoolArray, PreserveDofName)
 
     const std::string& setDofName(size_t index, const std::string& name, bool preserveName);
     DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, std::string, StringArray, DofName, DofNames, DOF)
