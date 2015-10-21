@@ -404,41 +404,39 @@ struct TestResource : public dart::common::Resource
 //==============================================================================
 struct PresentResourceRetriever : public dart::common::ResourceRetriever
 {
-  bool exists(const dart::common::Uri& _uri) const override
+  bool exists(const dart::common::Uri& _uri) override
   {
     mExists.push_back(_uri.toString());
     return true;
   }
 
-  dart::common::ResourcePtr retrieve(
-          const dart::common::Uri& _uri) const override
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
     return std::make_shared<TestResource>();
   }
 
-  mutable std::vector<std::string> mExists;
-  mutable std::vector<std::string> mRetrieve;
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
 };
 
 //==============================================================================
 struct AbsentResourceRetriever : public dart::common::ResourceRetriever
 {
-  bool exists(const dart::common::Uri& _uri) const override
+  bool exists(const dart::common::Uri& _uri) override
   {
     mExists.push_back(_uri.toString());
     return false;
   }
 
-  dart::common::ResourcePtr retrieve(
-          const dart::common::Uri& _uri) const override
+  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
     return nullptr;
   }
 
-  mutable std::vector<std::string> mExists;
-  mutable std::vector<std::string> mRetrieve;
+  std::vector<std::string> mExists;
+  std::vector<std::string> mRetrieve;
 };
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

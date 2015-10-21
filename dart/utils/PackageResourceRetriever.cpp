@@ -71,7 +71,7 @@ void PackageResourceRetriever::addPackageDirectory(
 }
 
 //==============================================================================
-bool PackageResourceRetriever::exists(const common::Uri& _uri) const
+bool PackageResourceRetriever::exists(const common::Uri& _uri)
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))
@@ -89,8 +89,7 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri) const
 }
 
 //==============================================================================
-common::ResourcePtr PackageResourceRetriever::retrieve(
-    const common::Uri& _uri) const
+common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
 {
   std::string packageName, relativePath;
   if (!resolvePackageUri(_uri, packageName, relativePath))
