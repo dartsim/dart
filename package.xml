@@ -22,6 +22,7 @@
   <buildtool_depend>cmake</buildtool_depend>
   <buildtool_depend>pkg-config</buildtool_depend>
   <depend>assimp</depend>
+  <depend>bullet</depend>
   <depend>eigen</depend>
   <depend>fcl</depend>
   <depend>glut</depend>
