@@ -315,10 +315,10 @@ public:
     virtual ~TaskSpaceRegion() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
+    std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual Eigen::Vector6d computeError() override;
+    Eigen::Vector6d computeError() override;
 
     /// Setting this to true (which is default) will tell it to compute the
     /// error based on the center of the Task Space Region instead of the edge
@@ -446,12 +446,12 @@ public:
     virtual ~JacobianDLS() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+    std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual void computeGradient(const Eigen::Vector6d& _error,
-                                 Eigen::VectorXd& _grad) override;
+    void computeGradient(const Eigen::Vector6d& _error,
+                         Eigen::VectorXd& _grad) override;
 
     /// Set the damping coefficient. A higher damping coefficient will smooth
     /// out behavior around singularities but will also result in less precision
@@ -484,12 +484,12 @@ public:
     virtual ~JacobianTranspose() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+    std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual void computeGradient(const Eigen::Vector6d& _error,
-                                 Eigen::VectorXd& _grad) override;
+    void computeGradient(const Eigen::Vector6d& _error,
+                         Eigen::VectorXd& _grad) override;
   };
 
   /// If this IK module is set to active, then it will be utilized by any
