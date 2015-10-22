@@ -90,10 +90,10 @@ public:
                            const std::string& _packageDirectory);
 
   // Documentation inherited.
-  bool exists(const common::Uri& _uri) const override;
+  bool exists(const common::Uri& _uri) override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const common::Uri& _uri) const override;
+  common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
 private:
   common::ResourceRetrieverPtr mLocalRetriever;
