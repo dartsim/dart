@@ -74,7 +74,7 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 }
 
 //==============================================================================
-bool CompositeResourceRetriever::exists(const common::Uri& _uri) const
+bool CompositeResourceRetriever::exists(const common::Uri& _uri)
 {
   for(const common::ResourceRetrieverPtr& resourceRetriever
       : getRetrievers(_uri))
@@ -87,7 +87,7 @@ bool CompositeResourceRetriever::exists(const common::Uri& _uri) const
 
 //==============================================================================
 common::ResourcePtr CompositeResourceRetriever::retrieve(
-  const common::Uri& _uri) const
+  const common::Uri& _uri)
 {
   const std::vector<common::ResourceRetrieverPtr> &retrievers
     = getRetrievers(_uri);
