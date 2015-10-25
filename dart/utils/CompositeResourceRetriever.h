@@ -71,10 +71,10 @@ public:
     const common::ResourceRetrieverPtr& _resourceRetriever);
 
   // Documentation inherited.
-  bool exists(const common::Uri& _uri) const override;
+  bool exists(const common::Uri& _uri) override;
 
   // Documentation inherited.
-  common::ResourcePtr retrieve(const common::Uri& _uri) const override;
+  common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(

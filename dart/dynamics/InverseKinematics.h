@@ -349,15 +349,15 @@ public:
     virtual ~TaskSpaceRegion() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
+    std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual Eigen::Isometry3d computeDesiredTransform(
+    Eigen::Isometry3d computeDesiredTransform(
         const Eigen::Isometry3d& _currentTf,
         const Eigen::Vector6d& _error) override;
 
     // Documentation inherited
-    virtual Eigen::Vector6d computeError() override;
+    Eigen::Vector6d computeError() override;
 
     /// Set whether this TaskSpaceRegion should compute its error vector from
     /// the center of the region.
@@ -523,12 +523,12 @@ public:
     virtual ~JacobianDLS() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+    std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual void computeGradient(const Eigen::Vector6d& _error,
-                                 Eigen::VectorXd& _grad) override;
+    void computeGradient(const Eigen::Vector6d& _error,
+                         Eigen::VectorXd& _grad) override;
 
     /// Set the damping coefficient. A higher damping coefficient will smooth
     /// out behavior around singularities but will also result in less precision
@@ -565,12 +565,12 @@ public:
     virtual ~JacobianTranspose() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+    std::unique_ptr<GradientMethod> clone(
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
-    virtual void computeGradient(const Eigen::Vector6d& _error,
-                                 Eigen::VectorXd& _grad) override;
+    void computeGradient(const Eigen::Vector6d& _error,
+                         Eigen::VectorXd& _grad) override;
   };
 
   /// Analytical is a base class that should be inherited by methods that are

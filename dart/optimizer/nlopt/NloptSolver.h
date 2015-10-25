@@ -64,16 +64,16 @@ public:
   virtual ~NloptSolver();
 
   // Documentation inherited
-  virtual bool solve();
+  bool solve() override;
 
   // Documentation inherited
   Eigen::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
-  virtual std::string getType() const override;
+  std::string getType() const override;
 
   // Documentation inherited
-  virtual std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> clone() const override;
 
   /// Copy the Properties of another NloptSolver
   void copy(const NloptSolver& _other);
