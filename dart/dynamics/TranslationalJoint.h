@@ -59,6 +59,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  TranslationalJoint(const TranslationalJoint&) = delete;
+
   /// Destructor
   virtual ~TranslationalJoint();
 
