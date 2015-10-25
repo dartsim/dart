@@ -35,6 +35,7 @@
  */
 
 #include <cstring>
+#include <limits>
 #include <iostream>
 #include "dart/common/Console.h"
 #include "LocalResource.h"
@@ -106,6 +107,17 @@ size_t LocalResource::getSize()
            << std::strerror(errno) << "\n";
     return 0;
   }
+  // fopen, ftell, and fseek produce undefined behavior when called on
+  // directories. ftell() on Linux libc returns LONG_MAX, unless you are in an
+  // NFS mount.
+  //
+  // See here: http://stackoverflow.com/a/18193383/111426
+  else if(size == std::numeric_limits<long>::max())
+  {
+    dtwarn << "[LocalResource::getSize] Unable to compute file size: Computed"
+              " file size of LONG_MAX. Is this a directory?\n";
+    return 0;
+  }
 
   if(std::fseek(mFile, offset, SEEK_SET) || std::ferror(mFile))
   {
@@ -129,6 +141,17 @@ size_t LocalResource::tell()
   {
     dtwarn << "[LocalResource::tell] Failed getting current offset: "
            << std::strerror(errno) << "\n";
+  }
+  // fopen, ftell, and fseek produce undefined behavior when called on
+  // directories. ftell() on Linux libc returns LONG_MAX, unless you are in an
+  // NFS mount.
+  //
+  // See here: http://stackoverflow.com/a/18193383/111426
+  else if(offset == std::numeric_limits<long>::max())
+  {
+    dtwarn << "[LocalResource::tell] Failed getting current offset: ftell"
+              " returned LONG_MAX. Is this a directory?\n";
+    return -1L;
   }
 
   // We return -1 to match the beahvior of DefaultIoStream in Assimp.
