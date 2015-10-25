@@ -73,6 +73,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  UniversalJoint(const UniversalJoint&) = delete;
+
   /// Destructor
   virtual ~UniversalJoint();
 
