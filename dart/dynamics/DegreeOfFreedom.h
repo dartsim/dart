@@ -64,6 +64,8 @@ public:
   template<size_t> friend class MultiDofJoint;
   friend class Skeleton;
 
+  DegreeOfFreedom(const DegreeOfFreedom&) = delete;
+
   /// Change the name of this DegreeOfFreedom
   ///
   /// The _preserveName argument will be passed to the preserveName(bool)

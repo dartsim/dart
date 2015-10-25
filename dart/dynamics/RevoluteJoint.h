@@ -74,6 +74,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  RevoluteJoint(const RevoluteJoint&) = delete;
+
   /// Destructor
   virtual ~RevoluteJoint();
 
