@@ -72,6 +72,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  PrismaticJoint(const PrismaticJoint&) = delete;
+
   /// Destructor
   virtual ~PrismaticJoint();
 

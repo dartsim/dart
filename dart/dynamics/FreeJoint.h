@@ -61,6 +61,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  FreeJoint(const FreeJoint&) = delete;
+
   /// Destructor
   virtual ~FreeJoint();
 

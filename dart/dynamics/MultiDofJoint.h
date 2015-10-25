@@ -62,6 +62,8 @@ public:
 
   typedef Eigen::Matrix<double, DOF, 1> Vector;
 
+  MultiDofJoint(const MultiDofJoint&) = delete;
+
   struct UniqueProperties
   {
     /// Lower limit of position
