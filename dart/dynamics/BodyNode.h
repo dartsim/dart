@@ -204,7 +204,7 @@ public:
   /// Return moment of inertia defined around the center of mass
   void getMomentOfInertia(
       double& _Ixx, double& _Iyy, double& _Izz,
-      double& _Ixy, double& _Ixz, double& _Iyz);
+      double& _Ixy, double& _Ixz, double& _Iyz) const;
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
