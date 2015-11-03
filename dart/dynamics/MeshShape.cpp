@@ -320,8 +320,8 @@ void MeshShape::_updateBoundingBoxDim() {
         min_Z = mMesh->mMeshes[i]->mVertices[j].z;
     }
   }
-  mBoundingBox.setMin(Eigen::Vector3d(min_X, min_Y, min_Z));
-  mBoundingBox.setMax(Eigen::Vector3d(max_X, max_Y, max_Z));
+  mBoundingBox.setMin(Eigen::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
+  mBoundingBox.setMax(Eigen::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
 }
 
 const aiScene* MeshShape::loadMesh(
