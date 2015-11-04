@@ -169,9 +169,9 @@ if(ASSIMP_FOUND)
   ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
   if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
-      message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} has missing symbols "
-          "for constructor or destructor of aiScene. DART will use own "
-          "implementation. Please use ASSIMP that fixed this issue.")
+    message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} is missing symbols "
+            "for constructor or destructor of aiScene. DART will use own "
+            "implementation. Please use ASSIMP that fixed this issue.")
   endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
   check_cxx_source_compiles(
@@ -187,9 +187,9 @@ if(ASSIMP_FOUND)
   ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
   if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-    message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} has missing symbols "
-        "for constructor or destructor of aiMaterial. DART will use own "
-        "implementation. Please use ASSIMP that fixed this issue.")
+    message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} is missing symbols "
+            "for constructor or destructor of aiMaterial. DART will use own "
+            "implementation. Please use ASSIMP that fixed this issue.")
   endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
   unset(CMAKE_REQUIRED_INCLUDES)
