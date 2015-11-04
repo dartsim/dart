@@ -37,6 +37,7 @@
 
 #include "dart/optimizer/Function.h"
 
+#include "dart/config.h"
 #include "dart/common/Console.h"
 
 namespace dart {
@@ -81,9 +82,32 @@ double Function::eval(Eigen::Map<const Eigen::VectorXd>& _x)
 double Function::eval(const Eigen::VectorXd& _x)
 {
   // TODO(MXG): This is for backwards compatibility. This function should be
-  // made pure abstract with the next major version-up
+  // made pure abstract with the next major version-up. We suppress the
+  // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+
+#if defined (DART_COMPILER_GCC)
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return eval(temp);
+  #pragma GCC diagnostic pop
+
+#elif defined (DART_COMPILER_CLANG)
+
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  return eval(temp);
+  #pragma clang diagnostic pop
+
+#elif defined (DART_COMPILER_MSVC)
+
+  #pragma warning( push )
+  #pragma warning( disable : 4996 )
+  return eval(temp);
+  #pragma warning( pop )
+
+#endif
 }
 
 //==============================================================================
@@ -101,9 +125,32 @@ void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
 void Function::evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad)
 {
-  // TODO(MXG): This is for backwards compatibility
+  // TODO(MXG): This is for backwards compatibility. We suppress the
+  // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+
+#if defined (DART_COMPILER_GCC)
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   evalGradient(temp, _grad);
+  #pragma GCC diagnostic pop
+
+#elif defined (DART_COMPILER_CLANG)
+
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  evalGradient(temp, _grad);
+  #pragma clang diagnostic pop
+
+#elif defined (DART_COMPILER_MSVC)
+
+  #pragma warning( push )
+  #pragma warning( disable : 4996 )
+  evalGradient(temp, _grad);
+  #pragma warning( pop )
+
+#endif
 }
 
 //==============================================================================
