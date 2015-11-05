@@ -150,6 +150,51 @@ endif()
 find_package(ASSIMP 3.0.0 QUIET)
 if(ASSIMP_FOUND)
   message(STATUS "Looking for ASSIMP - ${ASSIMP_VERSION} found")
+
+  # Check for missing symbols in ASSIMP (see #451)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
+
+  check_cxx_source_compiles(
+  "
+  #include <assimp/scene.h>
+  int main()
+  {
+    aiScene* scene = new aiScene;
+    delete scene;
+    return 1;
+  }
+  "
+  ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+
+  if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+    message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} is missing symbols "
+            "for constructor or destructor of aiScene. DART will use own "
+            "implementation. Please use ASSIMP that fixed this issue.")
+  endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+
+  check_cxx_source_compiles(
+  "
+  #include <assimp/material.h>
+  int main()
+  {
+    aiMaterial* material = new aiMaterial;
+    delete material;
+    return 1;
+  }
+  "
+  ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+
+  if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+    message(WARNING "Installed ASSIMP ${ASSIMP_VERSION} is missing symbols "
+            "for constructor or destructor of aiMaterial. DART will use own "
+            "implementation. Please use ASSIMP that fixed this issue.")
+  endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+
+  unset(CMAKE_REQUIRED_INCLUDES)
+  unset(CMAKE_REQUIRED_LIBRARIES)
+
 else()
   if(ASSIMP_VERSION)
     message(SEND_ERROR "Looking for ASSIMP - ${ASSIMP_VERSION} found, ${PROJECT_NAME} requires 3.0.0 or greater.")
@@ -410,7 +455,7 @@ endif()
 #===============================================================================
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
                 RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
-if (${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
+if(${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
   set(FILESYSTEM_CASE_SENSITIVE TRUE)
 else()
   set(FILESYSTEM_CASE_SENSITIVE FALSE)
