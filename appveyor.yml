@@ -12,8 +12,8 @@ platform:
 # specify custom environment variables
 environment:
   MSVC_DEFAULT_OPTIONS: ON
-  BOOST_ROOT: "C:\\Libraries\\boost"
-  BOOST_LIBRARYDIR: "C:\\Libraries\\boost\\lib32-msvc-12.0"
+  BOOST_ROOT: C:\Libraries\boost
+  BOOST_LIBRARYDIR: C:\Libraries\boost\lib32-msvc-12.0
   BUILD_EXAMPLES: OFF  # don't build examples to not exceed allowed build time (40 min)
   BUILD_TUTORIALS: OFF  # don't build tutorials to not exceed allowed build time (40 min)
   matrix:
@@ -44,7 +44,7 @@ branches:
 
 # scripts that run after cloning repository
 install:
-  - ps: cd "C:\projects\dart\ci"
+  - ps: cd C:\projects\dart\ci
   - ps: .\appveyor_install.ps1
 
 # scripts to run before build
