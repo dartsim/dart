@@ -1,10 +1,19 @@
-### Version 5.1.1 (2015-11-02)
+### Version 5.1.1 (2015-11-06)
 
 1. Add bullet dependency to package.xml
     * [Pull request #523](https://github.com/dartsim/dart/pull/523)
 
+1. Improved handling of missing symbols of Assimp package
+    * [Pull request #542](https://github.com/dartsim/dart/pull/542)
+
 1. Improved travis-ci build log for Mac
     * [Pull request #529](https://github.com/dartsim/dart/pull/529)
+
+1. Fixed warnings in Function.cpp
+    * [Pull request #550](https://github.com/dartsim/dart/pull/550)
+
+1. Fixed build failures on AppVeyor
+    * [Pull request #543](https://github.com/dartsim/dart/pull/543)
 
 1. Fixed const qualification of ResourceRetriever
     * [Pull request #534](https://github.com/dartsim/dart/pull/534)
