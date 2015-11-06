@@ -44,14 +44,16 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
+#include "dart/config.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 #include "dart/dynamics/AssimpInputResourceAdaptor.h"
 #include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
-// We define our own constructor for aiScene, because it seems to be missing
-// from the standard assimp library
+#ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
+// We define our own constructor and destructor for aiScene, because it seems to
+// be missing from the standard assimp library (see #451)
 aiScene::aiScene()
   : mFlags(0),
     mRootNode(nullptr),
@@ -70,8 +72,6 @@ aiScene::aiScene()
 
 }
 
-// We define our own destructor for aiScene, because it seems to be missing
-// from the standard assimp library
 aiScene::~aiScene()
 {
   delete mRootNode;
@@ -106,9 +106,11 @@ aiScene::~aiScene()
       delete mCameras[a];
   delete[] mCameras;
 }
+#endif  // #ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
 
-// We define our own constructor for aiMaterial, because it seems to be missing
-// from the standard assimp library
+// We define our own constructor and destructor for aiMaterial, because it seems
+// to be missing from the standard assimp library (see #451)
+#ifndef ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 aiMaterial::aiMaterial()
 {
   mNumProperties = 0;
@@ -118,8 +120,6 @@ aiMaterial::aiMaterial()
     mProperties[i] = nullptr;
 }
 
-// We define our own destructor for aiMaterial, because it seems to be missing
-// from the standard assimp library
 aiMaterial::~aiMaterial()
 {
   for(size_t i=0; i<mNumProperties; ++i)
@@ -127,6 +127,7 @@ aiMaterial::~aiMaterial()
 
   delete[] mProperties;
 }
+#endif  // #ifndef ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 
 namespace dart {
 namespace dynamics {
