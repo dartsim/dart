@@ -81,9 +81,13 @@ double Function::eval(Eigen::Map<const Eigen::VectorXd>& _x)
 double Function::eval(const Eigen::VectorXd& _x)
 {
   // TODO(MXG): This is for backwards compatibility. This function should be
-  // made pure abstract with the next major version-up
+  // made pure abstract with the next major version-up. We suppress the
+  // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   return eval(temp);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -101,9 +105,13 @@ void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
 void Function::evalGradient(const Eigen::VectorXd& _x,
                             Eigen::Map<Eigen::VectorXd> _grad)
 {
-  // TODO(MXG): This is for backwards compatibility
+  // TODO(MXG): This is for backwards compatibility. We suppress the
+  // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
   evalGradient(temp, _grad);
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

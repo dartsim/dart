@@ -78,6 +78,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  ScrewJoint(const ScrewJoint&) = delete;
+
   /// Destructor
   virtual ~ScrewJoint();
 
