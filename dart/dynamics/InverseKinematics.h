@@ -780,7 +780,9 @@ public:
 
     /// Go through the mSolutions vector and tag entries with LIMIT_VIOLATED if
     /// any components of their configuration are outside of their position
-    /// limits.
+    /// limits. This will NOT clear the LIMIT_VIOLATED flag from entries of
+    /// mSolutions which are already tagged with it, even if they do not violate
+    /// any limits.
     void checkSolutionJointLimits();
 
     /// Vector of solutions
