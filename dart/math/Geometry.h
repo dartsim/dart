@@ -428,20 +428,11 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
-/// Get the remainder of dividing x by y
-inline double mod(double x, double y)
-{
-  if( 0.0 == y )
-    return x;
-
-  return x - y * floor(x/y);
-}
-
 /// Compute the angle (in the range of -pi to +pi) which ignores any full
 /// rotations
 inline double wrapToPi(double angle)
 {
-  return mod(angle+M_PI, 2*M_PI) - M_PI;
+  return std::fmod(angle+M_PI, 2*M_PI) - M_PI;
 }
 
 template <typename MatrixType, typename ReturnType>
