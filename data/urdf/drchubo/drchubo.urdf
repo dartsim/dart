@@ -1,0 +1,1508 @@
+<robot name="drchubo">
+    <link name="Body_Torso">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00186303110078396 -0.000700932863027737 0.144864941081362" />
+            <mass value="8.95351612283643" />
+            <inertia ixx="0.097115701663788" ixy="-0.000131502652256357" ixz="-0.000536351319855448" iyy="0.0782182891825729" iyz="0.000190893230363873" izz="0.102805257612153" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_Torso_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_Torso_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_LSP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0125095477277756 0.0682567187642331 -0.000101296692959801" />
+            <mass value="0.512814669817052" />
+            <inertia ixx="0.00105971934903801" ixy="0.000159674623034314" ixz="-8.62192186714616E-07" iyy="0.00101602821932241" iyz="6.2966884306785E-06" izz="0.00161449029531154" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LSP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0010 0.1305 0.2061" />
+        <parent link="Body_Torso" />
+        <child link="Body_LSP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <link name="Body_LSR">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.0353989625513559 -0.000442459951967733 -0.0177626332998561" />
+            <mass value="0.478101234588499" />
+            <inertia ixx="0.000470991608414918" ixy="-9.0901553039533E-08" ixz="-1.21957572289795E-05" iyy="0.00056865982747998" iyz="7.94197935321249E-06" izz="0.000377112142444654" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LSR" type="revolute">
+        <origin rpy="0 0 0" xyz="0.033 0.099 0" />
+        <parent link="Body_LSP" />
+        <child link="Body_LSR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-.262" upper="3.14" velocity="10.0" />
+    </joint>
+    <link name="Body_LSY">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00596307108671425 -0.00223165835990308 -0.16200994741112" />
+            <mass value="1.35206539449553" />
+            <inertia ixx="0.0134777313253687" ixy="-2.51384514257897E-05" ixz="-0.000850780329961022" iyy="0.0134238053664017" iyz="0.000270964573540381" izz="0.00109460289061941" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LSY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LSY" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0330 0 -0.0270" />
+        <parent link="Body_LSR" />
+        <child link="Body_LSY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-2" upper="3.14" velocity="10.0" />
+    </joint>
+    <link name="Body_LEP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.02571445335908 0.000806178520288664 -0.0417853587164666" />
+            <mass value="0.267758871202315" />
+            <inertia ixx="0.000341774590608957" ixy="-8.94704764293737E-07" ixz="5.48147249702E-05" iyy="0.000322402837807457" iyz="2.93006728475972E-06" izz="0.000239480055722266" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LEP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LEP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LEP" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0300 0.000 -0.2730" />
+        <parent link="Body_LSY" />
+        <child link="Body_LEP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-2.96" upper=".2" velocity="10.0" />
+    </joint>
+    <link name="Body_LWY">
+        <inertial>
+            <origin rpy="0 0 0" xyz="3.99379011692602E-05 0.0577379856357585 -0.151718765023044" />
+            <mass value="1.37072161761866" />
+            <inertia ixx="0.0138917492745533" ixy="-3.54251778004189E-06" ixz="7.9309444806889E-06" iyy="0.0118173705529259" iyz="-0.00394273246628464" izz="0.00267824831844074" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LWY" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0300 0 -0.0520" />
+        <parent link="Body_LEP" />
+        <child link="Body_LWY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <link name="Body_LWP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.000378739071217597 0.0108882434913045 0.0170093706107317" />
+            <mass value="0.294902574333316" />
+            <inertia ixx="0.000715165417977553" ixy="-1.51543969240671E-06" ixz="-4.37551165446012E-06" iyy="0.000574579884042658" iyz="-5.5583549065965E-05" izz="0.000301632100473859" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LWP" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 -0.2618" />
+        <parent link="Body_LWY" />
+        <child link="Body_LWP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <link name="Body_LWR">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00526734472242982 -0.00165481505247564 -0.0476967183846567" />
+            <mass value="0.474006924726537" />
+            <inertia ixx="0.000397832341494148" ixy="2.62847439473878E-06" ixz="-1.84132721696329E-05" iyy="0.000310585574870465" iyz="-5.74611340451118E-06" izz="0.000251799615334244" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LWR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LWR" type="revolute">
+        <origin rpy="0 0 1.57079632679" xyz="0 0 -0.0275" />
+        <parent link="Body_LWP" />
+        <child link="Body_LWR" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+
+    <link name="Body_LF11">
+        <inertial>
+            <origin rpy="0 0 0" xyz="4.08082421144568E-06 -0.0103654579068141 -0.0223572146583746" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="-3.61896654972963E-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="1.21167394757334E-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF11" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0230 -0.0120 -0.0755" />
+        <parent link="Body_LWR" />
+        <child link="Body_LF11" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF12">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000130946971760824 0.000226771833385403 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="-2.32805891508231E-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="-4.92964124837522E-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF12" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0020 -0.0105 -0.0420" />
+        <parent link="Body_LF11" />
+        <child link="Body_LF12" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF13">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000169386130301579 0.000356898419659246 -0.0163165219752076" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="-4.4210418009567E-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="-2.82215020077362E-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF13" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0014 0 -0.0300" />
+        <parent link="Body_LF12" />
+        <child link="Body_LF13" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_TSY">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.0160702033923426 -0.00217130156788575 -0.0329438544914258" />
+            <mass value="3.85811444190788" />
+            <inertia ixx="0.0199734074242983" ixy="-0.00013227939476964" ixz="0.00017668619158262" iyy="0.0085778641786012" iyz="0.000147644598532384" izz="0.0237690845804838" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_TSY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_TSY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="TSY" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <parent link="Body_TSY" />
+        <child link="Body_Torso" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-1.57" upper="1.57" velocity="10.0" />
+    </joint>
+    <link name="Body_LHY">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0378123600719454 2.54097696217315E-08 -0.116128242308007" />
+            <mass value="1.02665437743596" />
+            <inertia ixx="0.00249606232939035" ixy="-2.76272075666202E-09" ixz="-0.000829704581049298" iyy="0.00377324783994803" iyz="5.79132768620233E-10" izz="0.0021281978106318" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LHY" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0.0885 -0.0230" />
+        <parent link="Body_TSY" />
+        <child link="Body_LHY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-1.92" upper="1.92" velocity="10.0" />
+    </joint>
+    <link name="Body_LHR">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00473723996484245 -0.00482931760302879 -0.0325563692830159" />
+            <mass value="1.37473370900606" />
+            <inertia ixx="0.00222021321390697" ixy="3.01344959315266E-05" ixz="0.000214745489876361" iyy="0.00208177057868792" iyz="6.99363261903671E-05" izz="0.00174245289623185" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LHR" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 -0.1410" />
+        <parent link="Body_LHY" />
+        <child link="Body_LHR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-0.52" upper="0.52" velocity="10.0" />
+    </joint>
+    <link name="Body_LHP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0139820973756429 0.0119128547059099 -0.190050892707924" />
+            <mass value="3.39708806380558" />
+            <inertia ixx="0.0610144402594715" ixy="-0.000679183163268319" ixz="-0.00115726366946058" iyy="0.0588960128286437" iyz="0.00381190200425667" izz="0.00864106131257887" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LHP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LHP" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <parent link="Body_LHR" />
+        <child link="Body_LHP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-1.87" upper="1.61" velocity="10.0" />
+    </joint>
+    <link name="Body_LKP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0167128425968244 -0.00423174064898188 -0.163547981620547" />
+            <mass value="1.2513314922159" />
+            <inertia ixx="0.0176853262863822" ixy="5.97588040758602E-05" ixz="0.000242087956452148" iyy="0.0161941871476601" iyz="2.05953671058067E-05" izz="0.00355046513294474" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LKP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LKP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LKP" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 -0.3299" />
+        <parent link="Body_LHP" />
+        <child link="Body_LKP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-0.07" upper="2.61" velocity="10.0" />
+    </joint>
+    <link name="Body_LAP">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0148223972690647 0.0100562738748088 0.00997467775305361" />
+            <mass value="2.00597218062827" />
+            <inertia ixx="0.00317573590934402" ixy="-0.00030397733226894" ixz="-0.000298327569678596" iyy="0.00347243568780368" iyz="-0.000320093631728957" izz="0.0036796574607068" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LAP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LAP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LAP" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 -0.3300" />
+        <parent link="Body_LKP" />
+        <child link="Body_LAP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-1.7" upper="1.7" velocity="10.0" />
+    </joint>
+    <link name="Body_LAR">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0165455008793805 0.00216085982209592 -0.0952915062130097" />
+            <mass value="1.06815376654094" />
+            <inertia ixx="0.00372790935829238" ixy="3.13391462968031E-05" ixz="-0.000480888102685697" iyy="0.00607005664613535" iyz="-9.42514897869005E-05" izz="0.00420512438203011" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LAR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LAR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LAR" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <parent link="Body_LAP" />
+        <child link="Body_LAR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-1.57" upper="1.57" velocity="10.0" />
+    </joint>
+    <link name="Body_NKY">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.0132341759354885 -0.000264833073564218 0.0409690989083223" />
+            <mass value="0.170508153365938" />
+            <inertia ixx="0.000101054047458944" ixy="-6.00968902822632E-07" ixz="-2.18923858832909E-06" iyy="0.000105642534003898" iyz="5.06882999846784E-07" izz="0.000105863654255542" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NKY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NKY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="NKY" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0010 0 0.2598" />
+        <parent link="Body_Torso" />
+        <child link="Body_NKY" />
+        <axis xyz="0 0 1" />
+        <limit effort="10.0" lower="-2" upper="2" velocity="10.0" />
+    </joint>
+    <link name="Body_NK1">
+        <inertial>
+            <origin rpy="0 0 0" xyz="-0.000519835312274866 -0.112505098178575 -9.33147645172232E-05" />
+            <mass value="0.657803087875364" />
+            <inertia ixx="0.00461193404989021" ixy="2.06037288507875E-05" ixz="-3.18942823947151E-08" iyy="0.00189695830911958" iyz="8.9775768045783E-05" izz="0.00293465680409193" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NK1_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NK1_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="NK1" type="revolute">
+        <origin rpy="-1.5707963267949 0 0" xyz="0 0 0.0298" />
+        <parent link="Body_NKY" />
+        <child link="Body_NK1" />
+        <axis xyz="0 0 1" />
+        <limit effort="10.0" lower="-2" upper="2" velocity="10.0" />
+    </joint>
+    <link name="Body_NK2">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00619110883708962 0.000180362999792852 -0.00925441765145953" />
+            <mass value="0.250303289297233" />
+            <inertia ixx="0.000202848165255698" ixy="-2.85613884397634E-07" ixz="4.4023872954844E-06" iyy="0.000189595993252901" iyz="4.2100514679016E-07" izz="0.000145991865917545" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NK2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_NK2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="NK2" type="revolute">
+        <origin rpy="1.5707963267949 0 -1.5707963267949" xyz="0 -0.0860 0" />
+        <parent link="Body_NK1" />
+        <child link="Body_NK2" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-2" upper="2" velocity="10.0" />
+    </joint>
+
+    <link name="Body_LF21">
+        <inertial>
+            <origin rpy="0 0 0" xyz="4.08082421144568E-06 -0.0103654579068141 -0.0223572146583746" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="-3.61896654972963E-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="1.21167394757334E-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF21" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0230 0.0330 -0.0755" />
+        <parent link="Body_LWR" />
+        <child link="Body_LF21" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF22">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000130946971760824 0.000226771833385403 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="-2.32805891508231E-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="-4.92964124837522E-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF22" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0020 -0.0105 -0.0420" />
+        <parent link="Body_LF21" />
+        <child link="Body_LF22" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF23">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000169386130301579 0.000356898419659246 -0.0163165219752076" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="-4.4210418009567E-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="-2.82215020077362E-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF23" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0014 0 -0.0300" />
+        <parent link="Body_LF22" />
+        <child link="Body_LF23" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+
+
+    <link name="Body_LF31">
+        <inertial>
+            <origin rpy="0 0 0" xyz="4.08082421144568E-06 -0.0103654579068141 -0.0223572146583746" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="-3.61896654972963E-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="1.21167394757334E-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF31" type="revolute">
+        <origin rpy="0 0 3.141592653589" xyz="-0.0230 -0.0105 -0.0755" />
+        <parent link="Body_LWR" />
+        <child link="Body_LF31" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF32">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000130946971760824 0.000226771833385403 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="-2.32805891508231E-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="-4.92964124837522E-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF32" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0020 -0.0105 -0.0420" />
+        <parent link="Body_LF31" />
+        <child link="Body_LF32" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_LF33">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.000169386130301579 0.000356898419659246 -0.0163165219752076" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="-4.4210418009567E-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="-2.82215020077362E-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_LF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="LF33" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0014 0 -0.0300" />
+        <parent link="Body_LF32" />
+        <child link="Body_LF33" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <link name="Body_RSP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0125095477277756 -0.068256718764233101 -0.00010129669295980101" />
+            <mass value="0.512814669817052" />
+            <inertia ixx="0.00105971934903801" ixy="-1.5967462303431400e-04" ixz="-8.62192186714616E-07" iyy="0.00101602821932241" iyz="-6.2966884306784996e-06" izz="0.00161449029531154" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RSR">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="-0.035398962551355898 0.00044245995196773302 -0.017762633299856102" />
+            <mass value="0.478101234588499" />
+            <inertia ixx="0.000470991608414918" ixy="9.0901553039532995e-08" ixz="-1.21957572289795E-05" iyy="0.00056865982747998" iyz="-7.9419793532124904e-06" izz="0.000377112142444654" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RSY">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0059630710867142498 0.0022316583599030801 -0.16200994741111999" />
+            <mass value="1.35206539449553" />
+            <inertia ixx="0.0134777313253687" ixy="2.5138451425789699e-05" ixz="-0.000850780329961022" iyy="0.0134238053664017" iyz="-2.7096457354038099e-04" izz="0.00109460289061941" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RSY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_REP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="-0.02571445335908 -0.00080617852028866399 -0.041785358716466603" />
+            <mass value="0.267758871202315" />
+            <inertia ixx="0.000341774590608957" ixy="8.9470476429373695e-07" ixz="5.48147249702E-05" iyy="0.000322402837807457" iyz="-2.9300672847597200e-06" izz="0.000239480055722266" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_REP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_REP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RWY">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="3.99379011692602E-05 -0.0577379856357585 -0.15171876502304399" />
+            <mass value="1.37072161761866" />
+            <inertia ixx="0.0138917492745533" ixy="3.5425177800418901e-06" ixz="7.9309444806889E-06" iyy="0.0118173705529259" iyz="3.9427324662846402e-03" izz="0.00267824831844074" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RWP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="-0.00037873907121759699 -0.010888243491304499 0.017009370610731701" />
+            <mass value="0.294902574333316" />
+            <inertia ixx="0.000715165417977553" ixy="1.5154396924067100e-06" ixz="-4.37551165446012E-06" iyy="0.000574579884042658" iyz="5.5583549065965003e-05" izz="0.000301632100473859" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RWR">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0052673447224298202 0.00165481505247564 -0.047696718384656701" />
+            <mass value="0.474006924726537" />
+            <inertia ixx="0.000397832341494148" ixy="-2.6284743947387800e-06" ixz="-1.84132721696329E-05" iyy="0.000310585574870465" iyz="5.7461134045111800e-06" izz="0.000251799615334244" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RWR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF11">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="4.0808242114456797E-06 0.010365457906814099 -0.022357214658374602" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="3.6189665497296299e-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="-1.2116739475733400e-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF12">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00013094697176082399 -0.00022677183338540299 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="2.3280589150823100e-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="4.9296412483752203e-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF13">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00016938613030157901 -0.00035689841965924602 -0.016316521975207599" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="4.4210418009567002e-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="2.8221502007736200e-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RHY">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.037812360071945397 -2.54097696217315E-08 -0.116128242308007" />
+            <mass value="1.02665437743596" />
+            <inertia ixx="0.00249606232939035" ixy="2.7627207566620200e-09" ixz="-0.000829704581049298" iyy="0.00377324783994803" iyz="-5.7913276862023304e-10" izz="0.0021281978106318" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHY_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHY_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RHR">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0047372399648424497 0.0048293176030287897 -0.032556369283015897" />
+            <mass value="1.37473370900606" />
+            <inertia ixx="0.00222021321390697" ixy="-3.0134495931526598e-05" ixz="0.000214745489876361" iyy="0.00208177057868792" iyz="-6.9936326190367105e-05" izz="0.00174245289623185" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RHP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.013982097375642899 -0.0119128547059099 -0.190050892707924" />
+            <mass value="3.39708806380558" />
+            <inertia ixx="0.0610144402594715" ixy="6.7918316326831898e-04" ixz="-0.00115726366946058" iyy="0.0588960128286437" iyz="-3.8119020042566699e-03" izz="0.00864106131257887" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RHP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RKP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.016712842596824401 0.0042317406489818798 -0.16354798162054701" />
+            <mass value="1.2513314922159" />
+            <inertia ixx="0.0176853262863822" ixy="-5.9758804075860202e-05" ixz="0.000242087956452148" iyy="0.0161941871476601" iyz="-2.0595367105806700e-05" izz="0.00355046513294474" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RKP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RKP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RAP">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0148223972690647 -0.010056273874808799 0.0099746777530536103" />
+            <mass value="2.00597218062827" />
+            <inertia ixx="0.00317573590934402" ixy="3.0397733226893999e-04" ixz="-0.000298327569678596" iyy="0.00347243568780368" iyz="3.2009363172895699e-04" izz="0.0036796574607068" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RAP_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RAP_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RAR">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.0165455008793805 -0.0021608598220959202 -0.095291506213009705" />
+            <mass value="1.06815376654094" />
+            <inertia ixx="0.00372790935829238" ixy="-3.1339146296803101e-05" ixz="-0.000480888102685697" iyy="0.00607005664613535" iyz="9.4251489786900507e-05" izz="0.00420512438203011" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RAR_merged.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RAR_merged.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF21">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="4.0808242114456797E-06 0.010365457906814099 -0.022357214658374602" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="3.6189665497296299e-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="-1.2116739475733400e-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF22">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00013094697176082399 -0.00022677183338540299 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="2.3280589150823100e-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="4.9296412483752203e-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF23">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00016938613030157901 -0.00035689841965924602 -0.016316521975207599" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="4.4210418009567002e-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="2.8221502007736200e-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF31">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="4.0808242114456797E-06 0.010365457906814099 -0.022357214658374602" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="3.6189665497296299e-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="-1.2116739475733400e-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF32">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00013094697176082399 -0.00022677183338540299 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="2.3280589150823100e-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="4.9296412483752203e-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF33">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00016938613030157901 -0.00035689841965924602 -0.016316521975207599" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="4.4210418009567002e-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="2.8221502007736200e-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="Body_RF41">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="4.0808242114456797E-06 0.010365457906814099 -0.022357214658374602" />
+            <mass value="0.0209635645691505" />
+            <inertia ixx="5.79877083007342E-06" ixy="3.6189665497296299e-09" ixz="2.45166522675331E-07" iyy="6.02432212425641E-06" iyz="-1.2116739475733400e-09" izz="1.78245355770108E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF1.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF42">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00013094697176082399 -0.00022677183338540299 -0.0135375370531412" />
+            <mass value="0.0121177256078384" />
+            <inertia ixx="2.50372945957958E-06" ixy="2.3280589150823100e-09" ixz="5.14105106916585E-08" iyy="2.26813369660349E-06" iyz="4.9296412483752203e-09" izz="1.22101156825522E-06" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF2.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="Body_RF43">
+        <inertial>
+            <origin rpy="-0 0 -0" xyz="0.00016938613030157901 -0.00035689841965924602 -0.016316521975207599" />
+            <mass value="0.0163435127658012" />
+            <inertia ixx="2.35338373719888E-06" ixy="4.4210418009567002e-09" ixz="1.38024261681812E-07" iyy="2.40973096927305E-06" iyz="2.8221502007736200e-08" izz="9.69758896639509E-07" />
+        </inertial>
+        <visual>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+            <material name="">
+                <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin rpy="-0 0 -0" xyz="0 -0 0" />
+            <geometry>
+                <mesh filename="package://drchubo/meshes/convhull_RF3.stl" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="RSP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0010 -0.1305 0.2061" />
+        <parent link="Body_Torso" />
+        <child link="Body_RSP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <joint name="RSR" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0330 -0.0990 0" />
+        <parent link="Body_RSP" />
+        <child link="Body_RSR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-3.14" upper="0.262" velocity="10.0" />
+    </joint>
+    <joint name="RSY" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0330 -0 -0.0270" />
+        <parent link="Body_RSR" />
+        <child link="Body_RSY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-3.14" upper="2.0" velocity="10.0" />
+    </joint>
+    <joint name="REP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0300 0 -0.2730" />
+        <parent link="Body_RSY" />
+        <child link="Body_REP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-2.96" upper=".2" velocity="10.0" />
+    </joint>
+    <joint name="RWY" type="revolute">
+        <origin rpy="-0 0 0" xyz="-0.0300 0 -0.0520" />
+        <parent link="Body_REP" />
+        <child link="Body_RWY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <joint name="RWP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 -0.2618" />
+        <parent link="Body_RWY" />
+        <child link="Body_RWP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <joint name="RWR" type="revolute">
+        <origin rpy="-0 0 -1.57079632679" xyz="0 -0 -0.0275" />
+        <parent link="Body_RWP" />
+        <child link="Body_RWR" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-3.14" upper="3.14" velocity="10.0" />
+    </joint>
+    <joint name="RF11" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0230 0.0120 -0.0755" />
+        <parent link="Body_RWR" />
+        <child link="Body_RF11" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF12" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0020 0.0105 -0.0420" />
+        <parent link="Body_RF11" />
+        <child link="Body_RF12" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF13" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0014 -0 -0.0300" />
+        <parent link="Body_RF12" />
+        <child link="Body_RF13" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RHY" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0.0885 -0.0230" />
+        <parent link="Body_TSY" />
+        <child link="Body_RHY" />
+        <axis xyz="0 0 1" />
+        <limit effort="100.0" lower="-1.92" upper="1.92" velocity="10.0" />
+    </joint>
+    <joint name="RHR" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 -0.1410" />
+        <parent link="Body_RHY" />
+        <child link="Body_RHR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-0.52" upper="0.52" velocity="10.0" />
+    </joint>
+    <joint name="RHP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 0" />
+        <parent link="Body_RHR" />
+        <child link="Body_RHP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-1.87" upper="1.61" velocity="10.0" />
+    </joint>
+    <joint name="RKP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 -0.3299" />
+        <parent link="Body_RHP" />
+        <child link="Body_RKP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-0.07" upper="2.61" velocity="10.0" />
+    </joint>
+    <joint name="RAP" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 -0.3300" />
+        <parent link="Body_RKP" />
+        <child link="Body_RAP" />
+        <axis xyz="0 1 0" />
+        <limit effort="100.0" lower="-1.7" upper="1.7" velocity="10.0" />
+    </joint>
+    <joint name="RAR" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0 -0 0" />
+        <parent link="Body_RAP" />
+        <child link="Body_RAR" />
+        <axis xyz="1 0 0" />
+        <limit effort="100.0" lower="-1.57" upper="1.57" velocity="10.0" />
+    </joint>
+    <joint name="RF21" type="revolute">
+        <origin rpy="-0 0 -0" xyz="0.0230 -0.0330 -0.0755" />
+        <parent link="Body_RWR" />
+        <child link="Body_RF21" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF22" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0020 0.0105 -0.0420" />
+        <parent link="Body_RF21" />
+        <child link="Body_RF22" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF23" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0014 -0 -0.0300" />
+        <parent link="Body_RF22" />
+        <child link="Body_RF23" />
+        <axis xyz="0 1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+
+    <joint name="RF31" type="revolute">
+        <origin rpy="-0 0 -3.141592653589" xyz="-0.023 0.0105 -0.0755" />
+        <parent link="Body_RWR" />
+        <child link="Body_RF31" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF32" type="revolute">
+        <origin rpy="0 0 0" xyz="-0.0020 0.0105 -0.0420" />
+        <parent link="Body_RF31" />
+        <child link="Body_RF32" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF33" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0014 -0 -0.0300" />
+        <parent link="Body_RF32" />
+        <child link="Body_RF33" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF41" type="revolute">
+        <origin rpy="-0 0 -3.141592653589" xyz="-0.0230 0.0555 -0.0755" />
+        <parent link="Body_RWR" />
+        <child link="Body_RF41" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF42" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.002 0.0105 -0.0420" />
+        <parent link="Body_RF41" />
+        <child link="Body_RF42" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+    <joint name="RF43" type="revolute">
+        <origin rpy="-0 0 -0" xyz="-0.0014 -0 -0.0300" />
+        <parent link="Body_RF42" />
+        <child link="Body_RF43" />
+        <axis xyz="0 -1 0" />
+        <limit effort="10.0" lower="-1.5" upper=".1" velocity="2.0" />
+    </joint>
+</robot>

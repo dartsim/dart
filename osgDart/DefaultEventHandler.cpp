@@ -338,8 +338,11 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 
         case ' ':
         {
-          mViewer->simulate(!mViewer->isSimulating());
-          return true;
+          if(mViewer->isAllowingSimulation())
+          {
+            mViewer->simulate(!mViewer->isSimulating());
+            return true;
+          }
           break;
         }
       }

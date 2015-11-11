@@ -501,6 +501,8 @@ public:
     mEntity = tool;
   }
 
+  virtual ~InteractiveToolDnD() = default;
+
 protected:
 
   dart::sub_ptr<InteractiveTool> mTool;
