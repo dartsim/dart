@@ -55,17 +55,17 @@ class Camera {
 public:
     Camera() {}
     virtual ~Camera() {}
-    virtual void set(const Eigen::Vector3d& _eye, const Eigen::Vector3d& _look, const Eigen::Vector3d& _up);
-    virtual void slide(double _delX, double _delY, double _delZ, bool _bLocal = false);
-    virtual void setFrustum(float _vAng, float _asp, float _nearD, float _farD);
-    virtual void setOrtho(float _width, float _height, float _nearD, float _farD);
+    virtual void set(const Eigen::Vector3d& _eye, const Eigen::Vector3d& _look, const Eigen::Vector3d& _up) = 0;
+    virtual void slide(double _delX, double _delY, double _delZ, bool _bLocal = false) = 0;
+    virtual void setFrustum(float _vAng, float _asp, float _nearD, float _farD) = 0;
+    virtual void setOrtho(float _width, float _height, float _nearD, float _farD) = 0;
 
 
-    virtual void roll(float _angle);
-    virtual void pitch(float _angle);
-    virtual void yaw(float _angle);
-    virtual void localRotate(float _angle, AXIS _axis);
-    virtual void globalRotate(float _angle, AXIS _axis);
+    virtual void roll(float _angle) = 0;
+    virtual void pitch(float _angle) = 0;
+    virtual void yaw(float _angle) = 0;
+    virtual void localRotate(float _angle, AXIS _axis) = 0;
+    virtual void globalRotate(float _angle, AXIS _axis) = 0;
 
     virtual Eigen::Vector3d getEye(void) const {
         return Eigen::Vector3d(0.0f, 0.0f, 1.0f);

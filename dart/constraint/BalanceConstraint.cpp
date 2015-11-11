@@ -382,6 +382,12 @@ void BalanceConstraint::setPseudoInverseDamping(double _damping)
 }
 
 //==============================================================================
+double BalanceConstraint::getPseudoInverseDamping() const
+{
+  return mDamping;
+}
+
+//==============================================================================
 const Eigen::Vector3d& BalanceConstraint::getLastError() const
 {
   return mLastError;
