@@ -46,7 +46,7 @@
 namespace dart {
 namespace utils {
 
-float ConvertDecToFloat(char _bytes[4]) {
+float convertDecToFloat(char _bytes[4]) {
     union {
         char theChars[4];
         float theFloat;
@@ -61,7 +61,7 @@ float ConvertDecToFloat(char _bytes[4]) {
 }
 
 
-void ConvertFloatToDec(float _f, char* _bytes) {
+void convertFloatToDec(float _f, char* _bytes) {
     char* p = (char*)&_f;
     _bytes[0] = p[2];
     _bytes[1] = p[3];
@@ -107,8 +107,8 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
 
     //convert if in dec format
     if (bDecFmt) {
-        hdr.freq = ConvertDecToFloat((char*)&hdr.freq);
-        hdr.scale = ConvertDecToFloat((char*)&hdr.scale);
+        hdr.freq = convertDecToFloat((char*)&hdr.freq);
+        hdr.scale = convertDecToFloat((char*)&hdr.scale);
     }
 
     int numFrames = hdr.end_frame - hdr.start_frame + 1;
@@ -149,9 +149,9 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
             if (c3dScale < 0) {
                 memcpy(&frame, buf, sizeof(frame));
                 if(bDecFmt){
-                    frame.y = ConvertDecToFloat((char*)&frame.y);
-                    frame.z = ConvertDecToFloat((char*)&frame.z);
-                    frame.x = ConvertDecToFloat((char*)&frame.x);
+                    frame.y = convertDecToFloat((char*)&frame.y);
+                    frame.z = convertDecToFloat((char*)&frame.z);
+                    frame.x = convertDecToFloat((char*)&frame.x);
                 }
                 v[0] = frame.y / 1000.0;
                 v[1] = frame.z / 1000.0;
@@ -159,9 +159,9 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
             } else {
                 memcpy(&frameSI, buf, sizeof(frameSI));
                 if (bDecFmt) {
-                    frameSI.y = (short)ConvertDecToFloat((char*)&frameSI.y);
-                    frameSI.z = (short)ConvertDecToFloat((char*)&frameSI.z);
-                    frameSI.x = (short)ConvertDecToFloat((char*)&frameSI.x);
+                    frameSI.y = (short)convertDecToFloat((char*)&frameSI.y);
+                    frameSI.z = (short)convertDecToFloat((char*)&frameSI.z);
+                    frameSI.x = (short)convertDecToFloat((char*)&frameSI.x);
                 }
                 v[0] = (float)frameSI.y * pntScale / 1000.0;
                 v[1] = (float)frameSI.z * pntScale / 1000.0;
