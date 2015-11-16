@@ -46,15 +46,26 @@ class Group : public ReferentialSkeleton
 {
 public:
 
-  /// Create a Group out of a set of BodyNodes
+  /// Create a Group out of a set of BodyNodes. If _includeDofs is true, then
+  /// the parent DegreesOfFreedom of each BodyNode will also be added to the
+  /// Group.
   static GroupPtr create(
       const std::string& _name = "Group",
-      const std::vector<BodyNode*>& _bodyNodes = std::vector<BodyNode*>());
+      const std::vector<BodyNode*>& _bodyNodes = std::vector<BodyNode*>(),
+      bool _includeDofs = true);
 
-  /// Create a Group out of a set of DegreesOfFreedom
+  /// Create a Group out of a set of DegreesOfFreedom. If _includeBodyNodes is
+  /// true, then the child BodyNode of each DegreeOfFreedom will also be added
+  /// to the Group.
   static GroupPtr create(
       const std::string& _name,
-      const std::vector<DegreeOfFreedom*>& _dofs);
+      const std::vector<DegreeOfFreedom*>& _dofs,
+      bool _includeBodyNodes = true);
+
+  /// Create a Group that mimics the given MetaSkeleton
+  static GroupPtr create(
+      const std::string& _name,
+      const MetaSkeletonPtr& _metaSkeleton);
 
   /// Destructor
   virtual ~Group() = default;
@@ -165,12 +176,18 @@ public:
 
 protected:
   /// Default constructor
-  Group(const std::string& _name = "Group",
-        const std::vector<BodyNode*>& _bodyNodes = std::vector<BodyNode*>());
+  Group(const std::string& _name,
+        const std::vector<BodyNode*>& _bodyNodes,
+        bool _includeDofs);
 
   /// Alternative constructor
   Group(const std::string& _name,
-        const std::vector<DegreeOfFreedom*>& _dofs);
+        const std::vector<DegreeOfFreedom*>& _dofs,
+        bool _includeBodyNodes);
+
+  /// MetaSkeleton-based constructor
+  Group(const std::string& _name,
+        const MetaSkeletonPtr& _metaSkeleton);
 };
 
 } // dynamics

@@ -45,18 +45,29 @@ namespace dynamics {
 
 //==============================================================================
 GroupPtr Group::create(const std::string& _name,
-                       const std::vector<BodyNode*>& _bodyNodes)
+                       const std::vector<BodyNode*>& _bodyNodes,
+                       bool _includeDofs)
 {
-  GroupPtr group(new Group(_name, _bodyNodes));
+  GroupPtr group(new Group(_name, _bodyNodes, _includeDofs));
   group->mPtr = group;
   return group;
 }
 
 //==============================================================================
 GroupPtr Group::create(const std::string& _name,
-                       const std::vector<DegreeOfFreedom*>& _dofs)
+                       const std::vector<DegreeOfFreedom*>& _dofs,
+                       bool _includeBodyNodes)
 {
-  GroupPtr group(new Group(_name, _dofs));
+  GroupPtr group(new Group(_name, _dofs, _includeBodyNodes));
+  group->mPtr = group;
+  return group;
+}
+
+//==============================================================================
+GroupPtr Group::create(const std::string& _name,
+                       const MetaSkeletonPtr& _metaSkeleton)
+{
+  GroupPtr group(new Group(_name, _metaSkeleton));
   group->mPtr = group;
   return group;
 }
@@ -354,18 +365,46 @@ bool Group::removeDofs(const std::vector<DegreeOfFreedom*>& _dofs,
 
 //==============================================================================
 Group::Group(const std::string& _name,
-             const std::vector<BodyNode*>& _bodyNodes)
+             const std::vector<BodyNode*>& _bodyNodes, bool _includeDofs)
 {
   setName(_name);
   addBodyNodes(_bodyNodes);
+
+  if(_includeDofs)
+  {
+    for(size_t i=0; i < _bodyNodes.size(); ++i)
+    {
+      Joint* joint = _bodyNodes[i]->getParentJoint();
+      for(size_t j=0; j < joint->getNumDofs(); ++j)
+        addDof(joint->getDof(j));
+    }
+  }
 }
 
 //==============================================================================
 Group::Group(const std::string& _name,
-             const std::vector<DegreeOfFreedom*>& _dofs)
+             const std::vector<DegreeOfFreedom*>& _dofs,
+             bool _includeBodyNodes)
 {
   setName(_name);
   addDofs(_dofs);
+
+  if(_includeBodyNodes)
+  {
+    for(size_t i=0; i < _dofs.size(); ++i)
+    {
+      DegreeOfFreedom* dof = _dofs[i];
+      addBodyNode(dof->getChildBodyNode(), false);
+    }
+  }
+}
+
+//==============================================================================
+Group::Group(const std::string& _name,
+             const MetaSkeletonPtr& _metaSkeleton)
+{
+  setName(_name);
+  addComponents(_metaSkeleton->getBodyNodes());
 }
 
 } // namespace dynamics
