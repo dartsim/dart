@@ -166,7 +166,71 @@ void Group::swapDofIndices(size_t _index1, size_t _index2)
 }
 
 //==============================================================================
-void Group::addBodyNode(BodyNode* _bn, bool _warning)
+bool Group::addComponent(BodyNode* _bn, bool _warning)
+{
+  bool added = false;
+
+  added |= addBodyNode(_bn, false);
+
+  for(size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+    added |= addDof(_bn->getParentJoint()->getDof(i), false);
+
+  if(_warning && !added)
+  {
+    dtwarn << "[Group::addComponent] The BodyNode named [" << _bn->getName()
+           << "] (" << _bn << ") and all of its parent DegreesOfFreedom are "
+           << "already in the Group [" << getName() << "] (" << this << ")\n";
+    assert(false);
+  }
+
+  return added;
+}
+
+//==============================================================================
+bool Group::addComponents(const std::vector<BodyNode*>& _bodyNodes,
+                          bool _warning)
+{
+  bool added = false;
+  for(BodyNode* bn : _bodyNodes)
+    added |= addComponent(bn, _warning);
+
+  return added;
+}
+
+//==============================================================================
+bool Group::removeComponent(BodyNode* _bn, bool _warning)
+{
+  bool removed = false;
+
+  removed |= removeBodyNode(_bn, false);
+
+  for(size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+    removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
+
+  if(_warning && !removed)
+  {
+    dtwarn << "[Group::removeComponent] The BodyNode named [" << _bn->getName()
+           << "] (" << _bn << ") and its parent DegreesOfFreedom were not in "
+           << "the Group [" << getName() << "] (" << this << ")\n";
+    assert(false);
+  }
+
+  return removed;
+}
+
+//==============================================================================
+bool Group::removeComponents(const std::vector<BodyNode*>& _bodyNodes,
+                             bool _warning)
+{
+  bool removed = false;
+  for(BodyNode* bn : _bodyNodes)
+    removed |= removeComponent(bn, _warning);
+
+  return removed;
+}
+
+//==============================================================================
+bool Group::addBodyNode(BodyNode* _bn, bool _warning)
 {
   if(INVALID_INDEX != getIndexOf(_bn, false))
   {
@@ -176,21 +240,24 @@ void Group::addBodyNode(BodyNode* _bn, bool _warning)
              << "] (" << _bn << ") is already in the Group [" << getName()
              << "] (" << this << ")\n";
       assert(false);
-      return;
     }
 
-    return;
+    return false;
   }
 
   registerBodyNode(_bn);
+  return true;
 }
 
 //==============================================================================
-void Group::addBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
+bool Group::addBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
                          bool _warning)
 {
+  bool added = false;
   for(BodyNode* bn : _bodyNodes)
-    addBodyNode(bn, _warning);
+    added |= addBodyNode(bn, _warning);
+
+  return added;
 }
 
 //==============================================================================
@@ -210,7 +277,6 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
   }
 
   unregisterBodyNode(_bn, false);
-
   return true;
 }
 
@@ -218,15 +284,15 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
 bool Group::removeBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
                             bool _warning)
 {
-  bool allGood = true;
+  bool removed = false;
   for(BodyNode* bn : _bodyNodes)
-    allGood &= removeBodyNode(bn, _warning);
+    removed |= removeBodyNode(bn, _warning);
 
-  return allGood;
+  return removed;
 }
 
 //==============================================================================
-void Group::addDof(DegreeOfFreedom* _dof, bool _warning)
+bool Group::addDof(DegreeOfFreedom* _dof, bool _warning)
 {
   if(INVALID_INDEX != getIndexOf(_dof, false))
   {
@@ -236,20 +302,23 @@ void Group::addDof(DegreeOfFreedom* _dof, bool _warning)
              << "] (" << _dof << ") is already in the Group [" << getName()
              << "] (" << this << ")\n";
       assert(false);
-      return;
     }
 
-    return;
+    return false;
   }
 
   registerDegreeOfFreedom(_dof);
+  return true;
 }
 
 //==============================================================================
-void Group::addDofs(const std::vector<DegreeOfFreedom*>& _dofs, bool _warning)
+bool Group::addDofs(const std::vector<DegreeOfFreedom*>& _dofs, bool _warning)
 {
+  bool added = false;
   for(DegreeOfFreedom* dof : _dofs)
-    addDof(dof, _warning);
+    added |= addDof(dof, _warning);
+
+  return added;
 }
 
 //==============================================================================
@@ -269,7 +338,6 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _warning)
   }
 
   unregisterDegreeOfFreedom(_dof->getChildBodyNode(), _dof->getIndexInJoint());
-
   return true;
 }
 
@@ -277,11 +345,11 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _warning)
 bool Group::removeDofs(const std::vector<DegreeOfFreedom*>& _dofs,
                        bool _warning)
 {
-  bool allGood = true;
+  bool removed = false;
   for(DegreeOfFreedom* dof : _dofs)
-    allGood &= removeDof(dof, _warning);
+    removed |= removeDof(dof, _warning);
 
-  return allGood;
+  return removed;
 }
 
 //==============================================================================

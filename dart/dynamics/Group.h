@@ -65,60 +65,100 @@ public:
   /// Swap the index of DegreeOfFreedom _index1 with _index2
   void swapDofIndices(size_t _index1, size_t _index2);
 
+  /// Add a BodyNode and its parent DegreesOfFreedom to this Group. If _warning
+  /// is true, you will be warned when the BodyNode and all its DegreesOfFreedom
+  /// were already in the Group, and an assertion will be thrown.
+  ///
+  /// This function will return false if the BodyNode and all its
+  /// DegreesOfFreedom were already in the Group.
+  bool addComponent(BodyNode* _bn, bool _warning=true);
+
+  /// Add set of BodyNodes and their parent DegreesOfFreedom to this Group. If
+  /// _warning is true, you will be warned when an entire component was already
+  /// in the Group, and an assertion will be thrown.
+  ///
+  /// This function will return false if all of the components in the set were
+  /// already in this Group.
+  bool addComponents(const std::vector<BodyNode*>& _bodyNodes,
+                      bool _warning=true);
+
+  /// Remove a BodyNode and its parent DegreesOfFreedom from this Group. If
+  /// _warning is true, you will be warned if this Group does not have the
+  /// BodyNode or any of its DegreesOfFreedom, and an assertion will be thrown.
+  ///
+  /// This function will return false if the Group did not include the BodyNode
+  /// or any of its parent DegreesOfFreedom.
+  bool removeComponent(BodyNode* _bn, bool _warning=true);
+
+  /// Remove a set of BodyNodes and their parent DegreesOfFreedom from this
+  /// Group. If _warning is true, you will be warned if any of the components
+  /// were completely missing from this Group, and an assertion will be thrown.
+  ///
+  /// This function will return false if none of the components in this set were
+  /// in the Group.
+  bool removeComponents(const std::vector<BodyNode*>& _bodyNodes,
+                        bool _warning=true);
+
   /// Add a BodyNode to this Group. If _warning is true, you will be warned when
-  /// you attempt to add the same BodyNode twice, and assertion will be thrown.
-  void addBodyNode(BodyNode* _bn, bool _warning=true);
+  /// you attempt to add the same BodyNode twice, and an assertion will be
+  /// thrown.
+  ///
+  /// This function will return false if the BodyNode was already in the Group.
+  bool addBodyNode(BodyNode* _bn, bool _warning=true);
 
   /// Add a set of BodyNodes to this Group. If _warning is true, you will be
   /// warned when you attempt to add the same BodyNode twice, and an assertion
   /// will be thrown.
-  void addBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
+  ///
+  /// This function will return false if all of the BodyNodes were already in
+  /// the Group.
+  bool addBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
                     bool _warning=true);
 
-  /// Remove a BodyNode from this Group. Note: All DegreesOfFreedom belonging to
-  /// this BodyNode will also be removed. If _warning is true, you will be
-  /// warned when you attempt to remove BodyNode that is not in this Group, and
-  /// an assertion will be thrown.
+  /// Remove a BodyNode from this Group. If _warning is true, you will be warned
+  /// when you attempt to remove a BodyNode that is not in this Group, and an
+  /// assertion will be thrown.
   ///
-  /// The function will return false if the BodyNode was not already in this
-  /// Group.
+  /// The function will return false if the BodyNode was not in this Group.
   bool removeBodyNode(BodyNode* _bn, bool _warning=true);
 
-  /// Remove a set of BodyNodes from this Group. Note: All DegreesOfFreedom
-  /// belonging to each BodyNode will also be removed. If _warning is true, you
-  /// will be warned when you attempt to remove a BodyNode that is not in this
-  /// Group, and an assertion will be thrown.
+  /// Remove a set of BodyNodes from this Group. If _warning is true, you will
+  /// be warned when you attempt to remove a BodyNode that is not in this Group,
+  /// and an assertion will be thrown.
   ///
-  /// The function will return false if one of the BodyNodes was not already in
-  /// this Group.
+  /// The function will return false if none of the BodyNodes were in this Group.
   bool removeBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
                        bool _warning=true);
 
-  /// Add a DegreeOfFreedom to this Group. Note: The BodyNode of this
-  /// DegreeOfFreedom will also be added. If _warning is true, you will be
+  /// Add a DegreeOfFreedom to this Group. If _warning is true, you will be
   /// warned when you attempt to add the same DegreeOfFreedom twice, and an
   /// assertion will be thrown.
-  void addDof(DegreeOfFreedom* _dof, bool _warning=true);
+  ///
+  /// This function will return false if the DegreeOfFreedom was already in the
+  /// Group.
+  bool addDof(DegreeOfFreedom* _dof, bool _warning=true);
 
-  /// Add a set of DegreesOfFreedom to this Group. Note: The BodyNodes of these
-  /// DegreesOfFreedom will also be added. If _warning is true, you will be
-  /// warned when you attempt to add the same DegreeOfFreedom twice, and an
+  /// Add a set of DegreesOfFreedom to this Group. If _warning is true, you will
+  /// be warned when you attempt to add the same DegreeOfFreedom twice, and an
   /// assertion will be thrown.
-  void addDofs(const std::vector<DegreeOfFreedom*>& _dofs, bool _warning=true);
+  ///
+  /// This function will return false if all of the DegreesOfFreedom was already
+  /// in the Group.
+  bool addDofs(const std::vector<DegreeOfFreedom*>& _dofs, bool _warning=true);
 
   /// Remove a DegreeOfFreedom from this Group. If _warning is true, you will be
   /// warned when you attempt to remove a DegreeOfFreedom that is not in this
   /// Group, and an assertion will be thrown.
   ///
-  /// This function will return false if the DegreeOfFreedom was not already in
-  /// this Group.
+  /// This function will return false if the DegreeOfFreedom was not in this
+  /// Group.
   bool removeDof(DegreeOfFreedom* _dof, bool _warning=true);
 
   /// Remove a set of DegreesOfFreedom from this Group. If _warning is true, you
   /// will be warned when you attempt to remove a DegreeOfFreedom that is not
   /// in this Group, and an assertion will be thrown.
   ///
-  /// This function will return false if the DegreeOfFreedom was not alraedy in
+  /// This function will return false if none of the DegreesOfFreedom were in
   /// this Group.
   bool removeDofs(const std::vector<DegreeOfFreedom*>& _dofs,
                   bool _warning=true);
