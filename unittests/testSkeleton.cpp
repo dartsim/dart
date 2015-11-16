@@ -623,6 +623,23 @@ TEST(Skeleton, NodePersistence)
   }
 }
 
+TEST(Skeleton, ZeroDofJointInReferential)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly included in linkages.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  BodyNode* zeroDof2 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+
+  BranchPtr branch = Branch::create(skel->getBodyNode(0));
+  EXPECT_EQ(branch->getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_FALSE(branch->getIndexOf(zeroDof1) == INVALID_INDEX);
+  EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();

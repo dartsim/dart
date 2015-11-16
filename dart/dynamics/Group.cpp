@@ -209,7 +209,7 @@ bool Group::removeBodyNode(BodyNode* _bn, bool _warning)
     return false;
   }
 
-  unregisterBodyNode(_bn);
+  unregisterBodyNode(_bn, false);
 
   return true;
 }

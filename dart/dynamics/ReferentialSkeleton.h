@@ -327,21 +327,29 @@ protected:
   /// of ReferentialSkeleton.
   ReferentialSkeleton() = default;
 
-  /// Add a BodyNode to this ReferentialSkeleton. Only usable by derived classes
+  /// Add a BodyNode, along with its parent Joint and parent DegreesOfFreedom
+  /// to this ReferentialSkeleton. This can only be used by derived classes.
+  void registerComponent(BodyNode* _bn);
+
+  /// Add a BodyNode to this ReferentialSkeleton, ignoring its DegreesOfFreedom.
+  /// This can only be used by derived classes.
   void registerBodyNode(BodyNode* _bn);
 
-  /// Add a DegreeOfFreedom to this ReferentialSkeleton. Only usable by
-  /// derived classes.
+  /// Add a DegreeOfFreedom to this ReferentialSkeleton. This can only be used
+  /// by derived classes.
   void registerDegreeOfFreedom(DegreeOfFreedom* _dof);
 
-  /// Completely remove a BodyNode from this ReferentialSkeleton. Only usable
-  /// by derived classes
-  void unregisterBodyNode(BodyNode* _bn);
+  /// Completely remove a BodyNode and its parent DegreesOfFreedom from this
+  /// ReferentialSkeleton. This can only be used by derived classes.
+  void unregisterComponent(BodyNode* _bn);
 
-  /// Remove a DegreeOfFreedom from this ReferentialSkeleton. Only usable by
-  /// derived classes.
-  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex,
-                                 bool removeBnIfEmpty = true);
+  /// Remove a BodyNode from this ReferentialSkeleton, ignoring its parent
+  /// DegreesOfFreedom. This can only be used by derived classes.
+  void unregisterBodyNode(BodyNode* _bn, bool _unregisterDofs);
+
+  /// Remove a DegreeOfFreedom from this ReferentialSkeleton. This can only be
+  /// used by derived classes.
+  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex);
 
   /// Update the caches to match any changes to the structure of this
   /// ReferentialSkeleton
@@ -359,6 +367,13 @@ protected:
 
     /// Indices of the DegreesOfFreedom
     std::vector<size_t> mDofIndices;
+
+    /// Default constructor. Initializes mBodyNodeIndex to INVALID_INDEX
+    IndexMap();
+
+    /// Returns true if nothing in this entry is mapping to a valid index any
+    /// longer.
+    bool isExpired() const;
   };
 
   /// Name of this ReferentialSkeleton
