@@ -46,9 +46,9 @@ namespace dynamics {
 //==============================================================================
 GroupPtr Group::create(const std::string& _name,
                        const std::vector<BodyNode*>& _bodyNodes,
-                       bool _includeDofs)
+                       bool _includeJoints, bool _includeDofs)
 {
-  GroupPtr group(new Group(_name, _bodyNodes, _includeDofs));
+  GroupPtr group(new Group(_name, _bodyNodes, _includeJoints, _includeDofs));
   group->mPtr = group;
   return group;
 }
@@ -56,9 +56,9 @@ GroupPtr Group::create(const std::string& _name,
 //==============================================================================
 GroupPtr Group::create(const std::string& _name,
                        const std::vector<DegreeOfFreedom*>& _dofs,
-                       bool _includeBodyNodes)
+                       bool _includeBodyNodes, bool _includeJoints)
 {
-  GroupPtr group(new Group(_name, _dofs, _includeBodyNodes));
+  GroupPtr group(new Group(_name, _dofs, _includeBodyNodes, _includeJoints));
   group->mPtr = group;
   return group;
 }
@@ -368,7 +368,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
   }
 
   bool added = false;
-  if(INVALID_INDEX == getIndexOf(_joint))
+  if(INVALID_INDEX == getIndexOf(_joint, false))
   {
     registerJoint(_joint);
     added = true;
@@ -555,7 +555,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
     Joint* joint = _dof->getJoint();
     for(size_t i=0; i < joint->getNumDofs(); ++i)
     {
-      if(getIndexOf(joint->getDof(i)) == INVALID_INDEX)
+      if(getIndexOf(joint->getDof(i), false) == INVALID_INDEX)
       {
         performCleanup = false;
         break;
@@ -601,18 +601,26 @@ bool Group::removeDofs(const std::vector<DegreeOfFreedom*>& _dofs,
 
 //==============================================================================
 Group::Group(const std::string& _name,
-             const std::vector<BodyNode*>& _bodyNodes, bool _includeDofs)
+             const std::vector<BodyNode*>& _bodyNodes,
+             bool _includeJoints, bool _includeDofs)
 {
   setName(_name);
   addBodyNodes(_bodyNodes);
 
-  if(_includeDofs)
+  if(_includeDofs || _includeJoints)
   {
     for(size_t i=0; i < _bodyNodes.size(); ++i)
     {
       Joint* joint = _bodyNodes[i]->getParentJoint();
-      for(size_t j=0; j < joint->getNumDofs(); ++j)
-        addDof(joint->getDof(j));
+
+      if(_includeJoints)
+        addJoint(joint, false);
+
+      if(_includeDofs)
+      {
+        for(size_t j=0; j < joint->getNumDofs(); ++j)
+          addDof(joint->getDof(j));
+      }
     }
   }
 }
@@ -620,10 +628,10 @@ Group::Group(const std::string& _name,
 //==============================================================================
 Group::Group(const std::string& _name,
              const std::vector<DegreeOfFreedom*>& _dofs,
-             bool _includeBodyNodes)
+             bool _includeBodyNodes, bool _includeJoints)
 {
   setName(_name);
-  addDofs(_dofs);
+  addDofs(_dofs, _includeJoints);
 
   if(_includeBodyNodes)
   {
@@ -640,7 +648,18 @@ Group::Group(const std::string& _name,
              const MetaSkeletonPtr& _metaSkeleton)
 {
   setName(_name);
-  addComponents(_metaSkeleton->getBodyNodes());
+
+  if(_metaSkeleton)
+  {
+    for(size_t i=0; i < _metaSkeleton->getNumBodyNodes(); ++i)
+      addBodyNode(_metaSkeleton->getBodyNode(i));
+
+    for(size_t i=0; i < _metaSkeleton->getNumJoints(); ++i)
+      addJoint(_metaSkeleton->getJoint(i), false);
+
+    for(size_t i=0; i < _metaSkeleton->getNumDofs(); ++i)
+      addDof(_metaSkeleton->getDof(i), false);
+  }
 }
 
 } // namespace dynamics

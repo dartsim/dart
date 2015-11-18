@@ -46,21 +46,25 @@ class Group : public ReferentialSkeleton
 {
 public:
 
-  /// Create a Group out of a set of BodyNodes. If _includeDofs is true, then
-  /// the parent DegreesOfFreedom of each BodyNode will also be added to the
-  /// Group.
+  /// Create a Group out of a set of BodyNodes. If _includeJoints is true, the
+  /// parent Joint of each BodyNode will also be added to the Group. If
+  /// _includeDofs is true, then the parent DegreesOfFreedom of each BodyNode
+  /// will also be added to the Group.
   static GroupPtr create(
       const std::string& _name = "Group",
       const std::vector<BodyNode*>& _bodyNodes = std::vector<BodyNode*>(),
+      bool _includeJoints = true,
       bool _includeDofs = true);
 
   /// Create a Group out of a set of DegreesOfFreedom. If _includeBodyNodes is
   /// true, then the child BodyNode of each DegreeOfFreedom will also be added
-  /// to the Group.
+  /// to the Group. If _includeJoints is true, then the Joint of each
+  /// DegreeOfFreedom will also be added to the Group.
   static GroupPtr create(
       const std::string& _name,
       const std::vector<DegreeOfFreedom*>& _dofs,
-      bool _includeBodyNodes = true);
+      bool _includeBodyNodes = true,
+      bool _includeJoints = true);
 
   /// Create a Group that mimics the given MetaSkeleton
   static GroupPtr create(
@@ -227,12 +231,14 @@ protected:
   /// Default constructor
   Group(const std::string& _name,
         const std::vector<BodyNode*>& _bodyNodes,
+        bool _includeJoints,
         bool _includeDofs);
 
   /// Alternative constructor
   Group(const std::string& _name,
         const std::vector<DegreeOfFreedom*>& _dofs,
-        bool _includeBodyNodes);
+        bool _includeBodyNodes,
+        bool _includeJoints);
 
   /// MetaSkeleton-based constructor
   Group(const std::string& _name,
