@@ -977,6 +977,73 @@ TEST(Skeleton, Linkage)
   checkLinkageJointConsistency(terminatedUpstream);
 }
 
+TEST(Skeleton, Group)
+{
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  // Make twice as many BodyNodes in the Skeleton
+  SkeletonPtr skel2 = constructLinkageTestSkeleton();
+  skel2->getRootBodyNode()->moveTo(skel, nullptr);
+
+  // Test nullptr construction
+  GroupPtr nullGroup = Group::create("null_group", nullptr);
+  EXPECT_EQ(nullGroup->getNumBodyNodes(), 0u);
+  EXPECT_EQ(nullGroup->getNumJoints(), 0u);
+  EXPECT_EQ(nullGroup->getNumDofs(), 0u);
+
+  // Test conversion from Skeleton
+  GroupPtr skel1Group = Group::create("skel1_group", skel);
+  EXPECT_EQ(skel1Group->getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_EQ(skel1Group->getNumJoints(), skel->getNumJoints());
+  EXPECT_EQ(skel1Group->getNumDofs(), skel->getNumDofs());
+
+  for(size_t i=0; i < skel1Group->getNumBodyNodes(); ++i)
+    EXPECT_EQ(skel1Group->getBodyNode(i), skel->getBodyNode(i));
+
+  for(size_t i=0; i < skel1Group->getNumJoints(); ++i)
+    EXPECT_EQ(skel1Group->getJoint(i), skel->getJoint(i));
+
+  for(size_t i=0; i < skel1Group->getNumDofs(); ++i)
+    EXPECT_EQ(skel1Group->getDof(i), skel->getDof(i));
+
+  // Test arbitrary Groups by plucking random BodyNodes, Joints, and
+  // DegreesOfFreedom from a Skeleton.
+  GroupPtr group = Group::create();
+  std::vector<BodyNode*> bodyNodes;
+  std::vector<Joint*> joints;
+  std::vector<DegreeOfFreedom*> dofs;
+  for(size_t i=0; i < 2*skel->getNumBodyNodes(); ++i)
+  {
+    size_t randomIndex = floor(random(0, skel->getNumBodyNodes()));
+    BodyNode* bn = skel->getBodyNode(randomIndex);
+    if(group->addBodyNode(bn, false))
+      bodyNodes.push_back(bn);
+
+    randomIndex = floor(random(0, skel->getNumJoints()));
+    Joint* joint = skel->getJoint(randomIndex);
+    if(group->addJoint(joint, false, false))
+      joints.push_back(joint);
+
+    randomIndex = floor(random(0, skel->getNumDofs()));
+    DegreeOfFreedom* dof = skel->getDof(randomIndex);
+    if(group->addDof(dof, false, false))
+      dofs.push_back(dof);
+  }
+
+  EXPECT_EQ(group->getNumBodyNodes(), bodyNodes.size());
+  EXPECT_EQ(group->getNumJoints(), joints.size());
+  EXPECT_EQ(group->getNumDofs(), dofs.size());
+
+  for(size_t i=0; i < group->getNumBodyNodes(); ++i)
+    EXPECT_EQ(group->getBodyNode(i), bodyNodes[i]);
+
+  for(size_t i=0; i < group->getNumJoints(); ++i)
+    EXPECT_EQ(group->getJoint(i), joints[i]);
+
+  for(size_t i=0; i < group->getNumDofs(); ++i)
+    EXPECT_EQ(group->getDof(i), dofs[i]);
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
