@@ -331,9 +331,13 @@ protected:
   /// to this ReferentialSkeleton. This can only be used by derived classes.
   void registerComponent(BodyNode* _bn);
 
-  /// Add a BodyNode to this ReferentialSkeleton, ignoring its DegreesOfFreedom.
-  /// This can only be used by derived classes.
+  /// Add a BodyNode to this ReferentialSkeleton, ignoring its Joint and
+  /// DegreesOfFreedom. This can only be used by derived classes.
   void registerBodyNode(BodyNode* _bn);
+
+  /// Add a Joint to this Referential Skeleton, ignoring its DegreesOfFreedom.
+  /// This can only be used by derived classes.
+  void registerJoint(Joint* _joint);
 
   /// Add a DegreeOfFreedom to this ReferentialSkeleton. This can only be used
   /// by derived classes.
@@ -346,6 +350,10 @@ protected:
   /// Remove a BodyNode from this ReferentialSkeleton, ignoring its parent
   /// DegreesOfFreedom. This can only be used by derived classes.
   void unregisterBodyNode(BodyNode* _bn, bool _unregisterDofs);
+
+  /// Remove a Joint from this ReferentialSkeleton. This can only be used by
+  /// derived classes.
+  void unregisterJoint(BodyNode* _child);
 
   /// Remove a DegreeOfFreedom from this ReferentialSkeleton. This can only be
   /// used by derived classes.
@@ -365,10 +373,14 @@ protected:
     /// Index of the BodyNode
     size_t mBodyNodeIndex;
 
-    /// Indices of the DegreesOfFreedom
+    /// Index of the parent Joint
+    size_t mJointIndex;
+
+    /// Indices of the parent DegreesOfFreedom
     std::vector<size_t> mDofIndices;
 
-    /// Default constructor. Initializes mBodyNodeIndex to INVALID_INDEX
+    /// Default constructor. Initializes mBodyNodeIndex and mJointIndex to
+    /// INVALID_INDEX
     IndexMap();
 
     /// Returns true if nothing in this entry is mapping to a valid index any
@@ -388,6 +400,9 @@ protected:
 
   /// Raw const BodyNode pointers. This vector is used for the MetaSkeleton API
   mutable std::vector<const BodyNode*> mRawConstBodyNodes;
+
+  /// Joints that this ReferentialSkeleton references
+  std::vector<JointPtr> mJoints;
 
   /// DegreesOfFreedom that this ReferentialSkeleton references
   std::vector<DegreeOfFreedomPtr> mDofs;

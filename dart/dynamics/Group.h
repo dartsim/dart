@@ -118,8 +118,8 @@ public:
   bool addBodyNode(BodyNode* _bn, bool _warning=true);
 
   /// Add a set of BodyNodes to this Group. If _warning is true, you will be
-  /// warned when you attempt to add the same BodyNode twice, and an assertion
-  /// will be thrown.
+  /// warned when you attempt to add a BodyNode that is already in the Group,
+  /// and an assertion will be thrown.
   ///
   /// This function will return false if all of the BodyNodes were already in
   /// the Group.
@@ -141,38 +141,87 @@ public:
   bool removeBodyNodes(const std::vector<BodyNode*>& _bodyNodes,
                        bool _warning=true);
 
-  /// Add a DegreeOfFreedom to this Group. If _warning is true, you will be
+  /// Add a Joint to this Group. If _addDofs is true, it will also add all the
+  /// DegreesOfFreedom of the Joint. If _warning is true, you will be warned
+  /// if the Joint (and all its DOFs if _addDofs is set to true) was already in
+  /// the Group, and an assertion will be thrown.
+  ///
+  /// This function will return false if the Joint (and all its DOFs, if
+  /// _addDofs is true) was already in the Group.
+  bool addJoint(Joint* _joint, bool _addDofs=true, bool _warning=true);
+
+  /// Add a set of Joints to this Group. If _addDofs is true, it will also add
+  /// all the DOFs of each Joint. If _warning is true, you will be warned when
+  /// you attempt to add a Joint that is already in the Group (and all its DOFs
+  /// are in the Group, if _addDofs is set to true), and an assertion will be
+  /// thrown.
+  ///
+  /// This function will return false if all the Joints (and their DOFs if
+  /// _addDofs is set to true) were already in the Group.
+  bool addJoints(const std::vector<Joint*>& _joints, bool _addDofs=true,
+                 bool _warning=true);
+
+  /// Remove a Joint from this Group. If _removeDofs is true, it will also
+  /// remove any DOFs belonging to this Joint. If _warning is true, you will
+  /// be warned if you attempt to remove a Joint which is not in this Group (and
+  /// none of its DOFs are in the Group if _removeDofs is set to true), and an
+  /// assertion will be thrown.
+  ///
+  /// This function will return false if the Joint was not in the Group (and
+  /// neither were any of its DOFs, if _removeDofs is set to true).
+  bool removeJoint(Joint* _joint, bool _removeDofs=true, bool _warning=true);
+
+  /// Remove a set of Joints from this Group. If _removeDofs is true, it will
+  /// also remove any DOFs belonging to any of the Joints. If _warning is true,
+  /// you will be warned if you attempt to remove a Joint which is not in this
+  /// Group (and none of its DOFs are in the Group if _removeDofs is set to
+  /// true), and an assertion will be thrown.
+  ///
+  /// This function will return false if none of the Joints (nor any of their
+  /// DOFs if _removeDofs is set to true) were in the Group.
+  bool removeJoints(const std::vector<Joint*>& _joints, bool _removeDofs=true,
+                    bool _warning=true);
+
+  /// Add a DegreeOfFreedom to this Group. If _addJoint is true, the Joint of
+  /// this DOF will also be added to the Group. If _warning is true, you will be
   /// warned when you attempt to add the same DegreeOfFreedom twice, and an
   /// assertion will be thrown.
   ///
   /// This function will return false if the DegreeOfFreedom was already in the
   /// Group.
-  bool addDof(DegreeOfFreedom* _dof, bool _warning=true);
+  bool addDof(DegreeOfFreedom* _dof, bool _addJoint=true, bool _warning=true);
 
-  /// Add a set of DegreesOfFreedom to this Group. If _warning is true, you will
-  /// be warned when you attempt to add the same DegreeOfFreedom twice, and an
-  /// assertion will be thrown.
+  /// Add a set of DegreesOfFreedom to this Group. If _addJoint is true, the
+  /// Joint of each DOF will also be added to the Group. If _warning is true,
+  /// you will be warned when you attempt to add the same DegreeOfFreedom twice,
+  /// and an assertion will be thrown.
   ///
   /// This function will return false if all of the DegreesOfFreedom was already
   /// in the Group.
-  bool addDofs(const std::vector<DegreeOfFreedom*>& _dofs, bool _warning=true);
+  bool addDofs(const std::vector<DegreeOfFreedom*>& _dofs,
+               bool _addJoint = true, bool _warning=true);
 
-  /// Remove a DegreeOfFreedom from this Group. If _warning is true, you will be
+  /// Remove a DegreeOfFreedom from this Group. If _cleanupJoint is true, the
+  /// Joint of this DOF will be removed, but only if no other DOFs belonging to
+  /// the Joint are remaining in the Group. If _warning is true, you will be
   /// warned when you attempt to remove a DegreeOfFreedom that is not in this
   /// Group, and an assertion will be thrown.
   ///
   /// This function will return false if the DegreeOfFreedom was not in this
   /// Group.
-  bool removeDof(DegreeOfFreedom* _dof, bool _warning=true);
+  bool removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint=true,
+                 bool _warning=true);
 
-  /// Remove a set of DegreesOfFreedom from this Group. If _warning is true, you
-  /// will be warned when you attempt to remove a DegreeOfFreedom that is not
-  /// in this Group, and an assertion will be thrown.
+  /// Remove a set of DegreesOfFreedom from this Group. If _cleanupJoint is
+  /// true, the Joint of this DOF will be removed, but only if no other DOFs
+  /// belonging to the Joint are remaining in the Group. If _warning is true,
+  /// you will be warned when you attempt to remove a DegreeOfFreedom that is
+  /// not in this Group, and an assertion will be thrown.
   ///
   /// This function will return false if none of the DegreesOfFreedom were in
   /// this Group.
   bool removeDofs(const std::vector<DegreeOfFreedom*>& _dofs,
-                  bool _warning=true);
+                  bool _cleanupJoint=true, bool _warning=true);
 
 protected:
   /// Default constructor

@@ -854,6 +854,19 @@ size_t checkForBodyNodes(
   return count;
 }
 
+void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
+{
+  EXPECT_TRUE(refSkel->getNumBodyNodes() == refSkel->getNumJoints());
+
+  // Linkages should have the property:
+  // getJoint(i) == getBodyNode(i)->getParentJoint()
+  for(size_t i=0; i < refSkel->getNumJoints(); ++i)
+  {
+    EXPECT_EQ(refSkel->getJoint(i), refSkel->getBodyNode(i)->getParentJoint());
+    EXPECT_EQ(refSkel->getIndexOf(refSkel->getJoint(i)), i);
+  }
+}
+
 TEST(Skeleton, Linkage)
 {
   // Test a variety of uses of Linkage::Criteria
@@ -866,6 +879,7 @@ TEST(Skeleton, Linkage)
   ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
                  skel->getBodyNode("c3b4"), "midchain");
   checkForBodyNodes(midchain, skel, true, "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(midchain);
 
   Linkage::Criteria criteria;
   criteria.mStart = skel->getBodyNode("c5b2");
@@ -874,6 +888,7 @@ TEST(Skeleton, Linkage)
   LinkagePtr path = Linkage::create(criteria, "path");
   checkForBodyNodes(path, skel, true, "c5b2", "c5b1", "c1b3", "c3b1", "c3b2",
                                       "c3b3", "c4b1", "c4b2", "c4b3");
+  checkLinkageJointConsistency(path);
 
   skel->getBodyNode(0)->copyTo(nullptr);
   criteria.mTargets.clear();
@@ -889,6 +904,7 @@ TEST(Skeleton, Linkage)
                     "c3b1(1)", "c1b3(1)", "c2b1(1)", "c2b2(1)", "c2b3(1)",
                     "c5b1",    "c5b2",    "c1b2",    "c1b1",
                     "c5b1(1)", "c5b2(1)", "c1b2(1)", "c1b1(1)");
+  checkLinkageJointConsistency(combinedTreeBases);
 
   SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
   criteria.mTargets.clear();
@@ -908,23 +924,28 @@ TEST(Skeleton, Linkage)
   ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
       skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
+  checkLinkageJointConsistency(downstreamFreeJoint);
 
   ChainPtr emptyChain = Chain::create(skel->getBodyNode("c1b1"),
       skel->getBodyNode("c1b3"), "emptyChain");
   checkForBodyNodes(emptyChain, skel, true);
+  checkLinkageJointConsistency(emptyChain);
 
   ChainPtr chainFromNull = Chain::create(nullptr, skel->getBodyNode("c1b2"),
                                          "chainFromNull");
   checkForBodyNodes(chainFromNull, skel, true, "c1b1");
+  checkLinkageJointConsistency(chainFromNull);
 
   ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
+  checkLinkageJointConsistency(upstreamFreeJoint);
 
   // Using nullptr as the target should bring us towards the root of the tree
   ChainPtr upTowardsRoot =
       Chain::create(skel->getBodyNode("c1b3"), nullptr, "upTowardsRoot");
   checkForBodyNodes(upTowardsRoot, skel, true, "c1b3", "c1b2");
+  checkLinkageJointConsistency(upTowardsRoot);
 
   criteria.mTargets.clear();
   criteria.mTargets.push_back(skel->getBodyNode("c4b3"));
@@ -933,6 +954,7 @@ TEST(Skeleton, Linkage)
   LinkagePtr terminatedLinkage = Linkage::create(criteria, "terminatedLinkage");
   checkForBodyNodes(terminatedLinkage, skel, true,
                     "c1b3", "c3b1", "c3b2");
+  checkLinkageJointConsistency(terminatedLinkage);
 
   criteria.mStart = skel->getBodyNode("c1b1");
   criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
@@ -945,12 +967,14 @@ TEST(Skeleton, Linkage)
   checkForBodyNodes(terminatedSubtree, skel, true,
                     "c1b1", "c1b2", "c1b3", "c5b1",
                     "c5b2", "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(terminatedSubtree);
 
   criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
   criteria.mStart.mNode = skel->getBodyNode("c3b1");
   LinkagePtr terminatedUpstream = Linkage::create(criteria, "terminatedUpstream");
   checkForBodyNodes(terminatedUpstream, skel, true,
                     "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
+  checkLinkageJointConsistency(terminatedUpstream);
 }
 
 int main(int argc, char* argv[])
