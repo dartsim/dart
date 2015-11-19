@@ -251,9 +251,10 @@ void AddonManager::matchAddons(const AddonManager* otherManager)
 }
 
 //==============================================================================
-void AddonManager::becomeManager(Addon* addon)
+void AddonManager::becomeManager(Addon* addon, bool transfer)
 {
-  addon->changeManager(this);
+  if(addon)
+    addon->setManager(this, transfer);
 }
 
 } // namespace common

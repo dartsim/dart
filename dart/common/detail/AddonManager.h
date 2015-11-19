@@ -79,15 +79,23 @@ const T* AddonManager::get() const
 template <class T>
 void AddonManager::set(const T* addon)
 {
-  mAddonMap[typeid(T)] = addon->cloneAddon(this);
+  if(addon)
+  {
+    mAddonMap[typeid(T)] = addon->cloneAddon(this);
+    becomeManager(mAddonMap[typeid(T)].get(), false);
+  }
+  else
+  {
+    mAddonMap[typeid(T)] = nullptr;
+  }
 }
 
 //==============================================================================
 template <class T>
 void AddonManager::set(std::unique_ptr<T>&& addon)
 {
-  becomeManager(addon.get());
   mAddonMap[typeid(T)] = std::move(addon);
+  becomeManager(mAddonMap[typeid(T)].get(), true);
 }
 
 //==============================================================================
@@ -96,6 +104,7 @@ T* AddonManager::create(Args&&... args)
 {
   T* addon = new T(this, std::forward<Args>(args)...);
   mAddonMap[typeid(T)] = std::unique_ptr<T>(addon);
+  becomeManager(addon, false);
 
   return addon;
 }
@@ -121,6 +130,20 @@ std::unique_ptr<T> AddonManager::release()
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
 
   return extraction;
+}
+
+//==============================================================================
+template <class T>
+constexpr bool AddonManager::isSpecializedFor()
+{
+  return _isSpecializedFor(type<T>());
+}
+
+//==============================================================================
+template <class T>
+constexpr bool AddonManager::_isSpecializedFor(type<T>)
+{
+  return false;
 }
 
 } // namespace common
@@ -173,16 +196,17 @@ std::unique_ptr<T> AddonManager::release()
   { return static_cast< TypeName *>( it ->second.get() );\
   }\
   inline void set ## AddonName (const TypeName * addon)\
-  { it ->second = addon->cloneAddon(this); CreationCallback\
+  { it ->second = addon->cloneAddon(this); becomeManager(it ->second.get(), false);\
   }\
   inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)\
-  { becomeManager(addon.get()); it ->second = std::move(addon); CreationCallback\
+  { it ->second = std::move(addon); becomeManager(it ->second.get(), true);\
   }\
   template <typename ...Args>\
   inline TypeName * create ## AddonName (Args&&... args)\
   { it ->second = std::unique_ptr< TypeName >(\
           new TypeName (this, std::forward<Args>(args)...));\
-    return static_cast< TypeName *>( it ->second.get() ); CreationCallback\
+    becomeManager(it ->second.get(), false);\
+    return static_cast< TypeName *>( it ->second.get() );\
   }\
   inline void erase ## AddonName ()\
   { DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase ## AddonName, it, DART_BLANK)\

@@ -185,11 +185,17 @@ template <class BaseT, typename PropertiesDataT,
           class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 void AddonWithProtectedPropertiesInSkeleton<
     BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
-changeManager(common::AddonManager* newManager)
+setManager(common::AddonManager* newManager, bool /*transfer*/)
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
-        Base, ManagerType, newManager, castedManager, changeManager);
+        Base, ManagerType, newManager, castedManager, setManager);
   mManager = castedManager;
+
+  if(mManager)
+  {
+    UpdateProperties(static_cast<Base*>(this));
+    incrementSkeletonVersion();
+  }
 }
 
 //==============================================================================
@@ -433,12 +439,19 @@ template <class BaseT, typename StateDataT, typename PropertiesDataT,
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
     ManagerT, updateState, updateProperties, OptionalT>::
-changeManager(common::AddonManager* newManager)
+setManager(common::AddonManager* newManager, bool /*transfer*/)
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
-        Base, ManagerType, newManager, castedManager, changeManager);
+        Base, ManagerType, newManager, castedManager, setManager);
 
   mManager = castedManager;
+
+  if(mManager)
+  {
+    UpdateState(static_cast<Base*>(this));
+    UpdateProperties(static_cast<Base*>(this));
+    incrementSkeletonVersion();
+  }
 }
 
 } // namespace dynamics

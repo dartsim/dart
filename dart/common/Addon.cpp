@@ -86,7 +86,7 @@ Addon::Addon(AddonManager* manager)
 }
 
 //==============================================================================
-void Addon::changeManager(AddonManager* /*newManager*/)
+void Addon::setManager(AddonManager* /*newManager*/, bool /*transfer*/)
 {
   // Do nothing
 }

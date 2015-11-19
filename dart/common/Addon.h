@@ -133,9 +133,13 @@ protected:
   // constructors.
   Addon(AddonManager* manager);
 
-  /// This function should be overriden if your Addon needs to do any special
-  /// handling when its AddonManager gets changed.
-  virtual void changeManager(AddonManager* newManager);
+  /// This function will be triggered (1) after the Addon has been created
+  /// [transfer will be false] and (2) after the Addon has been transferred
+  /// to a new AddonManager [transfer will be true]. You should override this
+  /// function if your Addon requires special handling in either of those cases.
+  /// By default, this function does nothing.
+  virtual void setManager(AddonManager* newManager, bool transfer);
+
 };
 
 //==============================================================================

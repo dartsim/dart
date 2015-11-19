@@ -290,7 +290,6 @@ TEST(Addon, Releasing)
     EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
   }
 
-
   // ---- Test specialized releases ----
   {
     EXPECT_TRUE( sender.get<SpecializedAddon>() == nullptr );

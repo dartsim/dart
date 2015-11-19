@@ -90,7 +90,7 @@ public:
   /// Virtual destructor
   virtual ~AddonManager() = default;
 
-  /// Check if this AddonManager has a certain type of Addon
+  /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
   bool has() const;
 
@@ -128,6 +128,10 @@ public:
   template <class T>
   std::unique_ptr<T> release();
 
+  /// Check if this Manager is specialized for a specific type of Addon
+  template <class T>
+  static constexpr bool isSpecializedFor();
+
   /// Set the states of the addons in this AddonManager based on the given
   /// AddonManager::State. The states of any Addon types that do not exist
   /// within this manager will be ignored.
@@ -161,8 +165,15 @@ public:
 
 protected:
 
-  /// Become the manager of the specified Addon
-  void becomeManager(Addon* addon);
+  template <class T> struct type { };
+
+  /// Become the AddonManager of the given Addon. This allows derived
+  /// AddonManager types to call the protected Addon::setManager function.
+  void becomeManager(Addon* addon, bool transfer);
+
+  /// Always returns false
+  template <class T>
+  static constexpr bool _isSpecializedFor(type<T>);
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;

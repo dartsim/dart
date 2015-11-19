@@ -111,7 +111,7 @@ public:
 protected:
 
   // Documentation inherited
-  void changeManager(common::AddonManager* newManager) override;
+  void setManager(common::AddonManager* newManager, bool transfer) override;
 
   /// Properties of this Addon
   Properties mProperties;
@@ -211,7 +211,7 @@ public:
 protected:
 
   // Documentation inherited
-  void changeManager(common::AddonManager* newManager) override;
+  void setManager(common::AddonManager* newManager, bool transfer) override;
 
   /// State of this Addon
   State mState;
