@@ -87,7 +87,7 @@ template <class SpecAddon>
 template <class T>
 void SpecializedManager<SpecAddon>::set(std::unique_ptr<T>&& addon)
 {
-  _set(type<T>, addon);
+  _set(type<T>(), addon);
 }
 
 //==============================================================================
@@ -95,7 +95,7 @@ template <class SpecAddon>
 template <class T, typename ...Args>
 T* SpecializedManager<SpecAddon>::create(Args&&... args)
 {
-  return _create(type<T>, std::forward<Args>(args)...);
+  return _create(type<T>(), std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -103,7 +103,7 @@ template <class SpecAddon>
 template <class T>
 void SpecializedManager<SpecAddon>::erase()
 {
-  _erase(type<T>);
+  _erase(type<T>());
 }
 
 //==============================================================================
@@ -111,7 +111,7 @@ template <class SpecAddon>
 template <class T>
 std::unique_ptr<T> SpecializedManager<SpecAddon>::release()
 {
-  return _release(type<T>);
+  return _release(type<T>());
 }
 
 //==============================================================================
@@ -119,7 +119,7 @@ template <class SpecAddon>
 template <class T>
 constexpr bool SpecializedManager<SpecAddon>::isSpecializedFor()
 {
-  return _isSpecializedFor(type<T>);
+  return _isSpecializedFor(type<T>());
 }
 
 //==============================================================================
@@ -258,9 +258,9 @@ template <class SpecAddon>
 std::unique_ptr<SpecAddon> SpecializedManager<SpecAddon>::_release(
     type<SpecAddon>)
 {
-  std::unique_ptr<SpecAddon> extraction = nullptr;
   DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, mAddonIterator, nullptr);
-  extraction = std::unique_ptr<T>(static_cast<SpecAddon*>(it->second.release()));
+  std::unique_ptr<SpecAddon> extraction(
+        static_cast<SpecAddon*>(mAddonIterator->second.release()));
 
   return extraction;
 }
