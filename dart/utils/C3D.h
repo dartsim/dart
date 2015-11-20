@@ -90,9 +90,6 @@ bool loadC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
 bool saveC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
                   int _nFrame, int _nMarker, double _freq );
 
-double maxElem(std::vector<double>& _arr, int& _index);
-double minElem(std::vector<double>& _arr, int& _index);
-
 } // namespace utils
 } // namespace dart
 
