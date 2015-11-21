@@ -1,5 +1,4 @@
 usr/include/dart/dart.h
-usr/include/dart/optimizer/*
 usr/include/dart/planning/*
 usr/include/dart/utils/*
 usr/include/dart/gui/*
