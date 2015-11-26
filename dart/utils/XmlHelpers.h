@@ -90,13 +90,23 @@ Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, 
 Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
 Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
 Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* parentElement, const std::string& name);
 
-void openXMLFile(tinyxml2::XMLDocument& doc, const common::Uri& uri,
+void openXMLFile(tinyxml2::XMLDocument& doc,
+                 const common::Uri& uri,
                  const common::ResourceRetrieverPtr& retriever = nullptr);
-bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
-tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
-bool hasAttribute(tinyxml2::XMLElement* element, const char* const name);
+
+bool hasElement(const tinyxml2::XMLElement* parentElement,
+                const std::string& name);
+
+const tinyxml2::XMLElement* getElement(
+    const tinyxml2::XMLElement* parentElement,
+    const std::string& name);
+
+tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* parentElement,
+                                 const std::string& name);
+
+bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
 // Please use getAttributeString() instead.
 DEPRECATED(6.0)

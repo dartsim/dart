@@ -617,13 +617,24 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
 }
 
 //==============================================================================
-bool hasElement(tinyxml2::XMLElement* parentElement, const std::string& name)
+bool hasElement(const tinyxml2::XMLElement* parentElement,
+                const std::string& name)
 {
   assert(parentElement != nullptr);
   assert(!name.empty());
 
   return parentElement->FirstChildElement(name.c_str())
       == nullptr ? false : true;
+}
+
+//==============================================================================
+const tinyxml2::XMLElement* getElement(
+    const tinyxml2::XMLElement* parentElement,
+    const std::string& name)
+{
+  assert(!name.empty());
+
+  return parentElement->FirstChildElement(name.c_str());
 }
 
 //==============================================================================
@@ -675,7 +686,7 @@ void openXMLFile(tinyxml2::XMLDocument& doc,
 }
 
 //==============================================================================
-bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)
+bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
 {
   const char* const result = element->Attribute(name);
   return result != 0;
