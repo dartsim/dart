@@ -48,199 +48,211 @@
 namespace dart {
 namespace utils {
 
-std::string toString(bool _v)
+//==============================================================================
+std::string toString(bool v)
 {
-    return boost::lexical_cast<std::string>(_v);
-}
-
-std::string toString(int _v)
-{
-    return boost::lexical_cast<std::string>(_v);
-}
-
-std::string toString(unsigned int _v)
-{
-    return boost::lexical_cast<std::string>(_v);
-}
-
-std::string toString(float _v)
-{
-    //if (std::isfinite(_v))
-        return boost::lexical_cast<std::string>(_v);
-    //else
-    //    return std::string("0");
-}
-
-std::string toString(double _v)
-{
-    //if (std::isfinite(_v))
-        return boost::lexical_cast<std::string>(_v);
-    //else
-    //    return std::string("0");
-}
-
-std::string toString(char _v)
-{
-    return boost::lexical_cast<std::string>(_v);
+  return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector2d& _v)
+std::string toString(int v)
 {
-  return boost::lexical_cast<std::string>(_v.transpose());
+  return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector3d& _v)
+std::string toString(unsigned int v)
 {
-  return boost::lexical_cast<std::string>(_v.transpose());
+  return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector3i& _v)
+std::string toString(float v)
 {
-  return boost::lexical_cast<std::string>(_v.transpose());
+  return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::Vector6d& _v)
+std::string toString(double v)
 {
-  return boost::lexical_cast<std::string>(_v.transpose());
+  return boost::lexical_cast<std::string>(v);
 }
 
 //==============================================================================
-std::string toString(const Eigen::VectorXd& _v)
+std::string toString(char v)
 {
-  return boost::lexical_cast<std::string>(_v.transpose());
+  return boost::lexical_cast<std::string>(v);
 }
 
-std::string toString(const Eigen::Isometry3d& _v)
+//==============================================================================
+std::string toString(const Eigen::Vector2d& v)
 {
-    std::ostringstream ostr;
-    ostr.precision(6);
-
-    Eigen::Vector3d xyz = math::matrixToEulerXYZ(_v.linear());
-
-    ostr << _v.translation()(0) << " "
-         << _v.translation()(1) << " "
-         << _v.translation()(2) << " ";
-    ostr << xyz[0] << " " << xyz[1] << " " << xyz[2];
-
-    return ostr.str();
+  return boost::lexical_cast<std::string>(v.transpose());
 }
 
-bool toBool(const std::string& _str)
+//==============================================================================
+std::string toString(const Eigen::Vector3d& v)
 {
-    if (boost::to_upper_copy(_str) == "TRUE" || _str == "1")
-        return true;
-    else if (boost::to_upper_copy(_str) == "FALSE" || _str == "0")
-        return false;
-    else
+  return boost::lexical_cast<std::string>(v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::Vector3i& v)
+{
+  return boost::lexical_cast<std::string>(v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::Vector6d& v)
+{
+  return boost::lexical_cast<std::string>(v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::VectorXd& v)
+{
+  return boost::lexical_cast<std::string>(v.transpose());
+}
+
+//==============================================================================
+std::string toString(const Eigen::Isometry3d& v)
+{
+  std::ostringstream ostr;
+  ostr.precision(6);
+
+  Eigen::Vector3d xyz = math::matrixToEulerXYZ(v.linear());
+
+  ostr << v.translation()(0) << " "
+       << v.translation()(1) << " "
+       << v.translation()(2) << " ";
+  ostr << xyz[0] << " " << xyz[1] << " " << xyz[2];
+
+  return ostr.str();
+}
+
+//==============================================================================
+bool toBool(const std::string& str)
+{
+  if (boost::to_upper_copy(str) == "TRUE" || str == "1")
+    return true;
+  else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
+    return false;
+  else
+  {
+    dterr << "value ["
+          << str
+          << "] is not a valid boolean type. "
+          << "Retuning false."
+          << std::endl;
+    return false;
+  }
+}
+
+//==============================================================================
+int toInt(const std::string& str)
+{
+  return boost::lexical_cast<int>(str);
+}
+
+//==============================================================================
+unsigned int toUInt(const std::string& str)
+{
+  return boost::lexical_cast<unsigned int>(str);
+}
+
+//==============================================================================
+float toFloat(const std::string& str)
+{
+  return boost::lexical_cast<float>(str);
+}
+
+//==============================================================================
+double toDouble(const std::string& str)
+{
+  return boost::lexical_cast<double>(str);
+}
+//==============================================================================
+char toChar(const std::string& str)
+{
+  return boost::lexical_cast<char>(str);
+}
+
+//==============================================================================
+Eigen::Vector2d toVector2d(const std::string& str)
+{
+  Eigen::Vector2d ret;
+
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
+  assert(pieces.size() == 2);
+
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
     {
-        dterr << "value ["
-              << _str
-              << "] is not a valid boolean type. "
-              << "Retuning false."
-              << std::endl;
-        return false;
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch (boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for Eigen::Vector2d["
+                     << i
+                     << std::endl;
+      }
     }
+  }
+
+  return ret;
 }
 
-int toInt(const std::string& _str)
+//==============================================================================
+Eigen::Vector3d toVector3d(const std::string& str)
 {
-    return boost::lexical_cast<int>(_str);
-}
+  Eigen::Vector3d ret;
 
-unsigned int toUInt(const std::string& _str)
-{
-    return boost::lexical_cast<unsigned int>(_str);
-}
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
+  assert(pieces.size() == 3);
 
-float toFloat(const std::string& _str)
-{
-    return boost::lexical_cast<float>(_str);
-}
-
-double toDouble(const std::string& _str)
-{
-    return boost::lexical_cast<double>(_str);
-}
-
-char toChar(const std::string& _str)
-{
-    return boost::lexical_cast<char>(_str);
-}
-
-Eigen::Vector2d toVector2d(const std::string& _str)
-{
-    Eigen::Vector2d ret;
-
-    std::vector<std::string> pieces;
-    std::string trimedStr = boost::trim_copy(_str);
-    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
-    assert(pieces.size() == 2);
-
-    for (size_t i = 0; i < pieces.size(); ++i)
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
     {
-        if (pieces[i] != "")
-        {
-            try
-            {
-                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-            }
-            catch(boost::bad_lexical_cast& e)
-            {
-                std::cerr << "value ["
-                          << pieces[i]
-                          << "] is not a valid double for Eigen::Vector2d["
-                          << i
-                          << std::endl;
-            }
-        }
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for Eigen::Vector3d["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
     }
+  }
 
-    return ret;
+  return ret;
 }
 
-Eigen::Vector3d toVector3d(const std::string& _str)
-{
-    Eigen::Vector3d ret;
-
-    std::vector<std::string> pieces;
-    std::string trimedStr = boost::trim_copy(_str);
-    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
-    assert(pieces.size() == 3);
-
-    for (size_t i = 0; i < pieces.size(); ++i)
-    {
-        if (pieces[i] != "")
-        {
-            try
-            {
-                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-            }
-            catch(boost::bad_lexical_cast& e)
-            {
-                std::cerr << "value ["
-                          << pieces[i]
-                          << "] is not a valid double for Eigen::Vector3d["
-                          << i
-                          << "]"
-                          << std::endl;
-            }
-        }
-    }
-
-    return ret;
-}
-
-Eigen::Vector3i toVector3i(const std::string& _str)
+//==============================================================================
+Eigen::Vector3i toVector3i(const std::string& str)
 {
   Eigen::Vector3i ret;
 
   std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(_str);
-  boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
   assert(pieces.size() == 3);
 
   for (size_t i = 0; i < pieces.size(); ++i)
@@ -266,43 +278,45 @@ Eigen::Vector3i toVector3i(const std::string& _str)
   return ret;
 }
 
-Eigen::Vector6d toVector6d(const std::string& _str)
+//==============================================================================
+Eigen::Vector6d toVector6d(const std::string& str)
 {
-    Eigen::Vector6d ret;
+  Eigen::Vector6d ret;
 
-    std::vector<std::string> pieces;
-    std::string trimedStr = boost::trim_copy(_str);
-    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
-    assert(pieces.size() == 6);
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
+  assert(pieces.size() == 6);
 
-    for (size_t i = 0; i < pieces.size(); ++i)
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
     {
-        if (pieces[i] != "")
-        {
-            try
-            {
-                ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
-            }
-            catch(boost::bad_lexical_cast& e)
-            {
-                std::cerr << "value ["
-                          << pieces[i]
-                          << "] is not a valid double for Eigen::Vector6d["
-                          << i
-                          << "]"
-                          << std::endl;
-            }
-        }
+      try
+      {
+        ret(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for Eigen::Vector6d["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
     }
+  }
 
-    return ret;
+  return ret;
 }
 
 //==============================================================================
-Eigen::VectorXd toVectorXd(const std::string& _str)
+Eigen::VectorXd toVectorXd(const std::string& str)
 {
   std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(_str);
+  std::string trimedStr = boost::trim_copy(str);
   boost::split(pieces, trimedStr, boost::is_any_of(" "),
                boost::token_compress_on);
   assert(pieces.size() > 0);
@@ -332,71 +346,75 @@ Eigen::VectorXd toVectorXd(const std::string& _str)
   return ret;
 }
 
-Eigen::Isometry3d toIsometry3d(const std::string& _str)
-{
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    Eigen::Vector6d elements = Eigen::Vector6d::Zero();
-    std::vector<std::string> pieces;
-    std::string trimedStr = boost::trim_copy(_str);
-    boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
-    assert(pieces.size() == 6);
-
-    for (size_t i = 0; i < pieces.size(); ++i)
-    {
-        if (pieces[i] != "")
-        {
-            try
-            {
-                elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
-            }
-            catch(boost::bad_lexical_cast& e)
-            {
-                std::cerr << "value ["
-                          << pieces[i]
-                          << "] is not a valid double for SE3["
-                          << i
-                          << "]"
-                          << std::endl;
-            }
-        }
-    }
-
-    T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
-    T.translation() = elements.head<3>();
-    return T;
-}
-
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str)
+//==============================================================================
+Eigen::Isometry3d toIsometry3d(const std::string& str)
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   std::vector<std::string> pieces;
-  std::string trimedStr = boost::trim_copy(_str);
-  boost::split(pieces, trimedStr, boost::is_any_of(" "), boost::token_compress_on);
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
   assert(pieces.size() == 6);
 
   for (size_t i = 0; i < pieces.size(); ++i)
   {
-      if (pieces[i] != "")
+    if (pieces[i] != "")
+    {
+      try
       {
-          try
-          {
-              elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
-          }
-          catch(boost::bad_lexical_cast& e)
-          {
-              std::cerr << "value ["
-                        << pieces[i]
-                        << "] is not a valid double for SE3["
-                        << i
-                        << "]"
-                        << std::endl;
-          }
+        elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
       }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for SE3["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
+    }
+  }
+
+  T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
+  T.translation() = elements.head<3>();
+  return T;
+}
+
+//==============================================================================
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  Eigen::Vector6d elements = Eigen::Vector6d::Zero();
+  std::vector<std::string> pieces;
+  std::string trimedStr = boost::trim_copy(str);
+  boost::split(pieces, trimedStr, boost::is_any_of(" "),
+               boost::token_compress_on);
+  assert(pieces.size() == 6);
+
+  for (size_t i = 0; i < pieces.size(); ++i)
+  {
+    if (pieces[i] != "")
+    {
+      try
+      {
+        elements(i) = boost::lexical_cast<double>(pieces[i].c_str());
+      }
+      catch(boost::bad_lexical_cast& e)
+      {
+        std::cerr << "value ["
+                  << pieces[i]
+                     << "] is not a valid double for SE3["
+                     << i
+                     << "]"
+                     << std::endl;
+      }
+    }
   }
 
   Eigen::Vector3d reverseEulerAngles(
-      elements.tail<3>()[2],
+        elements.tail<3>()[2],
       elements.tail<3>()[1],
       elements.tail<3>()[0]);
 
@@ -405,195 +423,226 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str)
   return T;
 }
 
-std::string getValueString(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+std::string getValueString(const tinyxml2::XMLElement* parentElement,
+                           const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return str;
+  return str;
 }
 
-bool getValueBool(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+bool getValueBool(const tinyxml2::XMLElement* parentElement,
+                  const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    if (boost::to_upper_copy(str) == "TRUE" || str == "1")
-        return true;
-    else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
-        return false;
-    else
-    {
-        std::cerr << "value ["
-                  << str
-                  << "] is not a valid boolean type. "
-                  << "Returning false."
-                  << std::endl;
-        assert(0);
-        return false;
-    }
+  if (boost::to_upper_copy(str) == "TRUE" || str == "1")
+    return true;
+  else if (boost::to_upper_copy(str) == "FALSE" || str == "0")
+    return false;
+  else
+  {
+    std::cerr << "value ["
+              << str
+              << "] is not a valid boolean type. "
+              << "Returning false."
+              << std::endl;
+    assert(0);
+    return false;
+  }
 }
 
-int getValueInt(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+int getValueInt(const tinyxml2::XMLElement* parentElement,
+                const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toInt(str);
+  return toInt(str);
 }
 
-unsigned int getValueUInt(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+unsigned int getValueUInt(const tinyxml2::XMLElement* parentElement,
+                          const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toUInt(str);
+  return toUInt(str);
 }
 
-float getValueFloat(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+float getValueFloat(const tinyxml2::XMLElement* parentElement,
+                    const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toFloat(str);
+  return toFloat(str);
 }
 
-double getValueDouble(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+double getValueDouble(const tinyxml2::XMLElement* parentElement,
+                      const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toDouble(str);
+  return toDouble(str);
 }
 
-char getValueChar(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+char getValueChar(const tinyxml2::XMLElement* parentElement,
+                  const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toChar(str);
+  return toChar(str);
 }
 
-Eigen::Vector2d getValueVector2d(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+Eigen::Vector2d getValueVector2d(const tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toVector2d(str);
+  return toVector2d(str);
 }
 
-Eigen::Vector3d getValueVector3d(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+Eigen::Vector3d getValueVector3d(const tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toVector3d(str);
+  return toVector3d(str);
 }
 
-Eigen::Vector3i getValueVector3i(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+Eigen::Vector3i getValueVector3i(const tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
 {
-  assert(_parentElement != nullptr);
-  assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-  std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
   return toVector3i(str);
 }
 
-Eigen::Vector6d getValueVector6d(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+Eigen::Vector6d getValueVector6d(const tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toVector6d(str);
+  return toVector6d(str);
 }
 
 //==============================================================================
-Eigen::VectorXd getValueVectorXd(const tinyxml2::XMLElement* _parentElement,
-                                 const std::string& _name)
+Eigen::VectorXd getValueVectorXd(const tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
 {
-  assert(_parentElement != nullptr);
-  assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-  std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
   return toVectorXd(str);
 }
 
-Eigen::Vector3d getValueVec3(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
+//==============================================================================
+Eigen::Vector3d getValueVec3(const tinyxml2::XMLElement* parentElement,
+                             const std::string& name)
 {
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
+  assert(parentElement != nullptr);
+  assert(!name.empty());
 
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
 
-    return toVector3d(str);
-}
-
-Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
-{
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
-
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
-
-    return toIsometry3d(str);
-}
-
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* _parentElement, const std::string& _name)
-{
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
-
-    std::string str = _parentElement->FirstChildElement(_name.c_str())->GetText();
-
-    return toIsometry3dWithExtrinsicRotation(str);
-}
-
-bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name)
-{
-    assert(_parentElement != nullptr);
-    assert(!_name.empty());
-
-    return _parentElement->FirstChildElement(_name.c_str()) == nullptr ? false : true;
-}
-
-tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement,
-                                 const std::string& _name)
-{
-    assert(!_name.empty());
-
-    return _parentElement->FirstChildElement(_name.c_str());
+  return toVector3d(str);
 }
 
 //==============================================================================
-void openXMLFile(
-    tinyxml2::XMLDocument& doc, const common::Uri& uri,
-    const common::ResourceRetrieverPtr& _retriever)
+Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement,
+                                     const std::string& name)
+{
+  assert(parentElement != nullptr);
+  assert(!name.empty());
+
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+
+  return toIsometry3d(str);
+}
+
+//==============================================================================
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
+    const tinyxml2::XMLElement* parentElement, const std::string& name)
+{
+  assert(parentElement != nullptr);
+  assert(!name.empty());
+
+  std::string str = parentElement->FirstChildElement(name.c_str())->GetText();
+
+  return toIsometry3dWithExtrinsicRotation(str);
+}
+
+//==============================================================================
+bool hasElement(tinyxml2::XMLElement* parentElement, const std::string& name)
+{
+  assert(parentElement != nullptr);
+  assert(!name.empty());
+
+  return parentElement->FirstChildElement(name.c_str())
+      == nullptr ? false : true;
+}
+
+//==============================================================================
+tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* parentElement,
+                                 const std::string& name)
+{
+  assert(!name.empty());
+
+  return parentElement->FirstChildElement(name.c_str());
+}
+
+//==============================================================================
+void openXMLFile(tinyxml2::XMLDocument& doc,
+                 const common::Uri& uri,
+                 const common::ResourceRetrieverPtr& retrieverOrNullPtr)
 {
   common::ResourceRetrieverPtr retriever;
-  if(_retriever)
-    retriever = _retriever;
+  if(retrieverOrNullPtr)
+    retriever = retrieverOrNullPtr;
   else
     retriever = std::make_shared<common::LocalResourceRetriever>();
 
@@ -625,6 +674,7 @@ void openXMLFile(
   }
 }
 
+//==============================================================================
 bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)
 {
   const char* const result = element->Attribute(name);
@@ -633,7 +683,7 @@ bool hasAttribute(tinyxml2::XMLElement* element, const char* const name)
 
 //==============================================================================
 std::string getAttribute(tinyxml2::XMLElement * element,
-                                const char* const name)
+                         const char* const name)
 {
   return getAttributeString(element, name);
 }

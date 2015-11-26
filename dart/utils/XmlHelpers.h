@@ -49,47 +49,47 @@
 namespace dart {
 namespace utils {
 
-std::string toString(bool _v);
-std::string toString(int _v);
-std::string toString(unsigned int _v);
-std::string toString(float _v);
-std::string toString(double _v);
-std::string toString(char _v);
-std::string toString(const Eigen::Vector2d& _v);
-std::string toString(const Eigen::Vector3d& _v);
-std::string toString(const Eigen::Vector3i& _v);
-std::string toString(const Eigen::Vector6d& _v);
-std::string toString(const Eigen::VectorXd& _v);
-std::string toString(const Eigen::Isometry3d& _v);
+std::string toString(bool v);
+std::string toString(int v);
+std::string toString(unsigned int v);
+std::string toString(float v);
+std::string toString(double v);
+std::string toString(char v);
+std::string toString(const Eigen::Vector2d& v);
+std::string toString(const Eigen::Vector3d& v);
+std::string toString(const Eigen::Vector3i& v);
+std::string toString(const Eigen::Vector6d& v);
+std::string toString(const Eigen::VectorXd& v);
+std::string toString(const Eigen::Isometry3d& v);
 
-bool              toBool      (const std::string& _str);
-int               toInt       (const std::string& _str);
-unsigned int      toUInt      (const std::string& _str);
-float             toFloat     (const std::string& _str);
-double            toDouble    (const std::string& _str);
-char              toChar      (const std::string& _str);
-Eigen::Vector2d   toVector2d  (const std::string& _str);
-Eigen::Vector3d   toVector3d  (const std::string& _str);
-Eigen::Vector3i   toVector3i  (const std::string& _str);
-Eigen::Vector6d   toVector6d  (const std::string& _str);
-Eigen::VectorXd   toVectorXd  (const std::string& _str);
+bool              toBool      (const std::string& str);
+int               toInt       (const std::string& str);
+unsigned int      toUInt      (const std::string& str);
+float             toFloat     (const std::string& str);
+double            toDouble    (const std::string& str);
+char              toChar      (const std::string& str);
+Eigen::Vector2d   toVector2d  (const std::string& str);
+Eigen::Vector3d   toVector3d  (const std::string& str);
+Eigen::Vector3i   toVector3i  (const std::string& str);
+Eigen::Vector6d   toVector6d  (const std::string& str);
+Eigen::VectorXd   toVectorXd  (const std::string& str);
 // TODO: The definition of _str is not clear for transform (see: #250)
-Eigen::Isometry3d toIsometry3d(const std::string& _str);
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str);
+Eigen::Isometry3d toIsometry3d(const std::string& str);
+Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
 
-std::string       getValueString    (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-bool              getValueBool      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-int               getValueInt       (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-unsigned int      getValueUInt      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-float             getValueFloat     (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-double            getValueDouble    (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-char              getValueChar      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+std::string       getValueString    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+bool              getValueBool      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+int               getValueInt       (const tinyxml2::XMLElement* parentElement, const std::string& name);
+unsigned int      getValueUInt      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+float             getValueFloat     (const tinyxml2::XMLElement* parentElement, const std::string& name);
+double            getValueDouble    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+char              getValueChar      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
 void openXMLFile(tinyxml2::XMLDocument& doc, const common::Uri& uri,
