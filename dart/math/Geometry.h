@@ -40,6 +40,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -416,7 +417,28 @@ Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
                                     const Eigen::Vector3d& _comShift,
                                     double _mass);
 
+enum AxisType
+{
+  AXIS_X = 0,
+  AXIS_Y = 1,
+  AXIS_Z = 2
+};
+
+/// Compute a rotation matrix from a vector. One axis of the rotated coordinates
+/// by the rotation matrix matches the input axis where the axis is specified
+/// by axisType.
+Eigen::Matrix3d computeRotation(const Eigen::Vector3d& axis,
+                                AxisType axisType = AxisType::AXIS_X);
+
+/// Compute a transform from a vector and a position. The rotation of the result
+/// transform is computed by computeRotationMatrix(), and the translation is
+/// just the input translation.
+Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
+                                   const Eigen::Vector3d& translation,
+                                   AxisType axisType = AxisType::AXIS_X);
+
 /// Generate frame given origin and z-axis
+DEPRECATED(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 

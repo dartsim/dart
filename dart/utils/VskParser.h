@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,17 +35,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_KINEMATICS_PARSER_VSK_H
-#define DART_KINEMATICS_PARSER_VSK_H
+#ifndef DART_UTILS_VSKPARSER_H_
+#define DART_UTILS_VSKPARSER_H_
 
-namespace kinematics {
-    class Skeleton;
-} // namespace kinematics
+#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Uri.h"
+#include "dart/dynamics/Skeleton.h"
 
-#define VERBOSE false
-#define VSK_OK 0
-#define VSK_ERROR 1
-int readVSKFile(const char* const filename, kinematics::Skeleton* skel);
+namespace dart {
+namespace utils {
 
-#endif // #ifndef DART_KINEMATICS_PARSER_VSK_H
+class VskParser
+{
+public:
+  /// Read Skeleton from skel file
+  static dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr);
+};
+
+} // namespace utils
+} // namespace dart
+
+#endif // #ifndef DART_UTILS_VSKPARSER_H_
 
