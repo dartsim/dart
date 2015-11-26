@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/Parser.h"
+#include "dart/utils/XmlHelpers.h"
 
 #include <iostream>
 #include <vector>

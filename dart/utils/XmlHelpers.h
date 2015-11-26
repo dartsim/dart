@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_PARSER_H
-#define DART_UTILS_PARSER_H
+#ifndef DART_UTILS_XMLHELPERS_H_
+#define DART_UTILS_XMLHELPERS_H_
 
 #include <string>
 #include <Eigen/Dense>
@@ -148,4 +148,4 @@ private:
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_PARSER_H
+#endif // #ifndef DART_UTILS_XMLHELPER_H_
