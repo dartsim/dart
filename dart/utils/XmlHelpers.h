@@ -77,75 +77,154 @@ Eigen::VectorXd   toVectorXd  (const std::string& _str);
 Eigen::Isometry3d toIsometry3d(const std::string& _str);
 Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& _str);
 
-std::string       getValueString    (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-bool              getValueBool      (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-int               getValueInt       (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-unsigned int      getValueUInt      (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-float             getValueFloat     (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-double            getValueDouble    (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-char              getValueChar      (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector2d   getValueVector2d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector3d   getValueVector3d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector3i   getValueVector3i  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Vector6d   getValueVector6d  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::VectorXd   getValueVectorXd  (tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Isometry3d getValueIsometry3d(tinyxml2::XMLElement* _parentElement, const std::string& _name);
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(tinyxml2::XMLElement* _parentElement, const std::string& _name);
+std::string       getValueString    (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+bool              getValueBool      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+int               getValueInt       (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+unsigned int      getValueUInt      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+float             getValueFloat     (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+double            getValueDouble    (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+char              getValueChar      (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* _parentElement, const std::string& _name);
+Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* _parentElement, const std::string& _name);
 
 void openXMLFile(tinyxml2::XMLDocument& doc, const common::Uri& uri,
                  const common::ResourceRetrieverPtr& retriever = nullptr);
 bool hasElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* _parentElement, const std::string& _name);
 bool hasAttribute(tinyxml2::XMLElement* element, const char* const name);
+
+// Please use getAttributeString() instead.
+DEPRECATED(6.0)
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
+
+// Please use getAttributeDouble() instead.
+DEPRECATED(6.0)
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
-//------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------
-/// \brief
-class ElementEnumerator
+std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+bool            getAttributeBool    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+int             getAttributeInt     (const tinyxml2::XMLElement* element, const std::string& attributeName);
+unsigned int    getAttributeUInt    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+float           getAttributeFloat   (const tinyxml2::XMLElement* element, const std::string& attributeName);
+double          getAttributeDouble  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+char            getAttributeChar    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::Vector2d getAttributeVector2d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::Vector3d getAttributeVector3d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::Vector6d getAttributeVector6d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element, const std::string& attributeName);
+
+/// TemplatedElementEnumerator is a convenience class to help visiting all the
+/// child elements of given parent element. This class is templated to cover
+/// const and non-const tinyxml2::XMLElement types.
+template <typename ElementType>
+class TemplatedElementEnumerator
 {
+protected:
+
+  using ElementPtr = typename std::add_pointer<ElementType>::type;
+  using ElementRef = typename std::add_lvalue_reference<ElementType>::type;
+
 public:
-    /// \brief
-    ElementEnumerator(tinyxml2::XMLElement* _parent, const std::string& _name);
 
-    /// \brief
-    virtual ~ElementEnumerator();
+  /// Constructor that takes parent element and
+  TemplatedElementEnumerator(ElementPtr parentElement,
+                             const std::string& childElementName)
+    : mParentElement(parentElement),
+      mChildElementName(childElementName),
+      mCurrentElement(nullptr)
+  {
+  }
 
-    /// \brief
-    bool valid() const;
+  /// Destructor
+  ~TemplatedElementEnumerator() {}
 
-    /// \brief
-    bool next();
+  /// Set the current element to the next sibling element or to the first child
+  /// element of given parent element if it exists; returns success
+  bool next()
+  {
+    if (!mParentElement)
+      return false;
 
-    /// \brief
-    tinyxml2::XMLElement* get() const { return m_current; }
+    if (mCurrentElement)
+    {
+      mCurrentElement
+          = mCurrentElement->NextSiblingElement(mChildElementName.c_str());
+    }
+    else
+    {
+      mCurrentElement
+          = mParentElement->FirstChildElement(mChildElementName.c_str());
+    }
 
-    /// \brief
-    tinyxml2::XMLElement* operator->() const { return m_current; }
+    if (!valid())
+      mParentElement = nullptr;
 
-    /// \brief
-    tinyxml2::XMLElement& operator*() const { return *m_current; }
+    return valid();
+  }
 
-    /// \brief
-    bool operator==(const ElementEnumerator& _rhs) const;
+  /// Get the current element
+  ElementPtr get() const { return mCurrentElement; }
 
-    /// \brief
-    ElementEnumerator & operator=(const ElementEnumerator& _rhs);
+  /// Dereference operator
+  ElementPtr operator->() const { return mCurrentElement; }
+
+  /// Dereference operator
+  ElementRef operator*() const { return *mCurrentElement; }
+
+  /// Equality operator
+  bool operator==(const TemplatedElementEnumerator<ElementType>& rhs) const
+  {
+    // If they point at the same node, then the names must match
+    return (this->mParentElement == rhs.mParentElement)
+           && (this->mCurrentElement == rhs.mCurrentElement)
+           && (this->mCurrentElement != nullptr
+              || (this->mChildElementName == rhs.mChildElementName));
+  }
+
+  /// Assignment operator
+  TemplatedElementEnumerator<ElementType>& operator=(
+      const TemplatedElementEnumerator<ElementType>& rhs)
+  {
+    this->mParentElement    = rhs.mParentElement;
+    this->mChildElementName = rhs.mChildElementName;
+    this->mCurrentElement   = rhs.mCurrentElement;
+
+    return *this;
+  }
 
 private:
-    /// \brief
-    std::string m_name;
 
-    /// \brief
-    tinyxml2::XMLElement* m_parent;
+  /// Returns true if the current element is valid (not a nullptr)
+  bool valid() const
+  {
+    return mCurrentElement != nullptr;
+  }
 
-    /// \brief
-    tinyxml2::XMLElement* m_current;
+private:
+
+  /// Parent element
+  ElementPtr mParentElement;
+
+  /// Child element name
+  std::string mChildElementName;
+
+  /// Currently visiting child element
+  ElementPtr mCurrentElement;
+
 };
+
+// ElementEnumerator is for iterating elements for
+using ElementEnumerator
+    = TemplatedElementEnumerator<tinyxml2::XMLElement>;
+using ConstElementEnumerator
+    = TemplatedElementEnumerator<const tinyxml2::XMLElement>;
 
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_XMLHELPER_H_
+#endif // #ifndef DART_UTILS_XMLHELPERS_H_
