@@ -765,15 +765,15 @@ void generateShapes(const dynamics::SkeletonPtr& skel,
 
     parent->addVisualizationShape(shape);
     parent->addCollisionShape(shape);
-    parent->setLocalCOM(localTransform.translation());
-    // TODO(JS): Inertia should support local transform rather than just offset.
 
-    // Update mass
-    const double density = 2000.0;
-    // TODO: Add static function that computes mass from density and radii of
-    // an ellipsoid.
-    double mass = density * size[0] * size[1] * size[2];
-    parent->setMass(mass);
+    // Update inertia
+    const double density = 2.0e+3;
+    const double mass = shape->getVolume() * density;
+    const Eigen::Matrix3d moi = shape->computeInertia(mass);
+    const dynamics::Inertia inertia(mass, localTransform.translation(), moi);
+    // TODO(JS): Once Inertia supports transform, pass the localTransform to the
+    // inertia. See #234.
+    parent->setInertia(inertia);
   }
 
   // Generate shpae for bodies with no shape
@@ -794,11 +794,31 @@ void generateShapes(const dynamics::SkeletonPtr& skel,
     bodyNode->addCollisionShape(shape);
 
     // Update mass
-    const double density = 2000.0;
-    // TODO: Add static function that computes mass from density and radii of
-    // an ellipsoid.
-    double mass = density * size[0] * size[1] * size[2];
-    bodyNode->setMass(mass);
+    const double density = 1.0e+3;
+    const double mass = shape->getVolume() * density;
+    const Eigen::Matrix3d moi = shape->computeInertia(mass);
+    const dynamics::Inertia inertia(mass, Eigen::Vector3d::Zero(), moi);
+    bodyNode->setInertia(inertia);
+  }
+
+  // Update mass and moments of inertia of the bodies based on the generated
+  // shapes into them.
+  double density = 1.0e+3;
+  for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+  {
+    dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
+
+    // Now all the bodies should have at least one shape
+    assert(bodyNode->getNumVisualizationShapes() > 0);
+
+    double mass = 0.0;
+    Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+    auto shapes = bodyNode->getVisualizationShapes();
+    for (const dynamics::ShapePtr& shape : shapes)
+    {
+      mass += density * shape->getVolume();
+      inertia += shape->computeInertia(mass);
+    }
   }
 }
 

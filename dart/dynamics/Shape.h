@@ -43,6 +43,7 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
+#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -140,7 +141,18 @@ public:
   Eigen::Vector3d getOffset() const;
 
   /// \brief
-  virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
+  virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
+
+  Eigen::Matrix3d computeInertiaFromDensity(double density) const
+  {
+//    return computeInertiaFromMass(density * computeVolume());
+    return Eigen::Matrix3d();
+  }
+
+  virtual Eigen::Matrix3d computeInertiaFromMass(double density) const
+  {
+    return Eigen::Matrix3d();
+  }
 
   /// \brief Get volume of this shape.
   ///        The volume will be automatically calculated by the sub-classes
@@ -189,10 +201,13 @@ public:
   bool isHidden() const;
 
 protected:
-  /// \brief
-  virtual void computeVolume() = 0;
+  DEPRECATED(6.0)
+  virtual void computeVolume() { updateVolume(); }
 
-  /// \brief
+  /// \brief Update volume
+  virtual void updateVolume() = 0;
+
+  DEPRECATED(6.0)
   virtual void initMeshes() {}
 
   /// \brief Dimensions for bounding box.

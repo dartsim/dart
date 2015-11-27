@@ -67,12 +67,19 @@ public:
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
             bool _useDefaultColor = true) const;
 
+  /// \brief Compute volume from given properties
+  static double computeVolume(double radius, double height);
+
+  /// \brief Compute moments of inertia of a cylinder
+  static Eigen::Matrix3d computeInertia(
+      double radius, double height, double mass);
+
   // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
   // Documentation inherited.
-  virtual void computeVolume();
+  void updateVolume() override;
 
 private:
   /// \brief

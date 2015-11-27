@@ -48,7 +48,7 @@ namespace utils {
 class VskParser
 {
 public:
-  /// Read Skeleton from skel file
+  /// Read Skeleton from VSK file
   static dynamics::SkeletonPtr readSkeleton(
     const common::Uri& fileUri,
     const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr);

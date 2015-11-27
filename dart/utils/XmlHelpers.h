@@ -136,8 +136,8 @@ class TemplatedElementEnumerator
 {
 protected:
 
-  using ElementPtr = typename std::add_pointer<ElementType>::type;
-  using ElementRef = typename std::add_lvalue_reference<ElementType>::type;
+  using ElementPtr = ElementType*;
+  using ElementRef = ElementType&;
 
 public:
 

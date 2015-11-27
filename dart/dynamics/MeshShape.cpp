@@ -214,7 +214,7 @@ void MeshShape::setMesh(
   mResourceRetriever = _resourceRetriever;
 
   _updateBoundingBoxDim();
-  computeVolume();
+  updateVolume();
 }
 
 void MeshShape::setScale(const Eigen::Vector3d& _scale) {
@@ -222,7 +222,7 @@ void MeshShape::setScale(const Eigen::Vector3d& _scale) {
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
   mScale = _scale;
-  computeVolume();
+  updateVolume();
 }
 
 const Eigen::Vector3d& MeshShape::getScale() const {
@@ -291,7 +291,7 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   return inertia;
 }
 
-void MeshShape::computeVolume() {
+void MeshShape::updateVolume() {
   // Use bounding box to represent the mesh
   double l = mScale[0] * mBoundingBoxDim[0];
   double h = mScale[1] * mBoundingBoxDim[1];
