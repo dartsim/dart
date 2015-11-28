@@ -367,6 +367,9 @@ public:
   /// nullptr
   void clearIK();
 
+  /// Get total number of markers in this Skeleton
+  size_t getNumMarkers() const;
+
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
 

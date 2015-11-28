@@ -58,12 +58,13 @@ using namespace utils;
 TEST(VskParser, EmptySkeleton)
 {
   WorldPtr world(new World());
+  EXPECT_TRUE(world != nullptr);
+
   SkeletonPtr skeleton
       = VskParser::readSkeleton(DART_DATA_PATH"vsk/test/empty.vsk");
-  world->addSkeleton(skeleton);
-
-  EXPECT_TRUE(world != nullptr);
   EXPECT_TRUE(skeleton == nullptr);
+
+  world->addSkeleton(skeleton);
   EXPECT_EQ(world->getNumSkeletons(), 0u);
 
   world->step();
@@ -78,14 +79,17 @@ TEST(VskParser, SingleStepSimulations)
   SkeletonPtr nick
       = VskParser::readSkeleton(DART_DATA_PATH"vsk/Nick01.vsk");
   EXPECT_NE(nick  , nullptr);
+  EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr sehoon
       = VskParser::readSkeleton(DART_DATA_PATH"vsk/SehoonVSK3.vsk");
   EXPECT_NE(sehoon, nullptr);
+  EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr yuting
       = VskParser::readSkeleton(DART_DATA_PATH"vsk/Yuting.vsk");
   EXPECT_NE(yuting, nullptr);
+  EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   world->removeAllSkeletons();
   world->addSkeleton(nick);
