@@ -43,10 +43,6 @@
 #include <sstream>
 #include <stdexcept>
 
-// TinyXML-2 Library
-// http://www.grinninglizard.com/tinyxml2/index.html
-#include <tinyxml2.h>
-
 #include <Eigen/Dense>
 
 // Local Files
@@ -126,7 +122,7 @@ bool readJointDummy(const tinyxml2::XMLElement* jointEle,
                     const ParameterMap& parameterMap);
 
 template <typename JointType>
-std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
+std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
     const dynamics::SkeletonPtr& skeleton,
     dynamics::BodyNode* parentBodyNode,
     const dynamics::Joint::Properties* jointProperties,
@@ -433,31 +429,31 @@ bool readSegment(const tinyxml2::XMLElement* segment,
 
   if (__jointType == "JointFree")
   {
-    auto pair = createJointAndNodePair<dynamics::FreeJoint>(
+    auto pair = createJointAndBodyNodePair<dynamics::FreeJoint>(
           skel, parentBodyNode, jointProperties.get(), bodyNodeProperties);
     bodyNode = pair.second;
   }
   else if (__jointType == "JointBall")
   {
-    auto pair = createJointAndNodePair<dynamics::BallJoint>(
+    auto pair = createJointAndBodyNodePair<dynamics::BallJoint>(
           skel, parentBodyNode, jointProperties.get(), bodyNodeProperties);
     bodyNode = pair.second;
   }
   else if (__jointType == "JointHardySpicer")
   {
-    auto pair = createJointAndNodePair<dynamics::WeldJoint>(
+    auto pair = createJointAndBodyNodePair<dynamics::WeldJoint>(
           skel, parentBodyNode, jointProperties.get(), bodyNodeProperties);
     bodyNode = pair.second;
   }
   else if (__jointType == "JointHinge")
   {
-    auto pair = createJointAndNodePair<dynamics::RevoluteJoint>(
+    auto pair = createJointAndBodyNodePair<dynamics::RevoluteJoint>(
           skel, parentBodyNode, jointProperties.get(), bodyNodeProperties);
     bodyNode = pair.second;
   }
   else if (__jointType == "JointDummy")
   {
-    auto pair = createJointAndNodePair<dynamics::WeldJoint>(
+    auto pair = createJointAndBodyNodePair<dynamics::WeldJoint>(
           skel, parentBodyNode, jointProperties.get(), bodyNodeProperties);
     bodyNode = pair.second;
   }
@@ -547,6 +543,10 @@ bool readJointBall(const tinyxml2::XMLElement* jointEle,
 
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
+  properties.mDampingCoefficients = Eigen::Vector3d::Constant(0.5);
+  properties.mPositionLowerLimits = Eigen::Vector3d::Constant(-0.5 * DART_PI);
+  properties.mPositionUpperLimits = Eigen::Vector3d::Constant(+0.5 * DART_PI);
+  properties.mIsPositionLimited = true;
 
   jointProperties
       = Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
@@ -578,6 +578,10 @@ bool readJointHardySpicer(const tinyxml2::XMLElement* jointEle,
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
   properties.mAxis[0] = axis1;
   properties.mAxis[1] = axis2;
+  properties.mDampingCoefficients = Eigen::Vector2d::Constant(0.5);
+  properties.mPositionLowerLimits = Eigen::Vector2d::Constant(-0.5 * DART_PI);
+  properties.mPositionUpperLimits = Eigen::Vector2d::Constant(+0.5 * DART_PI);
+  properties.mIsPositionLimited = true;
 
   jointProperties
       = Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
@@ -602,6 +606,10 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
   properties.mAxis = axis;
+  properties.mDampingCoefficient = 0.5;
+  properties.mPositionLowerLimit = -0.5 * DART_PI;
+  properties.mPositionUpperLimit = +0.5 * DART_PI;
+  properties.mIsPositionLimited = true;
 
   jointProperties
       = Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
@@ -683,12 +691,15 @@ bool readMarker(const tinyxml2::XMLElement* markerEle,
   //     = getAttribute<Eigen::VectorXd>(markerEle, "COVARIANCE");
 
   // Attribute: RGB
-  // Eigen::Vector3d rgb = Eigen::Vector3d::Constant(0.5);
-  // if (hasAttribute(markerEle, "RGB"))
-  // {
-  //   rgb = getAttributeVector3d(markerEle, "RGB");
-  //   rgb /= 255.0;
-  // }
+  Eigen::Vector3d rgb = Eigen::Vector3d::Constant(0.5);
+  if (hasAttribute(markerEle, "RGB"))
+  {
+    rgb = getAttributeVector3d(markerEle, "RGB");
+    rgb /= 255.0;
+  }
+  Eigen::Vector4d rgba;
+  rgba.head<3>() = rgb;
+  rgba[3] = 1.0;
 
   // Attribute: RADIUS
   // double radius = 0.01;
@@ -704,7 +715,8 @@ bool readMarker(const tinyxml2::XMLElement* markerEle,
     return false;
   }
 
-  dynamics::Marker* marker = new dynamics::Marker(name, position, bodyNode);
+  dynamics::Marker* marker = new dynamics::Marker(name, position, rgba,
+                                                  bodyNode);
   bodyNode->addMarker(marker);
 
   return true;
