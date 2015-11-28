@@ -48,10 +48,56 @@ namespace utils {
 class VskParser
 {
 public:
+
+  /// Options struct is additional information that helps building a skeleton
+  /// that can be used in kinematics or dynamics simulation. VSK file format
+  /// itself doesn't provide essential properties for it such as body's shape,
+  /// mass, and inertia.
+  struct Options
+  {
+    /// The default shape for body node is ellipsoid. The size of ellipsoid of
+    /// each body node are determined by the relative transformation from a body
+    /// node and its child body node. defaultEllipsoidSize is used for body
+    /// nodes that don't have child body node.
+    Eigen::Vector3d defaultEllipsoidSize;
+
+    /// Ratio of shorter radii of each ellipsoid to the longest radius where
+    /// the longest radius is the distance between a body and its child body
+    /// node.
+    double thicknessRatio;
+
+    /// Density of each ellipsoid that are used to compute mass.
+    double density;
+
+    /// Lower limit of joint position
+    double jointPositionLowerLimit;
+
+    /// Upper limit of joint position
+    double jointPositionUpperLimit;
+
+    /// Joint damping coefficient
+    double jointDampingCoefficient;
+
+    /// Joint Coulomb friction
+    double jointFriction;
+
+    /// Constructor
+    Options(const Eigen::Vector3d& defaultEllipsoidSize
+                = Eigen::Vector3d::Constant(0.05),
+            double thicknessRatio = 0.35,
+            double density = 1e+3,
+            double jointPositionLowerLimit = -DART_PI,
+            double jointPositionUpperLimit = +DART_PI,
+            double jointDampingCoefficient = 0.1,
+            double jointFriction = 0.0);
+  };
+
   /// Read Skeleton from VSK file
   static dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri,
-    const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr);
+      const common::Uri& fileUri,
+      const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
+      const Options options = Options());
+
 };
 
 } // namespace utils
