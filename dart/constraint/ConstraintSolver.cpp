@@ -50,6 +50,7 @@
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/ServoMotorConstraint.h"
 #include "dart/constraint/JointCoulombFrictionConstraint.h"
 #include "dart/constraint/DantzigLCPSolver.h"
 #include "dart/constraint/PGSLCPSolver.h"
@@ -422,6 +423,36 @@ void ConstraintSolver::updateConstraints()
 
     if (jointLimitConstraint->isActive())
       mActiveConstraints.push_back(jointLimitConstraint);
+  }
+
+  //----------------------------------------------------------------------------
+  // Update automatic constraints: servo motor constraints
+  //----------------------------------------------------------------------------
+  // Destroy previous joint limit constraints
+  for (const auto& servoMotorConstraint : mServoMotorConstraints)
+    delete servoMotorConstraint;
+  mServoMotorConstraints.clear();
+
+  // Create new joint limit constraints
+  for (const auto& skel : mSkeletons)
+  {
+    const size_t numJoints = skel->getNumJoints();
+    for (size_t i = 0; i < numJoints; i++)
+    {
+      dynamics::Joint* joint = skel->getJoint(i);
+
+      if (joint->getActuatorType() == dynamics::Joint::SERVO)
+        mServoMotorConstraints.push_back(new ServoMotorConstraint(joint));
+    }
+  }
+
+  // Add active servo motor constraints
+  for (auto& servoMotorConstraint : mServoMotorConstraints)
+  {
+    servoMotorConstraint->update();
+
+    if (servoMotorConstraint->isActive())
+      mActiveConstraints.push_back(servoMotorConstraint);
   }
 
   //----------------------------------------------------------------------------
