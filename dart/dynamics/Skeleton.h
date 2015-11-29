@@ -514,8 +514,9 @@ public:
   // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
 
-  /// Clear constraint impulses: (a) spatial constraints on BodyNode and
-  /// (b) generalized constraints on Joint
+  /// Clear constraint impulses and cache data used for impulse-based forward
+  /// dynamics algorithm, where the constraint impulses are spatial constraints
+  /// on the BodyNodes and generalized constraints on the Joints.
   void clearConstraintImpulses();
 
   /// Update bias impulses

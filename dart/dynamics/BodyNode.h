@@ -764,7 +764,8 @@ public:
                             bool _isImpulseLocal = false,
                             bool _isOffsetLocal = true);
 
-  /// Clear constraint impulse
+  /// Clear constraint impulses and cache data used for impulse-based forward
+  /// dynamics algorithm
   virtual void clearConstraintImpulse();
 
   /// Return constraint impulse

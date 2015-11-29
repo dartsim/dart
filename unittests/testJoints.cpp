@@ -794,7 +794,7 @@ void testServoMotor()
     // doesn't work together because they compete against each other to achieve
     // different joint velocities with their infinit force limits. In this case,
     // the position limit constraint should dominent the servo motor constraint.
-    // EXPECT_NEAR(jointVels[5], 0.0, tol * 1e+2);
+    EXPECT_NEAR(jointVels[5], 0.0, tol * 1e+2);
     // EXPECT_NEAR(jointVels[6], 0.0, tol * 1e+2);
     // TODO(JS): Servo motor with infinite force limits and infinite Coulomb
     // friction doesn't work because they compete against each other to achieve

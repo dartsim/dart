@@ -200,6 +200,7 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
       mJoint->setConstraintImpulse(i, 1.0);
       skeleton->updateBiasImpulse(mBodyNode);
       skeleton->updateVelocityChange();
+      mJoint->setConstraintImpulse(i, 0.0);
     }
 
     ++localIndex;
@@ -262,7 +263,8 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
     if (mActive[i] == false)
       continue;
 
-    mJoint->setConstraintImpulse(i, _lambda[localIndex]);
+    mJoint->setConstraintImpulse(
+          i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
 
     mOldX[i] = _lambda[localIndex];
 
