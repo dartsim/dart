@@ -396,23 +396,46 @@ void ConstraintSolver::updateConstraints()
   }
 
   //----------------------------------------------------------------------------
-  // Update automatic constraints: joint limit constraints
+  // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
-  // Destroy previous joint limit constraints
+  // Destroy previous joint constraints
   for (const auto& jointLimitConstraint : mJointLimitConstraints)
     delete jointLimitConstraint;
+  for (const auto& servoMotorConstraint : mServoMotorConstraints)
+    delete servoMotorConstraint;
+  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
+    delete jointFrictionConstraint;
   mJointLimitConstraints.clear();
+  mServoMotorConstraints.clear();
+  mJointCoulombFrictionConstraints.clear();
 
-  // Create new joint limit constraints
+  // Create new joint constraints
   for (const auto& skel : mSkeletons)
   {
-    const size_t numBodyNodes = skel->getNumBodyNodes();
-    for (size_t i = 0; i < numBodyNodes; i++)
+    const size_t numJoints = skel->getNumJoints();
+    for (size_t i = 0; i < numJoints; i++)
     {
-      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+      dynamics::Joint* joint = skel->getJoint(i);
 
-      if (joint->isDynamic() && joint->isPositionLimitEnforced())
+      if (joint->isKinematic())
+        continue;
+
+      const size_t dof = joint->getNumDofs();
+      for (size_t j = 0; j < dof; ++j)
+      {
+        if (joint->getCoulombFriction(j) != 0.0)
+        {
+          mJointCoulombFrictionConstraints.push_back(
+                new JointCoulombFrictionConstraint(joint));
+          break;
+        }
+      }
+
+      if (joint->isPositionLimitEnforced())
         mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
+
+      if (joint->getActuatorType() == dynamics::Joint::SERVO)
+        mServoMotorConstraints.push_back(new ServoMotorConstraint(joint));
     }
   }
 
@@ -425,28 +448,6 @@ void ConstraintSolver::updateConstraints()
       mActiveConstraints.push_back(jointLimitConstraint);
   }
 
-  //----------------------------------------------------------------------------
-  // Update automatic constraints: servo motor constraints
-  //----------------------------------------------------------------------------
-  // Destroy previous joint limit constraints
-  for (const auto& servoMotorConstraint : mServoMotorConstraints)
-    delete servoMotorConstraint;
-  mServoMotorConstraints.clear();
-
-  // Create new joint limit constraints
-  for (const auto& skel : mSkeletons)
-  {
-    const size_t numJoints = skel->getNumJoints();
-    for (size_t i = 0; i < numJoints; i++)
-    {
-      dynamics::Joint* joint = skel->getJoint(i);
-
-      if (joint->getActuatorType() == dynamics::Joint::SERVO)
-        mServoMotorConstraints.push_back(new ServoMotorConstraint(joint));
-    }
-  }
-
-  // Add active servo motor constraints
   for (auto& servoMotorConstraint : mServoMotorConstraints)
   {
     servoMotorConstraint->update();
@@ -455,39 +456,6 @@ void ConstraintSolver::updateConstraints()
       mActiveConstraints.push_back(servoMotorConstraint);
   }
 
-  //----------------------------------------------------------------------------
-  // Update automatic constraints: joint Coulomb friction constraints
-  //----------------------------------------------------------------------------
-  // Destroy previous joint limit constraints
-  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
-    delete jointFrictionConstraint;
-  mJointCoulombFrictionConstraints.clear();
-
-  // Create new joint limit constraints
-  for (const auto& skel : mSkeletons)
-  {
-    const size_t numBodyNodes = skel->getNumBodyNodes();
-    for (size_t i = 0; i < numBodyNodes; i++)
-    {
-      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
-
-      if (joint->isDynamic())
-      {
-        const size_t dof = joint->getNumDofs();
-        for (size_t i = 0; i < dof; ++i)
-        {
-          if (joint->getCoulombFriction(i) != 0.0)
-          {
-            mJointCoulombFrictionConstraints.push_back(
-                  new JointCoulombFrictionConstraint(joint));
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // Add active joint limit
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
   {
     jointFrictionConstraint->update();
