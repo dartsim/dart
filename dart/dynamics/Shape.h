@@ -45,6 +45,7 @@
 #include "dart/math/Geometry.h"
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace renderer {
@@ -122,10 +123,8 @@ public:
   /// \brief Get dimensions of bounding box.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
-  // TODO(JS): Single Vector3d does not fit to represent bounding box for
-  //           biased mesh shape. Two Vector3ds might be better; one is for
-  //           minimum verterx, and the other is for maximum verterx of the
-  //           bounding box.
+  /// \deprecated Please use getBoundingBox() instead
+  DEPRECATED(5.2)
   Eigen::Vector3d getBoundingBoxDim() const;
 
   /// \brief Set local transformation of the shape w.r.t. parent frame.
