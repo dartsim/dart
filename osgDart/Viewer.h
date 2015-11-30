@@ -74,6 +74,7 @@ class InteractiveFrame;
 class InteractiveFrameDnD;
 class BodyNodeDnD;
 class Viewer;
+class SaveScreen;
 
 class ViewerAttachment : public virtual osg::Group
 {
@@ -126,6 +127,35 @@ public:
 
   /// Destructor
   virtual ~Viewer();
+
+  /// Capture the current screen in a png file. The filename argument should
+  /// include the full path for the file.
+  ///
+  /// It is recommended that you end the filename with ".png". That is the type
+  /// of file that will be produced, but the extension will not be added on
+  /// automatically.
+  void captureScreen(const std::string& filename);
+
+  /// As the screen refreshes, save screen capture images to the specified
+  /// directory.
+  ///
+  /// The prefix argument will be the first part of the name of each
+  /// image. The second part of the image will contain an integer with "digits"
+  /// number of digits; any unused leading digits will be filled with 0. The
+  /// integer corresponds to its number in the sequence of frames.
+  ///
+  /// Set the restart argument to true if you want the sequence counter to
+  /// restart from 0.
+  void record(const std::string& directory, const std::string& prefix = "image",
+              bool restart = false, size_t digits=6);
+
+  /// If the Viewer is recording, then pause the recording. The next time
+  /// record() is called, the numbering of the images will resume from where it
+  /// left off.
+  void pauseRecording();
+
+  /// Returns true if the Viewer is currently recording.
+  bool isRecording() const;
 
   /// Creates the default event handler for this osgDart::Viewer
   virtual void switchDefaultEventHandler(bool _on);
@@ -263,6 +293,29 @@ public:
   const osg::ref_ptr<osg::Group>& getRootGroup() const;
 
 protected:
+
+  friend class SaveScreen;
+
+  /// Current number of the image sequence for screen recording
+  size_t mImageSequenceNum;
+
+  /// Number of digits to use when saving an image sequence
+  size_t mImageDigits;
+
+  /// Whether or not the Viewer is currently recording
+  bool mRecording;
+
+  /// Whether or not the Viewer is staged for a screen capture
+  bool mScreenCapture;
+
+  /// Directory for saving images
+  std::string mImageDirectory;
+
+  /// Prefix to apply to images
+  std::string mImagePrefix;
+
+  /// Name for the next screen capture
+  std::string mScreenCapName;
 
   /// Default WorldNodeEventHandler for this osgDart::Viewer
   osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;

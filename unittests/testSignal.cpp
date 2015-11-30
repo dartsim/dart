@@ -241,7 +241,7 @@ struct signal_sum
 //==============================================================================
 TEST(Signal, ReturnValues)
 {
-  const float tol = 1e-6;
+  const float tol = 1.5e-6;
 
   const float a = 5.0f;
   const float b = 3.0f;

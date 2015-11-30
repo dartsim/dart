@@ -59,28 +59,6 @@ void RenderInterface::clear(const Eigen::Vector3d& _color)
 {
 }
 
-void RenderInterface::setDefaultLight()
-{
-}
-
-void RenderInterface::addLight(Light* _light)
-{
-    mLightList.push_back(_light);
-}
-
-void RenderInterface::eraseAllLights()
-{
-    mLightList.clear();
-}
-
-void RenderInterface::turnLightsOff()
-{
-}
-
-void RenderInterface::turnLightsOn()
-{
-}
-
 void RenderInterface::setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow)
 {
 
@@ -179,10 +157,6 @@ void RenderInterface::saveToImage(const char* _filename, DecoBufferType _buffTyp
 void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels)
 {
 
-}
-
-Camera*  RenderInterface::getCamera(){
-    return mCamera;
 }
 
 } // namespace renderer

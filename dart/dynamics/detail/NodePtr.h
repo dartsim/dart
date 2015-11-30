@@ -222,7 +222,7 @@ public:
     }
 
     mWeakBodyNodePtr = _ptr->getBodyNodePtr();
-    mWeakDestructor = _ptr->mDestructor;
+    mWeakDestructor = _ptr->getOrCreateDestructor();
     mNode = _ptr;
   }
 

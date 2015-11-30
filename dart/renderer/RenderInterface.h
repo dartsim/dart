@@ -38,8 +38,6 @@
 #define DART_RENDERER_RENDERINTERFACE_H
 
 #include <vector>
-#include "Light.h"
-#include "Camera.h"
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
@@ -83,12 +81,6 @@ public:
 
     virtual void clear(const Eigen::Vector3d& _color);
 
-    virtual void setDefaultLight();
-    virtual void addLight(Light* _light);
-    virtual void eraseAllLights();
-    virtual void turnLightsOff();
-    virtual void turnLightsOn();
-
     virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow);
     virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const;
     virtual void setDefaultMaterial();
@@ -120,12 +112,6 @@ public:
 
     virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back);
     virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
-
-    virtual Camera* getCamera();
-
-protected:
-    Camera* mCamera;
-    std::vector<Light*> mLightList;
 };
 
 } // namespace renderer

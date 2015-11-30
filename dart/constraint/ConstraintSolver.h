@@ -98,9 +98,6 @@ public:
   /// Add a constraint
   void addConstraint(ConstraintBase* _constraint);
 
-  /// Return the number of constraints
-  size_t getNumConstraints() const;
-
   /// Remove a constraint
   void removeConstraint(ConstraintBase* _constraint);
 

@@ -1567,7 +1567,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
     Intersection_t result =
         computeIntersection(intersect, p0, midp12, p2, midp01);
 
-    if(INTERSECTING != result)
+    if(BEYOND_ENDPOINTS == result)
     {
       double a1 = atan2( (p1-p0)[1], (p1-p0)[0] )*180.0/M_PI;
       double a2 = atan2( (p2-p0)[1], (p2-p0)[0] )*180.0/M_PI;

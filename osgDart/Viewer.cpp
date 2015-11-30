@@ -34,7 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iomanip>
+
 #include <osg/OperationThread>
+#include <osgDB/WriteFile>
 
 #include "osgDart/Viewer.h"
 #include "osgDart/TrackballManipulator.h"
@@ -51,6 +54,83 @@
 
 namespace osgDart
 {
+
+class SaveScreen : public osg::Camera::DrawCallback
+{
+public:
+
+  SaveScreen(Viewer* viewer)
+    : mViewer(viewer),
+      mImage(new osg::Image),
+      mCamera(mViewer->getCamera())
+  {
+    // Do nothing
+  }
+
+  virtual void operator () (osg::RenderInfo& renderInfo) const
+  {
+    osg::Camera::DrawCallback::operator ()(renderInfo);
+
+    if(mViewer->mRecording || mViewer->mScreenCapture)
+    {
+      int x, y;
+      unsigned int width, height;
+      osg::ref_ptr<osg::Viewport> vp = mCamera->getViewport();
+      x = vp->x();
+      y = vp->y();
+      width = vp->width();
+      height = vp->height();
+
+      mImage->readPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE);
+    }
+
+    if(mViewer->mRecording)
+    {
+      if(!mViewer->mImageDirectory.empty())
+      {
+        std::stringstream str;
+        str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
+            << std::setfill('0') << std::setw(mViewer->mImageDigits)
+            << mViewer->mImageSequenceNum << std::setw(0) << ".png";
+
+        if(osgDB::writeImageFile(*mImage, str.str()))
+        {
+          ++mViewer->mImageSequenceNum;
+        }
+        else
+        {
+          dtwarn << "[SaveScreen::record] Unable to save image to file named: "
+                 << str.str() << "\n";
+
+          // Toggle off recording if the file cannot be saved.
+          mViewer->mRecording = false;
+        }
+      }
+    }
+
+    if(mViewer->mScreenCapture)
+    {
+      if(!mViewer->mScreenCapName.empty())
+      {
+        if(!osgDB::writeImageFile(*mImage, mViewer->mScreenCapName))
+          dtwarn << "[SaveScreen::capture] Unable to save image to file named: "
+                 << mViewer->mScreenCapName << "\n";
+
+        // Toggle off the screen capture after the image is grabbed (or the
+        // attempt is made).
+        mViewer->mScreenCapture = false;
+      }
+    }
+  }
+
+protected:
+
+  Viewer* mViewer;
+
+  osg::ref_ptr<osg::Image> mImage;
+
+  osg::ref_ptr<osg::Camera> mCamera;
+};
 
 //==============================================================================
 class ViewerAttachmentCallback : public osg::NodeCallback
@@ -114,7 +194,9 @@ void ViewerAttachment::attach(Viewer* newViewer)
 
 //==============================================================================
 Viewer::Viewer(const osg::Vec4& clearColor)
-  : mRootGroup(new osg::Group),
+  : mImageSequenceNum(0),
+    mImageDigits(0),
+    mRootGroup(new osg::Group),
     mLightGroup(new osg::Group),
     mLight1(new osg::Light),
     mLightSource1(new osg::LightSource),
@@ -139,6 +221,8 @@ Viewer::Viewer(const osg::Vec4& clearColor)
   addEventHandler(mDefaultEventHandler);
   setupDefaultLights();
   getCamera()->setClearColor(clearColor);
+
+  getCamera()->setFinalDrawCallback(new SaveScreen(this));
 }
 
 //==============================================================================
@@ -150,6 +234,67 @@ Viewer::~Viewer()
 
   while( it != end )
     removeAttachment(*(it++));
+}
+
+//==============================================================================
+void Viewer::captureScreen(const std::string& filename)
+{
+  if(filename.empty())
+  {
+    dtwarn << "[Viewer::captureScreen] Passed in empty filename for screen "
+           << "capture. This is not allowed!\n";
+    return;
+  }
+
+  dtmsg << "[Viewer::captureScreen] Saving image to file: "
+        << filename << std::endl;
+
+  mScreenCapName = filename;
+  mScreenCapture = true;
+}
+
+//==============================================================================
+void Viewer::record(const std::string& directory, const std::string& prefix,
+                    bool restart, size_t digits)
+{
+  if(directory.empty())
+  {
+    dtwarn << "[Viewer::record] Passed in empty directory name for screen "
+           << "recording. This is not allowed!\n";
+    return;
+  }
+
+  mImageDirectory = directory;
+  mImagePrefix = prefix;
+
+  if(restart)
+    mImageSequenceNum = 0;
+
+  mImageDigits = digits;
+
+  mRecording = true;
+
+  dtmsg << "[Viewer::record] Recording screen image sequence to directory ["
+        << mImageDirectory << "] with a prefix of [" << mImagePrefix << "]"
+        << " starting from sequence number [" << mImageSequenceNum << "]"
+        << std::endl;
+}
+
+//==============================================================================
+void Viewer::pauseRecording()
+{
+  if(!mRecording)
+    return;
+
+  mRecording = false;
+  dtmsg<< "[Viewer::pauseRecording] Screen recording is paused at image "
+       << "sequence number [" << mImageSequenceNum << "]" << std::endl;
+}
+
+//==============================================================================
+bool Viewer::isRecording() const
+{
+  return mRecording;
 }
 
 //==============================================================================
