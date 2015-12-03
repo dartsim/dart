@@ -48,7 +48,8 @@ BoxShape::BoxShape(const Eigen::Vector3d& _size)
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
-  mBoundingBoxDim = _size;
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
   updateVolume();
 }
 
@@ -79,7 +80,8 @@ void BoxShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBoxDim = _size;
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
   updateVolume();
 }
 
@@ -98,7 +100,7 @@ void BoxShape::draw(renderer::RenderInterface* _ri,
     _ri->setPenColor(mColor);
   _ri->pushMatrix();
   _ri->transform(mTransform);
-  _ri->drawCube(mBoundingBoxDim);
+  _ri->drawCube(mBoundingBox.computeFullExtents());
   _ri->popMatrix();
 }
 

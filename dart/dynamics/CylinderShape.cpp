@@ -121,9 +121,8 @@ Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
 }
 
 void CylinderShape::_updateBoundingBoxDim() {
-  mBoundingBoxDim[0] = mRadius * 2.0;
-  mBoundingBoxDim[1] = mRadius * 2.0;
-  mBoundingBoxDim[2] = mHeight;
+  mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
+  mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
 }
 
 }  // namespace dynamics

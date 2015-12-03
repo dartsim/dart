@@ -55,7 +55,8 @@ void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBoxDim = _size;
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
   updateVolume();
 }
 
@@ -76,7 +77,7 @@ void EllipsoidShape::draw(renderer::RenderInterface* _ri,
     _ri->setPenColor(mColor);
   _ri->pushMatrix();
   _ri->transform(mTransform);
-  _ri->drawEllipsoid(mBoundingBoxDim);
+  _ri->drawEllipsoid(mBoundingBox.computeFullExtents());
   _ri->popMatrix();
 }
 
