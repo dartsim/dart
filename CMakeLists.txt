@@ -174,7 +174,7 @@ if(ASSIMP_FOUND)
                     "missing symbols for the constructor and/or destructor of "
                     "aiScene. DART will use its own implementations of these "
                     "functions. We recommend using a version of ASSIMP that "
-                    "does not have this issue.")
+                    "does not have this issue, once one becomes available.")
   endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 
   check_cxx_source_compiles(
@@ -194,7 +194,7 @@ if(ASSIMP_FOUND)
                     "missing symbols for the constructor and/or destructor of "
                     "aiMaterial. DART will use its own implementations of "
                     "these functions. We recommend using a version of ASSIMP "
-                    "that does not have this issue.")
+                    "that does not have this issue, once one becomes available.")
   endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
 
   unset(CMAKE_REQUIRED_INCLUDES)
