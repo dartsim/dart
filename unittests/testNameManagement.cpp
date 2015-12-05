@@ -224,7 +224,7 @@ TEST(NameManagement, Regression554)
   std::shared_ptr<int> int0(new int(0));
   std::shared_ptr<int> int1(new int(1));
   std::shared_ptr<int> int2(new int(2));
-  std::shared_ptr<int> int_another0(new int(2));
+  std::shared_ptr<int> int_another0(new int(0));
 
   test_mgr.issueNewNameAndAdd(std::to_string(*int0), int0);
   test_mgr.issueNewNameAndAdd(std::to_string(*int1), int1);
@@ -240,6 +240,10 @@ TEST(NameManagement, Regression554)
   test_mgr.removeEntries(std::to_string(*int_another0), int_another0);
   bool res2 = test_mgr.addName(std::to_string(*int_another0), int_another0);
   EXPECT_TRUE( res2 );
+
+  EXPECT_TRUE( test_mgr.getObject("0") == int_another0 );
+  EXPECT_TRUE( test_mgr.getObject("1") == int1 );
+  EXPECT_TRUE( test_mgr.getObject("2") == int2 );
 }
 
 //==============================================================================
