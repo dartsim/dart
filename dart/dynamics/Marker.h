@@ -166,6 +166,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
+// TODO: Marker class should be refactored into a Node once pull request #531 is
+// finished.
 
 }  // namespace dynamics
 }  // namespace dart
