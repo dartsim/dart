@@ -38,17 +38,15 @@
 #ifndef DART_UTILS_VSKPARSER_H_
 #define DART_UTILS_VSKPARSER_H_
 
-#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace utils {
 
-class VskParser
+namespace VskParser
 {
-public:
-
   /// Options struct is additional information that helps building a skeleton
   /// that can be used in kinematics or dynamics simulation. VSK file format
   /// itself doesn't provide essential properties for it such as body's shape,
@@ -93,12 +91,12 @@ public:
   };
 
   /// Read Skeleton from VSK file
-  static dynamics::SkeletonPtr readSkeleton(
+  dynamics::SkeletonPtr readSkeleton(
       const common::Uri& fileUri,
       const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
       const Options options = Options());
 
-};
+} // namespace VskParser
 
 } // namespace utils
 } // namespace dart

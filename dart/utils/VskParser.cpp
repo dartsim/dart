@@ -40,7 +40,6 @@
 
 // Standard Library
 #include <map>
-#include <sstream>
 #include <stdexcept>
 
 #include <Eigen/Dense>
@@ -55,6 +54,8 @@
 
 namespace dart {
 namespace utils {
+
+namespace VskParser {
 
 namespace {
 
@@ -176,7 +177,7 @@ VskParser::Options::Options(const Eigen::Vector3d& newDefaultEllipsoidSize,
 }
 
 //==============================================================================
-dynamics::SkeletonPtr VskParser::readSkeleton(
+dynamics::SkeletonPtr readSkeleton(
     const common::Uri& fileUri,
     const common::ResourceRetrieverPtr& retrieverOrNullptr,
     const Options options)
@@ -913,6 +914,8 @@ void tokenize(const std::string& str,
 }
 
 } // anonymous namespace
+
+} // namespace VskParser
 
 } // namespace utils
 } // namespace dart
