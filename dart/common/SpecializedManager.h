@@ -38,14 +38,20 @@
 #define DART_COMMON_SPECIALIZEDMANAGER_H_
 
 #include "dart/common/AddonManager.h"
+#include "dart/common/SpecializedJoiner.h"
+#include "dart/common/Virtual.h"
 
 namespace dart {
 namespace common {
 
+/// Terminator for the variadic template
+template <class... OtherSpecAddons>
+class SpecializedManager { };
+
 /// SpecializedManager allows classes that inherit AddonManager to have
 /// constant-time access to a specific type of Addon
 template<class SpecAddon>
-class SpecializedManager : public virtual AddonManager
+class SpecializedManager<SpecAddon> : public virtual AddonManager
 {
 public:
 
@@ -170,6 +176,13 @@ protected:
   AddonManager::AddonMap::iterator mAddonIterator;
 
 };
+
+/// This is the variadic version of the SpecializedManager class which allows
+/// you to include arbitrarily many specialized types in the specialization.
+template <class SpecAddon1, class... OtherSpecAddons>
+class SpecializedManager<SpecAddon1, OtherSpecAddons...> :
+    public SpecializedJoiner< SpecializedManager<SpecAddon1>,
+                              SpecializedManager<OtherSpecAddons...> > { };
 
 } // namespace common
 } // namespace dart
