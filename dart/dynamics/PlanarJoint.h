@@ -121,6 +121,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  PlanarJoint(const PlanarJoint&) = delete;
+
   /// Destructor
   virtual ~PlanarJoint();
 

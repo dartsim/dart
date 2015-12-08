@@ -59,7 +59,7 @@ public:
             bool _default = true) const;
 
   // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
   /// Set plane normal
   void setNormal(const Eigen::Vector3d& _normal);
@@ -88,7 +88,7 @@ public:
 
 private:
   // Documentation inherited.
-  void computeVolume();
+  void updateVolume() override;
 
   /// Plane normal
   Eigen::Vector3d mNormal;

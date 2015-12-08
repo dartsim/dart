@@ -1,3 +1,32 @@
+### Version 5.1.1 (2015-11-06)
+
+1. Add bullet dependency to package.xml
+    * [Pull request #523](https://github.com/dartsim/dart/pull/523)
+
+1. Improved handling of missing symbols of Assimp package
+    * [Pull request #542](https://github.com/dartsim/dart/pull/542)
+
+1. Improved travis-ci build log for Mac
+    * [Pull request #529](https://github.com/dartsim/dart/pull/529)
+
+1. Fixed warnings in Function.cpp
+    * [Pull request #550](https://github.com/dartsim/dart/pull/550)
+
+1. Fixed build failures on AppVeyor
+    * [Pull request #543](https://github.com/dartsim/dart/pull/543)
+
+1. Fixed const qualification of ResourceRetriever
+    * [Pull request #534](https://github.com/dartsim/dart/pull/534)
+    * [Issue #532](https://github.com/dartsim/dart/issues/532)
+
+1. Fixed aligned memory allocation with Eigen objects
+    * [Pull request #527](https://github.com/dartsim/dart/pull/527)
+
+1. Fixed copy safety for various classes
+    * [Pull request #526](https://github.com/dartsim/dart/pull/526)
+    * [Pull request #539](https://github.com/dartsim/dart/pull/539)
+    * [Issue #524](https://github.com/dartsim/dart/issues/524)
+
 ### Version 5.1.0 (2015-10-15)
 
 1. Fixed incorrect rotational motion of BallJoint and FreeJoint

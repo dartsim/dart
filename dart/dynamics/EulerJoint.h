@@ -81,6 +81,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  EulerJoint(const EulerJoint&) = delete;
+
   /// Destructor
   virtual ~EulerJoint();
 

@@ -66,7 +66,7 @@ public:
   void update();
 
   // Documentation inherited.
-  virtual Eigen::Matrix3d computeInertia(double _mass) const;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
   virtual void draw(
@@ -76,7 +76,7 @@ public:
 
 protected:
   // Documentation inherited.
-  virtual void computeVolume();
+  void updateVolume() override;
 
 private:
   /// \brief Build mesh using SoftBodyNode data

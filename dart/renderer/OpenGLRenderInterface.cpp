@@ -103,19 +103,6 @@ void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void OpenGLRenderInterface::setDefaultLight() {
-
-}
-
-void OpenGLRenderInterface::turnLightsOff() {
-    glDisable(GL_LIGHTING);
-}
-
-void OpenGLRenderInterface::turnLightsOn() {
-    //not finished yet
-    glEnable(GL_LIGHTING);
-}
-
 void OpenGLRenderInterface::setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) {
 
 }
