@@ -45,7 +45,6 @@ namespace dynamics {
 EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
   : Shape(ELLIPSOID) {
   setSize(_size);
-  initMeshes();
 }
 
 EllipsoidShape::~EllipsoidShape() {
@@ -56,8 +55,9 @@ void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBoxDim = _size;
-  computeVolume();
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
+  updateVolume();
 }
 
 const Eigen::Vector3d&EllipsoidShape::getSize() const {
@@ -77,17 +77,34 @@ void EllipsoidShape::draw(renderer::RenderInterface* _ri,
     _ri->setPenColor(mColor);
   _ri->pushMatrix();
   _ri->transform(mTransform);
-  _ri->drawEllipsoid(mBoundingBoxDim);
+  _ri->drawEllipsoid(mBoundingBox.computeFullExtents());
   _ri->popMatrix();
 }
 
-Eigen::Matrix3d EllipsoidShape::computeInertia(double _mass) const {
+//==============================================================================
+double EllipsoidShape::computeVolume(const Eigen::Vector3d& size)
+{
+  // 4/3* Pi* a/2* b/2* c/2
+  return DART_PI * size[0] * size[1] * size[2] / 6.0;
+}
+
+//==============================================================================
+Eigen::Matrix3d EllipsoidShape::computeInertia(
+    const Eigen::Vector3d& size, double mass)
+{
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 20.0 * (mSize(1) * mSize(1) + mSize(2) * mSize(2));
-  inertia(1, 1) = _mass / 20.0 * (mSize(0) * mSize(0) + mSize(2) * mSize(2));
-  inertia(2, 2) = _mass / 20.0 * (mSize(0) * mSize(0) + mSize(1) * mSize(1));
+
+  inertia(0, 0) = mass / 20.0 * (std::pow(size[1], 2) + std::pow(size[2], 2));
+  inertia(1, 1) = mass / 20.0 * (std::pow(size[0], 2) + std::pow(size[2], 2));
+  inertia(2, 2) = mass / 20.0 * (std::pow(size[0], 2) + std::pow(size[1], 2));
 
   return inertia;
+}
+
+//==============================================================================
+Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const
+{
+  return computeInertia(mSize, mass);
 }
 
 bool EllipsoidShape::isSphere() const {
@@ -97,9 +114,10 @@ bool EllipsoidShape::isSphere() const {
     return false;
 }
 
-void EllipsoidShape::computeVolume() {
-  // 4/3* Pi* a/2* b/2* c/2
-  mVolume = DART_PI * mSize(0) * mSize(1) *mSize(2) / 6;
+//==============================================================================
+void EllipsoidShape::updateVolume()
+{
+  mVolume = computeVolume(mSize);
 }
 
 }  // namespace dynamics

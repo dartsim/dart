@@ -77,10 +77,9 @@ void PlaneShape::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-Eigen::Matrix3d PlaneShape::computeInertia(double _mass) const
+Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
 {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
-  return inertia;
+  return Eigen::Matrix3d::Zero();
 }
 
 //==============================================================================
@@ -136,7 +135,7 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
-void PlaneShape::computeVolume()
+void PlaneShape::updateVolume()
 {
   mVolume = 0.0;
 }

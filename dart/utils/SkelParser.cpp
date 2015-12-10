@@ -466,7 +466,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_skeletonElement, "name");
+  std::string name = getAttributeString(_skeletonElement, "name");
   newSkeleton->setName(name);
 
   //--------------------------------------------------------------------------
@@ -584,7 +584,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
 
   // Name attribute
-  newBodyNode->mName = getAttribute(_bodyNodeElement, "name");
+  newBodyNode->mName = getAttributeString(_bodyNodeElement, "name");
 
   //--------------------------------------------------------------------------
   // gravity
@@ -905,7 +905,7 @@ dynamics::Marker::Properties SkelParser::readMarker(
     tinyxml2::XMLElement* _markerElement)
 {
   // Name attribute
-  std::string name = getAttribute(_markerElement, "name");
+  std::string name = getAttributeString(_markerElement, "name");
 
   // offset
   Eigen::Vector3d offset = Eigen::Vector3d::Zero();
@@ -927,13 +927,13 @@ void SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_jointElement, "name");
+  std::string name = getAttributeString(_jointElement, "name");
 
   SkelJoint joint;
 
   //--------------------------------------------------------------------------
   // Type attribute
-  joint.type = getAttribute(_jointElement, "type");
+  joint.type = getAttributeString(_jointElement, "type");
   assert(!joint.type.empty());
   if (joint.type == std::string("weld"))
     joint.properties = readWeldJoint(_jointElement, joint, name);
@@ -968,7 +968,7 @@ void SkelParser::readJoint(tinyxml2::XMLElement* _jointElement,
   // Actuator attribute
   if (hasAttribute(_jointElement, "actuator"))
   {
-    const std::string actuator = getAttribute(_jointElement, "actuator");
+    const std::string actuator = getAttributeString(_jointElement, "actuator");
 
     if (actuator == "force")
       joint.properties->mActuatorType = dynamics::Joint::FORCE;
@@ -1885,7 +1885,7 @@ SkelParser::JointPropPtr SkelParser::readPlanarJoint(
     tinyxml2::XMLElement* planeElement = getElement(_jointElement, "plane");
 
     // Type attribute
-    std::string type = getAttribute(planeElement, "type");
+    std::string type = getAttributeString(planeElement, "type");
 
     if (type == "xy")
     {

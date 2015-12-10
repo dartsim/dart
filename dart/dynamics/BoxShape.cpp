@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include "dart/dynamics/BoxShape.h"
-
 #include "dart/renderer/RenderInterface.h"
 
 namespace dart {
@@ -48,12 +48,31 @@ BoxShape::BoxShape(const Eigen::Vector3d& _size)
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
-  mBoundingBoxDim = _size;
-  initMeshes();
-  computeVolume();
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
+  updateVolume();
 }
 
 BoxShape::~BoxShape() {
+}
+
+//==============================================================================
+double BoxShape::computeVolume(const Eigen::Vector3d& size)
+{
+  return size[0] * size[1] * size[2];
+}
+
+//==============================================================================
+Eigen::Matrix3d BoxShape::computeInertia(const Eigen::Vector3d& size,
+                                         double mass)
+{
+  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+
+  inertia(0, 0) = mass / 12.0 * (std::pow(size[1], 2) + std::pow(size[2], 2));
+  inertia(1, 1) = mass / 12.0 * (std::pow(size[0], 2) + std::pow(size[2], 2));
+  inertia(2, 2) = mass / 12.0 * (std::pow(size[0], 2) + std::pow(size[1], 2));
+
+  return inertia;
 }
 
 void BoxShape::setSize(const Eigen::Vector3d& _size) {
@@ -61,8 +80,9 @@ void BoxShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBoxDim = _size;
-  computeVolume();
+  mBoundingBox.setMin(-_size * 0.5);
+  mBoundingBox.setMax(_size * 0.5);
+  updateVolume();
 }
 
 const Eigen::Vector3d& BoxShape::getSize() const {
@@ -80,22 +100,20 @@ void BoxShape::draw(renderer::RenderInterface* _ri,
     _ri->setPenColor(mColor);
   _ri->pushMatrix();
   _ri->transform(mTransform);
-  _ri->drawCube(mBoundingBoxDim);
+  _ri->drawCube(mBoundingBox.computeFullExtents());
   _ri->popMatrix();
 }
 
-Eigen::Matrix3d BoxShape::computeInertia(double _mass) const {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 12.0 * (mSize(1) * mSize(1) + mSize(2) * mSize(2));
-  inertia(1, 1) = _mass / 12.0 * (mSize(0) * mSize(0) + mSize(2) * mSize(2));
-  inertia(2, 2) = _mass / 12.0 * (mSize(0) * mSize(0) + mSize(1) * mSize(1));
-
-  return inertia;
+//==============================================================================
+Eigen::Matrix3d BoxShape::computeInertia(double mass) const
+{
+  return computeInertia(mSize, mass);
 }
 
-void BoxShape::computeVolume() {
-  // a * b * c
-  mVolume = mSize[0] * mSize[1] * mSize[2];
+//==============================================================================
+void BoxShape::updateVolume()
+{
+  mVolume = computeVolume(mSize);
 }
 
 }  // namespace dynamics

@@ -46,7 +46,7 @@
 #include <tinyxml2.h>
 
 #include "dart/common/Deprecated.h"
-#include "dart/utils/Parser.h"
+#include "dart/utils/XmlHelpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
