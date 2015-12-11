@@ -72,7 +72,8 @@ public:
 
   /// Construct using a PropertiesData instance
   AddonWithProtectedPropertiesInSkeleton(
-      ManagerType* mgr, const PropertiesData& properties = PropertiesData());
+      common::AddonManager* mgr,
+      const PropertiesData& properties = PropertiesData());
 
   // Documentation inherited
   std::unique_ptr<common::Addon> cloneAddon(
@@ -152,13 +153,13 @@ public:
 
   /// Construct using a StateData and a PropertiesData instance
   AddonWithProtectedStateAndPropertiesInSkeleton(
-      ManagerT* mgr,
+      common::AddonManager* mgr,
       const StateDataT& state = StateData(),
       const PropertiesDataT& properties = PropertiesData());
 
   /// Construct using a StateData and a PropertiesData instance, flipped
   AddonWithProtectedStateAndPropertiesInSkeleton(
-      ManagerT* mgr,
+      common::AddonManager* mgr,
       const PropertiesData& properties,
       const StateData& state = StateData());
 

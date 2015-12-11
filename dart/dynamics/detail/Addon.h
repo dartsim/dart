@@ -48,7 +48,7 @@ template <class BaseT, typename PropertiesDataT,
 AddonWithProtectedPropertiesInSkeleton<
     BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
 AddonWithProtectedPropertiesInSkeleton(
-    ManagerType* mgr, const PropertiesData& properties)
+    common::AddonManager* mgr, const PropertiesData& properties)
   : Addon(mgr),
     mProperties(properties)
 {
@@ -206,7 +206,9 @@ AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
     ManagerT, updateState, updateProperties, OptionalT>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
-    ManagerType* mgr, const StateData& state, const PropertiesData& properties)
+    common::AddonManager* mgr,
+    const StateData& state,
+    const PropertiesData& properties)
   : common::Addon(mgr),
     mState(state),
     mProperties(properties)
@@ -224,7 +226,9 @@ AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
     ManagerT, updateState, updateProperties, OptionalT>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
-    ManagerType* mgr, const PropertiesData& properties, const StateData& state)
+    common::AddonManager* mgr,
+    const PropertiesData& properties,
+    const StateData& state)
   : common::Addon(mgr),
     mState(state),
     mProperties(properties)
@@ -470,9 +474,9 @@ setManager(common::AddonManager* newManager, bool /*transfer*/)
 //==============================================================================
 #define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (ManagerType* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
+  inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
     : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, state, properties) { }\
-  inline ClassName (ManagerType* mgr, const PropertiesData& properties, const StateData state = StateData())\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
     : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, properties, state) { }
 
 //==============================================================================

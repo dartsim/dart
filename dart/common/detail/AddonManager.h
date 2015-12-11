@@ -150,6 +150,33 @@ constexpr bool AddonManager::_isSpecializedFor(type<T>)
 } // namespace dart
 
 //==============================================================================
+// Create non-template alternatives to AddonManager functions
+#define DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( TypeName, AddonName )\
+  inline bool has ## AddonName () const\
+  { return has<TypeName>(); }\
+  inline TypeName * get ## AddonName ()\
+  { return get<TypeName>(); }\
+  inline const TypeName* get ## AddonName () const\
+  { return get<TypeName>(); }\
+  inline void set ## AddonName (const TypeName * addon)\
+  { set<TypeName>(addon); }\
+  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)\
+  { set<TypeName>(std::move(addon)); }\
+  template <typename ...Args>\
+  inline TypeName * create ## AddonName (Args&&... args)\
+  { return create<TypeName>(std::forward<Args>(args)...); }\
+  inline void erase ## AddonName ()\
+  { erase<TypeName>(); }\
+  inline std::unique_ptr< TypeName > release ## AddonName ()\
+  { return release<TypeName>(); }
+
+//==============================================================================
+#define DART_BAKE_SPECIALIZED_ADDON(AddonName)\
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(AddonName, AddonName);
+
+
+
+//==============================================================================
 #define DART_ENABLE_ADDON_SPECIALIZATION()\
   public:\
   template <class T> bool has() const { return AddonManager::has<T>(); }\

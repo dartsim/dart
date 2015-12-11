@@ -40,6 +40,7 @@
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/Addon.h"
+#include "dart/common/SpecializedManager.h"
 
 namespace dart {
 namespace dynamics {
@@ -97,7 +98,7 @@ public:
 };
 
 class EndEffector final :
-    public virtual common::AddonManager,
+    public virtual common::SpecializedManager<Support>,
     public FixedFrame,
     public AccessoryNode<EndEffector>,
     public TemplatedJacobianNode<EndEffector>
@@ -106,8 +107,6 @@ public:
 
   friend class Skeleton;
   friend class BodyNode;
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
 
   struct StateData
   {
@@ -227,7 +226,7 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  DART_SPECIALIZED_ADDON_INLINE(Support)
+  DART_BAKE_SPECIALIZED_ADDON(Support);
 
   /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
   /// is true, then the Support will be generated if one does not already exist.
@@ -360,8 +359,6 @@ protected:
   /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
   mutable math::Jacobian mWorldJacobianClassicDeriv;
 };
-
-DART_SPECIALIZED_ADDON_TEMPLATE(EndEffector, Support)
 
 } // namespace dynamics
 } // namespace dart

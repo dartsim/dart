@@ -408,7 +408,6 @@ EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
     FixedFrame(_parent, "", _properties.mDefaultTransform),
     TemplatedJacobianNode<EndEffector>(_parent)
 {
-  DART_SPECIALIZED_ADDON_INSTANTIATE(Support)
   setProperties(_properties);
 }
 

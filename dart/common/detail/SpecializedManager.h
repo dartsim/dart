@@ -210,7 +210,7 @@ void SpecializedManager<SpecAddon>::_set(
   if(addon)
   {
     mAddonIterator->second = addon->cloneAddon(this);
-    becomeManager(mAddonIterator->second, false);
+    becomeManager(mAddonIterator->second.get(), false);
   }
   else
   {
@@ -281,7 +281,7 @@ void SpecializedManager<SpecAddon>::_erase(type<SpecAddon>)
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
   DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, mAddonIterator, DART_BLANK);
-  mAddonIterator = nullptr;
+  mAddonIterator->second = nullptr;
 }
 
 //==============================================================================
