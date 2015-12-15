@@ -256,13 +256,13 @@ Find the function named ``changeRestPosition`` in the ``MyWindow`` class. This
 function will be called whenever the user presses the 'q' or 'a' button. We want
 those buttons to curl and uncurl the rest positions for the pendulum. To start,
 we'll go through all the generalized coordinates and change their rest positions
-by ``delta``:
+by ``delta_rest_position``:
 
 ```cpp
 for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
 {
   DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double q0 = dof->getRestPosition() + delta;
+  double q0 = dof->getRestPosition() + delta_rest_position;
 
   dof->setRestPosition(q0);
 }
@@ -298,7 +298,7 @@ spring stiffness. We can change the spring stiffness as follows:
 for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
 {
   DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double stiffness = dof->getSpringStiffness() + delta;
+  double stiffness = dof->getSpringStiffness() + delta_stiffness;
   dof->setSpringStiffness(stiffness);
 }
 ```
@@ -326,7 +326,7 @@ The API for getting and setting the damping is just like the API for stiffness:
 for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
 {
   DegreeOfFreedom* dof = mPendulum->getDof(i);
-  double damping = dof->getDampingCoefficient() + delta;
+  double damping = dof->getDampingCoefficient() + delta_damping;
   if(damping < 0.0)
     damping = 0.0;
   dof->setDampingCoefficient(damping);
