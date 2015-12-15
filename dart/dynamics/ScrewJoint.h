@@ -37,64 +37,23 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_H_
 #define DART_DYNAMICS_SCREWJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/ScrewJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class ScrewJoint
-class ScrewJoint : public SingleDofJoint
+class ScrewJoint : public detail::ScrewJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::ScrewJointUniqueProperties;
+  using Properties = detail::ScrewJointProperties;
+  using Addon = detail::ScrewJointAddon;
+  using Base = detail::ScrewJointBase;
 
-  struct UniqueProperties
-  {
-    /// Rotational axis
-    Eigen::Vector3d mAxis;
-
-    /// Translational pitch
-    double mPitch;
-
-    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
-                     double _pitch = 0.1);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : SingleDofJoint::Properties,
-                      ScrewJoint::UniqueProperties
-  {
-    Properties(
-        const SingleDofJoint::Properties& _singleDofProperties =
-                                              SingleDofJoint::Properties(),
-        const ScrewJoint::UniqueProperties& _screwProperties =
-                                              ScrewJoint::UniqueProperties());
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, ScrewJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-
-    void setAxis(const Eigen::Vector3d& _axis);
-    const Eigen::Vector3d& getAxis() const;
-
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Pitch)
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(ScrewJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, ScrewJointAddon)
 
   /// Destructor
   virtual ~ScrewJoint();
@@ -161,8 +120,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(ScrewJoint, ScrewJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

@@ -37,59 +37,10 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_H_
 #define DART_DYNAMICS_REVOLUTEJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/RevoluteJointProperties.h"
 
 namespace dart {
 namespace dynamics {
-
-class RevoluteJoint;
-
-namespace detail {
-
-struct RevoluteJointUniqueProperties
-{
-  Eigen::Vector3d mAxis;
-
-  RevoluteJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-
-  virtual ~RevoluteJointUniqueProperties() = default;
-};
-
-struct RevoluteJointProperties :
-    SingleDofJoint::Properties,
-    RevoluteJointUniqueProperties
-{
-  RevoluteJointProperties(
-      const SingleDofJoint::Properties& _singleDofJointProperties =
-          SingleDofJoint::Properties(),
-      const RevoluteJointUniqueProperties& _revoluteProperties =
-          RevoluteJointUniqueProperties());
-
-  virtual ~RevoluteJointProperties() = default;
-};
-
-class RevoluteJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
-        RevoluteJointAddon, RevoluteJointUniqueProperties, RevoluteJoint,
-        detail::JointPropertyUpdate<RevoluteJointAddon>, false >
-{
-public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
-
-  void setAxis(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis() const;
-};
-
-using RevoluteJointBase = common::SpecializedJoiner<
-    SingleDofJoint, common::SpecializedManager<detail::RevoluteJointAddon> >;
-
-} // namespace detail
 
 /// class RevoluteJoint
 class RevoluteJoint : public detail::RevoluteJointBase

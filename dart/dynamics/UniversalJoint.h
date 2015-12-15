@@ -37,58 +37,23 @@
 #ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
 #define DART_DYNAMICS_UNIVERSALJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/UniversalJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class UniversalJoint
-class UniversalJoint : public MultiDofJoint<2>
+class UniversalJoint : public detail::UniversalJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::UniversalJointUniqueProperties;
+  using Properties = detail::UniversalJointProperties;
+  using Addon = detail::UniversalJointAddon;
+  using Base = detail::UniversalJointBase;
 
-  struct UniqueProperties
-  {
-    std::array<Eigen::Vector3d,2> mAxis;
-
-    UniqueProperties(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-                     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : MultiDofJoint<2>::Properties,
-                      UniversalJoint::UniqueProperties
-  {
-    Properties(const MultiDofJoint<2>::Properties& _multiDofProperties =
-                                            MultiDofJoint<2>::Properties(),
-               const UniversalJoint::UniqueProperties& _universalProperties =
-                                            UniversalJoint::UniqueProperties());
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, UniversalJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-    void setAxis1(const Eigen::Vector3d& _axis);
-    const Eigen::Vector3d& getAxis1() const;
-    void setAxis2(const Eigen::Vector3d& _axis);
-    const Eigen::Vector3d& getAxis2() const;
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(UniversalJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, UniversalJointAddon)
 
   /// Destructor
   virtual ~UniversalJoint();
@@ -164,8 +129,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(UniversalJoint, UniversalJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

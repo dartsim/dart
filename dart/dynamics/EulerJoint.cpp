@@ -47,23 +47,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-EulerJoint::UniqueProperties::UniqueProperties(AxisOrder _axisOrder)
-  : mAxisOrder(_axisOrder)
-{
-  // Do nothing
-}
-
-//==============================================================================
-EulerJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _multiDofProperties,
-    const EulerJoint::UniqueProperties& _eulerJointProperties)
-  : MultiDofJoint<3>::Properties(_multiDofProperties),
-    EulerJoint::UniqueProperties(_eulerJointProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 EulerJoint::~EulerJoint()
 {
   // Do nothing
@@ -168,14 +151,14 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
 {
   switch (_ordering)
   {
-    case AO_XYZ:
+    case AxisOrder::XYZ:
       return math::eulerXYZToMatrix(_positions);
-    case AO_ZYX:
+    case AxisOrder::ZYX:
       return math::eulerZYXToMatrix(_positions);
     default:
     {
       dterr << "[EulerJoint::convertToRotation] Invalid AxisOrder specified ("
-            << _ordering << ")\n";
+            << static_cast<int>(_ordering) << ")\n";
       return Eigen::Matrix3d::Identity();
     }
   }
@@ -212,7 +195,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 
   switch (getAxisOrder())
   {
-    case AO_XYZ:
+    case AxisOrder::XYZ:
     {
       //------------------------------------------------------------------------
       // S = [    c1*c2, s2,  0
@@ -238,7 +221,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 
       break;
     }
-    case AO_ZYX:
+    case AxisOrder::ZYX:
     {
       //------------------------------------------------------------------------
       // S = [   -s1,    0,   1
@@ -298,9 +281,8 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 
 //==============================================================================
 EulerJoint::EulerJoint(const Properties& _properties)
-  : MultiDofJoint<3>(_properties)
+  : detail::EulerJointBase(_properties, common::NoArg)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(EulerJoint, Addon);
   createEulerJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
@@ -320,19 +302,19 @@ void EulerJoint::updateDegreeOfFreedomNames()
   std::vector<std::string> affixes;
   switch (getAxisOrder())
   {
-    case AO_ZYX:
+    case AxisOrder::ZYX:
       affixes.push_back("_z");
       affixes.push_back("_y");
       affixes.push_back("_x");
       break;
-    case AO_XYZ:
+    case AxisOrder::XYZ:
       affixes.push_back("_x");
       affixes.push_back("_y");
       affixes.push_back("_z");
       break;
     default:
       dterr << "Unsupported axis order in EulerJoint named '" << mJointP.mName
-            << "' (" << getAxisOrder() << ")\n";
+            << "' (" << static_cast<int>(getAxisOrder()) << ")\n";
   }
 
   if (affixes.size() == 3)
@@ -387,7 +369,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
 
   switch (getAxisOrder())
   {
-    case AO_XYZ:
+    case AxisOrder::XYZ:
     {
       //------------------------------------------------------------------------
       // dS = [  -(dq1*c2*s1) - dq2*c1*s2,    dq2*c2,  0
@@ -404,7 +386,7 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
 
       break;
     }
-    case AO_ZYX:
+    case AxisOrder::ZYX:
     {
       //------------------------------------------------------------------------
       // dS = [               -c1*dq1,        0,   0

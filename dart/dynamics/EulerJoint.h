@@ -37,63 +37,24 @@
 #ifndef DART_DYNAMICS_EULERJOINT_H_
 #define DART_DYNAMICS_EULERJOINT_H_
 
-#include <string>
-
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/EulerJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class EulerJoint
-class EulerJoint : public MultiDofJoint<3>
+class EulerJoint : public detail::EulerJointBase
 {
 public:
 
   friend class Skeleton;
+  using AxisOrder = detail::AxisOrder;
+  using UniqueProperties = detail::EulerJointUniqueProperties;
+  using Properties = detail::EulerJointProperties;
+  using Addon = detail::EulerJointAddon;
+  using Base = detail::EulerJointBase;
 
-  /// Axis order
-  enum AxisOrder
-  {
-    AO_ZYX = 0,
-    AO_XYZ = 1
-  };
-
-  struct UniqueProperties
-  {
-    /// Euler angle order
-    AxisOrder mAxisOrder;
-
-    /// Constructor
-    UniqueProperties(AxisOrder _axisOrder = AO_XYZ);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : MultiDofJoint<3>::Properties, EulerJoint::UniqueProperties
-  {
-    /// Composed constructor
-    Properties(
-        const MultiDofJoint<3>::Properties& _multiDofProperties =
-                                                MultiDofJoint<3>::Properties(),
-        const EulerJoint::UniqueProperties& _eulerJointProperties =
-                                                EulerJoint::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, EulerJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( EulerJoint, Addon )
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, EulerJointAddon)
 
   /// Destructor
   virtual ~EulerJoint();
@@ -146,13 +107,13 @@ public:
   {
     switch(_ordering)
     {
-      case AO_XYZ:
+      case AxisOrder::XYZ:
         return math::matrixToEulerXYZ(_rotation);
-      case AO_ZYX:
+      case AxisOrder::ZYX:
         return math::matrixToEulerZYX(_rotation);
       default:
         dtwarn << "[EulerJoint::convertToPositions] Unsupported AxisOrder ("
-               << _ordering << "), returning a zero vector\n";
+               << static_cast<int>(_ordering) << "), returning a zero vector\n";
         return Eigen::Vector3d::Zero();
     }
   }
@@ -214,8 +175,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE( EulerJoint, EulerJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

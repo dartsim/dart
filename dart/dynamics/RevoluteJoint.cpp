@@ -46,41 +46,6 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-//==============================================================================
-RevoluteJointUniqueProperties::RevoluteJointUniqueProperties(
-    const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
-  // Do nothing
-}
-
-//==============================================================================
-RevoluteJointProperties::RevoluteJointProperties(
-    const SingleDofJoint::Properties& _singleDofJointProperties,
-    const RevoluteJointUniqueProperties& _revoluteProperties)
-  : SingleDofJoint::Properties(_singleDofJointProperties),
-    RevoluteJointUniqueProperties(_revoluteProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void RevoluteJointAddon::setAxis(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis = _axis.normalized();
-  incrementSkeletonVersion();
-  UpdateProperties(this);
-}
-
-//==============================================================================
-const Eigen::Vector3d& RevoluteJointAddon::getAxis() const
-{
-  return mProperties.mAxis;
-}
-
-} // namespace detail
-
 //==============================================================================
 RevoluteJoint::~RevoluteJoint()
 {
@@ -166,7 +131,7 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& _properties)
-  : detail::RevoluteJointBase(_properties, common::NextArgs)
+  : detail::RevoluteJointBase(_properties, common::NoArg)
 //  : detail::RevoluteJointBase(common::NextArgs, _properties)
 {
   createRevoluteJointAddon(_properties);

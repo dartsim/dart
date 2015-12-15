@@ -37,56 +37,23 @@
 #ifndef DART_DYNAMICS_PRISMATICJOINT_H_
 #define DART_DYNAMICS_PRISMATICJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/PrismaticJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class PrismaticJoint : public SingleDofJoint
+class PrismaticJoint : public detail::PrismaticJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::PrismaticJointUniqueProperties;
+  using Properties = detail::PrismaticJointProperties;
+  using Addon = detail::PrismaticJointAddon;
+  using Base = detail::PrismaticJointBase;
 
-  struct UniqueProperties
-  {
-    Eigen::Vector3d mAxis;
-
-    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : SingleDofJoint::Properties,
-                      PrismaticJoint::UniqueProperties
-  {
-    Properties(
-        const SingleDofJoint::Properties& _singleDofProperties =
-                                            SingleDofJoint::Properties(),
-        const PrismaticJoint::UniqueProperties& _prismaticProperties =
-                                            PrismaticJoint::UniqueProperties());
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, PrismaticJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-
-    void setAxis(const Eigen::Vector3d& _axis);
-    const Eigen::Vector3d& getAxis() const;
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(PrismaticJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PrismaticJointAddon)
 
   /// Destructor
   virtual ~PrismaticJoint();
@@ -147,8 +114,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(PrismaticJoint, PrismaticJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

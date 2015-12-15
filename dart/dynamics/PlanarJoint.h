@@ -37,10 +37,7 @@
 #ifndef DART_DYNAMICS_PLANARRJOINT_H_
 #define DART_DYNAMICS_PLANARRJOINT_H_
 
-#include <string>
-
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/dynamics/detail/PlanarJointProperties.h"
 
 namespace dart {
 namespace dynamics {
@@ -51,102 +48,18 @@ namespace dynamics {
 /// First and second coordiantes represent translation along first and second
 /// translational axese, respectively. Third coordinate represents rotation
 /// along rotational axis.
-class PlanarJoint : public MultiDofJoint<3>
+class PlanarJoint : public detail::PlanarJointBase
 {
 public:
 
   friend class Skeleton;
+  using PlaneType = detail::PlaneType;
+  using UniqueProperties = detail::PlanarJointUniqueProperties;
+  using Properties = detail::PlanarJointProperties;
+  using Addon = detail::PlanarJointAddon;
+  using Base = detail::PlanarJointBase;
 
-  /// Plane type
-  enum PlaneType
-  {
-    PT_XY,
-    PT_YZ,
-    PT_ZX,
-    PT_ARBITRARY
-  };
-
-  /// Properties that are unique to PlanarJoints. Note that the mPlaneType
-  /// member has greater authority than the mTransAxis1 and mTransAxis2 members.
-  /// When copying properties into a PlanarJoint, it will first defer to
-  /// mPlaneType. If mPlaneType is PT_ARBITRARY, then and only then will it use
-  /// mTransAxis1 and mTransAxis2. mRotAxis has no authority; it will always be
-  /// recomputed from mTransAxis1 and mTransAxis2 when copying it into a
-  /// PlanarJoint
-  struct UniqueProperties
-  {
-    /// Plane type
-    PlaneType mPlaneType;
-
-    /// First translational axis
-    Eigen::Vector3d mTransAxis1;
-
-    /// Second translational axis
-    Eigen::Vector3d mTransAxis2;
-
-    /// Rotational axis
-    Eigen::Vector3d mRotAxis;
-
-    /// Constructor for pre-defined plane types. Defaults to the XY plane if
-    /// PT_ARBITRARY is specified.
-    UniqueProperties(PlaneType _planeType = PT_XY);
-
-    /// Constructor for arbitrary plane types. mPlaneType will be set to
-    /// PT_ARBITRARY
-    UniqueProperties(const Eigen::Vector3d& _transAxis1,
-                     const Eigen::Vector3d& _transAxis2);
-
-    /// Copy-constructor, customized for robustness
-    UniqueProperties(const UniqueProperties& other);
-
-    virtual ~UniqueProperties() = default;
-
-    /// Set plane type as XY-plane
-    void setXYPlane();
-
-    /// Set plane type as YZ-plane
-    void setYZPlane();
-
-    /// Set plane type as ZX-plane
-    void setZXPlane();
-
-    /// Set plane type as arbitrary plane with two orthogonal translational axes
-    void setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
-                           const Eigen::Vector3d& _transAxis2);
-  };
-
-  struct Properties : MultiDofJoint<3>::Properties, PlanarJoint::UniqueProperties
-  {
-    Properties(const MultiDofJoint<3>::Properties& _multiDofProperties =
-                                              MultiDofJoint<3>::Properties(),
-               const PlanarJoint::UniqueProperties& _planarProperties =
-                                              PlanarJoint::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, PlanarJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-
-    void setXYPlane();
-    void setYZPlane();
-    void setZXPlane();
-    void setArbitraryPlane(const Eigen::Vector3d& _axis1,
-                           const Eigen::Vector3d& _axis2);
-
-    DART_DYNAMICS_GET_ADDON_PROPERTY( PlaneType, PlaneType )
-    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
-    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis2 )
-    DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, RotAxis )
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(PlanarJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PlanarJointAddon)
 
   /// Destructor
   virtual ~PlanarJoint();
@@ -246,8 +159,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(PlanarJoint, PlanarJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

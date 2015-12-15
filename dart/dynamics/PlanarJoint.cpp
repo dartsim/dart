@@ -47,147 +47,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PlanarJoint::UniqueProperties::UniqueProperties(PlaneType _planeType)
-{
-  switch(_planeType)
-  {
-    case PT_ARBITRARY:
-    case PT_XY:
-      setXYPlane();
-      mPlaneType = _planeType; // In case the PlaneType was supposed to be arbitrary
-      break;
-    case PT_YZ:
-      setYZPlane();
-       break;
-    case PT_ZX:
-      setZXPlane();
-      break;
-  }
-}
-
-//==============================================================================
-PlanarJoint::UniqueProperties::UniqueProperties(
-    const Eigen::Vector3d& _transAxis1,
-    const Eigen::Vector3d& _transAxis2)
-{
-  setArbitraryPlane(_transAxis1, _transAxis2);
-}
-
-//==============================================================================
-PlanarJoint::UniqueProperties::UniqueProperties(const UniqueProperties& other)
-{
-  switch(other.mPlaneType)
-  {
-    case PT_ARBITRARY:
-      setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
-      break;
-    case PT_XY:
-      setXYPlane();
-      break;
-    case PT_YZ:
-      setYZPlane();
-      break;
-    case PT_ZX:
-      setZXPlane();
-      break;
-  }
-}
-
-//==============================================================================
-void PlanarJoint::UniqueProperties::setXYPlane()
-{
-  mPlaneType = PT_XY;
-  mRotAxis   = Eigen::Vector3d::UnitZ();
-  mTransAxis1 = Eigen::Vector3d::UnitX();
-  mTransAxis2 = Eigen::Vector3d::UnitY();
-}
-
-//==============================================================================
-void PlanarJoint::UniqueProperties::setYZPlane()
-{
-  mPlaneType = PT_YZ;
-  mRotAxis   = Eigen::Vector3d::UnitX();
-  mTransAxis1 = Eigen::Vector3d::UnitY();
-  mTransAxis2 = Eigen::Vector3d::UnitZ();
-}
-
-//==============================================================================
-void PlanarJoint::UniqueProperties::setZXPlane()
-{
-  mPlaneType = PT_ZX;
-  mRotAxis   = Eigen::Vector3d::UnitY();
-  mTransAxis1 = Eigen::Vector3d::UnitZ();
-  mTransAxis2 = Eigen::Vector3d::UnitX();
-}
-
-//==============================================================================
-void PlanarJoint::UniqueProperties::setArbitraryPlane(
-    const Eigen::Vector3d& _transAxis1,
-    const Eigen::Vector3d& _transAxis2)
-{
-  // Set plane type as arbitrary plane
-  mPlaneType = PT_ARBITRARY;
-
-  // First translational axis
-  mTransAxis1 = _transAxis1.normalized();
-
-  // Second translational axis
-  mTransAxis2 = _transAxis2.normalized();
-
-  // Orthogonalize translational axese
-  double dotProduct = mTransAxis1.dot(mTransAxis2);
-  assert(std::abs(dotProduct) < 1.0 - 1e-6);
-  if (std::abs(dotProduct) > 1e-6)
-    mTransAxis2 = (mTransAxis2 - dotProduct * mTransAxis1).normalized();
-
-  // Rotational axis
-  mRotAxis = (mTransAxis1.cross(mTransAxis2)).normalized();
-}
-
-//==============================================================================
-PlanarJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _multiDofProperties,
-    const PlanarJoint::UniqueProperties& _planarProperties)
-  : MultiDofJoint<3>::Properties(_multiDofProperties),
-    PlanarJoint::UniqueProperties(_planarProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void PlanarJoint::Addon::setXYPlane()
-{
-  mProperties.setXYPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-void PlanarJoint::Addon::setYZPlane()
-{
-  mProperties.setYZPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-void PlanarJoint::Addon::setZXPlane()
-{
-  mProperties.setZXPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-void PlanarJoint::Addon::setArbitraryPlane(const Eigen::Vector3d& _axis1,
-                                           const Eigen::Vector3d& _axis2)
-{
-  mProperties.setArbitraryPlane(_axis1, _axis2);
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
 PlanarJoint::~PlanarJoint()
 {
   // Do nothing
@@ -348,9 +207,8 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
 
 //==============================================================================
 PlanarJoint::PlanarJoint(const Properties& _properties)
-  : MultiDofJoint<3>(_properties)
+  : detail::PlanarJointBase(_properties, common::NoArg)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PlanarJoint, Addon);
   createPlanarJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
@@ -370,25 +228,26 @@ void PlanarJoint::updateDegreeOfFreedomNames()
   std::vector<std::string> affixes;
   switch (getPlanarJointAddon()->getPlaneType())
   {
-    case PT_XY:
+    case PlaneType::XY:
       affixes.push_back("_x");
       affixes.push_back("_y");
       break;
-    case PT_YZ:
+    case PlaneType::YZ:
       affixes.push_back("_y");
       affixes.push_back("_z");
       break;
-    case PT_ZX:
+    case PlaneType::ZX:
       affixes.push_back("_z");
       affixes.push_back("_x");
       break;
-    case PT_ARBITRARY:
+    case PlaneType::ARBITRARY:
       affixes.push_back("_1");
       affixes.push_back("_2");
       break;
     default:
       dterr << "Unsupported plane type in PlanarJoint named '" << mJointP.mName
-            << "' (" << getPlanarJointAddon()->getPlaneType() << ")\n";
+            << "' (" << static_cast<int>(getPlanarJointAddon()->getPlaneType())
+            << ")\n";
   }
 
   if (affixes.size() == 2)

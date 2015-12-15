@@ -46,37 +46,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PrismaticJoint::UniqueProperties::UniqueProperties(const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
-  // Do nothing
-}
-
-//==============================================================================
-PrismaticJoint::Properties::Properties(
-    const SingleDofJoint::Properties& _singleDofProperties,
-    const PrismaticJoint::UniqueProperties& _prismaticProperties)
-  : SingleDofJoint::Properties(_singleDofProperties),
-    PrismaticJoint::UniqueProperties(_prismaticProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void PrismaticJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis = _axis.normalized();
-  incrementSkeletonVersion();
-  UpdateProperties(this);
-}
-
-//==============================================================================
-const Eigen::Vector3d& PrismaticJoint::Addon::getAxis() const
-{
-  return mProperties.mAxis;
-}
-
-//==============================================================================
 PrismaticJoint::~PrismaticJoint()
 {
   // Do nothing
@@ -161,9 +130,8 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 
 //==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& _properties)
-  : SingleDofJoint(_properties)
+  : detail::PrismaticJointBase(_properties, common::NoArg)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(PrismaticJoint, Addon);
   createPrismaticJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we

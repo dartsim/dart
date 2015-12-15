@@ -46,39 +46,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ScrewJoint::UniqueProperties::UniqueProperties(
-    const Eigen::Vector3d& _axis, double _pitch)
-  : mAxis(_axis.normalized()),
-    mPitch(_pitch)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ScrewJoint::Properties::Properties(
-    const SingleDofJoint::Properties& _singleDofProperties,
-    const ScrewJoint::UniqueProperties& _screwProperties)
-  : SingleDofJoint::Properties(_singleDofProperties),
-    ScrewJoint::UniqueProperties(_screwProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ScrewJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis = _axis.normalized();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-const Eigen::Vector3d& ScrewJoint::Addon::getAxis() const
-{
-  return mProperties.mAxis;
-}
-
-//==============================================================================
 ScrewJoint::~ScrewJoint()
 {
   // Do nothing
@@ -176,9 +143,8 @@ double ScrewJoint::getPitch() const
 
 //==============================================================================
 ScrewJoint::ScrewJoint(const Properties& _properties)
-  : SingleDofJoint(_properties)
+  : detail::ScrewJointBase(_properties, common::NoArg)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(ScrewJoint, Addon);
   createScrewJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we

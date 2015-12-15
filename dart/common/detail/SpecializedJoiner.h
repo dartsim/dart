@@ -44,10 +44,10 @@ namespace common {
 
 //==============================================================================
 template <class Base1, class Base2>
-template <typename... Base1Args, typename... Base2Args>
+template <typename Base1Arg, typename... Base2Args>
 SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
-    Base1Args&&... args1, NextArgs_t, Base2Args&&... args2)
-  : Base1(std::forward<Base1Args>(args1)...),
+    Base1Arg&& args1, Base2Args&&... args2)
+  : Base1(std::forward<Base1Arg>(args1)),
     Base2(std::forward<Base2Args>(args2)...)
 {
   // Do nothing
@@ -55,11 +55,22 @@ SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
 
 //==============================================================================
 template <class Base1, class Base2>
-template <typename... Base1Args>
+template <typename Base1Arg>
 SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
-    Base1Args&&... args1, NextArgs_t)
-  : Base1(std::forward<Base1Args>(args1)...),
+    Base1Arg&& args1, NoArg_t)
+  : Base1(std::forward<Base1Arg>(args1)),
     Base2()
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class Base1, class Base2>
+template <typename... Base2Args>
+SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+    NoArg_t, Base2Args&&... args2)
+  : Base1(),
+    Base2(std::forward<Base2Args>(args2)...)
 {
   // Do nothing
 }
@@ -119,17 +130,16 @@ constexpr bool SpecializedJoiner<Base1, Base2>::isSpecializedFor()
 }
 
 //==============================================================================
-//template <class Base1, class Base2, class... OtherBases>
-//template <typename... Base1Args, typename... OtherArgs>
-//SpecializedJoiner<Base1, Base2, OtherBases>::SpecializedJoiner(
-//    Base1Args&&... args1, NextArgs_t, OtherArgs&&... otherArgs)
-//  : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
-//      std::forward<Base1Args>(args1)...,
-//      NextArgs,
-//      std::forward<OtherArgs>(otherArgs)...)
-//{
-//  // Do nothing
-//}
+template <class Base1, class Base2, class... OtherBases>
+template <typename Base1Arg, typename... OtherArgs>
+SpecializedJoiner<Base1, Base2, OtherBases...>::SpecializedJoiner(
+    Base1Arg&& arg1, OtherArgs&&... otherArgs)
+  : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
+      std::forward<Base1Arg>(arg1),
+      std::forward<OtherArgs>(otherArgs)...)
+{
+  // Do nothing
+}
 
 } // namespace common
 } // namespace dart

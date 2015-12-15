@@ -45,52 +45,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::UniqueProperties::UniqueProperties(
-    const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2)
-  : mAxis({_axis1.normalized(), _axis2.normalized()})
-{
-  // Do nothing
-}
-
-//==============================================================================
-UniversalJoint::Properties::Properties(
-    const MultiDofJoint::Properties& _multiDofProperties,
-    const UniversalJoint::UniqueProperties& _universalProperties)
-  : MultiDofJoint::Properties(_multiDofProperties),
-    UniversalJoint::UniqueProperties(_universalProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void UniversalJoint::Addon::setAxis1(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[0] = _axis.normalized();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJoint::Addon::getAxis1() const
-{
-  return mProperties.mAxis[0];
-}
-
-//==============================================================================
-void UniversalJoint::Addon::setAxis2(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[1] = _axis.normalized();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJoint::Addon::getAxis2() const
-{
-  return mProperties.mAxis[1];
-}
-
-//==============================================================================
 UniversalJoint::~UniversalJoint()
 {
   // Do nothing
@@ -201,9 +155,8 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
 
 //==============================================================================
 UniversalJoint::UniversalJoint(const Properties& _properties)
-  : MultiDofJoint<2>(_properties)
+  : detail::UniversalJointBase(_properties, common::NoArg)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(UniversalJoint, Addon);
   createUniversalJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we

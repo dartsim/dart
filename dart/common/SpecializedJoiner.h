@@ -37,20 +37,19 @@
 #ifndef DART_COMMON_SPECIALIZEDJOINER_H_
 #define DART_COMMON_SPECIALIZEDJOINER_H_
 
-#include <tuple>
-
 #include "dart/common/AddonManager.h"
 
 namespace dart {
 namespace common {
 
-enum NextArgs_t { NextArgs };
+/// Used to tag arguments as blank in SpecializedJoiner constructors.
+enum NoArg_t { NoArg };
 
 /// Terminator for the variadic template
 template <class... OtherBases>
 class SpecializedJoiner { };
 
-/// Special case of only having 1 class: we do nothing.
+/// Special case of only having 1 class: we do nothing but inherit it.
 template <class Base1>
 class SpecializedJoiner<Base1> : public Base1 { };
 
@@ -66,11 +65,26 @@ public:
   /// Default constructor
   SpecializedJoiner() = default;
 
-  template <typename... Base1Args, typename... Base2Args>
-  SpecializedJoiner(Base1Args&&... args1, NextArgs_t, Base2Args&&... args2);
+  /// This constructor allows one argument to be passed to the Base1 constructor
+  /// and arbitrarily many arguments to be passed to the Base2 constructor.
+  //
+  // TODO(MXG): When we migrate to using C++14, we can use std::tuple and
+  // std::index_sequence (which is only available in C++14) to dispatch
+  // arbitrarily many arguments to the constructors of each base class. Until
+  // then, this is the best we can offer due to fundamental limitations of
+  // variadic templates in C++11.
+  template <typename Base1Arg, typename... Base2Args>
+  SpecializedJoiner(Base1Arg&& arg1, Base2Args&&... args2);
 
-  template <typename... Base1Args>
-  SpecializedJoiner(Base1Args&&... args1, NextArgs_t);
+  /// This constructor passes one argument to the Base1 constructor and no
+  /// arguments to the Base2 constructor.
+  template <typename Base1Arg>
+  SpecializedJoiner(Base1Arg&& arg1, NoArg_t);
+
+  /// This constructor passes no arguments to the Base1 constructor and
+  /// arbitrarily many arguments to the Base2 constructor.
+  template <typename... Base2Args>
+  SpecializedJoiner(NoArg_t, Base2Args&&... args2);
 
   // Documentation inherited
   template <class T>
@@ -118,17 +132,21 @@ class SpecializedJoiner<Base1, Base2, OtherBases...> :
 {
 public:
 
+  /// Default constructor
   SpecializedJoiner() = default;
 
-  template <typename... Base1Args, typename... OtherArgs>
-  SpecializedJoiner(Base1Args&&... args1, NextArgs_t, OtherArgs&&... otherArgs)
-    : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
-        std::forward<Base1Args>(args1)...,
-        NextArgs,
-        std::forward<OtherArgs>(otherArgs)...)
-  {
-    // Do nothing
-  }
+  /// This constructor allows one argument to be passed to each Base class's
+  /// constructor (except the final Base class, which accepts arbitrarily many
+  /// arguments). Pass in dart::common::NoArgs for classes whose constructors
+  /// do not take any arguments.
+  //
+  // TODO(MXG): When we migrate to using C++14, we can use std::tuple and
+  // std::index_sequence (which is only available in C++14) to dispatch
+  // arbitrarily many arguments to the constructors of each base class. Until
+  // then, this is the best we can offer due to fundamental limitations of
+  // variadic templates in C++11.
+  template <typename Base1Arg, typename... OtherArgs>
+  SpecializedJoiner(Base1Arg&& arg1, OtherArgs&&... otherArgs);
 
 };
 
