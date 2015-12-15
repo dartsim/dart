@@ -62,59 +62,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-SingleDofJoint::UniqueProperties::UniqueProperties(
-    double _positionLowerLimit,
-    double _positionUpperLimit,
-    double _velocityLowerLimit,
-    double _velocityUpperLimit,
-    double _accelerationLowerLimit,
-    double _accelerationUpperLimit,
-    double _forceLowerLimit,
-    double _forceUpperLimit,
-    double _springStiffness,
-    double _restPosition,
-    double _dampingCoefficient,
-    double _coulombFriction,
-    bool _preserveDofName,
-    std::string _dofName)
-  : mPositionLowerLimit(_positionLowerLimit),
-    mPositionUpperLimit(_positionUpperLimit),
-    mInitialPosition(0.0),
-    mVelocityLowerLimit(_velocityLowerLimit),
-    mVelocityUpperLimit(_velocityUpperLimit),
-    mInitialVelocity(0.0),
-    mAccelerationLowerLimit(_accelerationLowerLimit),
-    mAccelerationUpperLimit(_accelerationUpperLimit),
-    mForceLowerLimit(_forceLowerLimit),
-    mForceUpperLimit(_forceUpperLimit),
-    mSpringStiffness(_springStiffness),
-    mRestPosition(_restPosition),
-    mDampingCoefficient(_dampingCoefficient),
-    mFriction(_coulombFriction),
-    mPreserveDofName(_preserveDofName),
-    mDofName(_dofName)
-{
-  // Do nothing
-}
-
-//==============================================================================
-SingleDofJoint::Properties::Properties(
-    const Joint::Properties& _jointProperties,
-    const UniqueProperties& _singleDofProperties)
-  : Joint::Properties(_jointProperties),
-    UniqueProperties(_singleDofProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-const std::string& SingleDofJoint::Addon::setDofName(
-    const std::string& name, bool preserveName)
-{
-  return getManager()->setDofName(0, name, preserveName);
-}
-
-//==============================================================================
 SingleDofJoint::~SingleDofJoint()
 {
   delete mDof;
@@ -1221,7 +1168,6 @@ SingleDofJoint::SingleDofJoint(const Properties& _properties)
     mInvM_a(0.0),
     mInvMassMatrixSegment(0.0)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(SingleDofJoint, Addon);
   createSingleDofJointAddon(_properties);
 }
 

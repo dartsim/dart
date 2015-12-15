@@ -464,12 +464,12 @@ setManager(common::AddonManager* newManager, bool /*transfer*/)
 //==============================================================================
 #define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (ManagerType* mgr, const PropertiesData& properties)\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties)\
     : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdatePropertiesMacro, Optional>(mgr, properties) { }
 
 //==============================================================================
 #define DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( ClassName )\
-  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate<Addon> )
+  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
 
 //==============================================================================
 #define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\

@@ -226,7 +226,7 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  DART_BAKE_SPECIALIZED_ADDON(Support);
+  DART_BAKE_SPECIALIZED_ADDON(Support)
 
   /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
   /// is true, then the Support will be generated if one does not already exist.

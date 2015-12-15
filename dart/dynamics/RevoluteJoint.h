@@ -47,48 +47,62 @@
 namespace dart {
 namespace dynamics {
 
+class RevoluteJoint;
+
+namespace detail {
+
+struct RevoluteJointUniqueProperties
+{
+  Eigen::Vector3d mAxis;
+
+  RevoluteJointUniqueProperties(
+      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+
+  virtual ~RevoluteJointUniqueProperties() = default;
+};
+
+struct RevoluteJointProperties :
+    SingleDofJoint::Properties,
+    RevoluteJointUniqueProperties
+{
+  RevoluteJointProperties(
+      const SingleDofJoint::Properties& _singleDofJointProperties =
+          SingleDofJoint::Properties(),
+      const RevoluteJointUniqueProperties& _revoluteProperties =
+          RevoluteJointUniqueProperties());
+
+  virtual ~RevoluteJointProperties() = default;
+};
+
+class RevoluteJointAddon final :
+    public AddonWithProtectedPropertiesInSkeleton<
+        RevoluteJointAddon, RevoluteJointUniqueProperties, RevoluteJoint,
+        detail::JointPropertyUpdate<RevoluteJointAddon>, false >
+{
+public:
+  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
+
+  void setAxis(const Eigen::Vector3d& _axis);
+  const Eigen::Vector3d& getAxis() const;
+};
+
+using RevoluteJointBase = common::SpecializedJoiner<
+    SingleDofJoint, common::SpecializedManager<detail::RevoluteJointAddon> >;
+
+} // namespace detail
+
 /// class RevoluteJoint
-class RevoluteJoint : public SingleDofJoint
+class RevoluteJoint : public detail::RevoluteJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::RevoluteJointUniqueProperties;
+  using Properties = detail::RevoluteJointProperties;
+  using Addon = detail::RevoluteJointAddon;
+  using Base = detail::RevoluteJointBase;
 
-  struct UniqueProperties
-  {
-    Eigen::Vector3d mAxis;
-
-    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : SingleDofJoint::Properties,
-                      RevoluteJoint::UniqueProperties
-  {
-    Properties(
-        const SingleDofJoint::Properties& _singleDofJointProperties=
-                                            SingleDofJoint::Properties(),
-        const RevoluteJoint::UniqueProperties& _revoluteProperties =
-                                            RevoluteJoint::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, RevoluteJoint,
-          detail::JointPropertyUpdate<Addon>, false >
-  {
-  public:
-    DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( Addon )
-
-    void setAxis(const Eigen::Vector3d& _axis);
-    const Eigen::Vector3d& getAxis() const;
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(RevoluteJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, RevoluteJointAddon)
 
   /// Destructor
   virtual ~RevoluteJoint();
@@ -150,8 +164,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(RevoluteJoint, RevoluteJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

@@ -62,108 +62,6 @@ namespace dynamics {
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
-    const Vector& _positionLowerLimits,
-    const Vector& _positionUpperLimits,
-    const Vector& _velocityLowerLimits,
-    const Vector& _velocityUpperLimits,
-    const Vector& _accelerationLowerLimits,
-    const Vector& _accelerationUpperLimits,
-    const Vector& _forceLowerLimits,
-    const Vector& _forceUpperLimits,
-    const Vector& _springStiffness,
-    const Vector& _restPosition,
-    const Vector& _dampingCoefficient,
-    const Vector& _coulombFrictions)
-  : mPositionLowerLimits(_positionLowerLimits),
-    mPositionUpperLimits(_positionUpperLimits),
-    mInitialPositions(Vector::Zero()),
-    mVelocityLowerLimits(_velocityLowerLimits),
-    mVelocityUpperLimits(_velocityUpperLimits),
-    mInitialVelocities(Vector::Zero()),
-    mAccelerationLowerLimits(_accelerationLowerLimits),
-    mAccelerationUpperLimits(_accelerationUpperLimits),
-    mForceLowerLimits(_forceLowerLimits),
-    mForceUpperLimits(_forceUpperLimits),
-    mSpringStiffnesses(_springStiffness),
-    mRestPositions(_restPosition),
-    mDampingCoefficients(_dampingCoefficient),
-    mFrictions(_coulombFrictions)
-{
-  for (size_t i = 0; i < DOF; ++i)
-  {
-    mPreserveDofNames[i] = false;
-    mDofNames[i] = std::string();
-  }
-}
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJoint<DOF>::UniqueProperties::UniqueProperties(
-    const UniqueProperties& _other)
-  : mPositionLowerLimits(_other.mPositionLowerLimits),
-    mPositionUpperLimits(_other.mPositionUpperLimits),
-    mInitialPositions(_other.mInitialPositions),
-    mVelocityLowerLimits(_other.mVelocityLowerLimits),
-    mVelocityUpperLimits(_other.mVelocityUpperLimits),
-    mInitialVelocities(_other.mInitialVelocities),
-    mAccelerationLowerLimits(_other.mAccelerationLowerLimits),
-    mAccelerationUpperLimits(_other.mAccelerationUpperLimits),
-    mForceLowerLimits(_other.mForceLowerLimits),
-    mForceUpperLimits(_other.mForceUpperLimits),
-    mSpringStiffnesses(_other.mSpringStiffnesses),
-    mRestPositions(_other.mRestPositions),
-    mDampingCoefficients(_other.mDampingCoefficients),
-    mFrictions(_other.mFrictions)
-{
-  for (size_t i = 0; i < DOF; ++i)
-  {
-    mPreserveDofNames[i] = _other.mPreserveDofNames[i];
-    mDofNames[i] = _other.mDofNames[i];
-  }
-}
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJoint<DOF>::Properties::Properties(
-    const Joint::Properties& _jointProperties,
-    const UniqueProperties& _multiDofProperties)
-  : Joint::Properties(_jointProperties),
-    UniqueProperties(_multiDofProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJoint<DOF>::Properties::~Properties()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJoint<DOF>::Addon::Addon(
-    typename Addon::ManagerType* mgr,
-    const typename Addon::PropertiesData& properties)
-  : AddonWithProtectedPropertiesInSkeleton<
-        typename Addon::Base, typename Addon::PropertiesData,
-        typename Addon::ManagerType, &common::detail::NoOp<typename Addon::Base*>,
-        Addon::Optional>(mgr, properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <size_t DOF>
-const std::string& MultiDofJoint<DOF>::Addon::setDofName(
-    size_t index, const std::string& name, bool preserveName)
-{
-  return this->getManager()->setDofName(index, name, preserveName);
-}
-
-//==============================================================================
-template <size_t DOF>
 MultiDofJoint<DOF>::~MultiDofJoint()
 {
   for (size_t i = 0; i < DOF; ++i)
@@ -280,7 +178,7 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   }
 
   preserveDofName(_index, _preserveName);
-  std::string& dofName = getMultiDofJointAddon()->mProperties.mDofNames[_index];
+  std::string& dofName = getMultiDofJointAddon()->_getDofNameReference(_index);
   if(_name == dofName)
     return dofName;
 
@@ -1454,7 +1352,6 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
     mTotalForce(Vector::Zero()),
     mTotalImpulse(Vector::Zero())
 {
-  DART_IRREGULAR_SPECIALIZED_ADDON_INSTANTIATE( MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
   createMultiDofJointAddon(_properties);
 
   for (size_t i = 0; i < DOF; ++i)

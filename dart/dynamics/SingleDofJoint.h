@@ -40,7 +40,8 @@
 #include <string>
 
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/common/SpecializedManager.h"
+#include "dart/dynamics/detail/SingleDofJointProperties.h"
 
 namespace dart {
 namespace dynamics {
@@ -54,119 +55,11 @@ class SingleDofJoint : public Joint
 {
 public:
 
-  struct UniqueProperties
-  {
-    /// Lower limit of position
-    double mPositionLowerLimit;
+  using UniqueProperties = detail::SingleDofJointUniqueProperties;
+  using Properties = detail::SingleDofJointProperties;
+  using Addon = detail::SingleDofJointAddon;
 
-    /// Upper limit of position
-    double mPositionUpperLimit;
-
-    /// Initial position
-    double mInitialPosition;
-
-    /// Lower limit of velocity
-    double mVelocityLowerLimit;
-
-    /// Upper limit of velocity
-    double mVelocityUpperLimit;
-
-    /// Initial velocity
-    double mInitialVelocity;
-
-    /// Lower limit of acceleration
-    double mAccelerationLowerLimit;
-
-    /// Upper limit of acceleration
-    double mAccelerationUpperLimit;
-
-    /// Lower limit of force
-    double mForceLowerLimit;
-
-    /// Upper limit of force
-    double mForceUpperLimit;
-
-    /// Joint spring stiffness
-    double mSpringStiffness;
-
-    /// Rest position for joint spring
-    double mRestPosition;
-
-    /// Joint damping coefficient
-    double mDampingCoefficient;
-
-    /// Coulomb friction force
-    double mFriction;
-
-    /// True if the name of this Joint's DOF is not allowed to be overwritten
-    bool mPreserveDofName;
-
-    /// The name of the DegreeOfFreedom for this Joint
-    std::string mDofName;
-
-    /// Constructor
-    UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
-                     double _positionUpperLimit =  DART_DBL_INF,
-                     double _velocityLowerLimit = -DART_DBL_INF,
-                     double _velocityUpperLimit =  DART_DBL_INF,
-                     double _accelerationLowerLimit = -DART_DBL_INF,
-                     double _accelerationUpperLimit =  DART_DBL_INF,
-                     double _forceLowerLimit = -DART_DBL_INF,
-                     double _forceUpperLimit =  DART_DBL_INF,
-                     double _springStiffness = 0.0,
-                     double _restPosition = 0.0,
-                     double _dampingCoefficient = 0.0,
-                     double _coulombFriction = 0.0,
-                     bool _preserveDofName = false,
-                     std::string _dofName = "");
-    // TODO(MXG): In version 6.0, we should add mInitialPosition and
-    // mInitialVelocity to the constructor arguments. For now we must wait in
-    // order to avoid breaking the API
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : Joint::Properties, UniqueProperties
-  {
-    Properties(
-        const Joint::Properties& _jointProperties = Joint::Properties(),
-        const UniqueProperties& _singleDofProperties = UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
-
-  class Addon final :
-      public AddonWithProtectedPropertiesInSkeleton<
-          Addon, UniqueProperties, SingleDofJoint, common::detail::NoOp, false>
-  {
-  public:
-    DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( Addon, &common::detail::NoOp )
-
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialPosition)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityLowerLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityUpperLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialVelocity)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationLowerLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationUpperLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceLowerLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceUpperLimit)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, SpringStiffness)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, RestPosition)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Friction)
-    DART_DYNAMICS_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
-
-    const std::string& setDofName(const std::string& name,
-                                  bool preserveName = true);
-    DART_DYNAMICS_GET_ADDON_PROPERTY(std::string, DofName)
-
-    friend class SingleDofJoint;
-  };
-
-  DART_ENABLE_ADDON_SPECIALIZATION()
-  DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE(SingleDofJoint, Addon)
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, SingleDofJointAddon)
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -885,8 +778,6 @@ private:
 
   /// \}
 };
-
-DART_NESTED_SPECIALIZED_ADDON_TEMPLATE(SingleDofJoint, SingleDofJoint, Addon)
 
 }  // namespace dynamics
 }  // namespace dart

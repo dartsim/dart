@@ -67,8 +67,6 @@ class Joint : public virtual common::Subject,
 {
 public:
 
-  DART_ENABLE_ADDON_SPECIALIZATION()
-
   /// Actuator type
   ///
   /// The command is taken by setCommand() or setCommands(), and the meaning of

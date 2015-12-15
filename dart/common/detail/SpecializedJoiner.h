@@ -43,6 +43,28 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+template <class Base1, class Base2>
+template <typename... Base1Args, typename... Base2Args>
+SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+    Base1Args&&... args1, NextArgs_t, Base2Args&&... args2)
+  : Base1(std::forward<Base1Args>(args1)...),
+    Base2(std::forward<Base2Args>(args2)...)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class Base1, class Base2>
+template <typename... Base1Args>
+SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+    Base1Args&&... args1, NextArgs_t)
+  : Base1(std::forward<Base1Args>(args1)...),
+    Base2()
+{
+  // Do nothing
+}
+
+//==============================================================================
 #define DART_COMMON_SPECIALIZEDJOINER_IMPL(ReturnType, Function, Suffix, Args) \
   template <class Base1, class Base2>\
   template <class T>\
@@ -59,9 +81,19 @@ DART_COMMON_SPECIALIZEDJOINER_IMPL(bool, has, () const, ())
 DART_COMMON_SPECIALIZEDJOINER_IMPL(T*, get, (), ())
 DART_COMMON_SPECIALIZEDJOINER_IMPL(const T*, get, () const, ())
 DART_COMMON_SPECIALIZEDJOINER_IMPL(void, set, (const T* addon), (addon))
-DART_COMMON_SPECIALIZEDJOINER_IMPL(void, set, (std::unique_ptr<T>&& addon), (addon))
+DART_COMMON_SPECIALIZEDJOINER_IMPL(void, set, (std::unique_ptr<T>&& addon), (std::move(addon)))
 DART_COMMON_SPECIALIZEDJOINER_IMPL(void, erase, (), ())
 DART_COMMON_SPECIALIZEDJOINER_IMPL(std::unique_ptr<T>, release, (), ())
+
+//template <class Base1, class Base2>
+//template <class T>
+//void SpecializedJoiner<Base1, Base2>::set(std::unique_ptr<T>&& addon)
+//{
+//  if(Base1::template isSpecializedFor<T>())
+//    return Base1::template set<T>(std::move(addon));
+
+//  return Base2::template set<T>(std::move(addon));
+//}
 
 //==============================================================================
 // Because this function requires a comma inside of its template argument list,
@@ -72,9 +104,9 @@ template <class T, typename ...Args>
 T* SpecializedJoiner<Base1, Base2>::create(Args&&... args)
 {
   if(Base1::template isSpecializedFor<T>())
-    return Base1::template create<T, Args...>(std::forward(args)...);
+    return Base1::template create<T, Args...>(std::forward<Args>(args)...);
 
-  return Base2::template create<T, Args...>(std::forward(args)...);
+  return Base2::template create<T, Args...>(std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -85,6 +117,19 @@ constexpr bool SpecializedJoiner<Base1, Base2>::isSpecializedFor()
   return (Base1::template isSpecializedFor<T>()
           || Base2::template isSpecializedFor<T>());
 }
+
+//==============================================================================
+//template <class Base1, class Base2, class... OtherBases>
+//template <typename... Base1Args, typename... OtherArgs>
+//SpecializedJoiner<Base1, Base2, OtherBases>::SpecializedJoiner(
+//    Base1Args&&... args1, NextArgs_t, OtherArgs&&... otherArgs)
+//  : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
+//      std::forward<Base1Args>(args1)...,
+//      NextArgs,
+//      std::forward<OtherArgs>(otherArgs)...)
+//{
+//  // Do nothing
+//}
 
 } // namespace common
 } // namespace dart

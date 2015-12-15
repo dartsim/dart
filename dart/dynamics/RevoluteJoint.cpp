@@ -46,25 +46,27 @@
 namespace dart {
 namespace dynamics {
 
+namespace detail {
 //==============================================================================
-RevoluteJoint::UniqueProperties::UniqueProperties(const Eigen::Vector3d& _axis)
+RevoluteJointUniqueProperties::RevoluteJointUniqueProperties(
+    const Eigen::Vector3d& _axis)
   : mAxis(_axis.normalized())
 {
   // Do nothing
 }
 
 //==============================================================================
-RevoluteJoint::Properties::Properties(
+RevoluteJointProperties::RevoluteJointProperties(
     const SingleDofJoint::Properties& _singleDofJointProperties,
-    const RevoluteJoint::UniqueProperties& _revoluteProperties)
+    const RevoluteJointUniqueProperties& _revoluteProperties)
   : SingleDofJoint::Properties(_singleDofJointProperties),
-    RevoluteJoint::UniqueProperties(_revoluteProperties)
+    RevoluteJointUniqueProperties(_revoluteProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-void RevoluteJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
+void RevoluteJointAddon::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
   incrementSkeletonVersion();
@@ -72,10 +74,12 @@ void RevoluteJoint::Addon::setAxis(const Eigen::Vector3d& _axis)
 }
 
 //==============================================================================
-const Eigen::Vector3d& RevoluteJoint::Addon::getAxis() const
+const Eigen::Vector3d& RevoluteJointAddon::getAxis() const
 {
   return mProperties.mAxis;
 }
+
+} // namespace detail
 
 //==============================================================================
 RevoluteJoint::~RevoluteJoint()
@@ -162,9 +166,9 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& _properties)
-  : SingleDofJoint(_properties)
+  : detail::RevoluteJointBase(_properties, common::NextArgs)
+//  : detail::RevoluteJointBase(common::NextArgs, _properties)
 {
-  DART_NESTED_SPECIALIZED_ADDON_INSTANTIATE(RevoluteJoint, Addon);
   createRevoluteJointAddon(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we

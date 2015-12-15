@@ -37,19 +37,40 @@
 #ifndef DART_COMMON_SPECIALIZEDJOINER_H_
 #define DART_COMMON_SPECIALIZEDJOINER_H_
 
+#include <tuple>
+
 #include "dart/common/AddonManager.h"
 
 namespace dart {
 namespace common {
+
+enum NextArgs_t { NextArgs };
+
+/// Terminator for the variadic template
+template <class... OtherBases>
+class SpecializedJoiner { };
+
+/// Special case of only having 1 class: we do nothing.
+template <class Base1>
+class SpecializedJoiner<Base1> : public Base1 { };
 
 /// SpecializedJoiner allows classes that inherit from various
 /// SpecializedManager types to be inherited by a single derived class. This
 /// class solves the diamond-of-death problem for multiple SpecializedManager
 /// inheritance.
 template <class Base1, class Base2>
-class SpecializedJoiner : public Base1, public Base2
+class SpecializedJoiner<Base1, Base2> : public Base1, public Base2
 {
 public:
+
+  /// Default constructor
+  SpecializedJoiner() = default;
+
+  template <typename... Base1Args, typename... Base2Args>
+  SpecializedJoiner(Base1Args&&... args1, NextArgs_t, Base2Args&&... args2);
+
+  template <typename... Base1Args>
+  SpecializedJoiner(Base1Args&&... args1, NextArgs_t);
 
   // Documentation inherited
   template <class T>
@@ -91,9 +112,25 @@ public:
 
 /// This is the variadic version of the SpecializedJoiner class which allows
 /// you to include arbitrarily many base classes in the joining.
-template <class Base1, class... OtherBases>
-class SpecializedJoiner<Base1, OtherBases...> :
-    public SpecializedJoiner< Base1, SpecializedJoiner<OtherBases...> > { };
+template <class Base1, class Base2, class... OtherBases>
+class SpecializedJoiner<Base1, Base2, OtherBases...> :
+    public SpecializedJoiner< Base1, SpecializedJoiner<Base2, OtherBases...> >
+{
+public:
+
+  SpecializedJoiner() = default;
+
+  template <typename... Base1Args, typename... OtherArgs>
+  SpecializedJoiner(Base1Args&&... args1, NextArgs_t, OtherArgs&&... otherArgs)
+    : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
+        std::forward<Base1Args>(args1)...,
+        NextArgs,
+        std::forward<OtherArgs>(otherArgs)...)
+  {
+    // Do nothing
+  }
+
+};
 
 } // namespace common
 } // namespace dart
