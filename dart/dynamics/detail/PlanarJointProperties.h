@@ -145,8 +145,8 @@ public:
 };
 
 //==============================================================================
-using PlanarJointBase = common::SpecializedJoiner<
-    MultiDofJoint<3>, common::SpecializedManager<PlanarJointAddon> >;
+using PlanarJointBase = common::AddonManagerJoiner<
+    MultiDofJoint<3>, common::SpecializedAddonManager<PlanarJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

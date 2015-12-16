@@ -96,8 +96,8 @@ public:
 };
 
 //==============================================================================
-using EulerJointBase = common::SpecializedJoiner<
-    MultiDofJoint<3>, common::SpecializedManager<EulerJointAddon> >;
+using EulerJointBase = common::AddonManagerJoiner<
+    MultiDofJoint<3>, common::SpecializedAddonManager<EulerJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

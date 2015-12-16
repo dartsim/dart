@@ -40,7 +40,7 @@
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/Addon.h"
-#include "dart/common/SpecializedManager.h"
+#include "dart/common/SpecializedAddonManager.h"
 
 namespace dart {
 namespace dynamics {
@@ -98,7 +98,7 @@ public:
 };
 
 class EndEffector final :
-    public virtual common::SpecializedManager<Support>,
+    public virtual common::SpecializedAddonManager<Support>,
     public FixedFrame,
     public AccessoryNode<EndEffector>,
     public TemplatedJacobianNode<EndEffector>

@@ -96,8 +96,8 @@ public:
 };
 
 //==============================================================================
-using ScrewJointBase = common::SpecializedJoiner<
-    SingleDofJoint, common::SpecializedManager<ScrewJointAddon> >;
+using ScrewJointBase = common::AddonManagerJoiner<
+    SingleDofJoint, common::SpecializedAddonManager<ScrewJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

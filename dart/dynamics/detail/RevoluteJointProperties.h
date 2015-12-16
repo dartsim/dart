@@ -90,8 +90,8 @@ public:
 };
 
 //==============================================================================
-using RevoluteJointBase = common::SpecializedJoiner<
-    SingleDofJoint, common::SpecializedManager<RevoluteJointAddon> >;
+using RevoluteJointBase = common::AddonManagerJoiner<
+    SingleDofJoint, common::SpecializedAddonManager<RevoluteJointAddon> >;
 
 } // namespace detail
 

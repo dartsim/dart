@@ -90,8 +90,8 @@ public:
 };
 
 //==============================================================================
-using PrismaticJointBase = common::SpecializedJoiner<
-    SingleDofJoint, common::SpecializedManager<PrismaticJointAddon> >;
+using PrismaticJointBase = common::AddonManagerJoiner<
+    SingleDofJoint, common::SpecializedAddonManager<PrismaticJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

@@ -92,8 +92,8 @@ public:
 };
 
 //==============================================================================
-using UniversalJointBase = common::SpecializedJoiner<
-    MultiDofJoint<2>, common::SpecializedManager<UniversalJointAddon> >;
+using UniversalJointBase = common::AddonManagerJoiner<
+    MultiDofJoint<2>, common::SpecializedAddonManager<UniversalJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

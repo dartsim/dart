@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDJOINER_H_
-#define DART_COMMON_SPECIALIZEDJOINER_H_
+#ifndef DART_COMMON_ADDONMANAGERJOINER_H_
+#define DART_COMMON_ADDONMANAGERJOINER_H_
 
 #include "dart/common/AddonManager.h"
 
@@ -47,23 +47,23 @@ enum NoArg_t { NoArg };
 
 /// Terminator for the variadic template
 template <class... OtherBases>
-class SpecializedJoiner { };
+class AddonManagerJoiner { };
 
 /// Special case of only having 1 class: we do nothing but inherit it.
 template <class Base1>
-class SpecializedJoiner<Base1> : public Base1 { };
+class AddonManagerJoiner<Base1> : public Base1 { };
 
 /// SpecializedJoiner allows classes that inherit from various
 /// SpecializedManager types to be inherited by a single derived class. This
 /// class solves the diamond-of-death problem for multiple SpecializedManager
 /// inheritance.
 template <class Base1, class Base2>
-class SpecializedJoiner<Base1, Base2> : public Base1, public Base2
+class AddonManagerJoiner<Base1, Base2> : public Base1, public Base2
 {
 public:
 
   /// Default constructor
-  SpecializedJoiner() = default;
+  AddonManagerJoiner() = default;
 
   /// This constructor allows one argument to be passed to the Base1 constructor
   /// and arbitrarily many arguments to be passed to the Base2 constructor.
@@ -74,17 +74,17 @@ public:
   // then, this is the best we can offer due to fundamental limitations of
   // variadic templates in C++11.
   template <typename Base1Arg, typename... Base2Args>
-  SpecializedJoiner(Base1Arg&& arg1, Base2Args&&... args2);
+  AddonManagerJoiner(Base1Arg&& arg1, Base2Args&&... args2);
 
   /// This constructor passes one argument to the Base1 constructor and no
   /// arguments to the Base2 constructor.
   template <typename Base1Arg>
-  SpecializedJoiner(Base1Arg&& arg1, NoArg_t);
+  AddonManagerJoiner(Base1Arg&& arg1, NoArg_t);
 
   /// This constructor passes no arguments to the Base1 constructor and
   /// arbitrarily many arguments to the Base2 constructor.
   template <typename... Base2Args>
-  SpecializedJoiner(NoArg_t, Base2Args&&... args2);
+  AddonManagerJoiner(NoArg_t, Base2Args&&... args2);
 
   // Documentation inherited
   template <class T>
@@ -127,13 +127,13 @@ public:
 /// This is the variadic version of the SpecializedJoiner class which allows
 /// you to include arbitrarily many base classes in the joining.
 template <class Base1, class Base2, class... OtherBases>
-class SpecializedJoiner<Base1, Base2, OtherBases...> :
-    public SpecializedJoiner< Base1, SpecializedJoiner<Base2, OtherBases...> >
+class AddonManagerJoiner<Base1, Base2, OtherBases...> :
+    public AddonManagerJoiner< Base1, AddonManagerJoiner<Base2, OtherBases...> >
 {
 public:
 
   /// Default constructor
-  SpecializedJoiner() = default;
+  AddonManagerJoiner() = default;
 
   /// This constructor allows one argument to be passed to each Base class's
   /// constructor (except the final Base class, which accepts arbitrarily many
@@ -146,14 +146,14 @@ public:
   // then, this is the best we can offer due to fundamental limitations of
   // variadic templates in C++11.
   template <typename Base1Arg, typename... OtherArgs>
-  SpecializedJoiner(Base1Arg&& arg1, OtherArgs&&... otherArgs);
+  AddonManagerJoiner(Base1Arg&& arg1, OtherArgs&&... otherArgs);
 
 };
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/SpecializedJoiner.h"
+#include "dart/common/detail/AddonManagerJoiner.h"
 
-#endif // DART_COMMON_SPECIALIZEDJOINER_H_
+#endif // DART_COMMON_ADDONMANAGERJOINER_H_
 

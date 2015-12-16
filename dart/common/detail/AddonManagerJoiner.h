@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SPECIALIZEDJOINER_H_
-#define DART_COMMON_DETAIL_SPECIALIZEDJOINER_H_
+#ifndef DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#define DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
 
-#include "dart/common/SpecializedJoiner.h"
+#include "dart/common/AddonManagerJoiner.h"
 
 namespace dart {
 namespace common {
@@ -45,7 +45,7 @@ namespace common {
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg, typename... Base2Args>
-SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
     Base1Arg&& args1, Base2Args&&... args2)
   : Base1(std::forward<Base1Arg>(args1)),
     Base2(std::forward<Base2Args>(args2)...)
@@ -56,7 +56,7 @@ SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg>
-SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
     Base1Arg&& args1, NoArg_t)
   : Base1(std::forward<Base1Arg>(args1)),
     Base2()
@@ -67,7 +67,7 @@ SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename... Base2Args>
-SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
+AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
     NoArg_t, Base2Args&&... args2)
   : Base1(),
     Base2(std::forward<Base2Args>(args2)...)
@@ -79,7 +79,7 @@ SpecializedJoiner<Base1, Base2>::SpecializedJoiner(
 #define DART_COMMON_SPECIALIZEDJOINER_IMPL(ReturnType, Function, Suffix, Args) \
   template <class Base1, class Base2>\
   template <class T>\
-  ReturnType SpecializedJoiner<Base1, Base2>:: Function Suffix\
+  ReturnType AddonManagerJoiner<Base1, Base2>:: Function Suffix\
   {\
     if(Base1::template isSpecializedFor<T>())\
       return Base1::template Function <T> Args ;\
@@ -96,23 +96,13 @@ DART_COMMON_SPECIALIZEDJOINER_IMPL(void, set, (std::unique_ptr<T>&& addon), (std
 DART_COMMON_SPECIALIZEDJOINER_IMPL(void, erase, (), ())
 DART_COMMON_SPECIALIZEDJOINER_IMPL(std::unique_ptr<T>, release, (), ())
 
-//template <class Base1, class Base2>
-//template <class T>
-//void SpecializedJoiner<Base1, Base2>::set(std::unique_ptr<T>&& addon)
-//{
-//  if(Base1::template isSpecializedFor<T>())
-//    return Base1::template set<T>(std::move(addon));
-
-//  return Base2::template set<T>(std::move(addon));
-//}
-
 //==============================================================================
 // Because this function requires a comma inside of its template argument list,
 // it is not easily fit into a macro like the other functions, so we just
 // implement it explicitly.
 template <class Base1, class Base2>
 template <class T, typename ...Args>
-T* SpecializedJoiner<Base1, Base2>::create(Args&&... args)
+T* AddonManagerJoiner<Base1, Base2>::create(Args&&... args)
 {
   if(Base1::template isSpecializedFor<T>())
     return Base1::template create<T, Args...>(std::forward<Args>(args)...);
@@ -123,7 +113,7 @@ T* SpecializedJoiner<Base1, Base2>::create(Args&&... args)
 //==============================================================================
 template <class Base1, class Base2>
 template <class T>
-constexpr bool SpecializedJoiner<Base1, Base2>::isSpecializedFor()
+constexpr bool AddonManagerJoiner<Base1, Base2>::isSpecializedFor()
 {
   return (Base1::template isSpecializedFor<T>()
           || Base2::template isSpecializedFor<T>());
@@ -132,9 +122,9 @@ constexpr bool SpecializedJoiner<Base1, Base2>::isSpecializedFor()
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>
 template <typename Base1Arg, typename... OtherArgs>
-SpecializedJoiner<Base1, Base2, OtherBases...>::SpecializedJoiner(
+AddonManagerJoiner<Base1, Base2, OtherBases...>::AddonManagerJoiner(
     Base1Arg&& arg1, OtherArgs&&... otherArgs)
-  : SpecializedJoiner<Base1, SpecializedJoiner<Base2, OtherBases...>>(
+  : AddonManagerJoiner<Base1, AddonManagerJoiner<Base2, OtherBases...>>(
       std::forward<Base1Arg>(arg1),
       std::forward<OtherArgs>(otherArgs)...)
 {
@@ -144,5 +134,5 @@ SpecializedJoiner<Base1, Base2, OtherBases...>::SpecializedJoiner(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_SPECIALIZEDJOINER_H_
+#endif // DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
 
