@@ -54,8 +54,8 @@ template <class Base1>
 class AddonManagerJoiner<Base1> : public Base1 { };
 
 /// SpecializedJoiner allows classes that inherit from various
-/// SpecializedManager types to be inherited by a single derived class. This
-/// class solves the diamond-of-death problem for multiple SpecializedManager
+/// SpecializedAddonManager types to be inherited by a single derived class. This
+/// class solves the diamond-of-death problem for multiple SpecializedAddonManager
 /// inheritance.
 template <class Base1, class Base2>
 class AddonManagerJoiner<Base1, Base2> : public Base1, public Base2

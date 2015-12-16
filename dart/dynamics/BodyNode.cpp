@@ -895,9 +895,6 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 }
 
 //==============================================================================
-DART_SPECIALIZED_NODE_DEFINE( BodyNode, EndEffector )
-
-//==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
   EndEffector::Properties properties;
@@ -1212,8 +1209,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
 {
-  DART_INSTANTIATE_SPECALIZED_NODE( EndEffector );
-
   // Generate an inert destructor to make sure that it will not try to
   // double-delete this BodyNode when it gets destroyed.
   mSelfDestructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(nullptr));

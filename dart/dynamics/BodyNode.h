@@ -40,9 +40,6 @@
 
 #include <string>
 #include <vector>
-#include <typeindex>
-#include <unordered_set>
-#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -56,6 +53,7 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/detail/BasicNodeManager.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -86,6 +84,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public virtual common::AddonManager,
+    public virtual detail::BasicNodeManager,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -98,10 +97,6 @@ public:
 
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
-
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
-
-  using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
 
   struct UniqueProperties
   {
@@ -614,24 +609,9 @@ public:
   /// Return the (const) _index-th child Joint of this BodyNode
   const Joint* getChildJoint(size_t _index) const;
 
-  /// Get the number of Nodes corresponding to the specified type
-  template <class NodeType>
-  size_t getNumNodes() const;
-
-  /// Get the Node of the specified type and the specified index
-  template <class NodeType>
-  NodeType* getNode(size_t index);
-
-  /// Get the Node of the specified type and the specified index
-  template <class NodeType>
-  const NodeType* getNode(size_t index) const;
-
   /// Create some Node type and attach it to this BodyNode.
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
-
-//  DART_SPECIALIZE_NODE_INTERNAL( EndEffector )
-  DART_SPECIALIZED_NODE_DECLARE( EndEffector )
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
@@ -1109,17 +1089,8 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
-  /// List of EndEffectors that are attached to this BodyNode
-  std::vector<EndEffector*> mEndEffectors;
-
   /// List of markers associated
   std::vector<Marker*> mMarkers;
-
-  /// Map that retrieves the Nodes of a specified type
-  NodeMap mNodeMap;
-
-  /// A set for storing the Node destructors
-  NodeDestructorSet mNodeDestructors;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1260,8 +1231,6 @@ private:
   std::shared_ptr<NodeDestructor> mSelfDestructor;
 
 };
-
-DART_SPECIALIZED_NODE_TEMPLATE( BodyNode, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart
