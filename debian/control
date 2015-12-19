@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 9),
                libtinyxml-dev,
                libtinyxml2-dev,
                liburdfdom-dev,
-               libboost-dev (>= 1.54.0.1ubuntu1), 
+               libboost-dev (>= 1.54.0.1ubuntu1),
                libboost-system-dev (>= 1.54.0-4ubuntu3),
                libboost-regex-dev (>= 1.54.0-4ubuntu3),
                libopenthreads-dev,
@@ -71,7 +71,8 @@ Depends: ${misc:Depends},
          libxmu-dev,
          libtinyxml2-dev,
          libopenthreads-dev,
-         libopenscenegraph-dev
+         libopenscenegraph-dev,
+         liburdfdom-dev
 Description: Dynamic Animation and Robotics Toolkit, development files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
