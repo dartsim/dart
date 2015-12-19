@@ -1,3 +1,8 @@
+### Version 6.0.0 (2015-12-19)
+
+1. Added missing `liburdfdom-dev` dependency in Ubuntu package
+    * [Pull request #574](https://github.com/dartsim/dart/pull/574)
+
 ### Version 5.1.1 (2015-11-06)
 
 1. Add bullet dependency to package.xml
@@ -321,7 +326,7 @@
     * [Pull request #277](https://github.com/dartsim/dart/pull/277)
 1. Added all-inclusive header and namespace headers
     * [Pull request #278](https://github.com/dartsim/dart/pull/278)
-1. Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates 
+1. Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates
     * [Pull request #288](https://github.com/dartsim/dart/pull/288)
 1. Added hybrid dynamics
     * [Pull request #298](https://github.com/dartsim/dart/pull/298)
@@ -474,4 +479,3 @@
 1. Clean-up of the Robot class
 1. Removed Object class
 1. More robust build and installation process on Linux
-
