@@ -107,17 +107,17 @@ public:
       mForceCountDown[index] = default_countdown;
   }
 
-  void changeRestPosition(double)
+  void changeRestPosition(double /*delta*/)
   {
     // Lesson 2a
   }
 
-  void changeStiffness(double)
+  void changeStiffness(double /*delta*/)
   {
     // Lesson 2b
   }
 
-  void changeDamping(double)
+  void changeDamping(double /*delta*/)
   {
     // Lesson 2c
   }
