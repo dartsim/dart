@@ -59,6 +59,7 @@ void createAndDestroyFrames(int threadNum)
 //==============================================================================
 TEST(Concurrency, FrameDeletion)
 {
+  // Regression test for issue #576
   std::vector<std::future<void>> futures;
   for(size_t i=0; i < 10; ++i)
     futures.push_back(std::async(std::launch::async,
