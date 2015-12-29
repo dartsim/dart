@@ -51,8 +51,14 @@ void createAndDestroyFrames(int threadNum)
 {
   for(size_t i=0; i < 100; ++i)
   {
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+
     SimpleFrame someFrame(Frame::World(),
                           "Frame_"+std::to_string(threadNum)+std::to_string(i));
+
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
   }
 }
 
@@ -66,7 +72,14 @@ TEST(Concurrency, FrameDeletion)
                                  &createAndDestroyFrames, i));
 
   for(size_t i=0; i < futures.size(); ++i)
+  {
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
     futures[i].get();
+  }
+
+  EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+  EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
 }
 
 //==============================================================================
