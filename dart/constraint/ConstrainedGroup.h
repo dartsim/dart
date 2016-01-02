@@ -49,7 +49,7 @@ class Skeleton;
 
 namespace constraint {
 
-class ConstraintInfo;
+struct ConstraintInfo;
 class ConstraintBase;
 class ConstraintSolver;
 
