@@ -471,7 +471,7 @@ endif()
 #===============================================================================
 if(MSVC)
   # Visual Studio enables c++11 support by default
-  if(NOT MSVC12)
+  if(NOT MSVC12 AND NOT MSVC14)
     message(FATAL_ERROR "${PROJECT_NAME} requires VS 2013 or greater.")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP4")
