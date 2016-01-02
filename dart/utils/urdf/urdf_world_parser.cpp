@@ -39,6 +39,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 
 #include <tinyxml.h>
 
