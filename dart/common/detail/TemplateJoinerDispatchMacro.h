@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,21 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EMPTY_H_
-#define DART_COMMON_EMPTY_H_
+#ifndef DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_H_
+#define DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_H_
 
-namespace dart {
-namespace common {
+//==============================================================================
+/// This macro provides the implementation for most of the member functions in
+/// common::AddonManagerJoiner, dynamics::NodeManagerJoinerForBodyNode, and
+/// NodeManagerJoinerForSkeleton. The member functions of those classes share
+/// essentially the same logic, so it makes sense to have a single macro that
+/// provides the implementation for all of them.
+#define DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(ReturnType, ClassName, Function, Suffix, Args)\
+  template <class Base1, class Base2>\
+  template <class T>\
+  ReturnType ClassName <Base1, Base2>:: Function Suffix\
+  {\
+    if(Base1::template isSpecializedFor<T>())\
+      return Base1::template Function <T> Args ;\
+  \
+    return Base2::template Function <T> Args ;\
+  }
 
-/// This is an empty structure which can be used as a template argument when a
-/// zero-cost placeholder is needed.
-struct Empty { };
-
-/// Used to tag arguments as blank for in variadic joiner classes such as
-/// common::AddonManagerJoiner and dynamics::NodeManagerJoiner
-enum NoArg_t { NoArg };
-
-} // namespace common
-} // namespace dart
-
-#endif // DART_COMMON_EMPTY_H_
+#endif // DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_H_

@@ -46,21 +46,19 @@ class BodyNode;
 class Skeleton;
 
 /// Declaration of the variadic template
-template <bool amSkeleton, class... OtherSpecNodes>
-class SpecializedNodeManager { };
+template <class... OtherSpecNodes>
+class SpecializedNodeManagerForBodyNode { };
 
 /// SpecializedNodeManager allows classes that inherit BodyNode to have
 /// constant-time access to a specific type of Node
-template <bool amSkeleton, class SpecNode>
-class SpecializedNodeManager<amSkeleton, SpecNode> :
+template <class SpecNode>
+class SpecializedNodeManagerForBodyNode<SpecNode> :
     public virtual detail::BasicNodeManagerForBodyNode
 {
 public:
 
-  static constexpr bool isSkeleton = amSkeleton;
-
   /// Default constructor
-  SpecializedNodeManager();
+  SpecializedNodeManagerForBodyNode();
 
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
@@ -73,36 +71,6 @@ public:
   /// Get the Node of the specified type and the specified index
   template <class NodeType>
   const NodeType* getNode(size_t index) const;
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the number of Nodes of
-  /// the specified type that are in the treeIndexth tree of this Skeleton
-//  template <class NodeType>
-//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
-//  getNumNodes(size_t treeIndex) const;
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the nodeIndexth Node
-  /// of the specified type within the tree of treeIndex.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, NodeType*>::type getNode(
-      size_t treeIndex, size_t nodeIndex);
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the nodeIndexth Node
-  /// of the specified type within the tree of treeIndex.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, NodeType*>::type getNode(
-      size_t treeIndex, size_t nodeIndex) const;
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the Node of the
-  /// specified type with the given name.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, NodeType*>::type getNode(
-      const std::string& name);
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the Node of the
-  /// specified type with the given name.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, const NodeType*>::type getNode(
-      const std::string& name) const;
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class NodeType>
@@ -131,28 +99,46 @@ protected:
   /// Specialized implementation of getNode(size_t) const
   const SpecNode* _getNode(type<SpecNode>, size_t index) const;
 
-  /// Redirect to BasicNodeManager::getNumNodes(size_t) const
-//  template <class NodeType>
-//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
-//  _getNumNodes(type<NodeType>, size_t treeIndex) const;
+};
 
-  /// Specialized implementation of getNumNodes(size_t) const
-//  template <class NodeType>
-//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
-//  _getNumNodes(type<SpecNode>, size_t treeIndex) const;
+//template <class SpecNode1, class... OtherSpecNodes>
+//class SpecializedNodeManagerForBodyNode<
 
-  /// Redirect to BasicNodeManager::getNode(size_t, size_t)
-//  template <class NodeType>
-//  typename common::enable_if<amSkeleton, NodeType*>::type
-//  _getNode(type<NodeType>, size_t treeIndex, size_t nodeIndex);
+template <class... OtherSpecNodes>
+class SpecializedNodeManagerForSkeleton { };
 
-//  template <class NodeType>
-//  typename common::enable_if<amSkeleton, SpecNode*>::type
+template <class SpecNode>
+class SpecializedNodeManagerForSkeleton<SpecNode> :
+    public virtual detail::BasicNodeManagerForSkeleton,
+    public virtual SpecializedNodeManagerForBodyNode<SpecNode>
+{
+public:
 
+  using SpecializedNodeManagerForBodyNode<SpecNode>::getNode;
+  using SpecializedNodeManagerForBodyNode<SpecNode>::getNumNodes;
 
+  /// Get the number of Nodes of the specified type that are in the treeIndexth
+  /// tree of this Skeleton
+  template <class NodeType>
+  size_t getNumNodes(size_t treeIndex) const;
 
-  /// Iterator that points to the map location of the specialized Node type
-//  typename Basic::NodeMap::iterator mSpecNodeIterator;
+  /// Get the nodeIndexth Node of the specified type within the tree of
+  /// treeIndex.
+  template <class NodeType>
+  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
+
+  /// Get the nodeIndexth Node of the specified type within the tree of
+  /// treeIndex.
+  template <class NodeType>
+  NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
+
+  /// Get the Node of the specified type with the given name.
+  template <class NodeType>
+  NodeType* getNode(const std::string& name);
+
+  /// Get the Node of the specified type with the given name.
+  template <class NodeType>
+  const NodeType* getNode(const std::string& name) const;
 
 };
 

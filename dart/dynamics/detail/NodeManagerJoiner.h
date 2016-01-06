@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,19 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
-#define DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_
+#define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_
 
-#include "dart/common/AddonManagerJoiner.h"
+#include "dart/dynamics/NodeManagerJoiner.h"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg, typename... Base2Args>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
+NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
     Base1Arg&& arg1, Base2Args&&... args2)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2(std::forward<Base2Args>(args2)...)
@@ -57,8 +57,8 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
-    Base1Arg&& arg1, NoArg_t)
+NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
+    Base1Arg&& arg1, common::NoArg_t)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2()
 {
@@ -68,8 +68,8 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename... Base2Args>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
-    NoArg_t, Base2Args&&... args2)
+NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
+    common::NoArg_t, Base2Args&&... args2)
   : Base1(),
     Base2(std::forward<Base2Args>(args2)...)
 {
@@ -77,32 +77,14 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(bool, AddonManagerJoiner, has, () const, ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, AddonManagerJoiner, get, (), ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, AddonManagerJoiner, get, () const, ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, set, (const T* addon), (addon))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, set, (std::unique_ptr<T>&& addon), (std::move(addon)))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, erase, (), ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, AddonManagerJoiner, release, (), ())
-
-//==============================================================================
-// Because this function requires a comma inside of its template argument list,
-// it is not easily fit into a macro like the other functions, so we just
-// implement it explicitly.
-template <class Base1, class Base2>
-template <class T, typename ...Args>
-T* AddonManagerJoiner<Base1, Base2>::create(Args&&... args)
-{
-  if(Base1::template isSpecializedFor<T>())
-    return Base1::template create<T, Args...>(std::forward<Args>(args)...);
-
-  return Base2::template create<T, Args...>(std::forward<Args>(args)...);
-}
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (size_t index), (index))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (size_t index) const, (index))
 
 //==============================================================================
 template <class Base1, class Base2>
 template <class T>
-constexpr bool AddonManagerJoiner<Base1, Base2>::isSpecializedFor()
+constexpr bool NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedFor()
 {
   return (Base1::template isSpecializedFor<T>()
           || Base2::template isSpecializedFor<T>());
@@ -111,16 +93,43 @@ constexpr bool AddonManagerJoiner<Base1, Base2>::isSpecializedFor()
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
-AddonManagerJoiner<Base1, Base2, OtherBases...>::AddonManagerJoiner(
+NodeManagerJoinerForBodyNode<Base1, Base2, OtherBases...>::NodeManagerJoinerForBodyNode(
     Args&&... args)
-  : AddonManagerJoiner<Base1, AddonManagerJoiner<Base2, OtherBases...>>(
+  : NodeManagerJoinerForBodyNode<Base1, NodeManagerJoinerForBodyNode<Base2, OtherBases...>>(
       std::forward<Args>(args)...)
 {
   // Do nothing
 }
 
-} // namespace common
+//==============================================================================
+template <class Base1, class Base2>
+template <typename... Args>
+NodeManagerJoinerForSkeleton<Base1, Base2>::NodeManagerJoinerForSkeleton(
+    Args&&... args)
+  : NodeManagerJoinerForBodyNode<Base1, Base2>(std::forward<Args>(args)...)
+{
+  // Do nothing
+}
+
+//==============================================================================
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForSkeleton, getNumNodes, (size_t treeIndex) const, (treeIndex))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex), (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex) const, (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name), (name))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name) const, (name))
+
+//==============================================================================
+template <class Base1, class Base2, class... OtherBases>
+template <typename... Args>
+NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::NodeManagerJoinerForSkeleton(
+    Args&&... args)
+  : NodeManagerJoinerForSkeleton<Base1, NodeManagerJoinerForSkeleton<Base2, OtherBases...>>(
+      std::forward<Args>(args)...)
+{
+  // Do nothing
+}
+
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
-
+#endif // DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_

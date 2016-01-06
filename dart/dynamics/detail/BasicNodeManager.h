@@ -280,9 +280,11 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   inline const TypeName * get ## AddonName (size_t index) const\
   { return getNode< TypeName >(index); }
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE( AddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR( AddonName, AddonName, AddonName ## s )
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AddonName, PluralAddonName )\
   inline size_t getNum ## PluralAddoName (size_t treeIndex) const\
@@ -297,17 +299,21 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   inline const TypeName * get ## AddonName (const std::string& name) const\
   { return getNode< TypeName >(name); }
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL( AddonName )\
   DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( AddonName, AddonName, AddonName ## s)
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
   size_t getNum ## PluralAddonName () const;\
   TypeName * get ## AddonName (size_t index);\
   const TypeName * get ## AddonName (size_t index) const;
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( AddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( AddonName, AddonName, AddonName ## s )
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
   size_t getNum ## PluralAddoName (size_t treeIndex) const;\
@@ -317,9 +323,11 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   TypeName * get ## AddonName (const std::string& name);\
   const TypeName * get ## AddonName (const std::string& name) const;
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( AddonName )\
   DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( AddonName, AddonName, AddonName ## s )
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
   size_t ClassName :: getNum ## PluralAddonName () const\
   { return getNumNodes< TypeName >(); }\
@@ -328,9 +336,11 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   const TypeName * ClassName :: get ## AddonName (size_t index) const\
   { return getNode< TypeName >(index); }
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( ClassName, AddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, AddonName, AddonName, AddonName ## s )
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
   size_t ClassName :: getNum ## PluralAddoName (size_t treeIndex) const\
@@ -345,6 +355,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   const TypeName * ClassName :: get ## AddonName (const std::string& name) const\
   { return getNode< TypeName >(name); }
 
+//==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( ClassName, AddonName )\
   DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, AddonName, AddonName, AddonName ## s )
 
