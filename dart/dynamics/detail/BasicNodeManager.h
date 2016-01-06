@@ -43,19 +43,15 @@
 
 #include "dart/common/NameManager.h"
 #include "dart/common/Empty.h"
-#include "dart/common/deferred_enable_if.h"
 #include "dart/dynamics/Node.h"
 
 namespace dart {
 namespace dynamics {
 namespace detail {
 
-template <bool amSkeleton>
-class BasicNodeManager
+class BasicNodeManagerForBodyNode
 {
 public:
-
-  static constexpr bool isSkeleton = amSkeleton;
 
   using NodeMap = std::map<std::type_index, std::vector<Node*> >;
   using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
@@ -74,47 +70,17 @@ public:
   template <class NodeType>
   const NodeType* getNode(size_t index) const;
 
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the number of Nodes of
-  /// the specified type that are in the treeIndexth tree of this Skeleton
+  /// Check if this Manager is specialized for a specific type of Node
   template <class NodeType>
-  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
-  getNumNodes(size_t treeIndex) const;
-  // Developer's Note: deferred_enable_if was specifically created for this use-
-  // case. Using the normal std::enable_if here will force the declaration of
-  // this function to be resolved when the BasicNodeManager class is inherited,
-  // resulting in a compilation failure when ``type`` turns up being undefined
-  // for cases where amSkeleton==false. Using the deferred_enable_if will allow
-  // SFINAE to pass over this function when the BasicNodeManager class is
-  // inherited, and instead the declaration of this function will not be
-  // resolved until someone attempts to use it.
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the nodeIndexth Node
-  /// of the specified type within the tree of treeIndex.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, NodeType*>::type getNode(
-      size_t treeIndex, size_t nodeIndex);
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the nodeIndexth Node
-  /// of the specified type within the tree of treeIndex.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, const NodeType*>::type getNode(
-      size_t treeIndex, size_t nodeIndex) const;
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the Node of the
-  /// specified type with the given name.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, NodeType*>::type getNode(
-      const std::string& name);
-
-  /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the Node of the
-  /// specified type with the given name.
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, const NodeType*>::type getNode(
-      const std::string& name) const;
+  static constexpr bool isSpecializedFor();
 
 protected:
 
   template <class T> struct type { };
+
+  /// Always returns false
+  template <class NodeType>
+  static constexpr bool _isSpecializedFor(type<NodeType>);
 
   /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
@@ -122,34 +88,59 @@ protected:
   /// A set for storing the Node destructors
   NodeDestructorSet mNodeDestructors;
 
-  struct NodeInfoForSkeleton
-  {
-    /// NameManager for tracking Nodes
-    NodeNameMgrMap mNodeNameMgrMap;
+};
 
-    /// A NodeMap for each tree to allow tree Nodes to be accessed independently
-    std::vector<NodeMap> mTreeNodeMaps;
+class BasicNodeManagerForSkeleton : public BasicNodeManagerForBodyNode
+{
+public:
 
-    /// A map that allows SpecializedNodeManagers to have a direct iterator to
-    /// the tree-wise storage of its specialized Node. Each entry in this map
-    /// contains a pointer to a vector of iterators. Each vector of iterators is
-    /// stored in its corresponding SpecializedNodeManager. This system allows
-    /// Node specialization to be extensible, enabling custom derived Skeleton
-    /// types that are specialized for more than the default specialized Nodes.
-    SpecializedTreeNodes mSpecializedTreeNodes;
-  };
+  using BasicNodeManagerForBodyNode::getNumNodes;
+  using BasicNodeManagerForBodyNode::getNode;
 
-  typename std::conditional<isSkeleton, NodeInfoForSkeleton, common::Empty>::type mNodeInfoForSkeleton;
+  /// Get the number of Nodes of the specified type that are in the treeIndexth
+  /// tree of this Skeleton
+  template <class NodeType>
+  size_t getNumNodes(size_t treeIndex) const;
+
+  /// Get the nodeIndexth Node of the specified type within the tree of
+  /// treeIndex.
+  template <class NodeType>
+  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
+
+  /// Get the nodeIndexth Node of the specified type within the tree of
+  /// treeIndex.
+  template <class NodeType>
+  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
+
+  /// Get the Node of the specified type with the given name.
+  template <class NodeType>
+  NodeType* getNode(const std::string& name);
+
+  /// Get the Node of the specified type with the given name.
+  template <class NodeType>
+  const NodeType* getNode(const std::string& name) const;
+
+protected:
+
+  /// NameManager for tracking Nodes
+  NodeNameMgrMap mNodeNameMgrMap;
+
+  /// A NodeMap for each tree to allow tree Nodes to be accessed independently
+  std::vector<NodeMap> mTreeNodeMaps;
+
+  /// A map that allows SpecializedNodeManagers to have a direct iterator to
+  /// the tree-wise storage of its specialized Node. Each entry in this map
+  /// contains a pointer to a vector of iterators. Each vector of iterators is
+  /// stored in its corresponding SpecializedNodeManager. This system allows
+  /// Node specialization to be extensible, enabling custom derived Skeleton
+  /// types that are specialized for more than the default specialized Nodes.
+  SpecializedTreeNodes mSpecializedTreeNodes;
 
 };
 
-using BasicNodeManagerForBodyNode = BasicNodeManager<false>;
-using BasicNodeManagerForSkeleton = BasicNodeManager<true>;
-
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-size_t BasicNodeManager<amSkeleton>::getNumNodes() const
+size_t BasicNodeManagerForBodyNode::getNumNodes() const
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
@@ -159,9 +150,8 @@ size_t BasicNodeManager<amSkeleton>::getNumNodes() const
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-NodeType* BasicNodeManager<amSkeleton>::getNode(size_t index)
+NodeType* BasicNodeManagerForBodyNode::getNode(size_t index)
 {
   NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
@@ -172,30 +162,40 @@ NodeType* BasicNodeManager<amSkeleton>::getNode(size_t index)
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-const NodeType* BasicNodeManager<amSkeleton>::getNode(size_t index) const
+const NodeType* BasicNodeManagerForBodyNode::getNode(size_t index) const
 {
-  return const_cast<BasicNodeManager*>(this)->getNode<NodeType>(index);
+  return const_cast<BasicNodeManagerForBodyNode*>(this)->getNode<NodeType>(index);
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
-BasicNodeManager<amSkeleton>::getNumNodes(size_t treeIndex) const
+constexpr bool BasicNodeManagerForBodyNode::isSpecializedFor()
 {
-  const std::vector<NodeMap>& treeNodeMaps = mNodeInfoForSkeleton.mTreeNodeMaps;
-  if(treeIndex >= treeNodeMaps.size())
+  return _isSpecializedFor(type<NodeType>());
+}
+
+//==============================================================================
+template <class NodeType>
+constexpr bool BasicNodeManagerForBodyNode::_isSpecializedFor(type<NodeType>)
+{
+  return false;
+}
+
+//==============================================================================
+template <class NodeType>
+size_t BasicNodeManagerForSkeleton::getNumNodes(size_t treeIndex) const
+{
+  if(treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNumNodes<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
-          << treeNodeMaps.size() << ") trees available\n";
+          << mTreeNodeMaps.size() << ") trees available\n";
     assert(false);
     return 0;
   }
 
-  const NodeMap& nodeMap = treeNodeMaps[treeIndex];
+  const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
   if(nodeMap.end() == it)
     return 0;
@@ -204,22 +204,20 @@ BasicNodeManager<amSkeleton>::getNumNodes(size_t treeIndex) const
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-typename std::enable_if<amSkeleton, NodeType*>::type
-BasicNodeManager<amSkeleton>::getNode(size_t treeIndex, size_t nodeIndex)
+NodeType* BasicNodeManagerForSkeleton::getNode(
+    size_t treeIndex, size_t nodeIndex)
 {
-  const std::vector<NodeMap>& treeNodeMaps = mNodeInfoForSkeleton.mTreeNodeMaps;
-  if(treeIndex >= treeNodeMaps.size())
+  if(treeIndex >= mTreeNodeMaps.size())
   {
     dterr << "[Skeleton::getNode<" << typeid(NodeType).name() << ">] "
           << "Requested tree index (" << treeIndex << "), but there are only ("
-          << treeNodeMaps.size() << ") trees available\n";
+          << mTreeNodeMaps.size() << ") trees available\n";
     assert(false);
     return nullptr;
   }
 
-  const NodeMap& nodeMap = treeNodeMaps[treeIndex];
+  const NodeMap& nodeMap = mTreeNodeMaps[treeIndex];
   NodeMap::const_iterator it = nodeMap.find(typeid(NodeType));
   if(nodeMap.end() == it)
   {
@@ -244,43 +242,36 @@ BasicNodeManager<amSkeleton>::getNode(size_t treeIndex, size_t nodeIndex)
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-typename std::enable_if<amSkeleton, const NodeType*>::type
-BasicNodeManager<amSkeleton>::getNode(size_t treeIndex, size_t nodeIndex) const
+const NodeType* BasicNodeManagerForSkeleton::getNode(
+    size_t treeIndex, size_t nodeIndex) const
 {
-  return const_cast<BasicNodeManager<amSkeleton>*>(this)->getNode<NodeType>(
+  return const_cast<BasicNodeManagerForSkeleton*>(this)->getNode<NodeType>(
         treeIndex, nodeIndex);
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-typename std::enable_if<amSkeleton, NodeType*>::type
-BasicNodeManager<amSkeleton>::getNode(const std::string& name)
+NodeType* BasicNodeManagerForSkeleton::getNode(const std::string& name)
 {
-  const NodeNameMgrMap& nodeNameMgrMap = mNodeInfoForSkeleton.mNodeNameMgrMap;
-  NodeNameMgrMap::const_iterator it = nodeNameMgrMap.find(typeid(NodeType));
+  NodeNameMgrMap::const_iterator it = mNodeNameMgrMap.find(typeid(NodeType));
 
-  if(nodeNameMgrMap.end() == it)
+  if(mNodeNameMgrMap.end() == it)
     return nullptr;
 
   return static_cast<NodeType*>(it->second.getObject(name));
 }
 
 //==============================================================================
-template <bool amSkeleton>
 template <class NodeType>
-typename std::enable_if<amSkeleton, const NodeType*>::type
-BasicNodeManager<amSkeleton>::getNode(
+const NodeType* BasicNodeManagerForSkeleton::getNode(
     const std::string& name) const
 {
-  return const_cast<BasicNodeManager<amSkeleton>*>(
+  return const_cast<BasicNodeManagerForSkeleton*>(
         this)->getNode<NodeType>(name);
 }
 
 //==============================================================================
-// This
 #define DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AddonName, PluralAddonName )\
   inline size_t getNum ## PluralAddonName () const\
   { return getNumNodes< TypeName >(); }\

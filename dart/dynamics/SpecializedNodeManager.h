@@ -53,13 +53,11 @@ class SpecializedNodeManager { };
 /// constant-time access to a specific type of Node
 template <bool amSkeleton, class SpecNode>
 class SpecializedNodeManager<amSkeleton, SpecNode> :
-    public virtual detail::BasicNodeManager<amSkeleton>
+    public virtual detail::BasicNodeManagerForBodyNode
 {
 public:
 
   static constexpr bool isSkeleton = amSkeleton;
-  using Basic = typename detail::BasicNodeManager<isSkeleton>;
-  template <class T> using type = typename Basic::template type<T>;
 
   /// Default constructor
   SpecializedNodeManager();
@@ -78,9 +76,9 @@ public:
 
   /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the number of Nodes of
   /// the specified type that are in the treeIndexth tree of this Skeleton
-  template <class NodeType>
-  typename std::enable_if<amSkeleton, size_t>::type getNumNodes(
-      size_t treeIndex) const;
+//  template <class NodeType>
+//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
+//  getNumNodes(size_t treeIndex) const;
 
   /// THIS FUNCTION IS ONLY AVAILABLE FOR SKELETONS. Get the nodeIndexth Node
   /// of the specified type within the tree of treeIndex.
@@ -106,6 +104,10 @@ public:
   typename std::enable_if<amSkeleton, const NodeType*>::type getNode(
       const std::string& name) const;
 
+  /// Check if this Manager is specialized for a specific type of Node
+  template <class NodeType>
+  static constexpr bool isSpecializedFor();
+
 protected:
 
   /// Redirect to BasicNodeManager::getNumNodes()
@@ -122,9 +124,35 @@ protected:
   /// Specialized implementation of getNode(size_t)
   SpecNode* _getNode(type<SpecNode>, size_t index);
 
-  /// Iterator that points to the map location of the specialized Node type
-  typename Basic::NodeMap::iterator mSpecNodeIterator;
+  /// Redirect to BasicNodeManager::getNode(size_t) const
+  template <class NodeType>
+  const NodeType* _getNode(type<NodeType>, size_t index) const;
 
+  /// Specialized implementation of getNode(size_t) const
+  const SpecNode* _getNode(type<SpecNode>, size_t index) const;
+
+  /// Redirect to BasicNodeManager::getNumNodes(size_t) const
+//  template <class NodeType>
+//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
+//  _getNumNodes(type<NodeType>, size_t treeIndex) const;
+
+  /// Specialized implementation of getNumNodes(size_t) const
+//  template <class NodeType>
+//  typename common::deferred_enable_if<amSkeleton, size_t, NodeType>::type
+//  _getNumNodes(type<SpecNode>, size_t treeIndex) const;
+
+  /// Redirect to BasicNodeManager::getNode(size_t, size_t)
+//  template <class NodeType>
+//  typename common::enable_if<amSkeleton, NodeType*>::type
+//  _getNode(type<NodeType>, size_t treeIndex, size_t nodeIndex);
+
+//  template <class NodeType>
+//  typename common::enable_if<amSkeleton, SpecNode*>::type
+
+
+
+  /// Iterator that points to the map location of the specialized Node type
+//  typename Basic::NodeMap::iterator mSpecNodeIterator;
 
 };
 
