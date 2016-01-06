@@ -294,7 +294,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 
   // Clone over the nodes in such a way that their indexing will match up with
   // the original
-  for(const auto& nodeType : mSkelCache.mNodeMap)
+  for(const auto& nodeType : mNodeMap)
   {
     for(const auto& node : nodeType.second)
     {
@@ -412,7 +412,8 @@ const std::string& Skeleton::setName(const std::string& _name)
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
 
-  for(auto& mgr : mNodeNameMgrMap)
+  NodeNameMgrMap& nodeNameMgrMap = mNodeInfoForSkeleton.mNodeNameMgrMap;
+  for(auto& mgr : nodeNameMgrMap)
     mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
                                + " | " + mSkeletonP.mName );
 
@@ -857,9 +858,6 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
-DART_SKEL_SPECIALIZED_NODE_DEFINE(Skeleton, EndEffector)
-
-//==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
 {
   if(nullptr == mWholeBodyIK && _createIfNull)
@@ -904,6 +902,9 @@ const Marker* Skeleton::getMarker(const std::string& _name) const
 {
   return const_cast<Skeleton*>(this)->getMarker(_name);
 }
+
+//==============================================================================
+DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
 
 //==============================================================================
 void Skeleton::setState(const Eigen::VectorXd& _state)
@@ -1545,7 +1546,6 @@ Skeleton::Skeleton(const Properties& _properties)
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
-  DART_SKEL_INSTANTIATE_SPECIALIZED_NODE( EndEffector )
   setProperties(_properties);
 }
 
@@ -1560,19 +1560,21 @@ void Skeleton::setPtr(const SkeletonPtr& _ptr)
 void Skeleton::constructNewTree()
 {
   mTreeCache.push_back(DataCache());
-  DataCache& cache = mTreeCache.back();
+
+  std::vector<NodeMap>& treeNodeMaps = mNodeInfoForSkeleton.mTreeNodeMaps;
+  treeNodeMaps.push_back(NodeMap());
+  NodeMap& nodeMap = treeNodeMaps.back();
 
   // Create the machinery needed to directly call on specialized node types
   for(auto& nodeType : mSpecializedTreeNodes)
   {
-    NodeMap& nodeMap = cache.mNodeMap;
     const std::type_index& index = nodeType.first;
     nodeMap[index] = std::vector<Node*>();
 
-    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
-    nodeRepo->push_back(nodeMap.find(index));
+    std::vector<NodeMap::iterator>* nodeVec = nodeType.second;
+    nodeVec->push_back(nodeMap.find(index));
 
-    assert(nodeRepo->size() == mTreeCache.size());
+    assert(nodeVec->size() == mTreeCache.size());
   }
 }
 
@@ -1706,9 +1708,8 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-void Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
+void Skeleton::registerNode(NodeMap& nodeMap, Node* _newNode, size_t& _index)
 {
-  NodeMap& nodeMap = cache.mNodeMap;
   NodeMap::iterator it = nodeMap.find(typeid(*_newNode));
 
   if(nodeMap.end() == it)
@@ -1735,20 +1736,22 @@ void Skeleton::registerNode(DataCache& cache, Node* _newNode, size_t& _index)
 //==============================================================================
 void Skeleton::registerNode(Node* _newNode)
 {
-  registerNode(mSkelCache, _newNode, _newNode->mIndexInSkeleton);
+  registerNode(mNodeMap, _newNode, _newNode->mIndexInSkeleton);
 
-  registerNode(mTreeCache[_newNode->getBodyNodePtr()->getTreeIndex()],
+  std::vector<NodeMap>& treeNodeMaps = mNodeInfoForSkeleton.mTreeNodeMaps;
+  registerNode(treeNodeMaps[_newNode->getBodyNodePtr()->getTreeIndex()],
       _newNode, _newNode->mIndexInTree);
 
   const std::type_info& info = typeid(*_newNode);
-  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(info);
-  if(mNodeNameMgrMap.end() == it)
+  NodeNameMgrMap& nodeNameMgrMap = mNodeInfoForSkeleton.mNodeNameMgrMap;
+  NodeNameMgrMap::iterator it = nodeNameMgrMap.find(info);
+  if(nodeNameMgrMap.end() == it)
   {
-    mNodeNameMgrMap[info] = common::NameManager<Node*>(
+    nodeNameMgrMap[info] = common::NameManager<Node*>(
           std::string("Skeleton::") + info.name() + " | " + mSkeletonP.mName,
           info.name() );
 
-    it = mNodeNameMgrMap.find(info);
+    it = nodeNameMgrMap.find(info);
   }
 
   common::NameManager<Node*>& mgr = it->second;
@@ -1888,9 +1891,8 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index)
+void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index)
 {
-  NodeMap& nodeMap = cache.mNodeMap;
   NodeMap::iterator it = nodeMap.find(typeid(*_oldNode));
 
   if(nodeMap.end() == it)
@@ -1913,10 +1915,10 @@ void Skeleton::unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index)
 void Skeleton::unregisterNode(Node* _oldNode)
 {
   const size_t indexInSkel = _oldNode->mIndexInSkeleton;
-  unregisterNode(mSkelCache, _oldNode, _oldNode->mIndexInSkeleton);
+  unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
 
-  NodeMap::iterator node_it = mSkelCache.mNodeMap.find(typeid(*_oldNode));
-  assert(mSkelCache.mNodeMap.end() != node_it);
+  NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
+  assert(mNodeMap.end() != node_it);
 
   const std::vector<Node*>& skelNodes = node_it->second;
   for(size_t i=indexInSkel; i < skelNodes.size(); ++i)
@@ -1924,10 +1926,12 @@ void Skeleton::unregisterNode(Node* _oldNode)
 
   const size_t indexInTree = _oldNode->mIndexInTree;
   const size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
-  unregisterNode(mTreeCache[treeIndex], _oldNode, _oldNode->mIndexInTree);
+  std::vector<NodeMap>& allTreeNodeMaps = mNodeInfoForSkeleton.mTreeNodeMaps;
+  NodeMap& treeNodeMap = allTreeNodeMaps[treeIndex];
+  unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree);
 
-  node_it = mTreeCache[treeIndex].mNodeMap.find(typeid(*_oldNode));
-  assert(mTreeCache[treeIndex].mNodeMap.end() != node_it);
+  node_it = treeNodeMap.find(typeid(*_oldNode));
+  assert(treeNodeMap.end() != node_it);
 
   const std::vector<Node*>& treeNodes = node_it->second;
   for(size_t i=indexInTree; i < treeNodes.size(); ++i)
@@ -1935,8 +1939,9 @@ void Skeleton::unregisterNode(Node* _oldNode)
 
   // Remove it from the NameManager, if a NameManager is being used for this
   // type.
-  NodeNameMgrMap::iterator name_it = mNodeNameMgrMap.find(typeid(*_oldNode));
-  if(mNodeNameMgrMap.end() != name_it)
+  NodeNameMgrMap& nodeNameMgrMap = mNodeInfoForSkeleton.mNodeNameMgrMap;
+  NodeNameMgrMap::iterator name_it = nodeNameMgrMap.find(typeid(*_oldNode));
+  if(nodeNameMgrMap.end() != name_it)
   {
     common::NameManager<Node*>& mgr = name_it->second;
     mgr.removeObject(_oldNode);

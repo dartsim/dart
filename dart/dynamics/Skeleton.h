@@ -57,12 +57,10 @@ namespace dynamics {
 
 /// class Skeleton
 class Skeleton :  public virtual common::AddonManager,
-                  public MetaSkeleton
+                  public MetaSkeleton,
+                  public virtual detail::BasicNodeManagerForSkeleton
 {
 public:
-
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
-  using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
 
   enum ConfigFlag_t
   {
@@ -470,46 +468,6 @@ public:
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
 
-  /// Get the number of Nodes of the specified type in this Skeleton
-  template <class NodeType>
-  size_t getNumNodes() const;
-
-  /// Get the number of Nodes of the specified type that are in a tree within
-  /// this Skeleton
-  template <class NodeType>
-  size_t getNumNodes(size_t treeIndex) const;
-
-  /// Get the indexth Node of the specified type within this Skeleton
-  template <class NodeType>
-  NodeType* getNode(size_t index);
-
-  /// Get the nodeIndexth Node of the specified type within the the tree of
-  /// treeIndex
-  template <class NodeType>
-  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
-
-  /// Get the indexth Node of the specified type within this Skeleton
-  template <class NodeType>
-  const NodeType* getNode(size_t index) const;
-
-  /// Get the nodeIndexth Node of the specified type within the the tree of
-  /// treeIndex
-  template <class NodeType>
-  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
-
-  /// Get the Node of the specified type within this Skeleton that has the
-  /// specified name
-  template <class NodeType>
-  NodeType* getNode(const std::string& name);
-
-  /// Get the Node of the specified type within this Skeleton that has the
-  /// specified name
-  template <class NodeType>
-  const NodeType* getNode(const std::string& name) const;
-
-//  DART_SKEL_SPECIALIZE_NODE_INTERNAL( EndEffector )
-  DART_SKEL_SPECIALIZED_NODE_DECLARE( EndEffector )
-
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
   /// exist.
@@ -539,6 +497,8 @@ public:
 
   /// Get const marker whose name is _name
   const Marker* getMarker(const std::string& _name) const;
+
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( EndEffector )
 
   /// \}
 
@@ -1016,7 +976,7 @@ protected:
   void registerJoint(Joint* _newJoint);
 
   /// Register a Node with the Skeleton. Internal use only.
-  void registerNode(DataCache& cache, Node* _newNode, size_t& _index);
+  void registerNode(NodeMap& nodeMap, Node* _newNode, size_t& _index);
 
   /// Register a Node with the Skeleton. Internal use only.
   void registerNode(Node* _newNode);
@@ -1031,7 +991,7 @@ protected:
   void unregisterJoint(Joint* _oldJoint);
 
   /// Remove a Node from the Skeleton. Internal use only.
-  void unregisterNode(DataCache& cache, Node* _oldNode, size_t& _index);
+  void unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index);
 
   /// Remove a Node from the Skeleton. Internal use only.
   void unregisterNode(Node* _oldNode);
@@ -1197,9 +1157,6 @@ protected:
   /// NameManager for tracking Markers
   dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
-  /// NameManager for tracking Nodes
-  NodeNameMgrMap mNodeNameMgrMap;
-
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;
 
@@ -1261,9 +1218,6 @@ protected:
 
     /// Cache for const Degrees of Freedom, for the sake of the API
     std::vector<const DegreeOfFreedom*> mConstDofs;
-
-    /// Map that retrieves the Nodes of a specified type
-    NodeMap mNodeMap;
 
     /// Mass matrix cache
     Eigen::MatrixXd mM;
@@ -1355,8 +1309,6 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-DART_SKEL_SPECIALIZED_NODE_TEMPLATE( Skeleton, EndEffector )
 
 }  // namespace dynamics
 }  // namespace dart

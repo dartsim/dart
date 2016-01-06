@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,17 +34,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EMPTY_H_
-#define DART_COMMON_EMPTY_H_
+#ifndef DART_COMMON_DEFERRED_ENABLE_IF_H_
+#define DART_COMMON_DEFERRED_ENABLE_IF_H_
 
 namespace dart {
 namespace common {
 
-/// This is an empty structure which can be used as a template argument when a
-/// zero-cost placeholder is needed.
-struct Empty { };
+/// The deferred_enable_if is a customized implementation of std::enable_if with
+/// one important difference: for this version, the SFINAE stage is deferred
+/// until all the types passed into the Dependencies template arguments are
+/// provided. This offers greater flexibility than the std::enable_if
+/// implementation.
+template <bool B, typename Type, typename... Dependencies>
+struct deferred_enable_if { };
+
+/// This is the specialized version of deferred_enable_if wherein "type" is
+/// given a definition because the B template argument is true.
+template <typename Type, typename... Dependencies>
+struct deferred_enable_if<true, Type, Dependencies...> { using type = Type; };
 
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_EMPTY_H_
+#endif // DART_COMMON_DEFERRED_ENABLE_IF_H_
