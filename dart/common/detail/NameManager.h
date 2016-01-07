@@ -60,13 +60,6 @@ NameManager<T>::NameManager(const std::string& _managerName,
 
 //==============================================================================
 template <class T>
-NameManager<T>::~NameManager()
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <class T>
 bool NameManager<T>::setPattern(const std::string& _newPattern)
 {
   size_t name_start = _newPattern.find("%s");

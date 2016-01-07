@@ -58,7 +58,7 @@ namespace dynamics {
 /// class Skeleton
 class Skeleton :  public virtual common::AddonManager,
                   public MetaSkeleton,
-                  public virtual detail::BasicNodeManagerForSkeleton
+                  public virtual SpecializedNodeManagerForSkeleton<EndEffector>
 {
 public:
 
@@ -1312,6 +1312,9 @@ public:
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/detail/SpecializedNodeManager.h"
 
 #include "dart/dynamics/detail/Skeleton.h"
 #include "dart/dynamics/detail/BodyNode.h"

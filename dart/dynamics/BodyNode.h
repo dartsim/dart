@@ -84,7 +84,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public virtual common::AddonManager,
-    public virtual detail::BasicNodeManagerForBodyNode,
+    public virtual SpecializedNodeManagerForBodyNode<EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -1236,7 +1236,7 @@ private:
 }  // namespace dart
 
 #include "dart/dynamics/Skeleton.h"
-// Developer's Note: Skeleton.h needs to be included after the BodyNode class is
-// defined in order for the header dependencies to work out correctly.
+// These headers need to be included after the BodyNode class is defined in
+// order for the header dependencies to work out correctly.
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

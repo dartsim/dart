@@ -58,6 +58,13 @@ public:
   using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
   using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
 
+  /// Default constructor
+  BasicNodeManagerForBodyNode() = default;
+
+  /// Delete copy constructors and assignment operators
+  BasicNodeManagerForBodyNode(const BasicNodeManagerForBodyNode&) = delete;
+  BasicNodeManagerForBodyNode& operator=(const BasicNodeManagerForBodyNode&) = delete;
+
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
   size_t getNumNodes() const;
@@ -86,7 +93,7 @@ protected:
 
 };
 
-class BasicNodeManagerForSkeleton : public BasicNodeManagerForBodyNode
+class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
 {
 public:
 

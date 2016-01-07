@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
 
+#include "dart/common/Virtual.h"
 #include "dart/dynamics/detail/BasicNodeManager.h"
 #include "dart/dynamics/NodeManagerJoiner.h"
 
@@ -114,8 +115,8 @@ protected:
 template <class SpecNode1, class... OtherSpecNodes>
 class SpecializedNodeManagerForBodyNode<SpecNode1, OtherSpecNodes...> :
     public NodeManagerJoinerForBodyNode<
-      SpecializedNodeManagerForBodyNode<SpecNode1>,
-      SpecializedNodeManagerForBodyNode<OtherSpecNodes...> > { };
+      common::Virtual< SpecializedNodeManagerForBodyNode<SpecNode1> >,
+      common::Virtual< SpecializedNodeManagerForBodyNode<OtherSpecNodes...> > > { };
 
 //==============================================================================
 /// Declaration of the variadic template
@@ -201,12 +202,12 @@ protected:
 template <class SpecNode1, class... OtherSpecNodes>
 class SpecializedNodeManagerForSkeleton<SpecNode1, OtherSpecNodes...> :
     public NodeManagerJoinerForSkeleton<
-      SpecializedNodeManagerForSkeleton<SpecNode1>,
-      SpecializedNodeManagerForSkeleton<OtherSpecNodes...> > { };
+      common::Virtual< SpecializedNodeManagerForSkeleton<SpecNode1> >,
+      common::Virtual< SpecializedNodeManagerForSkeleton<OtherSpecNodes...> > > { };
 
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/SpecializedNodeManager.h"
+#include "dart/dynamics/BodyNode.h"
 
 #endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_

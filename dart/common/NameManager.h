@@ -71,7 +71,7 @@ public:
               const std::string& _defaultName = "default");
 
   /// Destructor
-  virtual ~NameManager();
+  virtual ~NameManager() = default;
 
   /// Set a new pattern for name generation.
   ///
