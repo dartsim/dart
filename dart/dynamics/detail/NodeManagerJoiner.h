@@ -84,10 +84,10 @@ DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBod
 //==============================================================================
 template <class Base1, class Base2>
 template <class T>
-constexpr bool NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedFor()
+constexpr bool NodeManagerJoinerForBodyNode<Base1, Base2>::isSpecializedForNode()
 {
-  return (Base1::template isSpecializedFor<T>()
-          || Base2::template isSpecializedFor<T>());
+  return (Base1::template isSpecializedForNode<T>()
+          || Base2::template isSpecializedForNode<T>());
 }
 
 //==============================================================================

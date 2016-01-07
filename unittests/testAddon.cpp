@@ -223,53 +223,53 @@ TEST(Addon, Generic)
 
 TEST(Addon, Specialized)
 {
-  usedSpecializedAccess = false;
+  usedSpecializedAddonAccess = false;
   CustomSpecializedManager mgr;
 
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == nullptr );
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 //  EXPECT_TRUE( mgr.getSpecializedAddon() == nullptr );
   EXPECT_TRUE( mgr.get<GenericAddon>() == nullptr );
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 
   sub_ptr<SpecializedAddon> spec = mgr.create<SpecializedAddon>();
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
   SpecializedAddon* rawSpec = spec;
 
   sub_ptr<GenericAddon> generic = mgr.create<GenericAddon>();
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
   GenericAddon* rawGeneric = generic;
 
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == spec );
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 //  EXPECT_TRUE( mgr.getSpecializedAddon() == spec );
 
   EXPECT_TRUE( mgr.get<GenericAddon>() == generic );
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 
 //  SpecializedAddon* newSpec = mgr.createSpecializedAddon();
   SpecializedAddon* newSpec = mgr.create<SpecializedAddon>();
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 
   GenericAddon* newGeneric = mgr.create<GenericAddon>();
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 
   EXPECT_TRUE( nullptr == spec );
   EXPECT_TRUE( nullptr == generic );
 
   EXPECT_FALSE( mgr.get<SpecializedAddon>() == rawSpec );
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 //  EXPECT_FALSE( mgr.getSpecializedAddon() == rawSpec );
 
   EXPECT_FALSE( mgr.get<GenericAddon>() == rawGeneric );
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 
   EXPECT_TRUE( mgr.get<SpecializedAddon>() == newSpec );
-  EXPECT_TRUE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 //  EXPECT_TRUE( mgr.getSpecializedAddon() == newSpec );
 
   EXPECT_TRUE( mgr.get<GenericAddon>() == newGeneric );
-  EXPECT_FALSE( usedSpecializedAccess ); usedSpecializedAccess = false;
+  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
 }
 
 TEST(Addon, Releasing)

@@ -38,6 +38,7 @@
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
 
 #include "dart/dynamics/detail/BasicNodeManager.h"
+#include "dart/dynamics/NodeManagerJoiner.h"
 
 namespace dart {
 namespace dynamics {
@@ -45,12 +46,14 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 
+//==============================================================================
 /// Declaration of the variadic template
 template <class... OtherSpecNodes>
 class SpecializedNodeManagerForBodyNode { };
 
-/// SpecializedNodeManager allows classes that inherit BodyNode to have
-/// constant-time access to a specific type of Node
+//==============================================================================
+/// SpecializedNodeManagerForBodyNode allows classes that inherit BodyNode to
+/// have constant-time access to a specific type of Node
 template <class SpecNode>
 class SpecializedNodeManagerForBodyNode<SpecNode> :
     public virtual detail::BasicNodeManagerForBodyNode
@@ -74,39 +77,54 @@ public:
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class NodeType>
-  static constexpr bool isSpecializedFor();
+  static constexpr bool isSpecializedForNode();
 
 protected:
 
-  /// Redirect to BasicNodeManager::getNumNodes()
+  /// Redirect to BasicNodeManagerForBodyNode::getNumNodes()
   template <class NodeType>
   size_t _getNumNodes(type<NodeType>) const;
 
   /// Specialized implementation of getNumNodes()
   size_t _getNumNodes(type<SpecNode>) const;
 
-  /// Redirect to BasicNodeManager::getNode(size_t)
+  /// Redirect to BasicNodeManagerForBodyNode::getNode(size_t)
   template <class NodeType>
   NodeType* _getNode(type<NodeType>, size_t index);
 
   /// Specialized implementation of getNode(size_t)
   SpecNode* _getNode(type<SpecNode>, size_t index);
 
-  /// Redirect to BasicNodeManager::getNode(size_t) const
+  /// Return false
   template <class NodeType>
-  const NodeType* _getNode(type<NodeType>, size_t index) const;
+  static constexpr bool _isSpecializedForNode(type<NodeType>);
 
-  /// Specialized implementation of getNode(size_t) const
-  const SpecNode* _getNode(type<SpecNode>, size_t index) const;
+  /// Return true
+  static constexpr bool _isSpecializedForNode(type<SpecNode>);
+
+  /// Iterator that allows direct access to the specialized Nodes
+  BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
 
 };
 
-//template <class SpecNode1, class... OtherSpecNodes>
-//class SpecializedNodeManagerForBodyNode<
+//==============================================================================
+/// This is the variadic version of the SpecializedNodeManagerForBodyNode class
+/// which allows you to include arbitrarily many specialized types in the
+/// specialization.
+template <class SpecNode1, class... OtherSpecNodes>
+class SpecializedNodeManagerForBodyNode<SpecNode1, OtherSpecNodes...> :
+    public NodeManagerJoinerForBodyNode<
+      SpecializedNodeManagerForBodyNode<SpecNode1>,
+      SpecializedNodeManagerForBodyNode<OtherSpecNodes...> > { };
 
+//==============================================================================
+/// Declaration of the variadic template
 template <class... OtherSpecNodes>
 class SpecializedNodeManagerForSkeleton { };
 
+//==============================================================================
+/// SpecializedNodeManagerForSkeleton allows classes that inherit Skeleton to
+/// have constant-time access to a specific type of Node
 template <class SpecNode>
 class SpecializedNodeManagerForSkeleton<SpecNode> :
     public virtual detail::BasicNodeManagerForSkeleton,
@@ -116,6 +134,9 @@ public:
 
   using SpecializedNodeManagerForBodyNode<SpecNode>::getNode;
   using SpecializedNodeManagerForBodyNode<SpecNode>::getNumNodes;
+  using SpecializedNodeManagerForBodyNode<SpecNode>::isSpecializedForNode;
+
+  SpecializedNodeManagerForSkeleton();
 
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
@@ -130,7 +151,7 @@ public:
   /// Get the nodeIndexth Node of the specified type within the tree of
   /// treeIndex.
   template <class NodeType>
-  NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
+  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
 
   /// Get the Node of the specified type with the given name.
   template <class NodeType>
@@ -140,7 +161,48 @@ public:
   template <class NodeType>
   const NodeType* getNode(const std::string& name) const;
 
+protected:
+
+  /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(size_t)
+  template <class NodeType>
+  size_t _getNumNodes(type<NodeType>, size_t treeIndex) const;
+
+  /// Specialized implementation of getNumNodes(size_t)
+  size_t _getNumNodes(type<SpecNode>, size_t treeIndex) const;
+
+  /// Redirect to BasicNodeManagerForSkeleton::getNode(size_t, size_t)
+  template <class NodeType>
+  NodeType* _getNode(type<NodeType>, size_t treeIndex, size_t nodeIndex);
+
+  /// Specialized implementation of getNode(size_t, size_t)
+  SpecNode* _getNode(type<SpecNode>, size_t treeIndex, size_t nodeIndex);
+
+  /// Redirect to BasicNodeManagerForSkeleton::getNode(const std::string&)
+  template <class NodeType>
+  NodeType* _getNode(type<NodeType>, const std::string& name);
+
+  /// Specialized implementation of getNode(const std::string&)
+  SpecNode* _getNode(type<SpecNode>, const std::string& name);
+
+  /// std::vector of iterators that allow direct access to the specialized Nodes
+  /// of each tree
+  std::vector<BasicNodeManagerForBodyNode::NodeMap::iterator> mTreeSpecNodeIterators;
+
+  /// Iterator that gives direct access to the name manager of the specialized
+  /// Nodes
+  NodeNameMgrMap::iterator mSpecNodeNameMgrIterator;
+
 };
+
+//==============================================================================
+/// This is the variadic version of the SpecializedNodeManagerForSkeleton class
+/// which allows you to include arbitrarily many specialized types in the
+/// specialization.
+template <class SpecNode1, class... OtherSpecNodes>
+class SpecializedNodeManagerForSkeleton<SpecNode1, OtherSpecNodes...> :
+    public NodeManagerJoinerForSkeleton<
+      SpecializedNodeManagerForSkeleton<SpecNode1>,
+      SpecializedNodeManagerForSkeleton<OtherSpecNodes...> > { };
 
 } // namespace dynamics
 } // namespace dart

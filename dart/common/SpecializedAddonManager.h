@@ -48,6 +48,7 @@ namespace common {
 template <class... OtherSpecAddons>
 class SpecializedAddonManager { };
 
+//==============================================================================
 /// SpecializedAddonManager allows classes that inherit AddonManager to have
 /// constant-time access to a specific type of Addon
 template <class SpecAddon>
@@ -173,12 +174,14 @@ protected:
   static constexpr bool _isSpecializedFor(type<SpecAddon>);
 
   /// Iterator that points to the Addon of this SpecializedAddonManager
-  AddonManager::AddonMap::iterator mAddonIterator;
+  AddonManager::AddonMap::iterator mSpecAddonIterator;
 
 };
 
-/// This is the variadic version of the SpecializedAddonManager class which allows
-/// you to include arbitrarily many specialized types in the specialization.
+//==============================================================================
+/// This is the variadic version of the SpecializedAddonManager class which
+/// allows you to include arbitrarily many specialized types in the
+/// specialization.
 template <class SpecAddon1, class... OtherSpecAddons>
 class SpecializedAddonManager<SpecAddon1, OtherSpecAddons...> :
     public AddonManagerJoiner< SpecializedAddonManager<SpecAddon1>,

@@ -92,7 +92,7 @@ public:
   const NodeType* getNode(size_t index) const;
 
   template <class NodeType>
-  static constexpr bool isSpecializedFor();
+  static constexpr bool isSpecializedForNode();
 
 };
 
@@ -132,7 +132,7 @@ public:
   using Base = NodeManagerJoinerForBodyNode<Base1, Base2>;
   using Base::getNumNodes;
   using Base::getNode;
-  using Base::isSpecializedFor;
+  using Base::isSpecializedForNode;
 
   /// Default constructor
   NodeManagerJoinerForSkeleton() = default;

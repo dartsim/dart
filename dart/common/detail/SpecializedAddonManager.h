@@ -43,7 +43,7 @@
 // responsible for checking that the specialized routines are being used to
 // access specialized Addons
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-bool usedSpecializedAccess;
+bool usedSpecializedAddonAccess;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
 namespace dart {
@@ -54,7 +54,7 @@ template <class SpecAddon>
 SpecializedAddonManager<SpecAddon>::SpecializedAddonManager()
 {
   mAddonMap[typeid( SpecAddon )] = nullptr;
-  mAddonIterator = mAddonMap.find(typeid( SpecAddon ));
+  mSpecAddonIterator = mAddonMap.find(typeid( SpecAddon ));
 }
 
 //==============================================================================
@@ -135,7 +135,7 @@ template <class T>
 bool SpecializedAddonManager<SpecAddon>::_has(type<T>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
   return AddonManager::has<T>();
@@ -146,10 +146,10 @@ template <class SpecAddon>
 bool SpecializedAddonManager<SpecAddon>::_has(type<SpecAddon>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  return (mAddonIterator->second.get() != nullptr);
+  return (mSpecAddonIterator->second.get() != nullptr);
 }
 
 //==============================================================================
@@ -165,10 +165,10 @@ template <class SpecAddon>
 SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  return static_cast<SpecAddon*>(mAddonIterator->second.get());
+  return static_cast<SpecAddon*>(mSpecAddonIterator->second.get());
 }
 
 //==============================================================================
@@ -184,10 +184,10 @@ template <class SpecAddon>
 const SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  return static_cast<SpecAddon*>(mAddonIterator->second.get());
+  return static_cast<SpecAddon*>(mSpecAddonIterator->second.get());
 }
 
 //==============================================================================
@@ -204,17 +204,17 @@ void SpecializedAddonManager<SpecAddon>::_set(
     type<SpecAddon>, const SpecAddon* addon)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
   if(addon)
   {
-    mAddonIterator->second = addon->cloneAddon(this);
-    becomeManager(mAddonIterator->second.get(), false);
+    mSpecAddonIterator->second = addon->cloneAddon(this);
+    becomeManager(mSpecAddonIterator->second.get(), false);
   }
   else
   {
-    mAddonIterator->second = nullptr;
+    mSpecAddonIterator->second = nullptr;
   }
 }
 
@@ -232,11 +232,11 @@ void SpecializedAddonManager<SpecAddon>::_set(
     type<SpecAddon>, std::unique_ptr<SpecAddon>&& addon)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  mAddonIterator->second = std::move(addon);
-  becomeManager(mAddonIterator->second.get(), true);
+  mSpecAddonIterator->second = std::move(addon);
+  becomeManager(mSpecAddonIterator->second.get(), true);
 }
 
 //==============================================================================
@@ -254,11 +254,11 @@ SpecAddon* SpecializedAddonManager<SpecAddon>::_create(
     type<SpecAddon>, Args&&... args)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
   SpecAddon* addon = new SpecAddon(this, std::forward<Args>(args)...);
-  mAddonIterator->second = std::unique_ptr<SpecAddon>(addon);
+  mSpecAddonIterator->second = std::unique_ptr<SpecAddon>(addon);
   becomeManager(addon, false);
 
   return addon;
@@ -277,11 +277,11 @@ template <class SpecAddon>
 void SpecializedAddonManager<SpecAddon>::_erase(type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, mAddonIterator, DART_BLANK);
-  mAddonIterator->second = nullptr;
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, mSpecAddonIterator, DART_BLANK);
+  mSpecAddonIterator->second = nullptr;
 }
 
 //==============================================================================
@@ -298,12 +298,12 @@ std::unique_ptr<SpecAddon> SpecializedAddonManager<SpecAddon>::_release(
     type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
-  usedSpecializedAccess = true;
+  usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, mAddonIterator, nullptr);
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, mSpecAddonIterator, nullptr);
   std::unique_ptr<SpecAddon> extraction(
-        static_cast<SpecAddon*>(mAddonIterator->second.release()));
+        static_cast<SpecAddon*>(mSpecAddonIterator->second.release()));
 
   return extraction;
 }

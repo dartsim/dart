@@ -72,15 +72,11 @@ public:
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class NodeType>
-  static constexpr bool isSpecializedFor();
+  static constexpr bool isSpecializedForNode();
 
 protected:
 
   template <class T> struct type { };
-
-  /// Always returns false
-  template <class NodeType>
-  static constexpr bool _isSpecializedFor(type<NodeType>);
 
   /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
@@ -170,15 +166,9 @@ const NodeType* BasicNodeManagerForBodyNode::getNode(size_t index) const
 
 //==============================================================================
 template <class NodeType>
-constexpr bool BasicNodeManagerForBodyNode::isSpecializedFor()
+constexpr bool BasicNodeManagerForBodyNode::isSpecializedForNode()
 {
-  return _isSpecializedFor(type<NodeType>());
-}
-
-//==============================================================================
-template <class NodeType>
-constexpr bool BasicNodeManagerForBodyNode::_isSpecializedFor(type<NodeType>)
-{
+  // When invoked through a BasicNodeManager, this should always return false.
   return false;
 }
 

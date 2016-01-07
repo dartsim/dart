@@ -53,7 +53,7 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/detail/BasicNodeManager.h"
+#include "dart/dynamics/SpecializedNodeManager.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
