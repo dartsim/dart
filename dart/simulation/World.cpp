@@ -184,7 +184,6 @@ void World::step(bool _resetCommand)
     {
       skel->clearInternalForces();
       skel->clearExternalForces();
-//    skel->clearConstraintImpulses();
       skel->resetCommands();
     }
   }

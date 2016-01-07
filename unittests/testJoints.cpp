@@ -625,6 +625,191 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
 }
 
 //==============================================================================
+SkeletonPtr createPendulum(Joint::ActuatorType actType)
+{
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 2);
+
+  SkeletonPtr pendulum = createNLinkPendulum(1, dim, DOF_ROLL, offset);
+  EXPECT_NE(pendulum, nullptr);
+
+  pendulum->disableSelfCollision();
+
+  for (size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
+  {
+    auto bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllCollisionShapes();
+  }
+
+  // Joint common setting
+  dynamics::Joint* joint = pendulum->getJoint(0);
+  EXPECT_NE(joint, nullptr);
+
+  joint->setActuatorType(actType);
+  joint->setPosition(0, 90.0 * DART_RADIAN);
+  joint->setDampingCoefficient(0, 0.0);
+  joint->setSpringStiffness(0, 0.0);
+  joint->setPositionLimitEnforced(true);
+  joint->setCoulombFriction(0, 0.0);
+
+  return pendulum;
+}
+
+//==============================================================================
+void testServoMotor()
+{
+  size_t numPendulums = 7;
+  double timestep = 1e-3;
+  double tol = 1e-9;
+  double posUpperLimit = 90.0 * DART_RADIAN;
+  double posLowerLimit = 45.0 * DART_RADIAN;
+  double sufficient_force   = 1e+5;
+  double insufficient_force = 1e-1;
+
+  // World
+  simulation::WorldPtr world(new simulation::World);
+  EXPECT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+  world->setTimeStep(timestep);
+
+  // Each pendulum has servo motor in the joint but also have different
+  // expectations depending on the property values.
+  //
+  // Pendulum0:
+  //  - Condition: Zero desired velocity and sufficient servo motor force limits
+  //  - Expectation: The desired velocity should be achieved.
+  // Pendulum 1:
+  //  - Condition: Nonzero desired velocity and sufficient servo motor force
+  //               limits
+  //  - Expectation: The desired velocity should be achieved.
+  // Pendulum 2:
+  //  - Condition: Nonzero desired velocity and insufficient servo motor force
+  //               limits
+  //  - Expectation: The desired velocity can be achieve or not. But when it's
+  //                 not achieved, the servo motor force is reached to the lower
+  //                 or upper limit.
+  // Pendulum 3:
+  //  - Condition: Nonzero desired velocity, finite servo motor force limits,
+  //               and position limits
+  //  - Expectation: The desired velocity should be achieved unless joint
+  //                 position is reached to lower or upper position limit.
+  // Pendulum 4:
+  //  - Condition: Nonzero desired velocity, infinite servo motor force limits,
+  //               and position limits
+  //  - Expectation: Same as the Pendulum 3's expectation.
+  // Pendulum 5:
+  //  - Condition: Nonzero desired velocity, finite servo motor force limits,
+  //               and infinite Coulomb friction
+  //  - Expectation: The the pendulum shouldn't move at all due to the infinite
+  //                 friction.
+  // Pendulum 6:
+  //  - Condition: Nonzero desired velocity, infinite servo motor force limits,
+  //               and infinite Coulomb friction
+  //  - Expectation: The the pendulum shouldn't move at all due to the friction.
+  //    TODO(JS): Should a servo motor dominent Coulomb friction in this case?
+
+  std::vector<SkeletonPtr> pendulums(numPendulums);
+  std::vector<JointPtr> joints(numPendulums);
+  for (size_t i = 0; i < numPendulums; ++i)
+  {
+    pendulums[i] = createPendulum(Joint::SERVO);
+    joints[i] = pendulums[i]->getJoint(0);
+  }
+
+  joints[0]->setForceUpperLimit(0, sufficient_force);
+  joints[0]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[1]->setForceUpperLimit(0, sufficient_force);
+  joints[1]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[2]->setForceUpperLimit(0, insufficient_force);
+  joints[2]->setForceLowerLimit(0, -insufficient_force);
+
+  joints[3]->setForceUpperLimit(0, sufficient_force);
+  joints[3]->setForceLowerLimit(0, -sufficient_force);
+  joints[3]->setPositionUpperLimit(0, posUpperLimit);
+  joints[3]->setPositionLowerLimit(0, posLowerLimit);
+
+  joints[4]->setForceUpperLimit(0, DART_DBL_INF);
+  joints[4]->setForceLowerLimit(0, -DART_DBL_INF);
+  joints[4]->setPositionUpperLimit(0, posUpperLimit);
+  joints[4]->setPositionLowerLimit(0, posLowerLimit);
+
+  joints[5]->setForceUpperLimit(0, sufficient_force);
+  joints[5]->setForceLowerLimit(0, -sufficient_force);
+  joints[5]->setCoulombFriction(0, DART_DBL_INF);
+
+  joints[6]->setForceUpperLimit(0, DART_DBL_INF);
+  joints[6]->setForceLowerLimit(0, -DART_DBL_INF);
+  joints[6]->setCoulombFriction(0, DART_DBL_INF);
+
+  for (auto pendulum : pendulums)
+    world->addSkeleton(pendulum);
+
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
+  double simTime = 2.0;
+#endif // ------- Debug mode
+  double timeStep = world->getTimeStep();
+  int nSteps = simTime / timeStep;
+
+  // Two seconds with lower control forces than the friction
+  for (int i = 0; i < nSteps; i++)
+  {
+    const double expected_vel = std::sin(world->getTime());
+
+    joints[0]->setCommand(0, 0.0);
+    joints[1]->setCommand(0, expected_vel);
+    joints[2]->setCommand(0, expected_vel);
+    joints[3]->setCommand(0, expected_vel);
+    joints[4]->setCommand(0, expected_vel);
+    joints[5]->setCommand(0, expected_vel);
+    joints[6]->setCommand(0, expected_vel);
+
+    world->step();
+
+    std::vector<double> jointVels(numPendulums);
+    for (size_t j = 0; j < numPendulums; ++j)
+      jointVels[j] = joints[j]->getVelocity(0);
+
+    EXPECT_NEAR(jointVels[0], 0.0, tol);
+    EXPECT_NEAR(jointVels[1], expected_vel, tol);
+    bool result2 = std::abs(jointVels[2] - expected_vel) < tol
+        || std::abs(joints[2]->getConstraintImpulse(0) / timeStep
+           - insufficient_force) < tol
+        || std::abs(joints[2]->getConstraintImpulse(0) / timeStep
+           + insufficient_force) < tol;
+    EXPECT_TRUE(result2);
+    EXPECT_LE(joints[3]->getPosition(0),
+        posUpperLimit + expected_vel * timeStep);
+    EXPECT_GE(joints[3]->getPosition(0),
+        posLowerLimit - expected_vel * timeStep);
+    // EXPECT_LE(joints[4]->getPosition(0),
+    //     posUpperLimit + expected_vel * timeStep);
+    // EXPECT_GE(joints[4]->getPosition(0),
+    //     posLowerLimit - expected_vel * timeStep);
+    // TODO(JS): Position limits and servo motor with infinite force limits
+    // doesn't work together because they compete against each other to achieve
+    // different joint velocities with their infinit force limits. In this case,
+    // the position limit constraint should dominent the servo motor constraint.
+    EXPECT_NEAR(jointVels[5], 0.0, tol * 1e+2);
+    // EXPECT_NEAR(jointVels[6], 0.0, tol * 1e+2);
+    // TODO(JS): Servo motor with infinite force limits and infinite Coulomb
+    // friction doesn't work because they compete against each other to achieve
+    // different joint velocities with their infinit force limits. In this case,
+    // the friction constraints should dominent the servo motor constraints.
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, SERVO_MOTOR)
+{
+  testServoMotor();
+}
+
+//==============================================================================
 template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {

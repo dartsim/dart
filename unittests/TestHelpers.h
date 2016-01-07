@@ -297,6 +297,72 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
 }
 
 //==============================================================================
+/// Creates a N link pendulum with the given dimensions where each joint is
+/// the specified type. The each offset from the joint position to the child
+/// body is specified.
+SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
+                                const Vector3d& dim,
+                                TypeOfDOF type,
+                                const Vector3d& offset,
+                                bool finished = false)
+{
+  assert(numBodyNodes > 0);
+
+  SkeletonPtr robot = Skeleton::create();
+  robot->disableSelfCollision();
+
+  // Create the first link, the joint with the ground and its shape
+  BodyNode::Properties node(std::string("link1"));
+  node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+  std::shared_ptr<Shape> shape(new BoxShape(dim));
+  node.mVizShapes.push_back(shape);
+  node.mColShapes.push_back(shape);
+
+  std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
+        robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type);
+
+  Joint* joint = pair1.first;
+  Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
+  T.translation() = offset;
+  joint->setTransformFromChildBodyNode(T);
+  joint->setDampingCoefficient(0, 0.01);
+
+  BodyNode* parent_node = pair1.second;
+
+  // Create links iteratively
+  for (size_t i = 1; i < numBodyNodes; ++i)
+  {
+    std::ostringstream ssLink;
+    std::ostringstream ssJoint;
+    ssLink << "link" << i;
+    ssJoint << "joint" << i;
+
+    node = BodyNode::Properties(ssLink.str());
+    node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
+    shape = std::shared_ptr<Shape>(new BoxShape(dim));
+    node.mVizShapes.push_back(shape);
+    node.mColShapes.push_back(shape);
+
+    std::pair<Joint*, BodyNode*> newPair = add1DofJoint(
+        robot, parent_node, node, ssJoint.str(), 0.0, -DART_PI, DART_PI, type);
+
+    Joint* joint = newPair.first;
+    Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
+    T.translation() = offset;
+    joint->setTransformFromChildBodyNode(T);
+    joint->setDampingCoefficient(0, 0.01);
+
+    parent_node = newPair.second;
+  }
+
+  // If finished, initialize the skeleton
+  if(finished)
+    addEndEffector(robot, parent_node, dim);
+
+  return robot;
+}
+
+//==============================================================================
 SkeletonPtr createGround(
         const Eigen::Vector3d& _size,
         const Eigen::Vector3d& _position = Eigen::Vector3d::Zero(),
