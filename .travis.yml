@@ -2,6 +2,8 @@ language: cpp
 os:
   - linux
   - osx
+sudo: required
+dist: trusty
 compiler:
   - gcc
   - clang
@@ -27,3 +29,4 @@ script:
 after_failure:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then '../ci/after_failure_linux.sh' ; fi
   - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then '../ci/after_failure_osx.sh'   ; fi
+
