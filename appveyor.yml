@@ -2,23 +2,24 @@
 version: "{build}"
 
 # Operating system (build VM template)
-# os: Windows Server 2012 R2
+os: Visual Studio 2015
 
 # build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
 platform: 
   - Win32
-  - x64
+  #- x64  Disable build for x64 machine until x64 version of dart-prerequisites is ready
 
 # specify custom environment variables
 environment:
-  BOOST_ROOT: c:\Libraries\boost
-  BOOST_LIBRARYDIR: c:\Libraries\boost\stage\lib
+  MSVC_DEFAULT_OPTIONS: ON
+  BOOST_ROOT: C:\Libraries\boost
+  BOOST_LIBRARYDIR: C:\Libraries\boost\lib32-msvc-12.0
+  BUILD_EXAMPLES: OFF  # don't build examples to not exceed allowed build time (40 min)
   matrix:
   - BUILD_CORE_ONLY: ON
-  # Diabled since we don't have binaries of DART prerequisites build on Visual Studio 2013 (/MT) yet (See #270)
-  # - BUILD_CORE_ONLY: OFF
+  - BUILD_CORE_ONLY: OFF
 
-# build Configuration, i.e. Debug, Release, etc.
+# build configuration, i.e. Debug, Release, etc.
 configuration:
   - Debug
   - Release
@@ -42,10 +43,8 @@ branches:
 
 # scripts that run after cloning repository
 install:
-  - cmd: cd C:\projects
-  - ps: Start-FileDownload 'http://www.prism.gatech.edu/~tkunz3/DART-Prerequisites.msi'
-  - cmd: C:\projects\DART-Prerequisites.msi
-  # - cmd: choco install doxygen.install
+  - ps: cd C:\projects\dart\ci
+  - ps: .\appveyor_install.ps1
 
 # scripts to run before build
 before_build:
@@ -55,11 +54,12 @@ before_build:
   # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
   - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 12
   - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 12 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" ..
+  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
 
 build:
-  project: C:\projects\dart\build\dart.sln
-  
+  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
+  parallel: true                           # enable MSBuild parallel builds
+  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
+
 test_script:
-  - cmd: ctest -C Release -VV
-  - cmd: ctest -C Debug -VV
+  - cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
