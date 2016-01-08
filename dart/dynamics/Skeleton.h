@@ -834,7 +834,7 @@ public:
   friend class EndEffector;
 
 protected:
-  class DataCache;
+  struct DataCache;
 
   /// Constructor called by create()
   Skeleton(const Properties& _properties);
