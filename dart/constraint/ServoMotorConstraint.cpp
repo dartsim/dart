@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/JointCoulombFrictionConstraint.h"
+#include "dart/constraint/ServoMotorConstraint.h"
 
 #include <iostream>
 
@@ -49,17 +49,16 @@
 namespace dart {
 namespace constraint {
 
-double JointCoulombFrictionConstraint::mConstraintForceMixing = DART_CFM;
+double ServoMotorConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
-JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
-    dynamics::Joint* _joint)
+ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)
   : ConstraintBase(),
-    mJoint(_joint),
-    mBodyNode(_joint->getChildBodyNode()),
+    mJoint(joint),
+    mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
-  assert(_joint);
+  assert(joint);
   assert(mBodyNode);
 
   mLifeTime[0] = 0;
@@ -78,38 +77,40 @@ JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
 }
 
 //==============================================================================
-JointCoulombFrictionConstraint::~JointCoulombFrictionConstraint()
+ServoMotorConstraint::~ServoMotorConstraint()
 {
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
+void ServoMotorConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (_cfm < 1e-9)
+  if (cfm < 1e-9)
   {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
+    dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
+           << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. " << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
-  if (_cfm > 1.0)
+  if (cfm > 1.0)
   {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
+    dtwarn << "[ServoMotorConstraint::setConstraintForceMixing] "
+           << "Constraint force mixing parameter[" << cfm
            << "] is greater than 1.0. " << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
-  mConstraintForceMixing = _cfm;
+  mConstraintForceMixing = cfm;
 }
 
 //==============================================================================
-double JointCoulombFrictionConstraint::getConstraintForceMixing()
+double ServoMotorConstraint::getConstraintForceMixing()
 {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::update()
+void ServoMotorConstraint::update()
 {
   // Reset dimention
   mDim = 0;
@@ -117,9 +118,9 @@ void JointCoulombFrictionConstraint::update()
   size_t dof = mJoint->getNumDofs();
   for (size_t i = 0; i < dof; ++i)
   {
-    mNegativeVel[i] = -mJoint->getVelocity(i);
+    mNegativeVelocityError[i] = mJoint->getCommand(i) - mJoint->getVelocity(i);
 
-    if (mNegativeVel[i] != 0.0)
+    if (mNegativeVelocityError[i] != 0.0)
     {
       double timeStep = mJoint->getSkeleton()->getTimeStep();
       // TODO: There are multiple ways to get time step (or its inverse).
@@ -130,9 +131,9 @@ void JointCoulombFrictionConstraint::update()
       // We might need to pick one way and remove the others to get rid of
       // redundancy.
 
-      // Note: Coulomb friction is force not impulse
-      mUpperBound[i] =  mJoint->getCoulombFriction(i) * timeStep;
-      mLowerBound[i] = -mUpperBound[i];
+      // Note that we are computing impulse not force
+      mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
+      mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
 
       if (mActive[i])
       {
@@ -154,7 +155,7 @@ void JointCoulombFrictionConstraint::update()
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
+void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 {
   size_t index = 0;
   size_t dof = mJoint->getNumDofs();
@@ -163,27 +164,27 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
     if (mActive[i] == false)
       continue;
 
-    assert(_lcp->w[index] == 0.0);
+    assert(lcp->w[index] == 0.0);
 
-    _lcp->b[index] = mNegativeVel[i];
-    _lcp->lo[index] = mLowerBound[i];
-    _lcp->hi[index] = mUpperBound[i];
+    lcp->b[index] = mNegativeVelocityError[i];
+    lcp->lo[index] = mLowerBound[i];
+    lcp->hi[index] = mUpperBound[i];
 
-    assert(_lcp->findex[index] == -1);
+    assert(lcp->findex[index] == -1);
 
     if (mLifeTime[i])
-      _lcp->x[index] = mOldX[i];
+      lcp->x[index] = mOldX[i];
     else
-      _lcp->x[index] = 0.0;
+      lcp->x[index] = 0.0;
 
     index++;
   }
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
+void ServoMotorConstraint::applyUnitImpulse(size_t index)
 {
-  assert(_index < mDim && "Invalid Index.");
+  assert(index < mDim && "Invalid Index.");
 
   size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
@@ -194,7 +195,7 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
     if (mActive[i] == false)
       continue;
 
-    if (localIndex == _index)
+    if (localIndex == index)
     {
       skeleton->clearConstraintImpulses();
       mJoint->setConstraintImpulse(i, 1.0);
@@ -206,14 +207,13 @@ void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
     ++localIndex;
   }
 
-  mAppliedImpulseIndex = _index;
+  mAppliedImpulseIndex = index;
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
-                                                       bool _withCfm)
+void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
-  assert(_delVel != nullptr && "Null pointer is not allowed.");
+  assert(delVel != nullptr && "Null pointer is not allowed.");
 
   size_t localIndex = 0;
   size_t dof = mJoint->getNumDofs();
@@ -223,18 +223,18 @@ void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
       continue;
 
     if (mJoint->getSkeleton()->isImpulseApplied())
-      _delVel[localIndex] = mJoint->getVelocityChange(i);
+      delVel[localIndex] = mJoint->getVelocityChange(i);
     else
-      _delVel[localIndex] = 0.0;
+      delVel[localIndex] = 0.0;
 
     ++localIndex;
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
   // varaible in ODE
-  if (_withCfm)
+  if (withCfm)
   {
-    _delVel[mAppliedImpulseIndex] += _delVel[mAppliedImpulseIndex]
+    delVel[mAppliedImpulseIndex] += delVel[mAppliedImpulseIndex]
                                      * mConstraintForceMixing;
   }
 
@@ -242,19 +242,19 @@ void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::excite()
+void ServoMotorConstraint::excite()
 {
   mJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::unexcite()
+void ServoMotorConstraint::unexcite()
 {
   mJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
+void ServoMotorConstraint::applyImpulse(double* lambda)
 {
   size_t localIndex = 0;
   size_t dof = mJoint->getNumDofs();
@@ -264,28 +264,28 @@ void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
       continue;
 
     mJoint->setConstraintImpulse(
-          i, mJoint->getConstraintImpulse(i) + _lambda[localIndex]);
+          i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
+    // TODO(JS): consider to add Joint::addConstraintImpulse()
 
-    mOldX[i] = _lambda[localIndex];
+    mOldX[i] = lambda[localIndex];
 
     ++localIndex;
   }
 }
 
 //==============================================================================
-dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr ServoMotorConstraint::getRootSkeleton() const
 {
   return mJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
-bool JointCoulombFrictionConstraint::isActive() const
+bool ServoMotorConstraint::isActive() const
 {
-  for (size_t i = 0; i < 6; ++i)
-  {
-    if (mActive[i])
-      return true;
-  }
+  // Since we are not allowed to set the joint actuator type per each
+  // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
+  if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
+    return true;
 
   return false;
 }
