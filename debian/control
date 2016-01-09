@@ -1,4 +1,4 @@
-Source: dart
+Source: dart4
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 9),
                libtinyxml-dev,
                libtinyxml2-dev,
                liburdfdom-dev
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Section: libs
 Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git
@@ -22,7 +22,7 @@ Vcs-Browser: https://github.com/dartsim/dart
 Package: libdart-core4-dev
 Section: libdevel
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Conflicts: libdart-core3-dev
 Depends: ${misc:Depends},
          libdart-core4.3 (= ${binary:Version}),
@@ -56,7 +56,7 @@ Description: Dynamic Animation and Robotics Toolkit, core development files
 Package: libdart4-dev
 Section: libdevel
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart-core4-dev,
          libdart4.3 (= ${binary:Version}),
@@ -92,7 +92,7 @@ Description: Dynamic Animation and Robotics Toolkit, development files
 Package: libdart-core4.3
 Section: libs
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, core library files
@@ -122,7 +122,7 @@ Description: Dynamic Animation and Robotics Toolkit, core library files
 Package: libdart4.3
 Section: libs
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, library files
