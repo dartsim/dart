@@ -1,4 +1,4 @@
-### Version 4.3.5 (2015-01-24)
+### Version 4.3.5 (2016-01-09)
 
 1. Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
     * [Pull request #578](https://github.com/dartsim/dart/pull/578)
