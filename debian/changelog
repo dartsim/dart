@@ -1,4 +1,4 @@
-dart (4.3.5) unstable; urgency=medium
+dart4 (4.3.5) unstable; urgency=medium
 
   * Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
 
