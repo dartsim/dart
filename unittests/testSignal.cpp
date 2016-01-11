@@ -41,7 +41,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 using namespace common;
 using namespace dynamics;
 using namespace simulation;

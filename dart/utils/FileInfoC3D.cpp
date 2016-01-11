@@ -39,7 +39,7 @@
 
 #include <cassert>
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 FileInfoC3D::FileInfoC3D()
@@ -82,5 +82,5 @@ bool FileInfoC3D::saveFile(const char* _fName, int _start, int _end, double _sam
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 

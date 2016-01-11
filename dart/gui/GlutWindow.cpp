@@ -48,7 +48,7 @@
 #include "dart/gui/GLFuncs.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
@@ -213,4 +213,4 @@ void GlutWindow::move(int _x, int _y) {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

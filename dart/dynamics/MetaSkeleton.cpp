@@ -38,7 +38,7 @@
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -704,7 +704,7 @@ MetaSkeleton::MetaSkeleton()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 
 

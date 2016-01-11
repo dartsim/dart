@@ -42,7 +42,7 @@
 #include "Path.h"
 #include "Trajectory.h"
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 class PathFollowingTrajectory : public Trajectory
@@ -103,4 +103,4 @@ private:
 };
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

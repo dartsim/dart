@@ -47,7 +47,7 @@
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -343,4 +343,4 @@ void DantzigLCPSolver::print(size_t _n, double* _A, double* _x,
 #endif
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

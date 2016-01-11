@@ -42,7 +42,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/optimizer/Solver.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 class Problem;
@@ -128,7 +128,7 @@ private:
 };
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
 

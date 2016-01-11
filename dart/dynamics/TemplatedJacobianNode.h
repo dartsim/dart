@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/JacobianNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// TemplatedJacobianNode provides a curiously recurring template pattern
@@ -129,7 +129,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #include "dart/dynamics/detail/TemplatedJacobianNode.h"
 

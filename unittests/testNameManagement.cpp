@@ -39,7 +39,7 @@
 #include "TestHelpers.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 
@@ -184,7 +184,7 @@ TEST(NameManagement, Skeleton)
 //==============================================================================
 TEST(NameManagement, SetPattern)
 {
-  dart::common::NameManager< std::shared_ptr<Entity> > test_mgr("test", "name");
+  kido::common::NameManager< std::shared_ptr<Entity> > test_mgr("test", "name");
 
   std::shared_ptr<Entity> entity0(new Entity(Frame::World(), "name", false));
   std::shared_ptr<Entity> entity1(new Entity(Frame::World(), "name", false));
@@ -219,7 +219,7 @@ TEST(NameManagement, SetPattern)
 //==============================================================================
 TEST(NameManagement, Regression554)
 {
-  dart::common::NameManager< std::shared_ptr<int> > test_mgr("test", "name");
+  kido::common::NameManager< std::shared_ptr<int> > test_mgr("test", "name");
 
   std::shared_ptr<int> int0(new int(0));
   std::shared_ptr<int> int1(new int(1));
@@ -249,12 +249,12 @@ TEST(NameManagement, Regression554)
 //==============================================================================
 TEST(NameManagement, WorldSkeletons)
 {
-  dart::simulation::WorldPtr world1(new dart::simulation::World);
+  kido::simulation::WorldPtr world1(new kido::simulation::World);
   world1->setName("world1");
 
-  dart::dynamics::SkeletonPtr skel0 = dart::dynamics::Skeleton::create();
-  dart::dynamics::SkeletonPtr skel1 = dart::dynamics::Skeleton::create();
-  dart::dynamics::SkeletonPtr skel2 = dart::dynamics::Skeleton::create();
+  kido::dynamics::SkeletonPtr skel0 = kido::dynamics::Skeleton::create();
+  kido::dynamics::SkeletonPtr skel1 = kido::dynamics::Skeleton::create();
+  kido::dynamics::SkeletonPtr skel2 = kido::dynamics::Skeleton::create();
 
   world1->addSkeleton(skel0);
   world1->addSkeleton(skel1);
@@ -278,11 +278,11 @@ TEST(NameManagement, WorldSkeletons)
   EXPECT_TRUE( skel1 == world1->getSkeleton(skel1->getName()) );
   EXPECT_TRUE( skel2 == world1->getSkeleton(skel2->getName()) );
 
-  dart::simulation::WorldPtr world2(new dart::simulation::World);
+  kido::simulation::WorldPtr world2(new kido::simulation::World);
   world2->setName("world2");
 
-  dart::dynamics::SkeletonPtr skel3 =
-      dart::dynamics::Skeleton::create("OtherName");
+  kido::dynamics::SkeletonPtr skel3 =
+      kido::dynamics::Skeleton::create("OtherName");
   world2->addSkeleton(skel3);
   world2->addSkeleton(skel2);
   world2->addSkeleton(skel1);
@@ -314,14 +314,14 @@ TEST(NameManagement, WorldSkeletons)
 //==============================================================================
 TEST(NameManagement, WorldSimpleFrames)
 {
-  dart::simulation::WorldPtr world1(new dart::simulation::World);
+  kido::simulation::WorldPtr world1(new kido::simulation::World);
 
-  dart::dynamics::SimpleFramePtr frame0(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
-  dart::dynamics::SimpleFramePtr frame1(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
-  dart::dynamics::SimpleFramePtr frame2(
-        new dart::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  kido::dynamics::SimpleFramePtr frame0(
+        new kido::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  kido::dynamics::SimpleFramePtr frame1(
+        new kido::dynamics::SimpleFrame(Frame::World(), "Frame"));
+  kido::dynamics::SimpleFramePtr frame2(
+        new kido::dynamics::SimpleFrame(Frame::World(), "Frame"));
 
   world1->addSimpleFrame(frame0);
   world1->addSimpleFrame(frame1);
@@ -345,11 +345,11 @@ TEST(NameManagement, WorldSimpleFrames)
   EXPECT_TRUE( frame1 == world1->getSimpleFrame(frame1->getName()) );
   EXPECT_TRUE( frame2 == world1->getSimpleFrame(frame2->getName()) );
 
-  dart::simulation::WorldPtr world2(new dart::simulation::World);
+  kido::simulation::WorldPtr world2(new kido::simulation::World);
   world2->setName("world2");
 
-  dart::dynamics::SimpleFramePtr frame3(
-        new dart::dynamics::SimpleFrame(Frame::World(), "OtherName"));
+  kido::dynamics::SimpleFramePtr frame3(
+        new kido::dynamics::SimpleFrame(Frame::World(), "OtherName"));
   world2->addSimpleFrame(frame3);
   world2->addSimpleFrame(frame2);
   world2->addSimpleFrame(frame1);

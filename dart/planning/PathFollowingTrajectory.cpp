@@ -44,7 +44,7 @@
 using namespace Eigen;
 using namespace std;
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 const double PathFollowingTrajectory::timeStep = 0.001;
@@ -621,4 +621,4 @@ double PathFollowingTrajectory::getMaxAccelerationError() {
 }
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

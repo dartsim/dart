@@ -41,7 +41,7 @@
 #include <list>
 #include <Eigen/Core>
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 class PathSegment
@@ -90,4 +90,4 @@ private:
 };
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

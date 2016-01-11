@@ -40,7 +40,7 @@
 #include "dart/dynamics/detail/BodyNodePtr.h"
 #include "dart/dynamics/InvalidIndex.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// TemplateDegreeOfFreedomPtr is a templated class that enables users to create
@@ -325,6 +325,6 @@ private:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_

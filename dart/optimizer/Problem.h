@@ -45,7 +45,7 @@
 
 #include <dart/optimizer/Function.h>
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 /// \brief class Problem
@@ -191,7 +191,7 @@ protected:
 };
 
 } // namespace optimizer
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_OPTIMIZER_PROBLEM_H
 

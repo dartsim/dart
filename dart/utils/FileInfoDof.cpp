@@ -44,7 +44,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/simulation/Recording.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -201,4 +201,4 @@ dynamics::Skeleton*FileInfoDof::getSkel() const
 }
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido

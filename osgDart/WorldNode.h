@@ -43,7 +43,7 @@
 
 #include "osgDart/Viewer.h"
 
-namespace dart {
+namespace kido {
 
 namespace simulation {
 class World;
@@ -54,7 +54,7 @@ class Frame;
 class Entity;
 }
 
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
@@ -71,13 +71,13 @@ public:
   friend class Viewer;
 
   /// Default constructor
-  explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr);
+  explicit WorldNode(std::shared_ptr<kido::simulation::World> _world = nullptr);
 
   /// Set the World that this WorldNode is associated with
-  void setWorld(std::shared_ptr<dart::simulation::World> _newWorld);
+  void setWorld(std::shared_ptr<kido::simulation::World> _newWorld);
 
   /// Get the World that this WorldNode is associated with
-  std::shared_ptr<dart::simulation::World> getWorld() const;
+  std::shared_ptr<kido::simulation::World> getWorld() const;
 
   /// This function is called at the beginning of each rendering cycle. It
   /// updates the tree of Frames and Entities that need to be rendered. It may
@@ -157,31 +157,31 @@ protected:
   void refreshCustomFrames();
 
   /// Refresh the specified Frame's rendering data
-  void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
+  void refreshBaseFrameNode(kido::dynamics::Frame* _frame);
 
   /// Create a node for the specified Frame
-  void createBaseFrameNode(dart::dynamics::Frame* _frame);
+  void createBaseFrameNode(kido::dynamics::Frame* _frame);
 
   /// Refresh the specified Entity's rendering data
-  void refreshBaseEntityNode(dart::dynamics::Entity* _entity);
+  void refreshBaseEntityNode(kido::dynamics::Entity* _entity);
 
   /// Create a node for the specified Entity
-  void createBaseEntityNode(dart::dynamics::Entity* _entity);
+  void createBaseEntityNode(kido::dynamics::Entity* _entity);
 
   /// Map from Frame pointers to child FrameNode pointers
-  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
+  std::map<kido::dynamics::Frame*, FrameNode*> mFrameToNode;
 
   /// Map from child FrameNode pointers to Frame pointers
-  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
+  std::map<FrameNode*, kido::dynamics::Frame*> mNodeToFrame;
 
   /// Map from Entity pointers to child EntityNode pointers
-  std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
+  std::map<kido::dynamics::Entity*, EntityNode*> mEntityToNode;
 
   /// Map from child EntityNode pointers to Entity pointers
-  std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
+  std::map<EntityNode*, kido::dynamics::Entity*> mNodeToEntity;
 
   /// The World that this WorldNode is associated with
-  std::shared_ptr<dart::simulation::World> mWorld;
+  std::shared_ptr<kido::simulation::World> mWorld;
 
   /// True iff simulation is active
   bool mSimulating;

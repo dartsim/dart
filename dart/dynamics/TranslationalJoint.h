@@ -41,7 +41,7 @@
 
 #include "dart/dynamics/MultiDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// class TranslationalJoint
@@ -107,7 +107,7 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_TRANSLATIONALJOINT_H_
 

@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Linkage.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// Chain is a specialized type of Linkage that represents a single unbranching
@@ -117,6 +117,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_CHAIN_H_

@@ -44,7 +44,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/detail/ConnectionBody.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// class Connection
@@ -241,7 +241,7 @@ private:
 };
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 #include "dart/common/detail/Signal.h"
 

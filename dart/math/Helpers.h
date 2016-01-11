@@ -53,7 +53,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace math {
 
 /// \brief a cross b = (CR*a) dot b
@@ -400,6 +400,6 @@ inline Eigen::Vector3d Random()
 
 } // namespace Color
 
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_MATH_HELPERS_H_

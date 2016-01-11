@@ -55,7 +55,7 @@
 #include "dart/collision/fcl_mesh/CollisionShapes.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -63,12 +63,12 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode)
 {
   // using-declaration
-  using dart::dynamics::Shape;
-  using dart::dynamics::BoxShape;
-  using dart::dynamics::EllipsoidShape;
-  using dart::dynamics::CylinderShape;
-  using dart::dynamics::MeshShape;
-  using dart::dynamics::SoftMeshShape;
+  using kido::dynamics::Shape;
+  using kido::dynamics::BoxShape;
+  using kido::dynamics::EllipsoidShape;
+  using kido::dynamics::CylinderShape;
+  using kido::dynamics::MeshShape;
+  using kido::dynamics::SoftMeshShape;
 
   // Create meshes according to types of the shapes
   for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
@@ -305,7 +305,7 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
 void FCLMeshCollisionNode::updateShape()
 {
   // using-declaration
-  using dart::dynamics::SoftMeshShape;
+  using kido::dynamics::SoftMeshShape;
 
   for (size_t i = 0; i < mBodyNode->getNumCollisionShapes(); i++)
   {
@@ -479,4 +479,4 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh,
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

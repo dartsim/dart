@@ -49,7 +49,7 @@
 
 #include "dart/gui/Win2D.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -74,6 +74,6 @@ protected:
 };
  
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_GRAPHWINDOW_H_

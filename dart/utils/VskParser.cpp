@@ -52,7 +52,7 @@
 
 #define SCALE_VSK 1.0e-3
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 namespace VskParser {
@@ -918,5 +918,5 @@ void tokenize(const std::string& str,
 } // namespace VskParser
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 

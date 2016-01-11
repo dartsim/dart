@@ -36,11 +36,11 @@
 
 #include "dart/dart.h"
 
-using namespace dart::dynamics;
+using namespace kido::dynamics;
 
 int main(int argc, char* argv[])
 {
-  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
+  kido::simulation::WorldPtr myWorld(new kido::simulation::World);
 
   Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());
   tf1.translate(Eigen::Vector3d(0.1,-0.1,0));
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
   // rendered correctly, it must be a child of the World Frame
   // TODO(MXG): Fix this issue ^
 
-  dart::gui::SimWindow window;
+  kido::gui::SimWindow window;
   window.setWorld(myWorld);
 
   glutInit(&argc, argv);

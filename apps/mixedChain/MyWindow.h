@@ -46,7 +46,7 @@
 #include "dart/dart.h"
 
 /// \brief
-class MyWindow : public dart::gui::SoftSimWindow
+class MyWindow : public kido::gui::SoftSimWindow
 {
 public:
   /// \brief

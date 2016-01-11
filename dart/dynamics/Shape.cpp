@@ -39,7 +39,7 @@
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 //==============================================================================
 Shape::Shape(ShapeType _type)
@@ -210,4 +210,4 @@ bool Shape::isHidden() const
 int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

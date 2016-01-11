@@ -49,7 +49,7 @@ class PlaneShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
+  PlaneShapeGeode(kido::dynamics::PlaneShape* shape,
                   EntityNode* parentEntity,
                   PlaneShapeNode* parentNode);
 
@@ -60,7 +60,7 @@ protected:
 
   virtual ~PlaneShapeGeode();
 
-  dart::dynamics::PlaneShape* mPlaneShape;
+  kido::dynamics::PlaneShape* mPlaneShape;
   PlaneShapeDrawable* mDrawable;
 
 };
@@ -70,7 +70,7 @@ class PlaneShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  PlaneShapeDrawable(dart::dynamics::PlaneShape* shape, PlaneShapeGeode* parent);
+  PlaneShapeDrawable(kido::dynamics::PlaneShape* shape, PlaneShapeGeode* parent);
 
   void refresh(bool firstTime);
 
@@ -78,14 +78,14 @@ protected:
 
   virtual ~PlaneShapeDrawable();
 
-  dart::dynamics::PlaneShape* mPlaneShape;
+  kido::dynamics::PlaneShape* mPlaneShape;
   PlaneShapeGeode* mParent;
 
 };
 
 //==============================================================================
 PlaneShapeNode::PlaneShapeNode(
-    std::shared_ptr<dart::dynamics::PlaneShape> shape,
+    std::shared_ptr<kido::dynamics::PlaneShape> shape,
     EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mPlaneShape(shape),
@@ -102,7 +102,7 @@ void PlaneShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -111,7 +111,7 @@ void PlaneShapeNode::refresh()
 //==============================================================================
 void PlaneShapeNode::extractData(bool firstTime)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if(mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
     setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
 
@@ -132,7 +132,7 @@ PlaneShapeNode::~PlaneShapeNode()
 }
 
 //==============================================================================
-PlaneShapeGeode::PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
+PlaneShapeGeode::PlaneShapeGeode(kido::dynamics::PlaneShape* shape,
                                  EntityNode* parentEntity,
                                  PlaneShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
@@ -172,7 +172,7 @@ PlaneShapeGeode::~PlaneShapeGeode()
 }
 
 //==============================================================================
-PlaneShapeDrawable::PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
+PlaneShapeDrawable::PlaneShapeDrawable(kido::dynamics::PlaneShape* shape,
                                        PlaneShapeGeode* parent)
   : mPlaneShape(shape),
     mParent(parent)
@@ -183,12 +183,12 @@ PlaneShapeDrawable::PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
 //==============================================================================
 void PlaneShapeDrawable::refresh(bool firstTime)
 {
-  if(mPlaneShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mPlaneShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(mPlaneShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     const Eigen::Vector3d& n = mPlaneShape->getNormal();
@@ -201,7 +201,7 @@ void PlaneShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(mPlaneShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     setColor(eigToOsgVec4(mPlaneShape->getRGBA()));

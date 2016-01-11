@@ -46,7 +46,7 @@
 
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace simulation {
 
 //==============================================================================
@@ -152,5 +152,5 @@ void Recording::updateNumGenCoords(
 }
 
 }  // namespace simulation
-}  // namespace dart
+}  // namespace kido
 

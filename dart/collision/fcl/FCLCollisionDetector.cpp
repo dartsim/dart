@@ -50,7 +50,7 @@
   (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
   FCL_PATCH_VERSION >= z))))
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -262,4 +262,4 @@ FCLCollisionNode* FCLCollisionDetector::findCollisionNode(
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

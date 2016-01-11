@@ -40,7 +40,7 @@
 #include <string>
 #include "dart/common/Deprecated.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 class UriComponent final
@@ -229,6 +229,6 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_COMMON_URI_H_

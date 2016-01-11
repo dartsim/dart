@@ -50,7 +50,7 @@ class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  LineSegmentShapeGeode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+  LineSegmentShapeGeode(std::shared_ptr<kido::dynamics::LineSegmentShape> shape,
                         EntityNode* parent);
 
   void refresh();
@@ -60,7 +60,7 @@ protected:
 
   virtual ~LineSegmentShapeGeode();
 
-  std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
+  std::shared_ptr<kido::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeDrawable* mDrawable;
 
   osg::ref_ptr<osg::LineWidth> mLineWidth;
@@ -72,7 +72,7 @@ class LineSegmentShapeDrawable : public osg::Geometry
 {
 public:
 
-  LineSegmentShapeDrawable(dart::dynamics::LineSegmentShape* shape);
+  LineSegmentShapeDrawable(kido::dynamics::LineSegmentShape* shape);
 
   void refresh(bool firstTime);
 
@@ -80,7 +80,7 @@ protected:
 
   virtual ~LineSegmentShapeDrawable();
 
-  dart::dynamics::LineSegmentShape* mLineSegmentShape;
+  kido::dynamics::LineSegmentShape* mLineSegmentShape;
 
   osg::ref_ptr<osg::Vec3Array> mVertices;
   osg::ref_ptr<osg::Vec4Array> mColors;
@@ -88,7 +88,7 @@ protected:
 
 //==============================================================================
 LineSegmentShapeNode::LineSegmentShapeNode(
-    std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+    std::shared_ptr<kido::dynamics::LineSegmentShape> shape,
     EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
@@ -105,7 +105,7 @@ void LineSegmentShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -114,7 +114,7 @@ void LineSegmentShapeNode::refresh()
 //==============================================================================
 void LineSegmentShapeNode::extractData(bool firstTime)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if(mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
     setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
 
@@ -136,7 +136,7 @@ LineSegmentShapeNode::~LineSegmentShapeNode()
 
 //==============================================================================
 LineSegmentShapeGeode::LineSegmentShapeGeode(
-    std::shared_ptr<dart::dynamics::LineSegmentShape> shape, EntityNode* parent)
+    std::shared_ptr<kido::dynamics::LineSegmentShape> shape, EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mDrawable(nullptr),
@@ -159,7 +159,7 @@ void LineSegmentShapeGeode::refresh()
 //==============================================================================
 void LineSegmentShapeGeode::extractData(bool firstTime)
 {
-  if(mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(mLineSegmentShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     mLineWidth->setWidth(mLineSegmentShape->getThickness());
@@ -184,7 +184,7 @@ LineSegmentShapeGeode::~LineSegmentShapeGeode()
 
 //==============================================================================
 LineSegmentShapeDrawable::LineSegmentShapeDrawable(
-    dart::dynamics::LineSegmentShape* shape)
+    kido::dynamics::LineSegmentShape* shape)
   : mLineSegmentShape(shape),
     mVertices(new osg::Vec3Array),
     mColors(new osg::Vec4Array)
@@ -195,7 +195,7 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
 //==============================================================================
 void LineSegmentShapeDrawable::refresh(bool firstTime)
 {
-  if(mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mLineSegmentShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
@@ -206,7 +206,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   const Eigen::aligned_vector<Eigen::Vector2i>& connections =
       mLineSegmentShape->getConnections();
 
-  if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(   mLineSegmentShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     osg::ref_ptr<osg::DrawElementsUInt> elements =
@@ -223,8 +223,8 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     addPrimitiveSet(elements);
   }
 
-  if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-     || mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(   mLineSegmentShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_VERTICES)
+     || mLineSegmentShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     if(mVertices->size() != vertices.size())
@@ -236,7 +236,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     setVertexArray(mVertices);
   }
 
-  if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(   mLineSegmentShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     if(mColors->size() != 1)

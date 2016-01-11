@@ -56,7 +56,7 @@
   #include <sys/time.h>
 #endif
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// \brief The implementation of Timer class
@@ -120,6 +120,6 @@ private:
 };
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COMMON_TIMER_H_

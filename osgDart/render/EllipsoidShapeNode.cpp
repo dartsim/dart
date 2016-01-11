@@ -51,7 +51,7 @@ class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
+  EllipsoidShapeGeode(kido::dynamics::EllipsoidShape* shape,
                       EntityNode* parentEntity,
                       EllipsoidShapeNode* parentNode);
 
@@ -63,7 +63,7 @@ protected:
   virtual ~EllipsoidShapeGeode();
 
   EllipsoidShapeNode* mParentNode;
-  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  kido::dynamics::EllipsoidShape* mEllipsoidShape;
   EllipsoidShapeDrawable* mDrawable;
 
 };
@@ -73,7 +73,7 @@ class EllipsoidShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  EllipsoidShapeDrawable(dart::dynamics::EllipsoidShape* shape,
+  EllipsoidShapeDrawable(kido::dynamics::EllipsoidShape* shape,
                          EllipsoidShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -82,14 +82,14 @@ protected:
 
   virtual ~EllipsoidShapeDrawable();
 
-  dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  kido::dynamics::EllipsoidShape* mEllipsoidShape;
   EllipsoidShapeGeode* mParent;
 
 };
 
 //==============================================================================
 EllipsoidShapeNode::EllipsoidShapeNode(
-    std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
+    std::shared_ptr<kido::dynamics::EllipsoidShape> shape,
     EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mEllipsoidShape(shape),
@@ -106,7 +106,7 @@ void EllipsoidShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -121,8 +121,8 @@ double smallestComponent(const Eigen::Vector3d& v)
 //==============================================================================
 void EllipsoidShapeNode::extractData(bool firstTime)
 {
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
+     || mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime )
   {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
@@ -149,7 +149,7 @@ EllipsoidShapeNode::~EllipsoidShapeNode()
 }
 
 //==============================================================================
-EllipsoidShapeGeode::EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
+EllipsoidShapeGeode::EllipsoidShapeGeode(kido::dynamics::EllipsoidShape* shape,
                                          EntityNode* parentEntity,
                                          EllipsoidShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
@@ -191,7 +191,7 @@ EllipsoidShapeGeode::~EllipsoidShapeGeode()
 
 //==============================================================================
 EllipsoidShapeDrawable::EllipsoidShapeDrawable(
-    dart::dynamics::EllipsoidShape* shape, EllipsoidShapeGeode* parent)
+    kido::dynamics::EllipsoidShape* shape, EllipsoidShapeGeode* parent)
   : mEllipsoidShape(shape),
     mParent(parent)
 {
@@ -201,12 +201,12 @@ EllipsoidShapeDrawable::EllipsoidShapeDrawable(
 //==============================================================================
 void EllipsoidShapeDrawable::refresh(bool firstTime)
 {
-  if(mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mEllipsoidShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(mEllipsoidShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     osg::ref_ptr<osg::Sphere> osg_shape = nullptr;
@@ -217,7 +217,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(mEllipsoidShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     setColor(eigToOsgVec4(mEllipsoidShape->getRGBA()));

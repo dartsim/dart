@@ -41,18 +41,18 @@
 #include <string>
 
 /// \brief Output a message
-#define dtmsg (dart::common::colorMsg("Msg", 32))
+#define dtmsg (kido::common::colorMsg("Msg", 32))
 
 /// \brief Output a debug message
-#define dtdbg (dart::common::colorMsg("Dbg", 36))
+#define dtdbg (kido::common::colorMsg("Dbg", 36))
 
 /// \brief Output a warning message
-#define dtwarn (dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
+#define dtwarn (kido::common::colorErr("Warning", __FILE__, __LINE__, 33))
 
 /// \brief Output an error message
-#define dterr (dart::common::colorErr("Error", __FILE__, __LINE__, 31))
+#define dterr (kido::common::colorErr("Error", __FILE__, __LINE__, 31))
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// \brief
@@ -65,6 +65,6 @@ std::ostream& colorErr(const std::string& _msg,
                        int _color);
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COMMON_CONSOLE_H_

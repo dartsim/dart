@@ -42,7 +42,7 @@
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// ReferentialSkeleton is a base class used to implement Linkage, Group, and
@@ -449,6 +449,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_REFERENTIALSKELETON_H_

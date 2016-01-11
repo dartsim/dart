@@ -46,7 +46,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionNode.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 CollisionDetector::CollisionDetector()
@@ -349,4 +349,4 @@ CollisionNode* CollisionDetector::getCollisionNode(
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

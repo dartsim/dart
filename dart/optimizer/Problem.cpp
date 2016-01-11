@@ -44,7 +44,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -313,4 +313,4 @@ const Eigen::VectorXd& Problem::getOptimalSolution()
 }
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido

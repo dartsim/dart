@@ -39,7 +39,7 @@
 
 #include "dart/common/Resource.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 class LocalResource : public virtual Resource
@@ -71,6 +71,6 @@ private:
 };
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_COMMON_LOCALRESOURCE_H_

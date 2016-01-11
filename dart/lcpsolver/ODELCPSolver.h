@@ -39,7 +39,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 namespace lcpsolver {
 
 /// \brief
@@ -82,6 +82,6 @@ private:
 };
 
 }  // namespace lcpsolver
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_LCPSOLVER_ODELCPSOLVER_H_

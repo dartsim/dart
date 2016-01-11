@@ -42,7 +42,7 @@
 #include <cassert>
 #include "dart/common/Console.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -307,6 +307,6 @@ const std::string& NameManager<T>::getManagerName() const
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // DART_COMMON_DETAIL_NAMEMANAGER_H_

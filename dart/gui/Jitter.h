@@ -55,7 +55,7 @@ accwindow() routine.
 
 #include "dart/renderer/LoadOpengl.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 typedef struct 
@@ -77,6 +77,6 @@ public:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_JITTER_H_

@@ -36,7 +36,7 @@
 
 #include "FixedFrame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -89,4 +89,4 @@ const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

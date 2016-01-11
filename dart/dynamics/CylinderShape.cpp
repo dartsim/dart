@@ -38,7 +38,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 CylinderShape::CylinderShape(double _radius, double _height)
@@ -126,4 +126,4 @@ void CylinderShape::_updateBoundingBoxDim() {
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

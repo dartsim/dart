@@ -47,8 +47,8 @@ namespace osgDart
 
 class DefaultEventHandler;
 
-class MouseEventHandler : public virtual dart::common::Subject,
-                          public virtual dart::common::Observer
+class MouseEventHandler : public virtual kido::common::Subject,
+                          public virtual kido::common::Observer
 {
 public:
 

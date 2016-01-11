@@ -42,7 +42,7 @@
 #include "dart/lcpsolver/lcp.h"
 #include "dart/lcpsolver/misc.h"
 
-namespace dart {
+namespace kido {
 namespace lcpsolver {
 
 ODELCPSolver::ODELCPSolver() {
@@ -207,4 +207,4 @@ bool ODELCPSolver::checkIfSolution(const Eigen::MatrixXd& _A,
 }
 
 }  // namespace lcpsolver
-}  // namespace dart
+}  // namespace kido

@@ -51,7 +51,7 @@ class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape,
+  SoftMeshShapeGeode(kido::dynamics::SoftMeshShape* shape,
                      EntityNode* parentEntity,
                      SoftMeshShapeNode* parentNode);
 
@@ -62,7 +62,7 @@ protected:
 
   virtual ~SoftMeshShapeGeode();
 
-  dart::dynamics::SoftMeshShape* mSoftMeshShape;
+  kido::dynamics::SoftMeshShape* mSoftMeshShape;
   SoftMeshShapeDrawable* mDrawable;
 
 };
@@ -72,7 +72,7 @@ class SoftMeshShapeDrawable : public osg::Geometry
 {
 public:
 
-  SoftMeshShapeDrawable(dart::dynamics::SoftMeshShape* shape);
+  SoftMeshShapeDrawable(kido::dynamics::SoftMeshShape* shape);
 
   void refresh(bool firstTime);
 
@@ -86,13 +86,13 @@ protected:
 
   std::vector<Eigen::Vector3d> mEigNormals;
 
-  dart::dynamics::SoftMeshShape* mSoftMeshShape;
+  kido::dynamics::SoftMeshShape* mSoftMeshShape;
 
 };
 
 //==============================================================================
 SoftMeshShapeNode::SoftMeshShapeNode(
-    std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
+    std::shared_ptr<kido::dynamics::SoftMeshShape> shape,
     EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mSoftMeshShape(shape),
@@ -109,7 +109,7 @@ void SoftMeshShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -118,7 +118,7 @@ void SoftMeshShapeNode::refresh()
 //==============================================================================
 void SoftMeshShapeNode::extractData(bool firstTime)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if(mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
     setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
 
@@ -140,7 +140,7 @@ SoftMeshShapeNode::~SoftMeshShapeNode()
 
 //==============================================================================
 SoftMeshShapeGeode::SoftMeshShapeGeode(
-    dart::dynamics::SoftMeshShape* shape,
+    kido::dynamics::SoftMeshShape* shape,
     EntityNode* parentEntity,
     SoftMeshShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
@@ -181,7 +181,7 @@ SoftMeshShapeGeode::~SoftMeshShapeGeode()
 
 //==============================================================================
 SoftMeshShapeDrawable::SoftMeshShapeDrawable(
-    dart::dynamics::SoftMeshShape* shape)
+    kido::dynamics::SoftMeshShape* shape)
   : mVertices(new osg::Vec3Array),
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),
@@ -190,7 +190,7 @@ SoftMeshShapeDrawable::SoftMeshShapeDrawable(
   refresh(true);
 }
 
-static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
+static Eigen::Vector3d normalFromVertex(const kido::dynamics::SoftBodyNode* bn,
                                         const Eigen::Vector3i& face,
                                         size_t v)
 {
@@ -209,7 +209,7 @@ static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
 }
 
 static void computeNormals(std::vector<Eigen::Vector3d>& normals,
-                           const dart::dynamics::SoftBodyNode* bn)
+                           const kido::dynamics::SoftBodyNode* bn)
 {
   for(size_t i=0; i<normals.size(); ++i)
     normals[i] = Eigen::Vector3d::Zero();
@@ -228,14 +228,14 @@ static void computeNormals(std::vector<Eigen::Vector3d>& normals,
 //==============================================================================
 void SoftMeshShapeDrawable::refresh(bool firstTime)
 {
-  if(mSoftMeshShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mSoftMeshShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
+  const kido::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
 
-  if(mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     osg::ref_ptr<osg::DrawElementsUInt> elements =
@@ -252,8 +252,8 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     addPrimitiveSet(elements);
   }
 
-  if(   mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-     || mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(   mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_VERTICES)
+     || mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     if(mVertices->size() != bn->getNumPointMasses())
@@ -276,7 +276,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, osg::Array::BIND_PER_VERTEX);
   }
 
-  if(   mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(   mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     if(mColors->size() != 1)

@@ -53,7 +53,7 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/JacobianNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 const double DefaultIKTolerance = 1e-6;
@@ -1195,7 +1195,7 @@ protected:
 typedef InverseKinematics IK;
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #include "dart/dynamics/detail/InverseKinematics.h"
 

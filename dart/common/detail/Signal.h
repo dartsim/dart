@@ -39,7 +39,7 @@
 
 #include <vector>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -287,7 +287,7 @@ Connection SlotRegister<T>::connect(const SlotType& _slot)
 }
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COMMON_DETAIL_SIGNAL_H_
 

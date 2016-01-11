@@ -39,7 +39,7 @@
 
 #include <memory>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 namespace signal {
@@ -140,7 +140,7 @@ struct DefaultCombiner
 }  // namespace signal
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COMMON_DETAIL_CONNECTIONBODY_H_
 

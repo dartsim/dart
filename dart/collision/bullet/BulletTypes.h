@@ -40,7 +40,7 @@
 #include <Eigen/Dense>
 #include <btBulletCollisionCommon.h>
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 /// @brief Convert Bullet vector3 type to Eigen vector3 type
@@ -56,6 +56,6 @@ btMatrix3x3 convertMatrix3x3(const Eigen::Matrix3d& _R);
 btTransform convertTransform(const Eigen::Isometry3d& _T);
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_BULLET_BULLETTYPES_H_

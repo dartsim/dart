@@ -47,7 +47,7 @@
 
 #include "dart/common/Subject.h"
 
-namespace dart {
+namespace kido {
 
 namespace simulation {
 class World;
@@ -60,7 +60,7 @@ class Shape;
 class BodyNode;
 } // namespace dynamics
 
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
@@ -117,7 +117,7 @@ private:
 
 };
 
-class Viewer : public osgViewer::Viewer, public dart::common::Subject
+class Viewer : public osgViewer::Viewer, public kido::common::Subject
 {
 public:
 
@@ -178,12 +178,12 @@ public:
   void removeWorldNode(WorldNode* _oldWorldNode);
 
   /// Remove the WorldNode associated with _oldWorld from this Viewer
-  void removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld);
+  void removeWorldNode(std::shared_ptr<kido::simulation::World> _oldWorld);
 
   /// Get the WorldNode associated with the given _world. Returns nullptr if
   /// this Viewer does not contain a WorldNode associated with _world.
   WorldNode* getWorldNode(
-      std::shared_ptr<dart::simulation::World> _world) const;
+      std::shared_ptr<kido::simulation::World> _world) const;
 
   /// Add an attachment to this Viewer. Note that an attachment can only be
   /// attached to one Viewer at a time.
@@ -216,7 +216,7 @@ public:
   void setWorldNodeActive(WorldNode* _node, bool _active=true);
 
   /// Set the given World to active
-  void setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
+  void setWorldNodeActive(std::shared_ptr<kido::simulation::World> _world,
                           bool _active=true);
 
   /// Set all currently active WorldNodes to simulate _on
@@ -236,22 +236,22 @@ public:
   /// interface object that has been created (allowing you to configure it). If
   /// a DragAndDrop interface already existed for this object, the existing one
   /// will be returned.
-  DragAndDrop* enableDragAndDrop(dart::dynamics::Entity* _entity);
+  DragAndDrop* enableDragAndDrop(kido::dynamics::Entity* _entity);
 
   /// A version of enableDragAndDrop specifically for SimpleFrame objects.
-  SimpleFrameDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
+  SimpleFrameDnD* enableDragAndDrop(kido::dynamics::SimpleFrame* _frame);
 
   /// A version of enableDragAndDrop specifically for a single shape within a
   /// SimpleFrame object. Dragging and Dropping the shape will also drag and
   /// drop the entire Frame
-  SimpleFrameShapeDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame,
-                                         dart::dynamics::Shape* _shape);
+  SimpleFrameShapeDnD* enableDragAndDrop(kido::dynamics::SimpleFrame* _frame,
+                                         kido::dynamics::Shape* _shape);
 
   /// A version of enableDragAndDrop specifically for InteractiveFrames
   InteractiveFrameDnD* enableDragAndDrop(InteractiveFrame* _frame);
 
   /// A version of enableDragAndDrop specifically for BodyNodes
-  BodyNodeDnD* enableDragAndDrop(dart::dynamics::BodyNode* _bn,
+  BodyNodeDnD* enableDragAndDrop(kido::dynamics::BodyNode* _bn,
                                  bool _useExternalIK = true,
                                  bool _useWholeBody = false);
 
@@ -366,18 +366,18 @@ protected:
   // typeid as a key
 
   /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
-  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
+  std::map<kido::dynamics::SimpleFrame*,SimpleFrameDnD*> mSimpleFrameDnDMap;
 
   /// Multimap from Shape ptrs to SimpleFrameShapeDnD ptrs. We use a multimap
   /// in order to support the possibility of a single Shape being used by
   /// multiple objects
-  std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*> mSimpleFrameShapeDnDMap;
+  std::multimap<kido::dynamics::Shape*,SimpleFrameShapeDnD*> mSimpleFrameShapeDnDMap;
 
   /// Map from InteractiveFrame ptrs to InteractiveFrameDnD ptrs
   std::map<InteractiveFrame*,InteractiveFrameDnD*> mInteractiveFrameDnDMap;
 
   /// Map from BodyNode ptrs to BodyNodeDnD ptrs
-  std::map<dart::dynamics::BodyNode*,BodyNodeDnD*> mBodyNodeDnDMap;
+  std::map<kido::dynamics::BodyNode*,BodyNodeDnD*> mBodyNodeDnDMap;
 };
 
 }

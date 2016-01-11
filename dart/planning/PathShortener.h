@@ -6,7 +6,7 @@
 
 #include "dart/simulation/World.h"
 
-namespace dart {
+namespace kido {
 
 namespace simulation { class World; }
 namespace dynamics { class Skeleton; }
@@ -30,4 +30,4 @@ protected:
 };
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

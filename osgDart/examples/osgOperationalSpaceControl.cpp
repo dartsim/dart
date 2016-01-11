@@ -39,15 +39,15 @@
 
 #include "dart/dart.h"
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::math;
+using namespace kido::common;
+using namespace kido::dynamics;
+using namespace kido::math;
 
 class OperationalSpaceControlWorld : public osgDart::WorldNode
 {
 public:
 
-  OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
+  OperationalSpaceControlWorld(kido::simulation::WorldPtr _world)
     : osgDart::WorldNode(_world)
   {
     // Extract the relevant pointers
@@ -249,16 +249,16 @@ public:
 
   bool mConstrained[3];
 
-  dart::sub_ptr<osgDart::DragAndDrop> mDnD;
+  kido::sub_ptr<osgDart::DragAndDrop> mDnD;
 };
 
 int main()
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
+  kido::simulation::WorldPtr world(new kido::simulation::World);
+  kido::utils::DartLoader loader;
 
   // Load the robot
-  dart::dynamics::SkeletonPtr robot =
+  kido::dynamics::SkeletonPtr robot =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
@@ -279,7 +279,7 @@ int main()
   robot->getJoint(0)->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
 
   // Load the ground
-  dart::dynamics::SkeletonPtr ground =
+  kido::dynamics::SkeletonPtr ground =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 

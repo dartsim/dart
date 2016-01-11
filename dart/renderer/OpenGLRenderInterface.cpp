@@ -63,7 +63,7 @@ static void initQuadObj(void)
 }
 //glut/lib/glut_shapes.c
 
-namespace dart {
+namespace kido {
 namespace renderer {
 
 void OpenGLRenderInterface::initialize() {
@@ -608,4 +608,4 @@ void OpenGLRenderInterface::saveToImage(const char* _filename, DecoBufferType _b
 }
 
 } // namespace renderer
-} // namespace dart
+} // namespace kido

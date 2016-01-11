@@ -38,7 +38,7 @@
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -421,4 +421,4 @@ void Inertia::computeParameters()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

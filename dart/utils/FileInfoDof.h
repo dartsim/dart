@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -106,5 +106,5 @@ protected:
 };
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido
 #endif  // DART_UTILS_FILEINFODOF_H_

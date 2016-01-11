@@ -46,7 +46,7 @@
 #define DART_MAX_ERV 1e+1
 #define DART_CFM     1e-9
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 double JointConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
@@ -186,4 +186,4 @@ dynamics::BodyNode* JointConstraint::getBodyNode2() const
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

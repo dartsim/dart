@@ -1,6 +1,6 @@
 #include "Jitter.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 jitter_point Jitter::j2[2] = {
@@ -146,4 +146,4 @@ jitter_point Jitter::j66[66]
   };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

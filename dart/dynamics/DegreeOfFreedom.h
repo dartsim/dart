@@ -44,7 +44,7 @@
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class Skeleton;
@@ -412,6 +412,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DEGREEOFFREEDOM_H_

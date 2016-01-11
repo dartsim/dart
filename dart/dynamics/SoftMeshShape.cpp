@@ -41,7 +41,7 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
@@ -144,4 +144,4 @@ void SoftMeshShape::update()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

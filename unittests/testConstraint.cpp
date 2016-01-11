@@ -104,12 +104,12 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart::math;
-  using namespace dart::collision;
-  using namespace dart::constraint;
-  using namespace dart::dynamics;
-  using namespace dart::simulation;
-  using namespace dart::utils;
+  using namespace kido::math;
+  using namespace kido::collision;
+  using namespace kido::constraint;
+  using namespace kido::dynamics;
+  using namespace kido::simulation;
+  using namespace kido::utils;
 
   //----------------------------------------------------------------------------
   // Settings

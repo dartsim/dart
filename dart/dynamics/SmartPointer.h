@@ -44,12 +44,12 @@
 #include "dart/dynamics/detail/InverseKinematicsPtr.h"
 
 // This file is a lightweight means of providing the smart pointers which are
-// commonly used within the dart::dynamics namespace. It is 'lightweight' in the
+// commonly used within the kido::dynamics namespace. It is 'lightweight' in the
 // sense that it does not depend on any types being fully defined, making this
 // header suitable for inclusion in other headers which might only want access
 // to the smart pointers without needing fully defined classes.
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 // -- Standard shared/weak pointers --
@@ -190,6 +190,6 @@ DART_DYNAMICS_MAKE_NODEPTR(EndEffector)
 DART_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_SMARTPOINTER_H_

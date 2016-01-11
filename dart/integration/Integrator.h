@@ -42,7 +42,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 /// \brief Any class that uses an integrator should implement this interface
@@ -104,6 +104,6 @@ public:
 };
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_INTEGRATION_INTEGRATOR_H_

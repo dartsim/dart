@@ -40,7 +40,7 @@
 #include <memory>
 #include "dart/dynamics/detail/NodePtr.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// TemplateInverseKinematicsPtr is a templated class that enables users to
@@ -333,6 +333,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_H_

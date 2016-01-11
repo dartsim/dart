@@ -38,7 +38,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/InverseKinematics.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -126,4 +126,4 @@ void JacobianNode::notifyJacobianDerivUpdate()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

@@ -42,7 +42,7 @@
 
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 class FileInfoC3D {
@@ -70,7 +70,7 @@ protected:
 };
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_FILEINFO_C3D_H
 

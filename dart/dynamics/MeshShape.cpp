@@ -129,7 +129,7 @@ aiMaterial::~aiMaterial()
 }
 #endif  // #ifndef ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
@@ -395,4 +395,4 @@ const aiScene* MeshShape::loadMesh(const std::string& _fileName)
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

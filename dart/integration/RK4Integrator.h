@@ -40,7 +40,7 @@
 
 #include "dart/integration/Integrator.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 /// \brief class RK4Integrator
@@ -68,6 +68,6 @@ private:
 };
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_INTEGRATION_RK4INTEGRATOR_H_

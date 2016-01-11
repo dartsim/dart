@@ -47,14 +47,14 @@
 #include "dart/collision/CollisionNode.h"
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class BodyNode;
 class Shape;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 class FCLCollisionNode;
@@ -98,6 +98,6 @@ private:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_FCL_FCLCOLLISIONNODE_H_

@@ -41,7 +41,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 int Marker::msMarkerCount = 0;
@@ -207,4 +207,4 @@ Marker::Marker(const Properties& properties, BodyNode* parent)
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

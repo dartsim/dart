@@ -48,13 +48,13 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/common/Deprecated.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 /// \brief
 class Shape : public virtual common::Subject
@@ -248,6 +248,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SHAPE_H_

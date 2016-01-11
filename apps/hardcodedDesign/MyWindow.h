@@ -49,10 +49,10 @@
 
 #include "dart/dart.h"
 
-class MyWindow : public dart::gui::Win3D {
+class MyWindow : public kido::gui::Win3D {
 public:
   /// \brief The constructor - set the position of the skeleton
-  explicit MyWindow(dart::dynamics::SkeletonPtr _skel): Win3D(), skel(_skel) {
+  explicit MyWindow(kido::dynamics::SkeletonPtr _skel): Win3D(), skel(_skel) {
     mTrans[1] = 200.f;
     mZoom = 0.3;
   }
@@ -64,7 +64,7 @@ public:
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief Hardcoded skeleton
-  dart::dynamics::SkeletonPtr skel;
+  kido::dynamics::SkeletonPtr skel;
 };
 
 #endif  // APPS_HARDCODEDDESIGN_MYWINDOW_H_

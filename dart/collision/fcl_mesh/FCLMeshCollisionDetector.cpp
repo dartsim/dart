@@ -51,7 +51,7 @@
 #include "dart/collision/fcl_mesh/CollisionShapes.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionNode.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -151,4 +151,4 @@ void FCLMeshCollisionDetector::draw()
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

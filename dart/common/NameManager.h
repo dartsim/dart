@@ -41,14 +41,14 @@
 #include <map>
 #include <string>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// \brief class NameManager
 ///
 /// Typical usage:
 /// \code{.cpp}
-/// using namespace dart;
+/// using namespace kido;
 ///
 /// NameManager<BodyNode*> nameMgr;
 ///
@@ -180,7 +180,7 @@ protected:
 };
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #include "dart/common/detail/NameManager.h"
 

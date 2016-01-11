@@ -41,7 +41,7 @@
 #include "dart/dart.h"
 
 /// \brief
-class MyWindow : public dart::gui::SimWindow {
+class MyWindow : public kido::gui::SimWindow {
 public:
   /// \brief
   MyWindow();

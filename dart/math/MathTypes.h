@@ -170,7 +170,7 @@ inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 
 }  // namespace Eigen
 
-namespace dart {
+namespace kido {
 namespace math {
 
 typedef Eigen::Matrix6d Inertia;
@@ -179,6 +179,6 @@ typedef Eigen::Matrix<double, 3, Eigen::Dynamic> AngularJacobian;
 typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian;
 
 }  // namespace math
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_MATH_MATHTYPES_H_

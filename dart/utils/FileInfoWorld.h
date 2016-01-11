@@ -37,7 +37,7 @@
 #ifndef DART_UTILS_FILEINFOWORLD_H_
 #define DART_UTILS_FILEINFOWORLD_H_
 
-namespace dart {
+namespace kido {
 
 namespace simulation {
 class Recording;
@@ -74,6 +74,6 @@ protected:
 };
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_UTILS_FILEINFOWORLD_H_

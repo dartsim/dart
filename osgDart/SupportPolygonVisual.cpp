@@ -45,17 +45,17 @@
 namespace osgDart {
 
 //==============================================================================
-SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
+SupportPolygonVisual::SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton,
                              double elevation)
   : mSkeleton(skeleton),
-    mTreeIndex(dart::dynamics::INVALID_INDEX),
+    mTreeIndex(kido::dynamics::INVALID_INDEX),
     mElevation(elevation)
 {
   initialize();
 }
 
 //==============================================================================
-SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
+SupportPolygonVisual::SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton,
                              size_t treeIndex, double elevation)
   : mSkeleton(skeleton),
     mTreeIndex(treeIndex),
@@ -65,13 +65,13 @@ SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& sk
 }
 
 //==============================================================================
-void SupportPolygonVisual::setSkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+void SupportPolygonVisual::setSkeleton(const kido::dynamics::SkeletonPtr& skeleton)
 {
   mSkeleton = skeleton;
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr SupportPolygonVisual::getSkeleton() const
+kido::dynamics::SkeletonPtr SupportPolygonVisual::getSkeleton() const
 {
   return mSkeleton.lock();
 }
@@ -79,7 +79,7 @@ dart::dynamics::SkeletonPtr SupportPolygonVisual::getSkeleton() const
 //==============================================================================
 void SupportPolygonVisual::visualizeWholeSkeleton()
 {
-  mTreeIndex = dart::dynamics::INVALID_INDEX;
+  mTreeIndex = kido::dynamics::INVALID_INDEX;
 }
 
 //==============================================================================
@@ -155,10 +155,10 @@ void SupportPolygonVisual::setCentroidRadius(double radius)
     return;
 
   mCentroidRadius = radius;
-  const dart::dynamics::ShapePtr& shape = mCentroid->getVisualizationShape(0);
-  std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
+  const kido::dynamics::ShapePtr& shape = mCentroid->getVisualizationShape(0);
+  std::static_pointer_cast<kido::dynamics::EllipsoidShape>(shape)->setSize(
         mCentroidRadius/2.0*Eigen::Vector3d::Ones());
-  shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+  shape->addDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
 //==============================================================================
@@ -194,10 +194,10 @@ void SupportPolygonVisual::setCenterOfMassRadius(double radius)
     return;
 
   mComRadius = radius;
-  const dart::dynamics::ShapePtr& shape = mCom->getVisualizationShape(0);
-  std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
+  const kido::dynamics::ShapePtr& shape = mCom->getVisualizationShape(0);
+  std::static_pointer_cast<kido::dynamics::EllipsoidShape>(shape)->setSize(
         mComRadius/2.0*Eigen::Vector3d::Ones());
-  shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+  shape->addDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
 //==============================================================================
@@ -233,16 +233,16 @@ const Eigen::Vector4d& SupportPolygonVisual::getInvalidCOMColor() const
 //==============================================================================
 void SupportPolygonVisual::refresh()
 {
-  const dart::dynamics::SkeletonPtr& skel = mSkeleton.lock();
+  const kido::dynamics::SkeletonPtr& skel = mSkeleton.lock();
   if(nullptr == skel)
     return;
 
-  const dart::math::SupportPolygon& poly =
-      (dart::dynamics::INVALID_INDEX == mTreeIndex)?
+  const kido::math::SupportPolygon& poly =
+      (kido::dynamics::INVALID_INDEX == mTreeIndex)?
         skel->getSupportPolygon() : skel->getSupportPolygon(mTreeIndex);
 
   const std::pair<Eigen::Vector3d, Eigen::Vector3d>& axes =
-      (dart::dynamics::INVALID_INDEX == mTreeIndex)?
+      (kido::dynamics::INVALID_INDEX == mTreeIndex)?
         skel->getSupportAxes() : skel->getSupportAxes(mTreeIndex);
   const Eigen::Vector3d& up = axes.first.cross(axes.second);
 
@@ -268,7 +268,7 @@ void SupportPolygonVisual::refresh()
 
     if(poly.size() > 0)
     {
-      const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)?
+      const Eigen::Vector2d& Cp = (kido::dynamics::INVALID_INDEX == mTreeIndex)?
             skel->getSupportCentroid() : skel->getSupportCentroid(mTreeIndex);
 
       const Eigen::Vector3d& C = Cp[0]*axes.first + Cp[1]*axes.second
@@ -289,13 +289,13 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCentroid->getVisualizationShape(0)->removeDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+          kido::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 
   if(mDisplayCOM)
   {
     Eigen::Vector3d com(Eigen::Vector3d::Zero());
-    if(dart::dynamics::INVALID_INDEX == mTreeIndex)
+    if(kido::dynamics::INVALID_INDEX == mTreeIndex)
     {
       com = skel->getCOM();
     }
@@ -303,13 +303,13 @@ void SupportPolygonVisual::refresh()
     {
       // We need to calculate tree COM ourselves, because that is not provided
       // by the API (yet)
-      const std::vector<dart::dynamics::BodyNode*>& bns =
+      const std::vector<kido::dynamics::BodyNode*>& bns =
           skel->getTreeBodyNodes(mTreeIndex);
 
       double mass = 0.0;
       for(size_t i=0; i < bns.size(); ++i)
       {
-        dart::dynamics::BodyNode* bn = bns[i];
+        kido::dynamics::BodyNode* bn = bns[i];
         com += bn->getMass() * bn->getCOM();
         mass += bn->getMass();
       }
@@ -328,7 +328,7 @@ void SupportPolygonVisual::refresh()
     tf.translation() = C;
     mCom->setTransform(tf);
 
-    if(dart::math::isInsideSupportPolygon(Cproj, poly))
+    if(kido::math::isInsideSupportPolygon(Cproj, poly))
       mCom->getVisualizationShape(0)->setColor(mValidColor);
     else
       mCom->getVisualizationShape(0)->setColor(mInvalidColor);
@@ -337,7 +337,7 @@ void SupportPolygonVisual::refresh()
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCom->getVisualizationShape(0)->removeDataVariance(
-          dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
+          kido::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 }
 
@@ -368,12 +368,12 @@ void SupportPolygonVisual::initialize()
   mPolygonGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
 
   mDisplayCentroid = true;
-  mCentroid = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World(), "centroid");
+  mCentroid = std::make_shared<kido::dynamics::SimpleFrame>(
+        kido::dynamics::Frame::World(), "centroid");
 
   mCentroidRadius = 0.12;
   mCentroid->addVisualizationShape(
-        std::make_shared<dart::dynamics::EllipsoidShape>(
+        std::make_shared<kido::dynamics::EllipsoidShape>(
           mCentroidRadius/2.0*Eigen::Vector3d::Ones()));
 
   mCentroid->getVisualizationShape(0)->setColor(
@@ -382,18 +382,18 @@ void SupportPolygonVisual::initialize()
   mCentroidNode = new FrameNode(mCentroid.get(), nullptr, false, false);
   addChild(mCentroidNode);
 
-  mValidColor = dart::Color::Blue(1.0);
-  mInvalidColor = dart::Color::Red(1.0);
+  mValidColor = kido::Color::Blue(1.0);
+  mInvalidColor = kido::Color::Red(1.0);
 
   mDisplayCOM = true;
-  mCom = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World(), "com");
+  mCom = std::make_shared<kido::dynamics::SimpleFrame>(
+        kido::dynamics::Frame::World(), "com");
 
   mComRadius = mCentroidRadius;
-  mCom->addVisualizationShape(std::make_shared<dart::dynamics::EllipsoidShape>(
+  mCom->addVisualizationShape(std::make_shared<kido::dynamics::EllipsoidShape>(
                                 mComRadius/2.0*Eigen::Vector3d::Ones()));
   mCom->getVisualizationShape(0)->addDataVariance(
-        dart::dynamics::Shape::DYNAMIC_COLOR);
+        kido::dynamics::Shape::DYNAMIC_COLOR);
 
   mComNode = new FrameNode(mCom.get(), nullptr, false, false);
   addChild(mComNode);

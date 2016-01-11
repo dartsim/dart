@@ -38,7 +38,7 @@
 #include "Joint.h"
 #include "Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -538,4 +538,4 @@ DegreeOfFreedom::DegreeOfFreedom(Joint* _joint,
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

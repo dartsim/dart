@@ -43,7 +43,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -406,4 +406,4 @@ void PlanarJoint::updateLocalJacobianTimeDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

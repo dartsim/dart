@@ -90,7 +90,7 @@ class BodyContactCondition : public TerminalCondition
 {
 public:
   /// \brief Constructor
-  BodyContactCondition(State* _state, dart::dynamics::BodyNode* _body);
+  BodyContactCondition(State* _state, kido::dynamics::BodyNode* _body);
 
   /// \brief Destructor
   virtual ~BodyContactCondition();
@@ -100,7 +100,7 @@ public:
 
 protected:
   /// \brief Body node to be tested
-  dart::dynamics::BodyNode* mBodyNode;
+  kido::dynamics::BodyNode* mBodyNode;
 };
 
 #endif  // APPS_ATLASROBOT_TERMINALCONDITION_H_

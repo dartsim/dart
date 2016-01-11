@@ -40,7 +40,7 @@
 #include <cstddef>
 #include <memory>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// \brief Resource provides file-like access to a resource loaded from URI.
@@ -85,6 +85,6 @@ public:
 using ResourcePtr = std::shared_ptr<Resource>;
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_COMMON_RESOURCE_H_

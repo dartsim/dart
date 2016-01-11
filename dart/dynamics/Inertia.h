@@ -41,7 +41,7 @@
 
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class Inertia
@@ -149,6 +149,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_INERTIA_H_

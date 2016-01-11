@@ -44,10 +44,10 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::utils;
+using namespace kido::common;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::utils;
 
 int main(int argc, char* argv[])
 {

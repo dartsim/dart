@@ -44,7 +44,7 @@
 #include "dart/dynamics/Entity.h"
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// The Frame class serves as the backbone of DART's kinematic tree structure.
@@ -355,6 +355,6 @@ public:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_FRAME_H_

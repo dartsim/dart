@@ -36,7 +36,7 @@
 
 #include "dart/collision/fcl/FCLTypes.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -71,4 +71,4 @@ fcl::Transform3f FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

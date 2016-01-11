@@ -46,8 +46,8 @@
 class Controller
 {
 public:
-  Controller(const dart::dynamics::SkeletonPtr& _skel,
-             dart::constraint::ConstraintSolver* _collisionSolver, double _t);
+  Controller(const kido::dynamics::SkeletonPtr& _skel,
+             kido::constraint::ConstraintSolver* _collisionSolver, double _t);
   virtual ~Controller() {}
 
   Eigen::VectorXd getTorques() { return mTorques; }
@@ -55,7 +55,7 @@ public:
   void setDesiredDof(int _index, double _val) { mDesiredDofs[_index] = _val; }
   void computeTorques(const Eigen::VectorXd& _dof,
                       const Eigen::VectorXd& _dofVel);
-  dart::dynamics::SkeletonPtr getSkel() { return mSkel; }
+  kido::dynamics::SkeletonPtr getSkel() { return mSkel; }
   Eigen::VectorXd getDesiredDofs() { return mDesiredDofs; }
   Eigen::MatrixXd getKp() {return mKp; }
   Eigen::MatrixXd getKd() {return mKd; }
@@ -63,13 +63,13 @@ public:
   { mConstrForces = _constrForce; }
 
 protected:
-  bool computeCoP(dart::dynamics::BodyNode* _node, Eigen::Vector3d* _cop);
+  bool computeCoP(kido::dynamics::BodyNode* _node, Eigen::Vector3d* _cop);
   Eigen::Vector3d evalLinMomentum(const Eigen::VectorXd& _dofVel);
   Eigen::Vector3d evalAngMomentum(const Eigen::VectorXd& _dofVel);
   Eigen::VectorXd adjustAngMomentum(Eigen::VectorXd _deltaMomentum,
                                     Eigen::VectorXd _controlledAxis);
-  dart::dynamics::SkeletonPtr mSkel;
-  dart::constraint::ConstraintSolver* mCollisionHandle;
+  kido::dynamics::SkeletonPtr mSkel;
+  kido::constraint::ConstraintSolver* mCollisionHandle;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;

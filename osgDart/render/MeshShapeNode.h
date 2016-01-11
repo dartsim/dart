@@ -47,11 +47,11 @@
 
 struct aiNode;
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class MeshShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -64,7 +64,7 @@ class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
+  MeshShapeNode(std::shared_ptr<kido::dynamics::MeshShape> shape,
                 EntityNode* parentEntity);
 
   void refresh();
@@ -76,7 +76,7 @@ protected:
 
   virtual ~MeshShapeNode();
 
-  std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
+  std::shared_ptr<kido::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
   std::vector< osg::ref_ptr<osg::Material> > mMaterials;
 

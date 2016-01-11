@@ -39,7 +39,7 @@
 
 #include "dart/common/Observer.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// sub_ptr is a pointer to a Subject. It can be used as a pointer to any class
@@ -98,6 +98,6 @@ protected:
 template <class T>
 using sub_ptr = common::sub_ptr<T>;
 
-} // namespace dart
+} // namespace kido
 
 #endif // DART_COMMON_SUB_PTR_H_

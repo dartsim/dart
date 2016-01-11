@@ -43,7 +43,7 @@
 #include "dart/common/Resource.h"
 #include "dart/common/Uri.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// ResourceRetriever provides methods for testing for the existance of and
@@ -69,6 +69,6 @@ public:
 using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_COMMON_RESOURCERETRIEVER_H_

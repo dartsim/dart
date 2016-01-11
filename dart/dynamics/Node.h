@@ -42,7 +42,7 @@
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -158,6 +158,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_NODE_H_

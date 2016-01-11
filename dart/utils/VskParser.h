@@ -42,7 +42,7 @@
 #include "dart/common/Uri.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 namespace VskParser
@@ -99,7 +99,7 @@ namespace VskParser
 } // namespace VskParser
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_VSKPARSER_H_
 

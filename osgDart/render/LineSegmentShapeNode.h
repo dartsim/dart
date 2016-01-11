@@ -41,11 +41,11 @@
 
 #include "osgDart/render/ShapeNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class LineSegmentShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -57,7 +57,7 @@ class LineSegmentShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  LineSegmentShapeNode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+  LineSegmentShapeNode(std::shared_ptr<kido::dynamics::LineSegmentShape> shape,
                        EntityNode* parent);
 
   void refresh();
@@ -67,7 +67,7 @@ protected:
 
   virtual ~LineSegmentShapeNode();
 
-  std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
+  std::shared_ptr<kido::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeGeode* mGeode;
 
 };

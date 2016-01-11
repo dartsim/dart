@@ -40,7 +40,7 @@
 namespace osgDart {
 namespace render {
 
-ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
+ShapeNode::ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
                      EntityNode* _parent,
                      osg::Node* _node)
   : mShape(_shape),
@@ -58,7 +58,7 @@ ShapeNode::~ShapeNode()
 }
 
 //==============================================================================
-std::shared_ptr<dart::dynamics::Shape> ShapeNode::getShape() const
+std::shared_ptr<kido::dynamics::Shape> ShapeNode::getShape() const
 {
   return mShape;
 }

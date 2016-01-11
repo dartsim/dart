@@ -46,7 +46,7 @@
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 
-namespace dart {
+namespace kido {
 namespace math {
 
 Eigen::Quaterniond expToQuat(const Eigen::Vector3d& _v) {
@@ -1988,4 +1988,4 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
 
 
 }  // namespace math
-}  // namespace dart
+}  // namespace kido

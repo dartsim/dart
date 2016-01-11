@@ -41,7 +41,7 @@
 
 #include "dart/dynamics/InverseKinematics.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// An IKHierarchy is a sorted set of IK modules. The outer vector represents
@@ -378,6 +378,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_HIERARCHICALIK_H_

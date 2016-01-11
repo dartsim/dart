@@ -51,7 +51,7 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftMeshShape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 
@@ -3060,5 +3060,5 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 

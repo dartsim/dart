@@ -42,7 +42,7 @@
 #include "Controller.h"
 
 /// \brief class MyWindow
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
   /// \brief Default constructor

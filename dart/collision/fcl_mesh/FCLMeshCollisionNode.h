@@ -49,13 +49,13 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/fcl_mesh/tri_tri_intersection_test.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class BodyNode;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 /// class FCLMeshCollisionNode
@@ -239,6 +239,6 @@ inline double FCLMeshCollisionNode::triArea(
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_FCLMESH_FCLMESHCOLLISIONNODE_H_

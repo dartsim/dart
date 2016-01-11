@@ -39,7 +39,7 @@
 #include "dart/common/Uri.h"
 #include "dart/utils/CompositeResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -136,4 +136,4 @@ std::vector<common::ResourceRetrieverPtr>
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido

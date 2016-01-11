@@ -39,7 +39,7 @@
 
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
@@ -121,4 +121,4 @@ void EllipsoidShape::updateVolume()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

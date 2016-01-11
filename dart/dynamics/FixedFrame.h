@@ -39,7 +39,7 @@
 
 #include "Frame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// The FixedFrame class represents a Frame with zero relative velocity and
@@ -81,7 +81,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 
 #endif // DART_DYNAMICS_FIXEDFRAME_H_

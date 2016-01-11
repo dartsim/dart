@@ -46,8 +46,8 @@ class Controller
 {
 public:
   /// \brief Constructor
-  Controller(dart::dynamics::SkeletonPtr _robot,
-             dart::dynamics::BodyNode* _endEffector);
+  Controller(kido::dynamics::SkeletonPtr _robot,
+             kido::dynamics::BodyNode* _endEffector);
 
   /// \brief Destructor
   virtual ~Controller();
@@ -56,20 +56,20 @@ public:
   void update(const Eigen::Vector3d& _targetPosition);
 
   /// \brief Get robot
-  dart::dynamics::SkeletonPtr getRobot() const;
+  kido::dynamics::SkeletonPtr getRobot() const;
 
   /// \brief Get end effector of the robot
-  dart::dynamics::BodyNode* getEndEffector() const;
+  kido::dynamics::BodyNode* getEndEffector() const;
 
   /// \brief Keyboard control
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
 private:
   /// \brief Robot
-  dart::dynamics::SkeletonPtr mRobot;
+  kido::dynamics::SkeletonPtr mRobot;
 
   /// \brief End-effector of the robot
-  dart::dynamics::BodyNode* mEndEffector;
+  kido::dynamics::BodyNode* mEndEffector;
 
   /// \brief Control forces
   Eigen::VectorXd mForces;

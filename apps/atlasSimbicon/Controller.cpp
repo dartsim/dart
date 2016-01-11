@@ -44,7 +44,7 @@ using namespace std;
 
 using namespace Eigen;
 
-using namespace dart;
+using namespace kido;
 using namespace constraint;
 using namespace dynamics;
 

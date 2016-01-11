@@ -46,7 +46,7 @@
 #include "dart/collision/CollisionNode.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 /// Contact information
@@ -206,6 +206,6 @@ private:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_

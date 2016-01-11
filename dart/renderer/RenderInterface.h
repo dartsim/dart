@@ -43,7 +43,7 @@
 
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 
 enum DecoBufferType {
@@ -115,6 +115,6 @@ public:
 };
 
 } // namespace renderer
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_RENDERER_RENDERINTERFACE_H

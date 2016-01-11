@@ -42,7 +42,7 @@
 #include "dart/common/Uri.h"
 #include "dart/utils/PackageResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -153,4 +153,4 @@ bool PackageResourceRetriever::resolvePackageUri(
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido

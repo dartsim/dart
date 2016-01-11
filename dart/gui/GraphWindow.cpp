@@ -49,7 +49,7 @@
 #include "dart/gui/GLFuncs.h"
 #include "dart/gui/LoadGlut.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 GraphWindow::GraphWindow()
@@ -131,4 +131,4 @@ void GraphWindow::setData(Eigen::VectorXd _data) {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

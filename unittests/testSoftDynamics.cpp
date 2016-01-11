@@ -53,7 +53,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 
 //==============================================================================
 /// Returns true if the two matrices are equal within the given bound
@@ -241,7 +241,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;

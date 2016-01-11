@@ -24,7 +24,7 @@
 #include "dart/common/Uri.h"
 #include "dart/utils/sdf/SdfParser.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -911,7 +911,7 @@ static void readAxisElement(
   }
 }
 
-dart::dynamics::WeldJoint::Properties SdfParser::readWeldJoint(
+kido::dynamics::WeldJoint::Properties SdfParser::readWeldJoint(
     tinyxml2::XMLElement* _jointElement,
     const Eigen::Isometry3d&,
     const std::string&)
@@ -1116,4 +1116,4 @@ common::ResourceRetrieverPtr SdfParser::getResourceRetriever(
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido

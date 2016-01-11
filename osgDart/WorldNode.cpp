@@ -63,7 +63,7 @@ public:
 };
 
 //==============================================================================
-WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> _world)
+WorldNode::WorldNode(std::shared_ptr<kido::simulation::World> _world)
   : mWorld(_world),
     mSimulating(false),
     mNumStepsPerCycle(1),
@@ -73,13 +73,13 @@ WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> _world)
 }
 
 //==============================================================================
-void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> _newWorld)
+void WorldNode::setWorld(std::shared_ptr<kido::simulation::World> _newWorld)
 {
   mWorld = _newWorld;
 }
 
 //==============================================================================
-std::shared_ptr<dart::simulation::World> WorldNode::getWorld() const
+std::shared_ptr<kido::simulation::World> WorldNode::getWorld() const
 {
   return mWorld;
 }
@@ -231,9 +231,9 @@ void WorldNode::refreshCustomFrames()
 }
 
 //==============================================================================
-void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* _frame)
+void WorldNode::refreshBaseFrameNode(kido::dynamics::Frame* _frame)
 {
-  std::map<dart::dynamics::Frame*, FrameNode*>::iterator it =
+  std::map<kido::dynamics::Frame*, FrameNode*>::iterator it =
       mFrameToNode.find(_frame);
 
   if(it == mFrameToNode.end())
@@ -246,7 +246,7 @@ void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* _frame)
 }
 
 //==============================================================================
-void WorldNode::createBaseFrameNode(dart::dynamics::Frame* _frame)
+void WorldNode::createBaseFrameNode(kido::dynamics::Frame* _frame)
 {
   osg::ref_ptr<FrameNode> node = new FrameNode(_frame, this, false, true);
 
@@ -257,9 +257,9 @@ void WorldNode::createBaseFrameNode(dart::dynamics::Frame* _frame)
 }
 
 //==============================================================================
-void WorldNode::refreshBaseEntityNode(dart::dynamics::Entity* _entity)
+void WorldNode::refreshBaseEntityNode(kido::dynamics::Entity* _entity)
 {
-  std::map<dart::dynamics::Entity*, EntityNode*>::iterator it =
+  std::map<kido::dynamics::Entity*, EntityNode*>::iterator it =
       mEntityToNode.find(_entity);
 
   if(it == mEntityToNode.end())
@@ -273,19 +273,19 @@ void WorldNode::refreshBaseEntityNode(dart::dynamics::Entity* _entity)
 }
 
 //==============================================================================
-void WorldNode::createBaseEntityNode(dart::dynamics::Entity* _entity)
+void WorldNode::createBaseEntityNode(kido::dynamics::Entity* _entity)
 {
-  dart::dynamics::Frame* parentFrame;
+  kido::dynamics::Frame* parentFrame;
 
   if(_entity->isFrame())
   {
-    parentFrame = dynamic_cast<dart::dynamics::Frame*>(_entity);
+    parentFrame = dynamic_cast<kido::dynamics::Frame*>(_entity);
     if(nullptr == parentFrame)
     {
       dtwarn << "[WorldNode::createBaseEntityNode] _entity named '"
              << _entity->getName() << "' claimed to be a Frame, but failed to "
              << "be dynamically cast into one\n";
-      parentFrame = dart::dynamics::Frame::World();
+      parentFrame = kido::dynamics::Frame::World();
     }
   }
   else

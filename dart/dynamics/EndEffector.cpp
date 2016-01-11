@@ -39,7 +39,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -464,4 +464,4 @@ void EndEffector::updateWorldJacobianClassicDeriv() const
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

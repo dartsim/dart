@@ -40,7 +40,7 @@
 #include "dart/common/Console.h"
 #include "LocalResource.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -208,4 +208,4 @@ size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido

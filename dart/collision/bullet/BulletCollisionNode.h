@@ -47,13 +47,13 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/collision/CollisionNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class BodyNode;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 class BulletCollisionNode;
@@ -95,6 +95,6 @@ btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
                                        const aiScene* _mesh);
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_

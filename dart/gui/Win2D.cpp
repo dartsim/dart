@@ -40,7 +40,7 @@
 
 #include "dart/gui/LoadGlut.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 Win2D::Win2D() : GlutWindow() {
@@ -159,4 +159,4 @@ void Win2D::initGL() {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

@@ -41,7 +41,7 @@
 #include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -480,4 +480,4 @@ size_t GradientDescentSolver::getLastNumIterations() const
 }
 
 } // namespace optimizer
-} // namespace dart
+} // namespace kido

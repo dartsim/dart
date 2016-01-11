@@ -42,7 +42,7 @@
 #include "dart/math/MathTypes.h"
 #include "dart/collision/CollisionDetector.h"
 
-namespace dart {
+namespace kido {
 
 namespace collision{
 class SoftCollisionInfo;
@@ -253,7 +253,7 @@ public:
 };
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
 

@@ -37,7 +37,7 @@
 
 #include "dart/integration/EulerIntegrator.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 //==============================================================================
@@ -71,4 +71,4 @@ void EulerIntegrator::integrateVel(IntegrableSystem* _system, double _dt)
 }
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido

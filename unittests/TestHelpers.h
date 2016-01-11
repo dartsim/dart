@@ -57,10 +57,10 @@
 #include "dart/common/ResourceRetriever.h"
 
 using namespace Eigen;
-using namespace dart::math;
-using namespace dart::collision;
-using namespace dart::dynamics;
-using namespace dart::simulation;
+using namespace kido::math;
+using namespace kido::collision;
+using namespace kido::dynamics;
+using namespace kido::simulation;
 
 /// Function headers
 enum TypeOfDOF
@@ -444,7 +444,7 @@ SkeletonPtr createBox(
 }
 
 //==============================================================================
-struct TestResource : public dart::common::Resource
+struct TestResource : public kido::common::Resource
 {
   size_t getSize() override
   {
@@ -468,15 +468,15 @@ struct TestResource : public dart::common::Resource
 };
 
 //==============================================================================
-struct PresentResourceRetriever : public dart::common::ResourceRetriever
+struct PresentResourceRetriever : public kido::common::ResourceRetriever
 {
-  bool exists(const dart::common::Uri& _uri) override
+  bool exists(const kido::common::Uri& _uri) override
   {
     mExists.push_back(_uri.toString());
     return true;
   }
 
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
+  kido::common::ResourcePtr retrieve(const kido::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
     return std::make_shared<TestResource>();
@@ -487,15 +487,15 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
 };
 
 //==============================================================================
-struct AbsentResourceRetriever : public dart::common::ResourceRetriever
+struct AbsentResourceRetriever : public kido::common::ResourceRetriever
 {
-  bool exists(const dart::common::Uri& _uri) override
+  bool exists(const kido::common::Uri& _uri) override
   {
     mExists.push_back(_uri.toString());
     return false;
   }
 
-  dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
+  kido::common::ResourcePtr retrieve(const kido::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
     return nullptr;

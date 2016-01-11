@@ -42,7 +42,7 @@
 #include "dart/config.h"
 #include "dart/constraint/LCPSolver.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
@@ -74,7 +74,7 @@ private:
 };
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_CONSTRAINT_DANTZIGLCPSOLVER_H_
 

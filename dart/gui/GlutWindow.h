@@ -44,7 +44,7 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/gui/lodepng.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -99,6 +99,6 @@ protected:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_GLUTWINDOW_H_

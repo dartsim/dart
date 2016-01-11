@@ -38,8 +38,8 @@
 #include <gtest/gtest.h>
 #include "dart/utils/urdf/DartLoader.h"
 
-using dart::common::Uri;
-using dart::utils::DartLoader;
+using kido::common::Uri;
+using kido::utils::DartLoader;
 
 TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
 {

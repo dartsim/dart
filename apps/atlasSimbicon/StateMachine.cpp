@@ -45,8 +45,8 @@
 
 using namespace std;
 
-using namespace dart::dynamics;
-using namespace dart::constraint;
+using namespace kido::dynamics;
+using namespace kido::constraint;
 
 //==============================================================================
 StateMachine::StateMachine(const std::string& _name)

@@ -42,7 +42,7 @@
 #include "dart/math/MathTypes.h"
 #include "dart/constraint/JointConstraint.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 /// WeldJointConstraint represents weld joint constraint between a body and the
@@ -119,7 +119,7 @@ public:
 };
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_CONSTRAINT_WELDJOINTCONSTRAINT_H_
 

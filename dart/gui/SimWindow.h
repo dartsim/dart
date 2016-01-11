@@ -49,7 +49,7 @@
 #include "dart/gui/Win3D.h"
 #include "dart/simulation/World.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 class GraphWindow;
@@ -82,7 +82,7 @@ public:
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   /// \brief
-  void setWorld(dart::simulation::WorldPtr _world);
+  void setWorld(kido::simulation::WorldPtr _world);
 
   /// \brief Save world in 'tempWorld.txt'
   void saveWorld();
@@ -114,6 +114,6 @@ protected:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_SIMWINDOW_H_

@@ -38,7 +38,7 @@
 
 #include "dart/renderer/LoadOpengl.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 Trackball::Trackball()
@@ -165,4 +165,4 @@ Eigen::Quaterniond Trackball::quatFromVectors(
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

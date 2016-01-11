@@ -40,7 +40,7 @@
 
 #include <Eigen/Core>
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 class Trajectory
@@ -52,4 +52,4 @@ public:
 };
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

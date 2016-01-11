@@ -44,17 +44,17 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Shape;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace collision {
 
-int collide(dart::dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
-            dart::dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
+int collide(kido::dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
+            kido::dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
             std::vector<Contact>* _result);
 
 int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
@@ -86,6 +86,6 @@ int collideCylinderPlane(
     std::vector<Contact>* result);
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_DART_DARTCOLLIDE_H_

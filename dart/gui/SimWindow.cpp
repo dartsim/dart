@@ -54,7 +54,7 @@
 #include "dart/utils/FileInfoWorld.h"
 #include "dart/gui/GraphWindow.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 SimWindow::SimWindow()
@@ -239,7 +239,7 @@ void SimWindow::setWorld(simulation::WorldPtr _world) {
 void SimWindow::saveWorld() {
   if (!mWorld)
     return;
-  dart::utils::FileInfoWorld worldFile;
+  kido::utils::FileInfoWorld worldFile;
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
 }
 
@@ -251,4 +251,4 @@ void SimWindow::plot(Eigen::VectorXd& _data) {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

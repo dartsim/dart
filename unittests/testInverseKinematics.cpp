@@ -42,8 +42,8 @@
 #include "TestHelpers.h"
 
 using namespace Eigen;
-using namespace dart;
-using namespace dart::dynamics;
+using namespace kido;
+using namespace kido::dynamics;
 
 SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
                                            Vector3d dim2, TypeOfDOF type2,

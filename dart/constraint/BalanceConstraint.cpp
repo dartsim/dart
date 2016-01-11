@@ -39,7 +39,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/EndEffector.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -401,4 +401,4 @@ void BalanceConstraint::clearCaches()
 }
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido

@@ -45,7 +45,7 @@
 #include "dart/gui/LoadGlut.h"
 #include "dart/renderer/LoadOpengl.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
   void drawStringOnScreen(float _x, float _y, const std::string& _s,
@@ -178,4 +178,4 @@ void drawProgressBar(int _currFrame, int _totalFrame) {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

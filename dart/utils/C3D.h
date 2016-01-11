@@ -44,7 +44,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //  C3D file reader and writer
-namespace dart {
+namespace kido {
 namespace utils {
 
 #define C3D_REC_SIZE   512
@@ -91,7 +91,7 @@ bool saveC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
                   int _nFrame, int _nMarker, double _freq );
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_C3D_H
 

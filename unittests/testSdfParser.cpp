@@ -45,7 +45,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/sdf/SdfParser.h"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;

@@ -44,7 +44,7 @@
 // #define CLOCKS_PER_SEC 1000
 // #endif
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -182,4 +182,4 @@ double Timer::getWallTime()
 }
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido

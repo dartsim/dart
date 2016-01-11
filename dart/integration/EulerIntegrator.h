@@ -40,7 +40,7 @@
 
 #include "dart/integration/Integrator.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 /// \brief class EulerIntegrator
@@ -64,6 +64,6 @@ public:
 };
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_INTEGRATION_EULERINTEGRATOR_H_

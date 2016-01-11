@@ -44,7 +44,7 @@
 
 #include "dart/dart.h"
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
   MyWindow(): SimWindow()
@@ -72,7 +72,7 @@ public:
 private:
   Eigen::Vector3d mForce;
   Controller* mController;
-  dart::constraint::WeldJointConstraint* mWeldJoint;
+  kido::constraint::WeldJointConstraint* mWeldJoint;
   int mImpulseDuration;
   bool mHarnessOn;
 

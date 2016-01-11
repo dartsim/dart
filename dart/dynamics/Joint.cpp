@@ -46,7 +46,7 @@
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -515,4 +515,4 @@ void Joint::notifyAccelerationUpdate()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

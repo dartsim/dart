@@ -43,7 +43,7 @@
 #include "dart/common/Resource.h"
 #include "dart/common/ResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
@@ -125,6 +125,6 @@ private:
 aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_

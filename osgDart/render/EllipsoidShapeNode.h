@@ -42,11 +42,11 @@
 
 #include "osgDart/render/ShapeNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class EllipsoidShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -59,7 +59,7 @@ class EllipsoidShapeNode : public ShapeNode, public osg::MatrixTransform
 public:
 
   EllipsoidShapeNode(
-      std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
+      std::shared_ptr<kido::dynamics::EllipsoidShape> shape,
       EntityNode* parent);
 
   void refresh();
@@ -69,7 +69,7 @@ protected:
 
   virtual ~EllipsoidShapeNode();
 
-  std::shared_ptr<dart::dynamics::EllipsoidShape> mEllipsoidShape;
+  std::shared_ptr<kido::dynamics::EllipsoidShape> mEllipsoidShape;
   EllipsoidShapeGeode* mGeode;
 
 };

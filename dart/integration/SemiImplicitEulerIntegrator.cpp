@@ -37,7 +37,7 @@
 
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 //==============================================================================
@@ -74,4 +74,4 @@ void SemiImplicitEulerIntegrator::integrateVel(IntegrableSystem* _system,
 }
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido

@@ -46,7 +46,7 @@
 
 #include "dart/common/Deprecated.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 /// \brief class Function
@@ -219,7 +219,7 @@ public:
 };
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_OPTIMIZER_FUNCTION_H_
 

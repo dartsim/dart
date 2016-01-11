@@ -43,7 +43,7 @@
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -431,4 +431,4 @@ void EulerJoint::updateLocalJacobianTimeDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

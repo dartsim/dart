@@ -55,7 +55,7 @@ namespace flann {
 	template <class A> class Index;
 }
 
-namespace dart {
+namespace kido {
 
 namespace simulation { class World; }
 namespace dynamics { class Skeleton; }
@@ -93,7 +93,7 @@ public:
 public:
 
 	//// Constructor with a single root 
-    RRT(dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs, const Eigen::VectorXd &root,
+    RRT(kido::simulation::WorldPtr world, kido::dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs, const Eigen::VectorXd &root,
       double stepSize = 0.02);
 
 	/// Constructor with multiple roots (so, multiple trees)
@@ -164,4 +164,4 @@ protected:
 };
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

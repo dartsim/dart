@@ -49,7 +49,7 @@ class BoxShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape,
+  BoxShapeGeode(kido::dynamics::BoxShape* shape,
                 EntityNode* parentEntity,
                 BoxShapeNode* parentNode);
 
@@ -60,7 +60,7 @@ protected:
 
   virtual ~BoxShapeGeode();
 
-  dart::dynamics::BoxShape* mBoxShape;
+  kido::dynamics::BoxShape* mBoxShape;
   BoxShapeDrawable* mDrawable;
 
 };
@@ -70,7 +70,7 @@ class BoxShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
+  BoxShapeDrawable(kido::dynamics::BoxShape* shape);
 
   void refresh(bool firstTime);
 
@@ -78,12 +78,12 @@ protected:
 
   virtual ~BoxShapeDrawable();
 
-  dart::dynamics::BoxShape* mBoxShape;
+  kido::dynamics::BoxShape* mBoxShape;
 
 };
 
 //==============================================================================
-BoxShapeNode::BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
+BoxShapeNode::BoxShapeNode(std::shared_ptr<kido::dynamics::BoxShape> shape,
                            EntityNode* parent)
   : ShapeNode(shape, parent, this),
     mBoxShape(shape),
@@ -100,7 +100,7 @@ void BoxShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -109,7 +109,7 @@ void BoxShapeNode::refresh()
 //==============================================================================
 void BoxShapeNode::extractData(bool firstTime)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if(mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
     setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
 
@@ -130,7 +130,7 @@ BoxShapeNode::~BoxShapeNode()
 }
 
 //==============================================================================
-BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
+BoxShapeGeode::BoxShapeGeode(kido::dynamics::BoxShape* shape,
                              EntityNode* parent,
                              BoxShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parent, this),
@@ -170,7 +170,7 @@ BoxShapeGeode::~BoxShapeGeode()
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
+BoxShapeDrawable::BoxShapeDrawable(kido::dynamics::BoxShape* shape)
   : mBoxShape(shape)
 {
   refresh(true);
@@ -179,12 +179,12 @@ BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
 //==============================================================================
 void BoxShapeDrawable::refresh(bool firstTime)
 {
-  if(mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mBoxShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(mBoxShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     const Eigen::Vector3d& d = mBoxShape->getSize();
@@ -194,7 +194,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
     dirtyDisplayList();
   }
 
-  if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(mBoxShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     setColor(eigToOsgVec4(mBoxShape->getRGBA()));

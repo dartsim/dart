@@ -42,7 +42,7 @@
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/Jitter.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 Win3D::Win3D()
@@ -339,4 +339,4 @@ void Win3D::capturing() {
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

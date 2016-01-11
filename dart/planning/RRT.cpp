@@ -48,11 +48,11 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 using namespace simulation;
 using namespace dynamics;
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 /* ********************************************************************************************* */
@@ -232,4 +232,4 @@ size_t RRT::getSize() {
 }
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

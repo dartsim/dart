@@ -39,7 +39,7 @@
 
 #include "dart/common/Console.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -265,4 +265,4 @@ MultiFunction::~MultiFunction()
 }
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido

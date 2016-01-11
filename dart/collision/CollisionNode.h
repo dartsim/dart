@@ -40,13 +40,13 @@
 
 #include <cstddef>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class BodyNode;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 /// \brief
@@ -76,6 +76,6 @@ protected:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_COLLISIONNODE_H_

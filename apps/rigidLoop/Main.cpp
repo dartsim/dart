@@ -38,7 +38,7 @@
 
 #include "apps/rigidLoop/MyWindow.h"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
+  kido::simulation::WorldPtr myWorld
     = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
   assert(myWorld != nullptr);
     

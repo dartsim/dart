@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class CylinderShape : public Shape {
@@ -93,6 +93,6 @@ private:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_CYLINDERSHAPE_H_

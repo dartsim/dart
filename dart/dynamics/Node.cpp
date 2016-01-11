@@ -43,7 +43,7 @@
         << "Please report this as a bug if it is not a custom node type!\n"; \
   assert(false);
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -174,4 +174,4 @@ AccessoryNode::AccessoryNode()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

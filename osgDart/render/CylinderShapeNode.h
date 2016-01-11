@@ -41,11 +41,11 @@
 
 #include "osgDart/render/ShapeNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class CylinderShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -57,7 +57,7 @@ class CylinderShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  CylinderShapeNode(std::shared_ptr<dart::dynamics::CylinderShape> shape,
+  CylinderShapeNode(std::shared_ptr<kido::dynamics::CylinderShape> shape,
                     EntityNode* parent);
 
   void refresh();
@@ -67,7 +67,7 @@ protected:
 
   virtual ~CylinderShapeNode();
 
-  std::shared_ptr<dart::dynamics::CylinderShape> mCylinderShape;
+  std::shared_ptr<kido::dynamics::CylinderShape> mCylinderShape;
   CylinderShapeGeode* mGeode;
 
 };

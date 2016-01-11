@@ -56,10 +56,10 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 
-using namespace dart;
-using namespace dart::math;
-using namespace dart::dynamics;
-using namespace dart::simulation;
+using namespace kido;
+using namespace kido::math;
+using namespace kido::dynamics;
+using namespace kido::simulation;
 
 #define JOINT_TOL 0.01
 

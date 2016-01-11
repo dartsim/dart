@@ -49,7 +49,7 @@ const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/PointMass.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class PointMass;
@@ -499,6 +499,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SOFTBODYNODE_H_

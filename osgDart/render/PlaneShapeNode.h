@@ -41,11 +41,11 @@
 
 #include "osgDart/render/ShapeNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class PlaneShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -57,7 +57,7 @@ class PlaneShapeNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  PlaneShapeNode(std::shared_ptr<dart::dynamics::PlaneShape> shape,
+  PlaneShapeNode(std::shared_ptr<kido::dynamics::PlaneShape> shape,
                  EntityNode* parent);
 
   void refresh();
@@ -67,7 +67,7 @@ protected:
 
   virtual ~PlaneShapeNode();
 
-  std::shared_ptr<dart::dynamics::PlaneShape> mPlaneShape;
+  std::shared_ptr<kido::dynamics::PlaneShape> mPlaneShape;
   PlaneShapeGeode* mGeode;
 
 };

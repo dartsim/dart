@@ -41,7 +41,7 @@
 #include "LocalResourceRetriever.h"
 #include "LocalResource.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -75,4 +75,4 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido

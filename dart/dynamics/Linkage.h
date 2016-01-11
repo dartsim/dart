@@ -40,7 +40,7 @@
 #include "ReferentialSkeleton.h"
 #include <unordered_set>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// A Linkage is a ReferentialSkeleton with the special property that all the
@@ -199,6 +199,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_LINKAGE_H_

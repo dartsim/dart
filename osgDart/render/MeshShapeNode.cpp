@@ -54,7 +54,7 @@ class osgAiNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  osgAiNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
+  osgAiNode(kido::dynamics::MeshShape* shape, EntityNode* parentEntity,
             MeshShapeNode* parentNode, const aiNode* node);
 
   void refresh();
@@ -70,7 +70,7 @@ protected:
   void clearUnusedNodes();
 
   MeshShapeNode* mMainNode;
-  dart::dynamics::MeshShape* mMeshShape;
+  kido::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
   MeshShapeGeode* mGeode;
   std::map<const aiNode*,osgAiNode*> mChildNodes;
@@ -82,7 +82,7 @@ class MeshShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  MeshShapeGeode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
+  MeshShapeGeode(kido::dynamics::MeshShape* shape, EntityNode* parentEntity,
                  MeshShapeNode* parentNode, const aiNode* node);
 
   void refresh();
@@ -95,7 +95,7 @@ protected:
   void clearChildUtilizationFlags();
   void clearUnusedMeshes();
 
-  dart::dynamics::MeshShape* mMeshShape;
+  kido::dynamics::MeshShape* mMeshShape;
   const aiNode* mAiNode;
   MeshShapeNode* mMainNode;
   std::map<const aiMesh*,MeshShapeGeometry*> mMeshes;
@@ -107,7 +107,7 @@ class MeshShapeGeometry : public ShapeNode, public osg::Geometry
 {
 public:
 
-  MeshShapeGeometry(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
+  MeshShapeGeometry(kido::dynamics::MeshShape* shape, EntityNode* parentEntity,
                     MeshShapeNode* parentNode, MeshShapeGeode* parentGeode,
                     aiMesh* mesh);
 
@@ -123,14 +123,14 @@ protected:
   osg::ref_ptr<osg::Vec3Array> mNormals;
   osg::ref_ptr<osg::Vec4Array> mColors;
 
-  dart::dynamics::MeshShape* mMeshShape;
+  kido::dynamics::MeshShape* mMeshShape;
   const aiMesh* mAiMesh;
   MeshShapeNode* mMainNode;
 
 };
 
 //==============================================================================
-MeshShapeNode::MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
+MeshShapeNode::MeshShapeNode(std::shared_ptr<kido::dynamics::MeshShape> shape,
                              EntityNode* parentEntity)
   : ShapeNode(shape, parentEntity, this),
     mMeshShape(shape),
@@ -147,7 +147,7 @@ void MeshShapeNode::refresh()
 
   setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -231,8 +231,8 @@ void MeshShapeNode::extractData(bool firstTime)
     }
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
+     || mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
@@ -285,7 +285,7 @@ MeshShapeNode::~MeshShapeNode()
 }
 
 //==============================================================================
-osgAiNode::osgAiNode(dart::dynamics::MeshShape* shape,
+osgAiNode::osgAiNode(kido::dynamics::MeshShape* shape,
                      EntityNode* parentEntity,
                      MeshShapeNode* parentNode,
                      const aiNode* node)
@@ -303,7 +303,7 @@ void osgAiNode::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -314,7 +314,7 @@ void osgAiNode::extractData(bool firstTime)
 {
   clearChildUtilizationFlags();
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_TRANSFORM)
      || firstTime)
   {
     aiMatrix4x4 M = mAiNode->mTransformation;
@@ -376,7 +376,7 @@ void osgAiNode::clearUnusedNodes()
 }
 
 //==============================================================================
-MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
+MeshShapeGeode::MeshShapeGeode(kido::dynamics::MeshShape* shape,
                                EntityNode* parentEntity,
                                MeshShapeNode* parentNode, const aiNode* node)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
@@ -395,7 +395,7 @@ void MeshShapeGeode::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -459,7 +459,7 @@ void MeshShapeGeode::clearUnusedMeshes()
 }
 
 //==============================================================================
-MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
+MeshShapeGeometry::MeshShapeGeometry(kido::dynamics::MeshShape* shape,
                                      EntityNode* parentEntity,
                                      MeshShapeNode* parentNode,
                                      MeshShapeGeode* parentGeode,
@@ -480,7 +480,7 @@ void MeshShapeGeometry::refresh()
 {
   mUtilized = true;
 
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     return;
 
   extractData(false);
@@ -489,12 +489,12 @@ void MeshShapeGeometry::refresh()
 //==============================================================================
 void MeshShapeGeometry::extractData(bool firstTime)
 {
-  if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if(mShape->getDataVariance() == kido::dynamics::Shape::STATIC)
     setDataVariance(osg::Object::STATIC);
   else
     setDataVariance(osg::Object::DYNAMIC);
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     osg::ref_ptr<osg::DrawElementsUInt> elements[4];
@@ -528,8 +528,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
         addPrimitiveSet(elements[i]);
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_VERTICES)
+     || mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     if(mVertices->size() != mAiMesh->mNumVertices)
@@ -557,12 +557,12 @@ void MeshShapeGeometry::extractData(bool firstTime)
       setNormalArray(mNormals, osg::Array::BIND_PER_VERTEX);
   }
 
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
+  if(   mShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
     bool isColored = false;
 
-    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::COLOR_INDEX)
+    if(mMeshShape->getColorMode() == kido::dynamics::MeshShape::COLOR_INDEX)
     {
       int index = mMeshShape->getColorIndex();
       if(index >= AI_MAX_NUMBER_OF_COLOR_SETS)
@@ -593,7 +593,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       }
     }
 
-    if(mMeshShape->getColorMode() == dart::dynamics::MeshShape::MATERIAL_COLOR)
+    if(mMeshShape->getColorMode() == kido::dynamics::MeshShape::MATERIAL_COLOR)
     {
       unsigned int matIndex = mAiMesh->mMaterialIndex;
       if(matIndex != (unsigned int)(-1)) // -1 is being used by us to indicate no material
@@ -615,7 +615,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       isColored = true;
 
     if(!isColored
-       || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
+       || mMeshShape->getColorMode() == kido::dynamics::MeshShape::SHAPE_COLOR)
     {
       const Eigen::Vector4d& c = mShape->getRGBA();
 

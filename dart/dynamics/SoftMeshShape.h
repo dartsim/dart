@@ -41,7 +41,7 @@
 #include "dart/dynamics/Shape.h"
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class SoftBodyNode;
@@ -90,6 +90,6 @@ private:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_

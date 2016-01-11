@@ -70,9 +70,9 @@ const double default_vertex_stiffness = 1000.0;
 const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::gui;
 
 void setupRing(const SkeletonPtr& /*ring*/)
 {
@@ -224,7 +224,7 @@ protected:
   {
     for(size_t i=0; i<mJointConstraints.size(); ++i)
     {
-      dart::constraint::JointConstraint* constraint = mJointConstraints[i];
+      kido::constraint::JointConstraint* constraint = mJointConstraints[i];
       if(constraint->getBodyNode1()->getSkeleton() == skel
          || constraint->getBodyNode2()->getSkeleton() == skel)
       {
@@ -248,7 +248,7 @@ protected:
 
   /// History of the active JointConstraints so that we can properly delete them
   /// when a Skeleton gets removed
-  std::vector<dart::constraint::JointConstraint*> mJointConstraints;
+  std::vector<kido::constraint::JointConstraint*> mJointConstraints;
 
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;
@@ -346,7 +346,7 @@ SkeletonPtr createBall()
   // Give the ball a body
   addRigidBody<FreeJoint>(ball, "rigid ball", Shape::ELLIPSOID);
 
-  setAllColors(ball, dart::Color::Red());
+  setAllColors(ball, kido::Color::Red());
 
   return ball;
 }
@@ -360,7 +360,7 @@ SkeletonPtr createRigidChain()
   bn = addRigidBody<BallJoint>(chain, "rigid cyl 2", Shape::CYLINDER, bn);
   bn = addRigidBody<BallJoint>(chain, "rigid box 3", Shape::BOX, bn);
 
-  setAllColors(chain, dart::Color::Orange());
+  setAllColors(chain, kido::Color::Orange());
 
   return chain;
 }
@@ -377,7 +377,7 @@ SkeletonPtr createRigidRing()
   bn = addRigidBody<BallJoint>(ring, "rigid box 5", Shape::BOX, bn);
   bn = addRigidBody<BallJoint>(ring, "rigid cyl 6", Shape::CYLINDER, bn);
 
-  setAllColors(ring, dart::Color::Blue());
+  setAllColors(ring, kido::Color::Blue());
 
   return ring;
 }
@@ -392,7 +392,7 @@ SkeletonPtr createSoftBody()
   // Add a rigid collision geometry and inertia
   // Lesson 2f
 
-  setAllColors(soft, dart::Color::Fuschia());
+  setAllColors(soft, kido::Color::Fuschia());
 
   return soft;
 }
@@ -407,7 +407,7 @@ SkeletonPtr createHybridBody()
   // Add a rigid body attached by a WeldJoint
   // Lesson 2g
 
-  setAllColors(hybrid, dart::Color::Green());
+  setAllColors(hybrid, kido::Color::Green());
 
   return hybrid;
 }

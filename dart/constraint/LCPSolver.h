@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_LCPSOLVER_H_
 #define DART_CONSTRAINT_LCPSOLVER_H_
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 class ConstrainedGroup;
@@ -68,7 +68,7 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_CONSTRAINT_LCPSOLVER_H_
 

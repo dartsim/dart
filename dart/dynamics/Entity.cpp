@@ -41,7 +41,7 @@
 
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -466,5 +466,5 @@ Detachable::Detachable()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 

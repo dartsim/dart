@@ -4,7 +4,7 @@
 #include "dart/common/Console.h"
 #include "AssimpInputResourceAdaptor.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /*
@@ -242,4 +242,4 @@ aiFileIO createFileIO(Assimp::IOSystem* _system)
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

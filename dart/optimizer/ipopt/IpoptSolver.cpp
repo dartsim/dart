@@ -41,7 +41,7 @@
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -454,4 +454,4 @@ void DartTNLP::finalize_solution(Ipopt::SolverReturn _status,
 }
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido

@@ -38,11 +38,11 @@
 
 #include "dart/dart.h"
 
-using namespace dart::dynamics;
+using namespace kido::dynamics;
 
 int main()
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  kido::simulation::WorldPtr world(new kido::simulation::World);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 

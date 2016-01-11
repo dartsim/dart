@@ -58,7 +58,7 @@
         << mJointP.mActuatorType << ") for Joint [" << getName() << "].\n"; \
   assert(false);
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -2107,4 +2107,4 @@ Eigen::VectorXd SingleDofJoint::getSpatialToGeneralized(
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

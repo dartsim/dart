@@ -37,7 +37,7 @@
 
 #include "dart/collision/CollisionNode.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 CollisionNode::CollisionNode(dynamics::BodyNode* _bodyNode)
@@ -60,4 +60,4 @@ size_t CollisionNode::getIndex() const {
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

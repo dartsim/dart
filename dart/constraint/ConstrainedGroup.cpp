@@ -43,7 +43,7 @@
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/constraint/ConstraintSolver.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -137,4 +137,4 @@ size_t ConstrainedGroup::getTotalDimension() const
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

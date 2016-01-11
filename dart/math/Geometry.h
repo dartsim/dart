@@ -43,7 +43,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace math {
 
 /// \brief
@@ -592,6 +592,6 @@ class BoundingBox {
 };
 
 }  // namespace math
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_MATH_GEOMETRY_H_

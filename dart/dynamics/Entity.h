@@ -46,13 +46,13 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 } // namespace renderer
-} // namespace dart
+} // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class Frame;
@@ -307,6 +307,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_ENTITY_H_

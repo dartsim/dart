@@ -40,12 +40,12 @@
 #include <osg/MatrixTransform>
 #include <map>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Frame;
 class Entity;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
@@ -59,11 +59,11 @@ public:
 
   /// Create a FrameNode. If _recursive is set to true, it will also create
   /// nodes for all child Entities and child Frames
-  FrameNode(dart::dynamics::Frame* _frame, WorldNode* _worldNode,
+  FrameNode(kido::dynamics::Frame* _frame, WorldNode* _worldNode,
             bool _relative, bool _recursive);
 
   /// Pointer to the Frame associated with this FrameNode
-  dart::dynamics::Frame* getFrame() const;
+  kido::dynamics::Frame* getFrame() const;
 
   WorldNode* getWorldNode();
 
@@ -89,31 +89,31 @@ protected:
 
   void clearUnusedNodes();
 
-  void refreshFrameNode(dart::dynamics::Frame* _frame);
+  void refreshFrameNode(kido::dynamics::Frame* _frame);
 
-  void createFrameNode(dart::dynamics::Frame* _frame);
+  void createFrameNode(kido::dynamics::Frame* _frame);
 
-  void refreshEntityNode(dart::dynamics::Entity* _entity);
+  void refreshEntityNode(kido::dynamics::Entity* _entity);
 
-  void createEntityNode(dart::dynamics::Entity* _entity);
+  void createEntityNode(kido::dynamics::Entity* _entity);
 
   /// Pointer to the Frame that this FrameNode is associated with
-  dart::dynamics::Frame* mFrame;
+  kido::dynamics::Frame* mFrame;
 
   /// Pointer to the WorldNode that this FrameNode belongs to
   WorldNode* mWorldNode;
 
   /// Map from child Entities to child EntityNodes
-  std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
+  std::map<kido::dynamics::Entity*, EntityNode*> mEntityToNode;
 
   /// Map from child EntityNodes to child Entities
-  std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
+  std::map<EntityNode*, kido::dynamics::Entity*> mNodeToEntity;
 
   /// Map from child Frames to child FrameNodes
-  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
+  std::map<kido::dynamics::Frame*, FrameNode*> mFrameToNode;
 
   /// Map from child FrameNodes to child Frames
-  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
+  std::map<FrameNode*, kido::dynamics::Frame*> mNodeToFrame;
 
   /// True iff this FrameNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being

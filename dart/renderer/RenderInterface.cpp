@@ -36,7 +36,7 @@
 
 #include "RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 
 void RenderInterface::initialize()
@@ -160,4 +160,4 @@ void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel
 }
 
 } // namespace renderer
-} // namespace dart
+} // namespace kido

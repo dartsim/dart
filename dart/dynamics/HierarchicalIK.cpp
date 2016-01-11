@@ -40,7 +40,7 @@
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -809,5 +809,5 @@ WholeBodyIK::WholeBodyIK(const SkeletonPtr& _skel)
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 

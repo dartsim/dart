@@ -42,7 +42,7 @@
 #include "dart/config.h"
 #include "dart/constraint/LCPSolver.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 /// PGSLCPSolver
@@ -90,7 +90,7 @@ bool solvePGS(int n, int nskip, int /*nub*/, double* A,
 
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_CONSTRAINT_PGSLCPSOLVER_H_
 

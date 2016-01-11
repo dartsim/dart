@@ -40,7 +40,7 @@
 
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BoxShape : public Shape {
@@ -86,6 +86,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_BOXSHAPE_H_

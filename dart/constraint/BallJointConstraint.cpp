@@ -41,7 +41,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -59,7 +59,7 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body,
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
+  Eigen::Matrix3d ssm1 = kido::math::makeSkewSymmetric(-mOffset1);
   mJacobian1.leftCols<3>()  = ssm1;
   mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
 }
@@ -80,8 +80,8 @@ BallJointConstraint::BallJointConstraint(dynamics::BodyNode* _body1,
   mOldX[1] = 0.0;
   mOldX[2] = 0.0;
 
-  Eigen::Matrix3d ssm1 = dart::math::makeSkewSymmetric(-mOffset1);
-  Eigen::Matrix3d ssm2 = dart::math::makeSkewSymmetric(-mOffset2);
+  Eigen::Matrix3d ssm1 = kido::math::makeSkewSymmetric(-mOffset1);
+  Eigen::Matrix3d ssm2 = kido::math::makeSkewSymmetric(-mOffset2);
   mJacobian1.leftCols<3>()  = ssm1;
   mJacobian1.rightCols<3>() = Eigen::Matrix3d::Identity();
   mJacobian2.leftCols<3>()  = ssm2;
@@ -398,5 +398,5 @@ bool BallJointConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 

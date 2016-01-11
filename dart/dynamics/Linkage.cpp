@@ -40,7 +40,7 @@
 #include "dart/dynamics/Linkage.h"
 #include "dart/dynamics/FreeJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -547,4 +547,4 @@ void Linkage::update()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

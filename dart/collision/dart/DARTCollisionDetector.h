@@ -39,7 +39,7 @@
 
 #include "dart/collision/CollisionDetector.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 /// \brief
@@ -66,6 +66,6 @@ protected:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_

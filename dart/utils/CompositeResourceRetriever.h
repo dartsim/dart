@@ -41,7 +41,7 @@
 #include <vector>
 #include "dart/common/ResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 /// CompositeResourceRetriever allows multiple \ref ResourceRetriever to be
@@ -89,6 +89,6 @@ using CompositeResourceRetrieverPtr
   = std::shared_ptr<CompositeResourceRetriever>;
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_UTILS_COMPOSITERESOURCERETRIEVER_H_

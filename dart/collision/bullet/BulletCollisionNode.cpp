@@ -48,7 +48,7 @@
 #include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/MeshShape.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -237,4 +237,4 @@ btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

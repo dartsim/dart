@@ -42,7 +42,7 @@
 #include <fcl/math/matrix_3f.h>
 #include <fcl/math/transform.h>
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 class FCLTypes
@@ -62,6 +62,6 @@ public:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_FCL_FCLTTYPES_H_

@@ -39,7 +39,7 @@
 
 #include "dart/constraint/ConstraintBase.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class BodyNode;
@@ -174,7 +174,7 @@ private:
 };
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_CONSTRAINT_JOINTLIMITCONSTRAINT_H_
 

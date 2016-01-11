@@ -42,7 +42,7 @@
 #include "RenderInterface.h"
 #include "dart/renderer/LoadOpengl.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -117,6 +117,6 @@ public:
 };
 
 } // namespace renderer
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_RENDERER_OPENGLRENDERINTERFACE_H

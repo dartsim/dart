@@ -182,7 +182,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   // This is a regression test for issue #499
   const double tolerance = 1e-8;
 
-  dart::utils::DartLoader loader;
+  kido::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
       loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
 

@@ -37,7 +37,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Observer.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -84,4 +84,4 @@ void Subject::removeObserver(Observer* _observer) const
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido

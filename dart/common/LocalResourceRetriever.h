@@ -39,7 +39,7 @@
 
 #include "dart/common/ResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /// LocalResourceRetriever provides access to local resources specified by
@@ -59,6 +59,6 @@ public:
 using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_

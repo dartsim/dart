@@ -38,7 +38,7 @@
 
 #include "dart/common/Timer.h"
 
-using namespace dart::common;
+using namespace kido::common;
 
 //==============================================================================
 TEST(Common, Timer)

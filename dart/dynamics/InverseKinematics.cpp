@@ -39,7 +39,7 @@
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -189,7 +189,7 @@ InverseKinematics::ErrorMethod::Properties::Properties(
 InverseKinematics::ErrorMethod::ErrorMethod(
     InverseKinematics* _ik,
     const std::string& _methodName,
-    const dart::dynamics::InverseKinematics::
+    const kido::dynamics::InverseKinematics::
         ErrorMethod::Properties& _properties)
   : mIK(_ik),
     mMethodName(_methodName),
@@ -1565,7 +1565,7 @@ void InverseKinematics::setPositions(const Eigen::VectorXd& _q)
     return;
   }
 
-  const dart::dynamics::SkeletonPtr& skel = getNode()->getSkeleton();
+  const kido::dynamics::SkeletonPtr& skel = getNode()->getSkeleton();
   skel->setPositions(mDofs, _q);
 }
 
@@ -1755,4 +1755,4 @@ void InverseKinematics::resetNodeConnection()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

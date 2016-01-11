@@ -38,15 +38,15 @@
 
 #include "dart/dart.h"
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::utils;
-using namespace dart::math;
+using namespace kido::common;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::utils;
+using namespace kido::math;
 
 const double display_elevation = 0.05;
 
-class RelaxedPosture : public dart::optimizer::Function
+class RelaxedPosture : public kido::optimizer::Function
 {
 public:
 
@@ -307,7 +307,7 @@ public:
     mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
           mAtlas->getIK(true)->getObjective());
 
-    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
+    mBalance = std::dynamic_pointer_cast<kido::constraint::BalanceConstraint>(
           mAtlas->getIK(true)->getProblem()->getEqConstraint(1));
 
     mOptimizationKey = 'r';
@@ -415,7 +415,7 @@ public:
           mPosture->enforceIdealPosture = true;
 
         if(mBalance)
-          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          mBalance->setErrorMethod(kido::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
 
         return true;
       }
@@ -429,7 +429,7 @@ public:
           mPosture->enforceIdealPosture = false;
 
         if(mBalance)
-          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
+          mBalance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_CENTROID);
 
         return true;
       }
@@ -484,7 +484,7 @@ protected:
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
+  std::shared_ptr<kido::constraint::BalanceConstraint> mBalance;
 
   char mOptimizationKey;
 
@@ -503,7 +503,7 @@ SkeletonPtr createGround()
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
-  groundShape->setColor(dart::Color::Blue(0.2));
+  groundShape->setColor(kido::Color::Blue(0.2));
 
   ground->getBodyNode(0)->addVisualizationShape(groundShape);
   ground->getBodyNode(0)->addCollisionShape(groundShape);
@@ -522,7 +522,7 @@ SkeletonPtr createAtlas()
   double scale = 0.25;
   ShapePtr boxShape =
       std::make_shared<BoxShape>(scale*Eigen::Vector3d(1.0, 1.0, 0.5));
-  boxShape->setColor(dart::Color::Black());
+  boxShape->setColor(kido::Color::Black());
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0.1*Eigen::Vector3d(0.0, 0.0, 1.0));
@@ -651,7 +651,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 
   // Define the support geometry for the feet. These points will be used to
   // compute the convex hull of the robot's support polygon
-  dart::math::SupportGeometry support;
+  kido::math::SupportGeometry support;
   const double sup_pos_x =  0.10-0.186;
   const double sup_neg_x = -0.03-0.186;
   const double sup_pos_y =  0.03;
@@ -741,8 +741,8 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 void setupWholeBodySolver(const SkeletonPtr& atlas)
 {
   // The default
-  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver =
-      std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
+  std::shared_ptr<kido::optimizer::GradientDescentSolver> solver =
+      std::dynamic_pointer_cast<kido::optimizer::GradientDescentSolver>(
       atlas->getIK(true)->getSolver());
   solver->setNumMaxIterations(10);
 
@@ -782,30 +782,30 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
         atlas->getPositions(), lower_posture, upper_posture, weights);
   atlas->getIK()->setObjective(objective);
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance =
-      std::make_shared<dart::constraint::BalanceConstraint>(atlas->getIK());
+  std::shared_ptr<kido::constraint::BalanceConstraint> balance =
+      std::make_shared<kido::constraint::BalanceConstraint>(atlas->getIK());
   atlas->getIK()->getProblem()->addEqConstraint(balance);
 
 //  // Shift the center of mass towards the support polygon center while trying
 //  // to keep the support polygon where it is
-//  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+//  balance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_CENTROID);
+//  balance->setBalanceMethod(kido::constraint::BalanceConstraint::SHIFT_COM);
 
 //  // Keep shifting the center of mass towards the center of the support
 //  // polygon, even if it is already inside. This is useful for trying to
 //  // optimize a stance
-//  balance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
+//  balance->setErrorMethod(kido::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+//  balance->setBalanceMethod(kido::constraint::BalanceConstraint::SHIFT_COM);
 
 //  // Try to leave the center of mass where it is while moving the support
 //  // polygon to be under the current center of mass location
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+  balance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_CENTROID);
+  balance->setBalanceMethod(kido::constraint::BalanceConstraint::SHIFT_SUPPORT);
 
 //  // Try to leave the center of mass where it is while moving the support
 //  // point that is closest to the center of mass
-//  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_EDGE);
-//  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+//  balance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_EDGE);
+//  balance->setBalanceMethod(kido::constraint::BalanceConstraint::SHIFT_SUPPORT);
 
   // Note that using the FROM_EDGE error method is liable to leave the center of
   // mass visualization red even when the constraint was successfully solved.

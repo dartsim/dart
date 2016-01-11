@@ -46,7 +46,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;

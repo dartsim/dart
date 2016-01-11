@@ -47,7 +47,7 @@
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -524,4 +524,4 @@ void PGSOption::setDefault()
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

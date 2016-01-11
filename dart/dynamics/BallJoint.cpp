@@ -41,7 +41,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -187,5 +187,5 @@ const Eigen::Isometry3d& BallJoint::getR() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 

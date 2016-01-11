@@ -50,21 +50,21 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(
+  kido::simulation::WorldPtr myWorld
+      = kido::utils::SkelParser::readWorld(
         DART_DATA_PATH"skel/softBodies.skel");
   assert(myWorld != nullptr);
 
   for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
   {
-    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
+    kido::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
     for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
     {
-      dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
-      Eigen::Vector3d color = dart::Color::Random();
+      kido::dynamics::BodyNode* bn = skel->getBodyNode(j);
+      Eigen::Vector3d color = kido::Color::Random();
       for(size_t k=0; k<bn->getNumVisualizationShapes(); ++k)
       {
-        dart::dynamics::ShapePtr vs = bn->getVisualizationShape(k);
+        kido::dynamics::ShapePtr vs = bn->getVisualizationShape(k);
         vs->setColor(color);
       }
     }

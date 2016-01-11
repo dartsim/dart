@@ -108,7 +108,7 @@ const InteractiveFrame* InteractiveTool::getInteractiveFrame() const
 
 //==============================================================================
 InteractiveFrame::InteractiveFrame(
-    dart::dynamics::Frame* referenceFrame,
+    kido::dynamics::Frame* referenceFrame,
     const std::string& name,
     const Eigen::Isometry3d& relativeTransform,
     double size_scale, double thickness_scale)
@@ -199,23 +199,23 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     color[a] = 0.9;
     color[3] = getTool(InteractiveTool::LINEAR,a)->getDefaultAlpha();
 
-    dart::dynamics::ArrowShape::Properties p;
+    kido::dynamics::ArrowShape::Properties p;
     p.mRadius = thickness*size*0.03;
     p.mHeadRadiusScale = 2;
     p.mHeadLengthScale = 0.4;
     p.mDoubleArrow = false;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
-          dart::dynamics::ShapePtr(
-            new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
+          kido::dynamics::ShapePtr(
+            new kido::dynamics::ArrowShape(tail, head, p, color, 100)));
 
 //    tail[a] = -1.2*plane_length;
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
     mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
-          dart::dynamics::ShapePtr(
-            new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
+          kido::dynamics::ShapePtr(
+            new kido::dynamics::ArrowShape(tail, head, p, color, 100)));
   }
 
   // Create rotation rings
@@ -361,9 +361,9 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
-    std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    std::shared_ptr<kido::dynamics::MeshShape> shape(
+        new kido::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    shape->setColorMode(kido::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( r == 1 )
@@ -450,9 +450,9 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     scene->mMeshes[0] = mesh;
     scene->mRootNode = node;
 
-    std::shared_ptr<dart::dynamics::MeshShape> shape(
-        new dart::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
-    shape->setColorMode(dart::dynamics::MeshShape::COLOR_INDEX);
+    std::shared_ptr<kido::dynamics::MeshShape> shape(
+        new kido::dynamics::MeshShape(Eigen::Vector3d::Ones(), scene));
+    shape->setColorMode(kido::dynamics::MeshShape::COLOR_INDEX);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     if( p == 1 )
@@ -469,18 +469,18 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   {
     for(size_t j=0; j<3; ++j)
     {
-      const std::vector<dart::dynamics::ShapePtr>& shapes =
+      const std::vector<kido::dynamics::ShapePtr>& shapes =
           mTools[i][j]->getVisualizationShapes();
       for(size_t s=0; s<shapes.size(); ++s)
-        shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+        shapes[s]->setDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR);
     }
   }
 
   // Create axes
   for(size_t i=0; i<3; ++i)
   {
-    std::shared_ptr<dart::dynamics::LineSegmentShape> line(
-        new dart::dynamics::LineSegmentShape(3.0));
+    std::shared_ptr<kido::dynamics::LineSegmentShape> line(
+        new kido::dynamics::LineSegmentShape(3.0));
     line->addVertex(Eigen::Vector3d::Zero());
     Eigen::Vector3d v(Eigen::Vector3d::Zero());
     v[i] = 0.9*size;

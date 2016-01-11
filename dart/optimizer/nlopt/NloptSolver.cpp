@@ -44,7 +44,7 @@
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -279,4 +279,4 @@ void NloptSolver::_nlopt_mfunc(unsigned _m,
 }
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido

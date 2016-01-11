@@ -38,7 +38,7 @@
 
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -141,4 +141,4 @@ void PlaneShape::updateVolume()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

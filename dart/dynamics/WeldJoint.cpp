@@ -41,7 +41,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -150,4 +150,4 @@ void WeldJoint::updateLocalJacobianTimeDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

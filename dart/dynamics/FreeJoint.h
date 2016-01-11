@@ -43,7 +43,7 @@
 
 #include "dart/dynamics/MultiDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// class FreeJoint
@@ -309,6 +309,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_FREEJOINT_H_

@@ -41,7 +41,7 @@
 
 #include "dart/optimizer/Solver.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 /// DefaultSolver is a Solver extension which is native to DART (rather than
@@ -241,6 +241,6 @@ protected:
 };
 
 } // namespace optimizer
-} // namespace dart
+} // namespace kido
 
 #endif // DART_OPTIMIZER_GRADIENTDESCENTSOLVER_H_

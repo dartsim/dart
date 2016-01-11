@@ -38,9 +38,9 @@
 #include "dart/common/LocalResourceRetriever.h"
 #include "TestHelpers.h"
 
-using dart::common::Uri;
-using dart::common::Resource;
-using dart::common::LocalResourceRetriever;
+using kido::common::Uri;
+using kido::common::Resource;
+using kido::common::LocalResourceRetriever;
 
 #ifdef _WIN32
   #define FILE_SCHEME "file:///"

@@ -44,13 +44,13 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/HierarchicalIK.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class EndEffector;
@@ -1013,22 +1013,22 @@ protected:
   std::vector<EndEffector*> mEndEffectors;
 
   /// NameManager for tracking BodyNodes
-  dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
+  kido::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
 
   /// NameManager for tracking Joints
-  dart::common::NameManager<Joint*> mNameMgrForJoints;
+  kido::common::NameManager<Joint*> mNameMgrForJoints;
 
   /// NameManager for tracking DegreesOfFreedom
-  dart::common::NameManager<DegreeOfFreedom*> mNameMgrForDofs;
+  kido::common::NameManager<DegreeOfFreedom*> mNameMgrForDofs;
 
   /// NameManager for tracking SoftBodyNodes
-  dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
+  kido::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
 
   /// NameManager for tracking Markers
-  dart::common::NameManager<Marker*> mNameMgrForMarkers;
+  kido::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// NameManager for tracking EndEffectors
-  dart::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
+  kido::common::NameManager<EndEffector*> mNameMgrForEndEffectors;
 
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;
@@ -1182,6 +1182,6 @@ public:
 #include "dart/dynamics/detail/Skeleton.h"
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SKELETON_H_

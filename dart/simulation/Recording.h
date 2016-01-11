@@ -49,7 +49,7 @@
 
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -117,6 +117,6 @@ private:
 };
 
 }  // namespace simulation
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_SIMULATION_RECORDING_H_

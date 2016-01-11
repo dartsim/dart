@@ -40,7 +40,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 namespace lcpsolver {
 
 /// \brief
@@ -52,6 +52,6 @@ bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
               const Eigen::VectorXd& _q);
 
 }  // namespace lcpsolver
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_LCPSOLVER_LEMKE_H_

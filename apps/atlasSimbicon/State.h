@@ -54,13 +54,13 @@
 #define ATLAS_DEFAULT_CORONAL_CD 0.1
 #define ATLAS_DEFAULT_CORONAL_CV 0.1
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class BodyNode;
 class Joint;
 class Skeleton;
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 class TerminalCondition;
 
@@ -70,7 +70,7 @@ class State
 {
 public:
   /// \brief Constructor
-  explicit State(dart::dynamics::SkeletonPtr _skeleton, const std::string& _name);
+  explicit State(kido::dynamics::SkeletonPtr _skeleton, const std::string& _name);
 
   /// \brief Destructor
   virtual ~State();
@@ -232,7 +232,7 @@ protected:
   std::string mName;
 
   /// \brief Target skeleton for control
-  dart::dynamics::SkeletonPtr mSkeleton;
+  kido::dynamics::SkeletonPtr mSkeleton;
 
   /// \brief Next state. Default is myself.
   State* mNextState;
@@ -293,7 +293,7 @@ protected:
 
 private:
   /// \brief Get the parent joint's position of _bodyNode
-  Eigen::Vector3d _getJointPosition(dart::dynamics::BodyNode* _bodyNode) const;
+  Eigen::Vector3d _getJointPosition(kido::dynamics::BodyNode* _bodyNode) const;
 
   /// \brief Compute the angle between two vectors
   double _getAngleBetweenTwoVectors(const Eigen::Vector3d& _v1,
@@ -303,22 +303,22 @@ private:
   void _updateTorqueForStanceLeg();
 
   /// \brief Pelvis body node
-  dart::dynamics::BodyNode* mPelvis;
+  kido::dynamics::BodyNode* mPelvis;
 
   /// \brief Left foot body node
-  dart::dynamics::BodyNode* mLeftThigh;
+  kido::dynamics::BodyNode* mLeftThigh;
 
   /// \brief Right foot body node
-  dart::dynamics::BodyNode* mRightThigh;
+  kido::dynamics::BodyNode* mRightThigh;
 
   /// \brief Left foot body node
-  dart::dynamics::BodyNode* mStanceFoot;
+  kido::dynamics::BodyNode* mStanceFoot;
 
   /// \brief Left foot body node
-  dart::dynamics::BodyNode* mLeftFoot;
+  kido::dynamics::BodyNode* mLeftFoot;
 
   /// \brief Right foot body node
-  dart::dynamics::BodyNode* mRightFoot;
+  kido::dynamics::BodyNode* mRightFoot;
 
   /// \brief Index for coronal left hip
   size_t mCoronalLeftHip;

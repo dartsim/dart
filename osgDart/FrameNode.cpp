@@ -43,7 +43,7 @@
 namespace osgDart
 {
 
-FrameNode::FrameNode(dart::dynamics::Frame* _frame, WorldNode* _worldNode,
+FrameNode::FrameNode(kido::dynamics::Frame* _frame, WorldNode* _worldNode,
                      bool _relative, bool _recursive)
   : mFrame(_frame),
     mWorldNode(_worldNode),
@@ -54,7 +54,7 @@ FrameNode::FrameNode(dart::dynamics::Frame* _frame, WorldNode* _worldNode,
 }
 
 //==============================================================================
-dart::dynamics::Frame* FrameNode::getFrame() const
+kido::dynamics::Frame* FrameNode::getFrame() const
 {
   return mFrame;
 }
@@ -88,17 +88,17 @@ void FrameNode::refresh(bool _relative, bool _recursive)
 
   refreshEntityNode(mFrame);
 
-  const std::set<dart::dynamics::Entity*>& entities =
+  const std::set<kido::dynamics::Entity*>& entities =
       mFrame->getChildEntities();
 
-  for(dart::dynamics::Entity* entity : entities)
+  for(kido::dynamics::Entity* entity : entities)
     if(!entity->isFrame())
       refreshEntityNode(entity);
 
-  const std::set<dart::dynamics::Frame*>& frames =
+  const std::set<kido::dynamics::Frame*>& frames =
       mFrame->getChildFrames();
 
-  for(dart::dynamics::Frame* frame : frames)
+  for(kido::dynamics::Frame* frame : frames)
     refreshFrameNode(frame);
 
   clearUnusedNodes();
@@ -161,9 +161,9 @@ void FrameNode::clearUnusedNodes()
 }
 
 //==============================================================================
-void FrameNode::refreshFrameNode(dart::dynamics::Frame* _frame)
+void FrameNode::refreshFrameNode(kido::dynamics::Frame* _frame)
 {
-  std::map<dart::dynamics::Frame*, FrameNode*>::iterator it =
+  std::map<kido::dynamics::Frame*, FrameNode*>::iterator it =
       mFrameToNode.find(_frame);
 
   if(it == mFrameToNode.end())
@@ -176,7 +176,7 @@ void FrameNode::refreshFrameNode(dart::dynamics::Frame* _frame)
 }
 
 //==============================================================================
-void FrameNode::createFrameNode(dart::dynamics::Frame* _frame)
+void FrameNode::createFrameNode(kido::dynamics::Frame* _frame)
 {
   osg::ref_ptr<FrameNode> node = new FrameNode(_frame, mWorldNode, true, true);
 
@@ -187,9 +187,9 @@ void FrameNode::createFrameNode(dart::dynamics::Frame* _frame)
 }
 
 //==============================================================================
-void FrameNode::refreshEntityNode(dart::dynamics::Entity* _entity)
+void FrameNode::refreshEntityNode(kido::dynamics::Entity* _entity)
 {
-  std::map<dart::dynamics::Entity*, EntityNode*>::iterator it =
+  std::map<kido::dynamics::Entity*, EntityNode*>::iterator it =
       mEntityToNode.find(_entity);
 
   if(it == mEntityToNode.end())
@@ -202,7 +202,7 @@ void FrameNode::refreshEntityNode(dart::dynamics::Entity* _entity)
 }
 
 //==============================================================================
-void FrameNode::createEntityNode(dart::dynamics::Entity* _entity)
+void FrameNode::createEntityNode(kido::dynamics::Entity* _entity)
 {
   osg::ref_ptr<EntityNode> node = new EntityNode(_entity, this);
 

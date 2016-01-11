@@ -46,11 +46,11 @@
 #include "dart/dynamics/Shape.h"
 #include "DefaultEventHandler.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class SimpleFrame;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
@@ -60,8 +60,8 @@ class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
 /// Entities to be dragged and dropped in an osgDart environment
-class DragAndDrop : public dart::common::Subject,
-                    public dart::common::Observer
+class DragAndDrop : public kido::common::Subject,
+                    public kido::common::Observer
 {
 public:
 
@@ -74,13 +74,13 @@ public:
   };
 
   /// Constructor
-  DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity);
+  DragAndDrop(Viewer* viewer, kido::dynamics::Entity* entity);
 
   /// Virtual destructor
   virtual ~DragAndDrop();
 
   /// Get the Entity that this DragAndDrop is associated with
-  dart::dynamics::Entity* getEntity() const;
+  kido::dynamics::Entity* getEntity() const;
 
   /// Called when mouse events are being handled
   virtual void update();
@@ -143,13 +143,13 @@ protected:
 
   /// Perform cleanup when the subject is destroyed
   virtual void handleDestructionNotification(
-      const dart::common::Subject* subscription) override;
+      const kido::common::Subject* subscription) override;
 
   /// Pointer to the DnD's Viewer
   Viewer* mViewer;
 
   /// Pointer to the DnD's Entity
-  dart::dynamics::Entity* mEntity;
+  kido::dynamics::Entity* mEntity;
 
   /// The location in the world that was picked by the user
   Eigen::Vector3d mPickedPosition;
@@ -185,13 +185,13 @@ class SimpleFrameDnD : public DragAndDrop
 public:
 
   /// Constructor
-  SimpleFrameDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame);
+  SimpleFrameDnD(Viewer* viewer, kido::dynamics::SimpleFrame* frame);
 
   /// Virtual destructor
   virtual ~SimpleFrameDnD() = default;
 
   /// Get the SimpleFrame associated with this DnD
-  dart::dynamics::SimpleFrame* getSimpleFrame() const;
+  kido::dynamics::SimpleFrame* getSimpleFrame() const;
 
   // Documentation inherited
   virtual void move() override;
@@ -202,7 +202,7 @@ public:
 protected:
 
   /// SimpleFrame pointer
-  dart::dynamics::SimpleFrame* mFrame;
+  kido::dynamics::SimpleFrame* mFrame;
 
   /// The saved rotation of the frame
   Eigen::AngleAxisd mSavedRotation;
@@ -217,14 +217,14 @@ class SimpleFrameShapeDnD : public SimpleFrameDnD
 public:
 
   /// Constructor
-  SimpleFrameShapeDnD(Viewer* viewer, dart::dynamics::SimpleFrame* frame,
-                      dart::dynamics::Shape* shape);
+  SimpleFrameShapeDnD(Viewer* viewer, kido::dynamics::SimpleFrame* frame,
+                      kido::dynamics::Shape* shape);
 
   /// Virtual destructor
   virtual ~SimpleFrameShapeDnD() = default;
 
   /// Get the Shape associated with this DnD
-  dart::dynamics::Shape* getShape() const;
+  kido::dynamics::Shape* getShape() const;
 
   // Documentation inherited
   virtual void update() override;
@@ -233,10 +233,10 @@ protected:
 
   // Documentation inherited
   virtual void handleDestructionNotification(
-      const dart::common::Subject* subscription) override;
+      const kido::common::Subject* subscription) override;
 
   /// Shape associated with this DnD
-  dart::dynamics::Shape* mShape;
+  kido::dynamics::Shape* mShape;
 };
 
 //==============================================================================
@@ -277,14 +277,14 @@ class BodyNodeDnD : public DragAndDrop
 public:
 
   /// Constructor
-  BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
+  BodyNodeDnD(Viewer* viewer, kido::dynamics::BodyNode* bn,
               bool useExternalIK = true, bool useWholeBody = false);
 
   /// Virtual destructor
   virtual ~BodyNodeDnD() = default;
 
   /// Get the BodyNode associated with this DnD
-  dart::dynamics::BodyNode* getBodyNode() const;
+  kido::dynamics::BodyNode* getBodyNode() const;
 
   // Documentation inherited
   virtual void move() override;
@@ -325,10 +325,10 @@ public:
 protected:
 
   /// The BodyNode associated with this DnD
-  dart::dynamics::WeakBodyNodePtr mBodyNode;
+  kido::dynamics::WeakBodyNodePtr mBodyNode;
 
   /// The IK module being used by this DnD
-  dart::dynamics::InverseKinematicsPtr mIK;
+  kido::dynamics::InverseKinematicsPtr mIK;
 
   /// The offset of the pick from the BodyNode origin, expressed in global
   /// coordinates

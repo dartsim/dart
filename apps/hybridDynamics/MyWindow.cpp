@@ -51,7 +51,7 @@ MyWindow::~MyWindow()
 //==============================================================================
 void MyWindow::timeStepping()
 {
-  dart::dynamics::SkeletonPtr skel  = mWorld->getSkeleton(1);
+  kido::dynamics::SkeletonPtr skel  = mWorld->getSkeleton(1);
 
   size_t index0 = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
   size_t index1 = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);
@@ -127,16 +127,16 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
       mHarnessOn = !mHarnessOn;
       if (mHarnessOn)
       {
-        dart::dynamics::Joint* joint
+        kido::dynamics::Joint* joint
             = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-        joint->setActuatorType(dart::dynamics::Joint::LOCKED);
+        joint->setActuatorType(kido::dynamics::Joint::LOCKED);
         std::cout << "The pelvis is locked." << std::endl;
       }
       else
       {
-        dart::dynamics::Joint* joint
+        kido::dynamics::Joint* joint
             = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-        joint->setActuatorType(dart::dynamics::Joint::PASSIVE);
+        joint->setActuatorType(kido::dynamics::Joint::PASSIVE);
         std::cout << "The pelvis is unlocked." << std::endl;
       }
       break;

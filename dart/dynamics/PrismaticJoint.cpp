@@ -42,7 +42,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -191,4 +191,4 @@ void PrismaticJoint::updateLocalJacobianTimeDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

@@ -44,7 +44,7 @@
 
 #include "dart/gui/LoadGlut.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 SoftSimWindow::SoftSimWindow()
@@ -112,4 +112,4 @@ void SoftSimWindow::keyboard(unsigned char key, int x, int y)
 }
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido

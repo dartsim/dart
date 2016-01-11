@@ -42,7 +42,7 @@
 #include <Eigen/Eigen>
 // #include "FreeImage.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -70,6 +70,6 @@ void drawProgressBar(int _currFrame, int _totalFrame);
 // TODO(Unknown): freeimage
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_GLFUNCS_H_

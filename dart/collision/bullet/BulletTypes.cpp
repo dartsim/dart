@@ -36,7 +36,7 @@
 
 #include "dart/collision/bullet/BulletTypes.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -69,4 +69,4 @@ btTransform convertTransform(const Eigen::Isometry3d& _T)
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

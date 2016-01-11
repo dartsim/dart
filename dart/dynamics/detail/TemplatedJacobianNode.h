@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_H_
 #define DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_H_
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 // Documentation inherited
@@ -320,7 +320,7 @@ TemplatedJacobianNode<NodeType>::TemplatedJacobianNode()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 
 #endif // DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_H_

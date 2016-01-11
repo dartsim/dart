@@ -44,7 +44,7 @@
 
 #include "dart/collision/CollisionDetector.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 class FCLCollisionNode;
@@ -85,6 +85,6 @@ protected:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

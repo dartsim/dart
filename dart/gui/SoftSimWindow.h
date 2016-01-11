@@ -45,7 +45,7 @@
 
 #include "dart/gui/SimWindow.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -70,6 +70,6 @@ protected:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_SOFTSIMWINDOW_H_

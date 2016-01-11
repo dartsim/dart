@@ -20,7 +20,7 @@
 #include "RRT.h"
 #include <cstdio>
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 /* ********************************************************************************************* */
@@ -257,6 +257,6 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 }
 
 } // namespace planning
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_PLANNING_PATHPLANNER_H_

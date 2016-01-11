@@ -37,7 +37,7 @@
 #include "dart/dynamics/Chain.h"
 #include "dart/dynamics/FreeJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -172,7 +172,7 @@ Chain::Chain(BodyNode* _start, BodyNode* _target,
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 
 

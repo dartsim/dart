@@ -57,7 +57,7 @@
 
 namespace osgDart {
 
-EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
+EntityNode::EntityNode(kido::dynamics::Entity* _entity, FrameNode* _parent)
   : mEntity(_entity),
     mParent(_parent),
     mUtilized(false)
@@ -67,7 +67,7 @@ EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
 }
 
 //==============================================================================
-dart::dynamics::Entity* EntityNode::getEntity() const
+kido::dynamics::Entity* EntityNode::getEntity() const
 {
   return mEntity;
 }
@@ -89,10 +89,10 @@ void EntityNode::refresh()
 {
   mUtilized = true;
 
-  const std::vector<dart::dynamics::ShapePtr>& visShapes =
+  const std::vector<kido::dynamics::ShapePtr>& visShapes =
       mEntity->getVisualizationShapes();
 
-  for(dart::dynamics::ShapePtr shape : visShapes)
+  for(kido::dynamics::ShapePtr shape : visShapes)
     refreshShapeNode(shape);
 }
 
@@ -138,9 +138,9 @@ void EntityNode::clearUnusedNodes()
 }
 
 //==============================================================================
-void EntityNode::refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
+void EntityNode::refreshShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
 {
-  std::map<dart::dynamics::ShapePtr, render::ShapeNode*>::iterator it =
+  std::map<kido::dynamics::ShapePtr, render::ShapeNode*>::iterator it =
       mShapeToNode.find(shape);
 
   if(it == mShapeToNode.end())
@@ -164,9 +164,9 @@ static void warnAboutUnsuccessfulCast(const std::string& shapeType,
 }
 
 //==============================================================================
-void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
+void EntityNode::createShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
 {
-  using namespace dart::dynamics;
+  using namespace kido::dynamics;
   render::ShapeNode* node = nullptr;
 
   switch(shape->getShapeType())

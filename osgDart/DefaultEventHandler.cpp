@@ -433,7 +433,7 @@ void DefaultEventHandler::clearButtonEvents()
 
 //==============================================================================
 void DefaultEventHandler::handleDestructionNotification(
-    const dart::common::Subject* _subject)
+    const kido::common::Subject* _subject)
 {
   MouseEventHandler* meh = const_cast<MouseEventHandler*>(
         dynamic_cast<const MouseEventHandler*>(_subject));

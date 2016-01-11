@@ -30,7 +30,7 @@ namespace urdf
   class Vector3;
 }
 
-namespace dart {
+namespace kido {
 
 namespace dynamics
 {
@@ -87,11 +87,11 @@ class DartLoader {
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a file to produce a World
-    dart::simulation::WorldPtr parseWorld(const common::Uri& _uri,
+    kido::simulation::WorldPtr parseWorld(const common::Uri& _uri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
     /// Parse a text string to produce a World
-    dart::simulation::WorldPtr parseWorldString(
+    kido::simulation::WorldPtr parseWorldString(
       const std::string& _urdfString, const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
 
@@ -99,7 +99,7 @@ private:
     typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
     typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
 
-    static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
+    static kido::dynamics::SkeletonPtr modelInterfaceToSkeleton(
       const urdf::ModelInterface* _model,
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);

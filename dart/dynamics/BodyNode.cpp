@@ -51,7 +51,7 @@
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -2249,4 +2249,4 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

@@ -62,8 +62,8 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace dart::optimizer;
-using namespace dart::dynamics;
+using namespace kido::optimizer;
+using namespace kido::dynamics;
 
 //==============================================================================
 /// \brief class SampleObjFunc

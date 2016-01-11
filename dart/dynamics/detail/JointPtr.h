@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/detail/BodyNodePtr.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// TemplateJointPtr is a templated class that enables users to create a strong
@@ -279,7 +279,7 @@ private:
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
 };
 
-} // namespace dart
+} // namespace kido
 } // namespace dynamics
 
 #endif // DART_DYNAMICS_DETAIL_JOINTPTR_H_

@@ -40,7 +40,7 @@
 
 #include "dart/dart.h"
 
-double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
+double testForwardKinematicSpeed(kido::dynamics::SkeletonPtr skel,
                                  bool position=true,
                                  bool velocity=true,
                                  bool acceleration=true,
@@ -49,7 +49,7 @@ double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
   if(nullptr==skel)
     return 0;
 
-  dart::dynamics::BodyNode* bn = skel->getBodyNode(0);
+  kido::dynamics::BodyNode* bn = skel->getBodyNode(0);
   while(bn->getNumChildBodyNodes() > 0)
     bn = bn->getChildBodyNode(0);
 
@@ -60,8 +60,8 @@ double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
   {
     for(size_t i=0; i<skel->getNumDofs(); ++i)
     {
-      dart::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
-      dof->setPosition( dart::math::random(
+      kido::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
+      dof->setPosition( kido::math::random(
                           std::max(dof->getPositionLowerLimit(),-1.0),
                           std::min(dof->getPositionUpperLimit(), 1.0)) );
     }
@@ -87,7 +87,7 @@ double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
 }
 
 void runKinematicsTest(std::vector<double>& results,
-                       const std::vector<dart::simulation::WorldPtr>& worlds,
+                       const std::vector<kido::simulation::WorldPtr>& worlds,
                        bool position, bool velocity, bool acceleration)
 {
   double totalTime = 0;
@@ -103,7 +103,7 @@ void runKinematicsTest(std::vector<double>& results,
   // Test for updating the whole skeleton
   for(size_t i=0; i<worlds.size(); ++i)
   {
-    dart::simulation::WorldPtr world = worlds[i];
+    kido::simulation::WorldPtr world = worlds[i];
     totalTime += testForwardKinematicSpeed(world->getSkeleton(0),
                                         position, velocity, acceleration);
   }
@@ -111,7 +111,7 @@ void runKinematicsTest(std::vector<double>& results,
   std::cout << "Result: " << totalTime << "s" << std::endl;
 }
 
-double testDynamicsSpeed(dart::simulation::WorldPtr world,
+double testDynamicsSpeed(kido::simulation::WorldPtr world,
                          size_t numIterations = 10000)
 {
   if(nullptr==world)
@@ -119,7 +119,7 @@ double testDynamicsSpeed(dart::simulation::WorldPtr world,
 
   for(size_t i=0; i<world->getNumSkeletons(); ++i)
   {
-    dart::dynamics::SkeletonPtr skel = world->getSkeleton(i);
+    kido::dynamics::SkeletonPtr skel = world->getSkeleton(i);
     skel->resetPositions();
     skel->resetVelocities();
     skel->resetAccelerations();
@@ -140,7 +140,7 @@ double testDynamicsSpeed(dart::simulation::WorldPtr world,
 }
 
 void runDynamicsTest(std::vector<double>& results,
-                     const std::vector<dart::simulation::WorldPtr>& worlds)
+                     const std::vector<kido::simulation::WorldPtr>& worlds)
 {
   double totalTime = 0;
 
@@ -192,12 +192,12 @@ std::vector<std::string> getSceneFiles()
   return scenes;
 }
 
-std::vector<dart::simulation::WorldPtr> getWorlds()
+std::vector<kido::simulation::WorldPtr> getWorlds()
 {
   std::vector<std::string> sceneFiles = getSceneFiles();
-  std::vector<dart::simulation::WorldPtr> worlds;
+  std::vector<kido::simulation::WorldPtr> worlds;
   for(size_t i=0; i<sceneFiles.size(); ++i)
-    worlds.push_back(dart::utils::SkelParser::readWorld(sceneFiles[i]));
+    worlds.push_back(kido::utils::SkelParser::readWorld(sceneFiles[i]));
 
   return worlds;
 }
@@ -211,7 +211,7 @@ int main(int argc, char* argv[])
       test_kinematics = true;
   }
 
-  std::vector<dart::simulation::WorldPtr> worlds = getWorlds();
+  std::vector<kido::simulation::WorldPtr> worlds = getWorlds();
 
   if(test_kinematics)
   {

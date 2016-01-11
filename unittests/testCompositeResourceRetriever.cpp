@@ -38,11 +38,11 @@
 #include "dart/utils/CompositeResourceRetriever.h"
 #include "TestHelpers.h"
 
-using dart::common::Uri;
-using dart::common::Resource;
-using dart::common::ResourcePtr;
-using dart::common::ResourceRetriever;
-using dart::utils::CompositeResourceRetriever;
+using kido::common::Uri;
+using kido::common::Resource;
+using kido::common::ResourcePtr;
+using kido::common::ResourceRetriever;
+using kido::utils::CompositeResourceRetriever;
 
 TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {

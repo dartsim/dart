@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// The LineSegmentShape facilitates creating graphs of line segments. The graph
@@ -131,6 +131,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_LINESEGMENTSHAPE_H_

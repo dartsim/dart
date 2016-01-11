@@ -41,11 +41,11 @@
 
 #include "osgDart/render/ShapeNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class SoftMeshShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 namespace render {
@@ -58,7 +58,7 @@ class SoftMeshShapeNode : public ShapeNode, public osg::MatrixTransform
 public:
 
   SoftMeshShapeNode(
-      std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
+      std::shared_ptr<kido::dynamics::SoftMeshShape> shape,
       EntityNode* parent);
 
   void refresh();
@@ -68,7 +68,7 @@ protected:
 
   virtual ~SoftMeshShapeNode();
 
-  std::shared_ptr<dart::dynamics::SoftMeshShape> mSoftMeshShape;
+  std::shared_ptr<kido::dynamics::SoftMeshShape> mSoftMeshShape;
   SoftMeshShapeGeode* mGeode;
 
 };

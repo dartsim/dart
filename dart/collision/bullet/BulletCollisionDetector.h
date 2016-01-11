@@ -46,7 +46,7 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/bullet/BulletTypes.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 class BulletCollisionNode;
@@ -79,6 +79,6 @@ protected:
 };
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_H_

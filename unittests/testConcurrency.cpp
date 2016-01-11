@@ -43,7 +43,7 @@
 
 #include "TestHelpers.h"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 
 //==============================================================================

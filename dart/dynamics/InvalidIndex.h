@@ -39,7 +39,7 @@
 
 #include <cstddef>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 #if defined(_MSC_VER)
@@ -50,6 +50,6 @@ constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
 #endif
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif // DART_DYNAMICS_INVALIDINDEX_H_

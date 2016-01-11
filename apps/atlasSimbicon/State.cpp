@@ -47,8 +47,8 @@ using namespace std;
 
 using namespace Eigen;
 
-using namespace dart::dynamics;
-using namespace dart::constraint;
+using namespace kido::dynamics;
+using namespace kido::constraint;
 
 //==============================================================================
 State::State(SkeletonPtr _skeleton, const std::string& _name)

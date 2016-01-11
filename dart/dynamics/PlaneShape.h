@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// PlaneShape represents infinite plane has normal and offset as properties.
@@ -102,6 +102,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_PLANESHAPE_H_

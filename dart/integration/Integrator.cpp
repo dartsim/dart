@@ -37,7 +37,7 @@
 
 #include "dart/integration/Integrator.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 //==============================================================================
@@ -61,4 +61,4 @@ Integrator::~Integrator()
 }
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido

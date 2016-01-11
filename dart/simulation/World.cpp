@@ -51,7 +51,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintSolver.h"
 
-namespace dart {
+namespace kido {
 namespace simulation {
 
 //==============================================================================
@@ -629,4 +629,4 @@ void World::handleSimpleFrameNameChange(const dynamics::Entity* _entity)
 
 
 }  // namespace simulation
-}  // namespace dart
+}  // namespace kido

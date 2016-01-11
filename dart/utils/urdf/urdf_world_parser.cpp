@@ -52,7 +52,7 @@
 
 const bool debug = false;
 
-namespace dart {
+namespace kido {
 namespace utils {
 namespace urdf_parsing {
 
@@ -69,7 +69,7 @@ Entity::Entity(const urdf::Entity& urdfEntity)
  */
 std::shared_ptr<World> parseWorldURDF(
     const std::string& _xml_string,
-    const dart::common::Uri& _baseUri)
+    const kido::common::Uri& _baseUri)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse( _xml_string.c_str() );
@@ -118,7 +118,7 @@ std::shared_ptr<World> parseWorldURDF(
        entity_xml = entity_xml->NextSiblingElement("entity") )
   {
     count++;
-    dart::utils::urdf_parsing::Entity entity;
+    kido::utils::urdf_parsing::Entity entity;
     try
     {
       const char* entity_model = entity_xml->Attribute("model");
@@ -136,7 +136,7 @@ std::shared_ptr<World> parseWorldURDF(
       {
         std::string fileName = includedFiles.find( string_entity_model )->second;
 
-        dart::common::Uri absoluteUri;
+        kido::common::Uri absoluteUri;
         if(!absoluteUri.fromRelativeUri(_baseUri, fileName))
         {
           dtwarn << "[parseWorldURDF] Failed resolving mesh URI '"
@@ -218,4 +218,4 @@ std::shared_ptr<World> parseWorldURDF(
 
 } // namesapce urdf_parsing
 } // namespace utils
-} // namespace dart
+} // namespace kido

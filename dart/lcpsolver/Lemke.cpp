@@ -65,7 +65,7 @@ static inline int isinf_ld(long double _x)
 { return !isnan (_x) && isnan (_x - _x); }
 #endif
 
-namespace dart {
+namespace kido {
 namespace lcpsolver {
 
 // double RandDouble(double _low, double _high) {
@@ -291,4 +291,4 @@ bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
 }
 
 }  // namespace lcpsolver
-}  // namespace dart
+}  // namespace kido

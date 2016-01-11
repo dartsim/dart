@@ -37,7 +37,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Observer.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -101,4 +101,4 @@ void Observer::removeAllSubjects()
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido

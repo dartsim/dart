@@ -41,7 +41,7 @@
 #include <memory>
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -112,7 +112,7 @@ private:
 };
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_CONSTRAINT_CONSTRAINEDGROUP_H_
 

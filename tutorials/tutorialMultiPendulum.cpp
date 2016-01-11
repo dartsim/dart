@@ -53,10 +53,10 @@ const double delta_stiffness = 10;
 const double default_damping = 5.0;
 const double delta_damping = 1.0;
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
+using namespace kido::dynamics;
+using namespace kido::simulation;
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
 
@@ -81,7 +81,7 @@ public:
     mArrow = std::shared_ptr<ArrowShape>(new ArrowShape(
              Eigen::Vector3d(-default_height, 0.0, default_height / 2.0),
              Eigen::Vector3d(-default_width / 2.0, 0.0, default_height / 2.0),
-             arrow_properties, dart::Color::Orange(1.0)));
+             arrow_properties, kido::Color::Orange(1.0)));
   }
 
   void changeDirection()
@@ -258,7 +258,7 @@ protected:
   SkeletonPtr mPendulum;
 
   /// Pointer to the ball constraint that we will be turning on and off
-  dart::constraint::BallJointConstraint* mBallConstraint;
+  kido::constraint::BallJointConstraint* mBallConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> mForceCountDown;
@@ -276,7 +276,7 @@ void setGeometry(const BodyNodePtr& bn)
   // Create a BoxShape to be used for both visualization and collision checking
   std::shared_ptr<BoxShape> box(new BoxShape(
       Eigen::Vector3d(default_width, default_depth, default_height)));
-  box->setColor(dart::Color::Blue());
+  box->setColor(kido::Color::Blue());
 
   // Set the location of the Box
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
@@ -307,7 +307,7 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   const double& R = default_width;
   std::shared_ptr<EllipsoidShape> ball(
         new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
-  ball->setColor(dart::Color::Blue());
+  ball->setColor(kido::Color::Blue());
   bn->addVisualizationShape(ball);
 
   // Set the geometry of the Body
@@ -338,11 +338,11 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
   const double h = default_depth;
   std::shared_ptr<CylinderShape> cyl(
         new CylinderShape(R, h));
-  cyl->setColor(dart::Color::Blue());
+  cyl->setColor(kido::Color::Blue());
 
   // Line up the cylinder with the Joint axis
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.linear() = dart::math::eulerXYZToMatrix(
+  tf.linear() = kido::math::eulerXYZToMatrix(
         Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
   cyl->setLocalTransform(tf);
 

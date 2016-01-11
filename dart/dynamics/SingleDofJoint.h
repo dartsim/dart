@@ -41,7 +41,7 @@
 
 #include "dart/dynamics/Joint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -850,6 +850,6 @@ private:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SINGLEDOFJOINT_H_

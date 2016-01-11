@@ -41,7 +41,7 @@
 
 #include "dart/simulation/Recording.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -174,4 +174,4 @@ simulation::Recording* FileInfoWorld::getRecording() const
 }
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido

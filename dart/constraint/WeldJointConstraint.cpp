@@ -40,7 +40,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -414,4 +414,4 @@ bool WeldJointConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido

@@ -45,7 +45,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 
-using namespace dart;
+using namespace kido;
 using namespace common;
 using namespace math;
 using namespace dynamics;
@@ -1114,7 +1114,7 @@ TEST(MATH, INVERSION)
 
 /******************************************************************************/
 TEST(MATH, ROTATION) {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
 
   // Create Initial ExpMap
@@ -1144,10 +1144,10 @@ TEST(MATH, ROTATION) {
 /******************************************************************************/
 TEST(MATH, UTILS) {
   // Test CR Matrix
-  EXPECT_DOUBLE_EQ(dart::math::CR(0, 1), -1.0);
+  EXPECT_DOUBLE_EQ(kido::math::CR(0, 1), -1.0);
 
   // Test randomize function
-  double x = dart::math::random(0.0, 2.0);
+  double x = kido::math::random(0.0, 2.0);
   EXPECT_LT(0.0, x);
   EXPECT_LT(x, 2.0);
 

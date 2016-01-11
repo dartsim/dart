@@ -44,7 +44,7 @@
 
 #include <Eigen/Dense>
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 class Problem;
@@ -183,6 +183,6 @@ protected:
 };
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_OPTIMIZER_SOLVER_H_

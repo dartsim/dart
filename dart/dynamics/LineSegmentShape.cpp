@@ -39,7 +39,7 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/math/Geometry.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -368,4 +368,4 @@ void LineSegmentShape::updateVolume()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

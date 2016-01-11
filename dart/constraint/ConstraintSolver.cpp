@@ -55,7 +55,7 @@
 #include "dart/constraint/DantzigLCPSolver.h"
 #include "dart/constraint/PGSLCPSolver.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 using namespace dynamics;
@@ -552,4 +552,4 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

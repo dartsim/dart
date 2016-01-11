@@ -39,7 +39,7 @@
 
 #include <set>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 class Subject;
@@ -49,7 +49,7 @@ class Subject;
 /// Observer::handleDestructionNotification() function to customize how your
 /// class responds to the destruction of a Subject.
 ///
-/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// kido::sub_ptr is a templated smart pointer that will change itself into a
 /// nullptr when its Subject is destroyed. It offers one of the easiest ways to
 /// take advantage of the Subject/Observer pattern.
 class Observer
@@ -86,7 +86,7 @@ protected:
 
 };
 
-} // namespace dart
+} // namespace kido
 } // namespace common
 
 #endif // DART_COMMON_OBSERVER_H_

@@ -48,7 +48,7 @@
 #include <urdf_model/pose.h>
 #include <urdf_model/twist.h>
 
-namespace dart {
+namespace kido {
 namespace utils {
 namespace urdf_parsing {
 
@@ -67,7 +67,7 @@ public:
   urdf::Pose origin;
   urdf::Twist twist;
 
-  dart::common::Uri uri;
+  kido::common::Uri uri;
 
 };
 
@@ -80,8 +80,8 @@ public:
 };
 
 std::shared_ptr<World> parseWorldURDF(const std::string &xml_string,
-    const dart::common::Uri& _baseUri);
+    const kido::common::Uri& _baseUri);
 
 } // namespace urdf_parsing
 } // namespace utils
-} // namespace dart
+} // namespace kido

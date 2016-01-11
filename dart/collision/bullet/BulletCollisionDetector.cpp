@@ -42,7 +42,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //struct btContactResultCB : public btCollisionWorld::ContactResultCallback {
@@ -226,4 +226,4 @@ bool BulletCollisionDetector::detectCollision(CollisionNode* _node1,
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

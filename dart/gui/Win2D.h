@@ -39,7 +39,7 @@
 
 #include "dart/gui/GlutWindow.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -81,6 +81,6 @@ protected:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_WIN2D_H_

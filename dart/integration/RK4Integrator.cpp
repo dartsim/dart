@@ -39,7 +39,7 @@
 
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace integration {
 
 //==============================================================================
@@ -112,4 +112,4 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
 }
 
 }  // namespace integration
-}  // namespace dart
+}  // namespace kido

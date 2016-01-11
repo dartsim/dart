@@ -39,7 +39,7 @@
 
 #include <type_traits>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -80,6 +80,6 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_

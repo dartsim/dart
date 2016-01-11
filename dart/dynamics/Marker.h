@@ -41,13 +41,13 @@
 #include <Eigen/Dense>
 #include "dart/math/Helpers.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -170,7 +170,7 @@ public:
 // finished.
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_MARKER_H_
 

@@ -48,7 +48,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -876,6 +876,6 @@ private:
 #include "dart/dynamics/detail/MultiDofJoint.h"
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_MULTIDOFJOINT_H_

@@ -46,7 +46,7 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -156,7 +156,7 @@ TEST(SkelParser, SerialChain)
 //==============================================================================
 TEST(SkelParser, RigidAndSoftBodies)
 {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -181,7 +181,7 @@ TEST(SkelParser, RigidAndSoftBodies)
 //==============================================================================
 TEST(SkelParser, PlanarJoint)
 {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;

@@ -40,7 +40,7 @@
 
 #include "dart/dynamics/Shape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class EllipsoidShape : public Shape {
@@ -89,6 +89,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_ELLIPSOIDSHAPE_H_

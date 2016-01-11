@@ -76,7 +76,7 @@ static bool startsWith(const std::string& _target, const std::string& _prefix)
   return _target.substr(0, _prefix.size()) == _prefix;
 }
 
-namespace dart {
+namespace kido {
 namespace common {
 
 /*
@@ -708,4 +708,4 @@ std::string Uri::removeDotSegments(const std::string& _path)
 }
 
 } // namespace common
-} // namespace dart
+} // namespace kido

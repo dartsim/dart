@@ -24,7 +24,7 @@
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/simulation/World.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -52,7 +52,7 @@ class SdfParser
 {
 public:
   // TODO: Make common::ResourceRetriever optional.
-  static dart::simulation::WorldPtr readSdfFile(
+  static kido::simulation::WorldPtr readSdfFile(
       const common::Uri& _fileUri,
       const common::ResourceRetrieverPtr& _retriever = nullptr);
 
@@ -247,7 +247,7 @@ public:
         const BodyMap& _bodies,
         const Eigen::Isometry3d& _skeletonFrame);
 
-    static dart::dynamics::WeldJoint::Properties readWeldJoint(
+    static kido::dynamics::WeldJoint::Properties readWeldJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _parentModelFrame,
         const std::string& _name);
@@ -277,12 +277,12 @@ public:
         const Eigen::Isometry3d& _parentModelFrame,
         const std::string& _name);
 
-    static dart::dynamics::EulerJoint* readEulerJoint(
+    static kido::dynamics::EulerJoint* readEulerJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _parentModelFrame,
         const std::string& _name);
 
-    static dart::dynamics::TranslationalJoint::Properties readTranslationalJoint(
+    static kido::dynamics::TranslationalJoint::Properties readTranslationalJoint(
             tinyxml2::XMLElement* _jointElement,
         const Eigen::Isometry3d& _parentModelFrame,
         const std::string& _name);
@@ -297,6 +297,6 @@ public:
 };
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_SDFPARSER_H

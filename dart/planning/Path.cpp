@@ -46,7 +46,7 @@
 using namespace std;
 using namespace Eigen;
 
-namespace dart {
+namespace kido {
 namespace planning {
 
 class LinearPathSegment : public PathSegment
@@ -298,4 +298,4 @@ list<pair<double, bool> > Path::getSwitchingPoints() const {
 }
 
 } // namespace planning
-} // namespace dart
+} // namespace kido

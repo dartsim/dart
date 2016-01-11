@@ -39,7 +39,7 @@
 #ifndef DART_DYNAMICS_GROUP_H_
 #define DART_DYNAMICS_GROUP_H_
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class Group : public ReferentialSkeleton
@@ -246,6 +246,6 @@ protected:
 };
 
 } // dynamics
-} // dart
+} // kido
 
 #endif // DART_DYNAMICS_GROUP_H_

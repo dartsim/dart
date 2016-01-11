@@ -38,7 +38,7 @@
 #include "dart/optimizer/Solver.h"
 #include "dart/optimizer/Problem.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 //==============================================================================
@@ -193,4 +193,4 @@ const std::string& Solver::getResultFileName() const
 }
 
 }  // namespace optimizer
-}  // namespace dart
+}  // namespace kido

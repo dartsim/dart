@@ -40,7 +40,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -663,4 +663,4 @@ Group::Group(const std::string& _name,
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

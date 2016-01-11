@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Frame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// The SimpleFrame class offers a user-friendly way of creating arbitrary
@@ -195,7 +195,7 @@ protected:
 
 };
 
-} // namespace dart
+} // namespace kido
 } // namespace dynamics
 
 #endif // DART_DYNAMICS_SIMPLEFRAME_H_

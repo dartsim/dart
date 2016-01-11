@@ -60,13 +60,13 @@
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class GenCoord;
@@ -1188,6 +1188,6 @@ private:
 #include "dart/dynamics/detail/BodyNode.h"
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

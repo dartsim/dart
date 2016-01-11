@@ -43,7 +43,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -192,4 +192,4 @@ void RevoluteJoint::updateLocalJacobianTimeDeriv() const
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

@@ -39,7 +39,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -1291,4 +1291,4 @@ bool ReferentialSkeleton::IndexMap::isExpired() const
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

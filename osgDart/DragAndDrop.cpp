@@ -51,7 +51,7 @@
 
 namespace osgDart {
 
-DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
+DragAndDrop::DragAndDrop(Viewer* viewer, kido::dynamics::Entity* entity)
   : mViewer(viewer),
     mEntity(entity),
     mPickedPosition(Eigen::Vector3d::Zero()),
@@ -72,7 +72,7 @@ DragAndDrop::~DragAndDrop()
 }
 
 //==============================================================================
-dart::dynamics::Entity* DragAndDrop::getEntity() const
+kido::dynamics::Entity* DragAndDrop::getEntity() const
 {
   return mEntity;
 }
@@ -240,7 +240,7 @@ osgGA::GUIEventAdapter::ModKeyMask DragAndDrop::getRotationModKey() const
 
 //==============================================================================
 void DragAndDrop::handleDestructionNotification(
-    const dart::common::Subject* subscription)
+    const kido::common::Subject* subscription)
 {
   if(mEntity == subscription)
     mViewer->disableDragAndDrop(this);
@@ -251,7 +251,7 @@ void DragAndDrop::handleDestructionNotification(
 
 //==============================================================================
 SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
-                               dart::dynamics::SimpleFrame* frame)
+                               kido::dynamics::SimpleFrame* frame)
   : DragAndDrop(viewer, frame),
     mFrame(frame)
 {
@@ -259,7 +259,7 @@ SimpleFrameDnD::SimpleFrameDnD(Viewer* viewer,
 }
 
 //==============================================================================
-dart::dynamics::SimpleFrame* SimpleFrameDnD::getSimpleFrame() const
+kido::dynamics::SimpleFrame* SimpleFrameDnD::getSimpleFrame() const
 {
   return mFrame;
 }
@@ -292,7 +292,7 @@ void SimpleFrameDnD::move()
     tf.rotate(mSavedRotation);
   }
 
-  dart::dynamics::Frame* parent = mFrame->getParentFrame();
+  kido::dynamics::Frame* parent = mFrame->getParentFrame();
   if(parent->isWorld())
     mFrame->setRelativeTransform(tf);
   else
@@ -309,8 +309,8 @@ void SimpleFrameDnD::saveState()
 //==============================================================================
 SimpleFrameShapeDnD::SimpleFrameShapeDnD(
     Viewer* viewer,
-    dart::dynamics::SimpleFrame* frame,
-    dart::dynamics::Shape* shape)
+    kido::dynamics::SimpleFrame* frame,
+    kido::dynamics::Shape* shape)
   : SimpleFrameDnD(viewer, frame),
     mShape(shape)
 {
@@ -318,7 +318,7 @@ SimpleFrameShapeDnD::SimpleFrameShapeDnD(
 }
 
 //==============================================================================
-dart::dynamics::Shape* SimpleFrameShapeDnD::getShape() const
+kido::dynamics::Shape* SimpleFrameShapeDnD::getShape() const
 {
   return mShape;
 }
@@ -369,7 +369,7 @@ void SimpleFrameShapeDnD::update()
 
 //==============================================================================
 void SimpleFrameShapeDnD::handleDestructionNotification(
-    const dart::common::Subject* subscription)
+    const kido::common::Subject* subscription)
 {
   DragAndDrop::handleDestructionNotification(subscription);
 
@@ -505,7 +505,7 @@ public:
 
 protected:
 
-  dart::sub_ptr<InteractiveTool> mTool;
+  kido::sub_ptr<InteractiveTool> mTool;
 };
 
 //==============================================================================
@@ -579,7 +579,7 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(!dnd->isMoving() && tool->getEnabled())
         {
-          const std::vector<dart::dynamics::ShapePtr> shapes =
+          const std::vector<kido::dynamics::ShapePtr> shapes =
               tool->getVisualizationShapes();
           for(size_t s=0; s<shapes.size(); ++s)
             shapes[s]->setHidden(true);
@@ -597,7 +597,7 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(tool->getEnabled())
         {
-          const std::vector<dart::dynamics::ShapePtr> shapes =
+          const std::vector<kido::dynamics::ShapePtr> shapes =
               tool->getVisualizationShapes();
           for(size_t s=0; s<shapes.size(); ++s)
             shapes[s]->setHidden(false);
@@ -620,7 +620,7 @@ void InteractiveFrameDnD::saveState()
 }
 
 //==============================================================================
-BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
+BodyNodeDnD::BodyNodeDnD(Viewer* viewer, kido::dynamics::BodyNode* bn,
                          bool useExternalIK, bool useWholeBody)
   : DragAndDrop(viewer, bn),
     mBodyNode(bn),
@@ -633,7 +633,7 @@ BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
+kido::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
 {
   return mBodyNode.lock();
 }
@@ -651,7 +651,7 @@ void BodyNodeDnD::move()
   {
     std::vector<size_t> dofs;
 
-    dart::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
+    kido::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
     for(size_t count = 0; count <= mAdditionalBodyNodes; ++count)
     {
       for(size_t j=0; j < joint->getNumDofs(); ++j)
@@ -714,13 +714,13 @@ void BodyNodeDnD::move()
 //==============================================================================
 void BodyNodeDnD::saveState()
 {
-  dart::dynamics::BodyNodePtr bn = mBodyNode.lock();
+  kido::dynamics::BodyNodePtr bn = mBodyNode.lock();
   mPivot = bn->getWorldTransform().translation();
   mSavedRotation = bn->getWorldTransform().rotation();
 
   if(mUseExternalIK)
   {
-    mIK = dart::dynamics::InverseKinematics::create(bn);
+    mIK = kido::dynamics::InverseKinematics::create(bn);
   }
   else
   {
@@ -732,7 +732,7 @@ void BodyNodeDnD::saveState()
                       * mSavedGlobalOffset;
 
   mIK->getTarget()->setTransform(bn->getWorldTransform());
-  mIK->setGradientMethod<dart::dynamics::InverseKinematics::JacobianTranspose>();
+  mIK->setGradientMethod<kido::dynamics::InverseKinematics::JacobianTranspose>();
 
   mAdditionalBodyNodes = 0;
 }

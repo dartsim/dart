@@ -39,7 +39,7 @@
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 typedef std::set<Entity*> EntityPtrSet;
@@ -639,5 +639,5 @@ WorldFrame::WorldFrame()
   changeParentFrame(this);
 }
 
-} // namespace dart
+} // namespace kido
 } // namespace dynamics

@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/detail/BodyNodePtr.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class NodeDestructor;
@@ -48,7 +48,7 @@ class NodeDestructor;
 /// reference-counting NodePtr. Holding onto a NodePtr will ensure that the
 /// BodyNode associated with a Node does not get deleted, and it will also
 /// ensure that the Node itself does not get deleted. This templated class can
-/// be applied to any class that inherits from dart::dynamics::Node.
+/// be applied to any class that inherits from kido::dynamics::Node.
 template <class NodeT, class BodyNodeT>
 class TemplateNodePtr
 {
@@ -250,6 +250,6 @@ protected:
 
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DETAIL_NODEPTR_H_

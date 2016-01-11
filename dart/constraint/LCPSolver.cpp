@@ -38,7 +38,7 @@
 
 #include <cassert>
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -65,4 +65,4 @@ LCPSolver::~LCPSolver()
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

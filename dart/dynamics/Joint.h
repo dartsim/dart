@@ -47,13 +47,13 @@
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -960,6 +960,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_JOINT_H_

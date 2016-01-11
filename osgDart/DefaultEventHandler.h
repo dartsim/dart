@@ -48,20 +48,20 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Observer.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Entity;
 class Shape;
 } // dynamics
-} // dart
+} // kido
 
 namespace osgDart
 {
 
 struct PickInfo
 {
-  dart::dynamics::Entity* entity;
-  std::shared_ptr<dart::dynamics::Shape> shape;
+  kido::dynamics::Entity* entity;
+  std::shared_ptr<kido::dynamics::Shape> shape;
   Eigen::Vector3d position;
   Eigen::Vector3d normal;
 };
@@ -99,8 +99,8 @@ enum ConstraintType {
 class MouseEventHandler;
 
 class DefaultEventHandler : public osgGA::GUIEventHandler,
-                            public virtual dart::common::Subject,
-                            public virtual dart::common::Observer
+                            public virtual kido::common::Subject,
+                            public virtual kido::common::Observer
 {
 public:
 
@@ -196,7 +196,7 @@ protected:
   void clearButtonEvents();
 
   virtual void handleDestructionNotification(
-      const dart::common::Subject* _subject) override;
+      const kido::common::Subject* _subject) override;
 
   /// osgDart::Viewer that this event handler is tied to
   Viewer* mViewer;

@@ -41,7 +41,7 @@
 #include <mutex>
 #include <atomic>
 
-namespace dart{
+namespace kido{
 namespace dynamics {
 
 class Skeleton;
@@ -336,6 +336,6 @@ private:
 
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_DETAIL_BODYNODEPTR_H_

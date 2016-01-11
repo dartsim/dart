@@ -25,7 +25,7 @@
 
 using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 DartLoader::DartLoader()
@@ -543,4 +543,4 @@ Eigen::Vector3d DartLoader::toEigen(const urdf::Vector3& _vector) {
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido

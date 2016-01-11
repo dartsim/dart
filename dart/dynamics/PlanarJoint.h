@@ -41,7 +41,7 @@
 
 #include "dart/dynamics/MultiDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// PlanarJoint represents a 3-dof joint, which has two orthogonal translational
@@ -226,7 +226,7 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_PLANARRJOINT_H_
 

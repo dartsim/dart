@@ -38,7 +38,7 @@
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -225,5 +225,5 @@ void SimpleFrame::setClassicDerivatives(
   setRelativeSpatialAcceleration(a, getParentFrame());
 }
 
-} // namespace dart
+} // namespace kido
 } // namespace dynamics

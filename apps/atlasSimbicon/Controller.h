@@ -50,8 +50,8 @@ class Controller
 {
 public:
   /// \brief Constructor
-  Controller(dart::dynamics::SkeletonPtr _atlasRobot,
-             dart::constraint::ConstraintSolver* _collisionSolver);
+  Controller(kido::dynamics::SkeletonPtr _atlasRobot,
+             kido::constraint::ConstraintSolver* _collisionSolver);
 
   /// \brief Destructor
   virtual ~Controller();
@@ -61,7 +61,7 @@ public:
   virtual void update(double _currentTime);
 
   /// \brief
-  dart::dynamics::SkeletonPtr getAtlasRobot();
+  kido::dynamics::SkeletonPtr getAtlasRobot();
 
   /// \brief Get current state machine
   StateMachine* getCurrentState();
@@ -104,10 +104,10 @@ public:
 
 protected:
   /// \brief Atlas robot skeleton
-  dart::dynamics::SkeletonPtr mAtlasRobot;
+  kido::dynamics::SkeletonPtr mAtlasRobot;
 
   /// \brief Conllision detector
-  dart::constraint::ConstraintSolver* mConstratinSolver;
+  kido::constraint::ConstraintSolver* mConstratinSolver;
 
   /// \brief List of state machines
   std::vector<StateMachine*> mStateMachines;
@@ -166,19 +166,19 @@ private:
   void _setJointDamping();
 
   /// \brief Get left foot
-  dart::dynamics::BodyNode* _getLeftFoot() const;
+  kido::dynamics::BodyNode* _getLeftFoot() const;
 
   /// \brief Get right foot
-  dart::dynamics::BodyNode* _getRightFoot() const;
+  kido::dynamics::BodyNode* _getRightFoot() const;
 
   /// \brief Weld joint constraint for pelvis harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintPelvis;
+  kido::constraint::WeldJointConstraint* mWeldJointConstraintPelvis;
 
   /// \brief Weld joint constraint for left foot harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintLeftFoot;
+  kido::constraint::WeldJointConstraint* mWeldJointConstraintLeftFoot;
 
   /// \brief Weld joint constraint for right foot harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintRightFoot;
+  kido::constraint::WeldJointConstraint* mWeldJointConstraintRightFoot;
 
   /// \brief Initial state of the robot
   Eigen::VectorXd mInitialState;

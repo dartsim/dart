@@ -36,7 +36,7 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 using namespace math;
 

@@ -46,7 +46,7 @@
 #include "dart/dart.h"
 
 /// MyWindow
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
   /// Constructor

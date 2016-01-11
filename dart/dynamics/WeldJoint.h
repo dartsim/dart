@@ -43,7 +43,7 @@
 
 #include "dart/dynamics/ZeroDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// class WeldJoint
@@ -118,7 +118,7 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_WELDJOINT_H_
 

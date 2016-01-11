@@ -49,7 +49,7 @@
 #include "dart/simulation/simulation.h"
 #include "dart/utils/utils.h"
 
-using namespace dart;
+using namespace kido;
 using namespace common;
 using namespace math;
 using namespace dynamics;
@@ -394,9 +394,9 @@ TEST_F(COLLISION, DROP)
     dtdbg << "Rotated box\n";
     fcl::Box box2(0.5, 0.5, 0.5);
     dropWithRotation(&box2,
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14));
+                     kido::math::random(-3.14, 3.14),
+                     kido::math::random(-3.14, 3.14),
+                     kido::math::random(-3.14, 3.14));
 
     dropWithRotation(&box2,
                      0.0,

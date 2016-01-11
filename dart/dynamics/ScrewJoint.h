@@ -43,7 +43,7 @@
 
 #include "dart/dynamics/SingleDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// class ScrewJoint
@@ -150,6 +150,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_SCREWJOINT_H_

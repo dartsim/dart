@@ -43,7 +43,7 @@
 
 #include "dart/dynamics/SingleDofJoint.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// class RevoluteJoint
@@ -140,7 +140,7 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_REVOLUTEJOINT_H_
 

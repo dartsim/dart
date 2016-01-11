@@ -39,7 +39,7 @@
 
 #include "dart/dart.h"
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
     MyWindow() : SimWindow() {}

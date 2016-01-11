@@ -43,7 +43,7 @@
 
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 //==============================================================================
@@ -88,4 +88,4 @@ dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

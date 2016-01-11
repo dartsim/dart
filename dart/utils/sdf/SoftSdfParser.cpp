@@ -65,7 +65,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -244,4 +244,4 @@ common::ResourceRetrieverPtr getResourceRetriever(
     const common::ResourceRetrieverPtr& _retriever);
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido

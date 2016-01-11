@@ -39,7 +39,7 @@
 #include "dart/dynamics/BoxShape.h"
 #include "dart/renderer/RenderInterface.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 BoxShape::BoxShape(const Eigen::Vector3d& _size)
@@ -117,4 +117,4 @@ void BoxShape::updateVolume()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

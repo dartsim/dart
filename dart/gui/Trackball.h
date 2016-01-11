@@ -40,7 +40,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 /// \brief
@@ -115,6 +115,6 @@ private:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_TRACKBALL_H_

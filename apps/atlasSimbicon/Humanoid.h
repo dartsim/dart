@@ -53,59 +53,59 @@ class Humanoid
 {
 public:
   /// \brief Constructor
-  Humanoid(dart::dynamics::Skeleton* _skeleton);
+  Humanoid(kido::dynamics::Skeleton* _skeleton);
 
   /// \brief Destructor
   virtual ~Humanoid();
 
   /// \brief Get skeleton
-  dart::dynamics::Skeleton* getSkeleton();
+  kido::dynamics::Skeleton* getSkeleton();
 
   /// \brief Get pelvis
-  dart::dynamics::BodyNode* getPelvis();
+  kido::dynamics::BodyNode* getPelvis();
 
   /// \brief Get left thigh
-  dart::dynamics::BodyNode* getLeftThigh();
+  kido::dynamics::BodyNode* getLeftThigh();
 
   /// \brief Get right thigh
-  dart::dynamics::BodyNode* getRightThigh();
+  kido::dynamics::BodyNode* getRightThigh();
 
   /// \brief Get left foot
-  dart::dynamics::BodyNode* getLeftFoot();
+  kido::dynamics::BodyNode* getLeftFoot();
 
   /// \brief Get right foot
-  dart::dynamics::BodyNode* getRightFoot();
+  kido::dynamics::BodyNode* getRightFoot();
 
 protected:
   /// \brief State
-  dart::dynamics::Skeleton* mSkeleton;
+  kido::dynamics::Skeleton* mSkeleton;
 
   /// \brief Pelvis
-  dart::dynamics::BodyNode* mPelvis;
+  kido::dynamics::BodyNode* mPelvis;
 
   /// \brief LeftThigh
-  dart::dynamics::BodyNode* mLeftThigh;
+  kido::dynamics::BodyNode* mLeftThigh;
 
   /// \brief LeftThigh
-  dart::dynamics::BodyNode* mRightThigh;
+  kido::dynamics::BodyNode* mRightThigh;
 
   /// \brief Left foot
-  dart::dynamics::BodyNode* mLeftFoot;
+  kido::dynamics::BodyNode* mLeftFoot;
 
   /// \brief Right foot
-  dart::dynamics::BodyNode* mRightFoot;
+  kido::dynamics::BodyNode* mRightFoot;
 
   /// \brief Left ankle on sagital plane
-  dart::dynamics::Joint* mLeftAnkleSagital;
+  kido::dynamics::Joint* mLeftAnkleSagital;
 
   /// \brief Left ankle on coronal plane
-  dart::dynamics::Joint* mLeftAnkleCoronal;
+  kido::dynamics::Joint* mLeftAnkleCoronal;
 
   /// \brief Right ankle on sagital plane
-  dart::dynamics::Joint* mRightAnkleSagital;
+  kido::dynamics::Joint* mRightAnkleSagital;
 
   /// \brief Right ankle on coronal plane
-  dart::dynamics::Joint* mRightAnkleCoronal;
+  kido::dynamics::Joint* mRightAnkleCoronal;
 };
 
 //==============================================================================
@@ -115,7 +115,7 @@ class AtlasRobot : public Humanoid
 {
 public:
   /// \brief Constructor
-  AtlasRobot(dart::dynamics::Skeleton* _skeleton);
+  AtlasRobot(kido::dynamics::Skeleton* _skeleton);
 
   /// \brief Destructor
   virtual ~AtlasRobot();

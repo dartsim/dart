@@ -40,7 +40,7 @@
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/BoxShape.h"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 
 TEST(Subjects, Notifications)

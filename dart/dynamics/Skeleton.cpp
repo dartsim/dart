@@ -54,7 +54,7 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
@@ -3271,4 +3271,4 @@ Skeleton::DirtyFlags::DirtyFlags()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido

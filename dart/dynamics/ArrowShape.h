@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/MeshShape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class ArrowShape : public MeshShape
@@ -110,6 +110,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_ARROWSHAPE_H_

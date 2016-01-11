@@ -37,7 +37,7 @@
 
 #include "apps/bipedStand/Controller.h"
 
-Controller::Controller(dart::dynamics::SkeletonPtr _skel,
+Controller::Controller(kido::dynamics::SkeletonPtr _skel,
                        double _t) {
   mSkel = _skel;
   mLeftHeel = _skel->getBodyNode("h_heel_left");
@@ -135,7 +135,7 @@ void Controller::computeTorques() {
   mFrame++;
 }
 
-dart::dynamics::MetaSkeletonPtr Controller::getSkel() {
+kido::dynamics::MetaSkeletonPtr Controller::getSkel() {
   return mSkel;
 }
 

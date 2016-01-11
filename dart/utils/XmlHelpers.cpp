@@ -45,7 +45,7 @@
 #include "dart/math/Geometry.h"
 #include "dart/common/LocalResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -863,4 +863,4 @@ Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element,
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido

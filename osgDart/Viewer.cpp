@@ -396,7 +396,7 @@ void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
 }
 
 //==============================================================================
-void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
+void Viewer::removeWorldNode(std::shared_ptr<kido::simulation::World> _oldWorld)
 {
   WorldNode* node = getWorldNode(_oldWorld);
 
@@ -409,7 +409,7 @@ void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
 
 //==============================================================================
 WorldNode* Viewer::getWorldNode(
-    std::shared_ptr<dart::simulation::World> _world) const
+    std::shared_ptr<kido::simulation::World> _world) const
 {
   std::map<WorldNode*,bool>::const_iterator it = mWorldNodes.begin(),
                                             end = mWorldNodes.end();
@@ -533,7 +533,7 @@ void Viewer::setWorldNodeActive(WorldNode* _node, bool _active)
 }
 
 //==============================================================================
-void Viewer::setWorldNodeActive(std::shared_ptr<dart::simulation::World> _world,
+void Viewer::setWorldNodeActive(std::shared_ptr<kido::simulation::World> _world,
                                 bool _active)
 {
   setWorldNodeActive(getWorldNode(_world), _active);
@@ -577,26 +577,26 @@ bool Viewer::isAllowingSimulation() const
 }
 
 //==============================================================================
-DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
+DragAndDrop* Viewer::enableDragAndDrop(kido::dynamics::Entity* _entity)
 {
-  if(dart::dynamics::BodyNode* bn =
-     dynamic_cast<dart::dynamics::BodyNode*>(_entity))
+  if(kido::dynamics::BodyNode* bn =
+     dynamic_cast<kido::dynamics::BodyNode*>(_entity))
     return enableDragAndDrop(bn);
 
-  if(dart::dynamics::SimpleFrame* sf =
-     dynamic_cast<dart::dynamics::SimpleFrame*>(_entity))
+  if(kido::dynamics::SimpleFrame* sf =
+     dynamic_cast<kido::dynamics::SimpleFrame*>(_entity))
     return enableDragAndDrop(sf);
 
   return nullptr;
 }
 
 //==============================================================================
-SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
+SimpleFrameDnD* Viewer::enableDragAndDrop(kido::dynamics::SimpleFrame* _frame)
 {
   if(nullptr == _frame)
     return nullptr;
 
-  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
+  std::map<kido::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
       mSimpleFrameDnDMap.find(_frame);
   if(it != mSimpleFrameDnDMap.end())
     return it->second;
@@ -609,13 +609,13 @@ SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
 //==============================================================================
 // Creating a typedef for a very long and ugly template
 namespace sfs_dnd {
-typedef std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>::iterator iterator;
+typedef std::multimap<kido::dynamics::Shape*,SimpleFrameShapeDnD*>::iterator iterator;
 } // namespace sfs_dnd
 
 //==============================================================================
 static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
-    dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape,
-    std::multimap<dart::dynamics::Shape*,SimpleFrameShapeDnD*>& map)
+    kido::dynamics::SimpleFrame* _frame, kido::dynamics::Shape* _shape,
+    std::multimap<kido::dynamics::Shape*,SimpleFrameShapeDnD*>& map)
 {
   using namespace sfs_dnd;
 
@@ -639,7 +639,7 @@ static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
 
 //==============================================================================
 SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
-    dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape)
+    kido::dynamics::SimpleFrame* _frame, kido::dynamics::Shape* _shape)
 {
   if(nullptr == _frame || nullptr == _shape)
     return nullptr;
@@ -653,7 +653,7 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 
   SimpleFrameShapeDnD* dnd = new SimpleFrameShapeDnD(this, _frame, _shape);
   mSimpleFrameShapeDnDMap.insert(
-        std::pair<dart::dynamics::Shape*,SimpleFrameShapeDnD*>(_shape,dnd));
+        std::pair<kido::dynamics::Shape*,SimpleFrameShapeDnD*>(_shape,dnd));
 
   return dnd;
 }
@@ -676,13 +676,13 @@ InteractiveFrameDnD* Viewer::enableDragAndDrop(
 }
 
 //==============================================================================
-BodyNodeDnD* Viewer::enableDragAndDrop(dart::dynamics::BodyNode* _bn,
+BodyNodeDnD* Viewer::enableDragAndDrop(kido::dynamics::BodyNode* _bn,
                                        bool _useExternalIK, bool _useWholeBody)
 {
   if(nullptr == _bn)
     return nullptr;
 
-  std::map<dart::dynamics::BodyNode*,BodyNodeDnD*>::iterator it =
+  std::map<kido::dynamics::BodyNode*,BodyNodeDnD*>::iterator it =
       mBodyNodeDnDMap.find(_bn);
   if(it != mBodyNodeDnDMap.end())
     return it->second;
@@ -713,7 +713,7 @@ bool Viewer::disableDragAndDrop(SimpleFrameDnD* _dnd)
   if(nullptr == _dnd)
     return false;
 
-  std::map<dart::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
+  std::map<kido::dynamics::SimpleFrame*,SimpleFrameDnD*>::iterator it =
       mSimpleFrameDnDMap.find(_dnd->getSimpleFrame());
   if(it == mSimpleFrameDnDMap.end())
     return false;
@@ -764,7 +764,7 @@ bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
 {
-  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it =
+  std::map<kido::dynamics::BodyNode*, BodyNodeDnD*>::iterator it =
       mBodyNodeDnDMap.find(_dnd->getBodyNode());
   if(it == mBodyNodeDnDMap.end())
     return false;

@@ -43,11 +43,11 @@ namespace osg {
 class Node;
 } // namespace osg
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Shape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart {
 
@@ -59,14 +59,14 @@ class ShapeNode
 {
 public:
 
-  ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
+  ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
             EntityNode* _parent,
             osg::Node* _node);
 
   virtual ~ShapeNode();
 
   /// Pointer to the Shape associated with this ShapeNode
-  std::shared_ptr<dart::dynamics::Shape> getShape() const;
+  std::shared_ptr<kido::dynamics::Shape> getShape() const;
 
   /// Cast this ShapeNode into an osg::Node
   osg::Node* getNode();
@@ -91,7 +91,7 @@ public:
 
 protected:
   /// Pointer to the Shape associated with this ShapeNode
-  const std::shared_ptr<dart::dynamics::Shape> mShape;
+  const std::shared_ptr<kido::dynamics::Shape> mShape;
 
   /// Should generally be equal to 'this'
   osg::Node* const mNode;

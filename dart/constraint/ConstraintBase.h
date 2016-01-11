@@ -41,7 +41,7 @@
 
 #include "dart/dynamics/SmartPointer.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Skeleton;
@@ -137,7 +137,7 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif  // DART_CONSTRAINT_CONSTRAINTBASE_H_
 

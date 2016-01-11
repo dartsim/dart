@@ -36,7 +36,7 @@
 
 #include "dart/common/Signal.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 //==============================================================================
@@ -140,5 +140,5 @@ ScopedConnection::~ScopedConnection()
 }
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 

@@ -36,7 +36,7 @@
 
 #include "dart/dynamics/ArrowShape.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -372,5 +372,5 @@ void ArrowShape::instantiate(size_t resolution)
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 

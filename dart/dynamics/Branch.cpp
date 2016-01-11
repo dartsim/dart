@@ -37,7 +37,7 @@
 #include "dart/dynamics/Branch.h"
 #include "dart/dynamics/BodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -115,4 +115,4 @@ void Branch::update()
 }
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido

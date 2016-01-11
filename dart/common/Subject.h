@@ -39,7 +39,7 @@
 
 #include <set>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 class Observer;
@@ -55,7 +55,7 @@ class Observer;
 /// special considerations are needed when virtually inheriting the Subject
 /// class.
 ///
-/// dart::sub_ptr is a templated smart pointer that will change itself into a
+/// kido::sub_ptr is a templated smart pointer that will change itself into a
 /// nullptr when its Subject is destroyed. It offers one of the easiest ways to
 /// take advantage of the Subject/Observer pattern.
 class Subject
@@ -86,6 +86,6 @@ protected:
 };
 
 } // namespace common
-} // namespace dart
+} // namespace kido
 
 #endif // DART_COMMON_SUBJECT_H_

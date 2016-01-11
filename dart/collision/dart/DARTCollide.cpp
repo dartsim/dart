@@ -44,7 +44,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/BodyNode.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 // point : world coordinate vector
@@ -1355,4 +1355,4 @@ int collide(dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
 }
 
 } // namespace collision
-} // namespace dart
+} // namespace kido

@@ -41,7 +41,7 @@
 #include "dart/dynamics/TemplatedJacobianNode.h"
 //#include "dart/math/Geometry.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class BodyNode;
@@ -322,7 +322,7 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 
 #endif // DART_DYNAMICS_ENDEFFECTOR_H_

@@ -55,7 +55,7 @@
   (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
   FCL_PATCH_VERSION >= z))))
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 //==============================================================================
@@ -495,9 +495,9 @@ fcl::Transform3f FCLCollisionNode::getFCLTransform(size_t _idx) const
 //==============================================================================
 void FCLCollisionNode::updateFCLCollisionObjects()
 {
-  using dart::dynamics::BodyNode;
-  using dart::dynamics::Shape;
-  using dart::dynamics::SoftMeshShape;
+  using kido::dynamics::BodyNode;
+  using kido::dynamics::Shape;
+  using kido::dynamics::SoftMeshShape;
 
   for (auto& fclCollObj : mCollisionObjects)
   {
@@ -552,4 +552,4 @@ void FCLCollisionNode::updateFCLCollisionObjects()
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido

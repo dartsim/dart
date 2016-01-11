@@ -53,18 +53,18 @@ class SupportPolygonVisual : public ViewerAttachment
 public:
 
   /// Visualize the support polygon of an entire Skeleton
-  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton = nullptr,
+  SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton = nullptr,
                 double elevation = 0.02);
 
   /// Visualize the support polygon of a specific tree in a Skeleton
-  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton, size_t treeIndex,
+  SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton, size_t treeIndex,
                 double elevation = 0.02);
 
   /// Change the Skeleton that is being visualized
-  void setSkeleton(const dart::dynamics::SkeletonPtr& skeleton);
+  void setSkeleton(const kido::dynamics::SkeletonPtr& skeleton);
 
   /// Get the Skeleton associated with this visual
-  dart::dynamics::SkeletonPtr getSkeleton() const;
+  kido::dynamics::SkeletonPtr getSkeleton() const;
 
   /// Visualize the entire Skeleton
   void visualizeWholeSkeleton();
@@ -139,7 +139,7 @@ protected:
   void initialize();
 
   /// Skeleton for this visual
-  dart::dynamics::WeakSkeletonPtr mSkeleton;
+  kido::dynamics::WeakSkeletonPtr mSkeleton;
 
   /// Tree index for this visual
   size_t mTreeIndex;
@@ -154,7 +154,7 @@ protected:
   bool mDisplayCentroid;
 
   /// SimpleFrame for the centroid
-  dart::dynamics::SimpleFramePtr mCentroid;
+  kido::dynamics::SimpleFramePtr mCentroid;
 
   /// Radius to be used by the centroid
   double mCentroidRadius;
@@ -163,7 +163,7 @@ protected:
   bool mDisplayCOM;
 
   /// SimpleFrame for the center of mass
-  dart::dynamics::SimpleFramePtr mCom;
+  kido::dynamics::SimpleFramePtr mCom;
 
   /// Radius to be used by the center of mass
   double mComRadius;

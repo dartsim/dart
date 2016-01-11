@@ -60,7 +60,7 @@
 #define DART_MAX_BOUNCING_VELOCITY       1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 double SoftContactConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
@@ -1064,4 +1064,4 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
 }
 
 }  // namespace constraint
-}  // namespace dart
+}  // namespace kido

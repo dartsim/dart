@@ -54,7 +54,7 @@
 #include "dart/dynamics/MultiDofJoint.h"
 #include "dart/simulation/World.h"
 
-namespace dart {
+namespace kido {
 
 namespace dynamics {
 class Joint;
@@ -146,7 +146,7 @@ protected:
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
 
-  static dart::dynamics::SkeletonPtr readSkeleton(
+  static kido::dynamics::SkeletonPtr readSkeleton(
       tinyxml2::XMLElement* _skeletonElement,
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _retriever);
@@ -245,6 +245,6 @@ protected:
 };
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_SKEL_PARSER_H

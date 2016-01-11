@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/HierarchicalIK.h"
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 /// BalanceConstraint is a kinematic constraint function designed to be passed
@@ -194,6 +194,6 @@ protected:
 };
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido
 
 #endif // DART_CONSTRAINT_BALANCECONSTRAINT_H_

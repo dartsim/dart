@@ -41,7 +41,7 @@
 #include <vector>
 #include "dart/common/ResourceRetriever.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 /// Retrieve local resources specified by package:// URIs by: (1) resolving 
@@ -108,6 +108,6 @@ private:
 using PackageResourceRetrieverPtr = std::shared_ptr<PackageResourceRetriever>;
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_H_

@@ -43,7 +43,7 @@
 //  C3D file reader and writer
 ///////////////////////////////////////////////////////////////////////
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 float convertDecToFloat(char _bytes[4]) {
@@ -230,5 +230,5 @@ bool saveC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int _
 }
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 

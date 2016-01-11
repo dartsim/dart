@@ -44,7 +44,7 @@
 namespace osgDart {
 namespace render {
 
-WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
+WarningShapeNode::WarningShapeNode(std::shared_ptr<kido::dynamics::Shape> shape,
                                    EntityNode* parent)
   : ShapeNode(shape, parent, this)
 {

@@ -36,7 +36,7 @@
 
 #include "dart/common/detail/ConnectionBody.h"
 
-namespace dart {
+namespace kido {
 namespace common {
 
 namespace signal {
@@ -71,6 +71,6 @@ bool ConnectionBodyBase::isConnected() const
 }  // namespace signal
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido
 
 

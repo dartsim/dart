@@ -46,7 +46,7 @@
 #include "dart/common/ResourceRetriever.h"
 #include "dart/math/MathTypes.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 std::string toString(bool v);
@@ -235,6 +235,6 @@ using ConstElementEnumerator
     = TemplatedElementEnumerator<const tinyxml2::XMLElement>;
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_XMLHELPERS_H_

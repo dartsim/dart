@@ -42,12 +42,12 @@
 
 #include <osg/Group>
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Entity;
 class Shape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
@@ -63,10 +63,10 @@ class EntityNode : public osg::Group
 public:
 
   /// Constructor
-  EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent);
+  EntityNode(kido::dynamics::Entity* _entity, FrameNode* _parent);
 
   /// Pointer to the Entity associated with this EntityNode
-  dart::dynamics::Entity* getEntity() const;
+  kido::dynamics::Entity* getEntity() const;
 
   /// Pointer to the parent FrameNode of this EntityNode
   FrameNode* getParentFrameNode();
@@ -91,23 +91,23 @@ protected:
 
   void clearUnusedNodes();
 
-  void refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
+  void refreshShapeNode(std::shared_ptr<kido::dynamics::Shape> shape);
 
-  void createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
+  void createShapeNode(std::shared_ptr<kido::dynamics::Shape> shape);
 
   /// Pointer to the Entity that this EntityNode is associated with
-  dart::dynamics::Entity* mEntity;
+  kido::dynamics::Entity* mEntity;
 
   /// Pointer to the parent FrameNode of this EntityNode
   FrameNode* mParent;
 
   /// Map from Shapes to ShapeGeodes
-  std::map<std::shared_ptr<dart::dynamics::Shape>,
+  std::map<std::shared_ptr<kido::dynamics::Shape>,
            render::ShapeNode*> mShapeToNode;
 
   /// Map from ShapeGeodes to Shapes
   std::map<render::ShapeNode*,
-           std::shared_ptr<dart::dynamics::Shape> > mNodeToShape;
+           std::shared_ptr<kido::dynamics::Shape> > mNodeToShape;
 
   /// True iff this EntityNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being

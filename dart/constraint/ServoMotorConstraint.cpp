@@ -46,7 +46,7 @@
 
 #define DART_CFM     1e-9
 
-namespace dart {
+namespace kido {
 namespace constraint {
 
 double ServoMotorConstraint::mConstraintForceMixing = DART_CFM;
@@ -291,4 +291,4 @@ bool ServoMotorConstraint::isActive() const
 }
 
 } // namespace constraint
-} // namespace dart
+} // namespace kido

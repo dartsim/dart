@@ -39,18 +39,18 @@
 
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class MeshShape;
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 namespace osgDart
 {
 
 class InteractiveFrame;
 
-class InteractiveTool : public dart::dynamics::Entity
+class InteractiveTool : public kido::dynamics::Entity
 {
 public:
 
@@ -101,13 +101,13 @@ protected:
 
 };
 
-class InteractiveFrame : public dart::dynamics::SimpleFrame
+class InteractiveFrame : public kido::dynamics::SimpleFrame
 {
 public:
 
   /// Constructor
   InteractiveFrame(
-    dart::dynamics::Frame* referenceFrame,
+    kido::dynamics::Frame* referenceFrame,
     const std::string& name = "interactive_frame",
     const Eigen::Isometry3d& relativeTransform = Eigen::Isometry3d::Identity(),
     double size_scale=0.2, double thickness_scale=2.0);

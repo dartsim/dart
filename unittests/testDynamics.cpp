@@ -52,7 +52,7 @@
 #include "dart/utils/SkelParser.h"
 
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 
 //==============================================================================
 class DynamicsTest : public ::testing::Test
@@ -570,7 +570,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -687,7 +687,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -789,7 +789,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -886,7 +886,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1179,7 +1179,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1452,7 +1452,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1608,7 +1608,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1723,7 +1723,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1817,7 +1817,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;

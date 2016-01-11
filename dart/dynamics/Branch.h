@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/Linkage.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// Branch is a specialized type of Linkage that represents a complete subtree
@@ -92,6 +92,6 @@ protected:
 };
 
 } // namespace dynamics
-} // namespace dart
+} // namespace kido
 
 #endif // DART_DYNAMICS_BRANCH_H_

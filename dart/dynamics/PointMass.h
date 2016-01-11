@@ -41,13 +41,13 @@
 #include <Eigen/Dense>
 #include "dart/dynamics/Entity.h"
 
-namespace dart {
+namespace kido {
 namespace renderer {
 class RenderInterface;
 }  // namespace renderer
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 class EllipsoidShape;
@@ -687,6 +687,6 @@ protected:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_POINTMASS_H_

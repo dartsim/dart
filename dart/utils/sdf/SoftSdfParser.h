@@ -47,7 +47,7 @@
 
 #include "dart/utils/sdf/SdfParser.h"
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 class Joint;
 class SoftBodyNode;
@@ -56,9 +56,9 @@ class Skeleton;
 namespace simulation {
 class World;
 }  // namespace simulation
-}  // namespace dart
+}  // namespace kido
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 class SoftSdfParser : public SdfParser
@@ -98,6 +98,6 @@ public:
 };
 
 } // namespace utils
-} // namespace dart
+} // namespace kido
 
 #endif // #ifndef DART_UTILS_SDF_SOFTSDFPARSER_H_

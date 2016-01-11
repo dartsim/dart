@@ -39,7 +39,7 @@
 
 #include <iostream>
 
-namespace dart {
+namespace kido {
 namespace common {
 
 std::ostream& colorMsg(const std::string& _msg, int _color)
@@ -63,4 +63,4 @@ std::ostream& colorErr(const std::string& _msg,
 }
 
 }  // namespace common
-}  // namespace dart
+}  // namespace kido

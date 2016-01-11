@@ -51,7 +51,7 @@ class IOSystem;
 
 } // namespace Assimp
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 /// \brief
@@ -180,6 +180,6 @@ public:
 };
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_DYNAMICS_MESHSHAPE_H_

@@ -42,7 +42,7 @@
 
 int main(int argc, char* argv[])
 {
-  using namespace dart;
+  using namespace kido;
   using namespace dynamics;
   using namespace simulation;
   using namespace utils;

@@ -43,7 +43,7 @@
 #include "dart/gui/GlutWindow.h"
 #include "dart/gui/Trackball.h"
 
-namespace dart {
+namespace kido {
 namespace gui {
 
 class Win3D : public GlutWindow {
@@ -79,6 +79,6 @@ protected:
 };
 
 }  // namespace gui
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_GUI_WIN3D_H_

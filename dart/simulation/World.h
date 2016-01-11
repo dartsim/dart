@@ -56,7 +56,7 @@
 #include "dart/dynamics/SimpleFrame.h"
 #include "dart/dynamics/Skeleton.h"
 
-namespace dart {
+namespace kido {
 
 namespace integration {
 class Integrator;
@@ -233,7 +233,7 @@ protected:
   std::vector<common::Connection> mNameConnectionsForSkeletons;
 
   /// NameManager for keeping track of Skeletons
-  dart::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
+  kido::common::NameManager<dynamics::SkeletonPtr> mNameMgrForSkeletons;
 
   /// Entities in this world
   std::vector<dynamics::SimpleFramePtr> mSimpleFrames;
@@ -246,7 +246,7 @@ protected:
   std::map<const dynamics::SimpleFrame*, dynamics::SimpleFramePtr> mSimpleFrameToShared;
 
   /// NameManager for keeping track of Entities
-  dart::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
+  kido::common::NameManager<dynamics::SimpleFramePtr> mNameMgrForSimpleFrames;
 
   /// The first indeices of each skeleton's dof in mDofs
   ///
@@ -288,6 +288,6 @@ public:
 typedef std::shared_ptr<World> WorldPtr;
 
 }  // namespace simulation
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_SIMULATION_WORLD_H_

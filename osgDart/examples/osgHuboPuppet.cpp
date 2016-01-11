@@ -39,10 +39,10 @@
 #include <osgDart/osgDart.h>
 
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
+using namespace kido::dynamics;
+using namespace kido::simulation;
 
-class RelaxedPosture : public dart::optimizer::Function
+class RelaxedPosture : public kido::optimizer::Function
 {
 public:
 
@@ -333,7 +333,7 @@ public:
 
       for(size_t j=0; j < 6; ++j)
       {
-        testQ[j] = dart::math::wrapToPi(testQ[j]);
+        testQ[j] = kido::math::wrapToPi(testQ[j]);
         if(std::abs(testQ[j]) < zeroSize)
           testQ[j] = 0.0;
       }
@@ -542,13 +542,13 @@ public:
       if(sqrt_radical.imag() != 0)
           isValid = false;
 
-      q5 = dart::math::wrapToPi(atan2(-pz, alternatives(i,1)*sqrt_radical.real())-psi);
+      q5 = kido::math::wrapToPi(atan2(-pz, alternatives(i,1)*sqrt_radical.real())-psi);
 
       q6 = atan2(py, -(px+L6));
       C45 = cos(q4+q5);
       C5 = cos(q5);
       if( C45*L4 + C5*L5 < 0 )
-          q6 = dart::math::wrapToPi(q6+M_PI);
+          q6 = kido::math::wrapToPi(q6+M_PI);
 
       S6 = sin(q6);
       C6 = cos(q6);
@@ -563,10 +563,10 @@ public:
       q1 = atan2(C6*sy + S6*sx, C6*ny + S6*nx);
       C2 = cos(q2);
       if( C2 < 0 )
-          q1 = dart::math::wrapToPi(q1+M_PI);
+          q1 = kido::math::wrapToPi(q1+M_PI);
 
       q345 = atan2(-az/C2, -(C6*ax - S6*ay)/C2);
-      q3 = dart::math::wrapToPi(q345 - q4 - q5);
+      q3 = kido::math::wrapToPi(q345 - q4 - q5);
 
       testQ[0]=q1; testQ[1]=q2; testQ[2]=q3; testQ[3]=q4; testQ[4]=q5; testQ[5]=q6;
 
@@ -863,7 +863,7 @@ public:
     mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
           mHubo->getIK(true)->getObjective());
 
-    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
+    mBalance = std::dynamic_pointer_cast<kido::constraint::BalanceConstraint>(
           mHubo->getIK(true)->getProblem()->getEqConstraint(1));
 
     mOptimizationKey = 'r';
@@ -984,7 +984,7 @@ public:
           mPosture->enforceIdealPosture = true;
 
         if(mBalance)
-          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          mBalance->setErrorMethod(kido::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
 
         return true;
       }
@@ -998,7 +998,7 @@ public:
           mPosture->enforceIdealPosture = false;
 
         if(mBalance)
-          mBalance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
+          mBalance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_CENTROID);
 
         return true;
       }
@@ -1054,7 +1054,7 @@ protected:
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
+  std::shared_ptr<kido::constraint::BalanceConstraint> mBalance;
 
   char mOptimizationKey;
 
@@ -1074,7 +1074,7 @@ SkeletonPtr createGround()
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
-  groundShape->setColor(dart::Color::Blue(0.2));
+  groundShape->setColor(kido::Color::Blue(0.2));
 
   ground->getBodyNode(0)->addVisualizationShape(groundShape);
   ground->getBodyNode(0)->addCollisionShape(groundShape);
@@ -1084,7 +1084,7 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::DartLoader loader;
+  kido::utils::DartLoader loader;
   loader.addPackageDirectory("drchubo", DART_DATA_PATH"/urdf/drchubo");
   SkeletonPtr hubo =
       loader.parseSkeleton(DART_DATA_PATH"/urdf/drchubo/drchubo.urdf");
@@ -1201,7 +1201,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
         -angularBounds, angularBounds);
 
 
-  dart::math::SupportGeometry foot_support;
+  kido::math::SupportGeometry foot_support;
   foot_support.push_back(Eigen::Vector3d(-0.08,  0.05, 0.0));
   foot_support.push_back(Eigen::Vector3d(-0.18,  0.05, 0.0));
   foot_support.push_back(Eigen::Vector3d(-0.18, -0.05, 0.0));
@@ -1263,7 +1263,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getSupport()->setActive();
 
 
-  dart::math::SupportGeometry peg_support;
+  kido::math::SupportGeometry peg_support;
   peg_support.push_back(Eigen::Vector3d::Zero());
 
   linearBounds = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
@@ -1336,8 +1336,8 @@ void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& hubo)
 
 void setupWholeBodySolver(const SkeletonPtr& hubo)
 {
-  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver =
-      std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
+  std::shared_ptr<kido::optimizer::GradientDescentSolver> solver =
+      std::dynamic_pointer_cast<kido::optimizer::GradientDescentSolver>(
         hubo->getIK(true)->getSolver());
 
   size_t nDofs = hubo->getNumDofs();
@@ -1365,19 +1365,19 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
 
   hubo->getIK()->setObjective(objective);
 
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance =
-      std::make_shared<dart::constraint::BalanceConstraint>(hubo->getIK());
+  std::shared_ptr<kido::constraint::BalanceConstraint> balance =
+      std::make_shared<kido::constraint::BalanceConstraint>(hubo->getIK());
   hubo->getIK()->getProblem()->addEqConstraint(balance);
 
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
+  balance->setErrorMethod(kido::constraint::BalanceConstraint::FROM_CENTROID);
+  balance->setBalanceMethod(kido::constraint::BalanceConstraint::SHIFT_SUPPORT);
 
   solver->setNumMaxIterations(5);
 }
 
 int main()
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  kido::simulation::WorldPtr world(new kido::simulation::World);
 
   const SkeletonPtr& hubo = createHubo();
   setStartupConfiguration(hubo);

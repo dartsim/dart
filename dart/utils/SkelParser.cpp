@@ -74,7 +74,7 @@
 #include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
-namespace dart {
+namespace kido {
 namespace utils {
 
 //==============================================================================
@@ -1997,4 +1997,4 @@ common::ResourceRetrieverPtr SkelParser::getRetriever(
 }
 
 }  // namespace utils
-}  // namespace dart
+}  // namespace kido

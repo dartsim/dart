@@ -44,7 +44,7 @@
 
 #include "fcl/BVH/BVH_model.h"
 
-namespace dart {
+namespace kido {
 namespace collision {
 
 template<class BV>
@@ -439,6 +439,6 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 }
 
 }  // namespace collision
-}  // namespace dart
+}  // namespace kido
 
 #endif  // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_

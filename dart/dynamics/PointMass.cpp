@@ -46,7 +46,7 @@
 
 using namespace Eigen;
 
-namespace dart {
+namespace kido {
 namespace dynamics {
 
 //==============================================================================
@@ -1110,4 +1110,4 @@ void PointMassNotifier::notifyAccelerationUpdate()
 }
 
 }  // namespace dynamics
-}  // namespace dart
+}  // namespace kido
