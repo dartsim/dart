@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
-#define DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
+#define KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
 
 #include "dart/common/ResourceRetriever.h"
 
@@ -61,4 +61,4 @@ using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 } // namespace common
 } // namespace kido
 
-#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
+#endif // ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_H_

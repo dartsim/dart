@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_RESOURCERETRIEVER_H_
-#define DART_COMMON_RESOURCERETRIEVER_H_
+#ifndef KIDO_COMMON_RESOURCERETRIEVER_H_
+#define KIDO_COMMON_RESOURCERETRIEVER_H_
 
 #include <memory>
 #include <string>
@@ -71,4 +71,4 @@ using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;
 } // namespace common
 } // namespace kido
 
-#endif // ifndef DART_COMMON_RESOURCERETRIEVER_H_
+#endif // ifndef KIDO_COMMON_RESOURCERETRIEVER_H_

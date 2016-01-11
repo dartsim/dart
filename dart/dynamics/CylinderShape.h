@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_CYLINDERSHAPE_H_
-#define DART_DYNAMICS_CYLINDERSHAPE_H_
+#ifndef KIDO_DYNAMICS_CYLINDERSHAPE_H_
+#define KIDO_DYNAMICS_CYLINDERSHAPE_H_
 
 #include "dart/dynamics/Shape.h"
 
@@ -95,4 +95,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_CYLINDERSHAPE_H_
+#endif  // KIDO_DYNAMICS_CYLINDERSHAPE_H_

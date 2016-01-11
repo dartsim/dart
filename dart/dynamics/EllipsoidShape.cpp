@@ -85,7 +85,7 @@ void EllipsoidShape::draw(renderer::RenderInterface* _ri,
 double EllipsoidShape::computeVolume(const Eigen::Vector3d& size)
 {
   // 4/3* Pi* a/2* b/2* c/2
-  return DART_PI * size[0] * size[1] * size[2] / 6.0;
+  return KIDO_PI * size[0] * size[1] * size[2] / 6.0;
 }
 
 //==============================================================================

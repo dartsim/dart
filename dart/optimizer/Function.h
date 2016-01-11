@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_H_
-#define DART_OPTIMIZER_FUNCTION_H_
+#ifndef KIDO_OPTIMIZER_FUNCTION_H_
+#define KIDO_OPTIMIZER_FUNCTION_H_
 
 #include <vector>
 #include <memory>
@@ -221,5 +221,5 @@ public:
 }  // namespace optimizer
 }  // namespace kido
 
-#endif  // DART_OPTIMIZER_FUNCTION_H_
+#endif  // KIDO_OPTIMIZER_FUNCTION_H_
 

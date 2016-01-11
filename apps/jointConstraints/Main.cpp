@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   kido::simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(DART_DATA_PATH"skel/fullbody1.skel");
+      = utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

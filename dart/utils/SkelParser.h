@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SKEL_PARSER_H
-#define DART_UTILS_SKEL_PARSER_H
+#ifndef KIDO_UTILS_SKEL_PARSER_H
+#define KIDO_UTILS_SKEL_PARSER_H
 
 #include <cstddef>
 
@@ -247,4 +247,4 @@ protected:
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_SKEL_PARSER_H
+#endif // #ifndef KIDO_UTILS_SKEL_PARSER_H

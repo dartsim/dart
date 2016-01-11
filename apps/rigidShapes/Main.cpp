@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   kido::simulation::WorldPtr myWorld
-      = kido::utils::SkelParser::readWorld(DART_DATA_PATH"skel/shapes.skel");
+      = kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/shapes.skel");
   assert(myWorld != NULL);
 #ifndef FCL_DART5
   myWorld->getConstraintSolver()->setCollisionDetector(

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODE_H_
-#define DART_DYNAMICS_BODYNODE_H_
+#ifndef KIDO_DYNAMICS_BODYNODE_H_
+#define KIDO_DYNAMICS_BODYNODE_H_
 
 #include <string>
 #include <vector>
@@ -57,8 +57,8 @@
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/EndEffector.h"
 
-const double DART_DEFAULT_FRICTION_COEFF = 1.0;
-const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+const double KIDO_DEFAULT_FRICTION_COEFF = 1.0;
+const double KIDO_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 namespace kido {
 namespace renderer {
@@ -125,8 +125,8 @@ public:
         const Inertia& _inertia = Inertia(),
         const std::vector<ShapePtr>& _collisionShapes = std::vector<ShapePtr>(),
         bool _isCollidable = true,
-        double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
-        double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
+        double _frictionCoeff = KIDO_DEFAULT_FRICTION_COEFF,
+        double _restitutionCoeff = KIDO_DEFAULT_RESTITUTION_COEFF,
         bool _gravityMode = true);
 
     virtual ~UniqueProperties() = default;
@@ -1190,4 +1190,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_BODYNODE_H_
+#endif  // KIDO_DYNAMICS_BODYNODE_H_

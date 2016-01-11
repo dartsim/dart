@@ -72,25 +72,25 @@ protected:
 //==============================================================================
 void ConstraintTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/chainwhipa.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/fullbody1.skel");
 }
 
 //==============================================================================
@@ -161,8 +161,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   CollisionDetector* cd = cs->getCollisionDetector();
 
   // Lower and upper bound of configuration for system
-  // double lb = -1.5 * DART_PI;
-  // double ub =  1.5 * DART_PI;
+  // double lb = -1.5 * KIDO_PI;
+  // double ub =  1.5 * KIDO_PI;
 
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i)

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_XMLHELPERS_H_
-#define DART_UTILS_XMLHELPERS_H_
+#ifndef KIDO_UTILS_XMLHELPERS_H_
+#define KIDO_UTILS_XMLHELPERS_H_
 
 #include <string>
 #include <Eigen/Dense>
@@ -237,4 +237,4 @@ using ConstElementEnumerator
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_XMLHELPERS_H_
+#endif // #ifndef KIDO_UTILS_XMLHELPERS_H_

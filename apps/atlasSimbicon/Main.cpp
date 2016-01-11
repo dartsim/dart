@@ -57,17 +57,17 @@ int main(int argc, char* argv[])
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
   SkeletonPtr ground = urdfLoader.parseSkeleton(
-        DART_DATA_PATH"sdf/atlas/ground.urdf");
+        KIDO_DATA_PATH"sdf/atlas/ground.urdf");
 //  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
-//        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
+//        KIDO_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
   SkeletonPtr atlas = SoftSdfParser::readSkeleton(
-        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+        KIDO_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);
 
   // Set initial configuration for Atlas robot
   VectorXd q = atlas->getPositions();
-  q[0] = -0.5 * DART_PI;
+  q[0] = -0.5 * KIDO_PI;
   atlas->setPositions(q);
 
   // Set gravity of the world

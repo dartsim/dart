@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_SOFTSIMWINDOW_H_
-#define DART_GUI_SOFTSIMWINDOW_H_
+#ifndef KIDO_GUI_SOFTSIMWINDOW_H_
+#define KIDO_GUI_SOFTSIMWINDOW_H_
 
 #include "dart/gui/SimWindow.h"
 
@@ -72,4 +72,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // DART_GUI_SOFTSIMWINDOW_H_
+#endif  // KIDO_GUI_SOFTSIMWINDOW_H_

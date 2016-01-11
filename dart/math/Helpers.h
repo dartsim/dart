@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_HELPERS_H_
-#define DART_MATH_HELPERS_H_
+#ifndef KIDO_MATH_HELPERS_H_
+#define KIDO_MATH_HELPERS_H_
 
 // Standard Libraries
 #include <cfloat>
@@ -114,7 +114,7 @@ inline double Tsinc(double _theta) {
 }
 
 inline bool isZero(double _theta) {
-  return (std::abs(_theta) < DART_EPSILON);
+  return (std::abs(_theta) < KIDO_EPSILON);
 }
 
 inline double asinh(double _X) {
@@ -169,7 +169,7 @@ inline typename DerivedA::PlainObject clip(
 }
 
 inline bool isEqual(double _x, double _y) {
-  return (std::abs(_x - _y) < DART_EPSILON);
+  return (std::abs(_x - _y) < KIDO_EPSILON);
 }
 
 // check if it is an integer
@@ -402,4 +402,4 @@ inline Eigen::Vector3d Random()
 
 }  // namespace kido
 
-#endif  // DART_MATH_HELPERS_H_
+#endif  // KIDO_MATH_HELPERS_H_

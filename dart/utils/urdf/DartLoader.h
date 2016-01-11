@@ -2,8 +2,8 @@
  * @file DartLoader.h
  */
 
-#ifndef DART_UTILS_URDF_LOADER_H
-#define DART_UTILS_URDF_LOADER_H
+#ifndef KIDO_UTILS_URDF_LOADER_H
+#define KIDO_UTILS_URDF_LOADER_H
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -149,4 +149,4 @@ private:
 }
 }
 
-#endif /** DART_UTILS_URDF_LOADER_H */
+#endif /** KIDO_UTILS_URDF_LOADER_H */

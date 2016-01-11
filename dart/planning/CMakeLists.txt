@@ -7,7 +7,7 @@ set(dart_planning_srcs ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_planning ${srcs} ${hdrs})
-#target_link_libraries(dart_planning ${DART_DEPENDENCIES})
+#target_link_libraries(dart_planning ${KIDO_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "planning headers" ${hdrs})

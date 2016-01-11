@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_METASKELETON_H_
-#define DART_DYNAMICS_METASKELETON_H_
+#ifndef KIDO_DYNAMICS_METASKELETON_H_
+#define KIDO_DYNAMICS_METASKELETON_H_
 
 #include <vector>
 #include <string>
@@ -624,4 +624,4 @@ public:
 } // namespace kido
 
 
-#endif // DART_DYNAMICS_METASKELETON_H_
+#endif // KIDO_DYNAMICS_METASKELETON_H_

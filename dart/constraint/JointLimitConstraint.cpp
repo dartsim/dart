@@ -44,18 +44,18 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
-#define DART_MAX_ERV 1e+1
-#define DART_CFM     1e-9
+#define KIDO_ERROR_ALLOWANCE 0.0
+#define KIDO_ERP     0.01
+#define KIDO_MAX_ERV 1e+1
+#define KIDO_CFM     1e-9
 
 namespace kido {
 namespace constraint {
 
-double JointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double JointLimitConstraint::mErrorReductionParameter   = DART_ERP;
-double JointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double JointLimitConstraint::mConstraintForceMixing     = DART_CFM;
+double JointLimitConstraint::mErrorAllowance            = KIDO_ERROR_ALLOWANCE;
+double JointLimitConstraint::mErrorReductionParameter   = KIDO_ERP;
+double JointLimitConstraint::mMaxErrorReductionVelocity = KIDO_MAX_ERV;
+double JointLimitConstraint::mConstraintForceMixing     = KIDO_CFM;
 
 //==============================================================================
 JointLimitConstraint::JointLimitConstraint(dynamics::Joint* _joint)

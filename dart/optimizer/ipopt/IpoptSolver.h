@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
-#define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#ifndef KIDO_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#define KIDO_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
 
 //------------------------------------------------------------------------------
 // Workaround for bug:
@@ -220,4 +220,4 @@ private:
 }  // namespace optimizer
 }  // namespace kido
 
-#endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#endif  // KIDO_OPTIMIZER_IPOPT_IPOPTSOLVER_H_

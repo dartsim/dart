@@ -50,8 +50,8 @@ jittering for depth of field effects. Use in conjunction with the
 accwindow() routine.
 */
 
-#ifndef DART_GUI_JITTER_H_
-#define DART_GUI_JITTER_H_
+#ifndef KIDO_GUI_JITTER_H_
+#define KIDO_GUI_JITTER_H_
 
 #include "dart/renderer/LoadOpengl.h"
 
@@ -79,4 +79,4 @@ public:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // DART_GUI_JITTER_H_
+#endif  // KIDO_GUI_JITTER_H_

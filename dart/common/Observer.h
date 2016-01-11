@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_OBSERVER_H_
-#define DART_COMMON_OBSERVER_H_
+#ifndef KIDO_COMMON_OBSERVER_H_
+#define KIDO_COMMON_OBSERVER_H_
 
 #include <set>
 
@@ -89,4 +89,4 @@ protected:
 } // namespace kido
 } // namespace common
 
-#endif // DART_COMMON_OBSERVER_H_
+#endif // KIDO_COMMON_OBSERVER_H_

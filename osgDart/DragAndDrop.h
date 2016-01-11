@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_DRAGANDDROP_H
-#define OSGDART_DRAGANDDROP_H
+#ifndef OSGKIDO_DRAGANDDROP_H
+#define OSGKIDO_DRAGANDDROP_H
 
 #include <functional>
 
@@ -360,4 +360,4 @@ protected:
 } // namespace osgDart
 
 
-#endif // OSGDART_DRAGANDDROP_H
+#endif // OSGKIDO_DRAGANDDROP_H

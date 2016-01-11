@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENTITY_H_
-#define DART_DYNAMICS_ENTITY_H_
+#ifndef KIDO_DYNAMICS_ENTITY_H_
+#define KIDO_DYNAMICS_ENTITY_H_
 
 #include <Eigen/Core>
 #include <string>
@@ -309,4 +309,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_ENTITY_H_
+#endif // KIDO_DYNAMICS_ENTITY_H_

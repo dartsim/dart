@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_H_
-#define DART_UTILS_PACKAGERESOURCERETRIEVER_H_
+#ifndef KIDO_UTILS_PACKAGERESOURCERETRIEVER_H_
+#define KIDO_UTILS_PACKAGERESOURCERETRIEVER_H_
 
 #include <unordered_map>
 #include <vector>
@@ -110,4 +110,4 @@ using PackageResourceRetrieverPtr = std::shared_ptr<PackageResourceRetriever>;
 } // namespace utils
 } // namespace kido
 
-#endif // ifndef DART_UTILS_PACKAGERESOURCERETRIEVER_H_
+#endif // ifndef KIDO_UTILS_PACKAGERESOURCERETRIEVER_H_

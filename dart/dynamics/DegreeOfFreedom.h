@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DEGREEOFFREEDOM_H_
-#define DART_DYNAMICS_DEGREEOFFREEDOM_H_
+#ifndef KIDO_DYNAMICS_DEGREEOFFREEDOM_H_
+#define KIDO_DYNAMICS_DEGREEOFFREEDOM_H_
 
 #include <string>
 #include <memory>
@@ -414,4 +414,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_DEGREEOFFREEDOM_H_
+#endif // KIDO_DYNAMICS_DEGREEOFFREEDOM_H_

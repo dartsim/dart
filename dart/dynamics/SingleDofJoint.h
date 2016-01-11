@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SINGLEDOFJOINT_H_
-#define DART_DYNAMICS_SINGLEDOFJOINT_H_
+#ifndef KIDO_DYNAMICS_SINGLEDOFJOINT_H_
+#define KIDO_DYNAMICS_SINGLEDOFJOINT_H_
 
 #include <string>
 
@@ -104,14 +104,14 @@ public:
     std::string mDofName;
 
     /// Constructor
-    UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
-                     double _positionUpperLimit =  DART_DBL_INF,
-                     double _velocityLowerLimit = -DART_DBL_INF,
-                     double _velocityUpperLimit =  DART_DBL_INF,
-                     double _accelerationLowerLimit = -DART_DBL_INF,
-                     double _accelerationUpperLimit =  DART_DBL_INF,
-                     double _forceLowerLimit = -DART_DBL_INF,
-                     double _forceUpperLimit =  DART_DBL_INF,
+    UniqueProperties(double _positionLowerLimit = -KIDO_DBL_INF,
+                     double _positionUpperLimit =  KIDO_DBL_INF,
+                     double _velocityLowerLimit = -KIDO_DBL_INF,
+                     double _velocityUpperLimit =  KIDO_DBL_INF,
+                     double _accelerationLowerLimit = -KIDO_DBL_INF,
+                     double _accelerationUpperLimit =  KIDO_DBL_INF,
+                     double _forceLowerLimit = -KIDO_DBL_INF,
+                     double _forceUpperLimit =  KIDO_DBL_INF,
                      double _springStiffness = 0.0,
                      double _restPosition = 0.0,
                      double _dampingCoefficient = 0.0,
@@ -852,4 +852,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_SINGLEDOFJOINT_H_
+#endif  // KIDO_DYNAMICS_SINGLEDOFJOINT_H_

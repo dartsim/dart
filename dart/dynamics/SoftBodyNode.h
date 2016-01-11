@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTBODYNODE_H_
-#define DART_DYNAMICS_SOFTBODYNODE_H_
+#ifndef KIDO_DYNAMICS_SOFTBODYNODE_H_
+#define KIDO_DYNAMICS_SOFTBODYNODE_H_
 
-const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
-const double DART_DEFAULT_EDGE_STIFNESS    = 1.0;
-const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
+const double KIDO_DEFAULT_VERTEX_STIFFNESS = 1.0;
+const double KIDO_DEFAULT_EDGE_STIFNESS    = 1.0;
+const double KIDO_DEFAULT_DAMPING_COEFF    = 0.01;
 
 #include <string>
 #include <vector>
@@ -88,9 +88,9 @@ public:
     std::vector<Eigen::Vector3i> mFaces;
 
     UniqueProperties(
-        double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
-        double _Ke = DART_DEFAULT_EDGE_STIFNESS,
-        double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
+        double _Kv = KIDO_DEFAULT_VERTEX_STIFFNESS,
+        double _Ke = KIDO_DEFAULT_EDGE_STIFNESS,
+        double _DampCoeff = KIDO_DEFAULT_DAMPING_COEFF,
         const std::vector<PointMass::Properties>& _points =
                                           std::vector<PointMass::Properties>(),
         const std::vector<Eigen::Vector3i>& _faces =
@@ -393,9 +393,9 @@ public:
       const Eigen::Vector3d&   _size,
       const Eigen::Isometry3d& _localTransform,
       double                   _totalMass,
-      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -403,9 +403,9 @@ public:
       const Eigen::Vector3d&   _size,
       const Eigen::Isometry3d& _localTransform,
       double                   _totalMass,
-      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// Create a Properties struct for a box-shaped SoftBodyNode. Specify the
   /// number of vertices along each axis with _frags. Each component should be
@@ -416,9 +416,9 @@ public:
       const Eigen::Isometry3d& _localTransform,
       const Eigen::Vector3i&   _frags,
       double                   _totalMass,
-      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -431,25 +431,25 @@ public:
       const Eigen::Isometry3d& _localTransform,
       const Eigen::Vector3i&   _frags,
       double                   _totalMass,
-      double                   _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                   _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                   _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                   _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                   _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                   _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// Create a Properties struct for a SoftBodyNode with a single PointMass
   static SoftBodyNode::UniqueProperties makeSinglePointMassProperties(
       double _totalMass,
-      double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
   static void setSinglePointMass(
       SoftBodyNode*          _softBodyNode,
       double                 _totalMass,
-      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
@@ -457,9 +457,9 @@ public:
       size_t                 _nSlices,
       size_t                 _nStacks,
       double                 _totalMass,
-      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// \brief
   /// This should be called before SoftBodyNode::init() is called
@@ -468,9 +468,9 @@ public:
       size_t _nSlices,
       size_t _nStacks,
       double                 _totalMass,
-      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   /// Create a Properties struct for a cylinder-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeCylinderProperties(
@@ -480,9 +480,9 @@ public:
       size_t _nStacks,
       size_t _nRings,
       double _totalMass,
-      double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 
   ///
   /// This should be called before SoftBodyNode::init() is called
@@ -493,12 +493,12 @@ public:
       size_t _nStacks,
       size_t _nRings,
       double                 _totalMass,
-      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
-      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
-      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+      double                 _vertexStiffness = KIDO_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = KIDO_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = KIDO_DEFAULT_DAMPING_COEFF);
 };
 
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_SOFTBODYNODE_H_
+#endif  // KIDO_DYNAMICS_SOFTBODYNODE_H_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MULTIDOFJOINT_H_
-#define DART_DYNAMICS_MULTIDOFJOINT_H_
+#ifndef KIDO_DYNAMICS_MULTIDOFJOINT_H_
+#define KIDO_DYNAMICS_MULTIDOFJOINT_H_
 
 #include <string>
 #include <array>
@@ -117,14 +117,14 @@ public:
 
     /// Default constructor
     UniqueProperties(
-      const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _velocityUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _forceLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _forceUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _positionLowerLimits = Vector::Constant(-KIDO_DBL_INF),
+      const Vector& _positionUpperLimits = Vector::Constant( KIDO_DBL_INF),
+      const Vector& _velocityLowerLimits = Vector::Constant(-KIDO_DBL_INF),
+      const Vector& _velocityUpperLimits = Vector::Constant( KIDO_DBL_INF),
+      const Vector& _accelerationLowerLimits = Vector::Constant(-KIDO_DBL_INF),
+      const Vector& _accelerationUpperLimits = Vector::Constant( KIDO_DBL_INF),
+      const Vector& _forceLowerLimits = Vector::Constant(-KIDO_DBL_INF),
+      const Vector& _forceUpperLimits = Vector::Constant( KIDO_DBL_INF),
       const Vector& _springStiffness = Vector::Constant(0.0),
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
@@ -878,4 +878,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_MULTIDOFJOINT_H_
+#endif  // KIDO_DYNAMICS_MULTIDOFJOINT_H_

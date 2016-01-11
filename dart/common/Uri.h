@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_URI_H_
-#define DART_COMMON_URI_H_
+#ifndef KIDO_COMMON_URI_H_
+#define KIDO_COMMON_URI_H_
 
 #include <string>
 #include "dart/common/Deprecated.h"
@@ -231,4 +231,4 @@ private:
 } // namespace common
 } // namespace kido
 
-#endif // ifndef DART_COMMON_URI_H_
+#endif // ifndef KIDO_COMMON_URI_H_

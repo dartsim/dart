@@ -44,12 +44,12 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_CFM     1e-9
+#define KIDO_CFM     1e-9
 
 namespace kido {
 namespace constraint {
 
-double ServoMotorConstraint::mConstraintForceMixing = DART_CFM;
+double ServoMotorConstraint::mConstraintForceMixing = KIDO_CFM;
 
 //==============================================================================
 ServoMotorConstraint::ServoMotorConstraint(dynamics::Joint* joint)

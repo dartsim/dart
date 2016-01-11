@@ -51,8 +51,8 @@ macro(dart_add_library _name)
   add_library(${_name} ${ARGN})
   set_target_properties(
     ${_name} PROPERTIES
-    SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
-    VERSION "${DART_VERSION}"
+    SOVERSION "${KIDO_MAJOR_VERSION}.${KIDO_MINOR_VERSION}"
+    VERSION "${KIDO_VERSION}"
   )
 endmacro()
 

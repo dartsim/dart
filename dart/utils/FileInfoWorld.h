@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFOWORLD_H_
-#define DART_UTILS_FILEINFOWORLD_H_
+#ifndef KIDO_UTILS_FILEINFOWORLD_H_
+#define KIDO_UTILS_FILEINFOWORLD_H_
 
 namespace kido {
 
@@ -76,4 +76,4 @@ protected:
 }  // namespace utils
 }  // namespace kido
 
-#endif  // DART_UTILS_FILEINFOWORLD_H_
+#endif  // KIDO_UTILS_FILEINFOWORLD_H_

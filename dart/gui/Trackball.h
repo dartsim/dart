@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_TRACKBALL_H_
-#define DART_GUI_TRACKBALL_H_
+#ifndef KIDO_GUI_TRACKBALL_H_
+#define KIDO_GUI_TRACKBALL_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -117,4 +117,4 @@ private:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // DART_GUI_TRACKBALL_H_
+#endif  // KIDO_GUI_TRACKBALL_H_

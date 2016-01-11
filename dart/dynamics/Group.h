@@ -36,8 +36,8 @@
 
 #include "dart/dynamics/ReferentialSkeleton.h"
 
-#ifndef DART_DYNAMICS_GROUP_H_
-#define DART_DYNAMICS_GROUP_H_
+#ifndef KIDO_DYNAMICS_GROUP_H_
+#define KIDO_DYNAMICS_GROUP_H_
 
 namespace kido {
 namespace dynamics {
@@ -248,4 +248,4 @@ protected:
 } // dynamics
 } // kido
 
-#endif // DART_DYNAMICS_GROUP_H_
+#endif // KIDO_DYNAMICS_GROUP_H_

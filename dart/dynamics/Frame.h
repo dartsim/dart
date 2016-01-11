@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FRAME_H_
-#define DART_DYNAMICS_FRAME_H_
+#ifndef KIDO_DYNAMICS_FRAME_H_
+#define KIDO_DYNAMICS_FRAME_H_
 
 #include <set>
 
@@ -357,4 +357,4 @@ public:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_FRAME_H_
+#endif // KIDO_DYNAMICS_FRAME_H_

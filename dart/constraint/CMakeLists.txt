@@ -11,7 +11,7 @@ set(dart_constraint_srcs ${srcs} PARENT_SCOPE)
 #  dart_constraint
 #  dart_collision
 #  dart_lcpsolver
-#  ${DART_CORE_DEPENDENCIES}
+#  ${KIDO_CORE_DEPENDENCIES}
 #)
 
 # Generate header for this namespace

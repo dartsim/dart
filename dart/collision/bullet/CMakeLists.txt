@@ -7,7 +7,7 @@ set(dart_collision_srcs ${dart_collision_srcs} ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_collision_bullet ${srcs} ${hdrs})
-#target_link_libraries(dart_collision_bullet ${DART_CORE_DEPENDENCIES})
+#target_link_libraries(dart_collision_bullet ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})

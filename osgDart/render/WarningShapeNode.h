@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_WARNINGSHAPENODE_H
-#define OSGDART_RENDER_WARNINGSHAPENODE_H
+#ifndef OSGKIDO_RENDER_WARNINGSHAPENODE_H
+#define OSGKIDO_RENDER_WARNINGSHAPENODE_H
 
 #include <osg/Node>
 #include <memory>
@@ -63,4 +63,4 @@ protected:
 } // namespace render
 } // namespace osgDart
 
-#endif // OSGDART_RENDER_WARNINGSHAPENODE_H
+#endif // OSGKIDO_RENDER_WARNINGSHAPENODE_H

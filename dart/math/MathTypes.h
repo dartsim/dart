@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_MATHTYPES_H_
-#define DART_MATH_MATHTYPES_H_
+#ifndef KIDO_MATH_MATHTYPES_H_
+#define KIDO_MATH_MATHTYPES_H_
 
 #include <limits>
 #include <map>
@@ -48,27 +48,27 @@
 //------------------------------------------------------------------------------
 // Defines
 //------------------------------------------------------------------------------
-#define DART_EPSILON (1.0E-6)
-#define DART_PI      (3.14159265358979323846)      // = pi
-#define DART_2PI     (6.28318530717958647693)      // = 2 * pi
-#define DART_PI_HALF (1.57079632679489661923)      // = pi / 2
-#define DART_PI_SQR  (9.86960440108935861883)      // = pi^2
-#define DART_RADIAN  (0.0174532925199432957692)    // = pi / 180
-#define DART_DEGREE  (57.2957795130823208768)      // = 180 / pi
+#define KIDO_EPSILON (1.0E-6)
+#define KIDO_PI      (3.14159265358979323846)      // = pi
+#define KIDO_2PI     (6.28318530717958647693)      // = 2 * pi
+#define KIDO_PI_HALF (1.57079632679489661923)      // = pi / 2
+#define KIDO_PI_SQR  (9.86960440108935861883)      // = pi^2
+#define KIDO_RADIAN  (0.0174532925199432957692)    // = pi / 180
+#define KIDO_DEGREE  (57.2957795130823208768)      // = 180 / pi
 
-#define DART_1_3     (0.333333333333333333333)     // = 1 / 3
-#define DART_1_6     (0.166666666666666666667)     // = 1 / 6
-#define DART_1_12    (0.0833333333333333333333)    // = 1 / 12
-#define DART_1_24    (0.0416666666666666666667)    // = 1 / 24
-#define DART_1_30    (0.0333333333333333333333)    // = 1 / 30
-#define DART_1_60    (0.0166666666666666666667)    // = 1 / 60
-#define DART_1_120   (0.00833333333333333333333)   // = 1 / 120
-#define DART_1_180   (0.00555555555555555555556)   // = 1 / 180
-#define DART_1_720   (0.00138888888888888888889)   // = 1 / 720
-#define DART_1_1260  (0.000793650793650793650794)  // = 1 / 1260
-#define DART_4_3     (1.33333333333333333333)      // = 4 / 3
+#define KIDO_1_3     (0.333333333333333333333)     // = 1 / 3
+#define KIDO_1_6     (0.166666666666666666667)     // = 1 / 6
+#define KIDO_1_12    (0.0833333333333333333333)    // = 1 / 12
+#define KIDO_1_24    (0.0416666666666666666667)    // = 1 / 24
+#define KIDO_1_30    (0.0333333333333333333333)    // = 1 / 30
+#define KIDO_1_60    (0.0166666666666666666667)    // = 1 / 60
+#define KIDO_1_120   (0.00833333333333333333333)   // = 1 / 120
+#define KIDO_1_180   (0.00555555555555555555556)   // = 1 / 180
+#define KIDO_1_720   (0.00138888888888888888889)   // = 1 / 720
+#define KIDO_1_1260  (0.000793650793650793650794)  // = 1 / 1260
+#define KIDO_4_3     (1.33333333333333333333)      // = 4 / 3
 
-#define DART_DBL_INF (std::numeric_limits<double>::infinity())
+#define KIDO_DBL_INF (std::numeric_limits<double>::infinity())
 
 //------------------------------------------------------------------------------
 // Macros
@@ -181,4 +181,4 @@ typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian;
 }  // namespace math
 }  // namespace kido
 
-#endif  // DART_MATH_MATHTYPES_H_
+#endif  // KIDO_MATH_MATHTYPES_H_

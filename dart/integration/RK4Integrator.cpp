@@ -102,13 +102,13 @@ void RK4Integrator::integrate(IntegrableSystem* _system, double _dt)
   //   where dq5 = (1/6) * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4)
   _system->setConfigs(q1);
   _system->integrateConfigs(
-        DART_1_6 * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4), _dt);
+        KIDO_1_6 * (dq1 + (2.0 * dq2) + (2.0 * dq3) + dq4), _dt);
 
   // dq = dq1 + ddq5 * _dt
   //   where dq5 = (1/6) * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4)
   _system->setGenVels(dq1);
   _system->integrateGenVels(
-        DART_1_6 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
+        KIDO_1_6 * (ddq1 + (2.0 * ddq2) + (2.0 * ddq3) + ddq4), _dt);
 }
 
 }  // namespace integration

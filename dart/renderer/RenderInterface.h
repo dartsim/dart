@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_RENDERINTERFACE_H
-#define DART_RENDERER_RENDERINTERFACE_H
+#ifndef KIDO_RENDERER_RENDERINTERFACE_H
+#define KIDO_RENDERER_RENDERINTERFACE_H
 
 #include <vector>
 #include <assimp/scene.h>
@@ -117,4 +117,4 @@ public:
 } // namespace renderer
 } // namespace kido
 
-#endif // #ifndef DART_RENDERER_RENDERINTERFACE_H
+#endif // #ifndef KIDO_RENDERER_RENDERINTERFACE_H

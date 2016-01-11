@@ -44,25 +44,25 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_ERROR_ALLOWANCE 0.0
-#define DART_ERP     0.01
-#define DART_MAX_ERV 1e-3
-#define DART_CFM     1e-5
-// #define DART_MAX_NUMBER_OF_CONTACTS 32
+#define KIDO_ERROR_ALLOWANCE 0.0
+#define KIDO_ERP     0.01
+#define KIDO_MAX_ERV 1e-3
+#define KIDO_CFM     1e-5
+// #define KIDO_MAX_NUMBER_OF_CONTACTS 32
 
-#define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
-#define DART_FRICTION_COEFF_THRESHOLD    1e-3
-#define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
-#define DART_MAX_BOUNCING_VELOCITY       1e+2
-#define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
+#define KIDO_RESTITUTION_COEFF_THRESHOLD 1e-3
+#define KIDO_FRICTION_COEFF_THRESHOLD    1e-3
+#define KIDO_BOUNCING_VELOCITY_THRESHOLD 1e-1
+#define KIDO_MAX_BOUNCING_VELOCITY       1e+2
+#define KIDO_CONTACT_CONSTRAINT_EPSILON  1e-6
 
 namespace kido {
 namespace constraint {
 
-double ContactConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double ContactConstraint::mErrorReductionParameter   = DART_ERP;
-double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double ContactConstraint::mConstraintForceMixing     = DART_CFM;
+double ContactConstraint::mErrorAllowance            = KIDO_ERROR_ALLOWANCE;
+double ContactConstraint::mErrorReductionParameter   = KIDO_ERP;
+double ContactConstraint::mMaxErrorReductionVelocity = KIDO_MAX_ERV;
+double ContactConstraint::mConstraintForceMixing     = KIDO_CFM;
 
 //==============================================================================
 ContactConstraint::ContactConstraint(collision::Contact& _contact,
@@ -87,7 +87,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
   //----------------------------------------------
   mRestitutionCoeff = mBodyNode1->getRestitutionCoeff()
                       * mBodyNode2->getRestitutionCoeff();
-  if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
+  if (mRestitutionCoeff > KIDO_RESTITUTION_COEFF_THRESHOLD)
     mIsBounceOn = true;
   else
     mIsBounceOn = false;
@@ -100,7 +100,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
   // Update mFrictionalCoff
   mFrictionCoeff = std::min(mBodyNode1->getFrictionCoeff(),
                             mBodyNode2->getFrictionCoeff());
-  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD)
+  if (mFrictionCoeff > KIDO_FRICTION_COEFF_THRESHOLD)
   {
     mIsFrictionOn = true;
 
@@ -141,11 +141,11 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
       // TODO(JS): Assumed that the number of tangent basis is 2.
       Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
 
-      assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
-      assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(0))) < KIDO_EPSILON);
+      assert(std::abs(ct->normal.dot(D.col(1))) < KIDO_EPSILON);
 //      if (D.col(0).dot(D.col(1)) > 0.0)
 //        std::cout << "D.col(0).dot(D.col(1): " << D.col(0).dot(D.col(1)) << std::endl;
-      assert(std::abs(D.col(0).dot(D.col(1))) < DART_EPSILON);
+      assert(std::abs(D.col(0).dot(D.col(1))) < KIDO_EPSILON);
 
 //      std::cout << "D: " << std::endl << D << std::endl;
 
@@ -436,15 +436,15 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
         double& negativeRelativeVel = _info->b[index];
         double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-        if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
+        if (restitutionVel > KIDO_BOUNCING_VELOCITY_THRESHOLD)
         {
           if (restitutionVel > bouncingVelocity)
           {
             bouncingVelocity = restitutionVel;
 
-            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
+            if (bouncingVelocity > KIDO_MAX_BOUNCING_VELOCITY)
             {
-              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+              bouncingVelocity = KIDO_MAX_BOUNCING_VELOCITY;
             }
           }
         }
@@ -486,7 +486,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
       //------------------------------------------------------------------------
       // A. Penetration correction
       double bouncingVelocity = mContacts[i]->penetrationDepth
-                                - DART_ERROR_ALLOWANCE;
+                                - KIDO_ERROR_ALLOWANCE;
       if (bouncingVelocity < 0.0)
       {
         bouncingVelocity = 0.0;
@@ -504,14 +504,14 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
         double& negativeRelativeVel = _info->b[i];
         double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-        if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
+        if (restitutionVel > KIDO_BOUNCING_VELOCITY_THRESHOLD)
         {
           if (restitutionVel > bouncingVelocity)
           {
             bouncingVelocity = restitutionVel;
 
-            if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY)
-              bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+            if (bouncingVelocity > KIDO_MAX_BOUNCING_VELOCITY)
+              bouncingVelocity = KIDO_MAX_BOUNCING_VELOCITY;
           }
         }
       }
@@ -800,7 +800,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
   // If they're too close, pick another tangent (use X-axis as arbitrary vector)
-  if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+  if (tangent.norm() < KIDO_CONTACT_CONSTRAINT_EPSILON)
     tangent = Eigen::Vector3d::UnitX().cross(_n);
 
   tangent.normalize();
@@ -810,7 +810,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
+  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(KIDO_PI_HALF, _n)) * tangent;
   return T;
 }
 

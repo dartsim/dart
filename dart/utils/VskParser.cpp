@@ -806,7 +806,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
     // Don't add shape for a body doesn't have parent or a body is too close to
     // the parent.
-    if (!parent || tf.translation().norm() < DART_EPSILON)
+    if (!parent || tf.translation().norm() < KIDO_EPSILON)
       continue;
 
     // Determine the diameters of the ellipsoid shape. The diameter along X-axis

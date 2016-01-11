@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_EULERINTEGRATOR_H_
-#define DART_INTEGRATION_EULERINTEGRATOR_H_
+#ifndef KIDO_INTEGRATION_EULERINTEGRATOR_H_
+#define KIDO_INTEGRATION_EULERINTEGRATOR_H_
 
 #include "dart/integration/Integrator.h"
 
@@ -66,4 +66,4 @@ public:
 }  // namespace integration
 }  // namespace kido
 
-#endif  // DART_INTEGRATION_EULERINTEGRATOR_H_
+#endif  // KIDO_INTEGRATION_EULERINTEGRATOR_H_

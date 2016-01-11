@@ -162,8 +162,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
     for (int i = 0; i < dof; ++i)
     {
-      q(i) = random(-DART_PI*1.0, DART_PI*1.0);
-      dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
+      q(i) = random(-KIDO_PI*1.0, KIDO_PI*1.0);
+      dq(i) = random(-KIDO_PI*1.0, KIDO_PI*1.0);
     }
 
     skeleton->setPositions(q);
@@ -391,7 +391,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 {
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        KIDO_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -433,7 +433,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        KIDO_DATA_PATH"/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -447,8 +447,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
   EXPECT_TRUE(joint0 != nullptr);
   EXPECT_TRUE(joint1 != nullptr);
 
-  double limit0 = DART_PI / 6.0;
-  double limit1 = DART_PI / 6.0;
+  double limit0 = KIDO_PI / 6.0;
+  double limit1 = KIDO_PI / 6.0;
 
   joint0->setPositionLimitEnforced(true);
   joint0->setPositionLowerLimit(0, -limit0);
@@ -508,7 +508,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        KIDO_DATA_PATH"/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -646,7 +646,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   EXPECT_NE(joint, nullptr);
 
   joint->setActuatorType(actType);
-  joint->setPosition(0, 90.0 * DART_RADIAN);
+  joint->setPosition(0, 90.0 * KIDO_RADIAN);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
   joint->setPositionLimitEnforced(true);
@@ -661,8 +661,8 @@ void testServoMotor()
   size_t numPendulums = 7;
   double timestep = 1e-3;
   double tol = 1e-9;
-  double posUpperLimit = 90.0 * DART_RADIAN;
-  double posLowerLimit = 45.0 * DART_RADIAN;
+  double posUpperLimit = 90.0 * KIDO_RADIAN;
+  double posLowerLimit = 45.0 * KIDO_RADIAN;
   double sufficient_force   = 1e+5;
   double insufficient_force = 1e-1;
 
@@ -731,18 +731,18 @@ void testServoMotor()
   joints[3]->setPositionUpperLimit(0, posUpperLimit);
   joints[3]->setPositionLowerLimit(0, posLowerLimit);
 
-  joints[4]->setForceUpperLimit(0, DART_DBL_INF);
-  joints[4]->setForceLowerLimit(0, -DART_DBL_INF);
+  joints[4]->setForceUpperLimit(0, KIDO_DBL_INF);
+  joints[4]->setForceLowerLimit(0, -KIDO_DBL_INF);
   joints[4]->setPositionUpperLimit(0, posUpperLimit);
   joints[4]->setPositionLowerLimit(0, posLowerLimit);
 
   joints[5]->setForceUpperLimit(0, sufficient_force);
   joints[5]->setForceLowerLimit(0, -sufficient_force);
-  joints[5]->setCoulombFriction(0, DART_DBL_INF);
+  joints[5]->setCoulombFriction(0, KIDO_DBL_INF);
 
-  joints[6]->setForceUpperLimit(0, DART_DBL_INF);
-  joints[6]->setForceLowerLimit(0, -DART_DBL_INF);
-  joints[6]->setCoulombFriction(0, DART_DBL_INF);
+  joints[6]->setForceUpperLimit(0, KIDO_DBL_INF);
+  joints[6]->setForceLowerLimit(0, -KIDO_DBL_INF);
+  joints[6]->setCoulombFriction(0, KIDO_DBL_INF);
 
   for (auto pendulum : pendulums)
     world->addSkeleton(pendulum);

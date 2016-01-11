@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
-#define DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
+#ifndef KIDO_DYNAMICS_DETAIL_BODYNODEPTR_H_
+#define KIDO_DYNAMICS_DETAIL_BODYNODEPTR_H_
 
 #include <memory>
 #include <mutex>
@@ -338,4 +338,4 @@ private:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
+#endif // KIDO_DYNAMICS_DETAIL_BODYNODEPTR_H_

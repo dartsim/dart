@@ -22,7 +22,7 @@ set(dart_collision_srcs ${srcs} ${dart_collision_srcs} PARENT_SCOPE)
 #  dart_collision_dart
 #  dart_collision_fcl
 #  dart_collision_fcl_mesh
-#  ${DART_CORE_DEPENDENCIES}
+#  ${KIDO_CORE_DEPENDENCIES}
 #)
 #if(HAVE_BULLET_COLLISION)
 #  target_link_libraries(dart_collision dart_collision_bullet)

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONNODE_H_
-#define DART_COLLISION_COLLISIONNODE_H_
+#ifndef KIDO_COLLISION_COLLISIONNODE_H_
+#define KIDO_COLLISION_COLLISIONNODE_H_
 
 #include <cstddef>
 
@@ -78,4 +78,4 @@ protected:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // DART_COLLISION_COLLISIONNODE_H_
+#endif  // KIDO_COLLISION_COLLISIONNODE_H_

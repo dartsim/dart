@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
-#define DART_DYNAMICS_UNIVERSALJOINT_H_
+#ifndef KIDO_DYNAMICS_UNIVERSALJOINT_H_
+#define KIDO_DYNAMICS_UNIVERSALJOINT_H_
 
 #include <string>
 
@@ -156,4 +156,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_UNIVERSALJOINT_H_
+#endif  // KIDO_DYNAMICS_UNIVERSALJOINT_H_

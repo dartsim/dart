@@ -179,7 +179,7 @@ void ScrewJoint::updateLocalTransform() const
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = mScrewP.mAxis;
-  S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/DART_2PI;
+  S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/KIDO_2PI;
   mT = mJointP.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
@@ -193,7 +193,7 @@ void ScrewJoint::updateLocalJacobian(bool _mandatory) const
   {
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = mScrewP.mAxis;
-    S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/DART_2PI;
+    S.tail<3>() = mScrewP.mAxis*mScrewP.mPitch/KIDO_2PI;
     mJacobian = math::AdT(mJointP.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }

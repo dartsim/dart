@@ -36,8 +36,8 @@
 
 #include "dart/config.h"
 
-#ifndef DART_COMMON_DEPRECATED_H_
-#define DART_COMMON_DEPRECATED_H_
+#ifndef KIDO_COMMON_DEPRECATED_H_
+#define KIDO_COMMON_DEPRECATED_H_
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -65,37 +65,37 @@
 //
 // deprecated_function()  // warning
 //
-// DART_SUPPRESS_DEPRECATED_BEGIN
+// KIDO_SUPPRESS_DEPRECATED_BEGIN
 // deprecated_function()  // okay, no warning
-// DART_SUPPRESS_DEPRECATED_END
+// KIDO_SUPPRESS_DEPRECATED_END
 //
-#if defined (DART_COMPILER_GCC)
+#if defined (KIDO_COMPILER_GCC)
 
-  #define DART_SUPPRESS_DEPRECATED_BEGIN                            \
+  #define KIDO_SUPPRESS_DEPRECATED_BEGIN                            \
     _Pragma("GCC diagnostic push")                                  \
     _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
 
-  #define DART_SUPPRESS_DEPRECATED_END \
+  #define KIDO_SUPPRESS_DEPRECATED_END \
     _Pragma("GCC diagnostic pop")
 
-#elif defined (DART_COMPILER_CLANG)
+#elif defined (KIDO_COMPILER_CLANG)
 
-  #define DART_SUPPRESS_DEPRECATED_BEGIN                              \
+  #define KIDO_SUPPRESS_DEPRECATED_BEGIN                              \
     _Pragma("clang diagnostic push")                                  \
     _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
 
-  #define DART_SUPPRESS_DEPRECATED_END \
+  #define KIDO_SUPPRESS_DEPRECATED_END \
     _Pragma("clang diagnostic pop")
 
-#elif defined (DART_COMPILER_MSVC)
+#elif defined (KIDO_COMPILER_MSVC)
 
-  #define DART_SUPPRESS_DEPRECATED_BEGIN \
+  #define KIDO_SUPPRESS_DEPRECATED_BEGIN \
     __pragma(warning(push))              \
     __pragma(warning(disable:4996))
 
-  #define DART_SUPPRESS_DEPRECATED_END \
+  #define KIDO_SUPPRESS_DEPRECATED_END \
     __pragma(warning(pop))
 
 #endif
 
-#endif  // DART_COMMON_DEPRECATED_H_
+#endif  // KIDO_COMMON_DEPRECATED_H_

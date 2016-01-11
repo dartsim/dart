@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MARKER_H_
-#define DART_DYNAMICS_MARKER_H_
+#ifndef KIDO_DYNAMICS_MARKER_H_
+#define KIDO_DYNAMICS_MARKER_H_
 
 #include <string>
 #include <Eigen/Dense>
@@ -172,5 +172,5 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_MARKER_H_
+#endif  // KIDO_DYNAMICS_MARKER_H_
 

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODE_H_
-#define DART_DYNAMICS_DETAIL_BODYNODE_H_
+#ifndef KIDO_DYNAMICS_DETAIL_BODYNODE_H_
+#define KIDO_DYNAMICS_DETAIL_BODYNODE_H_
 
 //==============================================================================
 template <class JointType>
@@ -126,4 +126,4 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
         this, _jointProperties, _bodyProperties);
 }
 
-#endif // DART_DYNAMICS_DETAIL_BODYNODE_H_
+#endif // KIDO_DYNAMICS_DETAIL_BODYNODE_H_

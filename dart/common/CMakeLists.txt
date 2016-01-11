@@ -9,7 +9,7 @@ set(dart_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_common ${srcs} ${hdrs})
-#target_link_libraries(dart_common ${DART_CORE_DEPENDENCIES})
+#target_link_libraries(dart_common ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "common headers" ${hdrs})

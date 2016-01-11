@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONDETECTOR_H_
-#define DART_COLLISION_COLLISIONDETECTOR_H_
+#ifndef KIDO_COLLISION_COLLISIONDETECTOR_H_
+#define KIDO_COLLISION_COLLISIONDETECTOR_H_
 
 #include <vector>
 #include <map>
@@ -208,4 +208,4 @@ private:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // DART_COLLISION_COLLISIONDETECTOR_H_
+#endif  // KIDO_COLLISION_COLLISIONDETECTOR_H_

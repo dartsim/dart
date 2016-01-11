@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETON_H_
-#define DART_DYNAMICS_SKELETON_H_
+#ifndef KIDO_DYNAMICS_SKELETON_H_
+#define KIDO_DYNAMICS_SKELETON_H_
 
 #include <mutex>
 #include "dart/common/NameManager.h"
@@ -1184,4 +1184,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_SKELETON_H_
+#endif  // KIDO_DYNAMICS_SKELETON_H_

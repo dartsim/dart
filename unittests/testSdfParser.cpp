@@ -57,7 +57,7 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
   // Regression test for #444
   WorldPtr world
       = SdfParser::readSdfFile(
-            DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
+            KIDO_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel = world->getSkeleton(0);

@@ -85,9 +85,9 @@ double Function::eval(const Eigen::VectorXd& _x)
   // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
+  KIDO_SUPPRESS_DEPRECATED_BEGIN
   return eval(temp);
-  DART_SUPPRESS_DEPRECATED_END
+  KIDO_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -109,9 +109,9 @@ void Function::evalGradient(const Eigen::VectorXd& _x,
   // deprecated-warnings until then (see #544).
   Eigen::Map<const Eigen::VectorXd> temp(_x.data(), _x.size());
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
+  KIDO_SUPPRESS_DEPRECATED_BEGIN
   evalGradient(temp, _grad);
-  DART_SUPPRESS_DEPRECATED_END
+  KIDO_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

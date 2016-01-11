@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_WORLD_H_
-#define DART_SIMULATION_WORLD_H_
+#ifndef KIDO_SIMULATION_WORLD_H_
+#define KIDO_SIMULATION_WORLD_H_
 
 #include <string>
 #include <vector>
@@ -290,4 +290,4 @@ typedef std::shared_ptr<World> WorldPtr;
 }  // namespace simulation
 }  // namespace kido
 
-#endif  // DART_SIMULATION_WORLD_H_
+#endif  // KIDO_SIMULATION_WORLD_H_

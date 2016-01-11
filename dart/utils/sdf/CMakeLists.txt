@@ -7,7 +7,7 @@ set(dart_utils_srcs ${dart_utils_srcs} ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_utils_sdf ${srcs} ${hdrs})
-#target_link_libraries(dart_utils_sdf ${DART_DEPENDENCIES})
+#target_link_libraries(dart_utils_sdf ${KIDO_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_sdf headers" ${hdrs})

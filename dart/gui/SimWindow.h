@@ -39,8 +39,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_SIMWINDOW_H_
-#define DART_GUI_SIMWINDOW_H_
+#ifndef KIDO_GUI_SIMWINDOW_H_
+#define KIDO_GUI_SIMWINDOW_H_
 
 #include <vector>
 
@@ -116,4 +116,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // DART_GUI_SIMWINDOW_H_
+#endif  // KIDO_GUI_SIMWINDOW_H_

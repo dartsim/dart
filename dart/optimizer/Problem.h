@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_PROBLEM_H
-#define DART_OPTIMIZER_PROBLEM_H
+#ifndef KIDO_OPTIMIZER_PROBLEM_H
+#define KIDO_OPTIMIZER_PROBLEM_H
 
 #include <cstddef>
 #include <vector>
@@ -193,5 +193,5 @@ protected:
 } // namespace optimizer
 } // namespace kido
 
-#endif // #ifndef DART_OPTIMIZER_PROBLEM_H
+#endif // #ifndef KIDO_OPTIMIZER_PROBLEM_H
 

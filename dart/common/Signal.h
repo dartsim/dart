@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SIGNAL_H_
-#define DART_COMMON_SIGNAL_H_
+#ifndef KIDO_COMMON_SIGNAL_H_
+#define KIDO_COMMON_SIGNAL_H_
 
 #include <functional>
 #include <memory>
@@ -245,5 +245,5 @@ private:
 
 #include "dart/common/detail/Signal.h"
 
-#endif  // DART_COMMON_SIGNAL_H_
+#endif  // KIDO_COMMON_SIGNAL_H_
 

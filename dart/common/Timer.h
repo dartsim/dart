@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_TIMER_H_
-#define DART_COMMON_TIMER_H_
+#ifndef KIDO_COMMON_TIMER_H_
+#define KIDO_COMMON_TIMER_H_
 
 #include <string>
 
@@ -122,4 +122,4 @@ private:
 }  // namespace common
 }  // namespace kido
 
-#endif  // DART_COMMON_TIMER_H_
+#endif  // KIDO_COMMON_TIMER_H_

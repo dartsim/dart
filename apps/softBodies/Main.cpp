@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   kido::simulation::WorldPtr myWorld
       = kido::utils::SkelParser::readWorld(
-        DART_DATA_PATH"skel/softBodies.skel");
+        KIDO_DATA_PATH"skel/softBodies.skel");
   assert(myWorld != nullptr);
 
   for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)

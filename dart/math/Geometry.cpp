@@ -88,7 +88,7 @@ Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& _R) {
       return Eigen::Vector3d(x0, y, x1);
     } else {
       // Not a unique solution:  x1_angle - x0_angle = atan2(-r12,r11)
-      double y  = DART_PI;
+      double y  = KIDO_PI;
       double x0 = -atan2(-_R(1, 2), _R(1, 1));
       double x1 = 0.0;
       // return EA_NOT_UNIQUE_DIF;
@@ -113,16 +113,16 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
 
   double x, y, z;
 
-  if (_R(0, 2) > (1.0-DART_EPSILON)) {
+  if (_R(0, 2) > (1.0-KIDO_EPSILON)) {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = DART_PI_HALF;
+    y = KIDO_PI_HALF;
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
 
-  if (_R(0, 2) < -(1.0-DART_EPSILON)) {
+  if (_R(0, 2) < -(1.0-KIDO_EPSILON)) {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = -DART_PI_HALF;
+    y = -KIDO_PI_HALF;
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
@@ -138,16 +138,16 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
 Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
-  if (_R(2, 0) > (1.0-DART_EPSILON)) {
+  if (_R(2, 0) > (1.0-KIDO_EPSILON)) {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = -DART_PI_HALF;
+    y = -KIDO_PI_HALF;
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
 
-  if (_R(2, 0) < -(1.0-DART_EPSILON)) {
+  if (_R(2, 0) < -(1.0-KIDO_EPSILON)) {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = DART_PI_HALF;
+    y = KIDO_PI_HALF;
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
@@ -163,16 +163,16 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
 Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
-  if (_R(0, 1) > (1.0-DART_EPSILON)) {
+  if (_R(0, 1) > (1.0-KIDO_EPSILON)) {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = -DART_PI_HALF;
+    z = -KIDO_PI_HALF;
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
 
-  if (_R(0, 1) < -(1.0-DART_EPSILON)) {
+  if (_R(0, 1) < -(1.0-KIDO_EPSILON)) {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = DART_PI_HALF;
+    z = KIDO_PI_HALF;
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
@@ -188,16 +188,16 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
 Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
-  if (_R(1, 0) > (1.0 - DART_EPSILON)) {
+  if (_R(1, 0) > (1.0 - KIDO_EPSILON)) {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = DART_PI_HALF;
+    z = KIDO_PI_HALF;
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
 
-  if (_R(1, 0) < -(1.0 - DART_EPSILON)) {
+  if (_R(1, 0) < -(1.0 - KIDO_EPSILON)) {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = -DART_PI_HALF;
+    z = -KIDO_PI_HALF;
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
@@ -213,16 +213,16 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
 Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
-  if (_R(2, 1) > (1.0-DART_EPSILON)) {
+  if (_R(2, 1) > (1.0-KIDO_EPSILON)) {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = DART_PI_HALF;
+    x = KIDO_PI_HALF;
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
 
-  if (_R(2, 1) < -(1.0-DART_EPSILON)) {
+  if (_R(2, 1) < -(1.0-KIDO_EPSILON)) {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = -DART_PI_HALF;
+    x = -KIDO_PI_HALF;
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
@@ -238,16 +238,16 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
 Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
   double x, y, z;
 
-  if (_R(1, 2) > (1.0-DART_EPSILON)) {
+  if (_R(1, 2) > (1.0-KIDO_EPSILON)) {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = -DART_PI_HALF;
+    x = -KIDO_PI_HALF;
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
 
-  if (_R(1, 2) < -(1.0-DART_EPSILON)) {
+  if (_R(1, 2) < -(1.0-KIDO_EPSILON)) {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = DART_PI_HALF;
+    x = KIDO_PI_HALF;
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
@@ -525,8 +525,8 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
 //        std::max(
 //          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
 
-//  if (theta > DART_PI - DART_EPSILON) {
-//    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
+//  if (theta > KIDO_PI - KIDO_EPSILON) {
+//    double delta = 0.5 + 0.125*(KIDO_PI - theta)*(KIDO_PI - theta);
 
 //    return Eigen::Vector3d(
 //          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
@@ -538,10 +538,10 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
 //  } else {
 //    double alpha = 0.0;
 
-//    if (theta > DART_EPSILON)
+//    if (theta > KIDO_EPSILON)
 //      alpha = 0.5*theta / sin(theta);
 //    else
-//      alpha = 0.5 + DART_1_12*theta*theta;
+//      alpha = 0.5 + KIDO_1_12*theta*theta;
 
 //    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
 //                           alpha*(_R(0, 2) - _R(2, 0)),
@@ -566,12 +566,12 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
   double gamma;
   Eigen::Vector6d ret;
 
-  if (theta > DART_PI - DART_EPSILON) {
+  if (theta > KIDO_PI - KIDO_EPSILON) {
     const double c1 = 0.10132118364234;  // 1 / pi^2
     const double c2 = 0.01507440267955;  // 1 / 4 / pi - 2 / pi^3
     const double c3 = 0.00546765085347;  // 3 / pi^4 - 1 / 4 / pi^2
 
-    double phi = DART_PI - theta;
+    double phi = KIDO_PI - theta;
     double delta = 0.5 + 0.125*phi*phi;
 
     double w[] = { _T(2, 1) > _T(1, 2)
@@ -584,7 +584,7 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
                    ? theta*sqrt(1.0 + (_T(2, 2) - 1.0)*delta)
                    : -theta*sqrt(1.0 + (_T(2, 2) - 1.0)*delta) };
 
-    beta = 0.25*theta*(DART_PI - theta);
+    beta = 0.25*theta*(KIDO_PI - theta);
     gamma = (w[0]*_T(0, 3) + w[1]*_T(1, 3) + w[2]*_T(2, 3))
             * (c1 -  c2*phi + c3*phi*phi);
 
@@ -596,14 +596,14 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
         beta*_T(2, 3) - 0.5*(w[0]*_T(1, 3) - w[1]*_T(0, 3)) + gamma*w[2];
   } else {
     double alpha;
-    if (theta > DART_EPSILON) {
+    if (theta > KIDO_EPSILON) {
       alpha = 0.5*theta / sin(theta);
       beta = (1.0 + cos(theta))*alpha;
       gamma = (1.0 - beta) / theta / theta;
     } else {
-      alpha = 0.5 + DART_1_12*theta*theta;
-      beta = 1.0 - DART_1_12*theta*theta;
-      gamma = DART_1_12 + DART_1_720*theta*theta;
+      alpha = 0.5 + KIDO_1_12*theta*theta;
+      beta = 1.0 - KIDO_1_12*theta*theta;
+      gamma = KIDO_1_12 + KIDO_1_720*theta*theta;
     }
 
     double w[] = { alpha*(_T(2, 1) - _T(1, 2)),
@@ -1182,7 +1182,7 @@ Eigen::Isometry3d expMap(const Eigen::Vector6d& _S) {
   double theta = sqrt(s2[0] + s2[1] + s2[2]);
   double cos_t = cos(theta), alpha, beta, gamma;
 
-  if (theta > DART_EPSILON) {
+  if (theta > KIDO_EPSILON) {
     double sin_t = sin(theta);
     alpha = sin_t / theta;
     beta = (1.0 - cos_t) / theta / theta;
@@ -1223,7 +1223,7 @@ Eigen::Isometry3d expAngular(const Eigen::Vector3d& _s) {
   double alpha = 0.0;
   double beta = 0.0;
 
-  if (theta > DART_EPSILON) {
+  if (theta > KIDO_EPSILON) {
     alpha = sin(theta) / theta;
     beta = (1.0 - cos_t) / theta / theta;
   } else {
@@ -1408,19 +1408,19 @@ Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
 
 bool verifyRotation(const Eigen::Matrix3d& _T) {
   return !isNan(_T)
-      && std::abs(_T.determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.determinant() - 1.0) <= KIDO_EPSILON;
 }
 
 bool verifyTransform(const Eigen::Isometry3d& _T) {
   return !isNan(_T.matrix().topRows<3>())
-      && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
+      && std::abs(_T.linear().determinant() - 1.0) <= KIDO_EPSILON;
 }
 
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
 #ifndef NDEBUG
-  if (std::abs(_m(0, 0)) > DART_EPSILON
-      || std::abs(_m(1, 1)) > DART_EPSILON
-      || std::abs(_m(2, 2)) > DART_EPSILON) {
+  if (std::abs(_m(0, 0)) > KIDO_EPSILON
+      || std::abs(_m(1, 1)) > KIDO_EPSILON
+      || std::abs(_m(2, 2)) > KIDO_EPSILON) {
     dtwarn << "[math::fromSkewSymmetric] Not skew a symmetric matrix:\n"
            << _m << "\n";
     return Eigen::Vector3d::Zero();
@@ -1455,7 +1455,7 @@ Eigen::Matrix3d computeRotation(const Eigen::Vector3d& axis,
 
   // Second axis
   Eigen::Vector3d axis1 = axis0.cross(Eigen::Vector3d::UnitX());
-  if (axis1.norm() < DART_EPSILON)
+  if (axis1.norm() < KIDO_EPSILON)
     axis1 = axis0.cross(Eigen::Vector3d::UnitY());
   axis1.normalize();
 

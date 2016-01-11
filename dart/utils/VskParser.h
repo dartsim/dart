@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_VSKPARSER_H_
-#define DART_UTILS_VSKPARSER_H_
+#ifndef KIDO_UTILS_VSKPARSER_H_
+#define KIDO_UTILS_VSKPARSER_H_
 
 #include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
@@ -84,8 +84,8 @@ namespace VskParser
                 = Eigen::Vector3d::Constant(0.05),
             double thicknessRatio = 0.35,
             double density = 1e+3,
-            double jointPositionLowerLimit = -DART_PI,
-            double jointPositionUpperLimit = +DART_PI,
+            double jointPositionLowerLimit = -KIDO_PI,
+            double jointPositionUpperLimit = +KIDO_PI,
             double jointDampingCoefficient = 0.1,
             double jointFriction = 0.0);
   };
@@ -101,5 +101,5 @@ namespace VskParser
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_VSKPARSER_H_
+#endif // #ifndef KIDO_UTILS_VSKPARSER_H_
 

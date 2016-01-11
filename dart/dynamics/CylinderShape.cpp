@@ -91,7 +91,7 @@ void CylinderShape::draw(renderer::RenderInterface* _ri,
 //==============================================================================
 double CylinderShape::computeVolume(double radius, double height)
 {
-  return DART_PI * std::pow(radius, 2) * height;
+  return KIDO_PI * std::pow(radius, 2) * height;
 }
 
 //==============================================================================

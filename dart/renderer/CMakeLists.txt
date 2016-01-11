@@ -7,7 +7,7 @@ set(dart_renderer_srcs ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_renderer ${srcs} ${hdrs})
-#target_link_libraries(dart_renderer ${DART_DEPENDENCIES})
+#target_link_libraries(dart_renderer ${KIDO_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "renderer headers" ${hdrs})

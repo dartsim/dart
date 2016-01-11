@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_LINESEGMENTSHAPE_H_
-#define DART_DYNAMICS_LINESEGMENTSHAPE_H_
+#ifndef KIDO_DYNAMICS_LINESEGMENTSHAPE_H_
+#define KIDO_DYNAMICS_LINESEGMENTSHAPE_H_
 
 #include "dart/dynamics/Shape.h"
 
@@ -133,4 +133,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_LINESEGMENTSHAPE_H_
+#endif // KIDO_DYNAMICS_LINESEGMENTSHAPE_H_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_ENTITYNODE_H
-#define OSGDART_ENTITYNODE_H
+#ifndef OSGKIDO_ENTITYNODE_H
+#define OSGKIDO_ENTITYNODE_H
 
 #include <map>
 #include <memory>
@@ -118,4 +118,4 @@ protected:
 
 } // namespace osgDart
 
-#endif // OSGDART_ENTITYNODE_H
+#endif // OSGKIDO_ENTITYNODE_H

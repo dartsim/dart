@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_PLANESHAPENODE_H
-#define OSGDART_RENDER_PLANESHAPENODE_H
+#ifndef OSGKIDO_RENDER_PLANESHAPENODE_H
+#define OSGKIDO_RENDER_PLANESHAPENODE_H
 
 #include <osg/MatrixTransform>
 
@@ -75,4 +75,4 @@ protected:
 } // namespace render
 } // namespace osgDart
 
-#endif // OSGDART_RENDER_PLANESHAPENODE_H
+#endif // OSGKIDO_RENDER_PLANESHAPENODE_H

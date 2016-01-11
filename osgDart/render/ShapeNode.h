@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_SHAPEGEODE_H
-#define OSGDART_RENDER_SHAPEGEODE_H
+#ifndef OSGKIDO_RENDER_SHAPEGEODE_H
+#define OSGKIDO_RENDER_SHAPEGEODE_H
 
 #include <memory>
 
@@ -109,4 +109,4 @@ protected:
 } // namespace render
 } // namespace osgDart
 
-#endif // OSGDART_RENDER_SHAPEGEODE_H
+#endif // OSGKIDO_RENDER_SHAPEGEODE_H

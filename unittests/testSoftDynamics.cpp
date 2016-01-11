@@ -124,7 +124,7 @@ protected:
 //==============================================================================
 void SoftDynamicsTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/test_drop_box.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/test_drop_box.skel");
 }
 
 //==============================================================================
@@ -256,8 +256,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * KIDO_PI;
+  double ub =  1.5 * KIDO_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;

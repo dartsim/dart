@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_RECORDING_H_
-#define DART_SIMULATION_RECORDING_H_
+#ifndef KIDO_SIMULATION_RECORDING_H_
+#define KIDO_SIMULATION_RECORDING_H_
 
 #include <vector>
 
@@ -119,4 +119,4 @@ private:
 }  // namespace simulation
 }  // namespace kido
 
-#endif  // DART_SIMULATION_RECORDING_H_
+#endif  // KIDO_SIMULATION_RECORDING_H_

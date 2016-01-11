@@ -1085,9 +1085,9 @@ SkeletonPtr createGround()
 SkeletonPtr createHubo()
 {
   kido::utils::DartLoader loader;
-  loader.addPackageDirectory("drchubo", DART_DATA_PATH"/urdf/drchubo");
+  loader.addPackageDirectory("drchubo", KIDO_DATA_PATH"/urdf/drchubo");
   SkeletonPtr hubo =
-      loader.parseSkeleton(DART_DATA_PATH"/urdf/drchubo/drchubo.urdf");
+      loader.parseSkeleton(KIDO_DATA_PATH"/urdf/drchubo/drchubo.urdf");
 
   for(size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
   {

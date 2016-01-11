@@ -36,4 +36,4 @@ set(DARTCore_LIBRARIES "${dart_core_location}")
 #===============================================================================
 # DARTCore_VERSION
 #===============================================================================
-set(DARTCore_VERSION @DART_VERSION@)
+set(DARTCore_VERSION @KIDO_VERSION@)

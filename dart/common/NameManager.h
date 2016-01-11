@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_NAMEMANAGER_H_
-#define DART_COMMON_NAMEMANAGER_H_
+#ifndef KIDO_COMMON_NAMEMANAGER_H_
+#define KIDO_COMMON_NAMEMANAGER_H_
 
 #include <map>
 #include <string>
@@ -184,4 +184,4 @@ protected:
 
 #include "dart/common/detail/NameManager.h"
 
-#endif // DART_COMMON_NAMEMANAGER_H_
+#endif // KIDO_COMMON_NAMEMANAGER_H_

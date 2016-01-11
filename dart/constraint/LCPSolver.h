@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_H_
-#define DART_CONSTRAINT_LCPSOLVER_H_
+#ifndef KIDO_CONSTRAINT_LCPSOLVER_H_
+#define KIDO_CONSTRAINT_LCPSOLVER_H_
 
 namespace kido {
 namespace constraint {
@@ -70,5 +70,5 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_H_
+#endif  // KIDO_CONSTRAINT_LCPSOLVER_H_
 

@@ -44,12 +44,12 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/lcpsolver/lcp.h"
 
-#define DART_CFM     1e-9
+#define KIDO_CFM     1e-9
 
 namespace kido {
 namespace constraint {
 
-double JointCoulombFrictionConstraint::mConstraintForceMixing = DART_CFM;
+double JointCoulombFrictionConstraint::mConstraintForceMixing = KIDO_CFM;
 
 //==============================================================================
 JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(

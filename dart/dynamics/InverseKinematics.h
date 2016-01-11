@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_INVERSEKINEMATICS_H_
-#define DART_DYNAMICS_INVERSEKINEMATICS_H_
+#ifndef KIDO_DYNAMICS_INVERSEKINEMATICS_H_
+#define KIDO_DYNAMICS_INVERSEKINEMATICS_H_
 
 #include <memory>
 #include <functional>
@@ -1199,4 +1199,4 @@ typedef InverseKinematics IK;
 
 #include "dart/dynamics/detail/InverseKinematics.h"
 
-#endif // DART_DYNAMICS_INVERSEKINEMATICS_H_
+#endif // KIDO_DYNAMICS_INVERSEKINEMATICS_H_

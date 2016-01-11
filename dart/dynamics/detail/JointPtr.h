@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINTPTR_H_
-#define DART_DYNAMICS_DETAIL_JOINTPTR_H_
+#ifndef KIDO_DYNAMICS_DETAIL_JOINTPTR_H_
+#define KIDO_DYNAMICS_DETAIL_JOINTPTR_H_
 
 #include "dart/dynamics/detail/BodyNodePtr.h"
 
@@ -282,4 +282,4 @@ private:
 } // namespace kido
 } // namespace dynamics
 
-#endif // DART_DYNAMICS_DETAIL_JOINTPTR_H_
+#endif // KIDO_DYNAMICS_DETAIL_JOINTPTR_H_

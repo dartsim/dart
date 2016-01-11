@@ -170,15 +170,15 @@ void State::computeControlForce(double _timestep)
   //  cout << "Coronal V: " << getCoronalCOMVelocity() << endl;
   //  cout << endl;
 
-//  cout << "Sagital left thigh : " << DART_DEGREE * getSagitalLeftLegAngle() << endl;
-//  cout << "Sagital right thigh: " << DART_DEGREE * getSagitalRightLegAngle() << endl;
+//  cout << "Sagital left thigh : " << KIDO_DEGREE * getSagitalLeftLegAngle() << endl;
+//  cout << "Sagital right thigh: " << KIDO_DEGREE * getSagitalRightLegAngle() << endl;
 //  cout << endl;
-//  cout << "Coronal left thigh : " << DART_DEGREE * getCoronalLeftLegAngle() << endl;
-//  cout << "Coronal right thigh: " << DART_DEGREE * getCoronalRightLegAngle() << endl;
+//  cout << "Coronal left thigh : " << KIDO_DEGREE * getCoronalLeftLegAngle() << endl;
+//  cout << "Coronal right thigh: " << KIDO_DEGREE * getCoronalRightLegAngle() << endl;
 //  cout << endl;
 
-//  cout << "Sagital pelvis: " << DART_DEGREE * getSagitalPelvisAngle() << endl;
-//  cout << "Coronal pelvis: " << DART_DEGREE * getCoronalPelvisAngle() << endl;
+//  cout << "Sagital pelvis: " << KIDO_DEGREE * getSagitalPelvisAngle() << endl;
+//  cout << "Coronal pelvis: " << KIDO_DEGREE * getCoronalPelvisAngle() << endl;
 //  cout << endl;
 
   // Compute torques for all the joints except for hip (standing and swing)
@@ -453,7 +453,7 @@ void State::_updateTorqueForStanceLeg()
   // Stance leg is left leg
   if (mStanceFoot == mLeftFoot)
   {
-//    std::cout << "Sagital Pelvis Angle: " << DART_DEGREE * getSagitalPelvisAngle() << std::endl;
+//    std::cout << "Sagital Pelvis Angle: " << KIDO_DEGREE * getSagitalPelvisAngle() << std::endl;
 
     // Torso control on sagital plane
     double pelvisSagitalAngle = getSagitalPelvisAngle();

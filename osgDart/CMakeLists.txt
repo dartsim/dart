@@ -32,9 +32,9 @@ if(${OPENSCENEGRAPH_FOUND})
 
   add_subdirectory(render)
 
-  if(${DART_BUILD_EXAMPLES})
+  if(${KIDO_BUILD_EXAMPLES})
     add_subdirectory(examples)
-  endif(${DART_BUILD_EXAMPLES})
+  endif(${KIDO_BUILD_EXAMPLES})
 
   install(
     FILES ${osgDart_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h

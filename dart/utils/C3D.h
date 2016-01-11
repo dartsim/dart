@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_C3D_H
-#define DART_UTILS_C3D_H
+#ifndef KIDO_UTILS_C3D_H
+#define KIDO_UTILS_C3D_H
 
 #include <vector>
 #include <ctime>
@@ -93,6 +93,6 @@ bool saveC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_C3D_H
+#endif // #ifndef KIDO_UTILS_C3D_H
 
 

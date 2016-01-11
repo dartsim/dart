@@ -69,7 +69,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   node.mColShapes.push_back(shape);
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
-        robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+        robot, parent_node, node, "joint2", 0.0, -KIDO_PI, KIDO_PI, type2);
 
   Joint* joint = pair2.first;
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -162,8 +162,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //  for (size_t i = 0; i < numRandomTests; ++i)
 //  {
 //    // Set joint limit
-//    joint2->setPositionLowerLimit(0, DART_RADIAN *  0.0);
-//    joint2->setPositionUpperLimit(0, DART_RADIAN * 15.0);
+//    joint2->setPositionLowerLimit(0, KIDO_RADIAN *  0.0);
+//    joint2->setPositionUpperLimit(0, KIDO_RADIAN * 15.0);
 
 //    // Store the original transformation and joint angle
 //    Isometry3d oldT2 = body2->getWorldTransform();
@@ -171,7 +171,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
 //    // Get desiredT2 by rotating the revolute joint with random angle out of
 //    // the joint limit range
-//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5, DART_PI));
+//    joint2->setPosition(0, math::random(KIDO_RADIAN * 15.5, KIDO_PI));
 //    robot->setConfigs(robot->getPositions(), true, false, false);
 //    Isometry3d desiredT2 = body2->getWorldTransform();
 
@@ -195,8 +195,8 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
 //    // Check if the optimal joint anlge is in the range
 //    double newQ2 = joint2->getPosition(0);
-//    EXPECT_GE(newQ2, DART_RADIAN *  0.0);
-//    EXPECT_LE(newQ2, DART_RADIAN * 15.0);
+//    EXPECT_GE(newQ2, KIDO_RADIAN *  0.0);
+//    EXPECT_LE(newQ2, KIDO_RADIAN * 15.0);
 //  }
 //}
 

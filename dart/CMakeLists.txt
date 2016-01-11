@@ -67,12 +67,12 @@ endif()
 
 # Library: dart-core
 dart_add_library(dart-core ${dart_core_hdrs} ${dart_core_srcs})
-target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
+target_link_libraries(dart-core ${KIDO_CORE_DEPENDENCIES})
 
 # Library: dart
 if(NOT BUILD_CORE_ONLY)
   dart_add_library(dart ${dart_hdrs} ${dart_srcs})
-  target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
+  target_link_libraries(dart dart-core ${KIDO_DEPENDENCIES})
 endif()
 
 if(MSVC)

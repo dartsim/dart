@@ -11,7 +11,7 @@ set(dart_gui_srcs ${srcs} PARENT_SCOPE)
 #  dart_gui
 #  dart_collision
 #  dart_simulation
-#  ${DART_DEPENDENCIES}
+#  ${KIDO_DEPENDENCIES}
 #)
 
 # Generate header for this namespace

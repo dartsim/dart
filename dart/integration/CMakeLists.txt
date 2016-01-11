@@ -7,7 +7,7 @@ set(dart_integration_srcs ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_integration ${srcs} ${hdrs})
-#target_link_libraries(dart_integration ${DART_CORE_DEPENDENCIES})
+#target_link_libraries(dart_integration ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "integration headers" ${hdrs})

@@ -39,19 +39,19 @@ endif()
 
 project(dart)
 
-set(DART_MAJOR_VERSION "5")
-set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "1")
-set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
-set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
+set(KIDO_MAJOR_VERSION "5")
+set(KIDO_MINOR_VERSION "1")
+set(KIDO_PATCH_VERSION "1")
+set(KIDO_VERSION "${KIDO_MAJOR_VERSION}.${KIDO_MINOR_VERSION}.${KIDO_PATCH_VERSION}")
+set(KIDO_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
+set(KIDO_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
 
 #===============================================================================
 # Print intro
 #===============================================================================
 message(STATUS "")
 message(STATUS "============================================")
-message(STATUS "                DART ${DART_VERSION}")
+message(STATUS "                DART ${KIDO_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
@@ -60,16 +60,16 @@ message(STATUS "============================================")
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
 option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(MSVC)
-  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
-  set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  set(KIDO_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
+  set_property(CACHE KIDO_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
+  option(KIDO_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_BUILD_OSGDART "Build osgDart library" ON)
-option(DART_BUILD_EXAMPLES "Build examples" ON)
-option(DART_BUILD_TUTORIALS "Build tutorials" ON)
-option(DART_BUILD_UNITTESTS "Build unit tests" ON)
+option(KIDO_BUILD_OSGDART "Build osgDart library" ON)
+option(KIDO_BUILD_EXAMPLES "Build examples" ON)
+option(KIDO_BUILD_TUTORIALS "Build tutorials" ON)
+option(KIDO_BUILD_UNITTESTS "Build unit tests" ON)
 
 #===============================================================================
 # Build type settings
@@ -217,18 +217,18 @@ else()
 endif()
 
 # Boost
-set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
+set(KIDO_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
 if(MSVC OR MSVC90 OR MSVC10)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 add_definitions(-DBOOST_TEST_DYN_LINK)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost ${DART_MIN_BOOST_VERSION} COMPONENTS regex system QUIET)
+find_package(Boost ${KIDO_MIN_BOOST_VERSION} COMPONENTS regex system QUIET)
 if(Boost_FOUND)
   message(STATUS "Looking for Boost - ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION} found")
 else()
-  message(SEND_ERROR "Please install system boost version ${DART_MIN_BOOST_VERSION} or higher.")
+  message(SEND_ERROR "Please install system boost version ${KIDO_MIN_BOOST_VERSION} or higher.")
 endif()
 
 if(NOT BUILD_CORE_ONLY)
@@ -392,7 +392,7 @@ endif()
 #===============================================================================
 # DART dependency variable settings
 #===============================================================================
-set(DART_CORE_DEPENDENCIES ${CCD_LIBRARIES}
+set(KIDO_CORE_DEPENDENCIES ${CCD_LIBRARIES}
                            ${FCL_LIBRARIES}
                            ${ASSIMP_LIBRARIES}
                            ${Boost_LIBRARIES}
@@ -401,11 +401,11 @@ set(DART_CORE_DEPENDENCIES ${CCD_LIBRARIES}
 )
 
 if(HAVE_BULLET_COLLISION)
-  set(DART_CORE_DEPENDENCIES ${DART_CORE_DEPENDENCIES} ${BULLET_LIBRARIES})
+  set(KIDO_CORE_DEPENDENCIES ${KIDO_CORE_DEPENDENCIES} ${BULLET_LIBRARIES})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
-  set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
+  set(KIDO_DEPENDENCIES ${urdfdom_LIBRARIES}
                         ${TINYXML_LIBRARIES}
                         ${TINYXML2_LIBRARIES}
   )
@@ -476,10 +476,10 @@ if(MSVC)
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP4")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
-  if(NOT DART_MSVC_DEFAULT_OPTIONS)
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
-  endif(NOT DART_MSVC_DEFAULT_OPTIONS)
+  if(NOT KIDO_MSVC_DEFAULT_OPTIONS)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${KIDO_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${KIDO_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+  endif(NOT KIDO_MSVC_DEFAULT_OPTIONS)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "-Wall -msse2 -fPIC")
   execute_process(
@@ -527,10 +527,10 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
-message(STATUS "Build osgDart    : ${DART_BUILD_OSGDART}")
-message(STATUS "Build examples   : ${DART_BUILD_EXAMPLES}")
-message(STATUS "Build tutorials  : ${DART_BUILD_TUTORIALS}")
-message(STATUS "Build unit tests : ${DART_BUILD_UNITTESTS}")
+message(STATUS "Build osgDart    : ${KIDO_BUILD_OSGDART}")
+message(STATUS "Build examples   : ${KIDO_BUILD_EXAMPLES}")
+message(STATUS "Build tutorials  : ${KIDO_BUILD_TUTORIALS}")
+message(STATUS "Build unit tests : ${KIDO_BUILD_UNITTESTS}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
@@ -553,29 +553,29 @@ message(STATUS "[ Configured files ]")
 
 # Generate the dart config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
-message(STATUS ${DART_CONFIG_OUT})
-configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
+set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
+set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
+message(STATUS ${KIDO_CONFIG_OUT})
+configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
+install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/dart)
 
 # Generate the DART CMake Config and version files
 include(WriteBasicConfigVersionFile)
-set(DART_CORE_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTCoreConfig.cmake.in)
-set(DART_CORE_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake)
-message(STATUS ${DART_CORE_CONFIG_OUT})
+set(KIDO_CORE_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTCoreConfig.cmake.in)
+set(KIDO_CORE_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake)
+message(STATUS ${KIDO_CORE_CONFIG_OUT})
 message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
-configure_file(${DART_CORE_CONFIG_IN} ${DART_CORE_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/DARTCoreConfigVersion.cmake VERSION ${DART_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${DART_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake DESTINATION share/dartcore)
+configure_file(${KIDO_CORE_CONFIG_IN} ${KIDO_CORE_CONFIG_OUT} @ONLY)
+write_basic_config_version_file(cmake/DARTCoreConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
-  set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in)
-  set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake)
-  message(STATUS ${DART_CONFIG_OUT})
+  set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in)
+  set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake)
+  message(STATUS ${KIDO_CONFIG_OUT})
   message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
-  configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-  write_basic_config_version_file(cmake/DARTConfigVersion.cmake VERSION ${DART_VERSION} COMPATIBILITY SameMajorVersion)
-  install(FILES ${DART_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake DESTINATION share/dart)
+  configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
+  write_basic_config_version_file(cmake/DARTConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake DESTINATION share/dart)
 endif()
 
 # Generate the DART pkg-config
@@ -595,22 +595,22 @@ add_subdirectory(dart)
 
 if(NOT BUILD_CORE_ONLY)
 
-  if(DART_BUILD_OSGDART)
+  if(KIDO_BUILD_OSGDART)
     add_subdirectory(osgDart)
-  endif(DART_BUILD_OSGDART)
+  endif(KIDO_BUILD_OSGDART)
 
   # Unit tests
-  if(DART_BUILD_UNITTESTS)
+  if(KIDO_BUILD_UNITTESTS)
     enable_testing()
     add_subdirectory(unittests)
-  endif(DART_BUILD_UNITTESTS)
+  endif(KIDO_BUILD_UNITTESTS)
 
   # Examples
-  if(DART_BUILD_EXAMPLES)
+  if(KIDO_BUILD_EXAMPLES)
     add_subdirectory(apps)
-  endif(DART_BUILD_EXAMPLES)
+  endif(KIDO_BUILD_EXAMPLES)
 
-  if(DART_BUILD_TUTORIALS)
+  if(KIDO_BUILD_TUTORIALS)
     add_subdirectory(tutorials)
   endif()
 

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_H_
-#define DART_COMMON_CONSOLE_H_
+#ifndef KIDO_COMMON_CONSOLE_H_
+#define KIDO_COMMON_CONSOLE_H_
 
 #include <string>
 
@@ -67,4 +67,4 @@ std::ostream& colorErr(const std::string& _msg,
 }  // namespace common
 }  // namespace kido
 
-#endif  // DART_COMMON_CONSOLE_H_
+#endif  // KIDO_COMMON_CONSOLE_H_

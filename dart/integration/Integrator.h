@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_INTEGRATOR_H_
-#define DART_INTEGRATION_INTEGRATOR_H_
+#ifndef KIDO_INTEGRATION_INTEGRATOR_H_
+#define KIDO_INTEGRATION_INTEGRATOR_H_
 
 #include <vector>
 
@@ -106,4 +106,4 @@ public:
 }  // namespace integration
 }  // namespace kido
 
-#endif  // DART_INTEGRATION_INTEGRATOR_H_
+#endif  // KIDO_INTEGRATION_INTEGRATOR_H_

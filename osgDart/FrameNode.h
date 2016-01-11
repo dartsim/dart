@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_FRAMENODE_H
-#define OSGDART_FRAMENODE_H
+#ifndef OSGKIDO_FRAMENODE_H
+#define OSGKIDO_FRAMENODE_H
 
 #include <osg/MatrixTransform>
 #include <map>
@@ -124,4 +124,4 @@ protected:
 
 } // namespace osgDart
 
-#endif // OSGDART_FRAMENODE_H
+#endif // OSGKIDO_FRAMENODE_H

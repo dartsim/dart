@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_LINKAGE_H_
-#define DART_DYNAMICS_LINKAGE_H_
+#ifndef KIDO_DYNAMICS_LINKAGE_H_
+#define KIDO_DYNAMICS_LINKAGE_H_
 
 #include "ReferentialSkeleton.h"
 #include <unordered_set>
@@ -201,4 +201,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // DART_DYNAMICS_LINKAGE_H_
+#endif // KIDO_DYNAMICS_LINKAGE_H_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_RESOURCE_H_
-#define DART_COMMON_RESOURCE_H_
+#ifndef KIDO_COMMON_RESOURCE_H_
+#define KIDO_COMMON_RESOURCE_H_
 
 #include <cstddef>
 #include <memory>
@@ -87,4 +87,4 @@ using ResourcePtr = std::shared_ptr<Resource>;
 } // namespace common
 } // namespace kido
 
-#endif // ifndef DART_COMMON_RESOURCE_H_
+#endif // ifndef KIDO_COMMON_RESOURCE_H_

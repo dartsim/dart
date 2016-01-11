@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_WORLDNODE_H
-#define OSGDART_WORLDNODE_H
+#ifndef OSGKIDO_WORLDNODE_H
+#define OSGKIDO_WORLDNODE_H
 
 #include <osg/Group>
 #include <map>
@@ -196,4 +196,4 @@ protected:
 
 } // namespace osgDart
 
-#endif // OSGDART_WORLDNODE_H
+#endif // OSGKIDO_WORLDNODE_H

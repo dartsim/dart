@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_BALANCECONSTRAINT_H_
-#define DART_CONSTRAINT_BALANCECONSTRAINT_H_
+#ifndef KIDO_CONSTRAINT_BALANCECONSTRAINT_H_
+#define KIDO_CONSTRAINT_BALANCECONSTRAINT_H_
 
 #include "dart/dynamics/HierarchicalIK.h"
 
@@ -196,4 +196,4 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif // DART_CONSTRAINT_BALANCECONSTRAINT_H_
+#endif // KIDO_CONSTRAINT_BALANCECONSTRAINT_H_

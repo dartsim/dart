@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_H_
-#define DART_COMMON_LOCALRESOURCE_H_
+#ifndef KIDO_COMMON_LOCALRESOURCE_H_
+#define KIDO_COMMON_LOCALRESOURCE_H_
 
 #include "dart/common/Resource.h"
 
@@ -73,4 +73,4 @@ private:
 } // namespace common
 } // namespace kido
 
-#endif // ifndef DART_COMMON_LOCALRESOURCE_H_
+#endif // ifndef KIDO_COMMON_LOCALRESOURCE_H_

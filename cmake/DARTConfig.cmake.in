@@ -2,26 +2,26 @@
 # Config file for DART
 #
 # This sets the following variables:
-# DART_INCLUDE_DIRS - Directories containing the DART include files.
-# DART_LIBRARIES    - Libraries needed to use DART.
-# DART_LIBRARY_DIRS - Directories that contain the DART libraries.
-# DART_VERSION      - DART version.
+# KIDO_INCLUDE_DIRS - Directories containing the DART include files.
+# KIDO_LIBRARIES    - Libraries needed to use DART.
+# KIDO_LIBRARY_DIRS - Directories that contain the DART libraries.
+# KIDO_VERSION      - DART version.
 
 #===============================================================================
-# DART_INCLUDE_DIRS
+# KIDO_INCLUDE_DIRS
 #===============================================================================
-set(DART_INCLUDE_DIRS
+set(KIDO_INCLUDE_DIRS
     "@CMAKE_INSTALL_PREFIX@/include"
     "@EIGEN3_INCLUDE_DIRS@"
     "@BULLET_INCLUDE_DIRS@")
 
 #===============================================================================
-# DART_LIBRARY_DIRS
+# KIDO_LIBRARY_DIRS
 #===============================================================================
-set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
+set(KIDO_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 
 #===============================================================================
-# DART_LIBRARIES
+# KIDO_LIBRARIES
 #===============================================================================
 get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include("${CURRENT_DIR}/DARTTargets.cmake")
@@ -29,26 +29,26 @@ include("${CURRENT_DIR}/DARTTargets.cmake")
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
 find_library(dart_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-set(DART_LIBRARIES "${dart_location}")
+set(KIDO_LIBRARIES "${dart_location}")
 
 # Handle requested components in find_package(DART COMPONENTS [components]).
-# The list of components is passed in DART_FIND_COMPONENTS.
-if(DART_FIND_COMPONENTS)
-  foreach(comp ${DART_FIND_COMPONENTS})
+# The list of components is passed in KIDO_FIND_COMPONENTS.
+if(KIDO_FIND_COMPONENTS)
+  foreach(comp ${KIDO_FIND_COMPONENTS})
     find_library(dart_${comp}_location
                  NAMES "dart-${comp}"
                  PATHS "@CMAKE_INSTALL_PREFIX@/lib")
     if(dart_${comp}_location)
-      list(APPEND DART_LIBRARIES "${dart_${comp}_location}")
+      list(APPEND KIDO_LIBRARIES "${dart_${comp}_location}")
     else()
-      if(DART_FIND_REQUIRED_${comp})
+      if(KIDO_FIND_REQUIRED_${comp})
         message(FATAL_ERROR "dart-${comp} not available")
-      endif(DART_FIND_REQUIRED_${comp})
+      endif(KIDO_FIND_REQUIRED_${comp})
     endif(dart_${comp}_location)
   endforeach(comp)
-endif(DART_FIND_COMPONENTS)
+endif(KIDO_FIND_COMPONENTS)
 
 #===============================================================================
-# DART_VERSION
+# KIDO_VERSION
 #===============================================================================
-set(DART_VERSION @DART_VERSION@)
+set(KIDO_VERSION @KIDO_VERSION@)

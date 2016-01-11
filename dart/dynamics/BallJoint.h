@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BALLJOINT_H_
-#define DART_DYNAMICS_BALLJOINT_H_
+#ifndef KIDO_DYNAMICS_BALLJOINT_H_
+#define KIDO_DYNAMICS_BALLJOINT_H_
 
 #include <Eigen/Dense>
 
@@ -142,5 +142,5 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_BALLJOINT_H_
+#endif  // KIDO_DYNAMICS_BALLJOINT_H_
 

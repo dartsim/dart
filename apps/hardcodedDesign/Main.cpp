@@ -67,8 +67,8 @@ int main(int argc, char* argv[]) {
   kido::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
   joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
-  joint.mPositionLowerLimit = -DART_PI;
-  joint.mPositionUpperLimit =  DART_PI;
+  joint.mPositionLowerLimit = -KIDO_PI;
+  joint.mPositionUpperLimit =  KIDO_PI;
 
   // You can get the newly created Joint and BodyNode pointers like this
   std::pair<kido::dynamics::Joint*, kido::dynamics::BodyNode*> pair =

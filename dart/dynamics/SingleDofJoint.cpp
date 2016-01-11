@@ -555,7 +555,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 
   setVelocityStatic(_velocity);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
@@ -585,7 +585,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 
   setVelocityStatic(_velocities[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
@@ -717,7 +717,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
   setAccelerationStatic(_acceleration);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
@@ -747,7 +747,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationStatic(_accelerations[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
@@ -875,7 +875,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 
   mForce = _force;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
@@ -905,7 +905,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 
   mForce = _forces[0];
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
@@ -923,7 +923,7 @@ void SingleDofJoint::resetForces()
 {
   mForce = 0.0;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.

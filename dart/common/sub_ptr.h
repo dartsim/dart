@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUB_PTR_H_
-#define DART_COMMON_SUB_PTR_H_
+#ifndef KIDO_COMMON_SUB_PTR_H_
+#define KIDO_COMMON_SUB_PTR_H_
 
 #include "dart/common/Observer.h"
 
@@ -100,4 +100,4 @@ using sub_ptr = common::sub_ptr<T>;
 
 } // namespace kido
 
-#endif // DART_COMMON_SUB_PTR_H_
+#endif // KIDO_COMMON_SUB_PTR_H_

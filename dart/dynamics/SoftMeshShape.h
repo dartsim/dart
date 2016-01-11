@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_H_
-#define DART_DYNAMICS_SOFTMESHSHAPE_H_
+#ifndef KIDO_DYNAMICS_SOFTMESHSHAPE_H_
+#define KIDO_DYNAMICS_SOFTMESHSHAPE_H_
 
 #include <assimp/scene.h>
 #include "dart/dynamics/Shape.h"
@@ -92,4 +92,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_
+#endif  // KIDO_DYNAMICS_SOFTMESHSHAPE_H_

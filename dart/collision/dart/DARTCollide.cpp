@@ -51,7 +51,7 @@ namespace collision {
 // normal : normal vector from right to left 0 <- 1
 // penetration : real positive means penetration
 
-#define DART_COLLISION_EPS  1E-6
+#define KIDO_COLLISION_EPS  1E-6
 static const int MAX_CYLBOX_CLIP_POINTS  = 16;
 static const int nCYLINDER_AXIS			 = 2;
 // Number of segment of cylinder base circle.
@@ -164,13 +164,13 @@ void cullPoints (int n, double p[], int m, int i0, int iret[])
   iret[0] = i0;
   iret++;
   for (j=1; j<m; j++) {
-    a = double(j)*(2*DART_PI/m) + A[i0];
-    if (a > DART_PI) a -= 2*DART_PI;
+    a = double(j)*(2*KIDO_PI/m) + A[i0];
+    if (a > KIDO_PI) a -= 2*KIDO_PI;
     double maxdiff=1e9,diff;
     for (i=0; i<n; i++) {
       if (avail[i]) {
         diff = fabs (A[i]-a);
-        if (diff > DART_PI) diff = 2*DART_PI - diff;
+        if (diff > KIDO_PI) diff = 2*KIDO_PI - diff;
         if (diff < maxdiff) {
           maxdiff = diff;
           *iret = i;
@@ -892,7 +892,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS)
+  if (mag > KIDO_COLLISION_EPS)
   {
     normal *= (1.0/mag);
 
@@ -999,7 +999,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     return 0;
   }
 
-  if (mag > DART_COLLISION_EPS)
+  if (mag > KIDO_COLLISION_EPS)
   {
     normal *= (1.0/mag);
 
@@ -1059,7 +1059,7 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
   Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
   double penetration;
 
-  if (normal_sqr < DART_COLLISION_EPS)
+  if (normal_sqr < KIDO_COLLISION_EPS)
   {
     normal.setZero();
     penetration = rsum;
@@ -1156,9 +1156,9 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
   Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
   double mag = Ry.norm();
   Ry.normalize();
-  if (mag < DART_COLLISION_EPS)
+  if (mag < KIDO_COLLISION_EPS)
   {
-    if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
+    if (std::abs(Rx[2]) > 1.0 - KIDO_COLLISION_EPS)
       Ry = Eigen::Vector3d::UnitX();
     else
       Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
@@ -1196,9 +1196,9 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
 
   Eigen::Vector3d point;
 
-  if (std::abs(depth[found] - depth[(found+1)%4]) < DART_COLLISION_EPS)
+  if (std::abs(depth[found] - depth[(found+1)%4]) < KIDO_COLLISION_EPS)
     point = T * (0.5 * (c[found] + c[(found+1)%4]));
-  else if (std::abs(depth[found] - depth[(found+3)%4]) < DART_COLLISION_EPS)
+  else if (std::abs(depth[found] - depth[(found+3)%4]) < KIDO_COLLISION_EPS)
     point = T * (0.5 * (c[found] + c[(found+3)%4]));
   else
     point = T * c[found];

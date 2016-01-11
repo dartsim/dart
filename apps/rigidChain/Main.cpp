@@ -42,7 +42,7 @@
 int main(int argc, char* argv[]) {
   // create and initialize the world
   kido::simulation::WorldPtr myWorld
-      = kido::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
+      = kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"/skel/chain.skel");
   assert(myWorld != nullptr);
 
   // create and initialize the world

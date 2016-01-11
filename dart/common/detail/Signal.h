@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SIGNAL_H_
-#define DART_COMMON_DETAIL_SIGNAL_H_
+#ifndef KIDO_COMMON_DETAIL_SIGNAL_H_
+#define KIDO_COMMON_DETAIL_SIGNAL_H_
 
 #include <vector>
 
@@ -289,5 +289,5 @@ Connection SlotRegister<T>::connect(const SlotType& _slot)
 }  // namespace common
 }  // namespace kido
 
-#endif  // DART_COMMON_DETAIL_SIGNAL_H_
+#endif  // KIDO_COMMON_DETAIL_SIGNAL_H_
 

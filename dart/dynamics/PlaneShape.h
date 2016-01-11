@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_PLANESHAPE_H_
-#define DART_DYNAMICS_PLANESHAPE_H_
+#ifndef KIDO_DYNAMICS_PLANESHAPE_H_
+#define KIDO_DYNAMICS_PLANESHAPE_H_
 
 #include "dart/dynamics/Shape.h"
 
@@ -104,4 +104,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_PLANESHAPE_H_
+#endif  // KIDO_DYNAMICS_PLANESHAPE_H_

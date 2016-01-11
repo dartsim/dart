@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTCONSTRAINT_H_
-#define DART_CONSTRAINT_JOINTCONSTRAINT_H_
+#ifndef KIDO_CONSTRAINT_JOINTCONSTRAINT_H_
+#define KIDO_CONSTRAINT_JOINTCONSTRAINT_H_
 
 #include "dart/constraint/ConstraintBase.h"
 
@@ -120,5 +120,5 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif  // DART_CONSTRAINT_CONSTRAINT_H_
+#endif  // KIDO_CONSTRAINT_CONSTRAINT_H_
 

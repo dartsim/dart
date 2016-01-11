@@ -7,7 +7,7 @@ set(dart_lcpsolver_srcs ${srcs} PARENT_SCOPE)
 
 # Library
 #dart_add_library(dart_lcpsolver ${srcs} ${hdrs})
-#target_link_libraries(dart_lcpsolver ${DART_CORE_DEPENDENCIES})
+#target_link_libraries(dart_lcpsolver ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#ifndef KIDO_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#define KIDO_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
 
 #include <fcl/collision_object.h>
 #include <fcl/collision_data.h>
@@ -87,4 +87,4 @@ protected:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#endif  // KIDO_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

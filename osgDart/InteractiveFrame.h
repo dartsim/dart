@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_INTERACTIVEFRAME_H
-#define OSGDART_INTERACTIVEFRAME_H
+#ifndef OSGKIDO_INTERACTIVEFRAME_H
+#define OSGKIDO_INTERACTIVEFRAME_H
 
 #include "dart/dynamics/SimpleFrame.h"
 
@@ -147,4 +147,4 @@ typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
 } // namespace osgDart
 
-#endif // OSGDART_INTERACTIVEFRAME_H
+#endif // OSGKIDO_INTERACTIVEFRAME_H

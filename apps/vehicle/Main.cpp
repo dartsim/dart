@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
   using namespace utils;
 
   // create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld(DART_DATA_PATH"/skel/vehicle.skel");
+  WorldPtr myWorld = SkelParser::readWorld(KIDO_DATA_PATH"/skel/vehicle.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

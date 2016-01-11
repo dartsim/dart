@@ -18,7 +18,7 @@ set(dart_utils_srcs ${srcs} ${dart_utils_srcs} PARENT_SCOPE)
 #  dart_collision
 #  dart_dynamics
 #  dart_simulation
-#  ${DART_DEPENDENCIES}
+#  ${KIDO_DEPENDENCIES}
 #)
 
 # Generate header for this namespace

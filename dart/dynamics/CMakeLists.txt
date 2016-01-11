@@ -12,7 +12,7 @@ set(dart_dynamics_srcs ${srcs} PARENT_SCOPE)
 #  dart_dynamics
 #  dart_common
 #  dart_math
-#  ${DART_CORE_DEPENDENCIES}
+#  ${KIDO_CORE_DEPENDENCIES}
 #)
 
 # Generate header for this namespace

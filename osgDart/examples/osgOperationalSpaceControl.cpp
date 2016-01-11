@@ -259,7 +259,7 @@ int main()
 
   // Load the robot
   kido::dynamics::SkeletonPtr robot =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
   // Set the colors of the models to obey the shape's color specification
@@ -280,7 +280,7 @@ int main()
 
   // Load the ground
   kido::dynamics::SkeletonPtr ground =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
+      loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/ground.urdf");
   world->addSkeleton(ground);
 
   // Rotate and move the ground so that z is upwards

@@ -63,7 +63,7 @@ TEST(FileInfoWorld, Basic)
   FileInfoWorld worldFile;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/file_info_world_test.skel");
+      KIDO_DATA_PATH"/skel/test/file_info_world_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   Recording* recording1 = nullptr;

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_MOUSEEVENTHANDLER_H
-#define OSGDART_MOUSEEVENTHANDLER_H
+#ifndef OSGKIDO_MOUSEEVENTHANDLER_H
+#define OSGKIDO_MOUSEEVENTHANDLER_H
 
 #include "dart/common/Subject.h"
 #include "dart/common/Observer.h"
@@ -74,4 +74,4 @@ protected:
 
 } // namespace osgDart
 
-#endif // OSGDART_MOUSEEVENTHANDLER_H
+#endif // OSGKIDO_MOUSEEVENTHANDLER_H

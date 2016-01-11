@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   kido::simulation::WorldPtr myWorld
-    = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
+    = utils::SkelParser::readWorld(KIDO_DATA_PATH"/skel/chain.skel");
   assert(myWorld != nullptr);
     
   // create and initialize the world

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
-#define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#ifndef KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#define KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 
 #define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )              \
   dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
@@ -685,7 +685,7 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
   mVelocities[_index] = _velocity;
   notifyVelocityUpdate();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommands[_index] = getVelocitiesStatic()[_index];
   // TODO: Remove at DART 5.1.
@@ -717,7 +717,7 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 
   setVelocitiesStatic(_velocities);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommands = getVelocitiesStatic();
   // TODO: Remove at DART 5.1.
@@ -866,7 +866,7 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   mAccelerations[_index] = _acceleration;
   notifyAccelerationUpdate();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands[_index] = getAccelerationsStatic()[_index];
   // TODO: Remove at DART 5.1.
@@ -898,7 +898,7 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationsStatic(_accelerations);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommands = getAccelerationsStatic();
   // TODO: Remove at DART 5.1.
@@ -1042,7 +1042,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 
   mForces[_index] = _force;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommands[_index] = mForces[_index];
   // TODO: Remove at DART 5.1.
@@ -1074,7 +1074,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 
   mForces = _forces;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
   // TODO: Remove at DART 5.1.
@@ -1094,7 +1094,7 @@ void MultiDofJoint<DOF>::resetForces()
 {
   mForces.setZero();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
+#if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommands = mForces;
   // TODO: Remove at DART 5.1.
@@ -2404,4 +2404,4 @@ Eigen::VectorXd MultiDofJoint<DOF>::getSpatialToGeneralized(
   return getLocalJacobianStatic().transpose() * _spatial;
 }
 
-#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#endif // KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_

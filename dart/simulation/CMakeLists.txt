@@ -11,7 +11,7 @@ set(dart_simulation_srcs ${srcs} PARENT_SCOPE)
 #  dart_simulation
 #  dart_constraint
 #  dart_integration
-#  ${DART_CORE_DEPENDENCIES}
+#  ${KIDO_CORE_DEPENDENCIES}
 #)
 
 # Generate header for this namespace

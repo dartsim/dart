@@ -1,5 +1,5 @@
-#ifndef DART_UTILS_SDFPARSER_H
-#define DART_UTILS_SDFPARSER_H
+#ifndef KIDO_UTILS_SDFPARSER_H
+#define KIDO_UTILS_SDFPARSER_H
 
 #include <map>
 #include <string>
@@ -299,4 +299,4 @@ public:
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_SDFPARSER_H
+#endif // #ifndef KIDO_UTILS_SDFPARSER_H

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFO_C3D_H
-#define DART_UTILS_FILEINFO_C3D_H
+#ifndef KIDO_UTILS_FILEINFO_C3D_H
+#define KIDO_UTILS_FILEINFO_C3D_H
 
 #include <vector>
 #include <Eigen/Dense>
@@ -72,5 +72,5 @@ protected:
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef DART_UTILS_FILEINFO_C3D_H
+#endif // #ifndef KIDO_UTILS_FILEINFO_C3D_H
 

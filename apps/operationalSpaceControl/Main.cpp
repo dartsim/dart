@@ -47,9 +47,9 @@ int main(int argc, char* argv[])
   // load skeletons
   kido::utils::DartLoader dl;
   kido::dynamics::SkeletonPtr ground
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
+      = dl.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/ground.urdf");
   kido::dynamics::SkeletonPtr robot
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      = dl.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(ground);
   world->addSkeleton(robot);
 

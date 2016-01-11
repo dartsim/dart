@@ -46,7 +46,7 @@ int main()
   using namespace kido::dynamics;
 
   kido::simulation::WorldPtr world =
-      kido::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
+      kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/softBodies.skel");
 
   osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
 

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAPE_H_
-#define DART_DYNAMICS_SHAPE_H_
+#ifndef KIDO_DYNAMICS_SHAPE_H_
+#define KIDO_DYNAMICS_SHAPE_H_
 
 #include <memory>
 
@@ -250,4 +250,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // DART_DYNAMICS_SHAPE_H_
+#endif  // KIDO_DYNAMICS_SHAPE_H_

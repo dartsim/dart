@@ -22,7 +22,7 @@ set(dart_optimizer_srcs ${srcs} ${dart_optimizer_srcs} PARENT_SCOPE)
 #  dart_optimizer
 #  dart_common
 #  dart_math
-#  ${DART_DEPENDENCIES}
+#  ${KIDO_DEPENDENCIES}
 #)
 #if(HAVE_IPOPT)
 #  target_link_libraries(dart_optimizer dart_optimizer_ipopt)

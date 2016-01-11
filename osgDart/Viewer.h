@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_VIEWER_H
-#define OSGDART_VIEWER_H
+#ifndef OSGKIDO_VIEWER_H
+#define OSGKIDO_VIEWER_H
 
 #include <map>
 #include <unordered_set>
@@ -382,4 +382,4 @@ protected:
 
 }
 
-#endif // OSGDART_VIEWER_H
+#endif // OSGKIDO_VIEWER_H
