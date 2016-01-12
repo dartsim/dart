@@ -1,6 +1,14 @@
+kido (0.1.0) unstable; urgency=medium
+
+  * Changed project name to kido
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 18 Jan 2016 00:00:00 -0500
+
 dart (6.0.0) unstable; urgency=medium
 
   * Added missing 'liburdfdom-dev' dependency in Ubuntu package
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 15 Feb 2015 00:00:00 -0500
 
 dart (5.1.1) unstable; urgency=medium
 

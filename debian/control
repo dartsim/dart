@@ -1,4 +1,4 @@
-Source: dart
+Source: kido0
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
@@ -24,48 +24,47 @@ Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git
 Vcs-Browser: https://github.com/dartsim/dart
 
-Package: libdart-core5-dev
+Package: libkido-core0-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Conflicts: libdart-core3-dev, libdart-core4-dev
 Depends: ${misc:Depends},
-         libdart-core5.1 (= ${binary:Version}),
+         libkido-core0.1 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
          libfcl-dev,
          libboost-all-dev (>= 1.54.0.1ubuntu1)
 Description: Dynamic Animation and Robotics Toolkit, core development files
- DART is a collaborative, cross-platform, open source library created by the
+ KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
  and computer animation.
- DART is distinguished by it's accuracy and stability due to its use of
+ KIDO is distinguished by it's accuracy and stability due to its use of
  generalized coordinates to represent articulated rigid body systems and
  computation of Lagrange's equations derived from D.Alembert's principle to
  describe the dynamics of motion.
  For developers, in contrast to many popular physics engines which view the
- simulator as a black box, DART gives full access to internal kinematic and
+ simulator as a black box, KIDO gives full access to internal kinematic and
  dynamic quantities, such as the mass matrix, Coriolis and centrifugal forces,
- transformation matrices and their derivatives. DART also provides efficient
+ transformation matrices and their derivatives. KIDO also provides efficient
  computation of Jacobian matrices for arbitrary body points and coordinate
  frames. Contact and collision are handled using an implicit time-stepping,
  velocity-based LCP (linear-complementarity problem) to guarantee
  non-penetration, directional friction, and approximated Coulomb friction cone
- conditions. For collision detection, DART uses FCL developed by Willow Garage
+ conditions. For collision detection, KIDO uses FCL developed by Willow Garage
  and the UNC Gamma Lab.
- DART has applications in robotics and computer animation because it features a
+ KIDO has applications in robotics and computer animation because it features a
  multibody dynamic simulator and tools for control and motion planning.
- Multibody dynamic simulation in DART is an extension of RTQL8, an open source
+ Multibody dynamic simulation in KIDO is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
-Package: libdart5-dev
+Package: libkido0-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
-         libdart-core5-dev,
-         libdart5.1 (= ${binary:Version}),
+         libkido-core0-dev,
+         libkido0.1 (= ${binary:Version}),
          freeglut3-dev,
          libxi-dev,
          libxmu-dev,
@@ -74,86 +73,86 @@ Depends: ${misc:Depends},
          libopenscenegraph-dev,
          liburdfdom-dev
 Description: Dynamic Animation and Robotics Toolkit, development files
- DART is a collaborative, cross-platform, open source library created by the
+ KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
  and computer animation.
- DART is distinguished by it's accuracy and stability due to its use of
+ KIDO is distinguished by it's accuracy and stability due to its use of
  generalized coordinates to represent articulated rigid body systems and
  computation of Lagrange's equations derived from D.Alembert's principle to
  describe the dynamics of motion.
  For developers, in contrast to many popular physics engines which view the
- simulator as a black box, DART gives full access to internal kinematic and
+ simulator as a black box, KIDO gives full access to internal kinematic and
  dynamic quantities, such as the mass matrix, Coriolis and centrifugal forces,
- transformation matrices and their derivatives. DART also provides efficient
+ transformation matrices and their derivatives. KIDO also provides efficient
  computation of Jacobian matrices for arbitrary body points and coordinate
  frames. Contact and collision are handled using an implicit time-stepping,
  velocity-based LCP (linear-complementarity problem) to guarantee
  non-penetration, directional friction, and approximated Coulomb friction cone
- conditions. For collision detection, DART uses FCL developed by Willow Garage
+ conditions. For collision detection, KIDO uses FCL developed by Willow Garage
  and the UNC Gamma Lab.
- DART has applications in robotics and computer animation because it features a
+ KIDO has applications in robotics and computer animation because it features a
  multibody dynamic simulator and tools for control and motion planning.
- Multibody dynamic simulation in DART is an extension of RTQL8, an open source
+ Multibody dynamic simulation in KIDO is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
 
-Package: libdart-core5.1
+Package: libkido-core0.1
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, core library files
- DART is a collaborative, cross-platform, open source library created by the
+ KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
  and computer animation.
- DART is distinguished by it's accuracy and stability due to its use of
+ KIDO is distinguished by it's accuracy and stability due to its use of
  generalized coordinates to represent articulated rigid body systems and
  computation of Lagrange's equations derived from D.Alembert's principle to
  describe the dynamics of motion.
  For developers, in contrast to many popular physics engines which view the
- simulator as a black box, DART gives full access to internal kinematic and
+ simulator as a black box, KIDO gives full access to internal kinematic and
  dynamic quantities, such as the mass matrix, Coriolis and centrifugal forces,
- transformation matrices and their derivatives. DART also provides efficient
+ transformation matrices and their derivatives. KIDO also provides efficient
  computation of Jacobian matrices for arbitrary body points and coordinate
  frames. Contact and collision are handled using an implicit time-stepping,
  velocity-based LCP (linear-complementarity problem) to guarantee
  non-penetration, directional friction, and approximated Coulomb friction cone
- conditions. For collision detection, DART uses FCL developed by Willow Garage
+ conditions. For collision detection, KIDO uses FCL developed by Willow Garage
  and the UNC Gamma Lab.
- DART has applications in robotics and computer animation because it features a
+ KIDO has applications in robotics and computer animation because it features a
  multibody dynamic simulator and tools for control and motion planning.
- Multibody dynamic simulation in DART is an extension of RTQL8, an open source
+ Multibody dynamic simulation in KIDO is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
 
-Package: libdart5.1
+Package: libkido0.1
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, library files
- DART is a collaborative, cross-platform, open source library created by the
+ KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
  and computer animation.
- DART is distinguished by it's accuracy and stability due to its use of
+ KIDO is distinguished by it's accuracy and stability due to its use of
  generalized coordinates to represent articulated rigid body systems and
  computation of Lagrange's equations derived from D.Alembert's principle to
  describe the dynamics of motion.
  For developers, in contrast to many popular physics engines which view the
- simulator as a black box, DART gives full access to internal kinematic and
+ simulator as a black box, KIDO gives full access to internal kinematic and
  dynamic quantities, such as the mass matrix, Coriolis and centrifugal forces,
- transformation matrices and their derivatives. DART also provides efficient
+ transformation matrices and their derivatives. KIDO also provides efficient
  computation of Jacobian matrices for arbitrary body points and coordinate
  frames. Contact and collision are handled using an implicit time-stepping,
  velocity-based LCP (linear-complementarity problem) to guarantee
  non-penetration, directional friction, and approximated Coulomb friction cone
- conditions. For collision detection, DART uses FCL developed by Willow Garage
+ conditions. For collision detection, KIDO uses FCL developed by Willow Garage
  and the UNC Gamma Lab.
- DART has applications in robotics and computer animation because it features a
+ KIDO has applications in robotics and computer animation because it features a
  multibody dynamic simulator and tools for control and motion planning.
- Multibody dynamic simulation in DART is an extension of RTQL8, an open source
+ Multibody dynamic simulation in KIDO is an extension of RTQL8, an open source
  software created by the Georgia Tech Graphics Lab.
