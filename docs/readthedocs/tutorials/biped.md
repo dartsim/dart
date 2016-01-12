@@ -1,5 +1,5 @@
 # Overview
-This tutorial demonstrates the dynamic features in DART useful for
+This tutorial demonstrates the dynamic features in KIDO useful for
 developing controllers for bipedal or wheel-based robots. The tutorial
 consists of seven Lessons covering the following topics:
 
@@ -9,21 +9,21 @@ consists of seven Lessons covering the following topics:
 - APIs for dynamic quantities.
 - Skeleton editing.
 
-Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp).
+Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/kido/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/kido/tutorials/tutorialBiped-Finished.cpp).
 
 # Lesson 1: Joint limits and self-collision
 Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
 and call ``loadBiped`` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
 describes a ``World`` with one or more ``Skeleton``s in it. Here we
-load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel) and assign the bipedal figure to a
+load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/kido/data/skel/biped.skel) and assign the bipedal figure to a
 ``Skeleton`` pointer called *biped*.
 
 ```cpp
 SkeletonPtr loadBiped()
 {
 ...
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/biped.skel");
+    WorldPtr world = SkelParser::readWorld(KIDO_DATA_PATH"skel/biped.skel");
     SkeletonPtr biped = world->getSkeleton("biped");
 ...
 }
@@ -34,7 +34,7 @@ human-like character collapse on the ground and fold in on
 itself. Before we attempt to control the biped, let's first make the
 biped a bit more realistic by enforcing more human-like joint limits.
 
-DART allows the user to set upper and lower bounds on each degree of
+KIDO allows the user to set upper and lower bounds on each degree of
 freedom in the SKEL file or using provided APIs. For example, you
 should see the description of the right knee joint in **biped.skel**:
 
@@ -69,7 +69,7 @@ SkeletonPtr loadBiped()
 }
 ```
 Once the joint limits are set, the next task is to enforce
-self-collision. By default, DART does not check self-collision within
+self-collision. By default, KIDO does not check self-collision within
 a skeleton. You can enable self-collision checking on the biped by
 ```cpp
 SkeletonPtr loadBiped()
@@ -209,12 +209,12 @@ SPD is a variation of PD control proposed by
 [Jie Tan](http://www.cc.gatech.edu/~jtan34/project/spd.html). The
 basic idea of SPD is to compute control force using the predicted
 state at the next time step, instead of the current state. This Lesson
-will only demonstrate the implementation of SPD using DART without
+will only demonstrate the implementation of SPD using KIDO without
 going into details of SPD derivation.
 
 The implementation of SPD involves accessing the current dynamic
 quantities in Lagrange's equations of motion. Fortunately, these
-quantities are readily available via DART API, which makes the full
+quantities are readily available via KIDO API, which makes the full
 implementation of SPD simple and concise:
 
 ```cpp
@@ -280,11 +280,11 @@ void addAnkleStrategyForces()
 }
 ```
 
-DART provides various APIs to access useful kinematic information. For
+KIDO provides various APIs to access useful kinematic information. For
 example, ``getCOM`` returns the center of mass of the skeleton and
 ``getTransform`` returns transformation of the body node with
 respect to any coordinate frame specified by the parameter (world
-coordinate frame as default). DART APIs also come in handy when
+coordinate frame as default). KIDO APIs also come in handy when
 computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 
 ```cpp
@@ -299,7 +299,7 @@ void addAnkleStrategyForces()
 ```
 
 The linear/angular velocity/acceleration of any point in any coordinate
-frame can be easily accessed in DART. The full list of the APIs for accessing
+frame can be easily accessed in KIDO. The full list of the APIs for accessing
 various velocities/accelerations can be found in the [API Documentation](http://dartsim.github.io/dart/). The 
 following table summarizes the essential APIs.
 
@@ -318,7 +318,7 @@ falling forward and backward result in more stable controller.
 
 # Lesson 5: Skeleton editing
 
-DART provides various functions to copy, delete, split, and merge
+KIDO provides various functions to copy, delete, split, and merge
 parts of skeletons to alleviate the pain of building simulation models from
 scratch. In this Lesson, we will load a skateboard model from a SKEL
 file and merge our biped with the skateboard to create a wheel-based
@@ -329,7 +329,7 @@ We first load a skateboard from **skateboard.skel**:
 ```cpp
 void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/skateboard.skel");
+    WorldPtr world = SkelParser::readWorld(KIDO_DATA_PATH"skel/skateboard.skel");
     SkeletonPtr skateboard = world->getSkeleton(0);
 ...
 }
@@ -378,7 +378,7 @@ a table of some relevant functions for quick references.
 
 # Lesson 6: Actuator types
 
-DART provides five types of actuator. Each joint can select its own
+KIDO provides five types of actuator. Each joint can select its own
 actuator type.
 
 | Type         | Description |
@@ -465,7 +465,7 @@ corner of the left foot.
 
 To compute the gradient of the above objective function, we need to evaluate
 the partial derivatives of each objective term with respect to the
-degrees of freedom, i.e., the computation of Jacobian matrix. DART
+degrees of freedom, i.e., the computation of Jacobian matrix. KIDO
 provides a comprensive set of APIs for accessing various types of
 Jacobian. In this example, computing the gradient of the first term of
 the objective function requires the Jacobian of the
