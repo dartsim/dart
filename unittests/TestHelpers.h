@@ -42,19 +42,19 @@
  * @brief Contains the helper functions for the tests.
  */
 
-#ifndef DART_UNITTESTS_TEST_HELPERS_H
-#define DART_UNITTESTS_TEST_HELPERS_H
+#ifndef KIDO_UNITTESTS_TEST_HELPERS_H
+#define KIDO_UNITTESTS_TEST_HELPERS_H
 
 #include <vector>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
-#include "dart/common/Uri.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/simulation/World.h"
-#include "dart/common/ResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/math/Geometry.h"
+#include "kido/dynamics/dynamics.h"
+#include "kido/collision/CollisionDetector.h"
+#include "kido/constraint/ConstraintSolver.h"
+#include "kido/simulation/World.h"
+#include "kido/common/ResourceRetriever.h"
 
 using namespace Eigen;
 using namespace kido::math;
@@ -173,7 +173,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     node.mColShapes.push_back(shape);
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
-      robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type1);
+      robot, nullptr, node, "joint1", 0.0, -KIDO_PI, KIDO_PI, type1);
 
   BodyNode* parent_node = pair1.second;
 
@@ -188,7 +188,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
         node.mColShapes.push_back(shape);
 
     std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
-        robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+        robot, parent_node, node, "joint2", 0.0, -KIDO_PI, KIDO_PI, type2);
     Joint* joint = pair2.first;
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     T.translate(Eigen::Vector3d(0.0, 0.0, dim1(2)));
@@ -208,7 +208,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     if (collisionShape)
         node.mColShapes.push_back(shape);
     std::pair<Joint*, BodyNode*> pair3 = add1DofJoint(
-          robot, parent_node, node, "joint3", 0.0, -DART_PI, DART_PI, type3);
+          robot, parent_node, node, "joint3", 0.0, -KIDO_PI, KIDO_PI, type3);
 
     Joint* joint = pair3.first;
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -256,7 +256,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   node.mColShapes.push_back(shape);
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
-        robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type);
+        robot, nullptr, node, "joint1", 0.0, -KIDO_PI, KIDO_PI, type);
 
   Joint* joint = pair1.first;
   joint->setDampingCoefficient(0, 0.01);
@@ -278,7 +278,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     node.mColShapes.push_back(shape);
 
     std::pair<Joint*, BodyNode*> newPair = add1DofJoint(
-        robot, parent_node, node, ssJoint.str(), 0.0, -DART_PI, DART_PI, type);
+        robot, parent_node, node, ssJoint.str(), 0.0, -KIDO_PI, KIDO_PI, type);
 
     Joint* joint = newPair.first;
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -319,7 +319,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   node.mColShapes.push_back(shape);
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
-        robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type);
+        robot, nullptr, node, "joint1", 0.0, -KIDO_PI, KIDO_PI, type);
 
   Joint* joint = pair1.first;
   Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
@@ -344,7 +344,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
     node.mColShapes.push_back(shape);
 
     std::pair<Joint*, BodyNode*> newPair = add1DofJoint(
-        robot, parent_node, node, ssJoint.str(), 0.0, -DART_PI, DART_PI, type);
+        robot, parent_node, node, ssJoint.str(), 0.0, -KIDO_PI, KIDO_PI, type);
 
     Joint* joint = newPair.first;
     Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
@@ -505,4 +505,4 @@ struct AbsentResourceRetriever : public kido::common::ResourceRetriever
   std::vector<std::string> mRetrieve;
 };
 
-#endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H
+#endif // #ifndef KIDO_UNITTESTS_TEST_HELPERS_H
