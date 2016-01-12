@@ -2,16 +2,16 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_math_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_math_srcs ${srcs} PARENT_SCOPE)
+set(kido_math_hdrs ${hdrs} PARENT_SCOPE)
+set(kido_math_srcs ${srcs} PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_math ${srcs} ${hdrs})
-#target_link_libraries(dart_math ${KIDO_CORE_DEPENDENCIES})
+#kido_add_library(kido_math ${srcs} ${hdrs})
+#target_link_libraries(kido_math ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "math headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "math headers" ${hdrs})
+kido_generate_include_header_list(
   math_headers
   "dart/math/"
   "math headers"
@@ -28,6 +28,6 @@ install(
   DESTINATION include/dart/math
   COMPONENT headers
 )
-#install(TARGETS dart_math EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS dart_math EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_math EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS kido_math EXPORT DARTTargets DESTINATION lib)
 

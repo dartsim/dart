@@ -2,21 +2,21 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_gui_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_gui_srcs ${srcs} PARENT_SCOPE)
+set(kido_gui_hdrs ${hdrs} PARENT_SCOPE)
+set(kido_gui_srcs ${srcs} PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_gui ${srcs} ${hdrs})
+#kido_add_library(kido_gui ${srcs} ${hdrs})
 #target_link_libraries(
-#  dart_gui
-#  dart_collision
-#  dart_simulation
+#  kido_gui
+#  kido_collision
+#  kido_simulation
 #  ${KIDO_DEPENDENCIES}
 #)
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "gui headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "gui headers" ${hdrs})
+kido_generate_include_header_list(
   gui_headers
   "dart/gui/"
   "gui headers"
@@ -33,5 +33,5 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-#install(TARGETS dart_gui EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_gui EXPORT DARTTargets DESTINATION lib)
 

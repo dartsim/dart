@@ -26,52 +26,52 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 # Set header and source files
-set(dart_core_hdrs
+set(kido_core_hdrs
   dart-core.h
-  ${dart_common_hdrs}
-  ${dart_math_hdrs}
-  ${dart_integration_hdrs}
-  ${dart_lcpsolver_hdrs}
-  ${dart_dynamics_hdrs}
-  ${dart_optimizer_hdrs}
-  ${dart_collision_hdrs}
-  ${dart_constraint_hdrs}
-  ${dart_renderer_hdrs}
-  ${dart_simulation_hdrs}
+  ${kido_common_hdrs}
+  ${kido_math_hdrs}
+  ${kido_integration_hdrs}
+  ${kido_lcpsolver_hdrs}
+  ${kido_dynamics_hdrs}
+  ${kido_optimizer_hdrs}
+  ${kido_collision_hdrs}
+  ${kido_constraint_hdrs}
+  ${kido_renderer_hdrs}
+  ${kido_simulation_hdrs}
 )
-set(dart_core_srcs
-  ${dart_common_srcs}
-  ${dart_math_srcs}
-  ${dart_integration_srcs}
-  ${dart_lcpsolver_srcs}
-  ${dart_dynamics_srcs}
-  ${dart_optimizer_srcs}
-  ${dart_collision_srcs}
-  ${dart_constraint_srcs}
-  ${dart_renderer_srcs}
-  ${dart_simulation_srcs}
+set(kido_core_srcs
+  ${kido_common_srcs}
+  ${kido_math_srcs}
+  ${kido_integration_srcs}
+  ${kido_lcpsolver_srcs}
+  ${kido_dynamics_srcs}
+  ${kido_optimizer_srcs}
+  ${kido_collision_srcs}
+  ${kido_constraint_srcs}
+  ${kido_renderer_srcs}
+  ${kido_simulation_srcs}
 )
 if(NOT BUILD_CORE_ONLY)
-  set(dart_hdrs
+  set(kido_hdrs
     dart.h
-    ${dart_gui_hdrs}
-    ${dart_planning_hdrs}
-    ${dart_utils_hdrs}
+    ${kido_gui_hdrs}
+    ${kido_planning_hdrs}
+    ${kido_utils_hdrs}
   )
-  set(dart_srcs
-    ${dart_gui_srcs}
-    ${dart_planning_srcs}
-    ${dart_utils_srcs}
+  set(kido_srcs
+    ${kido_gui_srcs}
+    ${kido_planning_srcs}
+    ${kido_utils_srcs}
   )
 endif()
 
 # Library: dart-core
-dart_add_library(dart-core ${dart_core_hdrs} ${dart_core_srcs})
+kido_add_library(dart-core ${kido_core_hdrs} ${kido_core_srcs})
 target_link_libraries(dart-core ${KIDO_CORE_DEPENDENCIES})
 
 # Library: dart
 if(NOT BUILD_CORE_ONLY)
-  dart_add_library(dart ${dart_hdrs} ${dart_srcs})
+  kido_add_library(dart ${kido_hdrs} ${kido_srcs})
   target_link_libraries(dart dart-core ${KIDO_DEPENDENCIES})
 endif()
 
@@ -82,11 +82,11 @@ if(MSVC)
   )
 endif()
 
-#install(FILES ${dart_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
+#install(FILES ${kido_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
 install(FILES dart-core.h DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
-#  install(FILES ${dart_hdrs} DESTINATION include/dart/ COMPONENT headers)
+#  install(FILES ${kido_hdrs} DESTINATION include/dart/ COMPONENT headers)
   install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
   install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()

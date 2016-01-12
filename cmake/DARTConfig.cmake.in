@@ -28,23 +28,23 @@ include("${CURRENT_DIR}/DARTTargets.cmake")
 # Return absolute path of the library instead of just library name as
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
-find_library(dart_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-set(KIDO_LIBRARIES "${dart_location}")
+find_library(kido_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
+set(KIDO_LIBRARIES "${kido_location}")
 
 # Handle requested components in find_package(DART COMPONENTS [components]).
 # The list of components is passed in KIDO_FIND_COMPONENTS.
 if(KIDO_FIND_COMPONENTS)
   foreach(comp ${KIDO_FIND_COMPONENTS})
-    find_library(dart_${comp}_location
+    find_library(kido_${comp}_location
                  NAMES "dart-${comp}"
                  PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-    if(dart_${comp}_location)
-      list(APPEND KIDO_LIBRARIES "${dart_${comp}_location}")
+    if(kido_${comp}_location)
+      list(APPEND KIDO_LIBRARIES "${kido_${comp}_location}")
     else()
       if(KIDO_FIND_REQUIRED_${comp})
         message(FATAL_ERROR "dart-${comp} not available")
       endif(KIDO_FIND_REQUIRED_${comp})
-    endif(dart_${comp}_location)
+    endif(kido_${comp}_location)
   endforeach(comp)
 endif(KIDO_FIND_COMPONENTS)
 

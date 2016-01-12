@@ -10,26 +10,26 @@ if(HAVE_BULLET_COLLISION)
   add_subdirectory(bullet)
 endif()
 
-set(dart_collision_hdrs ${hdrs} ${dart_collision_hdrs} PARENT_SCOPE)
-set(dart_collision_srcs ${srcs} ${dart_collision_srcs} PARENT_SCOPE)
+set(kido_collision_hdrs ${hdrs} ${kido_collision_hdrs} PARENT_SCOPE)
+set(kido_collision_srcs ${srcs} ${kido_collision_srcs} PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_collision ${srcs} ${hdrs})
+#kido_add_library(kido_collision ${srcs} ${hdrs})
 #target_link_libraries(
-#  dart_collision
-#  dart_common
-#  dart_math
-#  dart_collision_dart
-#  dart_collision_fcl
-#  dart_collision_fcl_mesh
+#  kido_collision
+#  kido_common
+#  kido_math
+#  kido_collision_dart
+#  kido_collision_fcl
+#  kido_collision_fcl_mesh
 #  ${KIDO_CORE_DEPENDENCIES}
 #)
 #if(HAVE_BULLET_COLLISION)
-#  target_link_libraries(dart_collision dart_collision_bullet)
+#  target_link_libraries(kido_collision kido_collision_bullet)
 #endif()
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "collision headers" ${hdrs})
+kido_get_filename_components(header_names "collision headers" ${hdrs})
 set(
   header_names
   ${header_names}
@@ -40,7 +40,7 @@ set(
 if(HAVE_BULLET_COLLISION)
   set(header_names ${header_names} bullet/bullet.h)
 endif()
-dart_generate_include_header_list(
+kido_generate_include_header_list(
   collision_headers
   "dart/collision/"
   "collision headers"
@@ -57,5 +57,5 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
-#install(TARGETS dart_collision EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS dart_collision EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_collision EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS kido_collision EXPORT DARTTargets DESTINATION lib)

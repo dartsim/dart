@@ -4,16 +4,16 @@ file(GLOB hdrs "*.h")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB detail_hdrs "detail/*.h")
 
-set(dart_common_hdrs "${hdrs};${detail_hdrs}" PARENT_SCOPE)
-set(dart_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
+set(kido_common_hdrs "${hdrs};${detail_hdrs}" PARENT_SCOPE)
+set(kido_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_common ${srcs} ${hdrs})
-#target_link_libraries(dart_common ${KIDO_CORE_DEPENDENCIES})
+#kido_add_library(kido_common ${srcs} ${hdrs})
+#target_link_libraries(kido_common ${KIDO_CORE_DEPENDENCIES})
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "common headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "common headers" ${hdrs})
+kido_generate_include_header_list(
   common_headers
   "dart/common/"
   "common headers"
@@ -37,6 +37,6 @@ install(
   COMPONENT headers
 )
 
-#install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_common EXPORT DARTCoreTargets DESTINATION lib)
+#install(TARGETS kido_common EXPORT DARTTargets DESTINATION lib)
 

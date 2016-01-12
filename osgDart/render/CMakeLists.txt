@@ -1,7 +1,7 @@
 file(GLOB osgDart_render_hdrs "*.h")
 
-dart_get_filename_components(header_names "osgDart render headers" ${osgDart_render_hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "osgDart render headers" ${osgDart_render_hdrs})
+kido_generate_include_header_list(
   osgDart_render_headers
   "osgDart/render/"
   "osgDart render headers"

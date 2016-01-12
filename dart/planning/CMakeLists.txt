@@ -2,16 +2,16 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_planning_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_planning_srcs ${srcs} PARENT_SCOPE)
+set(kido_planning_hdrs ${hdrs} PARENT_SCOPE)
+set(kido_planning_srcs ${srcs} PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_planning ${srcs} ${hdrs})
-#target_link_libraries(dart_planning ${KIDO_DEPENDENCIES})
+#kido_add_library(kido_planning ${srcs} ${hdrs})
+#target_link_libraries(kido_planning ${KIDO_DEPENDENCIES})
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "planning headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "planning headers" ${hdrs})
+kido_generate_include_header_list(
   planning_headers
   "dart/planning/"
   "planning headers"
@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-#install(TARGETS dart_planning EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_planning EXPORT DARTTargets DESTINATION lib)
 

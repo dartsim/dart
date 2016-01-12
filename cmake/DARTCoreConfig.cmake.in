@@ -28,10 +28,10 @@ include("${CURRENT_DIR}/DARTCoreTargets.cmake")
 # Return absolute path of the library instead of just library name as
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
-find_library(dart_core_location
+find_library(kido_core_location
              NAMES "dart-core"
              PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-set(DARTCore_LIBRARIES "${dart_core_location}")
+set(DARTCore_LIBRARIES "${kido_core_location}")
 
 #===============================================================================
 # DARTCore_VERSION

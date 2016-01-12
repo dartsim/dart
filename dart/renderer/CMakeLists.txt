@@ -2,16 +2,16 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_renderer_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_renderer_srcs ${srcs} PARENT_SCOPE)
+set(kido_renderer_hdrs ${hdrs} PARENT_SCOPE)
+set(kido_renderer_srcs ${srcs} PARENT_SCOPE)
 
 # Library
-#dart_add_library(dart_renderer ${srcs} ${hdrs})
-#target_link_libraries(dart_renderer ${KIDO_DEPENDENCIES})
+#kido_add_library(kido_renderer ${srcs} ${hdrs})
+#target_link_libraries(kido_renderer ${KIDO_DEPENDENCIES})
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "renderer headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "renderer headers" ${hdrs})
+kido_generate_include_header_list(
   renderer_headers
   "dart/renderer/"
   "renderer headers"
@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/renderer
   COMPONENT headers
 )
-#install(TARGETS dart_renderer EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_renderer EXPORT DARTTargets DESTINATION lib)
 

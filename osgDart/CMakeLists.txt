@@ -11,15 +11,15 @@ if(${OPENSCENEGRAPH_FOUND})
   file(GLOB osgDart_srcs "*.cpp" "render/*.cpp" "render/*.h")
   file(GLOB osgDart_hdrs "*.h")
 
-  dart_add_library(osgDart ${osgDart_srcs} ${osgDart_hdrs})
+  kido_add_library(osgDart ${osgDart_srcs} ${osgDart_hdrs})
   target_link_libraries(osgDart
     dart-core
     ${OPENSCENEGRAPH_LIBRARIES}
   )
 
-  dart_get_filename_components(header_names "osgDart headers" ${osgDart_hdrs})
+  kido_get_filename_components(header_names "osgDart headers" ${osgDart_hdrs})
   list(APPEND header_names "render/render.h")
-  dart_generate_include_header_list(
+  kido_generate_include_header_list(
     osgDart_headers
     "osgDart/"
     "osgDart headers"

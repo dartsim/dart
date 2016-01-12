@@ -3,12 +3,12 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-dart_add_library(dart-optimizer-ipopt ${srcs} ${hdrs})
+kido_add_library(dart-optimizer-ipopt ${srcs} ${hdrs})
 target_link_libraries(dart-optimizer-ipopt dart-core ${IPOPT_LIBRARIES})
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
+kido_generate_include_header_list(
   optimizer_ipopt_headers
   "dart/optimizer/ipopt/"
   "optimizer_ipopt headers"
