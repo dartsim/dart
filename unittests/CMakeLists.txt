@@ -64,7 +64,7 @@ foreach(test ${tests})
 
   # Get the name (i.e. bla.cpp => bla)
   get_filename_component(base ${test} NAME_WE)
-  link_directories(${DARTExt_LIBRARY_DIRS})
+  link_directories(${KIDOExt_LIBRARY_DIRS})
   add_executable(${base} ${test})
   if(MSVC)
     target_link_libraries(${base} dart optimized gtest debug gtestd)

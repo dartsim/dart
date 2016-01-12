@@ -58,8 +58,8 @@ static void initQuadObj(void)
 {
     quadObj = gluNewQuadric();
     if(!quadObj)
-        // DART modified error output
-        std::cerr << "OpenGL: Fatal Error in DART: out of memory." << std::endl;
+        // KIDO modified error output
+        std::cerr << "OpenGL: Fatal Error in KIDO: out of memory." << std::endl;
 }
 //glut/lib/glut_shapes.c
 

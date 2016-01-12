@@ -41,7 +41,7 @@
 #include <fstream>
 
 #include "dart/common/Console.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/KIDOCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 // #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/Shape.h"

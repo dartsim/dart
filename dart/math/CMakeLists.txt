@@ -28,6 +28,6 @@ install(
   DESTINATION include/dart/math
   COMPONENT headers
 )
-#install(TARGETS kido_math EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_math EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_math EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_math EXPORT KIDOTargets DESTINATION lib)
 

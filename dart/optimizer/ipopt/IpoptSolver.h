@@ -204,7 +204,7 @@ private:
   /// \brief
   explicit DartTNLP(IpoptSolver* _solver);
 
-  /// \brief DART optimization problem
+  /// \brief KIDO optimization problem
   IpoptSolver* mSolver;
 
   /// \brief Objective value

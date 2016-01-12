@@ -377,7 +377,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
         }
         else
         {
-#ifdef FCL_DART5
+#ifdef FCL_KIDO5
           fclCollGeom.reset(
                 new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5)));
 #else

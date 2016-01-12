@@ -558,7 +558,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -588,7 +588,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -720,7 +720,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -750,7 +750,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -878,7 +878,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -908,7 +908,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 
@@ -926,7 +926,7 @@ void SingleDofJoint::resetForces()
 #if KIDO_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
+  // TODO: Remove at KIDO 5.1.
 #endif
 }
 

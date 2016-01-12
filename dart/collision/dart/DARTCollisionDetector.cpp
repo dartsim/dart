@@ -34,30 +34,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/KIDOCollisionDetector.h"
 
 #include <vector>
 
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/collision/dart/DARTCollide.h"
+#include "dart/collision/dart/KIDOCollide.h"
 
 namespace kido {
 namespace collision {
 
-DARTCollisionDetector::DARTCollisionDetector()
+KIDOCollisionDetector::KIDOCollisionDetector()
   : CollisionDetector() {
 }
 
-DARTCollisionDetector::~DARTCollisionDetector() {
+KIDOCollisionDetector::~KIDOCollisionDetector() {
 }
 
-CollisionNode* DARTCollisionDetector::createCollisionNode(
+CollisionNode* KIDOCollisionDetector::createCollisionNode(
     dynamics::BodyNode* _bodyNode) {
   return new CollisionNode(_bodyNode);
 }
 
-bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
+bool KIDOCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
                                             bool /*_calculateContactPoints*/) {
   clearAllContacts();
 
@@ -136,7 +136,7 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
   return !mContacts.empty();
 }
 
-bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
+bool KIDOCollisionDetector::detectCollision(CollisionNode* _collNode1,
                                             CollisionNode* _collNode2,
                                             bool /*_calculateContactPoints*/) {
   std::vector<Contact> contacts;

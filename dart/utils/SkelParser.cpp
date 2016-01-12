@@ -45,7 +45,7 @@
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/KIDOCollisionDetector.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
@@ -184,7 +184,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   }
 
   //--------------------------------------------------------------------------
-  // Load DART
+  // Load KIDO
   tinyxml2::XMLElement* skelElement = nullptr;
   skelElement = _dartFile.FirstChildElement("skel");
   if (skelElement == nullptr)
@@ -266,7 +266,7 @@ simulation::WorldPtr SkelParser::readWorld(
       else if (strCD == "dart")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::DARTCollisionDetector());
+              new collision::KIDOCollisionDetector());
       }
 #ifdef HAVE_BULLET_COLLISION
       else if (strCD == "bullet")
@@ -849,13 +849,13 @@ dynamics::ShapePtr SkelParser::readShape(
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, offset));
     } else if (hasElement(planeEle, "point")) {
       dtwarn << "[SkelParser::readShape] <point> element of <plane> is "
-             << "deprecated as of DART 4.3. Please use <offset> element "
+             << "deprecated as of KIDO 4.3. Please use <offset> element "
              << "instead." << std::endl;
       Eigen::Vector3d point = getValueVector3d(planeEle, "point");
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, point));
     } else {
       dtwarn << "[SkelParser::readShape] <offset> element is not specified for "
-             << "plane shape. DART will use 0.0." << std::endl;
+             << "plane shape. KIDO will use 0.0." << std::endl;
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
     }
   }

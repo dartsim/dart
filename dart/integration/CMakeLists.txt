@@ -28,6 +28,6 @@ install(
   DESTINATION include/dart/integration
   COMPONENT headers
 )
-#install(TARGETS kido_integration EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_integration EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_integration EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_integration EXPORT KIDOTargets DESTINATION lib)
 

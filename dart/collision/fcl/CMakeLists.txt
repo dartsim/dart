@@ -28,6 +28,6 @@ install(
   DESTINATION include/dart/collision/fcl
   COMPONENT headers
 )
-#install(TARGETS kido_collision_fcl EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_collision_fcl EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_collision_fcl EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_collision_fcl EXPORT KIDOTargets DESTINATION lib)
 

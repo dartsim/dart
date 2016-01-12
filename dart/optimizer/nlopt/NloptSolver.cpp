@@ -139,7 +139,7 @@ bool NloptSolver::solve()
     {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an equality constraint to the Nlopt solver. "
-            << "This might be a bug in DART; please report this!\n";
+            << "This might be a bug in KIDO; please report this!\n";
       assert(false);
     }
   }
@@ -164,7 +164,7 @@ bool NloptSolver::solve()
     {
       dterr << "[NloptSolver::solve] Encountered exception [" << e.what()
             << "] while adding an inequality constraint to the Nlopt solver. "
-            << "This might be a bug in DART; please report this!\n";
+            << "This might be a bug in KIDO; please report this!\n";
       assert(false);
     }
   }

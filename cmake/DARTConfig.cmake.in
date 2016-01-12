@@ -1,11 +1,11 @@
 ###############################################################################
-# Config file for DART
+# Config file for KIDO
 #
 # This sets the following variables:
-# KIDO_INCLUDE_DIRS - Directories containing the DART include files.
-# KIDO_LIBRARIES    - Libraries needed to use DART.
-# KIDO_LIBRARY_DIRS - Directories that contain the DART libraries.
-# KIDO_VERSION      - DART version.
+# KIDO_INCLUDE_DIRS - Directories containing the KIDO include files.
+# KIDO_LIBRARIES    - Libraries needed to use KIDO.
+# KIDO_LIBRARY_DIRS - Directories that contain the KIDO libraries.
+# KIDO_VERSION      - KIDO version.
 
 #===============================================================================
 # KIDO_INCLUDE_DIRS
@@ -24,14 +24,14 @@ set(KIDO_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 # KIDO_LIBRARIES
 #===============================================================================
 get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-include("${CURRENT_DIR}/DARTTargets.cmake")
+include("${CURRENT_DIR}/KIDOTargets.cmake")
 # Return absolute path of the library instead of just library name as
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
 find_library(kido_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
 set(KIDO_LIBRARIES "${kido_location}")
 
-# Handle requested components in find_package(DART COMPONENTS [components]).
+# Handle requested components in find_package(KIDO COMPONENTS [components]).
 # The list of components is passed in KIDO_FIND_COMPONENTS.
 if(KIDO_FIND_COMPONENTS)
   foreach(comp ${KIDO_FIND_COMPONENTS})

@@ -59,7 +59,7 @@ class Frame;
 class Shape;
 
 /// Entity class is a base class for any objects that exist in the kinematic
-/// tree structure of DART.
+/// tree structure of KIDO.
 ///
 /// Entities all share the following properties: they exist within a reference
 /// frame, have a name, and are visualizable. However, different Entity types

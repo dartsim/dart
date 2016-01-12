@@ -46,5 +46,5 @@ install(
   DESTINATION include/dart/utils
   COMPONENT headers
 )
-#install(TARGETS kido_utils EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_utils EXPORT KIDOTargets DESTINATION lib)
 

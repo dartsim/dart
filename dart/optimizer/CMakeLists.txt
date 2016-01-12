@@ -62,5 +62,5 @@ install(
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )
-#install(TARGETS kido_optimizer EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_optimizer EXPORT KIDOTargets DESTINATION lib)
 

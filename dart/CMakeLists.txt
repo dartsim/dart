@@ -84,10 +84,10 @@ endif()
 
 #install(FILES ${kido_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
 install(FILES dart-core.h DESTINATION include/dart/ COMPONENT headers)
-install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
+install(TARGETS dart-core EXPORT KIDOCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
 #  install(FILES ${kido_hdrs} DESTINATION include/dart/ COMPONENT headers)
   install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
-  install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
+  install(TARGETS dart-core dart EXPORT KIDOTargets DESTINATION lib)
 endif()
 

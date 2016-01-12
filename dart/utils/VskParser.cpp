@@ -255,7 +255,7 @@ dynamics::SkeletonPtr readSkeleton(
              << "file '" << fileUri.toString() << "'. Ignoring the marker.\n";
     }
   }
-  // TODO: Each Marker is belongs to a MarkerSet but DART doesn't store the
+  // TODO: Each Marker is belongs to a MarkerSet but KIDO doesn't store the
   // marker set information.
 
   // TODO: Read sticks

@@ -24,7 +24,7 @@ set(CMAKE_CXX_WARNING_LEVEL 4)
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-include(${CMAKE_MODULE_PATH}/DARTMacros.cmake)
+include(${CMAKE_MODULE_PATH}/KIDOMacros.cmake)
 
 # System install paths on Windows
 if(WIN32)
@@ -51,22 +51,22 @@ set(KIDO_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
 #===============================================================================
 message(STATUS "")
 message(STATUS "============================================")
-message(STATUS "                DART ${KIDO_VERSION}")
+message(STATUS "                KIDO ${KIDO_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
 # Build options
 #===============================================================================
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
-option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
+option(BUILD_CORE_ONLY "Build only the core of KIDO" OFF)
 if(MSVC)
   set(KIDO_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE KIDO_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  option(KIDO_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  option(KIDO_MSVC_DEFAULT_OPTIONS "Build KIDO with default Visual Studio options" OFF)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(KIDO_BUILD_OSGDART "Build osgDart library" ON)
+option(KIDO_BUILD_OSGKIDO "Build osgDart library" ON)
 option(KIDO_BUILD_EXAMPLES "Build examples" ON)
 option(KIDO_BUILD_TUTORIALS "Build tutorials" ON)
 option(KIDO_BUILD_UNITTESTS "Build unit tests" ON)
@@ -134,7 +134,7 @@ else()
 endif()
 
 # FCL
-# TODO: We need to increate the minimum required fcl version to 0.4.0 for DART
+# TODO: We need to increate the minimum required fcl version to 0.4.0 for KIDO
 # 5.0 once fcl 0.4.0 is released.
 find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
@@ -172,7 +172,7 @@ if(ASSIMP_FOUND)
   if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
     message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
                     "missing symbols for the constructor and/or destructor of "
-                    "aiScene. DART will use its own implementations of these "
+                    "aiScene. KIDO will use its own implementations of these "
                     "functions. We recommend using a version of ASSIMP that "
                     "does not have this issue, once one becomes available.")
   endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
@@ -192,7 +192,7 @@ if(ASSIMP_FOUND)
   if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
     message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
                     "missing symbols for the constructor and/or destructor of "
-                    "aiMaterial. DART will use its own implementations of "
+                    "aiMaterial. KIDO will use its own implementations of "
                     "these functions. We recommend using a version of ASSIMP "
                     "that does not have this issue, once one becomes available.")
   endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
@@ -390,7 +390,7 @@ else()
 endif()
 
 #===============================================================================
-# DART dependency variable settings
+# KIDO dependency variable settings
 #===============================================================================
 set(KIDO_CORE_DEPENDENCIES ${CCD_LIBRARIES}
                            ${FCL_LIBRARIES}
@@ -527,7 +527,7 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
-message(STATUS "Build osgDart    : ${KIDO_BUILD_OSGDART}")
+message(STATUS "Build osgDart    : ${KIDO_BUILD_OSGKIDO}")
 message(STATUS "Build examples   : ${KIDO_BUILD_EXAMPLES}")
 message(STATUS "Build tutorials  : ${KIDO_BUILD_TUTORIALS}")
 message(STATUS "Build unit tests : ${KIDO_BUILD_UNITTESTS}")
@@ -559,26 +559,26 @@ message(STATUS ${KIDO_CONFIG_OUT})
 configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
 install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/dart)
 
-# Generate the DART CMake Config and version files
+# Generate the KIDO CMake Config and version files
 include(WriteBasicConfigVersionFile)
-set(KIDO_CORE_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTCoreConfig.cmake.in)
-set(KIDO_CORE_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfig.cmake)
+set(KIDO_CORE_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOCoreConfig.cmake.in)
+set(KIDO_CORE_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfig.cmake)
 message(STATUS ${KIDO_CORE_CONFIG_OUT})
-message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
+message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
 configure_file(${KIDO_CORE_CONFIG_IN} ${KIDO_CORE_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/DARTCoreConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTCoreConfigVersion.cmake DESTINATION share/dartcore)
+write_basic_config_version_file(cmake/KIDOCoreConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfigVersion.cmake DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
-  set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in)
-  set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake)
+  set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOConfig.cmake.in)
+  set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOConfig.cmake)
   message(STATUS ${KIDO_CONFIG_OUT})
-  message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
+  message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
   configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
-  write_basic_config_version_file(cmake/DARTConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake DESTINATION share/dart)
+  write_basic_config_version_file(cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/dart)
 endif()
 
-# Generate the DART pkg-config
+# Generate the KIDO pkg-config
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
 message(STATUS ${PC_CONFIG_OUT})
@@ -595,9 +595,9 @@ add_subdirectory(dart)
 
 if(NOT BUILD_CORE_ONLY)
 
-  if(KIDO_BUILD_OSGDART)
+  if(KIDO_BUILD_OSGKIDO)
     add_subdirectory(osgDart)
-  endif(KIDO_BUILD_OSGDART)
+  endif(KIDO_BUILD_OSGKIDO)
 
   # Unit tests
   if(KIDO_BUILD_UNITTESTS)
@@ -619,9 +619,9 @@ endif(NOT BUILD_CORE_ONLY)
 #===============================================================================
 # Export targets
 #===============================================================================
-install(EXPORT DARTCoreTargets DESTINATION share/dartcore)
+install(EXPORT KIDOCoreTargets DESTINATION share/dartcore)
 if(NOT BUILD_CORE_ONLY)
-  install(EXPORT DARTTargets DESTINATION share/dart)
+  install(EXPORT KIDOTargets DESTINATION share/dart)
 endif()
 
 # Add an "uninstall" target
@@ -645,7 +645,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
 
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
-  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
+  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/KIDO logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
   add_custom_command(OUTPUT ${DOXYGEN_HTML_INDEX}
                      COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
                      COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}

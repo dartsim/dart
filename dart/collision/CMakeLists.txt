@@ -57,5 +57,5 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
-#install(TARGETS kido_collision EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_collision EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_collision EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_collision EXPORT KIDOTargets DESTINATION lib)

@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
   kido::simulation::WorldPtr myWorld
       = kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/shapes.skel");
   assert(myWorld != NULL);
-#ifndef FCL_DART5
+#ifndef FCL_KIDO5
   myWorld->getConstraintSolver()->setCollisionDetector(
         new kido::collision::FCLMeshCollisionDetector());
 #endif

@@ -93,7 +93,7 @@ public:
 
   /// Prevent Joint::updateDegreeOfFreedomNames() from changing the name of this
   /// degree of freedom. This is useful if you (the user) have customized the
-  /// name for this DegreeOfFreedom and want to prevent DART from automatically
+  /// name for this DegreeOfFreedom and want to prevent KIDO from automatically
   /// updating its name if its parent Joint properties ever change.
   void preserveName(bool _preserve);
 

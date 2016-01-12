@@ -1657,7 +1657,7 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
                                     bool _isImpulseLocal,
                                     bool _isOffsetLocal)
 {
-  // TODO(JS): Add contact sensor data here (DART 4.1)
+  // TODO(JS): Add contact sensor data here (KIDO 4.1)
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
   Eigen::Vector6d F = Eigen::Vector6d::Zero();

@@ -33,6 +33,6 @@ install(
   DESTINATION include/dart/constraint
   COMPONENT headers
 )
-#install(TARGETS kido_constraint EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_constraint EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_constraint EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_constraint EXPORT KIDOTargets DESTINATION lib)
 

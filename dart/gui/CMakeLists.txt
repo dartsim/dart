@@ -33,5 +33,5 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-#install(TARGETS kido_gui EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_gui EXPORT KIDOTargets DESTINATION lib)
 

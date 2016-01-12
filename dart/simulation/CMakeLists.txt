@@ -33,6 +33,6 @@ install(
   DESTINATION include/dart/simulation
   COMPONENT headers
 )
-#install(TARGETS kido_simulation EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_simulation EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_simulation EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_simulation EXPORT KIDOTargets DESTINATION lib)
 

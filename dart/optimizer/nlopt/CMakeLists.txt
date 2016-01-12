@@ -25,4 +25,4 @@ install(
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-nlopt EXPORT DARTNLoptTargets DESTINATION lib)
+install(TARGETS dart-optimizer-nlopt EXPORT KIDONLoptTargets DESTINATION lib)

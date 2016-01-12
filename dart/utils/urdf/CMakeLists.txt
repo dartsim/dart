@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/utils/urdf
   COMPONENT headers
 )
-#install(TARGETS kido_utils_urdf EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_utils_urdf EXPORT KIDOTargets DESTINATION lib)
 

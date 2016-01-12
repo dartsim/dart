@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-#install(TARGETS kido_planning EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_planning EXPORT KIDOTargets DESTINATION lib)
 

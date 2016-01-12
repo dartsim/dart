@@ -42,7 +42,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/KIDOCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif

@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/renderer
   COMPONENT headers
 )
-#install(TARGETS kido_renderer EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_renderer EXPORT KIDOTargets DESTINATION lib)
 

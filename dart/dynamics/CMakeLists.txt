@@ -41,5 +41,5 @@ install(
   COMPONENT headers
 )
 
-#install(TARGETS kido_dynamics EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_dynamics EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_dynamics EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_dynamics EXPORT KIDOTargets DESTINATION lib)

@@ -60,7 +60,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
   }
 
   //--------------------------------------------------------------------------
-  // Load DART
+  // Load KIDO
   tinyxml2::XMLElement* sdfElement = nullptr;
   sdfElement = _dartFile.FirstChildElement("sdf");
   if (sdfElement == nullptr)

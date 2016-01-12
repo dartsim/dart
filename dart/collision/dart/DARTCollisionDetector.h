@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef  KIDO_COLLISION_KIDO_DARTCOLLISIONDETECTOR_H_
-#define  KIDO_COLLISION_KIDO_DARTCOLLISIONDETECTOR_H_
+#ifndef  KIDO_COLLISION_KIDO_KIDOCOLLISIONDETECTOR_H_
+#define  KIDO_COLLISION_KIDO_KIDOCOLLISIONDETECTOR_H_
 
 #include "dart/collision/CollisionDetector.h"
 
@@ -43,13 +43,13 @@ namespace kido {
 namespace collision {
 
 /// \brief
-class DARTCollisionDetector : public CollisionDetector {
+class KIDOCollisionDetector : public CollisionDetector {
 public:
   /// \brief Default constructor
-  DARTCollisionDetector();
+  KIDOCollisionDetector();
 
   /// \brief Default destructor
-  virtual ~DARTCollisionDetector();
+  virtual ~KIDOCollisionDetector();
 
   // Documentation inherited
   virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
@@ -68,4 +68,4 @@ protected:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_KIDO_DARTCOLLISIONDETECTOR_H_
+#endif  // KIDO_COLLISION_KIDO_KIDOCOLLISIONDETECTOR_H_

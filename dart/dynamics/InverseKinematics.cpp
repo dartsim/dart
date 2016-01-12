@@ -1727,7 +1727,7 @@ void InverseKinematics::initialize()
   // By default, we use the linkage when performing IK
   useChain();
 
-  // Default to the native DART gradient descent solver
+  // Default to the native KIDO gradient descent solver
   std::shared_ptr<optimizer::GradientDescentSolver> solver =
       std::make_shared<optimizer::GradientDescentSolver>(mProblem);
   solver->setStepSize(1.0);

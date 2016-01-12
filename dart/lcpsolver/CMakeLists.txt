@@ -28,6 +28,6 @@ install(
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )
-#install(TARGETS kido_lcpsolver EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS kido_lcpsolver EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_lcpsolver EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_lcpsolver EXPORT KIDOTargets DESTINATION lib)
 

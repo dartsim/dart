@@ -41,7 +41,7 @@
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
-// versions of DART. Every deprecated function should be removed for every major
+// versions of KIDO. Every deprecated function should be removed for every major
 // version up.
 //==============================================================================
 

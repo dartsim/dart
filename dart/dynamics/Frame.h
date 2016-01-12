@@ -47,7 +47,7 @@
 namespace kido {
 namespace dynamics {
 
-/// The Frame class serves as the backbone of DART's kinematic tree structure.
+/// The Frame class serves as the backbone of KIDO's kinematic tree structure.
 ///
 /// Frame inherits Entity, so it exists within a reference Frame. This class
 /// keeps track of both its local (relative) and global (world) transforms,

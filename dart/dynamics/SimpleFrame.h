@@ -43,7 +43,7 @@ namespace kido {
 namespace dynamics {
 
 /// The SimpleFrame class offers a user-friendly way of creating arbitrary
-/// Frames within the kinematic tree structure of DART. The user is free to
+/// Frames within the kinematic tree structure of KIDO. The user is free to
 /// specify the relative transform, relative velocity, and relative acceleration
 /// of this Frame.
 ///

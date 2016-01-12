@@ -28,5 +28,5 @@ install(
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
 )
-#install(TARGETS kido_utils_sdf EXPORT DARTTargets DESTINATION lib)
+#install(TARGETS kido_utils_sdf EXPORT KIDOTargets DESTINATION lib)
 

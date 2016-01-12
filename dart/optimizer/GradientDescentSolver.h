@@ -44,7 +44,7 @@
 namespace kido {
 namespace optimizer {
 
-/// DefaultSolver is a Solver extension which is native to DART (rather than
+/// DefaultSolver is a Solver extension which is native to KIDO (rather than
 /// relying on third-party libraries). It uses randomized gradient descent and
 /// softened constraints (i.e. constraint functions are added into the
 /// objective function and assigned weights) to solve nonlinear problems. Note
