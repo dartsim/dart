@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/EndEffector.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 namespace dynamics {

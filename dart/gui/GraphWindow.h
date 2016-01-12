@@ -47,7 +47,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/gui/Win2D.h"
+#include "kido/gui/Win2D.h"
 
 namespace kido {
 namespace gui {

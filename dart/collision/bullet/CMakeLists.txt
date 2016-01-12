@@ -13,7 +13,7 @@ set(kido_collision_srcs ${kido_collision_srcs} ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "collision_bullet headers" ${hdrs})
 kido_generate_include_header_list(
   collision_bullet_headers
-  "dart/collision/bullet/"
+  "kido/collision/bullet/"
   "collision_bullet headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/bullet.h
-  DESTINATION include/dart/collision/bullet
+  DESTINATION include/kido/collision/bullet
   COMPONENT headers
 )
 #install(TARGETS kido_collision_bullet EXPORT KIDOCoreTargets DESTINATION lib)

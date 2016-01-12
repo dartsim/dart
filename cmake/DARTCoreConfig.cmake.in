@@ -29,7 +29,7 @@ include("${CURRENT_DIR}/KIDOCoreTargets.cmake")
 # recommended in CMake documentation:
 # http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
 find_library(kido_core_location
-             NAMES "dart-core"
+             NAMES "kido-core"
              PATHS "@CMAKE_INSTALL_PREFIX@/lib")
 set(KIDOCore_LIBRARIES "${kido_core_location}")
 

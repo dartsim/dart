@@ -40,11 +40,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/Recording.h"
+#include "kido/simulation/Recording.h"
 
 #include <iostream>
 
-#include "dart/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 namespace simulation {

@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/ipopt/IpoptSolver.h"
+#include "kido/optimizer/ipopt/IpoptSolver.h"
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/Function.h"
-#include "dart/optimizer/Problem.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/optimizer/Function.h"
+#include "kido/optimizer/Problem.h"
 
 namespace kido {
 namespace optimizer {

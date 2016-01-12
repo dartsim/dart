@@ -42,16 +42,16 @@
 
 #include <Eigen/SVD>
 
-#include "dart/common/sub_ptr.h"
-#include "dart/common/Signal.h"
-#include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
-#include "dart/optimizer/Solver.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/Function.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/JacobianNode.h"
+#include "kido/common/sub_ptr.h"
+#include "kido/common/Signal.h"
+#include "kido/common/Subject.h"
+#include "kido/math/Geometry.h"
+#include "kido/optimizer/Solver.h"
+#include "kido/optimizer/GradientDescentSolver.h"
+#include "kido/optimizer/Problem.h"
+#include "kido/optimizer/Function.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/dynamics/JacobianNode.h"
 
 namespace kido {
 namespace dynamics {
@@ -1197,6 +1197,6 @@ typedef InverseKinematics IK;
 } // namespace dynamics
 } // namespace kido
 
-#include "dart/dynamics/detail/InverseKinematics.h"
+#include "kido/dynamics/detail/InverseKinematics.h"
 
 #endif // KIDO_DYNAMICS_INVERSEKINEMATICS_H_

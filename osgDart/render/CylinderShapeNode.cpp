@@ -40,7 +40,7 @@
 #include "osgDart/render/CylinderShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/CylinderShape.h"
+#include "kido/dynamics/CylinderShape.h"
 
 namespace osgDart {
 namespace render {

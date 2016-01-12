@@ -13,7 +13,7 @@ set(kido_utils_srcs ${kido_utils_srcs} ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "utils_urdf headers" ${hdrs})
 kido_generate_include_header_list(
   utils_urdf_headers
-  "dart/utils/urdf/"
+  "kido/utils/urdf/"
   "utils_urdf headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/urdf.h
-  DESTINATION include/dart/utils/urdf
+  DESTINATION include/kido/utils/urdf
   COMPONENT headers
 )
 #install(TARGETS kido_utils_urdf EXPORT KIDOTargets DESTINATION lib)

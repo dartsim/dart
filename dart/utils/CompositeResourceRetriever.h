@@ -39,7 +39,7 @@
 
 #include <unordered_map>
 #include <vector>
-#include "dart/common/ResourceRetriever.h"
+#include "kido/common/ResourceRetriever.h"
 
 namespace kido {
 namespace utils {

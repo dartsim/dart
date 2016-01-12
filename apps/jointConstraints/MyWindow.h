@@ -42,7 +42,7 @@
 
 #include "apps/jointConstraints/Controller.h"
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 class MyWindow : public kido::gui::SimWindow
 {

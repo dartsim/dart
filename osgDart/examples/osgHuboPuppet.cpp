@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.h>
+#include <kido/kido.h>
 
 #include <osgDart/osgDart.h>
 

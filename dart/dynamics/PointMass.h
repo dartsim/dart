@@ -39,7 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/dynamics/Entity.h"
+#include "kido/dynamics/Entity.h"
 
 namespace kido {
 namespace renderer {

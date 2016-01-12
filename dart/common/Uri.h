@@ -38,7 +38,7 @@
 #define KIDO_COMMON_URI_H_
 
 #include <string>
-#include "dart/common/Deprecated.h"
+#include "kido/common/Deprecated.h"
 
 namespace kido {
 namespace common {

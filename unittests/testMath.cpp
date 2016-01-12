@@ -38,12 +38,12 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/common/Timer.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/common/Timer.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
 
 using namespace kido;
 using namespace common;

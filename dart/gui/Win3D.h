@@ -39,9 +39,9 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/common/Deprecated.h"
-#include "dart/gui/GlutWindow.h"
-#include "dart/gui/Trackball.h"
+#include "kido/common/Deprecated.h"
+#include "kido/gui/GlutWindow.h"
+#include "kido/gui/Trackball.h"
 
 namespace kido {
 namespace gui {

@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/SoftMeshShape.h"
 
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/PointMass.h"
+#include "kido/dynamics/SoftBodyNode.h"
 
 namespace kido {
 namespace dynamics {

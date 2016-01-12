@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Trackball.h"
+#include "kido/gui/Trackball.h"
 
-#include "dart/renderer/LoadOpengl.h"
+#include "kido/renderer/LoadOpengl.h"
 
 namespace kido {
 namespace gui {

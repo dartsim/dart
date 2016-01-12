@@ -45,14 +45,14 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/Deprecated.h"
-#include "dart/utils/XmlHelpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/simulation/World.h"
+#include "kido/common/Deprecated.h"
+#include "kido/utils/XmlHelpers.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/SingleDofJoint.h"
+#include "kido/dynamics/MultiDofJoint.h"
+#include "kido/simulation/World.h"
 
 namespace kido {
 

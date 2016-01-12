@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/KIDOCollisionDetector.h"
+#include "kido/collision/kido/KIDOCollisionDetector.h"
 
 #include <vector>
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/collision/dart/KIDOCollide.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/collision/kido/KIDOCollide.h"
 
 namespace kido {
 namespace collision {

@@ -40,9 +40,9 @@
 #include "osgDart/render/SoftMeshShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/PointMass.h"
 
 namespace osgDart {
 namespace render {

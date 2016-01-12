@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
+#include "kido/dynamics/SimpleFrame.h"
 
 namespace kido {
 namespace dynamics {

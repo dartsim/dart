@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Inertia.h"
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
+#include "kido/dynamics/Inertia.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
 
 namespace kido {
 namespace dynamics {

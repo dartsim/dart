@@ -43,8 +43,8 @@
 #include <btBulletCollisionCommon.h>
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/collision/bullet/BulletTypes.h"
+#include "kido/collision/CollisionDetector.h"
+#include "kido/collision/bullet/BulletTypes.h"
 
 namespace kido {
 namespace collision {

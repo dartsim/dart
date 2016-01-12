@@ -40,7 +40,7 @@
 #include "osgDart/render/PlaneShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/PlaneShape.h"
+#include "kido/dynamics/PlaneShape.h"
 
 namespace osgDart {
 namespace render {

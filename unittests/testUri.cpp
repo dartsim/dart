@@ -35,7 +35,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/common/Uri.h"
+#include "kido/common/Uri.h"
 #include "TestHelpers.h"
 
 using kido::common::Uri;

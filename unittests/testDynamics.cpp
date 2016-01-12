@@ -42,14 +42,14 @@
 
 #include "TestHelpers.h"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
 
 using namespace Eigen;
 using namespace kido;

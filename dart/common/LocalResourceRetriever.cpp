@@ -36,8 +36,8 @@
 
 #include <iostream>
 #include <fstream>
-#include "dart/common/Console.h"
-#include "dart/common/Uri.h"
+#include "kido/common/Console.h"
+#include "kido/common/Uri.h"
 #include "LocalResourceRetriever.h"
 #include "LocalResource.h"
 

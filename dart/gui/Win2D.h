@@ -37,7 +37,7 @@
 #ifndef KIDO_GUI_WIN2D_H_
 #define KIDO_GUI_WIN2D_H_
 
-#include "dart/gui/GlutWindow.h"
+#include "kido/gui/GlutWindow.h"
 
 namespace kido {
 namespace gui {

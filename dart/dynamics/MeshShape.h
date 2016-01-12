@@ -42,8 +42,8 @@
 
 #include <assimp/scene.h>
 
-#include "dart/dynamics/Shape.h"
-#include "dart/common/ResourceRetriever.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/common/ResourceRetriever.h"
 
 namespace Assimp {
 

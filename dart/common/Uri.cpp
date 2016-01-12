@@ -36,7 +36,7 @@
 
 #include <cassert>
 #include <sstream>
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 #include "Uri.h"
 
 // std::regex is only implemented in GCC 4.9 and above; i.e. libstdc++ 6.0.20

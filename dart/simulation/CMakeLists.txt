@@ -18,7 +18,7 @@ set(kido_simulation_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "simulation headers" ${hdrs})
 kido_generate_include_header_list(
   simulation_headers
-  "dart/simulation/"
+  "kido/simulation/"
   "simulation headers"
   ${header_names}
 )
@@ -30,7 +30,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.h
-  DESTINATION include/dart/simulation
+  DESTINATION include/kido/simulation
   COMPONENT headers
 )
 #install(TARGETS kido_simulation EXPORT KIDOCoreTargets DESTINATION lib)

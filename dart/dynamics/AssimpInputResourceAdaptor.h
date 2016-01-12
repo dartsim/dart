@@ -40,8 +40,8 @@
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
-#include "dart/common/Resource.h"
-#include "dart/common/ResourceRetriever.h"
+#include "kido/common/Resource.h"
+#include "kido/common/ResourceRetriever.h"
 
 namespace kido {
 namespace dynamics {

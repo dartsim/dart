@@ -37,7 +37,7 @@
 #include <cstring>
 #include <limits>
 #include <iostream>
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 #include "LocalResource.h"
 
 namespace kido {

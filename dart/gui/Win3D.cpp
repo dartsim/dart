@@ -35,12 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win3D.h"
+#include "kido/gui/Win3D.h"
 
 #include <algorithm>
 
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/Jitter.h"
+#include "kido/gui/LoadGlut.h"
+#include "kido/gui/Jitter.h"
 
 namespace kido {
 namespace gui {

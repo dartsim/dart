@@ -39,8 +39,8 @@
 
 #include <cstddef>
 
-#include "dart/config.h"
-#include "dart/constraint/LCPSolver.h"
+#include "kido/config.h"
+#include "kido/constraint/LCPSolver.h"
 
 namespace kido {
 namespace constraint {

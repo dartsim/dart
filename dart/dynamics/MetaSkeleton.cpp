@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/MetaSkeleton.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
 
 namespace kido {
 namespace dynamics {

@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstrainedGroup.h"
+#include "kido/constraint/ConstrainedGroup.h"
 
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/constraint/ConstraintSolver.h"
+#include "kido/common/Console.h"
+#include "kido/constraint/ConstraintBase.h"
+#include "kido/constraint/ConstraintSolver.h"
 
 namespace kido {
 namespace constraint {

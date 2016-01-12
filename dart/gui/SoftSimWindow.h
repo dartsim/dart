@@ -43,7 +43,7 @@
 #ifndef KIDO_GUI_SOFTSIMWINDOW_H_
 #define KIDO_GUI_SOFTSIMWINDOW_H_
 
-#include "dart/gui/SimWindow.h"
+#include "kido/gui/SimWindow.h"
 
 namespace kido {
 namespace gui {

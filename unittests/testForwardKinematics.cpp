@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/utils/urdf/DartLoader.h"
+#include "kido/utils/urdf/DartLoader.h"
 
 std::vector<size_t> twoLinkIndices;
 

@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlanarJoint.h"
+#include "kido/dynamics/PlanarJoint.h"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
 
 namespace kido {
 namespace dynamics {

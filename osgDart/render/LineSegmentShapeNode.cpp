@@ -41,7 +41,7 @@
 #include "osgDart/render/LineSegmentShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/LineSegmentShape.h"
+#include "kido/dynamics/LineSegmentShape.h"
 
 namespace osgDart {
 namespace render {

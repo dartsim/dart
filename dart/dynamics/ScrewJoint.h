@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SingleDofJoint.h"
+#include "kido/dynamics/SingleDofJoint.h"
 
 namespace kido {
 namespace dynamics {

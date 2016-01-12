@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Subject.h"
-#include "dart/common/Observer.h"
+#include "kido/common/Subject.h"
+#include "kido/common/Observer.h"
 
 namespace kido {
 namespace common {

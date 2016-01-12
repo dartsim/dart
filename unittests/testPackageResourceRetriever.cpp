@@ -35,7 +35,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/utils/PackageResourceRetriever.h"
+#include "kido/utils/PackageResourceRetriever.h"
 #include "TestHelpers.h"
 
 using kido::common::Uri;

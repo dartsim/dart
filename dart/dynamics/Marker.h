@@ -39,7 +39,7 @@
 
 #include <string>
 #include <Eigen/Dense>
-#include "dart/math/Helpers.h"
+#include "kido/math/Helpers.h"
 
 namespace kido {
 namespace renderer {

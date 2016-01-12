@@ -38,13 +38,13 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/common/sub_ptr.h"
-#include "dart/math/Geometry.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/common/sub_ptr.h"
+#include "kido/math/Geometry.h"
+#include "kido/utils/SkelParser.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
 
 using namespace kido;
 using namespace math;

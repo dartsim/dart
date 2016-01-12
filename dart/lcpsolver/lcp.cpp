@@ -108,10 +108,10 @@ rows/columns and manipulate C.
 
 */
 
-#include "dart/lcpsolver/odeconfig.h"
-#include "dart/lcpsolver/lcp.h"
-#include "dart/lcpsolver/matrix.h"
-#include "dart/lcpsolver/misc.h"
+#include "kido/lcpsolver/odeconfig.h"
+#include "kido/lcpsolver/lcp.h"
+#include "kido/lcpsolver/matrix.h"
+#include "kido/lcpsolver/misc.h"
 
 //***************************************************************************
 // code generation parameters

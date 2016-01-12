@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/JointConstraint.h"
+#include "kido/constraint/JointConstraint.h"
 
 #include <cassert>
 #include <iostream>
 
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 
 #define KIDO_ERROR_ALLOWANCE 0.0
 #define KIDO_ERP     0.01

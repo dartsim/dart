@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionNode.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionNode.h"
 
 #include <iostream>
 #include <vector>
@@ -44,16 +44,16 @@
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/collision/fcl_mesh/CollisionShapes.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/renderer/LoadOpengl.h"
+#include "kido/collision/fcl_mesh/CollisionShapes.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 namespace kido {
 namespace collision {

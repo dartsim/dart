@@ -37,7 +37,7 @@
 #ifndef KIDO_CONSTRAINT_SERVOMOTORCONSTRAINT_H_
 #define KIDO_CONSTRAINT_SERVOMOTORCONSTRAINT_H_
 
-#include "dart/constraint/ConstraintBase.h"
+#include "kido/constraint/ConstraintBase.h"
 
 namespace kido {
 

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Solver.h"
-#include "dart/optimizer/Problem.h"
+#include "kido/optimizer/Solver.h"
+#include "kido/optimizer/Problem.h"
 
 namespace kido {
 namespace optimizer {

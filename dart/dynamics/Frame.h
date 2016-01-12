@@ -41,8 +41,8 @@
 
 #include <Eigen/Geometry>
 
-#include "dart/dynamics/Entity.h"
-#include "dart/math/MathTypes.h"
+#include "kido/dynamics/Entity.h"
+#include "kido/math/MathTypes.h"
 
 namespace kido {
 namespace dynamics {

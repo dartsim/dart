@@ -40,13 +40,13 @@
 #include <string>
 #include <array>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "kido/config.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
 
 namespace kido {
 namespace dynamics {
@@ -873,7 +873,7 @@ private:
   /// \}
 };
 
-#include "dart/dynamics/detail/MultiDofJoint.h"
+#include "kido/dynamics/detail/MultiDofJoint.h"
 
 }  // namespace dynamics
 }  // namespace kido

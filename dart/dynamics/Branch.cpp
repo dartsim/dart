@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Branch.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/dynamics/Branch.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace kido {
 namespace dynamics {

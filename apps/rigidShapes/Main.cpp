@@ -41,7 +41,7 @@
  */
 
 #include <iostream>
-#include "dart/dart.h"
+#include "kido/kido.h"
 #include "MyWindow.h"
 
 #include <fcl/config.h>

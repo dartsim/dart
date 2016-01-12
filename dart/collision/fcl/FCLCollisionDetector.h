@@ -42,7 +42,7 @@
 #include <fcl/collision_data.h>
 #include <fcl/broadphase/broadphase.h>
 
-#include "dart/collision/CollisionDetector.h"
+#include "kido/collision/CollisionDetector.h"
 
 namespace kido {
 namespace collision {

@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "kido/collision/fcl/FCLCollisionDetector.h"
 
 #include <vector>
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/fcl/FCLCollisionNode.h"
-#include "dart/collision/fcl/FCLTypes.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/collision/fcl/FCLCollisionNode.h"
+#include "kido/collision/fcl/FCLTypes.h"
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \

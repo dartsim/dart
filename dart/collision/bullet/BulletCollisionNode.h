@@ -43,9 +43,9 @@
 #include <btBulletCollisionCommon.h>
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionNode.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/collision/CollisionNode.h"
 
 namespace kido {
 namespace dynamics {

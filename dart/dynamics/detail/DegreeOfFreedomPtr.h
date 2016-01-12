@@ -37,8 +37,8 @@
 #ifndef KIDO_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_
 #define KIDO_DYNAMICS_DETAIL_DEGREEOFFREEDOMPTR_H_
 
-#include "dart/dynamics/detail/BodyNodePtr.h"
-#include "dart/dynamics/InvalidIndex.h"
+#include "kido/dynamics/detail/BodyNodePtr.h"
+#include "kido/dynamics/InvalidIndex.h"
 
 namespace kido {
 namespace dynamics {

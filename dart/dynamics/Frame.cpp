@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/common/Console.h"
+#include "kido/dynamics/Frame.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/renderer/RenderInterface.h"
+#include "kido/common/Console.h"
 
 namespace kido {
 namespace dynamics {

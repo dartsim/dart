@@ -37,8 +37,8 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
-#include "dart/config.h"
-#include "dart/math/Helpers.h"
+#include "kido/config.h"
+#include "kido/math/Helpers.h"
 #include "TestHelpers.h"
 
 using namespace Eigen;

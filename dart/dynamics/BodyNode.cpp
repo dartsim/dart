@@ -35,21 +35,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BodyNode.h"
+#include "kido/dynamics/BodyNode.h"
 
 #include <algorithm>
 #include <vector>
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Chain.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/renderer/RenderInterface.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Chain.h"
+#include "kido/dynamics/Marker.h"
+#include "kido/dynamics/SoftBodyNode.h"
 
 namespace kido {
 namespace dynamics {

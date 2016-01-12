@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Problem.h"
+#include "kido/optimizer/Problem.h"
 
 #include <algorithm>
 #include <limits>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/Function.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/optimizer/Function.h"
 
 namespace kido {
 namespace optimizer {

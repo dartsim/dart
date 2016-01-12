@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/common/Console.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/math/Geometry.h"
+#include "kido/dynamics/LineSegmentShape.h"
+#include "kido/common/Console.h"
+#include "kido/renderer/RenderInterface.h"
+#include "kido/math/Geometry.h"
 
 namespace kido {
 namespace dynamics {

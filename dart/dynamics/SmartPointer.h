@@ -37,11 +37,11 @@
 #ifndef KIDO_DYNAMICS_SMARTPOINTER_H_
 #define KIDO_DYNAMICS_SMARTPOINTER_H_
 
-#include "dart/dynamics/detail/BodyNodePtr.h"
-#include "dart/dynamics/detail/JointPtr.h"
-#include "dart/dynamics/detail/DegreeOfFreedomPtr.h"
-#include "dart/dynamics/detail/NodePtr.h"
-#include "dart/dynamics/detail/InverseKinematicsPtr.h"
+#include "kido/dynamics/detail/BodyNodePtr.h"
+#include "kido/dynamics/detail/JointPtr.h"
+#include "kido/dynamics/detail/DegreeOfFreedomPtr.h"
+#include "kido/dynamics/detail/NodePtr.h"
+#include "kido/dynamics/detail/InverseKinematicsPtr.h"
 
 // This file is a lightweight means of providing the smart pointers which are
 // commonly used within the kido::dynamics namespace. It is 'lightweight' in the

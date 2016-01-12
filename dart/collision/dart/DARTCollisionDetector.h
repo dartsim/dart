@@ -37,7 +37,7 @@
 #ifndef  KIDO_COLLISION_KIDO_KIDOCOLLISIONDETECTOR_H_
 #define  KIDO_COLLISION_KIDO_KIDOCOLLISIONDETECTOR_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include "kido/collision/CollisionDetector.h"
 
 namespace kido {
 namespace collision {

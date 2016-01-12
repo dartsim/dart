@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/InverseKinematics.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "kido/dynamics/InverseKinematics.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/dynamics/SimpleFrame.h"
 
 namespace kido {
 namespace dynamics {

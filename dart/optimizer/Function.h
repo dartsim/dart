@@ -44,7 +44,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
+#include "kido/common/Deprecated.h"
 
 namespace kido {
 namespace optimizer {

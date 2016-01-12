@@ -47,8 +47,8 @@
 #include <list>
 #include <Eigen/Core>
 
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/simulation/World.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/simulation/World.h"
 
 namespace flann {
 	template <class A> class L2;

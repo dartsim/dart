@@ -34,26 +34,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstraintSolver.h"
+#include "kido/constraint/ConstraintSolver.h"
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/collision/dart/KIDOCollisionDetector.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/collision/kido/KIDOCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+  #include "kido/collision/bullet/BulletCollisionDetector.h"
 #endif
-#include "dart/constraint/ConstrainedGroup.h"
-#include "dart/constraint/ContactConstraint.h"
-#include "dart/constraint/SoftContactConstraint.h"
-#include "dart/constraint/JointLimitConstraint.h"
-#include "dart/constraint/ServoMotorConstraint.h"
-#include "dart/constraint/JointCoulombFrictionConstraint.h"
-#include "dart/constraint/DantzigLCPSolver.h"
-#include "dart/constraint/PGSLCPSolver.h"
+#include "kido/constraint/ConstrainedGroup.h"
+#include "kido/constraint/ContactConstraint.h"
+#include "kido/constraint/SoftContactConstraint.h"
+#include "kido/constraint/JointLimitConstraint.h"
+#include "kido/constraint/ServoMotorConstraint.h"
+#include "kido/constraint/JointCoulombFrictionConstraint.h"
+#include "kido/constraint/DantzigLCPSolver.h"
+#include "kido/constraint/PGSLCPSolver.h"
 
 namespace kido {
 namespace constraint {

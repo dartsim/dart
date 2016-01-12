@@ -45,17 +45,17 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/config.h"
-#include "dart/common/Signal.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Inertia.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/EndEffector.h"
+#include "kido/config.h"
+#include "kido/common/Signal.h"
+#include "kido/math/Geometry.h"
+#include "kido/dynamics/Node.h"
+#include "kido/dynamics/Frame.h"
+#include "kido/dynamics/Inertia.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Marker.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/dynamics/TemplatedJacobianNode.h"
+#include "kido/dynamics/EndEffector.h"
 
 const double KIDO_DEFAULT_FRICTION_COEFF = 1.0;
 const double KIDO_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -1185,7 +1185,7 @@ private:
 
 };
 
-#include "dart/dynamics/detail/BodyNode.h"
+#include "kido/dynamics/detail/BodyNode.h"
 
 }  // namespace dynamics
 }  // namespace kido

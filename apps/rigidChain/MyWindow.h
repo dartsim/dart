@@ -38,7 +38,7 @@
 #ifndef APPS_FORWARDSIM_MYWINDOW_H_
 #define APPS_FORWARDSIM_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 class MyWindow : public kido::gui::SimWindow {
 public:

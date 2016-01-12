@@ -2,11 +2,11 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
 libdir=${prefix}/lib
-includedir=${prefix}/include/dart
+includedir=${prefix}/include/kido
 
 Name: @PROJECT_NAME@
 Description: @KIDO_PKG_DESC@
 Version: @KIDO_VERSION@
 Requires: @KIDO_PKG_EXTERNAL_DEPS@
-Libs: -L${libdir} -ldart
+Libs: -L${libdir} -lkido
 Cflags: @CMAKE_CXX_FLAGS@

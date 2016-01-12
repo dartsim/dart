@@ -39,10 +39,10 @@
 #define KIDO_DYNAMICS_SKELETON_H_
 
 #include <mutex>
-#include "dart/common/NameManager.h"
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/HierarchicalIK.h"
+#include "kido/common/NameManager.h"
+#include "kido/dynamics/MetaSkeleton.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/dynamics/HierarchicalIK.h"
 
 namespace kido {
 namespace renderer {
@@ -1179,7 +1179,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-#include "dart/dynamics/detail/Skeleton.h"
+#include "kido/dynamics/detail/Skeleton.h"
 
 }  // namespace dynamics
 }  // namespace kido

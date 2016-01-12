@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ServoMotorConstraint.h"
+#include "kido/constraint/ServoMotorConstraint.h"
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/lcpsolver/lcp.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/lcpsolver/lcp.h"
 
 #define KIDO_CFM     1e-9
 

@@ -46,11 +46,11 @@
 #include "osgDart/WorldNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/simulation/World.h"
+#include "kido/simulation/World.h"
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace osgDart
 {

@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Marker.h"
+#include "kido/dynamics/Marker.h"
 
 #include <string>
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/renderer/RenderInterface.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/renderer/RenderInterface.h"
 
 namespace kido {
 namespace dynamics {

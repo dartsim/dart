@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_CHAIN_H_
 #define KIDO_DYNAMICS_CHAIN_H_
 
-#include "dart/dynamics/Linkage.h"
+#include "kido/dynamics/Linkage.h"
 
 namespace kido {
 namespace dynamics {

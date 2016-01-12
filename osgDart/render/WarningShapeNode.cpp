@@ -37,9 +37,9 @@
 #include "osgDart/render/WarningShapeNode.h"
 #include "osgDart/EntityNode.h"
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Entity.h"
-#include "dart/common/Console.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/Entity.h"
+#include "kido/common/Console.h"
 
 namespace osgDart {
 namespace render {

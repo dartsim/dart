@@ -40,7 +40,7 @@
 #include <list>
 #include <vector>
 #include "RenderInterface.h"
-#include "dart/renderer/LoadOpengl.h"
+#include "kido/renderer/LoadOpengl.h"
 
 namespace kido {
 

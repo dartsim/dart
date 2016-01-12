@@ -47,7 +47,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 

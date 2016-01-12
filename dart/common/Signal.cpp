@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Signal.h"
+#include "kido/common/Signal.h"
 
 namespace kido {
 namespace common {

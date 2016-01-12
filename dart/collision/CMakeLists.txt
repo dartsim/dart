@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Add subdirectories
-add_subdirectory(dart)
+add_subdirectory(kido)
 add_subdirectory(fcl)
 add_subdirectory(fcl_mesh)
 if(HAVE_BULLET_COLLISION)
@@ -19,7 +19,7 @@ set(kido_collision_srcs ${srcs} ${kido_collision_srcs} PARENT_SCOPE)
 #  kido_collision
 #  kido_common
 #  kido_math
-#  kido_collision_dart
+#  kido_collision_kido
 #  kido_collision_fcl
 #  kido_collision_fcl_mesh
 #  ${KIDO_CORE_DEPENDENCIES}
@@ -33,7 +33,7 @@ kido_get_filename_components(header_names "collision headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  dart/dart.h
+  kido/kido.h
   fcl/fcl.h
   fcl_mesh/fcl_mesh.h
 )
@@ -42,7 +42,7 @@ if(HAVE_BULLET_COLLISION)
 endif()
 kido_generate_include_header_list(
   collision_headers
-  "dart/collision/"
+  "kido/collision/"
   "collision headers"
   ${header_names}
 )
@@ -54,7 +54,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
-  DESTINATION include/dart/collision
+  DESTINATION include/kido/collision
   COMPONENT headers
 )
 #install(TARGETS kido_collision EXPORT KIDOCoreTargets DESTINATION lib)

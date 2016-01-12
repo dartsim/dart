@@ -13,7 +13,7 @@ set(kido_lcpsolver_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "lcpsolver headers" ${hdrs})
 kido_generate_include_header_list(
   lcpsolver_headers
-  "dart/lcpsolver/"
+  "kido/lcpsolver/"
   "lcpsolver headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
-  DESTINATION include/dart/lcpsolver
+  DESTINATION include/kido/lcpsolver
   COMPONENT headers
 )
 #install(TARGETS kido_lcpsolver EXPORT KIDOCoreTargets DESTINATION lib)

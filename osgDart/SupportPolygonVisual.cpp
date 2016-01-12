@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/math/Helpers.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/math/Helpers.h"
 
 #include "SupportPolygonVisual.h"
 

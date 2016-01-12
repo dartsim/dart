@@ -42,7 +42,7 @@
 #include "osgDart/render/EllipsoidShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
 
 namespace osgDart {
 namespace render {

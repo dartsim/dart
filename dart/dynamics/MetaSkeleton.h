@@ -42,11 +42,11 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Signal.h"
-#include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/InvalidIndex.h"
+#include "kido/common/Signal.h"
+#include "kido/common/Subject.h"
+#include "kido/math/Geometry.h"
+#include "kido/dynamics/Frame.h"
+#include "kido/dynamics/InvalidIndex.h"
 
 namespace kido {
 namespace dynamics {

@@ -37,7 +37,7 @@
 #ifndef KIDO_COMMON_SUB_PTR_H_
 #define KIDO_COMMON_SUB_PTR_H_
 
-#include "dart/common/Observer.h"
+#include "kido/common/Observer.h"
 
 namespace kido {
 namespace common {
@@ -90,11 +90,11 @@ protected:
   T* mSubject;
 };
 
-#include "dart/common/detail/sub_ptr.h"
+#include "kido/common/detail/sub_ptr.h"
 
 } // namespace common
 
-// Make an alias for sub_ptr in the dart namespace for convenience
+// Make an alias for sub_ptr in the kido namespace for convenience
 template <class T>
 using sub_ptr = common::sub_ptr<T>;
 

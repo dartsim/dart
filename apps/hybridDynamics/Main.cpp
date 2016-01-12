@@ -35,7 +35,7 @@
  */
 
 #include <iostream>
-#include "dart/dart.h"
+#include "kido/kido.h"
 #include "MyWindow.h"
 
 int main(int argc, char* argv[])

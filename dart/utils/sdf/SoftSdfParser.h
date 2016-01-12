@@ -45,7 +45,7 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/utils/sdf/SdfParser.h"
+#include "kido/utils/sdf/SdfParser.h"
 
 namespace kido {
 namespace dynamics {

@@ -38,7 +38,7 @@
 #ifndef KIDO_DYNAMICS_BOXSHAPE_H_
 #define KIDO_DYNAMICS_BOXSHAPE_H_
 
-#include "dart/dynamics/Shape.h"
+#include "kido/dynamics/Shape.h"
 
 namespace kido {
 namespace dynamics {

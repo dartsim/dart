@@ -40,7 +40,7 @@
 #include "osgDart/render/BoxShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/BoxShape.h"
+#include "kido/dynamics/BoxShape.h"
 
 namespace osgDart {
 namespace render {

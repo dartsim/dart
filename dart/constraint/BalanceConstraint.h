@@ -37,7 +37,7 @@
 #ifndef KIDO_CONSTRAINT_BALANCECONSTRAINT_H_
 #define KIDO_CONSTRAINT_BALANCECONSTRAINT_H_
 
-#include "dart/dynamics/HierarchicalIK.h"
+#include "kido/dynamics/HierarchicalIK.h"
 
 namespace kido {
 namespace constraint {

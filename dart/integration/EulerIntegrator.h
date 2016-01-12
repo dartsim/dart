@@ -38,7 +38,7 @@
 #ifndef KIDO_INTEGRATION_EULERINTEGRATOR_H_
 #define KIDO_INTEGRATION_EULERINTEGRATOR_H_
 
-#include "dart/integration/Integrator.h"
+#include "kido/integration/Integrator.h"
 
 namespace kido {
 namespace integration {

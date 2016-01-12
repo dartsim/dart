@@ -40,8 +40,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.h"
-#include "dart/constraint/JointConstraint.h"
+#include "kido/math/MathTypes.h"
+#include "kido/constraint/JointConstraint.h"
 
 namespace kido {
 namespace constraint {

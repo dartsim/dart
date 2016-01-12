@@ -45,7 +45,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/common/Subject.h"
+#include "kido/common/Subject.h"
 
 namespace kido {
 

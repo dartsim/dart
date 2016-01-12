@@ -38,7 +38,7 @@
 #include "osgDart/EntityNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/Frame.h"
+#include "kido/dynamics/Frame.h"
 
 namespace osgDart
 {

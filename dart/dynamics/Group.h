@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ReferentialSkeleton.h"
+#include "kido/dynamics/ReferentialSkeleton.h"
 
 #ifndef KIDO_DYNAMICS_GROUP_H_
 #define KIDO_DYNAMICS_GROUP_H_

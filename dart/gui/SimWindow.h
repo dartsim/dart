@@ -46,8 +46,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/gui/Win3D.h"
-#include "dart/simulation/World.h"
+#include "kido/gui/Win3D.h"
+#include "kido/simulation/World.h"
 
 namespace kido {
 namespace gui {

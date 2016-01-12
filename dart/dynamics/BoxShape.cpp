@@ -36,8 +36,8 @@
  */
 
 #include <cmath>
-#include "dart/dynamics/BoxShape.h"
-#include "dart/renderer/RenderInterface.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/renderer/RenderInterface.h"
 
 namespace kido {
 namespace dynamics {

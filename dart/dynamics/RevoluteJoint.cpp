@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace kido {
 namespace dynamics {

@@ -25,7 +25,7 @@
 #ifndef _ODE_ERROR_H_
 #define _ODE_ERROR_H_
 
-#include "dart/lcpsolver/odeconfig.h"
+#include "kido/lcpsolver/odeconfig.h"
 
 #ifdef __cplusplus
 extern "C" {

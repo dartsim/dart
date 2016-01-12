@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/WeldJointConstraint.h"
+#include "kido/constraint/WeldJointConstraint.h"
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/lcpsolver/lcp.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/lcpsolver/lcp.h"
 
 namespace kido {
 namespace constraint {

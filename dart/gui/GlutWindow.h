@@ -40,9 +40,9 @@
 
 #include <vector>
 
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/gui/lodepng.h"
+#include "kido/renderer/LoadOpengl.h"
+#include "kido/renderer/RenderInterface.h"
+#include "kido/gui/lodepng.h"
 
 namespace kido {
 namespace gui {

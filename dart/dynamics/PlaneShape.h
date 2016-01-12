@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_PLANESHAPE_H_
 #define KIDO_DYNAMICS_PLANESHAPE_H_
 
-#include "dart/dynamics/Shape.h"
+#include "kido/dynamics/Shape.h"
 
 namespace kido {
 namespace dynamics {

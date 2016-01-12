@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/VskParser.h"
+#include "kido/utils/VskParser.h"
 
 // Standard Library
 #include <map>
@@ -45,10 +45,10 @@
 #include <Eigen/Dense>
 
 // Local Files
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/utils/XmlHelpers.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/dynamics/dynamics.h"
+#include "kido/utils/XmlHelpers.h"
 
 #define SCALE_VSK 1.0e-3
 

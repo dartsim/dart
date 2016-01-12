@@ -42,10 +42,10 @@
 #include <vector>
 #include <memory>
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/Subject.h"
-#include "dart/math/MathTypes.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/common/Deprecated.h"
+#include "kido/common/Subject.h"
+#include "kido/math/MathTypes.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 namespace renderer {

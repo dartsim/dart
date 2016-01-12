@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 #define KIDO_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 
-#include "dart/dynamics/JacobianNode.h"
+#include "kido/dynamics/JacobianNode.h"
 
 namespace kido {
 namespace dynamics {
@@ -131,6 +131,6 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#include "dart/dynamics/detail/TemplatedJacobianNode.h"
+#include "kido/dynamics/detail/TemplatedJacobianNode.h"
 
 #endif // KIDO_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_

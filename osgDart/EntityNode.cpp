@@ -45,15 +45,15 @@
 #include "osgDart/render/LineSegmentShapeNode.h"
 #include "osgDart/render/WarningShapeNode.h"
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/Entity.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/LineSegmentShape.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/Entity.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/PlaneShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/LineSegmentShape.h"
 
 namespace osgDart {
 

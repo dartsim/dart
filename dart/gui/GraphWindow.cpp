@@ -40,14 +40,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GraphWindow.h"
+#include "kido/gui/GraphWindow.h"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "dart/gui/GLFuncs.h"
-#include "dart/gui/LoadGlut.h"
+#include "kido/gui/GLFuncs.h"
+#include "kido/gui/LoadGlut.h"
 
 namespace kido {
 namespace gui {

@@ -43,7 +43,7 @@
 #ifndef APPS_TESTDROP_MYWINDOW_H_
 #define APPS_TESTDROP_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 /// \brief
 class MyWindow : public kido::gui::SoftSimWindow

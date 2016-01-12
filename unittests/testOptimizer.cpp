@@ -42,22 +42,22 @@
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
 #include "TestHelpers.h"
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/optimizer/Function.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/InverseKinematics.h"
+#include "kido/config.h"
+#include "kido/common/Console.h"
+#include "kido/optimizer/Function.h"
+#include "kido/optimizer/Problem.h"
+#include "kido/optimizer/GradientDescentSolver.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/InverseKinematics.h"
 #ifdef HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.h"
+  #include "kido/optimizer/nlopt/NloptSolver.h"
 #endif
 #ifdef HAVE_IPOPT
-  #include "dart/optimizer/ipopt/IpoptSolver.h"
+  #include "kido/optimizer/ipopt/IpoptSolver.h"
 #endif
 #ifdef HAVE_SNOPT
-  #include "dart/optimizer/snopt/SnoptSolver.h"
+  #include "kido/optimizer/snopt/SnoptSolver.h"
 #endif
 
 using namespace std;

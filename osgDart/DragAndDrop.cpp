@@ -40,14 +40,14 @@
 #include "osgDart/InteractiveFrame.h"
 #include "osgDart/MouseEventHandler.h"
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/MeshShape.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/dynamics/MeshShape.h"
 
-#include "dart/math/Helpers.h"
+#include "kido/math/Helpers.h"
 
 namespace osgDart {
 

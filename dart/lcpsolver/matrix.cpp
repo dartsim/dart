@@ -27,8 +27,8 @@
   #include <malloc.h>
 #endif
 
-#include "dart/lcpsolver/common.h"
-#include "dart/lcpsolver/matrix.h"
+#include "kido/lcpsolver/common.h"
+#include "kido/lcpsolver/matrix.h"
 
 #ifndef EFFICIENT_ALIGNMENT
 #define EFFICIENT_ALIGNMENT 16

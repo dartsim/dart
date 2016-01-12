@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win2D.h"
+#include "kido/gui/Win2D.h"
 
 #include <iostream>
 
-#include "dart/gui/LoadGlut.h"
+#include "kido/gui/LoadGlut.h"
 
 namespace kido {
 namespace gui {

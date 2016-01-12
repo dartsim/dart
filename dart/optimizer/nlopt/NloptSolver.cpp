@@ -36,13 +36,13 @@
 
 #include <memory>
 
-#include "dart/optimizer/nlopt/NloptSolver.h"
+#include "kido/optimizer/nlopt/NloptSolver.h"
 
 #include <Eigen/Dense>
 
-#include "dart/common/Console.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/Function.h"
+#include "kido/common/Console.h"
+#include "kido/optimizer/Problem.h"
+#include "kido/optimizer/Function.h"
 
 namespace kido {
 namespace optimizer {

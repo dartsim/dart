@@ -34,36 +34,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/sdf/SoftSdfParser.h"
+#include "kido/utils/sdf/SoftSdfParser.h"
 
 #include <map>
 #include <iostream>
 #include <fstream>
 
-#include "dart/common/Console.h"
-#include "dart/collision/dart/KIDOCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-// #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/common/Console.h"
+#include "kido/collision/kido/KIDOCollisionDetector.h"
+#include "kido/collision/fcl/FCLCollisionDetector.h"
+// #include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/TranslationalJoint.h"
+#include "kido/dynamics/BallJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/ScrewJoint.h"
+#include "kido/dynamics/UniversalJoint.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
 
 namespace kido {
 namespace utils {

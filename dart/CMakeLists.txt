@@ -27,7 +27,7 @@ endif()
 
 # Set header and source files
 set(kido_core_hdrs
-  dart-core.h
+  kido-core.h
   ${kido_common_hdrs}
   ${kido_math_hdrs}
   ${kido_integration_hdrs}
@@ -53,7 +53,7 @@ set(kido_core_srcs
 )
 if(NOT BUILD_CORE_ONLY)
   set(kido_hdrs
-    dart.h
+    kido.h
     ${kido_gui_hdrs}
     ${kido_planning_hdrs}
     ${kido_utils_hdrs}
@@ -65,14 +65,14 @@ if(NOT BUILD_CORE_ONLY)
   )
 endif()
 
-# Library: dart-core
-kido_add_library(dart-core ${kido_core_hdrs} ${kido_core_srcs})
-target_link_libraries(dart-core ${KIDO_CORE_DEPENDENCIES})
+# Library: kido-core
+kido_add_library(kido-core ${kido_core_hdrs} ${kido_core_srcs})
+target_link_libraries(kido-core ${KIDO_CORE_DEPENDENCIES})
 
-# Library: dart
+# Library: kido
 if(NOT BUILD_CORE_ONLY)
-  kido_add_library(dart ${kido_hdrs} ${kido_srcs})
-  target_link_libraries(dart dart-core ${KIDO_DEPENDENCIES})
+  kido_add_library(kido ${kido_hdrs} ${kido_srcs})
+  target_link_libraries(kido kido-core ${KIDO_DEPENDENCIES})
 endif()
 
 if(MSVC)
@@ -82,12 +82,12 @@ if(MSVC)
   )
 endif()
 
-#install(FILES ${kido_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
-install(FILES dart-core.h DESTINATION include/dart/ COMPONENT headers)
-install(TARGETS dart-core EXPORT KIDOCoreTargets DESTINATION lib)
+#install(FILES ${kido_core_hdrs} DESTINATION include/kido/ COMPONENT headers)
+install(FILES kido-core.h DESTINATION include/kido/ COMPONENT headers)
+install(TARGETS kido-core EXPORT KIDOCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
-#  install(FILES ${kido_hdrs} DESTINATION include/dart/ COMPONENT headers)
-  install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
-  install(TARGETS dart-core dart EXPORT KIDOTargets DESTINATION lib)
+#  install(FILES ${kido_hdrs} DESTINATION include/kido/ COMPONENT headers)
+  install(FILES kido.h DESTINATION include/kido/ COMPONENT headers)
+  install(TARGETS kido-core kido EXPORT KIDOTargets DESTINATION lib)
 endif()
 

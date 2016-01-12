@@ -34,21 +34,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionNode.h"
+#include "kido/collision/fcl/FCLCollisionNode.h"
 
 #include <assimp/scene.h>
 #include <fcl/shape/geometric_shapes.h>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/collision/fcl/FCLTypes.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/PlaneShape.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/collision/fcl/FCLTypes.h"
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \

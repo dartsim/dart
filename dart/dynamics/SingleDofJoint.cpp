@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SingleDofJoint.h"
+#include "kido/dynamics/SingleDofJoint.h"
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/DegreeOfFreedom.h"
 
 #define SINGLEDOFJOINT_REPORT_DIM_MISMATCH( func, arg )                        \
   dterr << "[SingleDofJoint::" #func "] Size of " << #arg << "[" << arg .size()\

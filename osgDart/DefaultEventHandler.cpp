@@ -43,7 +43,7 @@
 #include "osgDart/EntityNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/Entity.h"
+#include "kido/dynamics/Entity.h"
 
 
 #include <iostream>

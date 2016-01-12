@@ -39,7 +39,7 @@
 
 #include <osg/Geode>
 
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/dynamics/SmartPointer.h"
 
 #include "osgDart/Viewer.h"
 #include "FrameNode.h"

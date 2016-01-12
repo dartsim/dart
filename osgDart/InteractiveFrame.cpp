@@ -35,10 +35,10 @@
  */
 
 #include "osgDart/InteractiveFrame.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/ArrowShape.h"
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/common/Console.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/ArrowShape.h"
+#include "kido/dynamics/LineSegmentShape.h"
+#include "kido/common/Console.h"
 
 namespace osgDart {
 

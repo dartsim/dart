@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#include "kido/dynamics/Shape.h"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

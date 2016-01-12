@@ -25,7 +25,7 @@
 #ifndef _ODE_MATRIX_H_
 #define _ODE_MATRIX_H_
 
-#include "dart/lcpsolver/common.h"
+#include "kido/lcpsolver/common.h"
 
 
 #ifdef __cplusplus

@@ -10,16 +10,16 @@
 #include <map>
 #include <string>
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/CompositeResourceRetriever.h"
-#include "dart/utils/PackageResourceRetriever.h"
+#include "kido/common/Deprecated.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/ResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/CompositeResourceRetriever.h"
+#include "kido/utils/PackageResourceRetriever.h"
 
 namespace urdf
 {

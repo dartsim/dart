@@ -42,11 +42,11 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/Geometry.h"
-#include "dart/common/Deprecated.h"
-#include "dart/common/Subject.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/common/Deprecated.h"
+#include "kido/math/Geometry.h"
+#include "kido/common/Deprecated.h"
+#include "kido/common/Subject.h"
+#include "kido/dynamics/SmartPointer.h"
+#include "kido/common/Deprecated.h"
 
 namespace kido {
 namespace renderer {

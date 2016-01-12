@@ -38,7 +38,7 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 #include "apps/bipedStand/MyWindow.h"
 

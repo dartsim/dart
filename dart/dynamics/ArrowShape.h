@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_ARROWSHAPE_H_
 #define KIDO_DYNAMICS_ARROWSHAPE_H_
 
-#include "dart/dynamics/MeshShape.h"
+#include "kido/dynamics/MeshShape.h"
 
 namespace kido {
 namespace dynamics {

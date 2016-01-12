@@ -38,7 +38,7 @@
 #ifndef KIDO_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
 #define KIDO_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include "kido/collision/CollisionDetector.h"
 
 namespace kido {
 

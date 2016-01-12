@@ -41,7 +41,7 @@
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.h"
+#include "kido/math/MathTypes.h"
 
 namespace kido {
 namespace renderer {

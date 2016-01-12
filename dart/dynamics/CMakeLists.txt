@@ -19,7 +19,7 @@ set(kido_dynamics_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "dynamics headers" ${hdrs})
 kido_generate_include_header_list(
   dynamics_headers
-  "dart/dynamics/"
+  "kido/dynamics/"
   "dynamics headers"
   ${header_names}
 )
@@ -31,13 +31,13 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
-  DESTINATION include/dart/dynamics
+  DESTINATION include/kido/dynamics
   COMPONENT headers
 )
 
 install(
   FILES ${detail}
-  DESTINATION include/dart/dynamics/detail
+  DESTINATION include/kido/dynamics/detail
   COMPONENT headers
 )
 

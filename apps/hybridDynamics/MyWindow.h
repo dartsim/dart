@@ -37,7 +37,7 @@
 #ifndef APPS_HYBRIDDYNAMICS_MYWINDOW_H_
 #define APPS_HYBRIDDYNAMICS_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 /// \brief
 class MyWindow : public kido::gui::SimWindow

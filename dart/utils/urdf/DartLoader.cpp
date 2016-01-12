@@ -7,21 +7,21 @@
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/urdf/urdf_world_parser.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/PlanarJoint.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/urdf/urdf_world_parser.h"
 
 using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 

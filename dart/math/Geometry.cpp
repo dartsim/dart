@@ -42,9 +42,9 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
+#include "kido/common/Console.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
 
 namespace kido {
 namespace math {

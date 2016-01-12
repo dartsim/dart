@@ -49,12 +49,12 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Timer.h"
-#include "dart/common/NameManager.h"
-#include "dart/common/Subject.h"
-#include "dart/simulation/Recording.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Skeleton.h"
+#include "kido/common/Timer.h"
+#include "kido/common/NameManager.h"
+#include "kido/common/Subject.h"
+#include "kido/simulation/Recording.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 

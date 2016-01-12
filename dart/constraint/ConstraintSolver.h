@@ -41,8 +41,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/collision/CollisionDetector.h"
+#include "kido/constraint/ConstraintBase.h"
+#include "kido/collision/CollisionDetector.h"
 
 namespace kido {
 

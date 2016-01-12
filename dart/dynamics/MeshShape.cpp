@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MeshShape.h"
+#include "kido/dynamics/MeshShape.h"
 
 #include <limits>
 #include <string>
@@ -44,12 +44,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
-#include "dart/config.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/common/Console.h"
-#include "dart/dynamics/AssimpInputResourceAdaptor.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
+#include "kido/config.h"
+#include "kido/renderer/RenderInterface.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/AssimpInputResourceAdaptor.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Uri.h"
 
 #ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
 // We define our own constructor and destructor for aiScene, because it seems to

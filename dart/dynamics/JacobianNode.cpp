@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/JacobianNode.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/InverseKinematics.h"
+#include "kido/dynamics/JacobianNode.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/InverseKinematics.h"
 
 namespace kido {
 namespace dynamics {

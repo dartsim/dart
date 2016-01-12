@@ -34,22 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/SoftBodyNode.h"
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "dart/math/Helpers.h"
-#include "dart/common/Console.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
+#include "kido/math/Helpers.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/renderer/LoadOpengl.h"
+#include "kido/renderer/RenderInterface.h"
 
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/PointMass.h"
+#include "kido/dynamics/SoftMeshShape.h"
 
 namespace kido {
 namespace dynamics {

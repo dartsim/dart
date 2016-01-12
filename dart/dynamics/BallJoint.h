@@ -39,7 +39,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "kido/dynamics/MultiDofJoint.h"
 
 namespace kido {
 namespace dynamics {

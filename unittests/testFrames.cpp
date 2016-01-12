@@ -36,8 +36,8 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/math/Helpers.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/math/Helpers.h"
 
 #include "TestHelpers.h"
 

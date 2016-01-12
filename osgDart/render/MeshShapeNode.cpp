@@ -44,8 +44,8 @@
 #include "osgDart/render/MeshShapeNode.h"
 #include "osgDart/Utils.h"
 
-#include "dart/dynamics/MeshShape.h"
-#include "dart/common/Console.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/common/Console.h"
 
 namespace osgDart {
 namespace render {

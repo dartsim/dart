@@ -37,17 +37,17 @@
 #include <iostream>
 #include <assimp/cimport.h>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/LineSegmentShape.h"
+#include "kido/renderer/LoadOpengl.h"
+#include "kido/renderer/OpenGLRenderInterface.h"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj *quadObj;

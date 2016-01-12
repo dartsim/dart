@@ -44,8 +44,8 @@
 #include <fcl/collision.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Shape.h"
+#include "kido/collision/CollisionNode.h"
+#include "kido/dynamics/Shape.h"
 
 namespace kido {
 namespace dynamics {

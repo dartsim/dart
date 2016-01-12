@@ -39,8 +39,8 @@
 
 #include <unordered_map>
 
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/dynamics/MetaSkeleton.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 namespace dynamics {

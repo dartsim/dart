@@ -38,7 +38,7 @@
 #define KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_H_
 
 #include <memory>
-#include "dart/dynamics/detail/NodePtr.h"
+#include "kido/dynamics/detail/NodePtr.h"
 
 namespace kido {
 namespace dynamics {

@@ -41,8 +41,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/Shape.h"
+#include "kido/collision/CollisionDetector.h"
+#include "kido/dynamics/Shape.h"
 
 namespace kido {
 namespace dynamics {

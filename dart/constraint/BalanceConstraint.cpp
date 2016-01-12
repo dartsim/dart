@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/BalanceConstraint.h"
+#include "kido/constraint/BalanceConstraint.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/EndEffector.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/EndEffector.h"
 
 namespace kido {
 namespace constraint {

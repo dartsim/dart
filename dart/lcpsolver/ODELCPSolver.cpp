@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/ODELCPSolver.h"
+#include "kido/lcpsolver/ODELCPSolver.h"
 
 #include <cstdio>
 
-#include "dart/lcpsolver/Lemke.h"
-#include "dart/lcpsolver/lcp.h"
-#include "dart/lcpsolver/misc.h"
+#include "kido/lcpsolver/Lemke.h"
+#include "kido/lcpsolver/lcp.h"
+#include "kido/lcpsolver/misc.h"
 
 namespace kido {
 namespace lcpsolver {

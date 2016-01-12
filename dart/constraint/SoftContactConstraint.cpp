@@ -34,19 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/SoftContactConstraint.h"
+#include "kido/constraint/SoftContactConstraint.h"
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/lcpsolver/lcp.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/PointMass.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/lcpsolver/lcp.h"
 
 #define KIDO_ERROR_ALLOWANCE 0.0
 #define KIDO_ERP     0.01

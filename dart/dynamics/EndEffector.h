@@ -37,9 +37,9 @@
 #ifndef KIDO_DYNAMICS_ENDEFFECTOR_H_
 #define KIDO_DYNAMICS_ENDEFFECTOR_H_
 
-#include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
-//#include "dart/math/Geometry.h"
+#include "kido/dynamics/FixedFrame.h"
+#include "kido/dynamics/TemplatedJacobianNode.h"
+//#include "kido/math/Geometry.h"
 
 namespace kido {
 namespace dynamics {

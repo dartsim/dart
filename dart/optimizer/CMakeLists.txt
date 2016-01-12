@@ -47,7 +47,7 @@ if(HAVE_SNOPT)
 endif()
 kido_generate_include_header_list(
   optimizer_headers
-  "dart/optimizer/"
+  "kido/optimizer/"
   "optimizer headers"
   ${header_names}
 )
@@ -59,7 +59,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.h
-  DESTINATION include/dart/optimizer
+  DESTINATION include/kido/optimizer
   COMPONENT headers
 )
 #install(TARGETS kido_optimizer EXPORT KIDOTargets DESTINATION lib)

@@ -13,7 +13,7 @@ set(kido_math_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "math headers" ${hdrs})
 kido_generate_include_header_list(
   math_headers
-  "dart/math/"
+  "kido/math/"
   "math headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
-  DESTINATION include/dart/math
+  DESTINATION include/kido/math
   COMPONENT headers
 )
 #install(TARGETS kido_math EXPORT KIDOCoreTargets DESTINATION lib)

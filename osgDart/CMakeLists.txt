@@ -13,7 +13,7 @@ if(${OPENSCENEGRAPH_FOUND})
 
   kido_add_library(osgDart ${osgDart_srcs} ${osgDart_hdrs})
   target_link_libraries(osgDart
-    dart-core
+    kido-core
     ${OPENSCENEGRAPH_LIBRARIES}
   )
 

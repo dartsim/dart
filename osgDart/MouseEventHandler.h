@@ -37,8 +37,8 @@
 #ifndef OSGKIDO_MOUSEEVENTHANDLER_H
 #define OSGKIDO_MOUSEEVENTHANDLER_H
 
-#include "dart/common/Subject.h"
-#include "dart/common/Observer.h"
+#include "kido/common/Subject.h"
+#include "kido/common/Observer.h"
 
 #include "osgDart/DefaultEventHandler.h"
 

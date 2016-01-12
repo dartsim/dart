@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/KIDOCollide.h"
+#include "kido/collision/kido/KIDOCollide.h"
 
 #include <memory>
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace kido {
 namespace collision {

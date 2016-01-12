@@ -13,7 +13,7 @@ set(kido_planning_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "planning headers" ${hdrs})
 kido_generate_include_header_list(
   planning_headers
-  "dart/planning/"
+  "kido/planning/"
   "planning headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.h
-  DESTINATION include/dart/planning
+  DESTINATION include/kido/planning
   COMPONENT headers
 )
 #install(TARGETS kido_planning EXPORT KIDOTargets DESTINATION lib)

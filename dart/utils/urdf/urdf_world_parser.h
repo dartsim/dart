@@ -41,8 +41,8 @@
 
 #include <urdf_world/world.h>
 
-#include <dart/common/Uri.h>
-#include <dart/common/ResourceRetriever.h>
+#include <kido/common/Uri.h>
+#include <kido/common/ResourceRetriever.h>
 
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>

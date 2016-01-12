@@ -13,7 +13,7 @@ set(kido_collision_srcs ${kido_collision_srcs} ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "collision_fcl_mesh headers" ${hdrs})
 kido_generate_include_header_list(
   collision_fcl_mesh_headers
-  "dart/collision/fcl_mesh/"
+  "kido/collision/fcl_mesh/"
   "collision_fcl_mesh headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.h
-  DESTINATION include/dart/collision/fcl_mesh
+  DESTINATION include/kido/collision/fcl_mesh
   COMPONENT headers
 )
 #install(TARGETS kido_collision_fcl_mesh EXPORT KIDOCoreTargets DESTINATION lib)

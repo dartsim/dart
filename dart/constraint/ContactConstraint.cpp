@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ContactConstraint.h"
+#include "kido/constraint/ContactConstraint.h"
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/lcpsolver/lcp.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/lcpsolver/lcp.h"
 
 #define KIDO_ERROR_ALLOWANCE 0.0
 #define KIDO_ERP     0.01

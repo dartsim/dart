@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ScrewJoint.h"
+#include "kido/dynamics/ScrewJoint.h"
 
 #include <string>
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace kido {
 namespace dynamics {

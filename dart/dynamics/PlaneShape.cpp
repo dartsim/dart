@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlaneShape.h"
+#include "kido/dynamics/PlaneShape.h"
 
-#include "dart/renderer/RenderInterface.h"
+#include "kido/renderer/RenderInterface.h"
 
 namespace kido {
 namespace dynamics {

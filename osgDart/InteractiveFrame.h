@@ -37,7 +37,7 @@
 #ifndef OSGKIDO_INTERACTIVEFRAME_H
 #define OSGKIDO_INTERACTIVEFRAME_H
 
-#include "dart/dynamics/SimpleFrame.h"
+#include "kido/dynamics/SimpleFrame.h"
 
 namespace kido {
 namespace dynamics {

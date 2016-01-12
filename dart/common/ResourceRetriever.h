@@ -39,9 +39,9 @@
 
 #include <memory>
 #include <string>
-#include "dart/common/Deprecated.h"
-#include "dart/common/Resource.h"
-#include "dart/common/Uri.h"
+#include "kido/common/Deprecated.h"
+#include "kido/common/Resource.h"
+#include "kido/common/Uri.h"
 
 namespace kido {
 namespace common {

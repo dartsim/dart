@@ -42,7 +42,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 class State;
 

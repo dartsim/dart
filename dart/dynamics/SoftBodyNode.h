@@ -46,8 +46,8 @@ const double KIDO_DEFAULT_DAMPING_COEFF    = 0.01;
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/PointMass.h"
 
 namespace kido {
 namespace dynamics {

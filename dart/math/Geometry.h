@@ -40,8 +40,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
-#include "dart/math/MathTypes.h"
+#include "kido/common/Deprecated.h"
+#include "kido/math/MathTypes.h"
 
 namespace kido {
 namespace math {
@@ -157,7 +157,7 @@ Eigen::Isometry3d expMap(const Eigen::Vector6d& _S);
 /// \brief fast version of Exp(se3(s, 0))
 /// \todo This expAngular() can be replaced by Eigen::AngleAxis() but we need
 /// to verify that they have exactly same functionality.
-/// See: https://github.com/dartsim/dart/issues/88
+/// See: https://github.com/kidosim/kido/issues/88
 Eigen::Isometry3d expAngular(const Eigen::Vector3d& _s);
 
 /// \brief Computes the Rotation matrix from a given expmap vector.

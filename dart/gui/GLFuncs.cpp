@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GLFuncs.h"
+#include "kido/gui/GLFuncs.h"
 
 #include <cstdio>
 #include <iostream>
@@ -42,8 +42,8 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/gui/LoadGlut.h"
-#include "dart/renderer/LoadOpengl.h"
+#include "kido/gui/LoadGlut.h"
+#include "kido/renderer/LoadOpengl.h"
 
 namespace kido {
 namespace gui {

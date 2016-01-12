@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Chain.h"
-#include "dart/dynamics/FreeJoint.h"
+#include "kido/dynamics/Chain.h"
+#include "kido/dynamics/FreeJoint.h"
 
 namespace kido {
 namespace dynamics {

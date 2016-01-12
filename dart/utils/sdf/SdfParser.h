@@ -10,19 +10,19 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/Deprecated.h"
-#include "dart/utils/XmlHelpers.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/simulation/World.h"
+#include "kido/common/Deprecated.h"
+#include "kido/utils/XmlHelpers.h"
+#include "kido/common/ResourceRetriever.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/ScrewJoint.h"
+#include "kido/dynamics/UniversalJoint.h"
+#include "kido/dynamics/BallJoint.h"
+#include "kido/dynamics/TranslationalJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/simulation/World.h"
 
 namespace kido {
 

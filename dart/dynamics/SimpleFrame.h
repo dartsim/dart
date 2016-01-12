@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_SIMPLEFRAME_H_
 #define KIDO_DYNAMICS_SIMPLEFRAME_H_
 
-#include "dart/dynamics/Frame.h"
+#include "kido/dynamics/Frame.h"
 
 namespace kido {
 namespace dynamics {

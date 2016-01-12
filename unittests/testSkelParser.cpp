@@ -38,13 +38,13 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/PlanarJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
 
 using namespace kido;
 using namespace math;

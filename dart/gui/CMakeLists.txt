@@ -18,7 +18,7 @@ set(kido_gui_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "gui headers" ${hdrs})
 kido_generate_include_header_list(
   gui_headers
-  "dart/gui/"
+  "kido/gui/"
   "gui headers"
   ${header_names}
 )
@@ -30,7 +30,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
-  DESTINATION include/dart/gui
+  DESTINATION include/kido/gui
   COMPONENT headers
 )
 #install(TARGETS kido_gui EXPORT KIDOTargets DESTINATION lib)

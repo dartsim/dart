@@ -39,8 +39,8 @@
 
 #include <nlopt.hpp>
 
-#include "dart/common/Deprecated.h"
-#include "dart/optimizer/Solver.h"
+#include "kido/common/Deprecated.h"
+#include "kido/optimizer/Solver.h"
 
 namespace kido {
 namespace optimizer {

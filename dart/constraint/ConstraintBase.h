@@ -39,7 +39,7 @@
 
 #include <cstddef>
 
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 

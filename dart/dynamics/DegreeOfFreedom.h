@@ -41,8 +41,8 @@
 #include <memory>
 #include <Eigen/Core>
 
-#include "dart/common/Subject.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/common/Subject.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 namespace dynamics {

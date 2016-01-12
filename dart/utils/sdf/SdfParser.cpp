@@ -2,27 +2,27 @@
 #include <iostream>
 #include <fstream>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/utils/sdf/SdfParser.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/ScrewJoint.h"
+#include "kido/dynamics/TranslationalJoint.h"
+#include "kido/dynamics/BallJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/EulerJoint.h"
+#include "kido/dynamics/UniversalJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/utils/sdf/SdfParser.h"
 
 namespace kido {
 namespace utils {
@@ -47,10 +47,10 @@ simulation::WorldPtr SdfParser::readSdfFile(
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument _kidoFile;
   try
   {
-    openXMLFile(_dartFile, _fileUri, _retriever);
+    openXMLFile(_kidoFile, _fileUri, _retriever);
   }
   catch(std::exception const& e)
   {
@@ -62,7 +62,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
   //--------------------------------------------------------------------------
   // Load KIDO
   tinyxml2::XMLElement* sdfElement = nullptr;
-  sdfElement = _dartFile.FirstChildElement("sdf");
+  sdfElement = _kidoFile.FirstChildElement("sdf");
   if (sdfElement == nullptr)
     return nullptr;
 
@@ -113,10 +113,10 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
 {
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument _kidoFile;
   try
   {
-    openXMLFile(_dartFile, _fileUri, _retriever);
+    openXMLFile(_kidoFile, _fileUri, _retriever);
   }
   catch(std::exception const& e)
   {
@@ -128,7 +128,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
   //--------------------------------------------------------------------------
   // Load sdf
   tinyxml2::XMLElement* sdfElement = nullptr;
-  sdfElement = _dartFile.FirstChildElement("sdf");
+  sdfElement = _kidoFile.FirstChildElement("sdf");
   if (sdfElement == nullptr)
     return nullptr;
 

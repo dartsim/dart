@@ -35,9 +35,9 @@
  */
 
 #include <iostream>
-#include "dart/common/Console.h"
-#include "dart/common/Uri.h"
-#include "dart/utils/CompositeResourceRetriever.h"
+#include "kido/common/Console.h"
+#include "kido/common/Uri.h"
+#include "kido/utils/CompositeResourceRetriever.h"
 
 namespace kido {
 namespace utils {

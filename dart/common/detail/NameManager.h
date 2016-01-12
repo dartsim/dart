@@ -40,7 +40,7 @@
 
 #include <sstream>
 #include <cassert>
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 
 namespace kido {
 namespace common {

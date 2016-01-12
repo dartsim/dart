@@ -38,9 +38,9 @@
 #ifndef KIDO_UTILS_VSKPARSER_H_
 #define KIDO_UTILS_VSKPARSER_H_
 
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/Skeleton.h"
+#include "kido/common/ResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 namespace utils {

@@ -53,7 +53,7 @@ accwindow() routine.
 #ifndef KIDO_GUI_JITTER_H_
 #define KIDO_GUI_JITTER_H_
 
-#include "dart/renderer/LoadOpengl.h"
+#include "kido/renderer/LoadOpengl.h"
 
 namespace kido {
 namespace gui {

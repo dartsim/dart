@@ -15,7 +15,7 @@ set(kido_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
 kido_get_filename_components(header_names "common headers" ${hdrs})
 kido_generate_include_header_list(
   common_headers
-  "dart/common/"
+  "kido/common/"
   "common headers"
   ${header_names}
 )
@@ -27,13 +27,13 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/common.h
-  DESTINATION include/dart/common
+  DESTINATION include/kido/common
   COMPONENT headers
 )
 
 install(
   FILES ${detail_hdrs}
-  DESTINATION include/dart/common/detail
+  DESTINATION include/kido/common/detail
   COMPONENT headers
 )
 

@@ -35,7 +35,7 @@
  */
 
 #include <random>
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 const double default_shape_density = 1000; // kg/m^3
 const double default_shape_height  = 0.1;  // m

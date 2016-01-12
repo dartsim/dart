@@ -38,7 +38,7 @@
 #include <chrono>
 #include <numeric>
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 double testForwardKinematicSpeed(kido::dynamics::SkeletonPtr skel,
                                  bool position=true,

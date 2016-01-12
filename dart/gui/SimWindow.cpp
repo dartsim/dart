@@ -39,20 +39,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SimWindow.h"
+#include "kido/gui/SimWindow.h"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/utils/FileInfoWorld.h"
-#include "dart/gui/GraphWindow.h"
+#include "kido/simulation/World.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/constraint/ConstraintSolver.h"
+#include "kido/collision/CollisionDetector.h"
+#include "kido/gui/LoadGlut.h"
+#include "kido/gui/GLFuncs.h"
+#include "kido/utils/FileInfoWorld.h"
+#include "kido/gui/GraphWindow.h"
 
 namespace kido {
 namespace gui {

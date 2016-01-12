@@ -40,9 +40,9 @@
 #include "osgDart/FrameNode.h"
 #include "osgDart/EntityNode.h"
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/simulation/World.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.h"
 
 namespace osgDart
 {

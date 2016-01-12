@@ -47,7 +47,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 class MyWindow : public kido::gui::Win3D {
 public:

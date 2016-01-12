@@ -3,14 +3,14 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-kido_add_library(dart-optimizer-nlopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-nlopt dart-core ${NLOPT_LIBRARIES})
+kido_add_library(kido-optimizer-nlopt ${srcs} ${hdrs})
+target_link_libraries(kido-optimizer-nlopt kido-core ${NLOPT_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})
 kido_generate_include_header_list(
   optimizer_nlopt_headers
-  "dart/optimizer/nlopt/"
+  "kido/optimizer/nlopt/"
   "optimizer_nlopt headers"
   ${header_names}
 )
@@ -22,7 +22,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
-  DESTINATION include/dart/optimizer/nlopt
+  DESTINATION include/kido/optimizer/nlopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-nlopt EXPORT KIDONLoptTargets DESTINATION lib)
+install(TARGETS kido-optimizer-nlopt EXPORT KIDONLoptTargets DESTINATION lib)

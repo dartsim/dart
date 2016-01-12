@@ -41,9 +41,9 @@
 
 #include <Eigen/Geometry>
 
-#include "dart/common/sub_ptr.h"
-#include "dart/dynamics/Entity.h"
-#include "dart/dynamics/Shape.h"
+#include "kido/common/sub_ptr.h"
+#include "kido/dynamics/Entity.h"
+#include "kido/dynamics/Shape.h"
 #include "DefaultEventHandler.h"
 
 namespace kido {
@@ -58,7 +58,7 @@ namespace osgDart
 class Viewer;
 class InteractiveFrame;
 
-/// DragAndDrop is a class that facilitates enabling various kinds of dart
+/// DragAndDrop is a class that facilitates enabling various kinds of kido
 /// Entities to be dragged and dropped in an osgDart environment
 class DragAndDrop : public kido::common::Subject,
                     public kido::common::Observer

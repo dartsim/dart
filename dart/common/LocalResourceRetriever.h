@@ -37,7 +37,7 @@
 #ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
 #define KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
 
-#include "dart/common/ResourceRetriever.h"
+#include "kido/common/ResourceRetriever.h"
 
 namespace kido {
 namespace common {

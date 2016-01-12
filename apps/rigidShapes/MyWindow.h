@@ -43,7 +43,7 @@
 #ifndef APPS_RIGIDSHAPES_MYWINDOW_H_
 #define APPS_RIGIDSHAPES_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 /// MyWindow
 class MyWindow : public kido::gui::SimWindow

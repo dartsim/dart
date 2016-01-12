@@ -41,13 +41,13 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "dart/config.h"
-#include "dart/common/common.h"
-#include "dart/math/math.h"
-#include "dart/dynamics/dynamics.h"
-//#include "dart/collision/unc/UNCCollisionDetector.h"
-#include "dart/simulation/simulation.h"
-#include "dart/utils/utils.h"
+#include "kido/config.h"
+#include "kido/common/common.h"
+#include "kido/math/math.h"
+#include "kido/dynamics/dynamics.h"
+//#include "kido/collision/unc/UNCCollisionDetector.h"
+#include "kido/simulation/simulation.h"
+#include "kido/utils/utils.h"
 
 using namespace kido;
 using namespace common;

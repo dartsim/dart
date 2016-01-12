@@ -48,7 +48,7 @@
 #include <urdf_world/world.h>
 #include <urdf_model/pose.h>
 
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 
 const bool debug = false;
 

@@ -37,7 +37,7 @@ endif()
 #
 # If you change the version, please update the <version> tag in package.xml.
 
-project(dart)
+project(kido)
 
 set(KIDO_MAJOR_VERSION "5")
 set(KIDO_MINOR_VERSION "1")
@@ -551,13 +551,13 @@ message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
 message(STATUS "")
 message(STATUS "[ Configured files ]")
 
-# Generate the dart config file
+# Generate the kido config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
-set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
+set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/kido/config.h.in)
+set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/kido/config.h)
 message(STATUS ${KIDO_CONFIG_OUT})
 configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
-install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/dart)
+install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/kido)
 
 # Generate the KIDO CMake Config and version files
 include(WriteBasicConfigVersionFile)
@@ -567,7 +567,7 @@ message(STATUS ${KIDO_CORE_CONFIG_OUT})
 message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
 configure_file(${KIDO_CORE_CONFIG_IN} ${KIDO_CORE_CONFIG_OUT} @ONLY)
 write_basic_config_version_file(cmake/KIDOCoreConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfigVersion.cmake DESTINATION share/dartcore)
+install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfigVersion.cmake DESTINATION share/kidocore)
 if(NOT BUILD_CORE_ONLY)
   set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOConfig.cmake.in)
   set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOConfig.cmake)
@@ -575,12 +575,12 @@ if(NOT BUILD_CORE_ONLY)
   message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
   configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
   write_basic_config_version_file(cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/dart)
+  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/kido)
 endif()
 
 # Generate the KIDO pkg-config
-set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
-set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
+set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/kido.pc.in)
+set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/kido.pc)
 message(STATUS ${PC_CONFIG_OUT})
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
@@ -591,7 +591,7 @@ install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 #===============================================================================
 # Add sub-directories
 #===============================================================================
-add_subdirectory(dart)
+add_subdirectory(kido)
 
 if(NOT BUILD_CORE_ONLY)
 
@@ -619,9 +619,9 @@ endif(NOT BUILD_CORE_ONLY)
 #===============================================================================
 # Export targets
 #===============================================================================
-install(EXPORT KIDOCoreTargets DESTINATION share/dartcore)
+install(EXPORT KIDOCoreTargets DESTINATION share/kidocore)
 if(NOT BUILD_CORE_ONLY)
-  install(EXPORT KIDOTargets DESTINATION share/dart)
+  install(EXPORT KIDOTargets DESTINATION share/kido)
 endif()
 
 # Add an "uninstall" target
@@ -641,7 +641,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
   set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
   set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
-  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
+  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/kido                   ) # Pasted into Doxyfile.in
   set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
 
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)

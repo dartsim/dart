@@ -45,9 +45,9 @@
 #include <fcl/collision.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "dart/collision/CollisionNode.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/collision/fcl_mesh/tri_tri_intersection_test.h"
+#include "kido/collision/CollisionNode.h"
+#include "kido/collision/CollisionDetector.h"
+#include "kido/collision/fcl_mesh/tri_tri_intersection_test.h"
 
 namespace kido {
 namespace dynamics {

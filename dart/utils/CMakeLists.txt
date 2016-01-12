@@ -31,7 +31,7 @@ set(
 )
 kido_generate_include_header_list(
   utils_headers
-  "dart/utils/"
+  "kido/utils/"
   "utils headers"
   ${header_names}
 )
@@ -43,7 +43,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
-  DESTINATION include/dart/utils
+  DESTINATION include/kido/utils
   COMPONENT headers
 )
 #install(TARGETS kido_utils EXPORT KIDOTargets DESTINATION lib)

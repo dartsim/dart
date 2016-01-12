@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstraintBase.h"
+#include "kido/constraint/ConstraintBase.h"
 
 #include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
 
-#include "dart/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.h"
 
 namespace kido {
 namespace constraint {

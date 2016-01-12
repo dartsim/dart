@@ -36,9 +36,9 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/common/sub_ptr.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/BoxShape.h"
+#include "kido/common/sub_ptr.h"
+#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/BoxShape.h"
 
 using namespace kido;
 using namespace dynamics;

@@ -41,15 +41,15 @@
 #include <gtest/gtest.h>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Joint.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/Joint.h"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/PointMass.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
 
 using namespace std;
 using namespace Eigen;

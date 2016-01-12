@@ -37,7 +37,7 @@
 #ifndef KIDO_COMMON_LOCALRESOURCE_H_
 #define KIDO_COMMON_LOCALRESOURCE_H_
 
-#include "dart/common/Resource.h"
+#include "kido/common/Resource.h"
 
 namespace kido {
 namespace common {

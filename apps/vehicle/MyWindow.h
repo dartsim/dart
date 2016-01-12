@@ -38,7 +38,7 @@
 #ifndef APPS_VEHICLE_MYWINDOW_H_
 #define APPS_VEHICLE_MYWINDOW_H_
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 /// \brief
 class MyWindow : public kido::gui::SimWindow {

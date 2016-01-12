@@ -38,16 +38,16 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/dynamics/BallJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/TranslationalJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
 
 using namespace kido;
 using namespace math;

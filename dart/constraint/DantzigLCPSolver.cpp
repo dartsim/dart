@@ -34,18 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigLCPSolver.h"
+#include "kido/constraint/DantzigLCPSolver.h"
 
 #ifndef NDEBUG
 #include <iomanip>
 #include <iostream>
 #endif
 
-#include "dart/common/Console.h"
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/constraint/ConstrainedGroup.h"
-#include "dart/lcpsolver/Lemke.h"
-#include "dart/lcpsolver/lcp.h"
+#include "kido/common/Console.h"
+#include "kido/constraint/ConstraintBase.h"
+#include "kido/constraint/ConstrainedGroup.h"
+#include "kido/lcpsolver/Lemke.h"
+#include "kido/lcpsolver/lcp.h"
 
 namespace kido {
 namespace constraint {

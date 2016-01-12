@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/BodyNode.h"
+#include "kido/dynamics/Node.h"
+#include "kido/dynamics/BodyNode.h"
 
 #define REPORT_INVALID_NODE( func )                                          \
   dterr << "[Node::" #func "] This Node was not constructed correctly. It "  \

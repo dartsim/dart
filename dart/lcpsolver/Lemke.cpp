@@ -39,8 +39,8 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/math/Helpers.h"
-#include "dart/lcpsolver/Lemke.h"
+#include "kido/math/Helpers.h"
+#include "kido/lcpsolver/Lemke.h"
 
 #ifndef isnan
 # define isnan(x) \

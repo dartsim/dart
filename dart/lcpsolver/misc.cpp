@@ -20,9 +20,9 @@
  *                                                                       *
  *************************************************************************/
 
-#include "dart/lcpsolver/odeconfig.h"
-#include "dart/lcpsolver/misc.h"
-#include "dart/lcpsolver/matrix.h"
+#include "kido/lcpsolver/odeconfig.h"
+#include "kido/lcpsolver/misc.h"
+#include "kido/lcpsolver/matrix.h"
 
 //****************************************************************************
 // random numbers

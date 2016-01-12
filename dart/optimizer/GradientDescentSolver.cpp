@@ -36,10 +36,10 @@
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/optimizer/Problem.h"
+#include "kido/common/Console.h"
+#include "kido/math/Helpers.h"
+#include "kido/optimizer/GradientDescentSolver.h"
+#include "kido/optimizer/Problem.h"
 
 namespace kido {
 namespace optimizer {

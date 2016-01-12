@@ -182,6 +182,6 @@ protected:
 } // namespace common
 } // namespace kido
 
-#include "dart/common/detail/NameManager.h"
+#include "kido/common/detail/NameManager.h"
 
 #endif // KIDO_COMMON_NAMEMANAGER_H_

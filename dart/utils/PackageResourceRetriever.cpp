@@ -37,10 +37,10 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
-#include "dart/common/Console.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/utils/PackageResourceRetriever.h"
+#include "kido/common/Console.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Uri.h"
+#include "kido/utils/PackageResourceRetriever.h"
 
 namespace kido {
 namespace utils {

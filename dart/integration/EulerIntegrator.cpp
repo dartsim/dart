@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/EulerIntegrator.h"
+#include "kido/integration/EulerIntegrator.h"
 
 namespace kido {
 namespace integration {

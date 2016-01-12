@@ -40,16 +40,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/World.h"
+#include "kido/simulation/World.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/integration/SemiImplicitEulerIntegrator.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
+#include "kido/common/Console.h"
+#include "kido/integration/SemiImplicitEulerIntegrator.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/constraint/ConstraintSolver.h"
 
 namespace kido {
 namespace simulation {

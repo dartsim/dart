@@ -43,8 +43,8 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/ResourceRetriever.h"
-#include "dart/math/MathTypes.h"
+#include "kido/common/ResourceRetriever.h"
+#include "kido/math/MathTypes.h"
 
 namespace kido {
 namespace utils {

@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <assimp/IOStream.hpp>
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 #include "AssimpInputResourceAdaptor.h"
 
 namespace kido {

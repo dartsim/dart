@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GlutWindow.h"
+#include "kido/gui/GlutWindow.h"
 
 #ifndef _WIN32
   #include <dirent.h>
@@ -44,9 +44,9 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "kido/gui/LoadGlut.h"
+#include "kido/gui/GLFuncs.h"
+#include "kido/renderer/OpenGLRenderInterface.h"
 
 namespace kido {
 namespace gui {

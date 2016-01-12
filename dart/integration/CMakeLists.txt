@@ -13,7 +13,7 @@ set(kido_integration_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "integration headers" ${hdrs})
 kido_generate_include_header_list(
   integration_headers
-  "dart/integration/"
+  "kido/integration/"
   "integration headers"
   ${header_names}
 )
@@ -25,7 +25,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/integration.h
-  DESTINATION include/dart/integration
+  DESTINATION include/kido/integration
   COMPONENT headers
 )
 #install(TARGETS kido_integration EXPORT KIDOCoreTargets DESTINATION lib)

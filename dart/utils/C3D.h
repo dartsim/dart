@@ -40,7 +40,7 @@
 #include <vector>
 #include <ctime>
 #include <Eigen/Dense>
-#include "dart/math/MathTypes.h"
+#include "kido/math/MathTypes.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //  C3D file reader and writer

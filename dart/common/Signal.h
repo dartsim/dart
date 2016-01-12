@@ -41,8 +41,8 @@
 #include <memory>
 #include <set>
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/detail/ConnectionBody.h"
+#include "kido/common/Deprecated.h"
+#include "kido/common/detail/ConnectionBody.h"
 
 namespace kido {
 namespace common {
@@ -243,7 +243,7 @@ private:
 }  // namespace common
 }  // namespace kido
 
-#include "dart/common/detail/Signal.h"
+#include "kido/common/detail/Signal.h"
 
 #endif  // KIDO_COMMON_SIGNAL_H_
 

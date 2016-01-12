@@ -40,39 +40,39 @@
 
 #include <Eigen/Dense>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
+#include "kido/config.h"
+#include "kido/common/Console.h"
 #ifdef HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+  #include "kido/collision/bullet/BulletCollisionDetector.h"
 #endif
-#include "dart/collision/dart/KIDOCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
+#include "kido/collision/kido/KIDOCollisionDetector.h"
+#include "kido/collision/fcl/FCLCollisionDetector.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/constraint/ConstraintSolver.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/PlaneShape.h"
+#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/PrismaticJoint.h"
+#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/ScrewJoint.h"
+#include "kido/dynamics/TranslationalJoint.h"
+#include "kido/dynamics/BallJoint.h"
+#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/EulerJoint.h"
+#include "kido/dynamics/UniversalJoint.h"
+#include "kido/dynamics/PlanarJoint.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Marker.h"
+#include "kido/simulation/World.h"
+#include "kido/utils/SkelParser.h"
+#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Uri.h"
 
 namespace kido {
 namespace utils {
@@ -114,10 +114,10 @@ simulation::WorldPtr SkelParser::readWorld(
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument _kidoFile;
   try
   {
-    openXMLFile(_dartFile, _uri, retriever);
+    openXMLFile(_kidoFile, _uri, retriever);
   }
   catch(std::exception const& e)
   {
@@ -126,7 +126,7 @@ simulation::WorldPtr SkelParser::readWorld(
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartFile);
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_kidoFile);
   if(!worldElement)
   {
     dterr << "[SkelParser::readWorld] File named [" << _uri.toString()
@@ -145,14 +145,14 @@ simulation::WorldPtr SkelParser::readWorldXML(
 {
   const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
 
-  tinyxml2::XMLDocument _dartXML;
-  if(_dartXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS)
+  tinyxml2::XMLDocument _kidoXML;
+  if(_kidoXML.Parse(_xmlString.c_str()) != tinyxml2::XML_SUCCESS)
   {
-    _dartXML.PrintError();
+    _kidoXML.PrintError();
     return nullptr;
   }
 
-  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_dartXML);
+  tinyxml2::XMLElement* worldElement = checkFormatAndGetWorldElement(_kidoXML);
   if(!worldElement)
   {
     dterr << "[SkelParser::readWorldXML] XML String could not be parsed!\n";
@@ -171,10 +171,10 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument _kidoFile;
   try
   {
-    openXMLFile(_dartFile, _fileUri, retriever);
+    openXMLFile(_kidoFile, _fileUri, retriever);
   }
   catch(std::exception const& e)
   {
@@ -186,7 +186,7 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   //--------------------------------------------------------------------------
   // Load KIDO
   tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _dartFile.FirstChildElement("skel");
+  skelElement = _kidoFile.FirstChildElement("skel");
   if (skelElement == nullptr)
   {
     dterr << "Skel file[" << _fileUri.toString()
@@ -263,7 +263,7 @@ simulation::WorldPtr SkelParser::readWorld(
         newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::FCLCollisionDetector());
       }
-      else if (strCD == "dart")
+      else if (strCD == "kido")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
               new collision::KIDOCollisionDetector());
@@ -1411,7 +1411,7 @@ static void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
       {
         dtwarn << "[SkelParser] <damping> tag is now an element under the "
                << "<dynamics> tag. Please see "
-               << "(https://github.com/dartsim/dart/wiki/) for more details.\n";
+               << "(https://github.com/kidosim/kido/wiki/) for more details.\n";
         double damping = getValueDouble(axisElement, "damping");
         *proxy.dampingCoefficient = damping;
       }

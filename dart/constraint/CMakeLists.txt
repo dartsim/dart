@@ -18,7 +18,7 @@ set(kido_constraint_srcs ${srcs} PARENT_SCOPE)
 kido_get_filename_components(header_names "constraint headers" ${hdrs})
 kido_generate_include_header_list(
   constraint_headers
-  "dart/constraint/"
+  "kido/constraint/"
   "constraint headers"
   ${header_names}
 )
@@ -30,7 +30,7 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.h
-  DESTINATION include/dart/constraint
+  DESTINATION include/kido/constraint
   COMPONENT headers
 )
 #install(TARGETS kido_constraint EXPORT KIDOCoreTargets DESTINATION lib)

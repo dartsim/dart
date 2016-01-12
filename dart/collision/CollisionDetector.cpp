@@ -35,16 +35,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionDetector.h"
+#include "kido/collision/CollisionDetector.h"
 
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/CollisionNode.h"
+#include "kido/common/Console.h"
+#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Skeleton.h"
+#include "kido/collision/CollisionNode.h"
 
 namespace kido {
 namespace collision {

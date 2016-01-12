@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Function.h"
+#include "kido/optimizer/Function.h"
 
-#include "dart/common/Console.h"
+#include "kido/common/Console.h"
 
 namespace kido {
 namespace optimizer {

@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/LCPSolver.h"
+#include "kido/constraint/LCPSolver.h"
 
 #include <cassert>
 

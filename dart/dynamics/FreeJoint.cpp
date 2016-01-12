@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/FreeJoint.h"
+#include "kido/dynamics/FreeJoint.h"
 
 #include <string>
 
-#include "dart/math/Helpers.h"
-#include "dart/math/Geometry.h"
+#include "kido/math/Helpers.h"
+#include "kido/math/Geometry.h"
 
 namespace kido {
 namespace dynamics {

@@ -42,8 +42,8 @@
  */
 
 #include "RRT.h"
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include "kido/simulation/World.h"
+#include "kido/dynamics/Skeleton.h"
 #include <flann/flann.hpp>
 
 using namespace std;
