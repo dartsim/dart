@@ -105,7 +105,7 @@ for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
   {
     const ShapePtr& shape = bn->getVisualizationShape(j);
 
-    shape->setColor(dart::Color::Blue());
+    shape->setColor(kido::Color::Blue());
   }
 
   // TODO: Remove any arrows
@@ -167,7 +167,7 @@ zeroth indexed visualization shape will be the shape that depicts the joint.
 So now we will color it red:
 
 ```cpp
-shape->setColor(dart::Color::Red());
+shape->setColor(kido::Color::Red());
 ```
 
 ### Lesson 1c: Apply body forces based on user input
@@ -222,7 +222,7 @@ grab the Shape for the body and color it red:
 
 ```cpp
 const ShapePtr& shape = bn->getVisualizationShape(1);
-shape->setColor(dart::Color::Red());
+shape->setColor(kido::Color::Red());
 ```
 
 Last time we grabbed the 0-index visualization shape, because we trusted that
@@ -364,7 +364,7 @@ Eigen::Vector3d location =
 Now we can create the BallJointConstraint:
 
 ```cpp
-mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+mBallConstraint = new kido::constraint::BallJointConstraint(tip, location);
 ```
 
 And then add it to the world:

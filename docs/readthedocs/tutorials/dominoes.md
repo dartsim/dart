@@ -102,7 +102,7 @@ because this could make for a very ugly (perhaps even broken) simulation.
 First, we'll tell the world to compute collisions:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
+kido::collision::CollisionDetector* detector =
     mWorld->getConstraintSolver()->getCollisionDetector();
 detector->detectCollision(true, true);
 ```
@@ -120,7 +120,7 @@ for(size_t i = 0; i < collisionCount; ++i)
 {
   // If neither of the colliding BodyNodes belongs to the floor, then we
   // know the new domino is in contact with something it shouldn't be
-  const dart::collision::Contact& contact = detector->getContact(i);
+  const kido::collision::Contact& contact = detector->getContact(i);
   if(contact.bodyNode1.lock()->getSkeleton() != mFloor
      && contact.bodyNode2.lock()->getSkeleton() != mFloor)
   {
@@ -215,11 +215,11 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::utils::DartLoader`` class (pending upcoming changes to KIDO's
+by the ``kido::utils::DartLoader`` class (pending upcoming changes to KIDO's
 loading system). First, create a loader:
 
 ```cpp
-dart::utils::DartLoader loader;
+kido::utils::DartLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations

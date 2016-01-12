@@ -585,7 +585,7 @@ We can access the world's collision detector directly to check make sure the
 new object is collision-free:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
+kido::collision::CollisionDetector* detector =
     mWorld->getConstraintSolver()->getCollisionDetector();
 detector->detectCollision(true, true);
 ```
@@ -599,7 +599,7 @@ bool collision = false;
 size_t collisionCount = detector->getNumContacts();
 for(size_t i = 0; i < collisionCount; ++i)
 {
-  const dart::collision::Contact& contact = detector->getContact(i);
+  const kido::collision::Contact& contact = detector->getContact(i);
   if(contact.bodyNode1.lock()->getSkeleton() == object
      || contact.bodyNode2.lock()->getSkeleton() == object)
   {
@@ -820,7 +820,7 @@ tail BodyNode.
 Now we have everything we need to construct the constraint:
 
 ```cpp
-auto constraint = new dart::constraint::BallJointConstraint(
+auto constraint = new kido::constraint::BallJointConstraint(
       head, tail, offset);
 ```
 
