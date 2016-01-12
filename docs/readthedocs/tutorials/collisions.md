@@ -11,11 +11,11 @@ The tutorial consists of five Lessons covering the following topics:
 - Setting joint spring and damping properties
 - Creating a closed kinematic chain
 
-Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/kido/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/kido/tutorials/tutorialCollisions-Finished.cpp).
+Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions-Finished.cpp).
 
 # Lesson 1: Creating a rigid body
 
-Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/kido/tutorials/tutorialCollisions.cpp).
+Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions.cpp).
 Find the function named ``addRigidBody``. You will notice that this is a templated
 function. If you're not familiar with templates, that's okay; we won't be doing
 anything too complicated with them. Different Joint types in KIDO are managed by
