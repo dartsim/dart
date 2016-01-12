@@ -55,7 +55,7 @@ namespace kido {
 namespace optimizer {
 
 class Problem;
-class DartTNLP;
+class KidoTNLP;
 
 /// \brief class IpoptSolver
 class IpoptSolver : public Solver
@@ -99,15 +99,15 @@ private:
   Ipopt::SmartPtr<Ipopt::IpoptApplication> mIpoptApp;
 };
 
-/// class DartTNLP
-class DartTNLP : public Ipopt::TNLP
+/// class KidoTNLP
+class KidoTNLP : public Ipopt::TNLP
 {
 public:
 
   friend class IpoptSolver;
 
   /// \brief
-  virtual ~DartTNLP();
+  virtual ~KidoTNLP();
 
   //------------------------- Ipopt::TNLP --------------------------------------
   /// \brief Method to return some info about the nlp
@@ -202,7 +202,7 @@ public:
 private:
 
   /// \brief
-  explicit DartTNLP(IpoptSolver* _solver);
+  explicit KidoTNLP(IpoptSolver* _solver);
 
   /// \brief KIDO optimization problem
   IpoptSolver* mSolver;

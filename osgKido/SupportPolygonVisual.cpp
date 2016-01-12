@@ -42,7 +42,7 @@
 
 #include "SupportPolygonVisual.h"
 
-namespace osgDart {
+namespace osgKido {
 
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton,
@@ -399,4 +399,4 @@ void SupportPolygonVisual::initialize()
   addChild(mComNode);
 }
 
-} // namespace osgDart
+} // namespace osgKido

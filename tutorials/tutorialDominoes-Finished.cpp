@@ -472,7 +472,7 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
-  kido::utils::DartLoader loader;
+  kido::utils::KidoLoader loader;
   SkeletonPtr manipulator =
       loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");

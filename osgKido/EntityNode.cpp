@@ -34,16 +34,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/EntityNode.h"
-#include "osgDart/render/ShapeNode.h"
-#include "osgDart/render/BoxShapeNode.h"
-#include "osgDart/render/EllipsoidShapeNode.h"
-#include "osgDart/render/CylinderShapeNode.h"
-#include "osgDart/render/PlaneShapeNode.h"
-#include "osgDart/render/MeshShapeNode.h"
-#include "osgDart/render/SoftMeshShapeNode.h"
-#include "osgDart/render/LineSegmentShapeNode.h"
-#include "osgDart/render/WarningShapeNode.h"
+#include "osgKido/EntityNode.h"
+#include "osgKido/render/ShapeNode.h"
+#include "osgKido/render/BoxShapeNode.h"
+#include "osgKido/render/EllipsoidShapeNode.h"
+#include "osgKido/render/CylinderShapeNode.h"
+#include "osgKido/render/PlaneShapeNode.h"
+#include "osgKido/render/MeshShapeNode.h"
+#include "osgKido/render/SoftMeshShapeNode.h"
+#include "osgKido/render/LineSegmentShapeNode.h"
+#include "osgKido/render/WarningShapeNode.h"
 
 #include "kido/common/Console.h"
 #include "kido/dynamics/Entity.h"
@@ -55,7 +55,7 @@
 #include "kido/dynamics/SoftMeshShape.h"
 #include "kido/dynamics/LineSegmentShape.h"
 
-namespace osgDart {
+namespace osgKido {
 
 EntityNode::EntityNode(kido::dynamics::Entity* _entity, FrameNode* _parent)
   : mEntity(_entity),
@@ -156,7 +156,7 @@ void EntityNode::refreshShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
 static void warnAboutUnsuccessfulCast(const std::string& shapeType,
                                       const std::string& entityName)
 {
-  dtwarn << "[osgDart::EntityNode::createShapeNode] A Shape in '" << entityName
+  dtwarn << "[osgKido::EntityNode::createShapeNode] A Shape in '" << entityName
          << "' claimed to be a '" << shapeType << "' but it failed to be "
          << "dynamically cast to that type. "
          << "It will not be added to the OSG tree, "
@@ -262,4 +262,4 @@ void EntityNode::createShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
   addChild(node->getNode());
 }
 
-} // namespace osgDart
+} // namespace osgKido

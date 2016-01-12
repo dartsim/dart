@@ -40,9 +40,9 @@
 #include "kido/common/Subject.h"
 #include "kido/common/Observer.h"
 
-#include "osgDart/DefaultEventHandler.h"
+#include "osgKido/DefaultEventHandler.h"
 
-namespace osgDart
+namespace osgKido
 {
 
 class DefaultEventHandler;
@@ -72,6 +72,6 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_MOUSEEVENTHANDLER_H

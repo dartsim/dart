@@ -36,7 +36,7 @@
 
 #include <kido/kido.h>
 
-#include <osgDart/osgDart.h>
+#include <osgKido/osgKido.h>
 
 
 using namespace kido::dynamics;
@@ -693,7 +693,7 @@ protected:
 
 };
 
-class TeleoperationWorld : public osgDart::WorldNode
+class TeleoperationWorld : public osgKido::WorldNode
 {
 public:
 
@@ -712,7 +712,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : osgDart::WorldNode(_world),
+    : osgKido::WorldNode(_world),
       mHubo(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -834,7 +834,7 @@ class InputHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(osgDart::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(osgKido::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& hubo, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -1034,7 +1034,7 @@ public:
 
 protected:
 
-  osgDart::Viewer* mViewer;
+  osgKido::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -1084,7 +1084,7 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  kido::utils::DartLoader loader;
+  kido::utils::KidoLoader loader;
   loader.addPackageDirectory("drchubo", KIDO_DATA_PATH"/urdf/drchubo");
   SkeletonPtr hubo =
       loader.parseSkeleton(KIDO_DATA_PATH"/urdf/drchubo/drchubo.urdf");
@@ -1151,7 +1151,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_hand");
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  osgDart::InteractiveFramePtr lh_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr lh_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   l_hand->getIK(true)->setTarget(lh_target);
@@ -1178,7 +1178,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_hand");
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  osgDart::InteractiveFramePtr rh_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr rh_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   r_hand->getIK(true)->setTarget(rh_target);
@@ -1221,7 +1221,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_foot");
   l_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr lf_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   l_foot->getIK(true)->setTarget(lf_target);
@@ -1244,7 +1244,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_foot");
   r_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr rf_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   r_foot->getIK(true)->setTarget(rf_target);
@@ -1275,7 +1275,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* l_peg = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
   l_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  osgDart::InteractiveFramePtr lp_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr lp_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "lp_target"));
 
   l_peg->getIK(true)->setTarget(lp_target);
@@ -1293,7 +1293,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* r_peg = hubo->getBodyNode("Body_RWP")->createEndEffector("r_peg");
   r_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  osgDart::InteractiveFramePtr rp_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr rp_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "rp_target"));
 
   r_peg->getIK(true)->setTarget(rp_target);
@@ -1315,7 +1315,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
 
-void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& hubo)
+void enableDragAndDrops(osgKido::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < hubo->getNumBodyNodes(); ++i)
@@ -1328,7 +1328,7 @@ void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& hubo)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<osgDart::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<osgKido::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -1390,7 +1390,7 @@ int main()
 
   osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
 
-  osgDart::Viewer viewer;
+  osgKido::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 
@@ -1399,7 +1399,7 @@ int main()
   viewer.addEventHandler(new InputHandler(&viewer, node, hubo, world));
 
   double display_elevation = 0.05;
-  viewer.addAttachment(new osgDart::SupportPolygonVisual(
+  viewer.addAttachment(new osgKido::SupportPolygonVisual(
                          hubo, display_elevation));
 
   std::cout << viewer.getInstructions() << std::endl;

@@ -1,4 +1,4 @@
-#include "DartLoader.h"
+#include "KidoLoader.h"
 
 #include <map>
 #include <iostream>
@@ -28,7 +28,7 @@ using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 namespace kido {
 namespace utils {
 
-DartLoader::DartLoader()
+KidoLoader::KidoLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),
     mPackageRetriever(new utils::PackageResourceRetriever(mLocalRetriever)),
     mRetriever(new utils::CompositeResourceRetriever)
@@ -37,13 +37,13 @@ DartLoader::DartLoader()
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
 }
 
-void DartLoader::addPackageDirectory(const std::string& _packageName,
+void KidoLoader::addPackageDirectory(const std::string& _packageName,
                                      const std::string& _packageDirectory)
 {
   mPackageRetriever->addPackageDirectory(_packageName, _packageDirectory);
 }
 
-dynamics::SkeletonPtr DartLoader::parseSkeleton(
+dynamics::SkeletonPtr KidoLoader::parseSkeleton(
   const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
@@ -58,7 +58,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
   if(!urdfInterface)
   {
-    dtwarn << "[DartLoader::readSkeleton] Failed loading URDF file '"
+    dtwarn << "[KidoLoader::readSkeleton] Failed loading URDF file '"
            << _uri.toString() << "'.\n";
     return nullptr;
   }
@@ -66,13 +66,13 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
   return modelInterfaceToSkeleton(urdfInterface.get(), _uri, resourceRetriever);
 }
 
-dynamics::SkeletonPtr DartLoader::parseSkeletonString(
+dynamics::SkeletonPtr KidoLoader::parseSkeletonString(
     const std::string& _urdfString, const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if(_urdfString.empty())
   {
-    dtwarn << "[DartLoader::parseSkeletonString] A blank string cannot be "
+    dtwarn << "[KidoLoader::parseSkeletonString] A blank string cannot be "
            << "parsed into a Skeleton. Returning a nullptr\n";
     return nullptr;
   }
@@ -80,7 +80,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
   ModelInterfacePtr urdfInterface = urdf::parseURDF(_urdfString);
   if(!urdfInterface)
   {
-    dtwarn << "[DartLoader::parseSkeletonString] Failed loading URDF.\n";
+    dtwarn << "[KidoLoader::parseSkeletonString] Failed loading URDF.\n";
     return nullptr;
   }
 
@@ -88,7 +88,7 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     urdfInterface.get(), _baseUri, getResourceRetriever(_resourceRetriever));
 }
 
-simulation::WorldPtr DartLoader::parseWorld(
+simulation::WorldPtr KidoLoader::parseWorld(
   const common::Uri& _uri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
@@ -102,7 +102,7 @@ simulation::WorldPtr DartLoader::parseWorld(
   return parseWorldString(content, _uri, _resourceRetriever);
 }
 
-simulation::WorldPtr DartLoader::parseWorldString(
+simulation::WorldPtr KidoLoader::parseWorldString(
     const std::string& _urdfString, const common::Uri& _baseUri,
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
@@ -111,7 +111,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
   if(_urdfString.empty())
   {
-    dtwarn << "[DartLoader::parseWorldString] A blank string cannot be "
+    dtwarn << "[KidoLoader::parseWorldString] A blank string cannot be "
            << "parsed into a World. Returning a nullptr\n";
     return nullptr;
   }
@@ -121,7 +121,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
   if(!worldInterface)
   {
-    dtwarn << "[DartLoader::parseWorldString] Failed loading URDF.\n";
+    dtwarn << "[KidoLoader::parseWorldString] Failed loading URDF.\n";
     return nullptr;
   }
 
@@ -135,7 +135,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
     if(!skeleton)
     {
-      dtwarn << "[DartLoader::parseWorldString] Robot " << worldInterface->models[i].model->getName()
+      dtwarn << "[KidoLoader::parseWorldString] Robot " << worldInterface->models[i].model->getName()
              << " was not correctly parsed!\n";
       continue;
     }
@@ -159,7 +159,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
  * @function modelInterfaceToSkeleton
  * @brief Read the ModelInterface and spits out a Skeleton object
  */
-dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
+dynamics::SkeletonPtr KidoLoader::modelInterfaceToSkeleton(
   const urdf::ModelInterface* _model,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
@@ -172,21 +172,21 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   {
     if(_model->getRoot()->child_links.size() != 1)
     {
-      dterr << "[DartLoader::modelInterfaceToSkeleton] No unique link attached to world.\n";
+      dterr << "[KidoLoader::modelInterfaceToSkeleton] No unique link attached to world.\n";
     }
     else
     {
       root = root->child_links[0].get();
       dynamics::BodyNode::Properties rootProperties;
-      if (!createDartNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
+      if (!createKidoNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
         return nullptr;
 
-      rootNode = createDartJointAndNode(
+      rootNode = createKidoJointAndNode(
         root->parent_joint.get(), rootProperties, nullptr, skeleton,
         _baseUri, _resourceRetriever);
       if(nullptr == rootNode)
       {
-        dterr << "[DartLoader::modelInterfaceToSkeleton] Failed to create root node!\n";
+        dterr << "[KidoLoader::modelInterfaceToSkeleton] Failed to create root node!\n";
         return nullptr;
       }
     }
@@ -194,7 +194,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   else
   {
     dynamics::BodyNode::Properties rootProperties;
-    if (!createDartNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
+    if (!createKidoNodeProperties(root, rootProperties, _baseUri, _resourceRetriever))
       return nullptr;
 
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
@@ -218,7 +218,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   return skeleton;
 }
 
-bool DartLoader::createSkeletonRecursive(
+bool KidoLoader::createSkeletonRecursive(
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode* _parentNode,
@@ -226,10 +226,10 @@ bool DartLoader::createSkeletonRecursive(
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(_lk, properties, _baseUri, _resourceRetriever))
+  if (!createKidoNodeProperties(_lk, properties, _baseUri, _resourceRetriever))
     return false;
 
-  dynamics::BodyNode* node = createDartJointAndNode(
+  dynamics::BodyNode* node = createKidoJointAndNode(
     _lk->parent_joint.get(), properties, _parentNode, _skel,
     _baseUri, _resourceRetriever);
   if(!node)
@@ -248,7 +248,7 @@ bool DartLoader::createSkeletonRecursive(
 /**
  * @function readXml
  */
-bool DartLoader::readFileToString(
+bool KidoLoader::readFileToString(
   const common::ResourceRetrieverPtr& _resourceRetriever,
   const common::Uri& _uri,
   std::string &_output)
@@ -266,9 +266,9 @@ bool DartLoader::readFileToString(
 }
 
 /**
- * @function createDartJoint
+ * @function createKidoJoint
  */
-dynamics::BodyNode* DartLoader::createDartJointAndNode(
+dynamics::BodyNode* KidoLoader::createKidoJointAndNode(
     const urdf::Joint* _jt,
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
@@ -368,7 +368,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     default:
     {
-      dterr << "[DartLoader::createDartJoint] Unsupported joint type ("
+      dterr << "[KidoLoader::createKidoJoint] Unsupported joint type ("
             << _jt->type << ")\n";
       return nullptr;
     }
@@ -378,9 +378,9 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 }
 
 /**
- * @function createDartNode
+ * @function createKidoNode
  */
-bool DartLoader::createDartNodeProperties(
+bool KidoLoader::createKidoNodeProperties(
   const urdf::Link* _lk,
   dynamics::BodyNode::Properties &node,
   const common::Uri& _baseUri,
@@ -446,7 +446,7 @@ void setMaterial(dynamics::ShapePtr _shape, const urdf::Collision* _col) {
  * @function createShape
  */
 template <class VisualOrCollision>
-dynamics::ShapePtr DartLoader::createShape(
+dynamics::ShapePtr KidoLoader::createShape(
   const VisualOrCollision* _vizOrCol,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever)
@@ -478,7 +478,7 @@ dynamics::ShapePtr DartLoader::createShape(
     common::Uri relativeUri, absoluteUri;
     if(!absoluteUri.fromRelativeUri(_baseUri, mesh->filename))
     {
-      dtwarn << "[DartLoader::createShape] Failed resolving mesh URI '"
+      dtwarn << "[KidoLoader::createShape] Failed resolving mesh URI '"
              << mesh->filename << "' relative to '" << _baseUri.toString()
              << "'.\n";
       return nullptr;
@@ -498,7 +498,7 @@ dynamics::ShapePtr DartLoader::createShape(
   // Unknown geometry type
   else
   {
-    dtwarn << "[DartLoader::createShape] Unknown URDF Shape type "
+    dtwarn << "[KidoLoader::createShape] Unknown URDF Shape type "
            << "(we only know of Sphere, Box, Cylinder, and Mesh). "
            << "We are returning a nullptr." << std::endl;
     return nullptr;
@@ -509,7 +509,7 @@ dynamics::ShapePtr DartLoader::createShape(
   return shape;
 }
 
-common::ResourceRetrieverPtr DartLoader::getResourceRetriever(
+common::ResourceRetrieverPtr KidoLoader::getResourceRetriever(
   const common::ResourceRetrieverPtr& _resourceRetriever)
 {
   if (_resourceRetriever)
@@ -518,11 +518,11 @@ common::ResourceRetrieverPtr DartLoader::getResourceRetriever(
     return mRetriever;
 }
 
-template dynamics::ShapePtr DartLoader::createShape<urdf::Visual>(
+template dynamics::ShapePtr KidoLoader::createShape<urdf::Visual>(
   const urdf::Visual* _vizOrCol,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever);
-template dynamics::ShapePtr DartLoader::createShape<urdf::Collision>(
+template dynamics::ShapePtr KidoLoader::createShape<urdf::Collision>(
   const urdf::Collision* _vizOrCol,
   const common::Uri& _baseUri,
   const common::ResourceRetrieverPtr& _resourceRetriever);
@@ -530,7 +530,7 @@ template dynamics::ShapePtr DartLoader::createShape<urdf::Collision>(
 /**
  * @function pose2Affine3d
  */
-Eigen::Isometry3d DartLoader::toEigen(const urdf::Pose& _pose) {
+Eigen::Isometry3d KidoLoader::toEigen(const urdf::Pose& _pose) {
     Eigen::Quaterniond quat;
     _pose.rotation.getQuaternion(quat.x(), quat.y(), quat.z(), quat.w());
     Eigen::Isometry3d transform(quat);
@@ -538,7 +538,7 @@ Eigen::Isometry3d DartLoader::toEigen(const urdf::Pose& _pose) {
     return transform;
 }
 
-Eigen::Vector3d DartLoader::toEigen(const urdf::Vector3& _vector) {
+Eigen::Vector3d KidoLoader::toEigen(const urdf::Vector3& _vector) {
     return Eigen::Vector3d(_vector.x, _vector.y, _vector.z);
 }
 

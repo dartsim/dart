@@ -4,30 +4,30 @@ find_package(OpenSceneGraph 3.0 QUIET
 
 if(${OPENSCENEGRAPH_FOUND})
 
-  message(STATUS "Found OpenSceneGraph -- Building osgDart")
+  message(STATUS "Found OpenSceneGraph -- Building osgKido")
 
   include_directories(${OpenSceneGraph_INCLUDE_DIRS})
 
-  file(GLOB osgDart_srcs "*.cpp" "render/*.cpp" "render/*.h")
-  file(GLOB osgDart_hdrs "*.h")
+  file(GLOB osgKido_srcs "*.cpp" "render/*.cpp" "render/*.h")
+  file(GLOB osgKido_hdrs "*.h")
 
-  kido_add_library(osgDart ${osgDart_srcs} ${osgDart_hdrs})
-  target_link_libraries(osgDart
+  kido_add_library(osgKido ${osgKido_srcs} ${osgKido_hdrs})
+  target_link_libraries(osgKido
     kido-core
     ${OPENSCENEGRAPH_LIBRARIES}
   )
 
-  kido_get_filename_components(header_names "osgDart headers" ${osgDart_hdrs})
+  kido_get_filename_components(header_names "osgKido headers" ${osgKido_hdrs})
   list(APPEND header_names "render/render.h")
   kido_generate_include_header_list(
-    osgDart_headers
-    "osgDart/"
-    "osgDart headers"
+    osgKido_headers
+    "osgKido/"
+    "osgKido headers"
     ${header_names}
   )
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/osgDart.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/osgKido.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/osgKido.h
   )
 
   add_subdirectory(render)
@@ -37,18 +37,18 @@ if(${OPENSCENEGRAPH_FOUND})
   endif(${KIDO_BUILD_EXAMPLES})
 
   install(
-    FILES ${osgDart_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgDart.h
-    DESTINATION include/osgDart
+    FILES ${osgKido_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgKido.h
+    DESTINATION include/osgKido
     COMPONENT headers
   )
 
-  install(TARGETS osgDart EXPORT osgDartTargets DESTINATION lib)
+  install(TARGETS osgKido EXPORT osgKidoTargets DESTINATION lib)
 
 else(${OPENSCENEGRAPH_FOUND})
 
-  # osgDart requires both OSG and OpenThreads. This section attempts to identify
+  # osgKido requires both OSG and OpenThreads. This section attempts to identify
   # which of those are missing from the building machine and offer advice to the
-  # user for getting osgDart to build.
+  # user for getting osgKido to build.
 
   find_package(OpenThreads QUIET)
   if(${OPENTHREADS_FOUND})
@@ -65,7 +65,7 @@ else(${OPENSCENEGRAPH_FOUND})
 
   endif(${OPENTHREADS_FOUND})
 
-  message(WARNING "${warning_msg} -- we will skip osgDart\n"
+  message(WARNING "${warning_msg} -- we will skip osgKido\n"
           "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
 
 endif(${OPENSCENEGRAPH_FOUND})

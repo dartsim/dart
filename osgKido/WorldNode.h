@@ -41,7 +41,7 @@
 #include <map>
 #include <memory>
 
-#include "osgDart/Viewer.h"
+#include "osgKido/Viewer.h"
 
 namespace kido {
 
@@ -56,7 +56,7 @@ class Entity;
 
 } // namespace kido
 
-namespace osgDart
+namespace osgKido
 {
 
 class FrameNode;
@@ -138,9 +138,9 @@ protected:
   /// Destructor
   virtual ~WorldNode();
 
-  /// Called when this world gets added to an osgDart::Viewer. Override this
+  /// Called when this world gets added to an osgKido::Viewer. Override this
   /// function to customize the way your WorldNode starts up in an
-  /// osgDart::Viewer. Default behavior does nothing.
+  /// osgKido::Viewer. Default behavior does nothing.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -194,6 +194,6 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_WORLDNODE_H

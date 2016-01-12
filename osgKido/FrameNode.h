@@ -47,7 +47,7 @@ class Entity;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart
+namespace osgKido
 {
 
 class WorldNode;
@@ -122,6 +122,6 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_FRAMENODE_H

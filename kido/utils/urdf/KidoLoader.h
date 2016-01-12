@@ -1,5 +1,5 @@
 /**
- * @file DartLoader.h
+ * @file KidoLoader.h
  */
 
 #ifndef KIDO_UTILS_URDF_LOADER_H
@@ -47,12 +47,12 @@ namespace simulation
 namespace utils {
 
 /**
- * @class DartLoader
+ * @class KidoLoader
  */
-class DartLoader {
+class KidoLoader {
   public:
     /// Constructor with the default ResourceRetriever.
-    DartLoader();
+    KidoLoader();
 
     /// Specify the directory of a ROS package. In your URDF files, you may see
     /// strings with a package URI pattern such as:
@@ -116,7 +116,7 @@ private:
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    static dynamics::BodyNode* createDartJointAndNode(
+    static dynamics::BodyNode* createKidoJointAndNode(
       const urdf::Joint* _jt,
       const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
@@ -124,7 +124,7 @@ private:
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
-    static bool createDartNodeProperties(
+    static bool createKidoNodeProperties(
       const urdf::Link* _lk,
       dynamics::BodyNode::Properties &properties,
       const common::Uri& _baseUri,

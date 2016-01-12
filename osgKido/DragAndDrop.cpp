@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/DragAndDrop.h"
-#include "osgDart/DefaultEventHandler.h"
-#include "osgDart/Viewer.h"
-#include "osgDart/InteractiveFrame.h"
-#include "osgDart/MouseEventHandler.h"
+#include "osgKido/DragAndDrop.h"
+#include "osgKido/DefaultEventHandler.h"
+#include "osgKido/Viewer.h"
+#include "osgKido/InteractiveFrame.h"
+#include "osgKido/MouseEventHandler.h"
 
 #include "kido/dynamics/SimpleFrame.h"
 #include "kido/dynamics/MeshShape.h"
@@ -49,7 +49,7 @@
 
 #include "kido/math/Helpers.h"
 
-namespace osgDart {
+namespace osgKido {
 
 DragAndDrop::DragAndDrop(Viewer* viewer, kido::dynamics::Entity* entity)
   : mViewer(viewer),
@@ -83,12 +83,12 @@ void DragAndDrop::update()
   if(nullptr == mEntity)
     return;
 
-  osgDart::MouseButtonEvent event =
+  osgKido::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgDart::BUTTON_RELEASE == event)
+    if(osgKido::BUTTON_RELEASE == event)
     {
       mAmMoving = false;
       release();
@@ -98,13 +98,13 @@ void DragAndDrop::update()
   }
   else // not moving
   {
-    if(osgDart::BUTTON_PUSH == event)
+    if(osgKido::BUTTON_PUSH == event)
     {
-      const std::vector<osgDart::PickInfo>& picks =
+      const std::vector<osgKido::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+            osgKido::LEFT_MOUSE, osgKido::BUTTON_PUSH);
 
-      for(const osgDart::PickInfo& pick : picks)
+      for(const osgKido::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity)
         {
@@ -332,25 +332,25 @@ void SimpleFrameShapeDnD::update()
   if(nullptr == mEntity || nullptr == mShape)
     return;
 
-  osgDart::MouseButtonEvent event =
+  osgKido::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgDart::BUTTON_RELEASE == event)
+    if(osgKido::BUTTON_RELEASE == event)
       mAmMoving = false;
 
     move();
   }
   else
   {
-    if(osgDart::BUTTON_PUSH == event)
+    if(osgKido::BUTTON_PUSH == event)
     {
-      const std::vector<osgDart::PickInfo>& picks =
+      const std::vector<osgKido::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+            osgKido::LEFT_MOUSE, osgKido::BUTTON_PUSH);
 
-      for(const osgDart::PickInfo& pick : picks)
+      for(const osgKido::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity && pick.shape.get() == mShape)
         {
@@ -802,4 +802,4 @@ osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() cons
 }
 
 
-} // namespace osgDart
+} // namespace osgKido

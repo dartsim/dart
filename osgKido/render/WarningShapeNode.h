@@ -40,9 +40,9 @@
 #include <osg/Node>
 #include <memory>
 
-#include "osgDart/render/ShapeNode.h"
+#include "osgKido/render/ShapeNode.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class WarningShapeNode : public ShapeNode, public osg::Node
@@ -61,6 +61,6 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_RENDER_WARNINGSHAPENODE_H

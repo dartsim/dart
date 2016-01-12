@@ -39,7 +39,7 @@
 
 #include <osgGA/OrbitManipulator>
 
-namespace osgDart
+namespace osgKido
 {
 
 class OSGGA_EXPORT TrackballManipulator : public osgGA::OrbitManipulator
@@ -65,10 +65,10 @@ public:
                                                const double dx,
                                                const double dy) override;
 
-  META_Object( osgDart, TrackballManipulator )
-  // TODO(MXG): Consider applying the META macros to every osgDart Node
+  META_Object( osgKido, TrackballManipulator )
+  // TODO(MXG): Consider applying the META macros to every osgKido Node
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_TRACKBALLMANIPULATOR_H

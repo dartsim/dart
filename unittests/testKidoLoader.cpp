@@ -36,56 +36,56 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "kido/utils/urdf/DartLoader.h"
+#include "kido/utils/urdf/KidoLoader.h"
 
 using kido::common::Uri;
-using kido::utils::DartLoader;
+using kido::utils::KidoLoader;
 
-TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
+TEST(KidoLoader, parseSkeleton_NonExistantPathReturnsNull)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(KIDO_DATA_PATH"skel/test/does_not_exist.urdf"));
 }
 
-TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
+TEST(KidoLoader, parseSkeleton_InvalidUrdfReturnsNull)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(KIDO_DATA_PATH"urdf/test/invalid.urdf)"));
 }
 
-TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
+TEST(KidoLoader, parseSkeleton_MissingMeshReturnsNull)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(KIDO_DATA_PATH"urdf/test/missing_mesh.urdf"));
 }
 
-TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
+TEST(KidoLoader, parseSkeleton_InvalidMeshReturnsNull)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(KIDO_DATA_PATH"urdf/test/invalid_mesh.urdf"));
 }
 
-TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
+TEST(KidoLoader, parseSkeleton_MissingPackageReturnsNull)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_EQ(nullptr,
     loader.parseSkeleton(KIDO_DATA_PATH"urdf/test/missing_package.urdf"));
 }
 
-TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
+TEST(KidoLoader, parseSkeleton_LoadsPrimitiveGeometry)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_TRUE(nullptr !=
     loader.parseSkeleton(KIDO_DATA_PATH"urdf/test/primitive_geometry.urdf"));
 }
 
-TEST(DartLoader, parseWorld)
+TEST(KidoLoader, parseWorld)
 {
-  DartLoader loader;
+  KidoLoader loader;
   EXPECT_TRUE(nullptr !=
       loader.parseWorld(KIDO_DATA_PATH"urdf/test/testWorld.urdf"));
 }

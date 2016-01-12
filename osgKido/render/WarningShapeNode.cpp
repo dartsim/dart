@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/render/WarningShapeNode.h"
-#include "osgDart/EntityNode.h"
+#include "osgKido/render/WarningShapeNode.h"
+#include "osgKido/EntityNode.h"
 
 #include "kido/dynamics/Shape.h"
 #include "kido/dynamics/Entity.h"
 #include "kido/common/Console.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 WarningShapeNode::WarningShapeNode(std::shared_ptr<kido::dynamics::Shape> shape,
@@ -50,7 +50,7 @@ WarningShapeNode::WarningShapeNode(std::shared_ptr<kido::dynamics::Shape> shape,
 {
   dtwarn << "Shape type (" << shape->getShapeType()
          << ") found in Entity '" << parent->getEntity()->getName()
-         << "' is not currently supported by osgDart, "
+         << "' is not currently supported by osgKido, "
          << "and will not be rendered\n";
 }
 
@@ -67,4 +67,4 @@ WarningShapeNode::~WarningShapeNode()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

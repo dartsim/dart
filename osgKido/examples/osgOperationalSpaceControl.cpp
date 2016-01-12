@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/osgDart.h"
+#include "osgKido/osgKido.h"
 
 #include "kido/kido.h"
 
@@ -43,12 +43,12 @@ using namespace kido::common;
 using namespace kido::dynamics;
 using namespace kido::math;
 
-class OperationalSpaceControlWorld : public osgDart::WorldNode
+class OperationalSpaceControlWorld : public osgKido::WorldNode
 {
 public:
 
   OperationalSpaceControlWorld(kido::simulation::WorldPtr _world)
-    : osgDart::WorldNode(_world)
+    : osgKido::WorldNode(_world)
   {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -111,7 +111,7 @@ public:
     mRobot->setForces(mForces);
   }
 
-  osgDart::DragAndDrop* dnd;
+  osgKido::DragAndDrop* dnd;
 
 protected:
 
@@ -143,7 +143,7 @@ class ConstraintEventHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  ConstraintEventHandler(osgDart::DragAndDrop* dnd = nullptr)
+  ConstraintEventHandler(osgKido::DragAndDrop* dnd = nullptr)
     : mDnD(dnd)
   {
     clearConstraints();
@@ -249,13 +249,13 @@ public:
 
   bool mConstrained[3];
 
-  kido::sub_ptr<osgDart::DragAndDrop> mDnD;
+  kido::sub_ptr<osgKido::DragAndDrop> mDnD;
 };
 
 int main()
 {
   kido::simulation::WorldPtr world(new kido::simulation::World);
-  kido::utils::DartLoader loader;
+  kido::utils::KidoLoader loader;
 
   // Load the robot
   kido::dynamics::SkeletonPtr robot =
@@ -296,7 +296,7 @@ int main()
   node->setNumStepsPerCycle(10);
 
   // Create the Viewer instance
-  osgDart::Viewer viewer;
+  osgKido::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 

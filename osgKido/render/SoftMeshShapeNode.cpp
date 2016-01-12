@@ -37,14 +37,14 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
-#include "osgDart/render/SoftMeshShapeNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/render/SoftMeshShapeNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/SoftMeshShape.h"
 #include "kido/dynamics/SoftBodyNode.h"
 #include "kido/dynamics/PointMass.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
@@ -295,4 +295,4 @@ SoftMeshShapeDrawable::~SoftMeshShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

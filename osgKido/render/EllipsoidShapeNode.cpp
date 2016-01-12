@@ -39,12 +39,12 @@
 #include <osg/Light>
 #include <osg/Material>
 
-#include "osgDart/render/EllipsoidShapeNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/render/EllipsoidShapeNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/EllipsoidShape.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
@@ -231,4 +231,4 @@ EllipsoidShapeDrawable::~EllipsoidShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

@@ -43,7 +43,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Material>
 
-#include "osgDart/render/ShapeNode.h"
+#include "osgKido/render/ShapeNode.h"
 
 struct aiNode;
 
@@ -53,7 +53,7 @@ class MeshShape;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class osgAiNode;
@@ -83,6 +83,6 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_RENDER_MESHSHAPENODE_H

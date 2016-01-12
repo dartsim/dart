@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/TrackballManipulator.h"
+#include "osgKido/TrackballManipulator.h"
 
-namespace osgDart
+namespace osgKido
 {
 
 //==============================================================================
@@ -77,4 +77,4 @@ bool TrackballManipulator::performMovementRightMouseButton(
         eventTimeDelta, dx, dy);
 }
 
-} // namespace osgDart
+} // namespace osgKido

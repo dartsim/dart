@@ -41,13 +41,13 @@
 #include <osg/Geometry>
 #include <osg/CullFace>
 
-#include "osgDart/render/MeshShapeNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/render/MeshShapeNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/MeshShape.h"
 #include "kido/common/Console.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class osgAiNode : public ShapeNode, public osg::MatrixTransform
@@ -685,4 +685,4 @@ MeshShapeGeometry::~MeshShapeGeometry()
 }
 
 } // render
-} // osgDart
+} // osgKido

@@ -39,12 +39,12 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include "osgDart/Viewer.h"
-#include "osgDart/TrackballManipulator.h"
-#include "osgDart/DefaultEventHandler.h"
-#include "osgDart/DragAndDrop.h"
-#include "osgDart/WorldNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/Viewer.h"
+#include "osgKido/TrackballManipulator.h"
+#include "osgKido/DefaultEventHandler.h"
+#include "osgKido/DragAndDrop.h"
+#include "osgKido/WorldNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/simulation/World.h"
 
@@ -52,7 +52,7 @@
 #include "kido/dynamics/Shape.h"
 #include "kido/dynamics/BodyNode.h"
 
-namespace osgDart
+namespace osgKido
 {
 
 class SaveScreen : public osg::Camera::DrawCallback
@@ -208,7 +208,7 @@ Viewer::Viewer(const osg::Vec4& clearColor)
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  setCameraManipulator(new osgDart::TrackballManipulator);
+  setCameraManipulator(new osgKido::TrackballManipulator);
   addInstructionText("Left-click:   Interaction\n");
   addInstructionText("Right-click:  Rotate view\n");
   addInstructionText("Middle-click: Translate view\n");
@@ -660,7 +660,7 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 
 //==============================================================================
 InteractiveFrameDnD* Viewer::enableDragAndDrop(
-    osgDart::InteractiveFrame* _frame)
+    osgKido::InteractiveFrame* _frame)
 {
   if(nullptr == _frame)
     return nullptr;
@@ -827,4 +827,4 @@ const osg::ref_ptr<osg::Group>& Viewer::getRootGroup() const
   return mRootGroup;
 }
 
-} // namespace osgDart
+} // namespace osgKido

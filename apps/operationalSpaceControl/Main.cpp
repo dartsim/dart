@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
   assert(world != nullptr);
 
   // load skeletons
-  kido::utils::DartLoader dl;
+  kido::utils::KidoLoader dl;
   kido::dynamics::SkeletonPtr ground
       = dl.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/ground.urdf");
   kido::dynamics::SkeletonPtr robot

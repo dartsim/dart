@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/osgDart.h"
+#include "osgKido/osgKido.h"
 
 #include "kido/kido.h"
 
@@ -134,7 +134,7 @@ protected:
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public osgDart::WorldNode
+class TeleoperationWorld : public osgKido::WorldNode
 {
 public:
 
@@ -153,7 +153,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : osgDart::WorldNode(_world),
+    : osgKido::WorldNode(_world),
       mAtlas(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -267,7 +267,7 @@ class InputHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(osgDart::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(osgKido::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& atlas, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -462,7 +462,7 @@ public:
 
 protected:
 
-  osgDart::Viewer* mViewer;
+  osgKido::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -514,7 +514,7 @@ SkeletonPtr createGround()
 SkeletonPtr createAtlas()
 {
   // Parse in the atlas model
-  DartLoader urdf;
+  KidoLoader urdf;
   SkeletonPtr atlas =
       urdf.parseSkeleton(KIDO_DATA_PATH"sdf/atlas/atlas_v3_no_head.urdf");
 
@@ -592,7 +592,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the left hand
-  osgDart::InteractiveFramePtr lh_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr lh_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   // Set the target of the left hand to the interactive frame. We pass true into
@@ -628,7 +628,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the right hand
-  osgDart::InteractiveFramePtr rh_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr rh_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   // Create the right hand's IK and set its target
@@ -678,7 +678,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the left foot
-  osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr lf_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   // Create the left foot's IK and set its target
@@ -707,7 +707,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the right foot
-  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr rf_target(new osgKido::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   // Create the right foot's IK module and set its target
@@ -818,7 +818,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
-void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& atlas)
+void enableDragAndDrops(osgKido::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < atlas->getNumBodyNodes(); ++i)
@@ -831,7 +831,7 @@ void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& atlas)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<osgDart::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<osgKido::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -855,7 +855,7 @@ int main()
 
   osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, atlas);
 
-  osgDart::Viewer viewer;
+  osgKido::Viewer viewer;
 
   // Prevent this World from simulating
   viewer.allowSimulation(false);
@@ -867,7 +867,7 @@ int main()
   enableDragAndDrops(viewer, atlas);
 
   // Attach a support polygon visualizer
-  viewer.addAttachment(new osgDart::SupportPolygonVisual(
+  viewer.addAttachment(new osgKido::SupportPolygonVisual(
                          atlas, display_elevation));
 
   // Print out instructions for the viewer

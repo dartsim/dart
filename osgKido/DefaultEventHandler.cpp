@@ -36,19 +36,19 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include "osgDart/DefaultEventHandler.h"
-#include "osgDart/MouseEventHandler.h"
-#include "osgDart/Viewer.h"
-#include "osgDart/render/ShapeNode.h"
-#include "osgDart/EntityNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/DefaultEventHandler.h"
+#include "osgKido/MouseEventHandler.h"
+#include "osgKido/Viewer.h"
+#include "osgKido/render/ShapeNode.h"
+#include "osgKido/EntityNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/Entity.h"
 
 
 #include <iostream>
 
-namespace osgDart
+namespace osgKido
 {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
@@ -442,4 +442,4 @@ void DefaultEventHandler::handleDestructionNotification(
     mMouseEventHandlers.erase(it);
 }
 
-} // namespace osgDart
+} // namespace osgKido

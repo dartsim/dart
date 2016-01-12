@@ -40,7 +40,7 @@
 #include <osg/ShapeDrawable>
 #include <osg/MatrixTransform>
 
-#include "osgDart/render/ShapeNode.h"
+#include "osgKido/render/ShapeNode.h"
 
 namespace kido {
 namespace dynamics {
@@ -48,7 +48,7 @@ class EllipsoidShape;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class EllipsoidShapeGeode;
@@ -75,6 +75,6 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_H

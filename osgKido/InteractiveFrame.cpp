@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/InteractiveFrame.h"
+#include "osgKido/InteractiveFrame.h"
 #include "kido/dynamics/MeshShape.h"
 #include "kido/dynamics/ArrowShape.h"
 #include "kido/dynamics/LineSegmentShape.h"
 #include "kido/common/Console.h"
 
-namespace osgDart {
+namespace osgKido {
 
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
@@ -515,5 +515,5 @@ void InteractiveFrame::deleteAllTools()
       delete mTools[i][j];
 }
 
-} // namespace osgDart
+} // namespace osgKido
 

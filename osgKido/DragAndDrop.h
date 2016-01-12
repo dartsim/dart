@@ -52,14 +52,14 @@ class SimpleFrame;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart
+namespace osgKido
 {
 
 class Viewer;
 class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of kido
-/// Entities to be dragged and dropped in an osgDart environment
+/// Entities to be dragged and dropped in an osgKido environment
 class DragAndDrop : public kido::common::Subject,
                     public kido::common::Observer
 {
@@ -245,7 +245,7 @@ class InteractiveFrameDnD : public DragAndDrop
 public:
 
   /// Constructor
-  InteractiveFrameDnD(Viewer* viewer, osgDart::InteractiveFrame* frame);
+  InteractiveFrameDnD(Viewer* viewer, osgKido::InteractiveFrame* frame);
 
   /// Virtual destructor
   virtual ~InteractiveFrameDnD() = default;
@@ -357,7 +357,7 @@ protected:
   size_t mAdditionalBodyNodes;
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 
 #endif // OSGKIDO_DRAGANDDROP_H

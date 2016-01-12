@@ -48,7 +48,7 @@ namespace optimizer {
 IpoptSolver::IpoptSolver(const Solver::Properties& _properties)
   : Solver(_properties)
 {
-  mNlp = new DartTNLP(this);
+  mNlp = new KidoTNLP(this);
   mIpoptApp = IpoptApplicationFactory();
 }
 
@@ -59,7 +59,7 @@ IpoptSolver::IpoptSolver(std::shared_ptr<Problem> _problem)
   assert(_problem);
 
   // Create a new instance of nlp (use a SmartPtr, not raw)
-  mNlp = new DartTNLP(this);
+  mNlp = new KidoTNLP(this);
 
   // Create a new instance of IpoptApplication (use a SmartPtr, not raw). We are
   // using the factory, since this allows us to compile this with an Ipopt
@@ -150,7 +150,7 @@ IpoptSolver::IpoptSolver(const Properties& _properties,
 }
 
 //==============================================================================
-DartTNLP::DartTNLP(IpoptSolver* _solver)
+KidoTNLP::KidoTNLP(IpoptSolver* _solver)
   : Ipopt::TNLP(),
     mSolver(_solver)
 {
@@ -158,13 +158,13 @@ DartTNLP::DartTNLP(IpoptSolver* _solver)
 }
 
 //==============================================================================
-DartTNLP::~DartTNLP()
+KidoTNLP::~KidoTNLP()
 {
   // Do nothing
 }
 
 //==============================================================================
-bool DartTNLP::get_nlp_info(Ipopt::Index& n,
+bool KidoTNLP::get_nlp_info(Ipopt::Index& n,
                             Ipopt::Index& m,
                             Ipopt::Index& nnz_jac_g,
                             Ipopt::Index& nnz_h_lag,
@@ -191,7 +191,7 @@ bool DartTNLP::get_nlp_info(Ipopt::Index& n,
 }
 
 //==============================================================================
-bool DartTNLP::get_bounds_info(Ipopt::Index n,
+bool KidoTNLP::get_bounds_info(Ipopt::Index n,
                                Ipopt::Number* x_l,
                                Ipopt::Number* x_u,
                                Ipopt::Index m,
@@ -235,7 +235,7 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
 }
 
 //==============================================================================
-bool DartTNLP::get_starting_point(Ipopt::Index n,
+bool KidoTNLP::get_starting_point(Ipopt::Index n,
                                   bool init_x,
                                   Ipopt::Number* x,
                                   bool init_z,
@@ -276,7 +276,7 @@ bool DartTNLP::get_starting_point(Ipopt::Index n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_f(Ipopt::Index _n,
+bool KidoTNLP::eval_f(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool /*_new_x*/,
                       Ipopt::Number& _obj_value)
@@ -295,7 +295,7 @@ bool DartTNLP::eval_f(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_grad_f(Ipopt::Index _n,
+bool KidoTNLP::eval_grad_f(Ipopt::Index _n,
                            const Ipopt::Number* _x,
                            bool /*_new_x*/,
                            Ipopt::Number* _grad_f)
@@ -311,7 +311,7 @@ bool DartTNLP::eval_grad_f(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_g(Ipopt::Index _n,
+bool KidoTNLP::eval_g(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool _new_x,
                       Ipopt::Index _m,
@@ -350,7 +350,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_jac_g(Ipopt::Index _n,
+bool KidoTNLP::eval_jac_g(Ipopt::Index _n,
                           const Ipopt::Number* _x,
                           bool _new_x,
                           Ipopt::Index _m,
@@ -411,7 +411,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
 }
 
 //==============================================================================
-bool DartTNLP::eval_h(Ipopt::Index _n,
+bool KidoTNLP::eval_h(Ipopt::Index _n,
                       const Ipopt::Number* _x,
                       bool _new_x,
                       Ipopt::Number _obj_factor,
@@ -424,14 +424,14 @@ bool DartTNLP::eval_h(Ipopt::Index _n,
                       Ipopt::Number* _values)
 {
   // TODO(JS): Not implemented yet.
-  dterr << "[DartTNLP::eval_h] Not implemented yet.\n";
+  dterr << "[KidoTNLP::eval_h] Not implemented yet.\n";
 
   return TNLP::eval_h(_n, _x, _new_x, _obj_factor, _m, _lambda, _new_lambda,
                       _nele_hess, _iRow, _jCol, _values);
 }
 
 //==============================================================================
-void DartTNLP::finalize_solution(Ipopt::SolverReturn _status,
+void KidoTNLP::finalize_solution(Ipopt::SolverReturn _status,
                                  Ipopt::Index _n,
                                  const Ipopt::Number* _x,
                                  const Ipopt::Number* _z_L,

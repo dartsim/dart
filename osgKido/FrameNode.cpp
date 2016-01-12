@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/FrameNode.h"
-#include "osgDart/EntityNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/FrameNode.h"
+#include "osgKido/EntityNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/Frame.h"
 
-namespace osgDart
+namespace osgKido
 {
 
 FrameNode::FrameNode(kido::dynamics::Frame* _frame, WorldNode* _worldNode,
@@ -212,4 +212,4 @@ void FrameNode::createEntityNode(kido::dynamics::Entity* _entity)
   addChild(node);
 }
 
-} // namespace osgDart
+} // namespace osgKido

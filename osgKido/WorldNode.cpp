@@ -36,15 +36,15 @@
 
 #include <osg/NodeCallback>
 
-#include "osgDart/WorldNode.h"
-#include "osgDart/FrameNode.h"
-#include "osgDart/EntityNode.h"
+#include "osgKido/WorldNode.h"
+#include "osgKido/FrameNode.h"
+#include "osgKido/EntityNode.h"
 
 #include "kido/simulation/World.h"
 #include "kido/dynamics/Skeleton.h"
 #include "kido/dynamics/BodyNode.h"
 
-namespace osgDart
+namespace osgKido
 {
 
 class WorldNodeCallback : public osg::NodeCallback
@@ -303,4 +303,4 @@ void WorldNode::createBaseEntityNode(kido::dynamics::Entity* _entity)
   mNodeToEntity[entityNode] = _entity;
 }
 
-} // namespace osgDart
+} // namespace osgKido

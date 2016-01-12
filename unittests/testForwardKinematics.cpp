@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "kido/utils/urdf/DartLoader.h"
+#include "kido/utils/urdf/KidoLoader.h"
 
 std::vector<size_t> twoLinkIndices;
 
@@ -182,7 +182,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   // This is a regression test for issue #499
   const double tolerance = 1e-8;
 
-  kido::utils::DartLoader loader;
+  kido::utils::KidoLoader loader;
   SkeletonPtr skeleton1 =
       loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
 

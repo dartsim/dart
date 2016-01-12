@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
   WorldPtr myWorld(new World);
 
   // Load ground and Atlas robot and add them to the world
-  DartLoader urdfLoader;
+  KidoLoader urdfLoader;
   SkeletonPtr ground = urdfLoader.parseSkeleton(
         KIDO_DATA_PATH"sdf/atlas/ground.urdf");
 //  SkeletonPtr atlas = SoftSdfParser::readSkeleton(

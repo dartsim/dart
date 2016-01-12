@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/render/ShapeNode.h"
-#include "osgDart/EntityNode.h"
+#include "osgKido/render/ShapeNode.h"
+#include "osgKido/EntityNode.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 ShapeNode::ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
@@ -100,4 +100,4 @@ void ShapeNode::clearUtilization()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

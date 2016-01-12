@@ -37,12 +37,12 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgDart/render/PlaneShapeNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/render/PlaneShapeNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/PlaneShape.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class PlaneShapeGeode : public ShapeNode, public osg::Geode
@@ -215,4 +215,4 @@ PlaneShapeDrawable::~PlaneShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

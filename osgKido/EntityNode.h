@@ -49,7 +49,7 @@ class Shape;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart
+namespace osgKido
 {
 
 namespace render {
@@ -116,6 +116,6 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_ENTITYNODE_H

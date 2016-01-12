@@ -38,12 +38,12 @@
 #include <osg/Geometry>
 #include <osg/LineWidth>
 
-#include "osgDart/render/LineSegmentShapeNode.h"
-#include "osgDart/Utils.h"
+#include "osgKido/render/LineSegmentShapeNode.h"
+#include "osgKido/Utils.h"
 
 #include "kido/dynamics/LineSegmentShape.h"
 
-namespace osgDart {
+namespace osgKido {
 namespace render {
 
 class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
@@ -255,4 +255,4 @@ LineSegmentShapeDrawable::~LineSegmentShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osgKido

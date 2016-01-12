@@ -45,7 +45,7 @@ class MeshShape;
 } // namespace dynamics
 } // namespace kido
 
-namespace osgDart
+namespace osgKido
 {
 
 class InteractiveFrame;
@@ -145,6 +145,6 @@ protected:
 
 typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
-} // namespace osgDart
+} // namespace osgKido
 
 #endif // OSGKIDO_INTERACTIVEFRAME_H

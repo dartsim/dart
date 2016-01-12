@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/osgDart.h"
+#include "osgKido/osgKido.h"
 
 #include "kido/kido.h"
 
@@ -47,7 +47,7 @@ int main()
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.translation() = Eigen::Vector3d(4,-4,0);
-  osgDart::InteractiveFramePtr frame(new osgDart::InteractiveFrame(
+  osgKido::InteractiveFramePtr frame(new osgKido::InteractiveFrame(
           Frame::World(), "interactive frame", tf, 2.0));
   world->addSimpleFrame(frame);
 
@@ -82,9 +82,9 @@ int main()
   world->addSimpleFrame(z_marker);
 
 
-  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
+  osg::ref_ptr<osgKido::WorldNode> node = new osgKido::WorldNode(world);
 
-  osgDart::Viewer viewer;
+  osgKido::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.enableDragAndDrop(frame.get());
   viewer.enableDragAndDrop(draggable.get());
