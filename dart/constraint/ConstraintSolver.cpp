@@ -182,7 +182,7 @@ void ConstraintSolver::removeAllSkeletons()
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
+void ConstraintSolver::addConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint);
 
@@ -197,7 +197,7 @@ void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
 }
 
 //==============================================================================
-void ConstraintSolver::removeConstraint(ConstraintBase* _constraint)
+void ConstraintSolver::removeConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint);
 
@@ -306,7 +306,8 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& _skeleton)
 }
 
 //==============================================================================
-bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) const
+bool ConstraintSolver::containConstraint(
+    const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mManualConstraints.begin(),
                    mManualConstraints.end(),
@@ -314,7 +315,8 @@ bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) cons
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddConstraint(ConstraintBase* _constraint)
+bool ConstraintSolver::checkAndAddConstraint(
+    const ConstraintBasePtr& _constraint)
 {
   if (!containConstraint(_constraint))
   {
@@ -352,13 +354,9 @@ void ConstraintSolver::updateConstraints()
   mCollisionDetector->detectCollision(true, true);
 
   // Destroy previous contact constraints
-  for (const auto& contactConstraint : mContactConstraints)
-    delete contactConstraint;
   mContactConstraints.clear();
 
   // Destroy previous soft contact constraints
-  for (const auto& softContactConstraint : mSoftContactConstraints)
-    delete softContactConstraint;
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
@@ -369,11 +367,12 @@ void ConstraintSolver::updateConstraints()
     if (isSoftContact(ct))
     {
       mSoftContactConstraints.push_back(
-            new SoftContactConstraint(ct, mTimeStep));
+            std::make_shared<SoftContactConstraint>(ct, mTimeStep));
     }
     else
     {
-      mContactConstraints.push_back(new ContactConstraint(ct, mTimeStep));
+      mContactConstraints.push_back(
+            std::make_shared<ContactConstraint>(ct, mTimeStep));
     }
   }
 
@@ -399,12 +398,6 @@ void ConstraintSolver::updateConstraints()
   // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
   // Destroy previous joint constraints
-  for (const auto& jointLimitConstraint : mJointLimitConstraints)
-    delete jointLimitConstraint;
-  for (const auto& servoMotorConstraint : mServoMotorConstraints)
-    delete servoMotorConstraint;
-  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
-    delete jointFrictionConstraint;
   mJointLimitConstraints.clear();
   mServoMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
@@ -426,16 +419,18 @@ void ConstraintSolver::updateConstraints()
         if (joint->getCoulombFriction(j) != 0.0)
         {
           mJointCoulombFrictionConstraints.push_back(
-                new JointCoulombFrictionConstraint(joint));
+                std::make_shared<JointCoulombFrictionConstraint>(joint));
           break;
         }
       }
 
       if (joint->isPositionLimitEnforced())
-        mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
+        mJointLimitConstraints.push_back(
+              std::make_shared<JointLimitConstraint>(joint));
 
       if (joint->getActuatorType() == dynamics::Joint::SERVO)
-        mServoMotorConstraints.push_back(new ServoMotorConstraint(joint));
+        mServoMotorConstraints.push_back(
+              std::make_shared<ServoMotorConstraint>(joint));
     }
   }
 
@@ -478,7 +473,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBase*>::iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     (*it)->uniteSkeletons();
@@ -487,7 +482,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
@@ -514,7 +509,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();

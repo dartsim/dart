@@ -224,13 +224,14 @@ protected:
   {
     for(size_t i=0; i<mJointConstraints.size(); ++i)
     {
-      dart::constraint::JointConstraint* constraint = mJointConstraints[i];
+      const dart::constraint::JointConstraintPtr& constraint =
+          mJointConstraints[i];
+
       if(constraint->getBodyNode1()->getSkeleton() == skel
          || constraint->getBodyNode2()->getSkeleton() == skel)
       {
         mWorld->getConstraintSolver()->removeConstraint(constraint);
         mJointConstraints.erase(mJointConstraints.begin()+i);
-        delete constraint;
         break; // There should only be one constraint per skeleton
       }
     }
@@ -248,7 +249,7 @@ protected:
 
   /// History of the active JointConstraints so that we can properly delete them
   /// when a Skeleton gets removed
-  std::vector<dart::constraint::JointConstraint*> mJointConstraints;
+  std::vector<dart::constraint::JointConstraintPtr> mJointConstraints;
 
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;

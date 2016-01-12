@@ -172,13 +172,13 @@ private:
   dart::dynamics::BodyNode* _getRightFoot() const;
 
   /// \brief Weld joint constraint for pelvis harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintPelvis;
+  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintPelvis;
 
   /// \brief Weld joint constraint for left foot harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintLeftFoot;
+  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintLeftFoot;
 
   /// \brief Weld joint constraint for right foot harnessing
-  dart::constraint::WeldJointConstraint* mWeldJointConstraintRightFoot;
+  dart::constraint::WeldJointConstraintPtr mWeldJointConstraintRightFoot;
 
   /// \brief Initial state of the robot
   Eigen::VectorXd mInitialState;

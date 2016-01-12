@@ -820,7 +820,7 @@ tail BodyNode.
 Now we have everything we need to construct the constraint:
 
 ```cpp
-auto constraint = new dart::constraint::BallJointConstraint(
+auto constraint = std::make_shared<dart::constraint::BallJointConstraint>(
       head, tail, offset);
 ```
 

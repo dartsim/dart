@@ -57,7 +57,7 @@ ConstrainedGroup::~ConstrainedGroup()
 }
 
 //==============================================================================
-void ConstrainedGroup::addConstraint(ConstraintBase* _constraint)
+void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == false
@@ -74,14 +74,14 @@ size_t ConstrainedGroup::getNumConstraints() const
 }
 
 //==============================================================================
-ConstraintBase* ConstrainedGroup::getConstraint(size_t _index) const
+ConstraintBasePtr ConstrainedGroup::getConstraint(size_t _index) const
 {
   assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
-void ConstrainedGroup::removeConstraint(ConstraintBase* _constraint)
+void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
   assert(containConstraint(_constraint) == true
@@ -108,16 +108,20 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
-bool ConstrainedGroup::containConstraint(ConstraintBase* _constraint) const
+bool ConstrainedGroup::containConstraint(
+    const ConstConstraintBasePtr& _constraint) const
 {
 //  std::cout << "CommunityTEST::_containConstraint(): Not implemented."
 //            << std::endl;
+
+  // TODO(MXG): Is there any reason these functions are not implemented yet?
 
   return false;
 }
 
 //==============================================================================
-bool ConstrainedGroup::checkAndAddConstraint(ConstraintBase* _constraint)
+bool ConstrainedGroup::checkAndAddConstraint(
+    const ConstraintBasePtr& _constraint)
 {
   std::cout << "CommunityTEST::_checkAndAddConstraint(): Not implemented."
             << std::endl;

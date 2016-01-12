@@ -160,7 +160,8 @@ public:
     // Attach the last link to the world
     Eigen::Vector3d location =
         tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
-    mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+    mBallConstraint =
+        std::make_shared<dart::constraint::BallJointConstraint>(tip, location);
     mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
   }
 
@@ -168,7 +169,6 @@ public:
   void removeConstraint()
   {
     mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
-    delete mBallConstraint;
     mBallConstraint = nullptr;
   }
 
@@ -331,7 +331,7 @@ protected:
   SkeletonPtr mPendulum;
 
   /// Pointer to the ball constraint that we will be turning on and off
-  dart::constraint::BallJointConstraint* mBallConstraint;
+  dart::constraint::BallJointConstraintPtr mBallConstraint;
 
   /// Number of iterations before clearing a force entry
   std::vector<int> mForceCountDown;

@@ -41,6 +41,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/constraint/SmartPointer.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
 
@@ -51,17 +52,6 @@ class Skeleton;
 }  // namespace dynamics
 
 namespace constraint {
-
-class ConstrainedGroup;
-class ConstraintBase;
-class ClosedLoopConstraint;
-class ContactConstraint;
-class SoftContactConstraint;
-class JointLimitConstraint;
-class ServoMotorConstraint;
-class JointCoulombFrictionConstraint;
-class JointConstraint;
-class LCPSolver;
 
 // TODO:
 //   - RootSkeleton concept
@@ -97,10 +87,10 @@ public:
   void removeAllSkeletons();
 
   /// Add a constraint
-  void addConstraint(ConstraintBase* _constraint);
+  void addConstraint(const ConstraintBasePtr& _constraint);
 
   /// Remove a constraint
-  void removeConstraint(ConstraintBase* _constraint);
+  void removeConstraint(const ConstraintBasePtr& _constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
@@ -128,10 +118,10 @@ private:
   bool checkAndAddSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Check if the constraint is contained in this solver
-  bool containConstraint(const ConstraintBase* _constraint) const;
+  bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
 
   /// Add constraint if the constraint is not contained in this solver
-  bool checkAndAddConstraint(ConstraintBase* _constraint);
+  bool checkAndAddConstraint(const ConstraintBasePtr& _constraint);
 
   /// Update constraints
   void updateConstraints();
@@ -158,25 +148,25 @@ private:
   std::vector<dynamics::SkeletonPtr> mSkeletons;
 
   /// Contact constraints those are automatically created
-  std::vector<ContactConstraint*> mContactConstraints;
+  std::vector<ContactConstraintPtr> mContactConstraints;
 
   /// Soft contact constraints those are automatically created
-  std::vector<SoftContactConstraint*> mSoftContactConstraints;
+  std::vector<SoftContactConstraintPtr> mSoftContactConstraints;
 
   /// Joint limit constraints those are automatically created
-  std::vector<JointLimitConstraint*> mJointLimitConstraints;
+  std::vector<JointLimitConstraintPtr> mJointLimitConstraints;
 
   /// Servo motor constraints those are automatically created
-  std::vector<ServoMotorConstraint*> mServoMotorConstraints;
+  std::vector<ServoMotorConstraintPtr> mServoMotorConstraints;
 
   /// Joint Coulomb friction constraints those are automatically created
-  std::vector<JointCoulombFrictionConstraint*> mJointCoulombFrictionConstraints;
+  std::vector<JointCoulombFrictionConstraintPtr> mJointCoulombFrictionConstraints;
 
   /// Constraints that manually added
-  std::vector<ConstraintBase*> mManualConstraints;
+  std::vector<ConstraintBasePtr> mManualConstraints;
 
   /// Active constraints
-  std::vector<ConstraintBase*> mActiveConstraints;
+  std::vector<ConstraintBasePtr> mActiveConstraints;
 
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
