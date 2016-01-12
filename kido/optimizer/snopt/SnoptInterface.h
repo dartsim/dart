@@ -6,18 +6,18 @@
   Date		06/19/2011
 */
 
-#ifndef DART_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
-#define DART_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
+#ifndef KIDO_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
+#define KIDO_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/optimizer/OptimizerArrayTypes.h"
+#include "kido/optimizer/OptimizerArrayTypes.h"
 
 #ifndef	ZERO
 #define	ZERO 1.0e-30
 #endif  // ifndef ZERO
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 namespace snopt {
 
@@ -114,7 +114,7 @@ private:
 
 } // namespace snopt
 } // namespace optimizer
-} // namespace dart
+} // namespace kido
 
-#endif // #ifndef DART_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
+#endif // #ifndef KIDO_OPTIMIZER_SNOPT_SNOPT_INTERFACE_H
 

@@ -149,17 +149,17 @@ namespace utils {
                             if(tf->isVariable()) vals[di] = mDofData->getDofAt(fi, tf->getDof(0)->getSkelIndex());
                             else vals[di] = tf->getDof(0)->getValue();
                         }
-                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = dart_math::eulerToMatrixX(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = dart_math::eulerToMatrixY(vals[0])*(rotdofs);
-                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = dart_math::eulerToMatrixZ(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEX) rotdofs = kido_math::eulerToMatrixX(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEY) rotdofs = kido_math::eulerToMatrixY(vals[0])*(rotdofs);
+                        if(tf->getType()==Transformation::T_ROTATEZ) rotdofs = kido_math::eulerToMatrixZ(vals[0])*(rotdofs);
                         if(tf->getType()==Transformation::T_ROTATEEXPMAP) {
                             Vector3d exmap(vals[0],vals[1],vals[2]);
-                            Quaterniond quat = dart_math::expToQuat(exmap);
-                            rotdofs = dart_math::quatToMatrix(quat)*(rotdofs);
+                            Quaterniond quat = kido_math::expToQuat(exmap);
+                            rotdofs = kido_math::quatToMatrix(quat)*(rotdofs);
                         }
                     }
                     // convert to euler angles
-                    Vector3d erot = dart_math::matrixToEuler(rotdofs, dart_math::XYZ);	// leave to radians
+                    Vector3d erot = kido_math::matrixToEuler(rotdofs, kido_math::XYZ);	// leave to radians
                     eulerValues.push_back(erot);
                 }
                 // write out the euler values
@@ -214,9 +214,9 @@ namespace utils {
                         vector<Vector3d> eulerValues;
                         for(int i=_first; i<=_last; i++){
                             Vector3d exmap(mDofData->getDofAt(i, t->getDof(0)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(1)->getSkelIndex()), mDofData->getDofAt(i, t->getDof(2)->getSkelIndex()));
-                            Quaterniond q = dart_math::expToQuat(exmap);
+                            Quaterniond q = kido_math::expToQuat(exmap);
                             Matrix3d rot = q.matrix();
-                            Vector3d angles = dart_math::matrixToEuler(rot, dart_math::XYZ);
+                            Vector3d angles = kido_math::matrixToEuler(rot, kido_math::XYZ);
                             eulerValues.push_back(angles);
                         }
 
@@ -455,13 +455,13 @@ namespace utils {
                     for(int jj=0; jj<3; jj++) Rl(ii, jj) = Wl(ii, jj);
                     tl[ii]=Wl(ii, 3);
                 }
-                Vector3d ei = dart_math::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
+                Vector3d ei = kido_math::matrixToEuler(Rl, MayaExportSkeleton::mRotOrder);
                 eulerAngles.push_back(ei);
                 transVals.push_back(tl);
             }
 
 
-            assert(MayaExportSkeleton::mRotOrder==dart_math::XYZ);	// else change the euler angle order
+            assert(MayaExportSkeleton::mRotOrder==kido_math::XYZ);	// else change the euler angle order
             // X rotation
             outFile0<<"anim rotate.rotateX rotateX "<<bodyname.c_str()<<" "<<level<<" "<<numChildJoints<<" "<<dofNum++<<endl;
             outFile0<<"animData {\n";

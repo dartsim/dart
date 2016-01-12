@@ -40,7 +40,7 @@
 
 #include <fstream>
 #include <string>
-#include "dart/math/UtilsRotation.h"
+#include "kido/math/UtilsRotation.h"
 
 namespace kinematics{
     class Skeleton;
@@ -60,7 +60,7 @@ namespace utils {
             static const string mSuffixPrim;
             static const string mSuffixShape;
             static const string mSuffixGeom;
-            static const dart_math::RotationOrder mRotOrder;
+            static const kido_math::RotationOrder mRotOrder;
 
             static bool exportMayaAsciiHeader(ofstream &_outFile );
             static bool exportMayaAsciiShape(kinematics::BodyNode* b, ofstream &_outFile, const string &_prefix, const string &_suffix);

@@ -17,7 +17,7 @@
 #include "optimizer/ConstraintBox.h"
 #include "optimizer/ObjectiveBox.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 namespace snopt {
 
@@ -187,4 +187,4 @@ ObjectiveSet* SnoptSolver::objBox() {
 
 } // namespace snopt
 } // namespace optimizer
-} // namespace dart
+} // namespace kido

@@ -6,15 +6,15 @@
   Date		06/19/2011
 */
 
-#ifndef DART_OPTIMIZER_SNOPT_SNOPT_H
-#define DART_OPTIMIZER_SNOPT_SNOPT_H
+#ifndef KIDO_OPTIMIZER_SNOPT_SNOPT_H
+#define KIDO_OPTIMIZER_SNOPT_SNOPT_H
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/optimizer/snopt/SnoptInterface.h"
-#include "dart/optimizer/Solver.h"
+#include "kido/optimizer/snopt/SnoptInterface.h"
+#include "kido/optimizer/Solver.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 
 class Problem;
@@ -55,7 +55,7 @@ private:
 
 } // namespace snopt
 } // namespace optimizer
-} // namespace dart
+} // namespace kido
 
-#endif // #ifndef DART_OPTIMIZER_SNOPT_SNOPT_H
+#endif // #ifndef KIDO_OPTIMIZER_SNOPT_SNOPT_H
 

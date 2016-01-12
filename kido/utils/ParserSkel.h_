@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_KINEMATICS_PARSER_SKEL_H
-#define DART_KINEMATICS_PARSER_SKEL_H
+#ifndef KIDO_KINEMATICS_PARSER_SKEL_H
+#define KIDO_KINEMATICS_PARSER_SKEL_H
 
 namespace kinematics {
     class Transformation;
@@ -85,4 +85,4 @@ typedef union {
 
 extern YYSTYPE yylval;
 
-#endif // #ifndef DART_KINEMATICS_PARSER_SKEL_H
+#endif // #ifndef KIDO_KINEMATICS_PARSER_SKEL_H

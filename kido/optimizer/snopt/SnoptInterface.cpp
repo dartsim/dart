@@ -9,7 +9,7 @@
 #include <iostream>
 #include "SnoptInterface.h"
 
-namespace dart {
+namespace kido {
 namespace optimizer {
 namespace snopt {
 #include <string.h>
@@ -609,4 +609,4 @@ void SnoptInterface::checkTermination(int *iAbort, double *xs) {
 
 } // namespace snopt
 } // namespace optimizer
-} // namespace dart
+} // namespace kido

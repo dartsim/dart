@@ -215,16 +215,16 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``kido::utils::DartLoader`` class (pending upcoming changes to KIDO's
+by the ``kido::utils::KidoLoader`` class (pending upcoming changes to KIDO's
 loading system). First, create a loader:
 
 ```cpp
-kido::utils::DartLoader loader;
+kido::utils::KidoLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations
 of the resources that need to be loaded. We won't be using this in our example,
-but in general you should use the function ``DartLoader::addPackageDirectory``
+but in general you should use the function ``KidoLoader::addPackageDirectory``
 to specify the locations of these packages, because KIDO does not have the same
 package resolving abilities of ROS.
 

@@ -3,14 +3,14 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-dart_add_library(dart-optimizer-snopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-snopt dart)
+kido_add_library(kido-optimizer-snopt ${srcs} ${hdrs})
+target_link_libraries(kido-optimizer-snopt kido)
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "optimizer_snopt headers" ${hdrs})
-dart_generate_include_header_list(
+kido_get_filename_components(header_names "optimizer_snopt headers" ${hdrs})
+kido_generate_include_header_list(
   optimizer_snopt_headers
-  "dart/optimizer/snopt/"
+  "kido/optimizer/snopt/"
   "optimizer_snopt headers"
   ${header_names}
 )
@@ -22,8 +22,8 @@ configure_file(
 # Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/snopt.h
-  DESTINATION include/dart/optimizer/snopt
+  DESTINATION include/kido/optimizer/snopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-snopt EXPORT DARTSNOPTTargets DESTINATION lib)
+install(TARGETS kido-optimizer-snopt EXPORT KIDOSNOPTTargets DESTINATION lib)
 
