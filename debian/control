@@ -34,7 +34,8 @@ Depends: ${misc:Depends},
          libassimp-dev (>= 3),
          libfcl-dev,
          libboost-all-dev (>= 1.54.0.1ubuntu1)
-Description: Dynamic Animation and Robotics Toolkit, core development files
+Description: Kinematics, Dynamics and Optimization Library for Animation and 
+Robotics, core development files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -72,7 +73,8 @@ Depends: ${misc:Depends},
          libopenthreads-dev,
          libopenscenegraph-dev,
          liburdfdom-dev
-Description: Dynamic Animation and Robotics Toolkit, development files
+Description: Kinematics, Dynamics and Optimization Library for Animation and 
+Robotics, development files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -103,7 +105,8 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Dynamic Animation and Robotics Toolkit, core library files
+Description: Kinematics, Dynamics and Optimization Library for Animation and 
+Robotics, core library files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -133,7 +136,8 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Dynamic Animation and Robotics Toolkit, library files
+Description: Kinematics, Dynamics and Optimization Library for Animation and 
+Robotics, library files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
