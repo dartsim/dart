@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.h"
+#include "kido/config.h"
 
 #ifndef KIDO_COMMON_DEPRECATED_H_
 #define KIDO_COMMON_DEPRECATED_H_

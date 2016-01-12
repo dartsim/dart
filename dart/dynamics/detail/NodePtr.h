@@ -37,7 +37,7 @@
 #ifndef KIDO_DYNAMICS_DETAIL_NODEPTR_H_
 #define KIDO_DYNAMICS_DETAIL_NODEPTR_H_
 
-#include "dart/dynamics/detail/BodyNodePtr.h"
+#include "kido/dynamics/detail/BodyNodePtr.h"
 
 namespace kido {
 namespace dynamics {

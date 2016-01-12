@@ -50,8 +50,8 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/common/Deprecated.h"
-#include "dart/math/MathTypes.h"
+#include "kido/common/Deprecated.h"
+#include "kido/math/MathTypes.h"
 
 namespace kido {
 namespace math {

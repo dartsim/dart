@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart-core.h"
-#include "dart/gui/gui.h"
-#include "dart/optimizer/optimizer.h"
-#include "dart/planning/planning.h"
-#include "dart/utils/utils.h"
+#include "kido/kido-core.h"
+#include "kido/gui/gui.h"
+#include "kido/optimizer/optimizer.h"
+#include "kido/planning/planning.h"
+#include "kido/utils/utils.h"

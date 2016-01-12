@@ -36,7 +36,7 @@
 
 #include "osgDart/osgDart.h"
 
-#include "dart/dart.h"
+#include "kido/kido.h"
 
 using namespace kido::common;
 using namespace kido::dynamics;

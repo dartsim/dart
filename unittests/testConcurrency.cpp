@@ -39,7 +39,7 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/simulation/World.h"
+#include "kido/simulation/World.h"
 
 #include "TestHelpers.h"
 

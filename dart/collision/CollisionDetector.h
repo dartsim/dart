@@ -43,8 +43,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/collision/CollisionNode.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 namespace collision {

@@ -41,10 +41,10 @@
 #include <string>
 #include <vector>
 
-#include "dart/common/Subject.h"
-#include "dart/common/Signal.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "kido/common/Subject.h"
+#include "kido/common/Signal.h"
+#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/SmartPointer.h"
 
 namespace kido {
 namespace renderer {
