@@ -145,11 +145,9 @@ protected:
   // Documentation inherited.
   void updateVolume() override;
 
-private:
   /// \brief
   void _updateBoundingBoxDim();
 
-protected:
   /// \brief
   const aiScene* mMesh;
 

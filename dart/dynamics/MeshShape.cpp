@@ -299,6 +299,14 @@ void MeshShape::updateVolume() {
 }
 
 void MeshShape::_updateBoundingBoxDim() {
+
+  if(!mMesh)
+  {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    return;
+  }
+
   double max_X = -std::numeric_limits<double>::infinity();
   double max_Y = -std::numeric_limits<double>::infinity();
   double max_Z = -std::numeric_limits<double>::infinity();
