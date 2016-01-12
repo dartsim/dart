@@ -39,9 +39,9 @@ endif()
 
 project(kido)
 
-set(KIDO_MAJOR_VERSION "5")
+set(KIDO_MAJOR_VERSION "0")
 set(KIDO_MINOR_VERSION "1")
-set(KIDO_PATCH_VERSION "1")
+set(KIDO_PATCH_VERSION "0")
 set(KIDO_VERSION "${KIDO_MAJOR_VERSION}.${KIDO_MINOR_VERSION}.${KIDO_PATCH_VERSION}")
 set(KIDO_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(KIDO_PKG_EXTERNAL_DEPS "flann, ccd, fcl")

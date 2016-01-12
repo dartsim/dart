@@ -3,8 +3,8 @@
   <!-- This is a Catkin package.xml file to optionally support building DART in
        a Catkin workspace. Catkin is not required to build DART. For more
        information, see: http://ros.org/reps/rep-0136.html -->
-  <name>dart</name>
-  <version>5.1.1</version>
+  <name>kido</name>
+  <version>0.1.0</version>
   <description>
     DART (Dynamic Animation and Robotics Toolkit) is a collaborative,
     cross-platform, open source library created by the Georgia Tech Graphics

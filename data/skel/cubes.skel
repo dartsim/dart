@@ -4,7 +4,7 @@
         <physics>
             <time_step>0.001</time_step>
             <gravity>0 -9.81 0</gravity>
-            <collision_detector>dart</collision_detector>
+            <collision_detector>kido</collision_detector>
         </physics>
         
         <skeleton name="grount skeleton">
