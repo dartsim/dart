@@ -7,7 +7,7 @@ os: Visual Studio 2015
 # build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
 platform: 
   - Win32
-  #- x64  Disable build for x64 machine until x64 version of dart-prerequisites is ready
+  #- x64  Disable build for x64 machine until x64 version of kido-prerequisites is ready
 
 # specify custom environment variables
 environment:
@@ -55,10 +55,10 @@ before_build:
   # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
   - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 12
   - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 12 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DDART_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DKIDO_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DKIDO_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DKIDO_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
 
 build:
-  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
+  project: C:\projects\dart\build\kido.sln # path to Visual Studio solution or project
   parallel: true                           # enable MSBuild parallel builds
   verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
 
