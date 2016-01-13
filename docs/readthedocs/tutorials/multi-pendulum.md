@@ -364,7 +364,8 @@ Eigen::Vector3d location =
 Now we can create the BallJointConstraint:
 
 ```cpp
-mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+mBallConstraint =
+    std::make_shared<dart::constraint::BallJointConstraint>(tip, location);
 ```
 
 And then add it to the world:
@@ -378,12 +379,10 @@ Now we also want to be able to remove this constraint. In the function
 
 ```cpp
 mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
-delete mBallConstraint;
 mBallConstraint = nullptr;
 ```
 
-Currently DART does not use smart pointers for dynamic constraints, so they
-need to be explicitly deleted. This may be revised in a later version of DART.
+Setting mBallConstraint to a nullptr will allow its smart pointer to delete it.
 
 **Now you are ready to run the demo!**
 
