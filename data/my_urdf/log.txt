@@ -1,0 +1,36 @@
+Traditional processing is deprecated. Switch to --inorder processing!
+To check for compatibility of your document, use option --check-order.
+For more infos, see http://wiki.ros.org/xacro#Processing_Order
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://ros.org/wiki/xacro
+ new: http://www.ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/hand.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/components.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://ros.org/wiki/xacro
+ new: http://www.ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/hand.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/components.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+inconsistent namespace redefinitions for xmlns:xacro:
+ old: http://www.ros.org/wiki/xacro
+ new: http://ros.org/wiki/xacro (/opt/ros/jade/share/barrett_model/models/common.urdf.xacro)
+Undefined substitution argument 7dof
+when processing file: /opt/ros/jade/share/barrett_model/robots/barrett.urdf.xacro
+

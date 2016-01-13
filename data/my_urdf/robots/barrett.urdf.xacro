@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wam">
+
+  <!-- Includea all the WAM stuff -->
+  <xacro:include filename="$(find barrett_model)/models/wam_top.urdf.xacro"/>
+
+  <!-- Root link is in the world frame-->
+  <link name="world"/>
+
+  <xacro:if value="$(arg 7dof)">
+    <xacro:wam_7dof prefix="$(arg prefix)" parent_link="world" xyz="0.04 0.46 1" rpy="${PI} ${-PI/2} 0"/>
+    <xacro:if value="$(arg hand)">
+      <xacro:bhand prefix="$(arg prefix)/bhand" parent_link="$(arg prefix)/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 ${PI}"/>
+    </xacro:if>
+    <xacro:if value="$(arg ball)">
+      <xacro:bball prefix="$(arg prefix)/ball" parent_link="$(arg prefix)/wrist_palm_link" xyz="0.0 0.0 0.06" rpy="0 0 0"/>
+    </xacro:if>
+  </xacro:if>
+
+  <xacro:if value="$(arg 4dof)">
+    <xacro:wam_4dof prefix="$(arg prefix)" parent_link="world" xyz="0.02 0.46 1" rpy="0 0 0" />
+    <xacro:if value="$(arg hand)">
+      <xacro:bhand prefix="$(arg prefix)/bhand" parent_link="$(arg prefix)/stump_link" xyz="0 0 0.06" rpy="0 0 0"/>
+    </xacro:if>
+    <xacro:if value="$(arg ball)">
+      <xacro:bball prefix="$(arg prefix)/ball" parent_link="$(arg prefix)/stump_link" xyz="0.0 0.0 0.06" rpy="0 0 0"/>
+    </xacro:if>
+  </xacro:if>
+</robot>

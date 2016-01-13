@@ -1,0 +1,7 @@
+rosrun xacro xacro.py `rospack find pr2_description`/robots/pr2.urdf.xacro -o /tmp/pr2.urdf
+check_urdf pr2.urdf
+
+
+
+roslaunch urdf_tutorial xacrodisplay.launch model:=robots/wam7_bhand.urdf.xacro gui:=true
+
