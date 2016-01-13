@@ -54,7 +54,7 @@ const double default_push_force = 8.0;  // N
 const int default_force_duration = 200; // # iterations
 const int default_push_duration = 1000;  // # iterations
 
-const double defaultmEndEffectormOffset = 0.05;
+const double default_endeffector_offset = 0.05;
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -64,14 +64,28 @@ class Controller
 {
 public:
 
-  Controller(const SkeletonPtr& manipulator, const SkeletonPtr& /*domino*/)
+  Controller(const SkeletonPtr& manipulator, const SkeletonPtr& domino)
     : mManipulator(manipulator)
   {
     // Grab the current joint angles to use them as desired angles
     // Lesson 2b
+    mQDesired = mManipulator->getPositions();
 
     // Set up the information needed for an operational space controller
     // Lesson 3a
+    mEndEffector = mManipulator->getBodyNode(mManipulator->getNumBodyNodes()-1);
+    mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
+
+    mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target");
+    Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
+    target_offset.translation() = 
+        default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
+
+    target_offset.linear() = 
+        mEndEffector->getTransform(domino->getBodyNode(0)).linear();
+
+    mTarget->setTransform(target_offset, domino->getBodyNode(0));
+
 
     // Set PD control gains
     mKpPD = 200.0;
@@ -88,16 +102,68 @@ public:
   {
     // Write a stable PD controller
     // Lesson 2c
+    Eigen::VectorXd q = mManipulator->getPositions();
+    Eigen::VectorXd dq = mManipulator->getVelocities();
+
+    //for stability consideration
+    q+=dq*mManipulator->getTimeStep();
+
+    Eigen::VectorXd q_err = mQDesired - q;
+    Eigen::VectorXd dq_err = -dq;
+
+    const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+
+    
+
+    
 
     // Compensate for gravity and Coriolis forces
     // Lesson 2d
+    const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+
+    mForces = M * (mKpPD*q_err + mKdPD * dq_err) + Cg;
+    mManipulator->setForces(mForces);
   }
 
   /// Compute an operational space controller to push on the first domino
   void setOperationalSpaceForces()
   {
     // Lesson 3b
-  }
+    const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
+    Jacobian J = mEndEffector->getWorldJacobian(mOffset);
+
+    Eigen::MatrixXd pinv_J = J.transpose() * (J* J.transpose() + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+
+    Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
+
+    Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
+
+    Eigen::Vector6d e;
+    e.tail<3>() = mTarget->getWorldTransform().translation() - mEndEffector->getWorldTransform() * mOffset;
+
+    Eigen::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
+    e.head<3>() = aa.angle() * aa.axis();
+
+    Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
+          mOffset, mTarget.get(), Frame::World());
+
+    const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+
+    Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
+
+    size_t  dofs = mManipulator->getNumDofs();
+    Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
+
+    Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
+    fDesired[3] = default_push_force;
+    Eigen::VectorXd f = J.transpose() * fDesired;
+
+    Eigen::VectorXd dq = mManipulator->getVelocities();
+    mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e) - Kd* dq + Kd * pinv_J *Kp*e + Cg+f;
+
+    mManipulator->setForces(mForces);
+  } 
+
 
 protected:
 
@@ -155,14 +221,55 @@ public:
 
   // Attempt to create a new domino. If the new domino would be in collision
   // with anything (other than the floor), then discard it.
-  void attemptToCreateDomino(double /*angle*/)
+  void attemptToCreateDomino(double angle)
   {
     // Create a new domino
     // Lesson 1a
+    SkeletonPtr newDomino = mFirstDomino->clone();
+    newDomino->setName("domino #" + std::to_string(mDominoes.size() +1));
+    const SkeletonPtr& lastDomino = mDominoes.size() > 0 ? mDominoes.back() : mFirstDomino;
+
+    Eigen::Vector3d dx = default_distance * Eigen::Vector3d(cos(mTotalAngle),sin(mTotalAngle),0.0);
+
+    Eigen::Vector6d x = lastDomino->getPositions();
+    x.tail<3>() +=dx;
+
+    x[2] = mTotalAngle + angle;
+
+    newDomino->setPositions(x);
+
+    mWorld->addSkeleton(newDomino);
 
     // Look through the collisions to see if any dominoes are penetrating
     // something
     // Lesson 1b
+    dart::collision::CollisionDetector* detector =
+        mWorld->getConstraintSolver()->getCollisionDetector();
+    detector->detectCollision(true, true);
+
+    bool dominoCollision = false;
+    size_t collisionCount = detector->getNumContacts();
+    for(size_t i=0;i<collisionCount;++i)
+    {
+      const dart::collision::Contact& contact = detector->getContact(i);
+      if(contact.bodyNode1.lock()->getSkeleton() != mFloor && 
+          contact.bodyNode2.lock()->getSkeleton() != mFloor)
+      {
+        dominoCollision = true;
+        break;
+      }
+    }
+    if (dominoCollision)
+    {
+      mWorld->removeSkeleton(newDomino);
+    }
+    else
+    {
+      mAngles.push_back(angle);
+      mDominoes.push_back(newDomino);
+      mTotalAngle += angle;
+    }
+
   }
 
   // Delete the last domino that was added to the scene. (Do not delete the
@@ -170,6 +277,14 @@ public:
   void deleteLastDomino()
   {
     // Lesson 1c
+    if(mDominoes.size() > 0)
+    {
+      SkeletonPtr lastDomino = mDominoes.back();
+      mDominoes.pop_back();
+      mWorld->removeSkeleton(lastDomino);
+      mTotalAngle -=mAngles.back();
+      mAngles.pop_back();
+    }
   }
 
   void keyboard(unsigned char key, int x, int y) override
@@ -219,6 +334,11 @@ public:
     if(mForceCountDown > 0)
     {
       // Lesson 1d
+      Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
+      Eigen::Vector3d location = 
+          default_domino_height /2.0* Eigen::Vector3d::UnitZ();
+      mFirstDomino->getBodyNode(0)->addExtForce(force, location);
+
       --mForceCountDown;
     }
 
@@ -325,7 +445,19 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Lesson 2a
-  return Skeleton::create("manipulator");
+  dart::utils::DartLoader loader;
+  SkeletonPtr manipulator = 
+      loader.parseSkeleton(DART_DATA_PATH"/urdf/KR5/KR5 sixx R650.urdf");
+  manipulator->setName("manipulator");
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
+  manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
+
+  manipulator->getDof(1)->setPosition(140.0 * M_PI / 180.0);
+  manipulator->getDof(2)->setPosition(-140.0 * M_PI / 180.0);
+  return manipulator;
+
+  //return Skeleton::create("manipulator");
 }
 
 int main(int argc, char* argv[])
