@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/RevoluteJoint.h"
+#include "kido/dynamics/RevoluteJoint.hpp"
 
 #include <string>
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
 
 namespace kido {
 namespace dynamics {

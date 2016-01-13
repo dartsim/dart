@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/GLFuncs.h"
+#include "kido/gui/GLFuncs.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -42,8 +42,8 @@
 
 #include <Eigen/Eigen>
 
-#include "kido/gui/LoadGlut.h"
-#include "kido/renderer/LoadOpengl.h"
+#include "kido/gui/LoadGlut.hpp"
+#include "kido/renderer/LoadOpengl.hpp"
 
 namespace kido {
 namespace gui {

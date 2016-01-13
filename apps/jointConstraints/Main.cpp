@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/MyWindow.h"
+#include "apps/jointConstraints/MyWindow.hpp"
 
 #include <iostream>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
 using namespace kido;
 using namespace dynamics;

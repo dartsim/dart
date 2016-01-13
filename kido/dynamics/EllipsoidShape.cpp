@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/EllipsoidShape.hpp"
 
-#include "kido/renderer/RenderInterface.h"
+#include "kido/renderer/RenderInterface.hpp"
 
 namespace kido {
 namespace dynamics {

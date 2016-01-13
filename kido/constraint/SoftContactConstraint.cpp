@@ -34,18 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/SoftContactConstraint.h"
+#include "kido/constraint/SoftContactConstraint.hpp"
 
 #include <iostream>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/PointMass.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
 #include "kido/lcpsolver/lcp.h"
 
 #define KIDO_ERROR_ALLOWANCE 0.0

@@ -36,7 +36,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "kido/utils/urdf/KidoLoader.h"
+#include "kido/utils/urdf/KidoLoader.hpp"
 
 using kido::common::Uri;
 using kido::utils::KidoLoader;

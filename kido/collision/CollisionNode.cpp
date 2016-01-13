@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/CollisionNode.h"
+#include "kido/collision/CollisionNode.hpp"
 
 namespace kido {
 namespace collision {

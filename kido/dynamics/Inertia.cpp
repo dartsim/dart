@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Inertia.h"
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
+#include "kido/dynamics/Inertia.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
 
 namespace kido {
 namespace dynamics {

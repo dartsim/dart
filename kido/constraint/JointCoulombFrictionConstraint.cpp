@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/JointCoulombFrictionConstraint.h"
+#include "kido/constraint/JointCoulombFrictionConstraint.hpp"
 
 #include <iostream>
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 #include "kido/lcpsolver/lcp.h"
 
 #define KIDO_CFM     1e-9

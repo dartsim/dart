@@ -38,10 +38,10 @@
 #include <osg/Geometry>
 #include <osg/LineWidth>
 
-#include "osgKido/render/LineSegmentShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/LineSegmentShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/LineSegmentShape.h"
+#include "kido/dynamics/LineSegmentShape.hpp"
 
 namespace osgKido {
 namespace render {

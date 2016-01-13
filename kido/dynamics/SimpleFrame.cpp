@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/dynamics/SimpleFrame.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
 
 namespace kido {
 namespace dynamics {

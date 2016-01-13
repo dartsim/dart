@@ -35,24 +35,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.hpp"
 
 #include <algorithm>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/EndEffector.h"
-#include "kido/dynamics/InverseKinematics.h"
-#include "kido/dynamics/Marker.h"
-#include "kido/dynamics/PointMass.h"
-#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/EndEffector.hpp"
+#include "kido/dynamics/InverseKinematics.hpp"
+#include "kido/dynamics/Marker.hpp"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 namespace kido {
 namespace dynamics {

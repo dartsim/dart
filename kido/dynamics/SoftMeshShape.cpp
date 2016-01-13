@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/SoftMeshShape.hpp"
 
-#include "kido/common/Console.h"
+#include "kido/common/Console.hpp"
 
-#include "kido/dynamics/PointMass.h"
-#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 namespace kido {
 namespace dynamics {

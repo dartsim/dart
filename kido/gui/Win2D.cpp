@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/Win2D.h"
+#include "kido/gui/Win2D.hpp"
 
 #include <iostream>
 
-#include "kido/gui/LoadGlut.h"
+#include "kido/gui/LoadGlut.hpp"
 
 namespace kido {
 namespace gui {

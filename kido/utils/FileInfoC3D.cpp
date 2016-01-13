@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/FileInfoC3D.h"
-#include "kido/utils/C3D.h"
+#include "kido/utils/FileInfoC3D.hpp"
+#include "kido/utils/C3D.hpp"
 
 #include <cassert>
 

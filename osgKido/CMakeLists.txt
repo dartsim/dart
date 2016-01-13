@@ -8,8 +8,8 @@ if(${OPENSCENEGRAPH_FOUND})
 
   include_directories(${OpenSceneGraph_INCLUDE_DIRS})
 
-  file(GLOB osgKido_srcs "*.cpp" "render/*.cpp" "render/*.h")
-  file(GLOB osgKido_hdrs "*.h")
+  file(GLOB osgKido_srcs "*.cpp" "render/*.cpp" "render/*.hpp")
+  file(GLOB osgKido_hdrs "*.hpp")
 
   kido_add_library(osgKido ${osgKido_srcs} ${osgKido_hdrs})
   target_link_libraries(osgKido
@@ -18,7 +18,7 @@ if(${OPENSCENEGRAPH_FOUND})
   )
 
   kido_get_filename_components(header_names "osgKido headers" ${osgKido_hdrs})
-  list(APPEND header_names "render/render.h")
+  list(APPEND header_names "render/render.hpp")
   kido_generate_include_header_list(
     osgKido_headers
     "osgKido/"
@@ -26,8 +26,8 @@ if(${OPENSCENEGRAPH_FOUND})
     ${header_names}
   )
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/osgKido.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/osgKido.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/osgKido.hpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/osgKido.hpp
   )
 
   add_subdirectory(render)
@@ -37,7 +37,7 @@ if(${OPENSCENEGRAPH_FOUND})
   endif(${KIDO_BUILD_EXAMPLES})
 
   install(
-    FILES ${osgKido_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgKido.h
+    FILES ${osgKido_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osgKido.hpp
     DESTINATION include/osgKido
     COMPONENT headers
   )

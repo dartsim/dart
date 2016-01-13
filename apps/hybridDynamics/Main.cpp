@@ -35,8 +35,8 @@
  */
 
 #include <iostream>
-#include "kido/kido.h"
-#include "MyWindow.h"
+#include "kido/kido.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

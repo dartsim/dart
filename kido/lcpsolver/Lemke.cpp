@@ -39,8 +39,8 @@
 #include <iostream>
 #include <vector>
 
-#include "kido/math/Helpers.h"
-#include "kido/lcpsolver/Lemke.h"
+#include "kido/math/Helpers.hpp"
+#include "kido/lcpsolver/Lemke.hpp"
 
 #ifndef isnan
 # define isnan(x) \

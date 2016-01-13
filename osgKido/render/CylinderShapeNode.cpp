@@ -37,10 +37,10 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgKido/render/CylinderShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/CylinderShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/CylinderShape.h"
+#include "kido/dynamics/CylinderShape.hpp"
 
 namespace osgKido {
 namespace render {

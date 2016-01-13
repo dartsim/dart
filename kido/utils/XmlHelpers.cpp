@@ -34,16 +34,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/XmlHelpers.h"
+#include "kido/utils/XmlHelpers.hpp"
 
 #include <iostream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/common/LocalResourceRetriever.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/common/LocalResourceRetriever.hpp"
 
 namespace kido {
 namespace utils {

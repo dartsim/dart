@@ -27,7 +27,7 @@ endif()
 
 # Set header and source files
 set(kido_core_hdrs
-  kido-core.h
+  kido-core.hpp
   ${kido_common_hdrs}
   ${kido_math_hdrs}
   ${kido_integration_hdrs}
@@ -53,7 +53,7 @@ set(kido_core_srcs
 )
 if(NOT BUILD_CORE_ONLY)
   set(kido_hdrs
-    kido.h
+    kido.hpp
     ${kido_gui_hdrs}
     ${kido_planning_hdrs}
     ${kido_utils_hdrs}
@@ -83,11 +83,11 @@ if(MSVC)
 endif()
 
 #install(FILES ${kido_core_hdrs} DESTINATION include/kido/ COMPONENT headers)
-install(FILES kido-core.h DESTINATION include/kido/ COMPONENT headers)
+install(FILES kido-core.hpp DESTINATION include/kido/ COMPONENT headers)
 install(TARGETS kido-core EXPORT KIDOCoreTargets DESTINATION lib)
 if(NOT BUILD_CORE_ONLY)
 #  install(FILES ${kido_hdrs} DESTINATION include/kido/ COMPONENT headers)
-  install(FILES kido.h DESTINATION include/kido/ COMPONENT headers)
+  install(FILES kido.hpp DESTINATION include/kido/ COMPONENT headers)
   install(TARGETS kido-core kido EXPORT KIDOTargets DESTINATION lib)
 endif()
 

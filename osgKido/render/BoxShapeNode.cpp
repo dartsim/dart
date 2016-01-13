@@ -37,10 +37,10 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgKido/render/BoxShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/BoxShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/BoxShape.h"
+#include "kido/dynamics/BoxShape.hpp"
 
 namespace osgKido {
 namespace render {

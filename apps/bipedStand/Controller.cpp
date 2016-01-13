@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/bipedStand/Controller.h"
+#include "apps/bipedStand/Controller.hpp"
 
 Controller::Controller(kido::dynamics::SkeletonPtr _skel,
                        double _t) {

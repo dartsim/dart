@@ -41,9 +41,9 @@
  * checking, sampling and etc.
  */
 
-#include "RRT.h"
-#include "kido/simulation/World.h"
-#include "kido/dynamics/Skeleton.h"
+#include "RRT.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 #include <flann/flann.hpp>
 
 using namespace std;

@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/render/WarningShapeNode.h"
-#include "osgKido/EntityNode.h"
+#include "osgKido/render/WarningShapeNode.hpp"
+#include "osgKido/EntityNode.hpp"
 
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/Entity.h"
-#include "kido/common/Console.h"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/Entity.hpp"
+#include "kido/common/Console.hpp"
 
 namespace osgKido {
 namespace render {

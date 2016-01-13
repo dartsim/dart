@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Shape.h"
+#include "kido/dynamics/Shape.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 

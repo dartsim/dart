@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Frame.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/renderer/RenderInterface.h"
-#include "kido/common/Console.h"
+#include "kido/dynamics/Frame.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/renderer/RenderInterface.hpp"
+#include "kido/common/Console.hpp"
 
 namespace kido {
 namespace dynamics {

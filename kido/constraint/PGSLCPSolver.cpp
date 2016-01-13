@@ -34,17 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/PGSLCPSolver.h"
+#include "kido/constraint/PGSLCPSolver.hpp"
 
 #ifndef NDEBUG
 #include <iomanip>
 #include <iostream>
 #endif
 
-#include "kido/common/Console.h"
-#include "kido/constraint/ConstraintBase.h"
-#include "kido/constraint/ConstrainedGroup.h"
-#include "kido/lcpsolver/Lemke.h"
+#include "kido/common/Console.hpp"
+#include "kido/constraint/ConstraintBase.hpp"
+#include "kido/constraint/ConstrainedGroup.hpp"
+#include "kido/lcpsolver/Lemke.hpp"
 #include "kido/lcpsolver/lcp.h"
 
 namespace kido {

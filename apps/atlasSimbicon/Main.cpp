@@ -37,10 +37,10 @@
 
 #include <iostream>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/atlasSimbicon/MyWindow.h"
-#include "apps/atlasSimbicon/Controller.h"
+#include "apps/atlasSimbicon/MyWindow.hpp"
+#include "apps/atlasSimbicon/Controller.hpp"
 
 using namespace std;
 using namespace Eigen;

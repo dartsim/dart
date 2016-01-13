@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/ContactConstraint.h"
+#include "kido/constraint/ContactConstraint.hpp"
 
 #include <iostream>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 #include "kido/lcpsolver/lcp.h"
 
 #define KIDO_ERROR_ALLOWANCE 0.0

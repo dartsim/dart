@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 set(kido_math_hdrs ${hdrs} PARENT_SCOPE)
 set(kido_math_srcs ${srcs} PARENT_SCOPE)
@@ -18,13 +18,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/math.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/math.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/math.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
   DESTINATION include/kido/math
   COMPONENT headers
 )

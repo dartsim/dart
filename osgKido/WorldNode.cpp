@@ -36,13 +36,13 @@
 
 #include <osg/NodeCallback>
 
-#include "osgKido/WorldNode.h"
-#include "osgKido/FrameNode.h"
-#include "osgKido/EntityNode.h"
+#include "osgKido/WorldNode.hpp"
+#include "osgKido/FrameNode.hpp"
+#include "osgKido/EntityNode.hpp"
 
-#include "kido/simulation/World.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/BodyNode.h"
+#include "kido/simulation/World.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/BodyNode.hpp"
 
 namespace osgKido
 {

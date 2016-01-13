@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/fcl_mesh/FCLMeshCollisionNode.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionNode.hpp"
 
 #include <iostream>
 #include <vector>
@@ -44,16 +44,16 @@
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 #include <fcl/BVH/BVH_model.h>
 
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/SoftMeshShape.h"
-#include "kido/renderer/LoadOpengl.h"
-#include "kido/collision/fcl_mesh/CollisionShapes.h"
-#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/SoftMeshShape.hpp"
+#include "kido/renderer/LoadOpengl.hpp"
+#include "kido/collision/fcl_mesh/CollisionShapes.hpp"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
 
 namespace kido {
 namespace collision {

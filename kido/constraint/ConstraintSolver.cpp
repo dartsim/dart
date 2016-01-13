@@ -34,26 +34,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/ConstraintSolver.h"
+#include "kido/constraint/ConstraintSolver.hpp"
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "kido/collision/kido/KIDOCollisionDetector.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
+#include "kido/collision/kido/KIDOCollisionDetector.hpp"
 #ifdef HAVE_BULLET_COLLISION
-  #include "kido/collision/bullet/BulletCollisionDetector.h"
+  #include "kido/collision/bullet/BulletCollisionDetector.hpp"
 #endif
-#include "kido/constraint/ConstrainedGroup.h"
-#include "kido/constraint/ContactConstraint.h"
-#include "kido/constraint/SoftContactConstraint.h"
-#include "kido/constraint/JointLimitConstraint.h"
-#include "kido/constraint/ServoMotorConstraint.h"
-#include "kido/constraint/JointCoulombFrictionConstraint.h"
-#include "kido/constraint/DantzigLCPSolver.h"
-#include "kido/constraint/PGSLCPSolver.h"
+#include "kido/constraint/ConstrainedGroup.hpp"
+#include "kido/constraint/ContactConstraint.hpp"
+#include "kido/constraint/SoftContactConstraint.hpp"
+#include "kido/constraint/JointLimitConstraint.hpp"
+#include "kido/constraint/ServoMotorConstraint.hpp"
+#include "kido/constraint/JointCoulombFrictionConstraint.hpp"
+#include "kido/constraint/DantzigLCPSolver.hpp"
+#include "kido/constraint/PGSLCPSolver.hpp"
 
 namespace kido {
 namespace constraint {

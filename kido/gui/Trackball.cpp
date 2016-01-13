@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/Trackball.h"
+#include "kido/gui/Trackball.hpp"
 
-#include "kido/renderer/LoadOpengl.h"
+#include "kido/renderer/LoadOpengl.hpp"
 
 namespace kido {
 namespace gui {

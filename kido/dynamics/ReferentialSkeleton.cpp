@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/ReferentialSkeleton.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/dynamics/ReferentialSkeleton.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
 
 namespace kido {
 namespace dynamics {

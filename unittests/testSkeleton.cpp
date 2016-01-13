@@ -36,15 +36,15 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "kido/common/sub_ptr.h"
-#include "kido/math/Geometry.h"
-#include "kido/utils/SkelParser.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/RevoluteJoint.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/simulation/World.h"
+#include "kido/common/sub_ptr.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/utils/SkelParser.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
 using namespace kido;
 using namespace math;

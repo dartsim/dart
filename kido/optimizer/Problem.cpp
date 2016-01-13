@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/optimizer/Problem.h"
+#include "kido/optimizer/Problem.hpp"
 
 #include <algorithm>
 #include <limits>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/optimizer/Function.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/optimizer/Function.hpp"
 
 namespace kido {
 namespace optimizer {

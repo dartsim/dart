@@ -35,12 +35,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/Win3D.h"
+#include "kido/gui/Win3D.hpp"
 
 #include <algorithm>
 
-#include "kido/gui/LoadGlut.h"
-#include "kido/gui/Jitter.h"
+#include "kido/gui/LoadGlut.hpp"
+#include "kido/gui/Jitter.hpp"
 
 namespace kido {
 namespace gui {

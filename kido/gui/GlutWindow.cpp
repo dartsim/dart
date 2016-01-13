@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/GlutWindow.h"
+#include "kido/gui/GlutWindow.hpp"
 
 #ifndef _WIN32
   #include <dirent.h>
@@ -44,9 +44,9 @@
 #include <iostream>
 #include <vector>
 
-#include "kido/gui/LoadGlut.h"
-#include "kido/gui/GLFuncs.h"
-#include "kido/renderer/OpenGLRenderInterface.h"
+#include "kido/gui/LoadGlut.hpp"
+#include "kido/gui/GLFuncs.hpp"
+#include "kido/renderer/OpenGLRenderInterface.hpp"
 
 namespace kido {
 namespace gui {

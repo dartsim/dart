@@ -37,10 +37,10 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
-#include "kido/common/Console.h"
-#include "kido/common/LocalResourceRetriever.h"
-#include "kido/common/Uri.h"
-#include "kido/utils/PackageResourceRetriever.h"
+#include "kido/common/Console.hpp"
+#include "kido/common/LocalResourceRetriever.hpp"
+#include "kido/common/Uri.hpp"
+#include "kido/utils/PackageResourceRetriever.hpp"
 
 namespace kido {
 namespace utils {

@@ -36,14 +36,14 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include "osgKido/DefaultEventHandler.h"
-#include "osgKido/MouseEventHandler.h"
-#include "osgKido/Viewer.h"
-#include "osgKido/render/ShapeNode.h"
-#include "osgKido/EntityNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/DefaultEventHandler.hpp"
+#include "osgKido/MouseEventHandler.hpp"
+#include "osgKido/Viewer.hpp"
+#include "osgKido/render/ShapeNode.hpp"
+#include "osgKido/EntityNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/Entity.h"
+#include "kido/dynamics/Entity.hpp"
 
 
 #include <iostream>

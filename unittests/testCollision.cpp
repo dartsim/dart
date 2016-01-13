@@ -41,13 +41,13 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "kido/config.h"
-#include "kido/common/common.h"
-#include "kido/math/math.h"
-#include "kido/dynamics/dynamics.h"
-//#include "kido/collision/unc/UNCCollisionDetector.h"
-#include "kido/simulation/simulation.h"
-#include "kido/utils/utils.h"
+#include "kido/config.hpp"
+#include "kido/common/common.hpp"
+#include "kido/math/math.hpp"
+#include "kido/dynamics/dynamics.hpp"
+//#include "kido/collision/unc/UNCCollisionDetector.hpp"
+#include "kido/simulation/simulation.hpp"
+#include "kido/utils/utils.hpp"
 
 using namespace kido;
 using namespace common;

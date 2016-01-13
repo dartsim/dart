@@ -37,9 +37,9 @@
 
 #include <iostream>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/rigidCubes/MyWindow.h"
+#include "apps/rigidCubes/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

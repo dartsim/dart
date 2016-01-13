@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/InverseKinematics.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/SimpleFrame.h"
+#include "kido/dynamics/InverseKinematics.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
 
 namespace kido {
 namespace dynamics {

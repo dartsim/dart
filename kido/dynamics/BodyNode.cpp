@@ -35,21 +35,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/BodyNode.hpp"
 
 #include <algorithm>
 #include <vector>
 #include <string>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/renderer/RenderInterface.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/Chain.h"
-#include "kido/dynamics/Marker.h"
-#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/renderer/RenderInterface.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/Chain.hpp"
+#include "kido/dynamics/Marker.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 namespace kido {
 namespace dynamics {

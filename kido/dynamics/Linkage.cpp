@@ -37,8 +37,8 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "kido/dynamics/Linkage.h"
-#include "kido/dynamics/FreeJoint.h"
+#include "kido/dynamics/Linkage.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
 
 namespace kido {
 namespace dynamics {

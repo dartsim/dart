@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/math/Helpers.h"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/math/Helpers.hpp"
 
-#include "SupportPolygonVisual.h"
+#include "SupportPolygonVisual.hpp"
 
 namespace osgKido {
 

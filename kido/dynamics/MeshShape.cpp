@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/MeshShape.hpp"
 
 #include <limits>
 #include <string>
@@ -44,12 +44,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
-#include "kido/config.h"
-#include "kido/renderer/RenderInterface.h"
-#include "kido/common/Console.h"
-#include "kido/dynamics/AssimpInputResourceAdaptor.h"
-#include "kido/common/LocalResourceRetriever.h"
-#include "kido/common/Uri.h"
+#include "kido/config.hpp"
+#include "kido/renderer/RenderInterface.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "kido/common/LocalResourceRetriever.hpp"
+#include "kido/common/Uri.hpp"
 
 #ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
 // We define our own constructor and destructor for aiScene, because it seems to

@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/ConstraintBase.h"
+#include "kido/constraint/ConstraintBase.hpp"
 
 #include <cmath>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
 
-#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace constraint {

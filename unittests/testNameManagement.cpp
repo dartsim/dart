@@ -36,8 +36,8 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
-#include "kido/dynamics/SoftBodyNode.h"
+#include "TestHelpers.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 using namespace kido;
 using namespace math;

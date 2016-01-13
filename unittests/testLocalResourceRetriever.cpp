@@ -35,8 +35,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "kido/common/LocalResourceRetriever.h"
-#include "TestHelpers.h"
+#include "kido/common/LocalResourceRetriever.hpp"
+#include "TestHelpers.hpp"
 
 using kido::common::Uri;
 using kido::common::Resource;

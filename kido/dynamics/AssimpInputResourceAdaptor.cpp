@@ -1,8 +1,8 @@
 #include <cassert>
 #include <iostream>
 #include <assimp/IOStream.hpp>
-#include "kido/common/Console.h"
-#include "AssimpInputResourceAdaptor.h"
+#include "kido/common/Console.hpp"
+#include "AssimpInputResourceAdaptor.hpp"
 
 namespace kido {
 namespace dynamics {

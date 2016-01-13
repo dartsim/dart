@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 # Add subdirectories
 add_subdirectory(sdf)
@@ -26,8 +26,8 @@ kido_get_filename_components(header_names "utils headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  sdf/sdf.h
-  urdf/urdf.h
+  sdf/sdf.hpp
+  urdf/urdf.hpp
 )
 kido_generate_include_header_list(
   utils_headers
@@ -36,13 +36,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/utils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
   DESTINATION include/kido/utils
   COMPONENT headers
 )

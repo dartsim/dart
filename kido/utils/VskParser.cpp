@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/VskParser.h"
+#include "kido/utils/VskParser.hpp"
 
 // Standard Library
 #include <map>
@@ -45,10 +45,10 @@
 #include <Eigen/Dense>
 
 // Local Files
-#include "kido/common/LocalResourceRetriever.h"
-#include "kido/common/Uri.h"
-#include "kido/dynamics/dynamics.h"
-#include "kido/utils/XmlHelpers.h"
+#include "kido/common/LocalResourceRetriever.hpp"
+#include "kido/common/Uri.hpp"
+#include "kido/dynamics/dynamics.hpp"
+#include "kido/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
 

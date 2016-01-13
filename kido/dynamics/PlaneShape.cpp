@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/PlaneShape.h"
+#include "kido/dynamics/PlaneShape.hpp"
 
-#include "kido/renderer/RenderInterface.h"
+#include "kido/renderer/RenderInterface.hpp"
 
 namespace kido {
 namespace dynamics {

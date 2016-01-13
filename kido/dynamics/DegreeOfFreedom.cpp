@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "DegreeOfFreedom.h"
-#include "Joint.h"
-#include "Skeleton.h"
+#include "DegreeOfFreedom.hpp"
+#include "Joint.hpp"
+#include "Skeleton.hpp"
 
 namespace kido {
 namespace dynamics {

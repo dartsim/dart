@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/FileInfoDof.h"
+#include "kido/utils/FileInfoDof.hpp"
 
 #include <fstream>
 #include <string>
 
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/simulation/Recording.h"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/simulation/Recording.hpp"
 
 namespace kido {
 namespace utils {

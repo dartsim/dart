@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/BalanceConstraint.h"
+#include "kido/constraint/BalanceConstraint.hpp"
 
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/EndEffector.h"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/EndEffector.hpp"
 
 namespace kido {
 namespace constraint {

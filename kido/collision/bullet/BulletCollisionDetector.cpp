@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/bullet/BulletCollisionDetector.h"
+#include "kido/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <vector>
 
-#include "kido/collision/bullet/BulletCollisionNode.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/collision/bullet/BulletCollisionNode.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace collision {

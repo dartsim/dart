@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/ScrewJoint.h"
+#include "kido/dynamics/ScrewJoint.hpp"
 
 #include <string>
 
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
 
 namespace kido {
 namespace dynamics {

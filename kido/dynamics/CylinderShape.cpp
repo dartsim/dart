@@ -35,8 +35,8 @@
  */
 
 #include <cmath>
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/renderer/RenderInterface.h"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/renderer/RenderInterface.hpp"
 
 namespace kido {
 namespace dynamics {

@@ -1,8 +1,8 @@
-#include "PathShortener.h"
-#include "kido/simulation/World.h"
-#include "RRT.h"
-#include "kido/collision/CollisionDetector.h"
-#include "kido/dynamics/Skeleton.h"
+#include "PathShortener.hpp"
+#include "kido/simulation/World.hpp"
+#include "RRT.hpp"
+#include "kido/collision/CollisionDetector.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 #include <ctime>
 #include <cstdio>
 

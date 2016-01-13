@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RenderInterface.h"
+#include "RenderInterface.hpp"
 
 namespace kido {
 namespace renderer {

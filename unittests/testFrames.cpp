@@ -36,10 +36,10 @@
 
 #include <gtest/gtest.h>
 
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/math/Helpers.h"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/math/Helpers.hpp"
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
 using namespace kido;
 using namespace dynamics;

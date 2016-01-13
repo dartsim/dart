@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/optimizer/Function.h"
+#include "kido/optimizer/Function.hpp"
 
-#include "kido/common/Console.h"
+#include "kido/common/Console.hpp"
 
 namespace kido {
 namespace optimizer {

@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "C3D.h"
+#include "C3D.hpp"
 
 #include <cstring>
 #include <cstdio>

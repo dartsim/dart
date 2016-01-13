@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 set(kido_collision_hdrs ${kido_collision_hdrs} ${hdrs} PARENT_SCOPE)
 set(kido_collision_srcs ${kido_collision_srcs} ${srcs} PARENT_SCOPE)
@@ -18,13 +18,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/fcl_mesh.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/fcl_mesh.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/fcl_mesh.hpp
   DESTINATION include/kido/collision/fcl_mesh
   COMPONENT headers
 )

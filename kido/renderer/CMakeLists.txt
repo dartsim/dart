@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 set(kido_renderer_hdrs ${hdrs} PARENT_SCOPE)
 set(kido_renderer_srcs ${srcs} PARENT_SCOPE)
@@ -18,13 +18,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/renderer.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/renderer.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/renderer.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/renderer.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/renderer.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/renderer.hpp
   DESTINATION include/kido/renderer
   COMPONENT headers
 )

@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/ArrowShape.h"
+#include "kido/dynamics/ArrowShape.hpp"
 
 namespace kido {
 namespace dynamics {

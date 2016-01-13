@@ -39,9 +39,9 @@
 
 #include <gtest/gtest.h>
 
-#include "kido/simulation/World.h"
+#include "kido/simulation/World.hpp"
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
 using namespace kido;
 using namespace dynamics;

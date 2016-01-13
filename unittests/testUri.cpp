@@ -35,8 +35,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "kido/common/Uri.h"
-#include "TestHelpers.h"
+#include "kido/common/Uri.hpp"
+#include "TestHelpers.hpp"
 
 using kido::common::Uri;
 

@@ -40,11 +40,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/simulation/Recording.h"
+#include "kido/simulation/Recording.hpp"
 
 #include <iostream>
 
-#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace simulation {

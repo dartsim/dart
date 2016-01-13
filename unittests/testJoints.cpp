@@ -37,24 +37,24 @@
 #include <array>
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BallJoint.h"
-#include "kido/dynamics/FreeJoint.h"
-#include "kido/dynamics/PrismaticJoint.h"
-#include "kido/dynamics/RevoluteJoint.h"
-#include "kido/dynamics/TranslationalJoint.h"
-#include "kido/dynamics/UniversalJoint.h"
-#include "kido/dynamics/WeldJoint.h"
-#include "kido/dynamics/EulerJoint.h"
-#include "kido/dynamics/ScrewJoint.h"
-#include "kido/dynamics/PlanarJoint.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/simulation/World.h"
-#include "kido/utils/SkelParser.h"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BallJoint.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
+#include "kido/dynamics/PrismaticJoint.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/TranslationalJoint.hpp"
+#include "kido/dynamics/UniversalJoint.hpp"
+#include "kido/dynamics/WeldJoint.hpp"
+#include "kido/dynamics/EulerJoint.hpp"
+#include "kido/dynamics/ScrewJoint.hpp"
+#include "kido/dynamics/PlanarJoint.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 using namespace kido;
 using namespace kido::math;

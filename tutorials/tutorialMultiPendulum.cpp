@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m

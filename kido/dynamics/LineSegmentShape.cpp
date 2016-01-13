@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/LineSegmentShape.h"
-#include "kido/common/Console.h"
-#include "kido/renderer/RenderInterface.h"
-#include "kido/math/Geometry.h"
+#include "kido/dynamics/LineSegmentShape.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/renderer/RenderInterface.hpp"
+#include "kido/math/Geometry.hpp"
 
 namespace kido {
 namespace dynamics {

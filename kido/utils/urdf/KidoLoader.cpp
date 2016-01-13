@@ -1,4 +1,4 @@
-#include "KidoLoader.h"
+#include "KidoLoader.hpp"
 
 #include <map>
 #include <iostream>
@@ -7,21 +7,21 @@
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
 
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/RevoluteJoint.h"
-#include "kido/dynamics/PrismaticJoint.h"
-#include "kido/dynamics/WeldJoint.h"
-#include "kido/dynamics/FreeJoint.h"
-#include "kido/dynamics/PlanarJoint.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/simulation/World.h"
-#include "kido/utils/urdf/urdf_world_parser.h"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/PrismaticJoint.hpp"
+#include "kido/dynamics/WeldJoint.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
+#include "kido/dynamics/PlanarJoint.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/urdf/urdf_world_parser.hpp"
 
 using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 

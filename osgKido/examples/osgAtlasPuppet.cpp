@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/osgKido.h"
+#include "osgKido/osgKido.hpp"
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
 using namespace kido::common;
 using namespace kido::dynamics;

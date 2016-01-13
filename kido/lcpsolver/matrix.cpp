@@ -20,7 +20,7 @@
  *                                                                       *
  *************************************************************************/
 
-//#include "config.h"
+//#include "config.hpp"
 #ifdef __APPLE__
   #include <malloc/malloc.h>
 #else

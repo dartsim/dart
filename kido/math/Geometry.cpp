@@ -42,9 +42,9 @@
 #include <iostream>
 #include <vector>
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
 
 namespace kido {
 namespace math {

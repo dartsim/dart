@@ -39,10 +39,10 @@
 #include <osg/Light>
 #include <osg/Material>
 
-#include "osgKido/render/EllipsoidShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/EllipsoidShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/EllipsoidShape.h"
+#include "kido/dynamics/EllipsoidShape.hpp"
 
 namespace osgKido {
 namespace render {

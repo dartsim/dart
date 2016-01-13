@@ -37,8 +37,8 @@
 #include <cstring>
 #include <limits>
 #include <iostream>
-#include "kido/common/Console.h"
-#include "LocalResource.h"
+#include "kido/common/Console.hpp"
+#include "LocalResource.hpp"
 
 namespace kido {
 namespace common {

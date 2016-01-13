@@ -38,9 +38,9 @@
 #include <iostream>
 #include <vector>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/bipedStand/MyWindow.h"
+#include "apps/bipedStand/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

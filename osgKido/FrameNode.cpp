@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/FrameNode.h"
-#include "osgKido/EntityNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/FrameNode.hpp"
+#include "osgKido/EntityNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/Frame.h"
+#include "kido/dynamics/Frame.hpp"
 
 namespace osgKido
 {

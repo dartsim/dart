@@ -41,15 +41,15 @@
 #include <gtest/gtest.h>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/Joint.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/Joint.hpp"
 
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/PointMass.h"
-#include "kido/simulation/World.h"
-#include "kido/utils/SkelParser.h"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 using namespace std;
 using namespace Eigen;

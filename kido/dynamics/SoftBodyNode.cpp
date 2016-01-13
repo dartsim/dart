@@ -34,22 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "kido/math/Helpers.h"
-#include "kido/common/Console.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/renderer/LoadOpengl.h"
-#include "kido/renderer/RenderInterface.h"
+#include "kido/math/Helpers.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/renderer/LoadOpengl.hpp"
+#include "kido/renderer/RenderInterface.hpp"
 
-#include "kido/dynamics/PointMass.h"
-#include "kido/dynamics/SoftMeshShape.h"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/dynamics/SoftMeshShape.hpp"
 
 namespace kido {
 namespace dynamics {

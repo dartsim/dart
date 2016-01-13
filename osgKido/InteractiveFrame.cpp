@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/InteractiveFrame.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/dynamics/ArrowShape.h"
-#include "kido/dynamics/LineSegmentShape.h"
-#include "kido/common/Console.h"
+#include "osgKido/InteractiveFrame.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/dynamics/ArrowShape.hpp"
+#include "kido/dynamics/LineSegmentShape.hpp"
+#include "kido/common/Console.hpp"
 
 namespace osgKido {
 
