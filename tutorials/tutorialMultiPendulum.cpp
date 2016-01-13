@@ -107,31 +107,73 @@ public:
       mForceCountDown[index] = default_countdown;
   }
 
-  void changeRestPosition(double)
+  void changeRestPosition(double delta)
   {
     // Lesson 2a
+  	for (size_t i=0; i<mPendulum->getNumDofs();++i)
+  	{
+  		DegreeOfFreedom* dof = mPendulum->getDof(i);
+  		double q0 = dof->getRestPosition()+delta;
+
+  		if (std::abs(q0)>90.0 *M_PI/180.0)
+  			q0 = (q0 > 0)? (90.0 *M_PI/180.0):-(90.0 *M_PI/180.0);
+
+  		dof->setRestPosition(q0);
+  	}
+  	mPendulum->getDof(0)->setRestPosition(0.0);
+  	mPendulum->getDof(2)->setRestPosition(0.0);
   }
 
-  void changeStiffness(double)
+  void changeStiffness(double delta)
   {
     // Lesson 2b
+    for (size_t i = 0; i<mPendulum->getNumDofs();++i)
+    {
+    	DegreeOfFreedom* dof = mPendulum->getDof(i);
+    	double stiffness0 = dof->getSpringStiffness() + delta;
+
+    	if (stiffness0<0)
+    	{
+    		stiffness0 = 0.0;
+    	}
+    	dof->setSpringStiffness(stiffness0);
+    }
   }
 
-  void changeDamping(double)
+  void changeDamping(double delta)
   {
     // Lesson 2c
+    for (size_t i=0; i<mPendulum->getNumDofs(); ++i)
+    {
+    	DegreeOfFreedom* dof = mPendulum->getDof(i);
+    	double damping0 = dof->getDampingCoefficient() + delta;
+
+    	if (damping0<0.0)
+    	{
+    		damping0 = 0.0;
+    	}
+    	dof->setDampingCoefficient(damping0);
+    }
   }
 
   /// Add a constraint to attach the final link to the world
   void addConstraint()
   {
     // Lesson 3
+    BodyNode* tip = mPendulum->getBodyNode(mPendulum->getNumBodyNodes() - 1);
+    Eigen::Vector3d location = tip->getTransform() * Eigen::Vector3d(0.0,0.0,default_height);
+
+    mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+    mWorld->getConstraintSolver()->addConstraint(mBallConstraint);
   }
 
   /// Remove any existing constraint, allowing the pendulum to flail freely
   void removeConstraint()
   {
     // Lesson 3
+    mWorld->getConstraintSolver()->removeConstraint(mBallConstraint);
+    delete mBallConstraint;
+    mBallConstraint = nullptr;
   }
 
   /// Handle keyboard input
@@ -217,6 +259,20 @@ public:
   {
     // Reset all the shapes to be Blue
     // Lesson 1a
+    for(size_t i = 0; i<mPendulum->getNumBodyNodes();++i)
+    {
+    	BodyNode* bn = mPendulum->getBodyNode(i);
+    	for(size_t j = 0; j < 2; ++j)
+    	{
+    		const ShapePtr& shape = bn->getVisualizationShape(j);
+
+    		shape->setColor(dart::Color::Blue());
+    	}
+    	if(bn->getNumVisualizationShapes() == 3)
+    	{
+    		bn->removeVisualizationShape(mArrow);
+    	}
+    }
 
     if(!mBodyForce)
     {
@@ -225,7 +281,13 @@ public:
       {
         if(mForceCountDown[i] > 0)
         {
+          
           // Lesson 1b
+          DegreeOfFreedom* dof = mPendulum->getDof(i);
+          dof->setForce(mPositiveSign? default_torque:-default_torque);          
+          BodyNode* bn = dof->getChildBodyNode();
+          const ShapePtr& shape = bn->getVisualizationShape(0);
+          shape->setColor(dart::Color::Red());
 
           --mForceCountDown[i];
         }
@@ -239,6 +301,23 @@ public:
         if(mForceCountDown[i] > 0)
         {
           // Lesson 1c
+          BodyNode* bn = mPendulum->getBodyNode(i);
+
+          Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
+          Eigen::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+
+          if (!mPositiveSign)
+          {
+          	force = -force;
+          	location[0]=-location[0];
+          }
+
+          bn->addExtForce(force, location, true, true);
+
+          const ShapePtr& shape = bn->getVisualizationShape(1);
+          shape->setColor(dart::Color::Red());
+
+          bn->addVisualizationShape(mArrow);
 
           --mForceCountDown[i];
         }
