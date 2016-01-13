@@ -7,8 +7,8 @@
  * bidirectional, connect and etc.
  */
 
-#ifndef KIDO_PLANNING_PATHPLANNER_H_
-#define KIDO_PLANNING_PATHPLANNER_H_
+#ifndef KIDO_PLANNING_PATHPLANNER_HPP_
+#define KIDO_PLANNING_PATHPLANNER_HPP_
 
 #include <Eigen/Core>
 #include <iostream>
@@ -259,4 +259,4 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 } // namespace planning
 } // namespace kido
 
-#endif  // KIDO_PLANNING_PATHPLANNER_H_
+#endif  // KIDO_PLANNING_PATHPLANNER_HPP_

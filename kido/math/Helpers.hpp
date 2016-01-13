@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_MATH_HELPERS_H_
-#define KIDO_MATH_HELPERS_H_
+#ifndef KIDO_MATH_HELPERS_HPP_
+#define KIDO_MATH_HELPERS_HPP_
 
 // Standard Libraries
 #include <cfloat>
@@ -402,4 +402,4 @@ inline Eigen::Vector3d Random()
 
 }  // namespace kido
 
-#endif  // KIDO_MATH_HELPERS_H_
+#endif  // KIDO_MATH_HELPERS_HPP_

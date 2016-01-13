@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_DETAIL_CONNECTIONBODY_H_
-#define KIDO_COMMON_DETAIL_CONNECTIONBODY_H_
+#ifndef KIDO_COMMON_DETAIL_CONNECTIONBODY_HPP_
+#define KIDO_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
 #include <memory>
 
@@ -142,5 +142,5 @@ struct DefaultCombiner
 }  // namespace common
 }  // namespace kido
 
-#endif  // KIDO_COMMON_DETAIL_CONNECTIONBODY_H_
+#endif  // KIDO_COMMON_DETAIL_CONNECTIONBODY_HPP_
 

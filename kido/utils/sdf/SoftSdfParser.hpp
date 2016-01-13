@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_UTILS_SDF_SOFTSDFPARSER_H_
-#define KIDO_UTILS_SDF_SOFTSDFPARSER_H_
+#ifndef KIDO_UTILS_SDF_SOFTSDFPARSER_HPP_
+#define KIDO_UTILS_SDF_SOFTSDFPARSER_HPP_
 
 #include <map>
 #include <string>
@@ -100,4 +100,4 @@ public:
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef KIDO_UTILS_SDF_SOFTSDFPARSER_H_
+#endif // #ifndef KIDO_UTILS_SDF_SOFTSDFPARSER_HPP_

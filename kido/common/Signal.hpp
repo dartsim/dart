@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_SIGNAL_H_
-#define KIDO_COMMON_SIGNAL_H_
+#ifndef KIDO_COMMON_SIGNAL_HPP_
+#define KIDO_COMMON_SIGNAL_HPP_
 
 #include <functional>
 #include <memory>
@@ -245,5 +245,5 @@ private:
 
 #include "kido/common/detail/Signal.hpp"
 
-#endif  // KIDO_COMMON_SIGNAL_H_
+#endif  // KIDO_COMMON_SIGNAL_HPP_
 

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_DETAIL_NAMEMANAGER_H_
-#define KIDO_COMMON_DETAIL_NAMEMANAGER_H_
+#ifndef KIDO_COMMON_DETAIL_NAMEMANAGER_HPP_
+#define KIDO_COMMON_DETAIL_NAMEMANAGER_HPP_
 
 #include <sstream>
 #include <cassert>
@@ -309,4 +309,4 @@ const std::string& NameManager<T>::getManagerName() const
 } // namespace common
 } // namespace kido
 
-#endif // KIDO_COMMON_DETAIL_NAMEMANAGER_H_
+#endif // KIDO_COMMON_DETAIL_NAMEMANAGER_HPP_

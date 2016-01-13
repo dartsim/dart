@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_GRAPHWINDOW_H_
-#define KIDO_GUI_GRAPHWINDOW_H_
+#ifndef KIDO_GUI_GRAPHWINDOW_HPP_
+#define KIDO_GUI_GRAPHWINDOW_HPP_
 
 #include <vector>
 
@@ -76,4 +76,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // KIDO_GUI_GRAPHWINDOW_H_
+#endif  // KIDO_GUI_GRAPHWINDOW_HPP_

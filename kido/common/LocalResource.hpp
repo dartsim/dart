@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_LOCALRESOURCE_H_
-#define KIDO_COMMON_LOCALRESOURCE_H_
+#ifndef KIDO_COMMON_LOCALRESOURCE_HPP_
+#define KIDO_COMMON_LOCALRESOURCE_HPP_
 
 #include "kido/common/Resource.hpp"
 
@@ -73,4 +73,4 @@ private:
 } // namespace common
 } // namespace kido
 
-#endif // ifndef KIDO_COMMON_LOCALRESOURCE_H_
+#endif // ifndef KIDO_COMMON_LOCALRESOURCE_HPP_

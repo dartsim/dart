@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_LCPSOLVER_ODELCPSOLVER_H_
-#define KIDO_LCPSOLVER_ODELCPSOLVER_H_
+#ifndef KIDO_LCPSOLVER_ODELCPSOLVER_HPP_
+#define KIDO_LCPSOLVER_ODELCPSOLVER_HPP_
 
 #include <Eigen/Dense>
 
@@ -84,4 +84,4 @@ private:
 }  // namespace lcpsolver
 }  // namespace kido
 
-#endif  // KIDO_LCPSOLVER_ODELCPSOLVER_H_
+#endif  // KIDO_LCPSOLVER_ODELCPSOLVER_HPP_

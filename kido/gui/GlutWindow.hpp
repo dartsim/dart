@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_GLUTWINDOW_H_
-#define KIDO_GUI_GLUTWINDOW_H_
+#ifndef KIDO_GUI_GLUTWINDOW_HPP_
+#define KIDO_GUI_GLUTWINDOW_HPP_
 
 #include <vector>
 
@@ -101,4 +101,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // KIDO_GUI_GLUTWINDOW_H_
+#endif  // KIDO_GUI_GLUTWINDOW_HPP_

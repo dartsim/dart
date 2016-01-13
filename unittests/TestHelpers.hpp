@@ -42,8 +42,8 @@
  * @brief Contains the helper functions for the tests.
  */
 
-#ifndef KIDO_UNITTESTS_TEST_HELPERS_H
-#define KIDO_UNITTESTS_TEST_HELPERS_H
+#ifndef KIDO_UNITTESTS_TEST_HELPERS_HPP_
+#define KIDO_UNITTESTS_TEST_HELPERS_HPP_
 
 #include <vector>
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -505,4 +505,4 @@ struct AbsentResourceRetriever : public kido::common::ResourceRetriever
   std::vector<std::string> mRetrieve;
 };
 
-#endif // #ifndef KIDO_UNITTESTS_TEST_HELPERS_H
+#endif // #ifndef KIDO_UNITTESTS_TEST_HELPERS_HPP_

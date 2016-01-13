@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_DETAIL_JOINTPTR_H_
-#define KIDO_DYNAMICS_DETAIL_JOINTPTR_H_
+#ifndef KIDO_DYNAMICS_DETAIL_JOINTPTR_HPP_
+#define KIDO_DYNAMICS_DETAIL_JOINTPTR_HPP_
 
 #include "kido/dynamics/detail/BodyNodePtr.hpp"
 
@@ -282,4 +282,4 @@ private:
 } // namespace kido
 } // namespace dynamics
 
-#endif // KIDO_DYNAMICS_DETAIL_JOINTPTR_H_
+#endif // KIDO_DYNAMICS_DETAIL_JOINTPTR_HPP_

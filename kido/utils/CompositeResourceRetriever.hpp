@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_UTILS_COMPOSITERESOURCERETRIEVER_H_
-#define KIDO_UTILS_COMPOSITERESOURCERETRIEVER_H_
+#ifndef KIDO_UTILS_COMPOSITERESOURCERETRIEVER_HPP_
+#define KIDO_UTILS_COMPOSITERESOURCERETRIEVER_HPP_
 
 #include <unordered_map>
 #include <vector>
@@ -91,4 +91,4 @@ using CompositeResourceRetrieverPtr
 } // namespace utils
 } // namespace kido
 
-#endif // ifndef KIDO_UTILS_COMPOSITERESOURCERETRIEVER_H_
+#endif // ifndef KIDO_UTILS_COMPOSITERESOURCERETRIEVER_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_LCPSOLVER_H_
-#define KIDO_CONSTRAINT_LCPSOLVER_H_
+#ifndef KIDO_CONSTRAINT_LCPSOLVER_HPP_
+#define KIDO_CONSTRAINT_LCPSOLVER_HPP_
 
 namespace kido {
 namespace constraint {
@@ -70,5 +70,5 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif  // KIDO_CONSTRAINT_LCPSOLVER_H_
+#endif  // KIDO_CONSTRAINT_LCPSOLVER_HPP_
 

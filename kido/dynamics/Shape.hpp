@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_SHAPE_H_
-#define KIDO_DYNAMICS_SHAPE_H_
+#ifndef KIDO_DYNAMICS_SHAPE_HPP_
+#define KIDO_DYNAMICS_SHAPE_HPP_
 
 #include <memory>
 
@@ -250,4 +250,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_SHAPE_H_
+#endif  // KIDO_DYNAMICS_SHAPE_HPP_

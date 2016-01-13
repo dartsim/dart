@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_H
-#define OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_H
+#ifndef OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_HPP
+#define OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_HPP
 
 #include <osg/ShapeDrawable>
 #include <osg/MatrixTransform>
@@ -77,4 +77,4 @@ protected:
 } // namespace render
 } // namespace osgKido
 
-#endif // OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_H
+#endif // OSGKIDO_RENDER_ELLIPSOIDSHAPENODE_HPP

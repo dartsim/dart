@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_WIN2D_H_
-#define KIDO_GUI_WIN2D_H_
+#ifndef KIDO_GUI_WIN2D_HPP_
+#define KIDO_GUI_WIN2D_HPP_
 
 #include "kido/gui/GlutWindow.hpp"
 
@@ -83,4 +83,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // KIDO_GUI_WIN2D_H_
+#endif  // KIDO_GUI_WIN2D_HPP_

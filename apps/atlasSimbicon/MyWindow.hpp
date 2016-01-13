@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_MYWINDOW_H_
-#define APPS_ATLASROBOT_MYWINDOW_H_
+#ifndef APPS_ATLASROBOT_MYWINDOW_HPP_
+#define APPS_ATLASROBOT_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
 
@@ -72,4 +72,4 @@ private:
   Controller* mController;
 };
 
-#endif  // APPS_ATLASROBOT_MYWINDOW_H_
+#endif  // APPS_ATLASROBOT_MYWINDOW_HPP_

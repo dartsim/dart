@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_CONTROLLER_H_
-#define APPS_ATLASROBOT_CONTROLLER_H_
+#ifndef APPS_ATLASROBOT_CONTROLLER_HPP_
+#define APPS_ATLASROBOT_CONTROLLER_HPP_
 
 #include <vector>
 
@@ -184,4 +184,4 @@ private:
   Eigen::VectorXd mInitialState;
 };
 
-#endif  // APPS_ATLASROBOT_CONTROLLER_H_
+#endif  // APPS_ATLASROBOT_CONTROLLER_HPP_

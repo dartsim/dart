@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
-#define KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#ifndef KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_
+#define KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_
 
 #define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )              \
   dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
@@ -2404,4 +2404,4 @@ Eigen::VectorXd MultiDofJoint<DOF>::getSpatialToGeneralized(
   return getLocalJacobianStatic().transpose() * _spatial;
 }
 
-#endif // KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#endif // KIDO_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_BALANCE_MYWINDOW_H_
-#define APPS_BALANCE_MYWINDOW_H_
+#ifndef APPS_BALANCE_MYWINDOW_HPP_
+#define APPS_BALANCE_MYWINDOW_HPP_
 
 #include <cstdarg>
 
@@ -64,4 +64,4 @@ private:
   int mImpulseDuration;
 };
 
-#endif  // APPS_BALANCE_MYWINDOW_H_
+#endif  // APPS_BALANCE_MYWINDOW_HPP_

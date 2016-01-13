@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_RIGIDSHAPES_MYWINDOW_H_
-#define APPS_RIGIDSHAPES_MYWINDOW_H_
+#ifndef APPS_RIGIDSHAPES_MYWINDOW_HPP_
+#define APPS_RIGIDSHAPES_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
 
@@ -84,4 +84,4 @@ public:
       double _mass = 10);
 };
 
-#endif  // APPS_RIGIDSHAPES_MYWINDOW_H_
+#endif  // APPS_RIGIDSHAPES_MYWINDOW_HPP_

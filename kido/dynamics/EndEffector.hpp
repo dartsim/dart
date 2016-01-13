@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_ENDEFFECTOR_H_
-#define KIDO_DYNAMICS_ENDEFFECTOR_H_
+#ifndef KIDO_DYNAMICS_ENDEFFECTOR_HPP_
+#define KIDO_DYNAMICS_ENDEFFECTOR_HPP_
 
 #include "kido/dynamics/FixedFrame.hpp"
 #include "kido/dynamics/TemplatedJacobianNode.hpp"
@@ -325,4 +325,4 @@ protected:
 } // namespace kido
 
 
-#endif // KIDO_DYNAMICS_ENDEFFECTOR_H_
+#endif // KIDO_DYNAMICS_ENDEFFECTOR_HPP_

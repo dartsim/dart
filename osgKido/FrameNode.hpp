@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_FRAMENODE_H
-#define OSGKIDO_FRAMENODE_H
+#ifndef OSGKIDO_FRAMENODE_HPP
+#define OSGKIDO_FRAMENODE_HPP
 
 #include <osg/MatrixTransform>
 #include <map>
@@ -124,4 +124,4 @@ protected:
 
 } // namespace osgKido
 
-#endif // OSGKIDO_FRAMENODE_H
+#endif // OSGKIDO_FRAMENODE_HPP

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_MATH_MATHTYPES_H_
-#define KIDO_MATH_MATHTYPES_H_
+#ifndef KIDO_MATH_MATHTYPES_HPP_
+#define KIDO_MATH_MATHTYPES_HPP_
 
 #include <limits>
 #include <map>
@@ -181,4 +181,4 @@ typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian;
 }  // namespace math
 }  // namespace kido
 
-#endif  // KIDO_MATH_MATHTYPES_H_
+#endif  // KIDO_MATH_MATHTYPES_HPP_

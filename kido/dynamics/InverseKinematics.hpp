@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_INVERSEKINEMATICS_H_
-#define KIDO_DYNAMICS_INVERSEKINEMATICS_H_
+#ifndef KIDO_DYNAMICS_INVERSEKINEMATICS_HPP_
+#define KIDO_DYNAMICS_INVERSEKINEMATICS_HPP_
 
 #include <memory>
 #include <functional>
@@ -1199,4 +1199,4 @@ typedef InverseKinematics IK;
 
 #include "kido/dynamics/detail/InverseKinematics.hpp"
 
-#endif // KIDO_DYNAMICS_INVERSEKINEMATICS_H_
+#endif // KIDO_DYNAMICS_INVERSEKINEMATICS_HPP_

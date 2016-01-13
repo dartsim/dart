@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_UTILS_FILEINFODOF_H_
-#define KIDO_UTILS_FILEINFODOF_H_
+#ifndef KIDO_UTILS_FILEINFODOF_HPP_
+#define KIDO_UTILS_FILEINFODOF_HPP_
 
 #include <vector>
 
@@ -107,4 +107,4 @@ protected:
 
 }  // namespace utils
 }  // namespace kido
-#endif  // KIDO_UTILS_FILEINFODOF_H_
+#endif  // KIDO_UTILS_FILEINFODOF_HPP_

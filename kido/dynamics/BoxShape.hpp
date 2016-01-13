@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_BOXSHAPE_H_
-#define KIDO_DYNAMICS_BOXSHAPE_H_
+#ifndef KIDO_DYNAMICS_BOXSHAPE_HPP_
+#define KIDO_DYNAMICS_BOXSHAPE_HPP_
 
 #include "kido/dynamics/Shape.hpp"
 
@@ -88,4 +88,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_BOXSHAPE_H_
+#endif  // KIDO_DYNAMICS_BOXSHAPE_HPP_

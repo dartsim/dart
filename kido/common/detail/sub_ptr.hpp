@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_DETAIL_SUB_PTR_H_
-#define KIDO_COMMON_DETAIL_SUB_PTR_H_
+#ifndef KIDO_COMMON_DETAIL_SUB_PTR_HPP_
+#define KIDO_COMMON_DETAIL_SUB_PTR_HPP_
 
 //==============================================================================
 template <class T>
@@ -123,4 +123,4 @@ void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
     mSubject = nullptr;
 }
 
-#endif // KIDO_COMMON_DETAIL_SUB_PTR_H_
+#endif // KIDO_COMMON_DETAIL_SUB_PTR_HPP_

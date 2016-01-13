@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_MATH_GEOMETRY_H_
-#define KIDO_MATH_GEOMETRY_H_
+#ifndef KIDO_MATH_GEOMETRY_HPP_
+#define KIDO_MATH_GEOMETRY_HPP_
 
 #include <Eigen/Dense>
 
@@ -594,4 +594,4 @@ class BoundingBox {
 }  // namespace math
 }  // namespace kido
 
-#endif  // KIDO_MATH_GEOMETRY_H_
+#endif  // KIDO_MATH_GEOMETRY_HPP_

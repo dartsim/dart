@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_ARROWSHAPE_H_
-#define KIDO_DYNAMICS_ARROWSHAPE_H_
+#ifndef KIDO_DYNAMICS_ARROWSHAPE_HPP_
+#define KIDO_DYNAMICS_ARROWSHAPE_HPP_
 
 #include "kido/dynamics/MeshShape.hpp"
 
@@ -112,4 +112,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_ARROWSHAPE_H_
+#endif // KIDO_DYNAMICS_ARROWSHAPE_HPP_

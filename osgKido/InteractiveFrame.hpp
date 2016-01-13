@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_INTERACTIVEFRAME_H
-#define OSGKIDO_INTERACTIVEFRAME_H
+#ifndef OSGKIDO_INTERACTIVEFRAME_HPP
+#define OSGKIDO_INTERACTIVEFRAME_HPP
 
 #include "kido/dynamics/SimpleFrame.hpp"
 
@@ -147,4 +147,4 @@ typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
 } // namespace osgKido
 
-#endif // OSGKIDO_INTERACTIVEFRAME_H
+#endif // OSGKIDO_INTERACTIVEFRAME_HPP

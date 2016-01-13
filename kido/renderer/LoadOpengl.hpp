@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_RENDERER_LOADOPENGL_H_
-#define KIDO_RENDERER_LOADOPENGL_H_
+#ifndef KIDO_RENDERER_LOADOPENGL_HPP_
+#define KIDO_RENDERER_LOADOPENGL_HPP_
 
 #if defined(_WIN32)
   #ifdef NOMINMAX
@@ -57,4 +57,4 @@
   #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif  // KIDO_RENDERER_LOADOPENGL_H_
+#endif  // KIDO_RENDERER_LOADOPENGL_HPP_

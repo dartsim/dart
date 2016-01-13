@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
-#define KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
+#ifndef KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
+#define KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
 #include <cmath>
 #include <iostream>
@@ -441,4 +441,4 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
+#endif  // KIDO_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_

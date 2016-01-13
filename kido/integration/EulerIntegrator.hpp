@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_INTEGRATION_EULERINTEGRATOR_H_
-#define KIDO_INTEGRATION_EULERINTEGRATOR_H_
+#ifndef KIDO_INTEGRATION_EULERINTEGRATOR_HPP_
+#define KIDO_INTEGRATION_EULERINTEGRATOR_HPP_
 
 #include "kido/integration/Integrator.hpp"
 
@@ -66,4 +66,4 @@ public:
 }  // namespace integration
 }  // namespace kido
 
-#endif  // KIDO_INTEGRATION_EULERINTEGRATOR_H_
+#endif  // KIDO_INTEGRATION_EULERINTEGRATOR_HPP_

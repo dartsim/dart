@@ -36,8 +36,8 @@
 
 #include "kido/config.hpp"
 
-#ifndef KIDO_COMMON_DEPRECATED_H_
-#define KIDO_COMMON_DEPRECATED_H_
+#ifndef KIDO_COMMON_DEPRECATED_HPP_
+#define KIDO_COMMON_DEPRECATED_HPP_
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -98,4 +98,4 @@
 
 #endif
 
-#endif  // KIDO_COMMON_DEPRECATED_H_
+#endif  // KIDO_COMMON_DEPRECATED_HPP_

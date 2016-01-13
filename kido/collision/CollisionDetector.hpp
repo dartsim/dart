@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COLLISION_COLLISIONDETECTOR_H_
-#define KIDO_COLLISION_COLLISIONDETECTOR_H_
+#ifndef KIDO_COLLISION_COLLISIONDETECTOR_HPP_
+#define KIDO_COLLISION_COLLISIONDETECTOR_HPP_
 
 #include <vector>
 #include <map>
@@ -208,4 +208,4 @@ private:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_COLLISIONDETECTOR_H_
+#endif  // KIDO_COLLISION_COLLISIONDETECTOR_HPP_

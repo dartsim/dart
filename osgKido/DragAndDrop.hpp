@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_DRAGANDDROP_H
-#define OSGKIDO_DRAGANDDROP_H
+#ifndef OSGKIDO_DRAGANDDROP_HPP
+#define OSGKIDO_DRAGANDDROP_HPP
 
 #include <functional>
 
@@ -360,4 +360,4 @@ protected:
 } // namespace osgKido
 
 
-#endif // OSGKIDO_DRAGANDDROP_H
+#endif // OSGKIDO_DRAGANDDROP_HPP

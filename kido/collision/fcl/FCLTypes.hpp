@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COLLISION_FCL_FCLTTYPES_H_
-#define KIDO_COLLISION_FCL_FCLTTYPES_H_
+#ifndef KIDO_COLLISION_FCL_FCLTTYPES_HPP_
+#define KIDO_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
 #include <fcl/math/vec_3f.h>
@@ -64,4 +64,4 @@ public:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_FCL_FCLTTYPES_H_
+#endif  // KIDO_COLLISION_FCL_FCLTTYPES_HPP_

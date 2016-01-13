@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_HIERARCHICALIK_H_
-#define KIDO_DYNAMICS_HIERARCHICALIK_H_
+#ifndef KIDO_DYNAMICS_HIERARCHICALIK_HPP_
+#define KIDO_DYNAMICS_HIERARCHICALIK_HPP_
 
 #include <unordered_set>
 
@@ -380,4 +380,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_HIERARCHICALIK_H_
+#endif // KIDO_DYNAMICS_HIERARCHICALIK_HPP_

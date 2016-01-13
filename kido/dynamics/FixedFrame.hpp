@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_FIXEDFRAME_H_
-#define KIDO_DYNAMICS_FIXEDFRAME_H_
+#ifndef KIDO_DYNAMICS_FIXEDFRAME_HPP_
+#define KIDO_DYNAMICS_FIXEDFRAME_HPP_
 
 #include "Frame.hpp"
 
@@ -84,4 +84,4 @@ protected:
 } // namespace kido
 
 
-#endif // KIDO_DYNAMICS_FIXEDFRAME_H_
+#endif // KIDO_DYNAMICS_FIXEDFRAME_HPP_

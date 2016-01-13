@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_CHAIN_H_
-#define KIDO_DYNAMICS_CHAIN_H_
+#ifndef KIDO_DYNAMICS_CHAIN_HPP_
+#define KIDO_DYNAMICS_CHAIN_HPP_
 
 #include "kido/dynamics/Linkage.hpp"
 
@@ -119,4 +119,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_CHAIN_H_
+#endif // KIDO_DYNAMICS_CHAIN_HPP_

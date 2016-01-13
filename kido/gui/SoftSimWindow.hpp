@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_SOFTSIMWINDOW_H_
-#define KIDO_GUI_SOFTSIMWINDOW_H_
+#ifndef KIDO_GUI_SOFTSIMWINDOW_HPP_
+#define KIDO_GUI_SOFTSIMWINDOW_HPP_
 
 #include "kido/gui/SimWindow.hpp"
 
@@ -72,4 +72,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // KIDO_GUI_SOFTSIMWINDOW_H_
+#endif  // KIDO_GUI_SOFTSIMWINDOW_HPP_

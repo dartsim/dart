@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_SIMPLEFRAME_H_
-#define KIDO_DYNAMICS_SIMPLEFRAME_H_
+#ifndef KIDO_DYNAMICS_SIMPLEFRAME_HPP_
+#define KIDO_DYNAMICS_SIMPLEFRAME_HPP_
 
 #include "kido/dynamics/Frame.hpp"
 
@@ -198,4 +198,4 @@ protected:
 } // namespace kido
 } // namespace dynamics
 
-#endif // KIDO_DYNAMICS_SIMPLEFRAME_H_
+#endif // KIDO_DYNAMICS_SIMPLEFRAME_HPP_

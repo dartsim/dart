@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_WORLDNODE_H
-#define OSGKIDO_WORLDNODE_H
+#ifndef OSGKIDO_WORLDNODE_HPP
+#define OSGKIDO_WORLDNODE_HPP
 
 #include <osg/Group>
 #include <map>
@@ -196,4 +196,4 @@ protected:
 
 } // namespace osgKido
 
-#endif // OSGKIDO_WORLDNODE_H
+#endif // OSGKIDO_WORLDNODE_HPP

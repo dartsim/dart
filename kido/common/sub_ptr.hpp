@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_SUB_PTR_H_
-#define KIDO_COMMON_SUB_PTR_H_
+#ifndef KIDO_COMMON_SUB_PTR_HPP_
+#define KIDO_COMMON_SUB_PTR_HPP_
 
 #include "kido/common/Observer.hpp"
 
@@ -100,4 +100,4 @@ using sub_ptr = common::sub_ptr<T>;
 
 } // namespace kido
 
-#endif // KIDO_COMMON_SUB_PTR_H_
+#endif // KIDO_COMMON_SUB_PTR_HPP_

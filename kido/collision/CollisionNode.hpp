@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COLLISION_COLLISIONNODE_H_
-#define KIDO_COLLISION_COLLISIONNODE_H_
+#ifndef KIDO_COLLISION_COLLISIONNODE_HPP_
+#define KIDO_COLLISION_COLLISIONNODE_HPP_
 
 #include <cstddef>
 
@@ -78,4 +78,4 @@ protected:
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_COLLISIONNODE_H_
+#endif  // KIDO_COLLISION_COLLISIONNODE_HPP_

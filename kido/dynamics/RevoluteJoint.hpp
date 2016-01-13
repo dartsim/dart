@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_REVOLUTEJOINT_H_
-#define KIDO_DYNAMICS_REVOLUTEJOINT_H_
+#ifndef KIDO_DYNAMICS_REVOLUTEJOINT_HPP_
+#define KIDO_DYNAMICS_REVOLUTEJOINT_HPP_
 
 #include <string>
 
@@ -142,5 +142,5 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_REVOLUTEJOINT_H_
+#endif  // KIDO_DYNAMICS_REVOLUTEJOINT_HPP_
 

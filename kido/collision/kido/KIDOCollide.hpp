@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COLLISION_KIDO_KIDOCOLLIDE_H_
-#define KIDO_COLLISION_KIDO_KIDOCOLLIDE_H_
+#ifndef KIDO_COLLISION_KIDO_KIDOCOLLIDE_HPP_
+#define KIDO_COLLISION_KIDO_KIDOCOLLIDE_HPP_
 
 #include <vector>
 
@@ -88,4 +88,4 @@ int collideCylinderPlane(
 }  // namespace collision
 }  // namespace kido
 
-#endif  // KIDO_COLLISION_KIDO_KIDOCOLLIDE_H_
+#endif  // KIDO_COLLISION_KIDO_KIDOCOLLIDE_HPP_

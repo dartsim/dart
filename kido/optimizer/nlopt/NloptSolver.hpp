@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-#define KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#ifndef KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
+#define KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
 #include <nlopt.hpp>
 
@@ -130,5 +130,5 @@ private:
 }  // namespace optimizer
 }  // namespace kido
 
-#endif  // KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#endif  // KIDO_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 

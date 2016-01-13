@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_INTEGRATION_RK4INTEGRATOR_H_
-#define KIDO_INTEGRATION_RK4INTEGRATOR_H_
+#ifndef KIDO_INTEGRATION_RK4INTEGRATOR_HPP_
+#define KIDO_INTEGRATION_RK4INTEGRATOR_HPP_
 
 #include "kido/integration/Integrator.hpp"
 
@@ -70,4 +70,4 @@ private:
 }  // namespace integration
 }  // namespace kido
 
-#endif  // KIDO_INTEGRATION_RK4INTEGRATOR_H_
+#endif  // KIDO_INTEGRATION_RK4INTEGRATOR_HPP_

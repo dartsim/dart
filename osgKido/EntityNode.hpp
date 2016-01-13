@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_ENTITYNODE_H
-#define OSGKIDO_ENTITYNODE_H
+#ifndef OSGKIDO_ENTITYNODE_HPP
+#define OSGKIDO_ENTITYNODE_HPP
 
 #include <map>
 #include <memory>
@@ -118,4 +118,4 @@ protected:
 
 } // namespace osgKido
 
-#endif // OSGKIDO_ENTITYNODE_H
+#endif // OSGKIDO_ENTITYNODE_HPP

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_CYLINDERSHAPE_H_
-#define KIDO_DYNAMICS_CYLINDERSHAPE_H_
+#ifndef KIDO_DYNAMICS_CYLINDERSHAPE_HPP_
+#define KIDO_DYNAMICS_CYLINDERSHAPE_HPP_
 
 #include "kido/dynamics/Shape.hpp"
 
@@ -95,4 +95,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_CYLINDERSHAPE_H_
+#endif  // KIDO_DYNAMICS_CYLINDERSHAPE_HPP_

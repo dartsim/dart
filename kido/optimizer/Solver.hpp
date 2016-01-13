@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_OPTIMIZER_SOLVER_H_
-#define KIDO_OPTIMIZER_SOLVER_H_
+#ifndef KIDO_OPTIMIZER_SOLVER_HPP_
+#define KIDO_OPTIMIZER_SOLVER_HPP_
 
 #include <iostream>
 #include <memory>
@@ -185,4 +185,4 @@ protected:
 }  // namespace optimizer
 }  // namespace kido
 
-#endif  // KIDO_OPTIMIZER_SOLVER_H_
+#endif  // KIDO_OPTIMIZER_SOLVER_HPP_

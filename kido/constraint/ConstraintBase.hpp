@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_CONSTRAINTBASE_H_
-#define KIDO_CONSTRAINT_CONSTRAINTBASE_H_
+#ifndef KIDO_CONSTRAINT_CONSTRAINTBASE_HPP_
+#define KIDO_CONSTRAINT_CONSTRAINTBASE_HPP_
 
 #include <cstddef>
 
@@ -139,5 +139,5 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif  // KIDO_CONSTRAINT_CONSTRAINTBASE_H_
+#endif  // KIDO_CONSTRAINT_CONSTRAINTBASE_HPP_
 

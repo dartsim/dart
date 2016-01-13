@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_LOADGLUT_H_
-#define KIDO_GUI_LOADGLUT_H_
+#ifndef KIDO_GUI_LOADGLUT_HPP_
+#define KIDO_GUI_LOADGLUT_HPP_
 
 #if defined(_WIN32)
   #include <cstdlib> // To disable glut::exit() function
@@ -48,5 +48,5 @@
   #error "Load OpenGL Error: What's your operating system?"
 #endif
 
-#endif  // KIDO_GUI_LOADGLUT_H_
+#endif  // KIDO_GUI_LOADGLUT_HPP_
 

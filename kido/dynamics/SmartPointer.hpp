@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_SMARTPOINTER_H_
-#define KIDO_DYNAMICS_SMARTPOINTER_H_
+#ifndef KIDO_DYNAMICS_SMARTPOINTER_HPP_
+#define KIDO_DYNAMICS_SMARTPOINTER_HPP_
 
 #include "kido/dynamics/detail/BodyNodePtr.hpp"
 #include "kido/dynamics/detail/JointPtr.hpp"
@@ -192,4 +192,4 @@ KIDO_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_SMARTPOINTER_H_
+#endif // KIDO_DYNAMICS_SMARTPOINTER_HPP_

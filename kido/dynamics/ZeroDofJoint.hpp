@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_ZERODOFJOINT_H_
-#define KIDO_DYNAMICS_ZERODOFJOINT_H_
+#ifndef KIDO_DYNAMICS_ZERODOFJOINT_HPP_
+#define KIDO_DYNAMICS_ZERODOFJOINT_HPP_
 
 #include <string>
 
@@ -515,4 +515,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_ZERODOFJOINT_H_
+#endif  // KIDO_DYNAMICS_ZERODOFJOINT_HPP_

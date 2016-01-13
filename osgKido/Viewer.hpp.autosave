@@ -382,4 +382,4 @@ protected:
 
 }
 
-#endif // OSGKIDO_VIEWER_H
+#endif // OSGKIDO_VIEWER_HPP

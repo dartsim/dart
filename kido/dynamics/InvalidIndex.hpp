@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_INVALIDINDEX_H_
-#define KIDO_DYNAMICS_INVALIDINDEX_H_
+#ifndef KIDO_DYNAMICS_INVALIDINDEX_HPP_
+#define KIDO_DYNAMICS_INVALIDINDEX_HPP_
 
 #include <cstddef>
 
@@ -52,4 +52,4 @@ constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
 }  // namespace dynamics
 }  // namespace kido
 
-#endif // KIDO_DYNAMICS_INVALIDINDEX_H_
+#endif // KIDO_DYNAMICS_INVALIDINDEX_HPP_

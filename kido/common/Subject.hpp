@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_SUBJECT_H_
-#define KIDO_COMMON_SUBJECT_H_
+#ifndef KIDO_COMMON_SUBJECT_HPP_
+#define KIDO_COMMON_SUBJECT_HPP_
 
 #include <set>
 
@@ -88,4 +88,4 @@ protected:
 } // namespace common
 } // namespace kido
 
-#endif // KIDO_COMMON_SUBJECT_H_
+#endif // KIDO_COMMON_SUBJECT_HPP_

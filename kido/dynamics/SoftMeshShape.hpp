@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_SOFTMESHSHAPE_H_
-#define KIDO_DYNAMICS_SOFTMESHSHAPE_H_
+#ifndef KIDO_DYNAMICS_SOFTMESHSHAPE_HPP_
+#define KIDO_DYNAMICS_SOFTMESHSHAPE_HPP_
 
 #include <assimp/scene.h>
 #include "kido/dynamics/Shape.hpp"
@@ -92,4 +92,4 @@ private:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_SOFTMESHSHAPE_H_
+#endif  // KIDO_DYNAMICS_SOFTMESHSHAPE_HPP_

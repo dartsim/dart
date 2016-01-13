@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
-#define KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
+#ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#define KIDO_COMMON_LOCALRESOURCERETRIEVER_HPP_
 
 #include "kido/common/ResourceRetriever.hpp"
 
@@ -61,4 +61,4 @@ using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 } // namespace common
 } // namespace kido
 
-#endif // ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_H_
+#endif // ifndef KIDO_COMMON_LOCALRESOURCERETRIEVER_HPP_

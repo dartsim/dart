@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_CONTACTCONSTRAINT_H_
-#define KIDO_CONSTRAINT_CONTACTCONSTRAINT_H_
+#ifndef KIDO_CONSTRAINT_CONTACTCONSTRAINT_HPP_
+#define KIDO_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 
 #include "kido/constraint/ConstraintBase.hpp"
 
@@ -212,5 +212,5 @@ public:
 } // namespace constraint
 } // namespace kido
 
-#endif  // KIDO_CONSTRAINT_CONTACTCONSTRAINT_H_
+#endif  // KIDO_CONSTRAINT_CONTACTCONSTRAINT_HPP_
 

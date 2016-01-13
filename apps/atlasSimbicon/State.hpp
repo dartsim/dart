@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_STATE_H_
-#define APPS_ATLASROBOT_STATE_H_
+#ifndef APPS_ATLASROBOT_STATE_HPP_
+#define APPS_ATLASROBOT_STATE_HPP_
 
 #include <map>
 #include <vector>
@@ -336,4 +336,4 @@ private:
   Eigen::VectorXd mDesiredJointPositionsBalance;
 };
 
-#endif  // APPS_ATLASROBOT_STATE_H_
+#endif  // APPS_ATLASROBOT_STATE_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_URI_H_
-#define KIDO_COMMON_URI_H_
+#ifndef KIDO_COMMON_URI_HPP_
+#define KIDO_COMMON_URI_HPP_
 
 #include <string>
 #include "kido/common/Deprecated.hpp"
@@ -231,4 +231,4 @@ private:
 } // namespace common
 } // namespace kido
 
-#endif // ifndef KIDO_COMMON_URI_H_
+#endif // ifndef KIDO_COMMON_URI_HPP_

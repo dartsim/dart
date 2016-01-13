@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_JOINTCONSTRAINT_H_
-#define KIDO_CONSTRAINT_JOINTCONSTRAINT_H_
+#ifndef KIDO_CONSTRAINT_JOINTCONSTRAINT_HPP_
+#define KIDO_CONSTRAINT_JOINTCONSTRAINT_HPP_
 
 #include "kido/constraint/ConstraintBase.hpp"
 
@@ -120,5 +120,5 @@ protected:
 } // namespace constraint
 } // namespace kido
 
-#endif  // KIDO_CONSTRAINT_CONSTRAINT_H_
+#endif  // KIDO_CONSTRAINT_CONSTRAINT_HPP_
 

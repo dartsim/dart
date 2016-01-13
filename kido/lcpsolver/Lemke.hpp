@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_LCPSOLVER_LEMKE_H_
-#define KIDO_LCPSOLVER_LEMKE_H_
+#ifndef KIDO_LCPSOLVER_LEMKE_HPP_
+#define KIDO_LCPSOLVER_LEMKE_HPP_
 
 #include <Eigen/Dense>
 
@@ -54,4 +54,4 @@ bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
 }  // namespace lcpsolver
 }  // namespace kido
 
-#endif  // KIDO_LCPSOLVER_LEMKE_H_
+#endif  // KIDO_LCPSOLVER_LEMKE_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_CONSTRAINEDGROUP_H_
-#define KIDO_CONSTRAINT_CONSTRAINEDGROUP_H_
+#ifndef KIDO_CONSTRAINT_CONSTRAINEDGROUP_HPP_
+#define KIDO_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
 #include <vector>
 #include <memory>
@@ -114,5 +114,5 @@ private:
 }  // namespace constraint
 }  // namespace kido
 
-#endif  // KIDO_CONSTRAINT_CONSTRAINEDGROUP_H_
+#endif  // KIDO_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 

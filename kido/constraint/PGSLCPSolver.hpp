@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_CONSTRAINT_PGSLCPSOLVER_H_
-#define KIDO_CONSTRAINT_PGSLCPSOLVER_H_
+#ifndef KIDO_CONSTRAINT_PGSLCPSOLVER_HPP_
+#define KIDO_CONSTRAINT_PGSLCPSOLVER_HPP_
 
 #include <cstddef>
 
@@ -92,5 +92,5 @@ bool solvePGS(int n, int nskip, int /*nub*/, double* A,
 } // namespace constraint
 } // namespace kido
 
-#endif  // KIDO_CONSTRAINT_PGSLCPSOLVER_H_
+#endif  // KIDO_CONSTRAINT_PGSLCPSOLVER_HPP_
 

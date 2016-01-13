@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_OBSERVER_H_
-#define KIDO_COMMON_OBSERVER_H_
+#ifndef KIDO_COMMON_OBSERVER_HPP_
+#define KIDO_COMMON_OBSERVER_HPP_
 
 #include <set>
 
@@ -89,4 +89,4 @@ protected:
 } // namespace kido
 } // namespace common
 
-#endif // KIDO_COMMON_OBSERVER_H_
+#endif // KIDO_COMMON_OBSERVER_HPP_

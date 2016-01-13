@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_DETAIL_SIGNAL_H_
-#define KIDO_COMMON_DETAIL_SIGNAL_H_
+#ifndef KIDO_COMMON_DETAIL_SIGNAL_HPP_
+#define KIDO_COMMON_DETAIL_SIGNAL_HPP_
 
 #include <vector>
 
@@ -289,5 +289,5 @@ Connection SlotRegister<T>::connect(const SlotType& _slot)
 }  // namespace common
 }  // namespace kido
 
-#endif  // KIDO_COMMON_DETAIL_SIGNAL_H_
+#endif  // KIDO_COMMON_DETAIL_SIGNAL_HPP_
 

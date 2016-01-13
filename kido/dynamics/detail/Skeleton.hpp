@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_DETAIL_SKELETON_H_
-#define KIDO_DYNAMICS_DETAIL_SKELETON_H_
+#ifndef KIDO_DYNAMICS_DETAIL_SKELETON_HPP_
+#define KIDO_DYNAMICS_DETAIL_SKELETON_HPP_
 
 //==============================================================================
 template <class JointType>
@@ -85,4 +85,4 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
   return std::pair<JointType*, NodeType*>(joint, node);
 }
 
-#endif // KIDO_DYNAMICS_DETAIL_SKELETON_H_
+#endif // KIDO_DYNAMICS_DETAIL_SKELETON_HPP_

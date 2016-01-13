@@ -36,8 +36,8 @@
 
 #include "kido/dynamics/ReferentialSkeleton.hpp"
 
-#ifndef KIDO_DYNAMICS_GROUP_H_
-#define KIDO_DYNAMICS_GROUP_H_
+#ifndef KIDO_DYNAMICS_GROUP_HPP_
+#define KIDO_DYNAMICS_GROUP_HPP_
 
 namespace kido {
 namespace dynamics {
@@ -248,4 +248,4 @@ protected:
 } // dynamics
 } // kido
 
-#endif // KIDO_DYNAMICS_GROUP_H_
+#endif // KIDO_DYNAMICS_GROUP_HPP_

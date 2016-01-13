@@ -76,4 +76,4 @@ protected:
 } // namespace render
 } // namespace osgKido
 
-#endif // OSGKIDO_RENDER_SOFTMESHSHAPENODE_H
+#endif // OSGKIDO_RENDER_SOFTMESHSHAPENODE_HPP

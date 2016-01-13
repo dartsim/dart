@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_SOFTBODIES_MYWINDOW_H_
-#define APPS_SOFTBODIES_MYWINDOW_H_
+#ifndef APPS_SOFTBODIES_MYWINDOW_HPP_
+#define APPS_SOFTBODIES_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
 
@@ -75,4 +75,4 @@ private:
   Eigen::Vector3d mForceOnVertex;
 };
 
-#endif  // APPS_SOFTBODIES_MYWINDOW_H_
+#endif  // APPS_SOFTBODIES_MYWINDOW_HPP_

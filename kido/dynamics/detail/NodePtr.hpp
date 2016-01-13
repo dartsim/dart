@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_DETAIL_NODEPTR_H_
-#define KIDO_DYNAMICS_DETAIL_NODEPTR_H_
+#ifndef KIDO_DYNAMICS_DETAIL_NODEPTR_HPP_
+#define KIDO_DYNAMICS_DETAIL_NODEPTR_HPP_
 
 #include "kido/dynamics/detail/BodyNodePtr.hpp"
 
@@ -252,4 +252,4 @@ protected:
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_DETAIL_NODEPTR_H_
+#endif // KIDO_DYNAMICS_DETAIL_NODEPTR_HPP_

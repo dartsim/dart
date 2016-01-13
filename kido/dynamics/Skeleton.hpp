@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_SKELETON_H_
-#define KIDO_DYNAMICS_SKELETON_H_
+#ifndef KIDO_DYNAMICS_SKELETON_HPP_
+#define KIDO_DYNAMICS_SKELETON_HPP_
 
 #include <mutex>
 #include "kido/common/NameManager.hpp"
@@ -1184,4 +1184,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_SKELETON_H_
+#endif  // KIDO_DYNAMICS_SKELETON_HPP_

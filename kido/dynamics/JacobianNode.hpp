@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_JACOBIANNODE_H_
-#define KIDO_DYNAMICS_JACOBIANNODE_H_
+#ifndef KIDO_DYNAMICS_JACOBIANNODE_HPP_
+#define KIDO_DYNAMICS_JACOBIANNODE_HPP_
 
 #include <memory>
 #include <unordered_set>
@@ -308,4 +308,4 @@ protected:
 } // namespace kido
 } // namespace dynamics
 
-#endif // KIDO_DYNAMICS_JACOBIANNODE_H_
+#endif // KIDO_DYNAMICS_JACOBIANNODE_HPP_

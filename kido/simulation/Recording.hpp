@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_SIMULATION_RECORDING_H_
-#define KIDO_SIMULATION_RECORDING_H_
+#ifndef KIDO_SIMULATION_RECORDING_HPP_
+#define KIDO_SIMULATION_RECORDING_HPP_
 
 #include <vector>
 
@@ -119,4 +119,4 @@ private:
 }  // namespace simulation
 }  // namespace kido
 
-#endif  // KIDO_SIMULATION_RECORDING_H_
+#endif  // KIDO_SIMULATION_RECORDING_HPP_

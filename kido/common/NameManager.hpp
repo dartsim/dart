@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_NAMEMANAGER_H_
-#define KIDO_COMMON_NAMEMANAGER_H_
+#ifndef KIDO_COMMON_NAMEMANAGER_HPP_
+#define KIDO_COMMON_NAMEMANAGER_HPP_
 
 #include <map>
 #include <string>
@@ -184,4 +184,4 @@ protected:
 
 #include "kido/common/detail/NameManager.hpp"
 
-#endif // KIDO_COMMON_NAMEMANAGER_H_
+#endif // KIDO_COMMON_NAMEMANAGER_HPP_

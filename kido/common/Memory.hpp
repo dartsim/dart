@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_COMMON_MEMORY_H_
-#define KIDO_COMMON_MEMORY_H_
+#ifndef KIDO_COMMON_MEMORY_HPP_
+#define KIDO_COMMON_MEMORY_HPP_
 
 #ifdef __GNUC__
   #define KIDO_ALIGNED(v) __attribute__ ((aligned(v)))
@@ -45,4 +45,4 @@
   #define KIDO_ALIGNED(v)
 #endif
 
-#endif  // KIDO_COMMON_MEMORY_H_
+#endif  // KIDO_COMMON_MEMORY_HPP_

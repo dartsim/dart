@@ -63,4 +63,4 @@ protected:
 } // namespace render
 } // namespace osgKido
 
-#endif // OSGKIDO_RENDER_WARNINGSHAPENODE_H
+#endif // OSGKIDO_RENDER_WARNINGSHAPENODE_HPP

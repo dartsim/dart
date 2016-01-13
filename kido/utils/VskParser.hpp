@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_UTILS_VSKPARSER_H_
-#define KIDO_UTILS_VSKPARSER_H_
+#ifndef KIDO_UTILS_VSKPARSER_HPP_
+#define KIDO_UTILS_VSKPARSER_HPP_
 
 #include "kido/common/ResourceRetriever.hpp"
 #include "kido/common/Uri.hpp"
@@ -101,5 +101,5 @@ namespace VskParser
 } // namespace utils
 } // namespace kido
 
-#endif // #ifndef KIDO_UTILS_VSKPARSER_H_
+#endif // #ifndef KIDO_UTILS_VSKPARSER_HPP_
 

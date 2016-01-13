@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_HARNESSTEST_MYWINDOW_H_
-#define APPS_HARNESSTEST_MYWINDOW_H_
+#ifndef APPS_HARNESSTEST_MYWINDOW_HPP_
+#define APPS_HARNESSTEST_MYWINDOW_HPP_
 
 #include <Eigen/Dense>
 #include <stdarg.h>
@@ -78,7 +78,7 @@ private:
 
 };
 
-#endif  // APPS_HARNESSTEST_MYWINDOW_H_
+#endif  // APPS_HARNESSTEST_MYWINDOW_HPP_
 
 /*
 #include <stdarg.h>

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
-#define KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
+#ifndef KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
+#define KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 
 #include <type_traits>
 
@@ -82,4 +82,4 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 } // namespace dynamics
 } // namespace kido
 
-#endif // KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
+#endif // KIDO_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_

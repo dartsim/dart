@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_RENDER_BOXSHAPENODE_H
-#define OSGKIDO_RENDER_BOXSHAPENODE_H
+#ifndef OSGKIDO_RENDER_BOXSHAPENODE_HPP
+#define OSGKIDO_RENDER_BOXSHAPENODE_HPP
 
 #include <osg/MatrixTransform>
 
@@ -75,4 +75,4 @@ protected:
 } // namespace render
 } // namespace osgKido
 
-#endif // OSGKIDO_RENDER_BOXSHAPENODE_H
+#endif // OSGKIDO_RENDER_BOXSHAPENODE_HPP

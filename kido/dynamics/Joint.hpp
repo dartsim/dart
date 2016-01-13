@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_DYNAMICS_JOINT_H_
-#define KIDO_DYNAMICS_JOINT_H_
+#ifndef KIDO_DYNAMICS_JOINT_HPP_
+#define KIDO_DYNAMICS_JOINT_HPP_
 
 #include <string>
 #include <vector>
@@ -962,4 +962,4 @@ public:
 }  // namespace dynamics
 }  // namespace kido
 
-#endif  // KIDO_DYNAMICS_JOINT_H_
+#endif  // KIDO_DYNAMICS_JOINT_HPP_

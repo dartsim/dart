@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef KIDO_GUI_WIN3D_H_
-#define KIDO_GUI_WIN3D_H_
+#ifndef KIDO_GUI_WIN3D_HPP_
+#define KIDO_GUI_WIN3D_HPP_
 
 #include <Eigen/Eigen>
 
@@ -81,4 +81,4 @@ protected:
 }  // namespace gui
 }  // namespace kido
 
-#endif  // KIDO_GUI_WIN3D_H_
+#endif  // KIDO_GUI_WIN3D_HPP_
