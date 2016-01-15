@@ -100,12 +100,14 @@ void ConstrainedGroup::removeAllConstraints()
 }
 
 //==============================================================================
+#ifndef NDEBUG
 bool ConstrainedGroup::containConstraint(
     const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
       != mConstraints.end();
 }
+#endif
 
 //==============================================================================
 size_t ConstrainedGroup::getTotalDimension() const
