@@ -61,7 +61,7 @@ ConstrainedGroup::~ConstrainedGroup()
 void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint != nullptr && "Attempted to add nullptr.");
-  assert(containConstraint(_constraint) == false
+  assert(!containConstraint(_constraint)
          && "Attempted to add a duplicate constraint.");
   assert(_constraint->isActive());
 
@@ -105,17 +105,6 @@ bool ConstrainedGroup::containConstraint(
 {
   return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
       != mConstraints.end();
-}
-
-//==============================================================================
-bool ConstrainedGroup::checkAndAddConstraint(
-    const ConstraintBasePtr& _constraint)
-{
-  if (containConstraint(_constraint))
-    return false;
-
-  addConstraint(_constraint);
-  return true;
 }
 
 //==============================================================================

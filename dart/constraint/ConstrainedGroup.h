@@ -100,11 +100,10 @@ public:
   friend class ConstraintSolver;
 
 private:
+#ifndef NDEBUG
   /// Return true if _constraint is contained
   bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
-
-  /// Return true and add the constraint if _constraint is contained
-  bool checkAndAddConstraint(const ConstraintBasePtr& _constraint);
+#endif
 
   /// List of constraints
   std::vector<ConstraintBasePtr> mConstraints;
