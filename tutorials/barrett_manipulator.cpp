@@ -450,11 +450,17 @@ SkeletonPtr createManipulator()
       loader.parseSkeleton(DART_DATA_PATH"/my_urdf/wam_7dof_wam_bhand.urdf");
   manipulator->setName("manipulator");
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
+  tf.translation() = Eigen::Vector3d(0.0, -0.5, -0.5);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
-  manipulator->getDof(1)->setPosition(140.0 * M_PI / 180.0);
-  manipulator->getDof(2)->setPosition(-140.0 * M_PI / 180.0);
+  manipulator->getDof(0)->setPosition(0.0 * M_PI / 180.0);
+  manipulator->getDof(1)->setPosition(45.0 * M_PI / 180.0);
+  manipulator->getDof(2)->setPosition(-90 * M_PI / 180.0);
+  manipulator->getDof(3)->setPosition(50.0 * M_PI / 180.0);
+  manipulator->getDof(4)->setPosition(0.0 * M_PI / 180.0);
+  manipulator->getDof(5)->setPosition(90.0 * M_PI / 180.0);
+  manipulator->getDof(6)->setPosition(0.0 * M_PI / 180.0);
+  //manipulator->getDof(7)->setPosition(-50.0 * M_PI / 180.0);
   return manipulator;
 
   //return Skeleton::create("manipulator");
