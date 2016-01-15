@@ -67,7 +67,9 @@
 
  __PROTECTED:__
     + arguments: _mManiputlator, mTartget, mEndeffector, mQDesired (Desired Joint position when not applying operational space controller), mOffset,mKpPD, mKdPD, mKpOS, mKDOS, mForces_
+    
 2. MyWindow
+
 	__PUBLIC:__
     + MyWindow
     	- arguments: _mTotalAngle = 0.0, mHasEverRun = false, mForceCountDown = 0, mPushCountDown = 0_
