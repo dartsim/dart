@@ -450,7 +450,7 @@ SkeletonPtr createManipulator()
       loader.parseSkeleton(DART_DATA_PATH"/my_urdf/wam_7dof_wam_bhand.urdf");
   manipulator->setName("manipulator");
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, -0.5, -0.5);
+  tf.translation() = Eigen::Vector3d(-0.02, -0.46, -1);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
   manipulator->getDof(0)->setPosition(0.0 * M_PI / 180.0);
