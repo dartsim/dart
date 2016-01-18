@@ -447,12 +447,13 @@ SkeletonPtr createManipulator()
   // Lesson 2a
   dart::utils::DartLoader loader;
   SkeletonPtr manipulator = 
-      loader.parseSkeleton(DART_DATA_PATH"/my_urdf/wam_7dof_wam_bhand.urdf");
+      loader.parseSkeleton(DART_DATA_PATH"/my_urdf/customized_wam_7dof_wam_bhand.urdf");
   manipulator->setName("manipulator");
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(-0.02, -0.46, -1);
+  tf.translation() = Eigen::Vector3d(0, 0.2, -0.5);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
+  //Degree of freedom for wam arms
   manipulator->getDof(0)->setPosition(0.0 * M_PI / 180.0);
   manipulator->getDof(1)->setPosition(45.0 * M_PI / 180.0);
   manipulator->getDof(2)->setPosition(-90 * M_PI / 180.0);
@@ -460,7 +461,19 @@ SkeletonPtr createManipulator()
   manipulator->getDof(4)->setPosition(0.0 * M_PI / 180.0);
   manipulator->getDof(5)->setPosition(90.0 * M_PI / 180.0);
   manipulator->getDof(6)->setPosition(0.0 * M_PI / 180.0);
-  //manipulator->getDof(7)->setPosition(-50.0 * M_PI / 180.0);
+
+  //Degree of freedom for barrett hand
+  //finger 1
+  manipulator->getDof(7)->setPosition(160.0 * M_PI / 180.0);
+  manipulator->getDof(8)->setPosition(140.0 * M_PI / 180.0);
+  manipulator->getDof(9)->setPosition(45.0 * M_PI / 180.0);
+  //finger 2
+  manipulator->getDof(10)->setPosition(160.0 * M_PI / 180.0);
+  manipulator->getDof(11)->setPosition(140.0 * M_PI / 180.0);
+  manipulator->getDof(12)->setPosition(45.0 * M_PI / 180.0);
+  //finger 3
+  manipulator->getDof(13)->setPosition(140.0 * M_PI / 180.0);
+  manipulator->getDof(14)->setPosition(45.0 * M_PI / 180.0);
   return manipulator;
 
   //return Skeleton::create("manipulator");
