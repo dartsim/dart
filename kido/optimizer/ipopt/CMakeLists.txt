@@ -25,4 +25,4 @@ install(
   DESTINATION include/kido/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS kido-optimizer-ipopt EXPORT KIDOIpoptTargets DESTINATION lib)
+install(TARGETS kido-optimizer-ipopt EXPORT KIDOTargets DESTINATION lib)

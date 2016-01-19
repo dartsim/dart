@@ -25,4 +25,4 @@ install(
   DESTINATION include/kido/optimizer/nlopt
   COMPONENT headers
 )
-install(TARGETS kido-optimizer-nlopt EXPORT KIDONLoptTargets DESTINATION lib)
+install(TARGETS kido-optimizer-nlopt EXPORT KIDOTargets DESTINATION lib)

@@ -42,7 +42,7 @@ if(${OPENSCENEGRAPH_FOUND})
     COMPONENT headers
   )
 
-  install(TARGETS osgKido EXPORT osgKidoTargets DESTINATION lib)
+  install(TARGETS osgKido EXPORT KIDOTargets DESTINATION lib)
 
 else(${OPENSCENEGRAPH_FOUND})
 
