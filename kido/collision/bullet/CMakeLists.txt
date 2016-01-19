@@ -6,8 +6,8 @@ set(kido_collision_hdrs ${kido_collision_hdrs} ${hdrs} PARENT_SCOPE)
 set(kido_collision_srcs ${kido_collision_srcs} ${srcs} PARENT_SCOPE)
 
 # Library
-#kido_add_library(kido_collision_bullet ${srcs} ${hdrs})
-#target_link_libraries(kido_collision_bullet ${KIDO_CORE_DEPENDENCIES})
+#kido_add_library(kido-collision-bullet ${srcs} ${hdrs})
+#target_link_libraries(kido-collision-bullet kido ${BULLET_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "collision_bullet headers" ${hdrs})

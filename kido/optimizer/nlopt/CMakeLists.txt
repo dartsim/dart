@@ -2,9 +2,11 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.hpp")
 
+include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
+
 # Library
 kido_add_library(kido-optimizer-nlopt ${srcs} ${hdrs})
-target_link_libraries(kido-optimizer-nlopt kido-core ${NLOPT_LIBRARIES})
+target_link_libraries(kido-optimizer-nlopt kido ${NLOPT_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})

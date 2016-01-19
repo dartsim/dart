@@ -34,8 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/kido-core.hpp"
-#include "kido/gui/gui.hpp"
+#include "kido/config.hpp"
+#include "kido/common/common.hpp"
+#include "kido/math/math.hpp"
+#include "kido/integration/integration.hpp"
+#include "kido/collision/collision.hpp"
+#include "kido/lcpsolver/lcpsolver.hpp"
+#include "kido/constraint/constraint.hpp"
 #include "kido/optimizer/optimizer.hpp"
+#include "kido/dynamics/dynamics.hpp"
+#include "kido/renderer/renderer.hpp"
+#include "kido/simulation/simulation.hpp"
+
 #include "kido/planning/planning.hpp"
+#include "kido/gui/gui.hpp"
 #include "kido/utils/utils.hpp"

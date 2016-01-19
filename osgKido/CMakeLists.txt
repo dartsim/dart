@@ -12,10 +12,7 @@ if(${OPENSCENEGRAPH_FOUND})
   file(GLOB osgKido_hdrs "*.hpp")
 
   kido_add_library(osgKido ${osgKido_srcs} ${osgKido_hdrs})
-  target_link_libraries(osgKido
-    kido-core
-    ${OPENSCENEGRAPH_LIBRARIES}
-  )
+  target_link_libraries(osgKido kido kido-utils ${OPENSCENEGRAPH_LIBRARIES})
 
   kido_get_filename_components(header_names "osgKido headers" ${osgKido_hdrs})
   list(APPEND header_names "render/render.hpp")
