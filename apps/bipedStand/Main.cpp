@@ -38,20 +38,20 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-#include "apps/bipedStand/MyWindow.h"
+#include "apps/bipedStand/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/fullbody1.skel");
+  kido::simulation::WorldPtr myWorld
+      = kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::SkeletonPtr biped = myWorld->getSkeleton("fullbody1");
+  kido::dynamics::SkeletonPtr biped = myWorld->getSkeleton("fullbody1");
 
   biped->getDof("j_pelvis_rot_y")->setPosition( -0.20);
   biped->getDof("j_thigh_left_z")->setPosition(  0.15);

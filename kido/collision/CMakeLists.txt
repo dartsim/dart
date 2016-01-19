@@ -1,0 +1,61 @@
+# Search all header and source files
+file(GLOB srcs "*.cpp")
+file(GLOB hdrs "*.hpp")
+
+# Add subdirectories
+add_subdirectory(kido)
+add_subdirectory(fcl)
+add_subdirectory(fcl_mesh)
+if(HAVE_BULLET_COLLISION)
+  add_subdirectory(bullet)
+endif()
+
+set(kido_collision_hdrs ${hdrs} ${kido_collision_hdrs} PARENT_SCOPE)
+set(kido_collision_srcs ${srcs} ${kido_collision_srcs} PARENT_SCOPE)
+
+# Library
+#kido_add_library(kido_collision ${srcs} ${hdrs})
+#target_link_libraries(
+#  kido_collision
+#  kido_common
+#  kido_math
+#  kido_collision_kido
+#  kido_collision_fcl
+#  kido_collision_fcl_mesh
+#  ${KIDO_CORE_DEPENDENCIES}
+#)
+#if(HAVE_BULLET_COLLISION)
+#  target_link_libraries(kido_collision kido_collision_bullet)
+#endif()
+
+# Generate header for this namespace
+kido_get_filename_components(header_names "collision headers" ${hdrs})
+set(
+  header_names
+  ${header_names}
+  kido/kido.hpp
+  fcl/fcl.hpp
+  fcl_mesh/fcl_mesh.hpp
+)
+if(HAVE_BULLET_COLLISION)
+  set(header_names ${header_names} bullet/bullet.hpp)
+endif()
+kido_generate_include_header_list(
+  collision_headers
+  "kido/collision/"
+  "collision headers"
+  ${header_names}
+)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/collision.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
+)
+
+# Install
+install(
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
+  DESTINATION include/kido/collision
+  COMPONENT headers
+)
+#install(TARGETS kido_collision EXPORT KIDOCoreTargets DESTINATION lib)
+#install(TARGETS kido_collision EXPORT KIDOTargets DESTINATION lib)

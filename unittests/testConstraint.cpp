@@ -40,16 +40,16 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/collision/kido/KIDOCollisionDetector.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test
@@ -72,25 +72,25 @@ protected:
 //==============================================================================
 void ConstraintTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/chainwhipa.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  list.push_back(KIDO_DATA_PATH"skel/fullbody1.skel");
 }
 
 //==============================================================================
@@ -104,12 +104,12 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart::math;
-  using namespace dart::collision;
-  using namespace dart::constraint;
-  using namespace dart::dynamics;
-  using namespace dart::simulation;
-  using namespace dart::utils;
+  using namespace kido::math;
+  using namespace kido::collision;
+  using namespace kido::constraint;
+  using namespace kido::dynamics;
+  using namespace kido::simulation;
+  using namespace kido::utils;
 
   //----------------------------------------------------------------------------
   // Settings
@@ -126,7 +126,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
-        new DARTCollisionDetector());
+        new KIDOCollisionDetector());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
@@ -161,8 +161,8 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   CollisionDetector* cd = cs->getCollisionDetector();
 
   // Lower and upper bound of configuration for system
-  // double lb = -1.5 * DART_PI;
-  // double ub =  1.5 * DART_PI;
+  // double lb = -1.5 * KIDO_PI;
+  // double ub =  1.5 * KIDO_PI;
 
   int maxSteps = 500;
   for (int i = 0; i < maxSteps; ++i)

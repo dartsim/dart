@@ -36,16 +36,16 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Timer.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/common/Timer.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace common;
 using namespace math;
 using namespace dynamics;
@@ -1114,7 +1114,7 @@ TEST(MATH, INVERSION)
 
 /******************************************************************************/
 TEST(MATH, ROTATION) {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
 
   // Create Initial ExpMap
@@ -1129,7 +1129,7 @@ TEST(MATH, ROTATION) {
   Eigen::Quaterniond q = expToQuat(expmap);
   Eigen::Vector3d expmap2 = quatToExp(q);
 
-  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, KIDO_EPSILON)
     << "Orig: " << expmap << " Reconstructed: " << expmap2;
 
   // Test conversion between matrix and euler
@@ -1137,17 +1137,17 @@ TEST(MATH, ROTATION) {
   Eigen::Vector3d e = matrixToEulerXYZ(m);
   Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
 
-  EXPECT_NEAR((m - m2).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR((m - m2).norm(), 0.0, KIDO_EPSILON)
     << "Orig: " << m << " Reconstructed: " << m2;
 }
 
 /******************************************************************************/
 TEST(MATH, UTILS) {
   // Test CR Matrix
-  EXPECT_DOUBLE_EQ(dart::math::CR(0, 1), -1.0);
+  EXPECT_DOUBLE_EQ(kido::math::CR(0, 1), -1.0);
 
   // Test randomize function
-  double x = dart::math::random(0.0, 2.0);
+  double x = kido::math::random(0.0, 2.0);
   EXPECT_LT(0.0, x);
   EXPECT_LT(x, 2.0);
 
@@ -1157,7 +1157,7 @@ TEST(MATH, UTILS) {
   Eigen::Vector3d pt(1.0, 0.5, 1.0);
   Eigen::Vector3d result = M * pt;
   Eigen::Vector3d expected(4.0, 2.5, 2.0);
-  EXPECT_NEAR( (result - expected).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR( (result - expected).norm(), 0.0, KIDO_EPSILON)
     << "result = " << result << " expected = " << expected;
 }
 

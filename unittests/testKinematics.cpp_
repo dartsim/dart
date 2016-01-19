@@ -51,7 +51,7 @@ TEST(KINEMATICS, VSK_LOADER) {
     using namespace kinematics;
   
     FileInfoSkel<Skeleton> modelFile;
-    modelFile.loadFile(DART_DATA_PATH"skel/Yuting.vsk");
+    modelFile.loadFile(KIDO_DATA_PATH"skel/Yuting.vsk");
     Skeleton* skel = modelFile.getSkel();
 
     EXPECT_TRUE(skel != NULL);
@@ -67,7 +67,7 @@ TEST(KINEMATICS, C3D_LOADER) {
     using namespace kinematics;
   
     FileInfoC3D c3dFile;
-    bool result = c3dFile.loadFile(DART_DATA_PATH"c3d/squat.c3d");
+    bool result = c3dFile.loadFile(KIDO_DATA_PATH"c3d/squat.c3d");
     ASSERT_TRUE(result);
 
     EXPECT_EQ(c3dFile.getNumMarkers(), 53);
@@ -80,7 +80,7 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
     using namespace kinematics;
   
     FileInfoSkel<Skeleton> modelFile;
-    bool loadModelResult = modelFile.loadFile(DART_DATA_PATH"skel/SehoonVSK3.vsk");
+    bool loadModelResult = modelFile.loadFile(KIDO_DATA_PATH"skel/SehoonVSK3.vsk");
     ASSERT_TRUE(loadModelResult);
     
     Skeleton* skel = modelFile.getSkel();
@@ -90,7 +90,7 @@ TEST(KINEMATICS, TRANS_AND_DERIV) {
 
 
     FileInfoDof dofFile(skel);
-    bool loadDofResult = dofFile.loadFile(DART_DATA_PATH"dof/init_Tpose.dof");
+    bool loadDofResult = dofFile.loadFile(KIDO_DATA_PATH"dof/init_Tpose.dof");
     ASSERT_TRUE(loadDofResult);
     /* LOG(INFO) << "# frames = " << dofFile.getNumFrames(); */
 

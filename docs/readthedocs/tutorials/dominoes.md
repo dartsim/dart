@@ -1,6 +1,6 @@
 # Overview
 
-This tutorial will demonstrate some of the more advanced features of DART's
+This tutorial will demonstrate some of the more advanced features of KIDO's
 dynamics API which allow you to write robust controllers that work for real
 dynamic systems, such as robotic manipulators. We will show you how to:
 
@@ -9,12 +9,12 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 - Write a stable PD controller w/ gravity and coriolis compensation
 - Write an operational space controller
 
-Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-Finished.cpp).
+Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialDominoes-Finished.cpp).
 
 # Lesson 1: Cloning Skeletons
 
 There are often times where you might want to create an exact replica of an
-existing Skeleton. DART offers cloning functionality that allows you to do this
+existing Skeleton. KIDO offers cloning functionality that allows you to do this
 very easily.
 
 ### Lesson 1a: Create a new domino
@@ -102,7 +102,7 @@ because this could make for a very ugly (perhaps even broken) simulation.
 First, we'll tell the world to compute collisions:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
+kido::collision::CollisionDetector* detector =
     mWorld->getConstraintSolver()->getCollisionDetector();
 detector->detectCollision(true, true);
 ```
@@ -120,7 +120,7 @@ for(size_t i = 0; i < collisionCount; ++i)
 {
   // If neither of the colliding BodyNodes belongs to the floor, then we
   // know the new domino is in contact with something it shouldn't be
-  const dart::collision::Contact& contact = detector->getContact(i);
+  const kido::collision::Contact& contact = detector->getContact(i);
   if(contact.bodyNode1.lock()->getSkeleton() != mFloor
      && contact.bodyNode2.lock()->getSkeleton() != mFloor)
   {
@@ -215,24 +215,24 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::utils::DartLoader`` class (pending upcoming changes to DART's
+by the ``kido::utils::KidoLoader`` class (pending upcoming changes to KIDO's
 loading system). First, create a loader:
 
 ```cpp
-dart::utils::DartLoader loader;
+kido::utils::KidoLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations
 of the resources that need to be loaded. We won't be using this in our example,
-but in general you should use the function ``DartLoader::addPackageDirectory``
-to specify the locations of these packages, because DART does not have the same
+but in general you should use the function ``KidoLoader::addPackageDirectory``
+to specify the locations of these packages, because KIDO does not have the same
 package resolving abilities of ROS.
 
 Now we'll have ``loader`` parse the file into a Skeleton:
 
 ```cpp
 SkeletonPtr manipulator =
-    loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+    loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
 ```
 
 And we should give the Skeleton a convenient name:
@@ -340,7 +340,7 @@ mManipulator->setForces(mForces);
 
 ### Lesson 2d: Compensate for gravity and Coriolis forces
 
-One of the key features of DART is the ability to easily compute the gravity and
+One of the key features of KIDO is the ability to easily compute the gravity and
 Coriolis forces, allowing you to write much higher quality controllers than you
 would be able to otherwise. This is easily done like so:
 

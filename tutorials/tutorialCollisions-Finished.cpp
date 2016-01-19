@@ -35,7 +35,7 @@
  */
 
 #include <random>
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
 const double default_shape_density = 1000; // kg/m^3
 const double default_shape_height  = 0.1;  // m
@@ -70,8 +70,8 @@ const double default_vertex_stiffness = 1000.0;
 const double default_edge_stiffness = 1.0;
 const double default_soft_damping = 5.0;
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
+using namespace kido::dynamics;
+using namespace kido::simulation;
 
 void setupRing(const SkeletonPtr& ring)
 {
@@ -107,7 +107,7 @@ void setupRing(const SkeletonPtr& ring)
   }
 }
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
 
@@ -213,7 +213,7 @@ protected:
     mWorld->addSkeleton(object);
 
     // Compute collisions
-    dart::collision::CollisionDetector* detector =
+    kido::collision::CollisionDetector* detector =
         mWorld->getConstraintSolver()->getCollisionDetector();
     detector->detectCollision(true, true);
 
@@ -223,7 +223,7 @@ protected:
     size_t collisionCount = detector->getNumContacts();
     for(size_t i = 0; i < collisionCount; ++i)
     {
-      const dart::collision::Contact& contact = detector->getContact(i);
+      const kido::collision::Contact& contact = detector->getContact(i);
       if(contact.bodyNode1.lock()->getSkeleton() == object
          || contact.bodyNode2.lock()->getSkeleton() == object)
       {
@@ -291,7 +291,7 @@ protected:
     // Compute the offset where the JointConstraint should be located
     Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
     offset = tail->getWorldTransform() * offset;
-    auto constraint = new dart::constraint::BallJointConstraint(
+    auto constraint = new kido::constraint::BallJointConstraint(
           head, tail, offset);
 
     mWorld->getConstraintSolver()->addConstraint(constraint);
@@ -304,7 +304,7 @@ protected:
   {
     for(size_t i=0; i<mJointConstraints.size(); ++i)
     {
-      dart::constraint::JointConstraint* constraint = mJointConstraints[i];
+      kido::constraint::JointConstraint* constraint = mJointConstraints[i];
       if(constraint->getBodyNode1()->getSkeleton() == skel
          || constraint->getBodyNode2()->getSkeleton() == skel)
       {
@@ -328,7 +328,7 @@ protected:
 
   /// History of the active JointConstraints so that we can properly delete them
   /// when a Skeleton gets removed
-  std::vector<dart::constraint::JointConstraint*> mJointConstraints;
+  std::vector<kido::constraint::JointConstraint*> mJointConstraints;
 
   /// A blueprint Skeleton that we will use to spawn balls
   SkeletonPtr mOriginalBall;
@@ -521,7 +521,7 @@ SkeletonPtr createBall()
   // Give the ball a body
   addRigidBody<FreeJoint>(ball, "rigid ball", Shape::ELLIPSOID);
 
-  setAllColors(ball, dart::Color::Red());
+  setAllColors(ball, kido::Color::Red());
 
   return ball;
 }
@@ -535,7 +535,7 @@ SkeletonPtr createRigidChain()
   bn = addRigidBody<BallJoint>(chain, "rigid cyl 2", Shape::CYLINDER, bn);
   bn = addRigidBody<BallJoint>(chain, "rigid box 3", Shape::BOX, bn);
 
-  setAllColors(chain, dart::Color::Orange());
+  setAllColors(chain, kido::Color::Orange());
 
   return chain;
 }
@@ -552,7 +552,7 @@ SkeletonPtr createRigidRing()
   bn = addRigidBody<BallJoint>(ring, "rigid box 5", Shape::BOX, bn);
   bn = addRigidBody<BallJoint>(ring, "rigid cyl 6", Shape::CYLINDER, bn);
 
-  setAllColors(ring, dart::Color::Blue());
+  setAllColors(ring, kido::Color::Blue());
 
   return ring;
 }
@@ -578,7 +578,7 @@ SkeletonPtr createSoftBody()
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(soft, dart::Color::Fuschia());
+  setAllColors(soft, kido::Color::Fuschia());
 
   return soft;
 }
@@ -610,7 +610,7 @@ SkeletonPtr createHybridBody()
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(hybrid, dart::Color::Green());
+  setAllColors(hybrid, kido::Color::Green());
 
   return hybrid;
 }

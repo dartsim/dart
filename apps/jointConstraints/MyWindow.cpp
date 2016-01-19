@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/MyWindow.h"
+#include "apps/jointConstraints/MyWindow.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace gui;
-using namespace dart::constraint;
+using namespace kido::constraint;
 
 void MyWindow::timeStepping()
 {

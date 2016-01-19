@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -56,9 +56,9 @@ const int default_push_duration = 1000;  // # iterations
 
 const double defaultmEndEffectormOffset = 0.05;
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::math;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::math;
 
 class Controller
 {
@@ -135,7 +135,7 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
 
@@ -286,7 +286,7 @@ SkeletonPtr createDomino()
   body->addCollisionShape(box);
 
   // Set up inertia for the domino
-  dart::dynamics::Inertia inertia;
+  kido::dynamics::Inertia inertia;
   inertia.setMass(default_domino_mass);
   inertia.setMoment(box->computeInertia(default_domino_mass));
   body->setInertia(inertia);
@@ -309,7 +309,7 @@ SkeletonPtr createFloor()
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
         new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
-  box->setColor(dart::Color::Black());
+  box->setColor(kido::Color::Black());
 
   body->addVisualizationShape(box);
   body->addCollisionShape(box);

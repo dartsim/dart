@@ -36,17 +36,17 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/sub_ptr.h"
-#include "dart/math/Geometry.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/common/sub_ptr.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/utils/SkelParser.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -54,25 +54,25 @@ using namespace simulation;
 std::vector<std::string> getFileList()
 {
   std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/fullbody1.skel");
 
   return fileList;
 }

@@ -41,8 +41,8 @@
  */
 
 #include <iostream>
-#include "dart/dart.h"
-#include "MyWindow.h"
+#include "kido/kido.hpp"
+#include "MyWindow.hpp"
 
 #include <fcl/config.h>
 
@@ -50,12 +50,12 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/shapes.skel");
+  kido::simulation::WorldPtr myWorld
+      = kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/shapes.skel");
   assert(myWorld != NULL);
-#ifndef FCL_DART5
+#ifndef FCL_KIDO5
   myWorld->getConstraintSolver()->setCollisionDetector(
-        new dart::collision::FCLMeshCollisionDetector());
+        new kido::collision::FCLMeshCollisionDetector());
 #endif
   // create a window and link it to the world
   MyWindow window;

@@ -1,0 +1,54 @@
+###############################################################################
+# Config file for KIDO
+#
+# This sets the following variables:
+# KIDO_INCLUDE_DIRS - Directories containing the KIDO include files.
+# KIDO_LIBRARIES    - Libraries needed to use KIDO.
+# KIDO_LIBRARY_DIRS - Directories that contain the KIDO libraries.
+# KIDO_VERSION      - KIDO version.
+
+#===============================================================================
+# KIDO_INCLUDE_DIRS
+#===============================================================================
+set(KIDO_INCLUDE_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include"
+    "@EIGEN3_INCLUDE_DIRS@"
+    "@BULLET_INCLUDE_DIRS@")
+
+#===============================================================================
+# KIDO_LIBRARY_DIRS
+#===============================================================================
+set(KIDO_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
+
+#===============================================================================
+# KIDO_LIBRARIES
+#===============================================================================
+get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include("${CURRENT_DIR}/KIDOTargets.cmake")
+# Return absolute path of the library instead of just library name as
+# recommended in CMake documentation:
+# http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
+find_library(kido_location NAMES "kido" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
+set(KIDO_LIBRARIES "${kido_location}")
+
+# Handle requested components in find_package(KIDO COMPONENTS [components]).
+# The list of components is passed in KIDO_FIND_COMPONENTS.
+if(KIDO_FIND_COMPONENTS)
+  foreach(comp ${KIDO_FIND_COMPONENTS})
+    find_library(kido_${comp}_location
+                 NAMES "kido-${comp}"
+                 PATHS "@CMAKE_INSTALL_PREFIX@/lib")
+    if(kido_${comp}_location)
+      list(APPEND KIDO_LIBRARIES "${kido_${comp}_location}")
+    else()
+      if(KIDO_FIND_REQUIRED_${comp})
+        message(FATAL_ERROR "kido-${comp} not available")
+      endif(KIDO_FIND_REQUIRED_${comp})
+    endif(kido_${comp}_location)
+  endforeach(comp)
+endif(KIDO_FIND_COMPONENTS)
+
+#===============================================================================
+# KIDO_VERSION
+#===============================================================================
+set(KIDO_VERSION @KIDO_VERSION@)

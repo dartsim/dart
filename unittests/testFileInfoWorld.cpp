@@ -37,17 +37,17 @@
 #include <iostream>
 #include <fstream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/utils/FileInfoWorld.h"
+#include "kido/math/Geometry.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
+#include "kido/utils/FileInfoWorld.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -63,7 +63,7 @@ TEST(FileInfoWorld, Basic)
   FileInfoWorld worldFile;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/file_info_world_test.skel");
+      KIDO_DATA_PATH"/skel/test/file_info_world_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   Recording* recording1 = nullptr;

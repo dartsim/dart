@@ -35,20 +35,20 @@
  */
 
 #include <iostream>
-#include "dart/dart.h"
-#include "MyWindow.h"
+#include "kido/kido.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/fullbody1.skel");
+  kido::simulation::WorldPtr myWorld
+      = kido::utils::SkelParser::readWorld(
+        KIDO_DATA_PATH"/skel/fullbody1.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  dart::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
+  kido::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
 
   std::vector<size_t> genCoordIds;
   genCoordIds.push_back(1);
@@ -63,12 +63,12 @@ int main(int argc, char* argv[])
   initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
   skel->setPositions(genCoordIds, initConfig);
 
-  dart::dynamics::Joint* joint0 = skel->getJoint(0);
-  joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
+  kido::dynamics::Joint* joint0 = skel->getJoint(0);
+  joint0->setActuatorType(kido::dynamics::Joint::PASSIVE);
   for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
   {
-    dart::dynamics::Joint* joint = skel->getJoint(i);
-    joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
+    kido::dynamics::Joint* joint = skel->getJoint(i);
+    joint->setActuatorType(kido::dynamics::Joint::VELOCITY);
   }
 
   // create a window and link it to the world

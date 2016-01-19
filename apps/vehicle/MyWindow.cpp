@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/vehicle/MyWindow.h"
+#include "apps/vehicle/MyWindow.hpp"
 
 MyWindow::MyWindow()
   : SimWindow() {
@@ -48,7 +48,7 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  dart::dynamics::SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
+  kido::dynamics::SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
   assert(vehicle != 0);
 
   size_t dof = vehicle->getNumDofs();
@@ -112,23 +112,23 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case 'w':  // move forward
-      mBackWheelVelocity = DART_RADIAN * -420.0;
+      mBackWheelVelocity = KIDO_RADIAN * -420.0;
       break;
     case 's':  // stop
-      mBackWheelVelocity = DART_RADIAN * 0.0;
+      mBackWheelVelocity = KIDO_RADIAN * 0.0;
       break;
     case 'x':  // move backward
-      mBackWheelVelocity = DART_RADIAN * +420.0;
+      mBackWheelVelocity = KIDO_RADIAN * +420.0;
       break;
     case 'a':  // rotate steering wheels to left
-      mSteeringWheelAngle += DART_RADIAN * +10;
-      if (mSteeringWheelAngle > DART_RADIAN * 30.0)
-        mSteeringWheelAngle = DART_RADIAN * 30.0;
+      mSteeringWheelAngle += KIDO_RADIAN * +10;
+      if (mSteeringWheelAngle > KIDO_RADIAN * 30.0)
+        mSteeringWheelAngle = KIDO_RADIAN * 30.0;
       break;
     case 'd':  // rotate steering wheels to right
-      mSteeringWheelAngle += DART_RADIAN * -10;
-      if (mSteeringWheelAngle < DART_RADIAN * -30.0)
-        mSteeringWheelAngle = DART_RADIAN * -30.0;
+      mSteeringWheelAngle += KIDO_RADIAN * -10;
+      if (mSteeringWheelAngle < KIDO_RADIAN * -30.0)
+        mSteeringWheelAngle = KIDO_RADIAN * -30.0;
       break;
     default:
       Win3D::keyboard(_key, _x, _y);

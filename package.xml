@@ -1,16 +1,15 @@
 <?xml version="1.0"?> 
 <package format="2">
-  <!-- This is a Catkin package.xml file to optionally support building DART in
-       a Catkin workspace. Catkin is not required to build DART. For more
+  <!-- This is a Catkin package.xml file to optionally support building KIDO in
+       a Catkin workspace. Catkin is not required to build KIDO. For more
        information, see: http://ros.org/reps/rep-0136.html -->
-  <name>dart</name>
-  <version>5.1.1</version>
+  <name>kido</name>
+  <version>0.1.0</version>
   <description>
-    DART (Dynamic Animation and Robotics Toolkit) is a collaborative,
-    cross-platform, open source library created by the Georgia Tech Graphics
-    Lab and Humanoid Robotics Lab. The library provides data structures and
-    algorithms for kinematic and dynamic applications in robotics and computer
-    animation.
+    KIDO is a collaborative, cross-platform, open source library created by the
+    Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides 
+    data structures and algorithms for kinematic and dynamic applications in 
+    robotics and computer animation.
   </description>
   <url type="website">http://dartsim.github.io/</url>
   <url type="repository">https://github.com/dartsim/dart</url>

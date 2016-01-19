@@ -1,6 +1,6 @@
 # Overview
 
-This tutorial will demonstrate some basic interaction with DART's dynamics
+This tutorial will demonstrate some basic interaction with KIDO's dynamics
 API during simulation. This will show you how to:
 
 - Create a basic program to simulate a dynamic system
@@ -11,18 +11,18 @@ API during simulation. This will show you how to:
 - Alter the implicit spring and damping properties of joints
 - Add/remove dynamic constraints
 
-Please reference the source code in [**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp) and [**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum-Finished.cpp).
+Please reference the source code in [**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialMultiPendulum.cpp) and [**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialMultiPendulum-Finished.cpp).
 
 # Lesson 0: Simulate a passive multi-pendulum
 
 This is a warmup lesson that demonstrates how to set up a simulation
-program in DART. The example we will use throughout this tutorial is a
-pendulum with five rigid bodies swinging under gravity. DART allows
+program in KIDO. The example we will use throughout this tutorial is a
+pendulum with five rigid bodies swinging under gravity. KIDO allows
 the user to build various articulated rigid/soft body systems from
 scratch. It also loads models in URDF, SDF, and SKEL formats as
 demonstrated in the later tutorials.
 
-In DART, an articulated dynamics model is represented by a
+In KIDO, an articulated dynamics model is represented by a
 ``Skeleton``. In the ``main`` function, we first create an empty
 skeleton named *pendulum*.
 
@@ -53,7 +53,7 @@ the pendulum in the function ``addBody``:
 BodyNodePtr bn =
     pendulum->createJointAndBodyNodePair<RevoluteJoint>(parent, properties, BodyNode::Properties(name)).second;
 ```
-The simplest way to set up a simulation program in DART is to use
+The simplest way to set up a simulation program in KIDO is to use
 ``SimWindow`` class. A SimWindow owns an instance of ``World``  and
 simulates all the Skeletons in the World. In this example, we create a World with the
 pendulum skeleton in it, and assign the World to an instance of
@@ -105,7 +105,7 @@ for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
   {
     const ShapePtr& shape = bn->getVisualizationShape(j);
 
-    shape->setColor(dart::Color::Blue());
+    shape->setColor(kido::Color::Blue());
   }
 
   // TODO: Remove any arrows
@@ -167,7 +167,7 @@ zeroth indexed visualization shape will be the shape that depicts the joint.
 So now we will color it red:
 
 ```cpp
-shape->setColor(dart::Color::Red());
+shape->setColor(kido::Color::Red());
 ```
 
 ### Lesson 1c: Apply body forces based on user input
@@ -214,7 +214,7 @@ Now we can add the external force:
 bn->addExtForce(force, location, true, true);
 ```
 
-The two ``true`` booleans at the end are indicating to DART that both the force
+The two ``true`` booleans at the end are indicating to KIDO that both the force
 and the location vectors are being expressed with respect to the body frame.
 
 Now we'll want to visualize the force being applied to the body. First, we'll
@@ -222,7 +222,7 @@ grab the Shape for the body and color it red:
 
 ```cpp
 const ShapePtr& shape = bn->getVisualizationShape(1);
-shape->setColor(dart::Color::Red());
+shape->setColor(kido::Color::Red());
 ```
 
 Last time we grabbed the 0-index visualization shape, because we trusted that
@@ -240,7 +240,7 @@ bn->addVisualizationShape(mArrow);
 
 # Lesson 2: Set spring and damping properties for joints
 
-DART allows Joints to have implicit spring and damping properties. By default,
+KIDO allows Joints to have implicit spring and damping properties. By default,
 these properties are zeroed out, so a joint will only exhibit the forces that
 are given to it by the ``Joint::setForces`` function. However, you can give a
 non-zero spring coefficient to a joint so that it behaves according to Hooke's
@@ -339,7 +339,7 @@ stiffness coefficient.
 
 # Lesson 3: Add and remove dynamic constraints
 
-Dynamic constraints in DART allow you to attach two BodyNodes together according
+Dynamic constraints in KIDO allow you to attach two BodyNodes together according
 to a selection of a few different Joint-style constraints. This allows you to
 create closed loop constraints, which is not possible using standard Joints.
 You can also create a dynamic constraint that attaches a BodyNode to the World
@@ -364,7 +364,7 @@ Eigen::Vector3d location =
 Now we can create the BallJointConstraint:
 
 ```cpp
-mBallConstraint = new dart::constraint::BallJointConstraint(tip, location);
+mBallConstraint = new kido::constraint::BallJointConstraint(tip, location);
 ```
 
 And then add it to the world:
@@ -382,8 +382,8 @@ delete mBallConstraint;
 mBallConstraint = nullptr;
 ```
 
-Currently DART does not use smart pointers for dynamic constraints, so they
-need to be explicitly deleted. This may be revised in a later version of DART.
+Currently KIDO does not use smart pointers for dynamic constraints, so they
+need to be explicitly deleted. This may be revised in a later version of KIDO.
 
 **Now you are ready to run the demo!**
 

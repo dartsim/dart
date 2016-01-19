@@ -42,14 +42,14 @@ const int default_ik_iterations = 4500;
 const double default_force =  50.0; // N
 const int default_countdown = 100;  // Number of timesteps for applying force
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::math;
+using namespace kido::common;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::gui;
+using namespace kido::utils;
+using namespace kido::math;
 
 class Controller
 {
@@ -203,7 +203,7 @@ public:
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
       const ShapePtr& shape = bn->getVisualizationShape(0);
-      shape->setColor(dart::Color::Red());
+      shape->setColor(kido::Color::Red());
       
       if(mPositiveSign)
         bn->addExtForce(default_force * Eigen::Vector3d::UnitX(),
@@ -236,7 +236,7 @@ SkeletonPtr loadBiped()
   // Lesson 1
   
   // Create the world with a skeleton
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/biped.skel");
+  WorldPtr world = SkelParser::readWorld(KIDO_DATA_PATH"skel/biped.skel");
   assert(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");
@@ -277,7 +277,7 @@ SkeletonPtr createFloor()
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
       new BoxShape(Eigen::Vector3d(floor_width, floor_height, floor_width)));
-  box->setColor(dart::Color::Black());
+  box->setColor(kido::Color::Black());
   
   body->addVisualizationShape(box);
   body->addCollisionShape(box);
@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
 
 #ifdef HAVE_BULLET_COLLISION
   world->getConstraintSolver()->setCollisionDetector(
-          new dart::collision::BulletCollisionDetector());
+          new kido::collision::BulletCollisionDetector());
 #endif
   
   world->addSkeleton(floor);

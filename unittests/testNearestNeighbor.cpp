@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <flann/flann.hpp>
 #include <Eigen/Core>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
 /* ********************************************************************************************* */
 TEST(NEAREST_NEIGHBOR, 2D) {

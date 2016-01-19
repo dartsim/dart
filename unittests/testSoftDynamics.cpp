@@ -41,19 +41,19 @@
 #include <gtest/gtest.h>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Joint.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/Joint.hpp"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 using namespace std;
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 
 //==============================================================================
 /// Returns true if the two matrices are equal within the given bound
@@ -124,7 +124,7 @@ protected:
 //==============================================================================
 void SoftDynamicsTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/test_drop_box.skel");
+  list.push_back(KIDO_DATA_PATH"skel/test/test_drop_box.skel");
 }
 
 //==============================================================================
@@ -241,7 +241,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -256,8 +256,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * KIDO_PI;
+  double ub =  1.5 * KIDO_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;

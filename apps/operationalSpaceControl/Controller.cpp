@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/operationalSpaceControl/Controller.h"
+#include "apps/operationalSpaceControl/Controller.hpp"
 
 //==============================================================================
-Controller::Controller(dart::dynamics::SkeletonPtr _robot,
-                       dart::dynamics::BodyNode* _endEffector)
+Controller::Controller(kido::dynamics::SkeletonPtr _robot,
+                       kido::dynamics::BodyNode* _endEffector)
   : mRobot(_robot),
     mEndEffector(_endEffector)
 {
@@ -75,7 +75,7 @@ Controller::~Controller()
 //==============================================================================
 void Controller::update(const Eigen::Vector3d& _targetPosition)
 {
-  using namespace dart;
+  using namespace kido;
 
   // Get equation of motions
   Eigen::Vector3d x    = mEndEffector->getTransform().translation();
@@ -109,13 +109,13 @@ void Controller::update(const Eigen::Vector3d& _targetPosition)
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr Controller::getRobot() const
+kido::dynamics::SkeletonPtr Controller::getRobot() const
 {
   return mRobot;
 }
 
 //==============================================================================
-dart::dynamics::BodyNode* Controller::getEndEffector() const
+kido::dynamics::BodyNode* Controller::getEndEffector() const
 {
   return mEndEffector;
 }

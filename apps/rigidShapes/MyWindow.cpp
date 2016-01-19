@@ -40,11 +40,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.h"
+#include "MyWindow.hpp"
 
 using namespace std;
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 
 //==============================================================================
 MyWindow::MyWindow()
@@ -77,7 +77,7 @@ Isometry3d getRandomTransform()
 {
   Isometry3d T = Isometry3d::Identity();
 
-  const Vector3d rotation = math::randomVector<3>(-DART_PI, DART_PI);
+  const Vector3d rotation = math::randomVector<3>(-KIDO_PI, KIDO_PI);
   const Vector3d position = Vector3d(math::random(-1.0, 1.0),
                                      math::random( 0.5, 1.0),
                                      math::random(-1.0, 1.0));

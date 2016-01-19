@@ -41,29 +41,29 @@
 #include <sstream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "TestHelpers.h"
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/optimizer/Function.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/InverseKinematics.h"
+#include "TestHelpers.hpp"
+#include "kido/config.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/optimizer/Function.hpp"
+#include "kido/optimizer/Problem.hpp"
+#include "kido/optimizer/GradientDescentSolver.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
+#include "kido/dynamics/InverseKinematics.hpp"
 #ifdef HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.h"
+  #include "kido/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #ifdef HAVE_IPOPT
-  #include "dart/optimizer/ipopt/IpoptSolver.h"
+  #include "kido/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #ifdef HAVE_SNOPT
-  #include "dart/optimizer/snopt/SnoptSolver.h"
+  #include "kido/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;
 using namespace Eigen;
-using namespace dart::optimizer;
-using namespace dart::dynamics;
+using namespace kido::optimizer;
+using namespace kido::dynamics;
 
 //==============================================================================
 /// \brief class SampleObjFunc

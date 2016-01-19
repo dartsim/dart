@@ -1,7 +1,7 @@
 # Overview
 This tutorial will show you how to programmatically create different kinds of
 bodies and set initial conditions for Skeletons. It will also demonstrate some
-use of DART's Frame Semantics.
+use of KIDO's Frame Semantics.
 
 The tutorial consists of five Lessons covering the following topics:
 
@@ -11,14 +11,14 @@ The tutorial consists of five Lessons covering the following topics:
 - Setting joint spring and damping properties
 - Creating a closed kinematic chain
 
-Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions-Finished.cpp).
+Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions-Finished.cpp).
 
 # Lesson 1: Creating a rigid body
 
-Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp).
+Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/kido-0.1.0/tutorials/tutorialCollisions.cpp).
 Find the function named ``addRigidBody``. You will notice that this is a templated
 function. If you're not familiar with templates, that's okay; we won't be doing
-anything too complicated with them. Different Joint types in DART are managed by
+anything too complicated with them. Different Joint types in KIDO are managed by
 a bunch of different classes, so we need to use templates if we want the same
 function to work with a variety of Joint types.
 
@@ -43,7 +43,7 @@ so the ``RevoluteJoint::Properties`` and ``PrismaticJoint::Properties`` classes
 both inherit the ``SingleDofJoint::Properties`` class. The difference is that
 ``RevoluteJoint::Properties`` also inherits ``RevoluteJoint::UniqueProperties``
 whereas ``PrismaticJoint::Properties`` inherits ``PrismaticJoint::UniqueProperties``
-instead. Many DART classes contain nested ``Properties`` classes like this which
+instead. Many KIDO classes contain nested ``Properties`` classes like this which
 are compositions of their base class's nested ``Properties`` class and their own
 ``UniqueProperties`` class. As you'll see later, this is useful for providing a
 consistent API that works cleanly for fundamentally different types of classes.
@@ -60,7 +60,7 @@ From here, we can set the Joint properties in any way we'd like. There are only
 a few things we care about right now: First, the Joint's name. Every Joint in a
 Skeleton needs to have a non-empty unique name. Those are the only restrictions
 that are placed on Joint names. If you try to make a Joint's name empty, it will
-be given a default name. If you try to make a Joint's name non-unique, DART will
+be given a default name. If you try to make a Joint's name non-unique, KIDO will
 append a number tag to the end of the name in order to make it unique. It will
 also print out a warning during run time, which can be an eyesore (because it
 wants you to be aware when you are being negligent about naming things). For the
@@ -191,7 +191,7 @@ else if(SHAPE::ELLIPSOID == type)
 }
 ```
 
-``ShapePtr`` is simply a typedef for ``std::shared_ptr<Shape>``. DART has this
+``ShapePtr`` is simply a typedef for ``std::shared_ptr<Shape>``. KIDO has this
 typedef in order to improve space usage and readability, because this type gets
 used very often.
 
@@ -301,7 +301,7 @@ SoftBodyNode::UniqueProperties soft_properties;
 
 Later we will combine this with a standard ``BodyNode::Properties`` struct, but
 for now let's fill it in. Up above we defined an enumeration for a couple
-different SoftBodyNode types. There is no official DART-native enumeration
+different SoftBodyNode types. There is no official KIDO-native enumeration
 for this, we created our own to use for this function. We'll want to fill in
 the ``SoftBodyNode::UniqueProperties`` struct based off of this enumeration:
 
@@ -585,7 +585,7 @@ We can access the world's collision detector directly to check make sure the
 new object is collision-free:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
+kido::collision::CollisionDetector* detector =
     mWorld->getConstraintSolver()->getCollisionDetector();
 detector->detectCollision(true, true);
 ```
@@ -599,7 +599,7 @@ bool collision = false;
 size_t collisionCount = detector->getNumContacts();
 for(size_t i = 0; i < collisionCount; ++i)
 {
-  const dart::collision::Contact& contact = detector->getContact(i);
+  const kido::collision::Contact& contact = detector->getContact(i);
   if(contact.bodyNode1.lock()->getSkeleton() == object
      || contact.bodyNode2.lock()->getSkeleton() == object)
   {
@@ -627,16 +627,16 @@ didn't throw a new object.
 
 ### Lesson 3d: Creating reference frames
 
-DART has a unique feature that we call Frame Semantics. The Frame Semantics of
-DART allow you to create reference frames and use them to get and set data
+KIDO has a unique feature that we call Frame Semantics. The Frame Semantics of
+KIDO allow you to create reference frames and use them to get and set data
 relative to arbitrary frames. There are two crucial Frame types currently used
-in DART: ``BodyNode``s and ``SimpleFrame``s.
+in KIDO: ``BodyNode``s and ``SimpleFrame``s.
 
 The BodyNode class does not allow you to explicitly set its transform, velocity,
 or acceleration properties, because those are all strictly functions of the
 degrees of freedom that the BodyNode depends on. Because of this, the BodyNode
 is not a very convenient class if you want to create an arbitrary frame of
-reference. Instead, DART offers the ``SimpleFrame`` class which gives you the
+reference. Instead, KIDO offers the ``SimpleFrame`` class which gives you the
 freedom of arbitarily attaching it to any parent Frame and setting its transform,
 velocity, and acceleration to whatever you'd like. This makes SimpleFrame useful
 for specifying arbitrary reference frames.
@@ -691,7 +691,7 @@ center.setClassicDerivatives(v, w);
 
 The ``SimpleFrame::setClassicDerivatives()`` allows you to set the classic linear
 and angular velocities and accelerations of a SimpleFrame with respect to its
-parent Frame, which in this case is the World Frame. In DART, classic velocity and
+parent Frame, which in this case is the World Frame. In KIDO, classic velocity and
 acceleration vectors are explicitly differentiated from spatial velocity and
 acceleration vectors. If you are unfamiliar with the term "spatial vector", then
 you'll most likely want to work in terms of classic velocity and acceleration.
@@ -820,7 +820,7 @@ tail BodyNode.
 Now we have everything we need to construct the constraint:
 
 ```cpp
-auto constraint = new dart::constraint::BallJointConstraint(
+auto constraint = new kido::constraint::BallJointConstraint(
       head, tail, offset);
 ```
 

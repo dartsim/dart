@@ -35,10 +35,10 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/common/Uri.h"
-#include "TestHelpers.h"
+#include "kido/common/Uri.hpp"
+#include "TestHelpers.hpp"
 
-using dart::common::Uri;
+using kido::common::Uri;
 
 TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)
 {

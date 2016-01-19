@@ -45,43 +45,43 @@
  * direction.
  */
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-#include "apps/hardcodedDesign/MyWindow.h"
+#include "apps/hardcodedDesign/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton
-  dart::dynamics::SkeletonPtr LeftLegSkel = dart::dynamics::Skeleton::create();
+  kido::dynamics::SkeletonPtr LeftLegSkel = kido::dynamics::Skeleton::create();
 
   double mass = 1.0;
 
   // BodyNode 1: Left Hip Yaw (LHY)
-  dart::dynamics::BodyNode::Properties body;
+  kido::dynamics::BodyNode::Properties body;
   body.mName = "LHY";
-  dart::dynamics::ShapePtr shape(
-        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
+  kido::dynamics::ShapePtr shape(
+        new kido::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   body.mVizShapes.push_back(shape); // Use 'shape' for visualizing
   body.mColShapes.push_back(shape); // Use 'shape' for collision detection
   body.mInertia.setMass(mass);
 
-  dart::dynamics::RevoluteJoint::Properties joint;
+  kido::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
   joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
-  joint.mPositionLowerLimit = -DART_PI;
-  joint.mPositionUpperLimit =  DART_PI;
+  joint.mPositionLowerLimit = -KIDO_PI;
+  joint.mPositionUpperLimit =  KIDO_PI;
 
   // You can get the newly created Joint and BodyNode pointers like this
-  std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair =
-      LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+  std::pair<kido::dynamics::Joint*, kido::dynamics::BodyNode*> pair =
+      LeftLegSkel->createJointAndBodyNodePair<kido::dynamics::RevoluteJoint>(
         nullptr, joint, body);
-  dart::dynamics::BodyNode* parent = pair.second;
+  kido::dynamics::BodyNode* parent = pair.second;
 
 
   // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
-  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
+  body = kido::dynamics::BodyNode::Properties(); // create a fresh properties container
   body.mName = "LHR";
-  shape = dart::dynamics::ShapePtr(
-        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
+  shape = kido::dynamics::ShapePtr(
+        new kido::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   body.mVizShapes.push_back(shape);
   body.mColShapes.push_back(shape);
@@ -92,17 +92,17 @@ int main(int argc, char* argv[]) {
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
 
   // You can get the specific type of Joint Pointer instead of just a basic Joint pointer
-  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> nextPair =
-  LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+  std::pair<kido::dynamics::RevoluteJoint*, kido::dynamics::BodyNode*> nextPair =
+  LeftLegSkel->createJointAndBodyNodePair<kido::dynamics::RevoluteJoint>(
         parent, joint, body);
   nextPair.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
 
   // BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR
-  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
+  body = kido::dynamics::BodyNode::Properties(); // create a fresh properties container
   body.mName = "LHP";
-  shape = dart::dynamics::ShapePtr(
-        new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
+  shape = kido::dynamics::ShapePtr(
+        new kido::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
   body.mVizShapes.push_back(shape);
   body.mColShapes.push_back(shape);
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
 
   // Or you can completely ignore the return value of this function
-  LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+  LeftLegSkel->createJointAndBodyNodePair<kido::dynamics::RevoluteJoint>(
         LeftLegSkel->getBodyNode(1), joint, body);
 
 

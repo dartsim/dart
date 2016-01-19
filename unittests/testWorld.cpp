@@ -37,16 +37,16 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "kido/math/Geometry.hpp"
+#include "kido/utils/SkelParser.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -165,34 +165,34 @@ TEST(World, Cloning)
 {
   // Create a list of skel files to test with
   std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/fullbody1.skel");
 
-  std::vector<dart::simulation::WorldPtr> worlds;
+  std::vector<kido::simulation::WorldPtr> worlds;
   for(size_t i=0; i<fileList.size(); ++i)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
   for(size_t i=0; i<worlds.size(); ++i)
   {
-    dart::simulation::WorldPtr original = worlds[i];
-    std::vector<dart::simulation::WorldPtr> clones;
+    kido::simulation::WorldPtr original = worlds[i];
+    std::vector<kido::simulation::WorldPtr> clones;
     clones.push_back(original);
     for(size_t j=1; j<5; ++j)
       clones.push_back(clones[j-1]->clone());
@@ -203,8 +203,8 @@ TEST(World, Cloning)
     {
       for(size_t k=0; k<original->getNumSkeletons(); ++k)
       {
-        dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
-        dart::dynamics::SkeletonPtr clone = clones[j]->getSkeleton(k);
+        kido::dynamics::SkeletonPtr skel = original->getSkeleton(k);
+        kido::dynamics::SkeletonPtr clone = clones[j]->getSkeleton(k);
 
         clone->setPositions(skel->getPositions());
         clone->setVelocities(skel->getVelocities());
@@ -223,7 +223,7 @@ TEST(World, Cloning)
     {
       for(size_t k=0; k<original->getNumSkeletons(); ++k)
       {
-        dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
+        kido::dynamics::SkeletonPtr skel = original->getSkeleton(k);
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
@@ -233,7 +233,7 @@ TEST(World, Cloning)
         // Assign the command vector to each clone of the kth skeleton
         for(size_t c=0; c<clones.size(); ++c)
         {
-          dart::dynamics::SkeletonPtr skelClone = clones[c]->getSkeleton(k);
+          kido::dynamics::SkeletonPtr skelClone = clones[c]->getSkeleton(k);
           skelClone->setCommands(commands);
         }
       }
@@ -247,8 +247,8 @@ TEST(World, Cloning)
     {
       for(size_t k=0; k<original->getNumSkeletons(); ++k)
       {
-        dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
-        dart::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
+        kido::dynamics::SkeletonPtr skel = original->getSkeleton(k);
+        kido::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
 
         EXPECT_TRUE( equals(skel->getPositions(), clone->getPositions(), 0));
         EXPECT_TRUE( equals(skel->getVelocities(), clone->getVelocities(), 0));

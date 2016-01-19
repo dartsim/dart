@@ -36,19 +36,19 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-#include "apps/vehicle/MyWindow.h"
+#include "apps/vehicle/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
-  using namespace dart;
+  using namespace kido;
   using namespace dynamics;
   using namespace simulation;
   using namespace utils;
 
   // create and initialize the world
-  WorldPtr myWorld = SkelParser::readWorld(DART_DATA_PATH"/skel/vehicle.skel");
+  WorldPtr myWorld = SkelParser::readWorld(KIDO_DATA_PATH"/skel/vehicle.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

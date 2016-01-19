@@ -36,11 +36,11 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/common/sub_ptr.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/BoxShape.h"
+#include "kido/common/sub_ptr.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/dynamics/BoxShape.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 
 TEST(Subjects, Notifications)

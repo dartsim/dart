@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/MyWindow.h"
+#include "apps/jointConstraints/MyWindow.hpp"
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 using namespace simulation;
 
@@ -48,8 +48,8 @@ int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(DART_DATA_PATH"skel/fullbody1.skel");
+  kido::simulation::WorldPtr myWorld
+      = utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/atlasSimbicon/MyWindow.h"
+#include "apps/atlasSimbicon/MyWindow.hpp"
 
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
@@ -92,7 +92,7 @@ void MyWindow::drawSkels()
            * Eigen::Vector3d(0.0, 0.0, 0.0);
     Eigen::Vector3d start = poa - mForce / 500.0;
     double len = mForce.norm() / 500.0;
-    dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
+    kido::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
   }
 }
 

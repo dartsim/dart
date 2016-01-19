@@ -36,19 +36,17 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "tinyxml2.h"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/PlanarJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/VskParser.hpp"
 
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/VskParser.h"
-
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -61,7 +59,7 @@ TEST(VskParser, EmptySkeleton)
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skeleton
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/test/empty.vsk");
+      = VskParser::readSkeleton(KIDO_DATA_PATH"vsk/test/empty.vsk");
   EXPECT_TRUE(skeleton == nullptr);
 
   world->addSkeleton(skeleton);
@@ -77,17 +75,17 @@ TEST(VskParser, SingleStepSimulations)
   EXPECT_NE(world , nullptr);
 
   SkeletonPtr nick
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/Nick01.vsk");
+      = VskParser::readSkeleton(KIDO_DATA_PATH"vsk/Nick01.vsk");
   EXPECT_NE(nick  , nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr sehoon
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/SehoonVSK3.vsk");
+      = VskParser::readSkeleton(KIDO_DATA_PATH"vsk/SehoonVSK3.vsk");
   EXPECT_NE(sehoon, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr yuting
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/Yuting.vsk");
+      = VskParser::readSkeleton(KIDO_DATA_PATH"vsk/Yuting.vsk");
   EXPECT_NE(yuting, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 

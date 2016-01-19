@@ -36,9 +36,9 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/common/Timer.h"
+#include "kido/common/Timer.hpp"
 
-using namespace dart::common;
+using namespace kido::common;
 
 //==============================================================================
 TEST(Common, Timer)

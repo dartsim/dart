@@ -1,0 +1,10 @@
+usr/include/kido/kido.h
+usr/include/kido/planning/*
+usr/include/kido/utils/*
+usr/include/kido/gui/*
+usr/include/osgKido/*
+usr/share/kido/KIDOConfig.cmake
+usr/share/kido/KIDOConfigVersion.cmake
+usr/share/kido/KIDOTargets*.cmake
+usr/lib/libkido.so
+usr/lib/libosgKido.so

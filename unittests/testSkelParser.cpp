@@ -36,17 +36,17 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/PlanarJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
@@ -99,7 +99,7 @@ TEST(SkelParser, DataStructure)
 //==============================================================================
 TEST(SkelParser, EmptyWorld)
 {
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
+  WorldPtr world = SkelParser::readWorld(KIDO_DATA_PATH"skel/test/empty.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -117,7 +117,7 @@ TEST(SkelParser, EmptyWorld)
 TEST(SkelParser, SinglePendulum)
 {
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"skel/test/single_pendulum.skel");
+        KIDO_DATA_PATH"skel/test/single_pendulum.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -137,7 +137,7 @@ TEST(SkelParser, SinglePendulum)
 TEST(SkelParser, SerialChain)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+      KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -156,14 +156,14 @@ TEST(SkelParser, SerialChain)
 //==============================================================================
 TEST(SkelParser, RigidAndSoftBodies)
 {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
   using namespace utils;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
+      KIDO_DATA_PATH"skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -181,14 +181,14 @@ TEST(SkelParser, RigidAndSoftBodies)
 //==============================================================================
 TEST(SkelParser, PlanarJoint)
 {
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
   using namespace utils;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/planar_joint.skel");
+      KIDO_DATA_PATH"skel/test/planar_joint.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton1");
@@ -298,7 +298,7 @@ TEST(SkelParser, PlanarJoint)
 TEST(SKEL_PARSER, JointActuatorType)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
+      KIDO_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -331,19 +331,19 @@ TEST(SKEL_PARSER, JointActuatorType)
 TEST(SkelParser, DofAttributes)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
+      KIDO_DATA_PATH"/skel/test/dof_attribute_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
-  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -DART_DBL_INF);
-  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -KIDO_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  KIDO_DBL_INF);
   EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
 
-  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -DART_DBL_INF);
-  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -KIDO_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  KIDO_DBL_INF);
   EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
 
   EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());
@@ -409,7 +409,7 @@ TEST(SkelParser, JointDynamicsElements)
 {
   WorldPtr world
       = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
+        KIDO_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");

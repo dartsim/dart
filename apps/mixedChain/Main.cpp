@@ -42,23 +42,23 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-#include "apps/mixedChain/MyWindow.h"
+#include "apps/mixedChain/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
   // load a skeleton file
   // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
+  kido::simulation::WorldPtr myWorld
+      = kido::utils::SkelParser::readWorld(
+          KIDO_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
   for (int i = 0; i < 3; i++)
-    initPose[i] = dart::math::random(-0.5, 0.5);
+    initPose[i] = kido::math::random(-0.5, 0.5);
   myWorld->getSkeleton(1)->setPositions(initPose);
 
   // create a window and link it to the world

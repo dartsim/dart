@@ -41,15 +41,15 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "dart/config.h"
-#include "dart/common/common.h"
-#include "dart/math/math.h"
-#include "dart/dynamics/dynamics.h"
-//#include "dart/collision/unc/UNCCollisionDetector.h"
-#include "dart/simulation/simulation.h"
-#include "dart/utils/utils.h"
+#include "kido/config.hpp"
+#include "kido/common/common.hpp"
+#include "kido/math/math.hpp"
+#include "kido/dynamics/dynamics.hpp"
+//#include "kido/collision/unc/UNCCollisionDetector.hpp"
+#include "kido/simulation/simulation.hpp"
+#include "kido/utils/utils.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace common;
 using namespace math;
 using namespace dynamics;
@@ -394,9 +394,9 @@ TEST_F(COLLISION, DROP)
     dtdbg << "Rotated box\n";
     fcl::Box box2(0.5, 0.5, 0.5);
     dropWithRotation(&box2,
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14));
+                     kido::math::random(-3.14, 3.14),
+                     kido::math::random(-3.14, 3.14),
+                     kido::math::random(-3.14, 3.14));
 
     dropWithRotation(&box2,
                      0.0,
@@ -518,7 +518,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+        KIDO_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
@@ -559,12 +559,12 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   {
     const double time = world->getTime();
 
-    joint1->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint2->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint3->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint4->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint5->setCommand(0, -0.5 * DART_PI * std::sin(time));
-    joint6->setCommand(0, -0.5 * DART_PI * std::sin(time));  // ignored
+    joint1->setCommand(0, -0.5 * KIDO_PI * std::cos(time));
+    joint2->setCommand(0, -0.5 * KIDO_PI * std::cos(time));
+    joint3->setCommand(0, -0.5 * KIDO_PI * std::cos(time));
+    joint4->setCommand(0, -0.5 * KIDO_PI * std::cos(time));
+    joint5->setCommand(0, -0.5 * KIDO_PI * std::sin(time));
+    joint6->setCommand(0, -0.5 * KIDO_PI * std::sin(time));  // ignored
 
     world->step(false);
 

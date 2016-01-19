@@ -1,4 +1,9 @@
-### Version 6.0.0 (2015-12-19)
+### KIDO 0.1.0 (2016-01-XX)
+
+1. Change project name to KIDO
+    * [Issue #479](https://github.com/dartsim/dart/issues/479)
+
+### Version 6.0.0 (2016-02-XX)
 
 1. Added missing `liburdfdom-dev` dependency in Ubuntu package
     * [Pull request #574](https://github.com/dartsim/dart/pull/574)

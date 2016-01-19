@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.h"
+#include "MyWindow.hpp"
 
 MyWindow::MyWindow()
   : SimWindow() {
@@ -63,12 +63,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       break;
     case 'q':  // Spawn a cube
     case 'Q': {  // Spawn a cube
-      Eigen::Vector3d position = Eigen::Vector3d(dart::math::random(-1.0, 1.0),
-                                                 dart::math::random( 0.5, 1.0),
-                                                 dart::math::random(-1.0, 1.0));
-      Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.1, 0.5),
-                                             dart::math::random(0.1, 0.5),
-                                             dart::math::random(0.1, 0.5));
+      Eigen::Vector3d position = Eigen::Vector3d(kido::math::random(-1.0, 1.0),
+                                                 kido::math::random( 0.5, 1.0),
+                                                 kido::math::random(-1.0, 1.0));
+      Eigen::Vector3d size = Eigen::Vector3d(kido::math::random(0.1, 0.5),
+                                             kido::math::random(0.1, 0.5),
+                                             kido::math::random(0.1, 0.5));
       spawnCube(position, size);
       break;
     }
@@ -88,22 +88,22 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
                          const Eigen::Vector3d& _size,
                          double _mass)
 {
-  dart::dynamics::SkeletonPtr newCubeSkeleton =
-      dart::dynamics::Skeleton::create();
+  kido::dynamics::SkeletonPtr newCubeSkeleton =
+      kido::dynamics::Skeleton::create();
 
-  dart::dynamics::BodyNode::Properties body;
+  kido::dynamics::BodyNode::Properties body;
   body.mName = "cube_link";
   body.mInertia.setMass(_mass);
-  dart::dynamics::ShapePtr newBoxShape(new dart::dynamics::BoxShape(_size));
+  kido::dynamics::ShapePtr newBoxShape(new kido::dynamics::BoxShape(_size));
   body.mVizShapes.push_back(newBoxShape);
   body.mColShapes.push_back(newBoxShape);
-  newBoxShape->setColor(dart::math::randomVector<3>(0.0, 1.0));
+  newBoxShape->setColor(kido::math::randomVector<3>(0.0, 1.0));
 
-  dart::dynamics::FreeJoint::Properties joint;
+  kido::dynamics::FreeJoint::Properties joint;
   joint.mName = "cube_joint";
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(_position);
 
-  newCubeSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+  newCubeSkeleton->createJointAndBodyNodePair<kido::dynamics::FreeJoint>(
         nullptr, joint, body);
 
   mWorld->addSkeleton(newCubeSkeleton);

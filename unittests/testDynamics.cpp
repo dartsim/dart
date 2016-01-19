@@ -40,19 +40,19 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 using namespace Eigen;
-using namespace dart;
+using namespace kido;
 
 //==============================================================================
 class DynamicsTest : public ::testing::Test
@@ -126,25 +126,25 @@ protected:
 void DynamicsTest::SetUp()
 {
   // Create a list of skel files to test with
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(KIDO_DATA_PATH"skel/fullbody1.skel");
 
   // Create a list of reference frames to use during tests
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
@@ -570,7 +570,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -583,12 +583,12 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 #else
   int nTestItr = 100;
 #endif
-  double qLB  = -0.5 * DART_PI;
-  double qUB  =  0.5 * DART_PI;
-  double dqLB = -0.5 * DART_PI;
-  double dqUB =  0.5 * DART_PI;
-  double ddqLB = -0.5 * DART_PI;
-  double ddqUB =  0.5 * DART_PI;
+  double qLB  = -0.5 * KIDO_PI;
+  double qUB  =  0.5 * KIDO_PI;
+  double dqLB = -0.5 * KIDO_PI;
+  double dqUB =  0.5 * KIDO_PI;
+  double ddqLB = -0.5 * KIDO_PI;
+  double ddqUB =  0.5 * KIDO_PI;
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
@@ -687,7 +687,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -699,12 +699,12 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 #else
   int nRandomItr = 10;
 #endif
-  double qLB   = -0.5 * DART_PI;
-  double qUB   =  0.5 * DART_PI;
-  double dqLB  = -0.3 * DART_PI;
-  double dqUB  =  0.3 * DART_PI;
-  double ddqLB = -0.1 * DART_PI;
-  double ddqUB =  0.1 * DART_PI;
+  double qLB   = -0.5 * KIDO_PI;
+  double qUB   =  0.5 * KIDO_PI;
+  double dqLB  = -0.3 * KIDO_PI;
+  double dqUB  =  0.3 * KIDO_PI;
+  double ddqLB = -0.1 * KIDO_PI;
+  double ddqUB =  0.1 * KIDO_PI;
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1e-3;
   double TOLERANCE = 5e-4;
@@ -789,7 +789,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -803,12 +803,12 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
   int nRandomItr = 10;
   size_t numSteps = 1e+3;
 #endif
-  double qLB   = -0.5 * DART_PI;
-  double qUB   =  0.5 * DART_PI;
-  double dqLB  = -0.5 * DART_PI;
-  double dqUB  =  0.5 * DART_PI;
-  double ddqLB = -0.5 * DART_PI;
-  double ddqUB =  0.5 * DART_PI;
+  double qLB   = -0.5 * KIDO_PI;
+  double qUB   =  0.5 * KIDO_PI;
+  double dqLB  = -0.5 * KIDO_PI;
+  double dqUB  =  0.5 * KIDO_PI;
+  double ddqLB = -0.5 * KIDO_PI;
+  double ddqUB =  0.5 * KIDO_PI;
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1.0e-6;
   const double tol = timeStep * 1e+2;
@@ -886,7 +886,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -899,12 +899,12 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
 #else
   int nRandomItr = 10;
 #endif
-  double qLB   = -0.5 * DART_PI;
-  double qUB   =  0.5 * DART_PI;
-  double dqLB  = -0.5 * DART_PI;
-  double dqUB  =  0.5 * DART_PI;
-  double ddqLB = -0.5 * DART_PI;
-  double ddqUB =  0.5 * DART_PI;
+  double qLB   = -0.5 * KIDO_PI;
+  double qUB   =  0.5 * KIDO_PI;
+  double dqLB  = -0.5 * KIDO_PI;
+  double dqUB  =  0.5 * KIDO_PI;
+  double ddqLB = -0.5 * KIDO_PI;
+  double ddqUB =  0.5 * KIDO_PI;
   Vector3d gravity(0.0, -9.81, 0.0);
   double timeStep = 1.0e-6;
 
@@ -1044,12 +1044,12 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   size_t nRandomItr = 1e+2;
   size_t numSteps = 1e+2;
 #endif
-  double qLB   = -0.5 * DART_PI;
-  double qUB   =  0.5 * DART_PI;
-  double dqLB  = -0.3 * DART_PI;
-  double dqUB  =  0.3 * DART_PI;
-  double ddqLB = -0.1 * DART_PI;
-  double ddqUB =  0.1 * DART_PI;
+  double qLB   = -0.5 * KIDO_PI;
+  double qUB   =  0.5 * KIDO_PI;
+  double dqLB  = -0.3 * KIDO_PI;
+  double dqUB  =  0.3 * KIDO_PI;
+  double ddqLB = -0.1 * KIDO_PI;
+  double ddqUB =  0.1 * KIDO_PI;
   double timeStep = 1e-6;
 
   EXPECT_NE(skel, nullptr);
@@ -1179,7 +1179,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1194,8 +1194,8 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.0 * DART_PI;
-  double ub =  1.0 * DART_PI;
+  double lb = -1.0 * KIDO_PI;
+  double ub =  1.0 * KIDO_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;
@@ -1241,10 +1241,10 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -DART_PI)
-            lbRP = -DART_PI;
-          if (ubRP > DART_PI)
-            ubRP = DART_PI;
+          if (lbRP < -KIDO_PI)
+            lbRP = -KIDO_PI;
+          if (ubRP > KIDO_PI)
+            ubRP = KIDO_PI;
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }
@@ -1452,7 +1452,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1467,8 +1467,8 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * KIDO_PI;
+  double ub =  1.5 * KIDO_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;
@@ -1532,10 +1532,10 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -DART_PI)
-            lbRP = -DART_PI;
-          if (ubRP > DART_PI)
-            ubRP = DART_PI;
+          if (lbRP < -KIDO_PI)
+            lbRP = -KIDO_PI;
+          if (ubRP > KIDO_PI)
+            ubRP = KIDO_PI;
           joint->setRestPosition      (l, random(lbRP, ubRP));
         }
       }
@@ -1608,7 +1608,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1623,8 +1623,8 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 #endif // ------- Debug mode
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * KIDO_PI;
+  double ub =  1.5 * KIDO_PI;
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;
@@ -1691,10 +1691,10 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -DART_PI)
-            lbRP = -DART_PI;
-          if (ubRP > DART_PI)
-            ubRP = DART_PI;
+          if (lbRP < -KIDO_PI)
+            lbRP = -KIDO_PI;
+          if (ubRP > KIDO_PI)
+            ubRP = KIDO_PI;
           joint->setRestPosition(l, random(lbRP, ubRP));
         }
       }
@@ -1723,7 +1723,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1738,8 +1738,8 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-//  double lb = -1.5 * DART_PI;
-//  double ub =  1.5 * DART_PI;
+//  double lb = -1.5 * KIDO_PI;
+//  double ub =  1.5 * KIDO_PI;
 
   simulation::WorldPtr myWorld;
 
@@ -1776,10 +1776,10 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
         {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -DART_PI)
-            lbRP = -DART_PI;
-          if (ubRP > DART_PI)
-            ubRP = DART_PI;
+          if (lbRP < -KIDO_PI)
+            lbRP = -KIDO_PI;
+          if (ubRP > KIDO_PI)
+            ubRP = KIDO_PI;
           joint->setPosition(l, random(lbRP, ubRP));
         }
 
@@ -1817,7 +1817,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
 {
   using namespace std;
   using namespace Eigen;
-  using namespace dart;
+  using namespace kido;
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
@@ -1834,8 +1834,8 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   double TOLERANCE = 1e-3;
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * KIDO_PI;
+  double ub =  1.5 * KIDO_PI;
 
   simulation::WorldPtr myWorld;
 
@@ -1872,10 +1872,10 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
         {
           double lbRP = joint->getPositionLowerLimit(l);
           double ubRP = joint->getPositionUpperLimit(l);
-          if (lbRP < -DART_PI)
-            lbRP = -DART_PI;
-          if (ubRP > DART_PI)
-            ubRP = DART_PI;
+          if (lbRP < -KIDO_PI)
+            lbRP = -KIDO_PI;
+          if (ubRP > KIDO_PI)
+            ubRP = KIDO_PI;
           joint->setPosition(l, random(lbRP, ubRP));
         }
       }
@@ -1957,12 +1957,12 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     // TODO(JS): Following skel files, which contain euler joints couldn't
     //           pass EQUATIONS_OF_MOTION, are disabled.
     std::string skelFileName = getList()[i];
-    if (skelFileName == DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
+    if (skelFileName == KIDO_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
+        || skelFileName == KIDO_DATA_PATH"skel/test/chainwhipa.skel"
+        || skelFileName == KIDO_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
+        || skelFileName == KIDO_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
+        || skelFileName == KIDO_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
+        || skelFileName == KIDO_DATA_PATH"skel/fullbody1.skel")
     {
         continue;
     }
@@ -2036,7 +2036,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
+      KIDO_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

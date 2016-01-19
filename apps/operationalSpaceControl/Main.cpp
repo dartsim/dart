@@ -34,22 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
-#include "apps/operationalSpaceControl/MyWindow.h"
+#include "apps/operationalSpaceControl/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
   // create and initialize the world
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  kido::simulation::WorldPtr world(new kido::simulation::World);
   assert(world != nullptr);
 
   // load skeletons
-  dart::utils::DartLoader dl;
-  dart::dynamics::SkeletonPtr ground
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
-  dart::dynamics::SkeletonPtr robot
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+  kido::utils::KidoLoader dl;
+  kido::dynamics::SkeletonPtr ground
+      = dl.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/ground.urdf");
+  kido::dynamics::SkeletonPtr robot
+      = dl.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(ground);
   world->addSkeleton(robot);
 

@@ -36,12 +36,12 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/math/Helpers.h"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/math/Helpers.hpp"
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 
 template<int N>

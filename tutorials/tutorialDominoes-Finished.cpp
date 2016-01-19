@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "kido/kido.hpp"
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -56,10 +56,10 @@ const int default_push_duration = 1000;  // # iterations
 
 const double default_endeffector_offset = 0.05;
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::math;
+using namespace kido::common;
+using namespace kido::dynamics;
+using namespace kido::simulation;
+using namespace kido::math;
 
 class Controller
 {
@@ -221,7 +221,7 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public kido::gui::SimWindow
 {
 public:
 
@@ -265,7 +265,7 @@ public:
     mWorld->addSkeleton(newDomino);
 
     // Compute collisions
-    dart::collision::CollisionDetector* detector =
+    kido::collision::CollisionDetector* detector =
         mWorld->getConstraintSolver()->getCollisionDetector();
     detector->detectCollision(true, true);
 
@@ -277,7 +277,7 @@ public:
     {
       // If neither of the colliding BodyNodes belongs to the floor, then we
       // know the new domino is in contact with something it shouldn't be
-      const dart::collision::Contact& contact = detector->getContact(i);
+      const kido::collision::Contact& contact = detector->getContact(i);
       if(contact.bodyNode1.lock()->getSkeleton() != mFloor
          && contact.bodyNode2.lock()->getSkeleton() != mFloor)
       {
@@ -433,7 +433,7 @@ SkeletonPtr createDomino()
   body->addCollisionShape(box);
 
   // Set up inertia for the domino
-  dart::dynamics::Inertia inertia;
+  kido::dynamics::Inertia inertia;
   inertia.setMass(default_domino_mass);
   inertia.setMoment(box->computeInertia(default_domino_mass));
   body->setInertia(inertia);
@@ -456,7 +456,7 @@ SkeletonPtr createFloor()
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
         new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
-  box->setColor(dart::Color::Black());
+  box->setColor(kido::Color::Black());
 
   body->addVisualizationShape(box);
   body->addCollisionShape(box);
@@ -472,9 +472,9 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
-  dart::utils::DartLoader loader;
+  kido::utils::KidoLoader loader;
   SkeletonPtr manipulator =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton(KIDO_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");
 
   // Position its base in a reasonable way

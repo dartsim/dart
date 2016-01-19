@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/Controller.h"
+#include "apps/jointConstraints/Controller.hpp"
 
-using namespace dart;
+using namespace kido;
 using namespace dynamics;
 using namespace math;
 

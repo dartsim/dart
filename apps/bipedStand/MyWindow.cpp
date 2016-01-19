@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/bipedStand/MyWindow.h"
+#include "apps/bipedStand/MyWindow.hpp"
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
@@ -73,7 +73,7 @@ void MyWindow::drawSkels() {
         * Eigen::Vector3d(0.0, 0.0, 0.0);
     Eigen::Vector3d start = poa - mForce / 10.0;
     double len = mForce.norm() / 10.0;
-    dart::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
+    kido::gui::drawArrow3D(start, mForce, len, 0.05, 0.1);
   }
 }
 
