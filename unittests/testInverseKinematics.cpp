@@ -37,9 +37,9 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
-#include "kido/config.h"
-#include "kido/math/Helpers.h"
-#include "TestHelpers.h"
+#include "kido/config.hpp"
+#include "kido/math/Helpers.hpp"
+#include "TestHelpers.hpp"
 
 using namespace Eigen;
 using namespace kido;

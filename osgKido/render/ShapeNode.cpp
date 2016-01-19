@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/render/ShapeNode.h"
-#include "osgKido/EntityNode.h"
+#include "osgKido/render/ShapeNode.hpp"
+#include "osgKido/EntityNode.hpp"
 
 namespace osgKido {
 namespace render {

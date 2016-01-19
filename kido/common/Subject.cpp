@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Subject.h"
-#include "kido/common/Observer.h"
+#include "kido/common/Subject.hpp"
+#include "kido/common/Observer.hpp"
 
 namespace kido {
 namespace common {

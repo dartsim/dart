@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/MetaSkeleton.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/MetaSkeleton.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
 
 namespace kido {
 namespace dynamics {

@@ -36,10 +36,10 @@
 
 #include <iostream>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/optimizer/GradientDescentSolver.h"
-#include "kido/optimizer/Problem.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/optimizer/GradientDescentSolver.hpp"
+#include "kido/optimizer/Problem.hpp"
 
 namespace kido {
 namespace optimizer {

@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/rigidLoop/MyWindow.h"
+#include "apps/rigidLoop/MyWindow.hpp"
 
 using namespace kido;
 using namespace math;

@@ -40,16 +40,16 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/simulation/World.h"
-#include "kido/utils/SkelParser.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
 using namespace Eigen;
 using namespace kido;

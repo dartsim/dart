@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/JacobianNode.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/InverseKinematics.h"
+#include "kido/dynamics/JacobianNode.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/InverseKinematics.hpp"
 
 namespace kido {
 namespace dynamics {

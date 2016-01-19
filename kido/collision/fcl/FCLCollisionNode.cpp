@@ -34,21 +34,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/fcl/FCLCollisionNode.h"
+#include "kido/collision/fcl/FCLCollisionNode.hpp"
 
 #include <assimp/scene.h>
 #include <fcl/shape/geometric_shapes.h>
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/PlaneShape.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/dynamics/SoftMeshShape.h"
-#include "kido/collision/fcl/FCLTypes.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/PlaneShape.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/dynamics/SoftMeshShape.hpp"
+#include "kido/collision/fcl/FCLTypes.hpp"
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \

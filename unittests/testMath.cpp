@@ -36,14 +36,14 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "kido/common/Timer.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/RevoluteJoint.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/simulation/World.h"
+#include "kido/common/Timer.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
 using namespace kido;
 using namespace common;

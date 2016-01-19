@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/integration/Integrator.h"
+#include "kido/integration/Integrator.hpp"
 
 namespace kido {
 namespace integration {

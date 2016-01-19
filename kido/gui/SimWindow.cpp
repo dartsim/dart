@@ -39,20 +39,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/SimWindow.h"
+#include "kido/gui/SimWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "kido/simulation/World.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/constraint/ConstraintSolver.h"
-#include "kido/collision/CollisionDetector.h"
-#include "kido/gui/LoadGlut.h"
-#include "kido/gui/GLFuncs.h"
-#include "kido/utils/FileInfoWorld.h"
-#include "kido/gui/GraphWindow.h"
+#include "kido/simulation/World.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/constraint/ConstraintSolver.hpp"
+#include "kido/collision/CollisionDetector.hpp"
+#include "kido/gui/LoadGlut.hpp"
+#include "kido/gui/GLFuncs.hpp"
+#include "kido/utils/FileInfoWorld.hpp"
+#include "kido/gui/GraphWindow.hpp"
 
 namespace kido {
 namespace gui {

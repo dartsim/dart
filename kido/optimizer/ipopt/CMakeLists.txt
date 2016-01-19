@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 # Library
 kido_add_library(kido-optimizer-ipopt ${srcs} ${hdrs})
@@ -15,13 +15,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
   DESTINATION include/kido/optimizer/ipopt
   COMPONENT headers
 )

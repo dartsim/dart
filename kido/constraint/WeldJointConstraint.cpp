@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/WeldJointConstraint.h"
+#include "kido/constraint/WeldJointConstraint.hpp"
 
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 #include "kido/lcpsolver/lcp.h"
 
 namespace kido {

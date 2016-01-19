@@ -42,9 +42,9 @@
 
 #include <iostream>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/mixedChain/MyWindow.h"
+#include "apps/mixedChain/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

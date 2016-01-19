@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/fcl/FCLTypes.h"
+#include "kido/collision/fcl/FCLTypes.hpp"
 
 namespace kido {
 namespace collision {

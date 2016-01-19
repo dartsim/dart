@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/bullet/BulletTypes.h"
+#include "kido/collision/bullet/BulletTypes.hpp"
 
 namespace kido {
 namespace collision {

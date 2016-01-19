@@ -35,16 +35,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/CollisionDetector.h"
+#include "kido/collision/CollisionDetector.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/collision/CollisionNode.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/collision/CollisionNode.hpp"
 
 namespace kido {
 namespace collision {

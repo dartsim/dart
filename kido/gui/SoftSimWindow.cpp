@@ -40,9 +40,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/SoftSimWindow.h"
+#include "kido/gui/SoftSimWindow.hpp"
 
-#include "kido/gui/LoadGlut.h"
+#include "kido/gui/LoadGlut.hpp"
 
 namespace kido {
 namespace gui {

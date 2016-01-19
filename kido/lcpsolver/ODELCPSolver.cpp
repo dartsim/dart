@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/lcpsolver/ODELCPSolver.h"
+#include "kido/lcpsolver/ODELCPSolver.hpp"
 
 #include <cstdio>
 
-#include "kido/lcpsolver/Lemke.h"
+#include "kido/lcpsolver/Lemke.hpp"
 #include "kido/lcpsolver/lcp.h"
 #include "kido/lcpsolver/misc.h"
 

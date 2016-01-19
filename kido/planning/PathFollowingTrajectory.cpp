@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PathFollowingTrajectory.h"
+#include "PathFollowingTrajectory.hpp"
 #include <limits>
 #include <iostream>
 #include <fstream>

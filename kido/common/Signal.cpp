@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Signal.h"
+#include "kido/common/Signal.hpp"
 
 namespace kido {
 namespace common {

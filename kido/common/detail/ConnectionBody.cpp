@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/detail/ConnectionBody.h"
+#include "kido/common/detail/ConnectionBody.hpp"
 
 namespace kido {
 namespace common {

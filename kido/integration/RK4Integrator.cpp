@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/integration/RK4Integrator.h"
+#include "kido/integration/RK4Integrator.hpp"
 
-#include "kido/math/MathTypes.h"
+#include "kido/math/MathTypes.hpp"
 
 namespace kido {
 namespace integration {

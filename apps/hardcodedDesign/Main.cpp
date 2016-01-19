@@ -45,9 +45,9 @@
  * direction.
  */
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
-#include "apps/hardcodedDesign/MyWindow.h"
+#include "apps/hardcodedDesign/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton

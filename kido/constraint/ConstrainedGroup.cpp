@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/constraint/ConstrainedGroup.h"
+#include "kido/constraint/ConstrainedGroup.hpp"
 
 #include <iostream>
 #include <vector>
 
-#include "kido/common/Console.h"
-#include "kido/constraint/ConstraintBase.h"
-#include "kido/constraint/ConstraintSolver.h"
+#include "kido/common/Console.hpp"
+#include "kido/constraint/ConstraintBase.hpp"
+#include "kido/constraint/ConstraintSolver.hpp"
 
 namespace kido {
 namespace constraint {

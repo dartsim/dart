@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/fcl/FCLCollisionDetector.h"
+#include "kido/collision/fcl/FCLCollisionDetector.hpp"
 
 #include <vector>
 
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/collision/fcl/FCLCollisionNode.h"
-#include "kido/collision/fcl/FCLTypes.h"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/collision/fcl/FCLCollisionNode.hpp"
+#include "kido/collision/fcl/FCLTypes.hpp"
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \

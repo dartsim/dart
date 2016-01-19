@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/PointMass.h"
+#include "kido/dynamics/PointMass.hpp"
 
-#include "kido/common/Console.h"
-#include "kido/math/Geometry.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/renderer/RenderInterface.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/renderer/RenderInterface.hpp"
 
-#include "kido/dynamics/SoftBodyNode.h"
+#include "kido/dynamics/SoftBodyNode.hpp"
 
 using namespace Eigen;
 

@@ -36,9 +36,9 @@
 
 #include <gtest/gtest.h>
 
-#include "kido/common/sub_ptr.h"
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/dynamics/BoxShape.h"
+#include "kido/common/sub_ptr.hpp"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/dynamics/BoxShape.hpp"
 
 using namespace kido;
 using namespace dynamics;

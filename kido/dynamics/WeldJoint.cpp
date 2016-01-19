@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/WeldJoint.h"
+#include "kido/dynamics/WeldJoint.hpp"
 
 #include <string>
 
-#include "kido/math/Helpers.h"
-#include "kido/math/Geometry.h"
+#include "kido/math/Helpers.hpp"
+#include "kido/math/Geometry.hpp"
 
 namespace kido {
 namespace dynamics {

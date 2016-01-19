@@ -34,20 +34,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/DragAndDrop.h"
-#include "osgKido/DefaultEventHandler.h"
-#include "osgKido/Viewer.h"
-#include "osgKido/InteractiveFrame.h"
-#include "osgKido/MouseEventHandler.h"
+#include "osgKido/DragAndDrop.hpp"
+#include "osgKido/DefaultEventHandler.hpp"
+#include "osgKido/Viewer.hpp"
+#include "osgKido/InteractiveFrame.hpp"
+#include "osgKido/MouseEventHandler.hpp"
 
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/MeshShape.h"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/MeshShape.hpp"
 
-#include "kido/math/Helpers.h"
+#include "kido/math/Helpers.hpp"
 
 namespace osgKido {
 

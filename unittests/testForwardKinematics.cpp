@@ -36,9 +36,9 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "kido/utils/urdf/KidoLoader.h"
+#include "kido/utils/urdf/KidoLoader.hpp"
 
 std::vector<size_t> twoLinkIndices;
 

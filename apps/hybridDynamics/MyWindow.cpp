@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.h"
+#include "MyWindow.hpp"
 
 //==============================================================================
 MyWindow::MyWindow()

@@ -39,18 +39,18 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include "osgKido/Viewer.h"
-#include "osgKido/TrackballManipulator.h"
-#include "osgKido/DefaultEventHandler.h"
-#include "osgKido/DragAndDrop.h"
-#include "osgKido/WorldNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/Viewer.hpp"
+#include "osgKido/TrackballManipulator.hpp"
+#include "osgKido/DefaultEventHandler.hpp"
+#include "osgKido/DragAndDrop.hpp"
+#include "osgKido/WorldNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/simulation/World.h"
+#include "kido/simulation/World.hpp"
 
-#include "kido/dynamics/SimpleFrame.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/SimpleFrame.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BodyNode.hpp"
 
 namespace osgKido
 {

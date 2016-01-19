@@ -35,21 +35,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
 
 #include <algorithm>
 #include <cmath>
 
 #include <fcl/collision.h>
 
-#include "kido/renderer/LoadOpengl.h"
-#include "kido/math/Helpers.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/PointMass.h"
-#include "kido/collision/CollisionNode.h"
-#include "kido/collision/fcl_mesh/CollisionShapes.h"
-#include "kido/collision/fcl_mesh/FCLMeshCollisionNode.h"
+#include "kido/renderer/LoadOpengl.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/PointMass.hpp"
+#include "kido/collision/CollisionNode.hpp"
+#include "kido/collision/fcl_mesh/CollisionShapes.hpp"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionNode.hpp"
 
 namespace kido {
 namespace collision {

@@ -40,14 +40,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/gui/GraphWindow.h"
+#include "kido/gui/GraphWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "kido/gui/GLFuncs.h"
-#include "kido/gui/LoadGlut.h"
+#include "kido/gui/GLFuncs.hpp"
+#include "kido/gui/LoadGlut.hpp"
 
 namespace kido {
 namespace gui {

@@ -37,17 +37,17 @@
 #include <iostream>
 #include <assimp/cimport.h>
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/MeshShape.h"
-#include "kido/dynamics/LineSegmentShape.h"
-#include "kido/renderer/LoadOpengl.h"
-#include "kido/renderer/OpenGLRenderInterface.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/dynamics/LineSegmentShape.hpp"
+#include "kido/renderer/LoadOpengl.hpp"
+#include "kido/renderer/OpenGLRenderInterface.hpp"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj *quadObj;

@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/EndEffector.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/EndEffector.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace dynamics {

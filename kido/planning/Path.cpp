@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Path.h"
+#include "Path.hpp"
 #include <iostream>
 #include <vector>
 #include <algorithm>

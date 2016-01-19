@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Node.h"
-#include "kido/dynamics/BodyNode.h"
+#include "kido/dynamics/Node.hpp"
+#include "kido/dynamics/BodyNode.hpp"
 
 #define REPORT_INVALID_NODE( func )                                          \
   dterr << "[Node::" #func "] This Node was not constructed correctly. It "  \

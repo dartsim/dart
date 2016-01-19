@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/TrackballManipulator.h"
+#include "osgKido/TrackballManipulator.hpp"
 
 namespace osgKido
 {

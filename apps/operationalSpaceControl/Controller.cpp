@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/operationalSpaceControl/Controller.h"
+#include "apps/operationalSpaceControl/Controller.hpp"
 
 //==============================================================================
 Controller::Controller(kido::dynamics::SkeletonPtr _robot,

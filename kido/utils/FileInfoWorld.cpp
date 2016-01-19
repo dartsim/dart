@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/FileInfoWorld.h"
+#include "kido/utils/FileInfoWorld.hpp"
 
 #include <fstream>
 #include <string>
 
-#include "kido/simulation/Recording.h"
+#include "kido/simulation/Recording.hpp"
 
 namespace kido {
 namespace utils {

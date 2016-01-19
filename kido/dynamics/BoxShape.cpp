@@ -36,8 +36,8 @@
  */
 
 #include <cmath>
-#include "kido/dynamics/BoxShape.h"
-#include "kido/renderer/RenderInterface.h"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/renderer/RenderInterface.hpp"
 
 namespace kido {
 namespace dynamics {

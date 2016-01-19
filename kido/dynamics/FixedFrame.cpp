@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "FixedFrame.h"
+#include "FixedFrame.hpp"
 
 namespace kido {
 namespace dynamics {

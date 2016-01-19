@@ -34,19 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/collision/bullet/BulletCollisionNode.h"
+#include "kido/collision/bullet/BulletCollisionNode.hpp"
 
 #include <iostream>
 
 #include <assimp/scene.h>
 
-#include "kido/collision/bullet/BulletTypes.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/PlaneShape.h"
-#include "kido/dynamics/MeshShape.h"
+#include "kido/collision/bullet/BulletTypes.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/PlaneShape.hpp"
+#include "kido/dynamics/MeshShape.hpp"
 
 namespace kido {
 namespace collision {

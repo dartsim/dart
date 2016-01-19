@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Timer.h"
+#include "kido/common/Timer.hpp"
 
 #include <ctime>
 #include <iostream>

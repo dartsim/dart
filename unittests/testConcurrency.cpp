@@ -39,9 +39,9 @@
 
 #include <gtest/gtest.h>
 
-#include "kido/simulation/World.h"
+#include "kido/simulation/World.hpp"
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
 using namespace kido;
 using namespace dynamics;
@@ -51,14 +51,14 @@ void createAndDestroyFrames(int threadNum)
 {
   for(size_t i=0; i < 100; ++i)
   {
-    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
-    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0u);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0u);
 
     SimpleFrame someFrame(Frame::World(),
                           "Frame_"+std::to_string(threadNum)+std::to_string(i));
 
-    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
-    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0u);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0u);
   }
 }
 
@@ -73,13 +73,13 @@ TEST(Concurrency, FrameDeletion)
 
   for(size_t i=0; i < futures.size(); ++i)
   {
-    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
-    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0u);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0u);
     futures[i].get();
   }
 
-  EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
-  EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+  EXPECT_EQ(Frame::World()->getNumChildEntities(), 0u);
+  EXPECT_EQ(Frame::World()->getNumChildFrames(), 0u);
 }
 
 //==============================================================================

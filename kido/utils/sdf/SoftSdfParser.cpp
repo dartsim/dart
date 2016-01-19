@@ -34,36 +34,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/utils/sdf/SoftSdfParser.h"
+#include "kido/utils/sdf/SoftSdfParser.hpp"
 
 #include <map>
 #include <iostream>
 #include <fstream>
 
-#include "kido/common/Console.h"
-#include "kido/collision/kido/KIDOCollisionDetector.h"
-#include "kido/collision/fcl/FCLCollisionDetector.h"
-// #include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "kido/dynamics/Shape.h"
-#include "kido/dynamics/BoxShape.h"
-#include "kido/dynamics/CylinderShape.h"
-#include "kido/dynamics/EllipsoidShape.h"
-#include "kido/dynamics/WeldJoint.h"
-#include "kido/dynamics/RevoluteJoint.h"
-#include "kido/dynamics/PrismaticJoint.h"
-#include "kido/dynamics/TranslationalJoint.h"
-#include "kido/dynamics/BallJoint.h"
-#include "kido/dynamics/FreeJoint.h"
-#include "kido/dynamics/ScrewJoint.h"
-#include "kido/dynamics/UniversalJoint.h"
-#include "kido/simulation/World.h"
-#include "kido/utils/SkelParser.h"
+#include "kido/common/Console.hpp"
+#include "kido/collision/kido/KIDOCollisionDetector.hpp"
+#include "kido/collision/fcl/FCLCollisionDetector.hpp"
+// #include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
+#include "kido/dynamics/Shape.hpp"
+#include "kido/dynamics/BoxShape.hpp"
+#include "kido/dynamics/CylinderShape.hpp"
+#include "kido/dynamics/EllipsoidShape.hpp"
+#include "kido/dynamics/WeldJoint.hpp"
+#include "kido/dynamics/RevoluteJoint.hpp"
+#include "kido/dynamics/PrismaticJoint.hpp"
+#include "kido/dynamics/TranslationalJoint.hpp"
+#include "kido/dynamics/BallJoint.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
+#include "kido/dynamics/ScrewJoint.hpp"
+#include "kido/dynamics/UniversalJoint.hpp"
+#include "kido/simulation/World.hpp"
+#include "kido/utils/SkelParser.hpp"
 
-#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "kido/dynamics/SoftMeshShape.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/simulation/World.h"
+#include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
+#include "kido/dynamics/SoftMeshShape.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/simulation/World.hpp"
 
 namespace kido {
 namespace utils {

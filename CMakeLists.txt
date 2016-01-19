@@ -557,8 +557,8 @@ message(STATUS "[ Configured files ]")
 
 # Generate the kido config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/kido/config.h.in)
-set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/kido/config.h)
+set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/kido/config.hpp.in)
+set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/kido/config.hpp)
 message(STATUS ${KIDO_CONFIG_OUT})
 configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
 install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/kido)

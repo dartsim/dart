@@ -35,16 +35,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/Joint.h"
+#include "kido/dynamics/Joint.hpp"
 
 #include <string>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/renderer/RenderInterface.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/renderer/RenderInterface.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace dynamics {

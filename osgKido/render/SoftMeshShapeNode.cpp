@@ -37,12 +37,12 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
-#include "osgKido/render/SoftMeshShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/SoftMeshShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/SoftMeshShape.h"
-#include "kido/dynamics/SoftBodyNode.h"
-#include "kido/dynamics/PointMass.h"
+#include "kido/dynamics/SoftMeshShape.hpp"
+#include "kido/dynamics/SoftBodyNode.hpp"
+#include "kido/dynamics/PointMass.hpp"
 
 namespace osgKido {
 namespace render {

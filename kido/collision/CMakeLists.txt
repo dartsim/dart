@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 # Add subdirectories
 add_subdirectory(kido)
@@ -33,12 +33,12 @@ kido_get_filename_components(header_names "collision headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  kido/kido.h
-  fcl/fcl.h
-  fcl_mesh/fcl_mesh.h
+  kido/kido.hpp
+  fcl/fcl.hpp
+  fcl_mesh/fcl_mesh.hpp
 )
 if(HAVE_BULLET_COLLISION)
-  set(header_names ${header_names} bullet/bullet.h)
+  set(header_names ${header_names} bullet/bullet.hpp)
 endif()
 kido_generate_include_header_list(
   collision_headers
@@ -47,13 +47,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/collision.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/collision.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
   DESTINATION include/kido/collision
   COMPONENT headers
 )

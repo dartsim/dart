@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/common/Console.h"
-#include "kido/dynamics/Group.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/Joint.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.hpp"
+#include "kido/dynamics/Group.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/Joint.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
 
 namespace kido {
 namespace dynamics {

@@ -41,23 +41,23 @@
 #include <sstream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "TestHelpers.h"
-#include "kido/config.h"
-#include "kido/common/Console.h"
-#include "kido/optimizer/Function.h"
-#include "kido/optimizer/Problem.h"
-#include "kido/optimizer/GradientDescentSolver.h"
-#include "kido/dynamics/Skeleton.h"
-#include "kido/dynamics/FreeJoint.h"
-#include "kido/dynamics/InverseKinematics.h"
+#include "TestHelpers.hpp"
+#include "kido/config.hpp"
+#include "kido/common/Console.hpp"
+#include "kido/optimizer/Function.hpp"
+#include "kido/optimizer/Problem.hpp"
+#include "kido/optimizer/GradientDescentSolver.hpp"
+#include "kido/dynamics/Skeleton.hpp"
+#include "kido/dynamics/FreeJoint.hpp"
+#include "kido/dynamics/InverseKinematics.hpp"
 #ifdef HAVE_NLOPT
-  #include "kido/optimizer/nlopt/NloptSolver.h"
+  #include "kido/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #ifdef HAVE_IPOPT
-  #include "kido/optimizer/ipopt/IpoptSolver.h"
+  #include "kido/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #ifdef HAVE_SNOPT
-  #include "kido/optimizer/snopt/SnoptSolver.h"
+  #include "kido/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;

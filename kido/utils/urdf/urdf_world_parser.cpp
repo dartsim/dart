@@ -34,7 +34,7 @@
 
 /* Author: A. Huaman */
 
-#include "urdf_world_parser.h"
+#include "urdf_world_parser.hpp"
 
 #include <fstream>
 #include <sstream>
@@ -48,7 +48,7 @@
 #include <urdf_world/world.h>
 #include <urdf_model/pose.h>
 
-#include "kido/common/Console.h"
+#include "kido/common/Console.hpp"
 
 const bool debug = false;
 

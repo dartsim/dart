@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 set(kido_gui_hdrs ${hdrs} PARENT_SCOPE)
 set(kido_gui_srcs ${srcs} PARENT_SCOPE)
@@ -23,13 +23,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/gui.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/gui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gui.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
   DESTINATION include/kido/gui
   COMPONENT headers
 )

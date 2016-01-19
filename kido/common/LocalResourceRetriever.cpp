@@ -36,10 +36,10 @@
 
 #include <iostream>
 #include <fstream>
-#include "kido/common/Console.h"
-#include "kido/common/Uri.h"
-#include "LocalResourceRetriever.h"
-#include "LocalResource.h"
+#include "kido/common/Console.hpp"
+#include "kido/common/Uri.hpp"
+#include "LocalResourceRetriever.hpp"
+#include "LocalResource.hpp"
 
 namespace kido {
 namespace common {

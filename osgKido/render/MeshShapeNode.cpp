@@ -41,11 +41,11 @@
 #include <osg/Geometry>
 #include <osg/CullFace>
 
-#include "osgKido/render/MeshShapeNode.h"
-#include "osgKido/Utils.h"
+#include "osgKido/render/MeshShapeNode.hpp"
+#include "osgKido/Utils.hpp"
 
-#include "kido/dynamics/MeshShape.h"
-#include "kido/common/Console.h"
+#include "kido/dynamics/MeshShape.hpp"
+#include "kido/common/Console.hpp"
 
 namespace osgKido {
 namespace render {

@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 set(kido_utils_hdrs ${kido_utils_hdrs} ${hdrs} PARENT_SCOPE)
 set(kido_utils_srcs ${kido_utils_srcs} ${srcs} PARENT_SCOPE)
@@ -18,13 +18,13 @@ kido_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/sdf.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/sdf.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/sdf.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/sdf.hpp
   DESTINATION include/kido/utils/sdf
   COMPONENT headers
 )

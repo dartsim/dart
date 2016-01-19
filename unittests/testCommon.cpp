@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-#include "kido/common/Timer.h"
+#include "kido/common/Timer.hpp"
 
 using namespace kido::common;
 

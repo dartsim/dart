@@ -37,7 +37,7 @@
 #include <numeric>
 #include <gtest/gtest.h>
 
-#include "kido/kido.h"
+#include "kido/kido.hpp"
 
 using namespace std;
 using namespace Eigen;

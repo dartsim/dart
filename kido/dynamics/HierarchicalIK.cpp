@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/DegreeOfFreedom.h"
-#include "kido/dynamics/HierarchicalIK.h"
-#include "kido/dynamics/BodyNode.h"
-#include "kido/dynamics/EndEffector.h"
-#include "kido/dynamics/Skeleton.h"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
+#include "kido/dynamics/HierarchicalIK.hpp"
+#include "kido/dynamics/BodyNode.hpp"
+#include "kido/dynamics/EndEffector.hpp"
+#include "kido/dynamics/Skeleton.hpp"
 
 namespace kido {
 namespace dynamics {

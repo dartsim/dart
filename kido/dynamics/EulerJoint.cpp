@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "kido/dynamics/EulerJoint.h"
+#include "kido/dynamics/EulerJoint.hpp"
 
 #include <string>
 
-#include "kido/common/Console.h"
-#include "kido/math/Helpers.h"
-#include "kido/math/Geometry.h"
-#include "kido/dynamics/DegreeOfFreedom.h"
+#include "kido/common/Console.hpp"
+#include "kido/math/Helpers.hpp"
+#include "kido/math/Geometry.hpp"
+#include "kido/dynamics/DegreeOfFreedom.hpp"
 
 namespace kido {
 namespace dynamics {
