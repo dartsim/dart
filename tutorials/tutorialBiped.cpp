@@ -406,15 +406,20 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
                            getIndexInSkeleton(), -0.8);
         
 
+	//get positions for all generalized coordinates
         Eigen::VectorXd newPose = biped->getPositions();
         BodyNodePtr leftHeel = biped->getBodyNode("h_heel_left");
         BodyNodePtr leftToe = biped->getBodyNode("h_toe_left");
         double initialHeight = -0.8;
 
-        for(size_t i = 0; i < default_ik_iterations; ++i)
+	for(size_t i = 0; i < default_ik_iterations; ++i)
         {
-          Eigen::Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
+          //deviation between center of mass and center of pressure
+	  Eigen::Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
+	  // center of pressure in the left heel reference frame
           Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
+	  //Linear jacobian difference  c_dot - p_dot
+	  //LinearJacobian is a 3 by dynamic matrix
           LinearJacobian jacobian = biped->getCOMLinearJacobian() -
               biped->getLinearJacobian(leftHeel, localCOM);
           
@@ -430,6 +435,7 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
           
           // Position constraint on four (approximated) corners of the left foot
           Eigen::Vector3d offset(0.0, -0.04, -0.03);
+	  //leftHeel->getTransform() compute the BodyNode w.r.t the world frame
           error = (leftHeel->getTransform() * offset)[1] - initialHeight;
           gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
           newDirection += -0.2 * error * gradient;
@@ -451,6 +457,7 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
           
           newPose += newDirection;
           biped->setPositions(newPose);
+	  //request updating forward kinematics
           biped->computeForwardKinematics(true, false, false);
         }
 
