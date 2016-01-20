@@ -10,7 +10,7 @@ usr/include/kido/math/*
 usr/include/kido/optimizer/*
 usr/include/kido/renderer/*
 usr/include/kido/simulation/*
-usr/share/kidocore/KIDOConfig.cmake
-usr/share/kidocore/KIDOConfigVersion.cmake
-usr/share/kidocore/KIDOTargets.cmake
+usr/share/kido/KIDOConfig.cmake
+usr/share/kido/KIDOConfigVersion.cmake
+usr/share/kido/KIDOTargets.cmake
 usr/lib/libkido.so
