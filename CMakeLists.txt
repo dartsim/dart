@@ -69,7 +69,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON)
+option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON) # TODO(JS): we probably should remove this option or add another build options for other extensions as well for consistency.
 option(KIDO_BUILD_EXAMPLES "Build examples" ON)
 option(KIDO_BUILD_TUTORIALS "Build tutorials" ON)
 option(KIDO_BUILD_UNITTESTS "Build unit tests" ON)
