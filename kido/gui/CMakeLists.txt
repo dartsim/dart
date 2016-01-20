@@ -4,6 +4,11 @@ file(GLOB hdrs "*.hpp")
 
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
+# Add subdirectories
+if(HAVE_OPENSCENEGRAPH)
+  add_subdirectory(osgKido)
+endif(HAVE_OPENSCENEGRAPH)
+
 # Library
 kido_add_library(kido-gui ${srcs} ${hdrs})
 target_link_libraries(kido-gui kido kido-utils ${GLUT_LIBRARY})
