@@ -4,33 +4,22 @@ find_package(OpenSceneGraph 3.0 QUIET
 
 if(${OPENSCENEGRAPH_FOUND})
 
-  message(STATUS "Found OpenSceneGraph -- Building osgKido")
+  message(STATUS "Found OpenSceneGraph ${OPENSCENEGRAPH_VERSION} -- Building osgKido")
 
-  # Generate the KIDO CMake Config and version files
-  include(WriteBasicConfigVersionFile)
-  set(osgKido_VERSION ${KIDO_VERSION}) # TODO(JS): need different version from KIDO?
-  set(osgKido_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/osgKidoConfig.cmake.in)
-  set(osgKido_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/osgKidoConfig.cmake)
-  message(STATUS ${osgKido_CONFIG_OUT})
-  message(STATUS ${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake)
-  configure_file(${osgKido_CONFIG_IN} ${osgKido_CONFIG_OUT} @ONLY)
-  write_basic_config_version_file(${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake VERSION ${osgKido_VERSION} COMPATIBILITY SameMajorVersion)
-  install(FILES ${osgKido_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake DESTINATION share/osgKido)
+  include_directories(SYSTEM ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
-  include_directories(${OpenSceneGraph_INCLUDE_DIRS})
+  file(GLOB srcs "*.cpp" "render/*.cpp" "render/*.hpp")
+  file(GLOB hdrs "*.hpp")
 
-  file(GLOB osgKido_srcs "*.cpp" "render/*.cpp" "render/*.hpp")
-  file(GLOB osgKido_hdrs "*.hpp")
+  kido_add_library(kido-gui-osg ${srcs} ${hdrs})
+  target_link_libraries(kido-gui-osg kido kido-utils ${OPENSCENEGRAPH_LIBRARIES})
 
-  kido_add_library(osgKido ${osgKido_srcs} ${osgKido_hdrs})
-  target_link_libraries(osgKido kido kido-utils ${OPENSCENEGRAPH_LIBRARIES})
-
-  kido_get_filename_components(header_names "osgKido headers" ${osgKido_hdrs})
+  kido_get_filename_components(header_names "gui-osg headers" ${hdrs})
   list(APPEND header_names "render/render.hpp")
   kido_generate_include_header_list(
-    osgKido_headers
+    gui_osg_headers
     "osgKido/"
-    "osgKido headers"
+    "gui-osg headers"
     ${header_names}
   )
   configure_file(
@@ -50,8 +39,7 @@ if(${OPENSCENEGRAPH_FOUND})
     COMPONENT headers
   )
 
-  install(TARGETS osgKido EXPORT osgKidoTargets DESTINATION lib)
-  install(EXPORT osgKidoTargets DESTINATION share/osgKido)
+  install(TARGETS kido-gui-osg EXPORT KIDOTargets DESTINATION lib)
 
 else(${OPENSCENEGRAPH_FOUND})
 
