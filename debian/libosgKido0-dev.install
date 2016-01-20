@@ -1,2 +1,2 @@
-usr/include/osgKido/*
-usr/lib/libosgKido.so
+usr/include/kido/gui/osg/*
+usr/lib/libkido-gui-osg.so
