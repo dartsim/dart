@@ -1,0 +1,36 @@
+###############################################################################
+# Config file for KIDO
+#
+# This sets the following variables:
+# osgKido_INCLUDE_DIRS - Directories containing the KIDO include files.
+# osgKido_LIBRARIES    - Libraries needed to use KIDO.
+# osgKido_LIBRARY_DIRS - Directories that contain the KIDO libraries.
+# osgKido_VERSION      - KIDO version.
+
+#===============================================================================
+# osgKido_INCLUDE_DIRS
+#===============================================================================
+set(osgKido_INCLUDE_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include"
+    "@OpenSceneGraph_INCLUDE_DIRS@")
+
+#===============================================================================
+# osgKido_LIBRARY_DIRS
+#===============================================================================
+set(osgKido_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib")
+
+#===============================================================================
+# osgKido_LIBRARIES
+#===============================================================================
+get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include("${CURRENT_DIR}/osgKidoTargets.cmake")
+# Return absolute path of the library instead of just library name as
+# recommended in CMake documentation:
+# http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
+find_library(osgKido_location NAMES "osgKido" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
+set(osgKido_LIBRARIES "${osgKido_location}")
+
+#===============================================================================
+# osgKido_VERSION
+#===============================================================================
+set(osgKido_VERSION @osgKido_VERSION@)

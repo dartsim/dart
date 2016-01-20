@@ -6,6 +6,17 @@ if(${OPENSCENEGRAPH_FOUND})
 
   message(STATUS "Found OpenSceneGraph -- Building osgKido")
 
+  # Generate the KIDO CMake Config and version files
+  include(WriteBasicConfigVersionFile)
+  set(osgKido_VERSION ${KIDO_VERSION}) # TODO(JS): need different version from KIDO?
+  set(osgKido_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/osgKidoConfig.cmake.in)
+  set(osgKido_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/osgKidoConfig.cmake)
+  message(STATUS ${osgKido_CONFIG_OUT})
+  message(STATUS ${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake)
+  configure_file(${osgKido_CONFIG_IN} ${osgKido_CONFIG_OUT} @ONLY)
+  write_basic_config_version_file(${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake VERSION ${osgKido_VERSION} COMPATIBILITY SameMajorVersion)
+  install(FILES ${osgKido_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/osgKidoConfigVersion.cmake DESTINATION share/osgKido)
+
   include_directories(${OpenSceneGraph_INCLUDE_DIRS})
 
   file(GLOB osgKido_srcs "*.cpp" "render/*.cpp" "render/*.hpp")
@@ -39,7 +50,8 @@ if(${OPENSCENEGRAPH_FOUND})
     COMPONENT headers
   )
 
-  install(TARGETS osgKido EXPORT KIDOTargets DESTINATION lib)
+  install(TARGETS osgKido EXPORT osgKidoTargets DESTINATION lib)
+  install(EXPORT osgKidoTargets DESTINATION share/osgKido)
 
 else(${OPENSCENEGRAPH_FOUND})
 

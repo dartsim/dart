@@ -549,7 +549,7 @@ set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOConfig.cmake)
 message(STATUS ${KIDO_CONFIG_OUT})
 message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
 configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+write_basic_config_version_file(${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
 install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/kido)
 
 # Generate the KIDO pkg-config
