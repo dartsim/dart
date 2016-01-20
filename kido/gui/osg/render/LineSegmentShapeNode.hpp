@@ -39,15 +39,15 @@
 
 #include <osg/MatrixTransform>
 
-#include "osgKido/render/ShapeNode.hpp"
+#include "kido/gui/osg/render/ShapeNode.hpp"
 
 namespace kido {
+
 namespace dynamics {
 class LineSegmentShape;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido {
+namespace gui {
 namespace render {
 
 class LineSegmentShapeGeode;
@@ -73,6 +73,7 @@ protected:
 };
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_RENDER_LINESEGMENTSHAPENODE_HPP

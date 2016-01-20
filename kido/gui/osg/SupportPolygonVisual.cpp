@@ -42,7 +42,8 @@
 
 #include "SupportPolygonVisual.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(const kido::dynamics::SkeletonPtr& skeleton,
@@ -399,4 +400,5 @@ void SupportPolygonVisual::initialize()
   addChild(mComNode);
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

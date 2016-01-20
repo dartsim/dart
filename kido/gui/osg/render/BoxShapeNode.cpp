@@ -37,12 +37,13 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgKido/render/BoxShapeNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/render/BoxShapeNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/BoxShape.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class BoxShapeGeode : public ShapeNode, public osg::Geode
@@ -208,4 +209,5 @@ BoxShapeDrawable::~BoxShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

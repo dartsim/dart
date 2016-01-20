@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/TrackballManipulator.hpp"
+#include "kido/gui/osg/TrackballManipulator.hpp"
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
@@ -77,4 +77,5 @@ bool TrackballManipulator::performMovementRightMouseButton(
         eventTimeDelta, dx, dy);
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

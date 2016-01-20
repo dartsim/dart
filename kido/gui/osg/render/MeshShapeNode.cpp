@@ -41,13 +41,14 @@
 #include <osg/Geometry>
 #include <osg/CullFace>
 
-#include "osgKido/render/MeshShapeNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/render/MeshShapeNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/MeshShape.hpp"
 #include "kido/common/Console.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class osgAiNode : public ShapeNode, public osg::MatrixTransform
@@ -684,5 +685,6 @@ MeshShapeGeometry::~MeshShapeGeometry()
   // Do nothing
 }
 
-} // render
-} // osgKido
+} // namespace render
+} // namespace gui
+} // namespace kido

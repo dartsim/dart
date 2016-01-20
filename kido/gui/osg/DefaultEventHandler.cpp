@@ -36,20 +36,20 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include "osgKido/DefaultEventHandler.hpp"
-#include "osgKido/MouseEventHandler.hpp"
-#include "osgKido/Viewer.hpp"
-#include "osgKido/render/ShapeNode.hpp"
-#include "osgKido/EntityNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/DefaultEventHandler.hpp"
+#include "kido/gui/osg/MouseEventHandler.hpp"
+#include "kido/gui/osg/Viewer.hpp"
+#include "kido/gui/osg/render/ShapeNode.hpp"
+#include "kido/gui/osg/EntityNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/Entity.hpp"
 
 
 #include <iostream>
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -442,4 +442,5 @@ void DefaultEventHandler::handleDestructionNotification(
     mMouseEventHandlers.erase(it);
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

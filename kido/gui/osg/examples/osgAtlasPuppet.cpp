@@ -34,8 +34,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/osgKido.hpp"
-
 #include "kido/kido.hpp"
 
 using namespace kido::common;
@@ -134,7 +132,7 @@ protected:
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public osgKido::WorldNode
+class TeleoperationWorld : public kido::gui::WorldNode
 {
 public:
 
@@ -153,7 +151,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : osgKido::WorldNode(_world),
+    : kido::gui::WorldNode(_world),
       mAtlas(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -267,7 +265,7 @@ class InputHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(osgKido::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(kido::gui::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& atlas, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -462,7 +460,7 @@ public:
 
 protected:
 
-  osgKido::Viewer* mViewer;
+  kido::gui::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -592,7 +590,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the left hand
-  osgKido::InteractiveFramePtr lh_target(new osgKido::InteractiveFrame(
+  kido::gui::InteractiveFramePtr lh_target(new kido::gui::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   // Set the target of the left hand to the interactive frame. We pass true into
@@ -628,7 +626,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the right hand
-  osgKido::InteractiveFramePtr rh_target(new osgKido::InteractiveFrame(
+  kido::gui::InteractiveFramePtr rh_target(new kido::gui::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   // Create the right hand's IK and set its target
@@ -678,7 +676,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the left foot
-  osgKido::InteractiveFramePtr lf_target(new osgKido::InteractiveFrame(
+  kido::gui::InteractiveFramePtr lf_target(new kido::gui::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   // Create the left foot's IK and set its target
@@ -707,7 +705,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the right foot
-  osgKido::InteractiveFramePtr rf_target(new osgKido::InteractiveFrame(
+  kido::gui::InteractiveFramePtr rf_target(new kido::gui::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   // Create the right foot's IK module and set its target
@@ -818,7 +816,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
-void enableDragAndDrops(osgKido::Viewer& viewer, const SkeletonPtr& atlas)
+void enableDragAndDrops(kido::gui::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < atlas->getNumBodyNodes(); ++i)
@@ -831,7 +829,7 @@ void enableDragAndDrops(osgKido::Viewer& viewer, const SkeletonPtr& atlas)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<osgKido::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<kido::gui::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -855,7 +853,7 @@ int main()
 
   osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, atlas);
 
-  osgKido::Viewer viewer;
+  kido::gui::Viewer viewer;
 
   // Prevent this World from simulating
   viewer.allowSimulation(false);
@@ -867,7 +865,7 @@ int main()
   enableDragAndDrops(viewer, atlas);
 
   // Attach a support polygon visualizer
-  viewer.addAttachment(new osgKido::SupportPolygonVisual(
+  viewer.addAttachment(new kido::gui::SupportPolygonVisual(
                          atlas, display_elevation));
 
   // Print out instructions for the viewer

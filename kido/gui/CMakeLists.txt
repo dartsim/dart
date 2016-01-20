@@ -6,7 +6,7 @@ include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
 # Add subdirectories
 if(HAVE_OPENSCENEGRAPH)
-  add_subdirectory(osgKido)
+  add_subdirectory(osg)
 endif(HAVE_OPENSCENEGRAPH)
 
 # Library
@@ -15,6 +15,7 @@ target_link_libraries(kido-gui kido kido-utils ${GLUT_LIBRARY})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "gui headers" ${hdrs})
+list(APPEND header_names "osg/osg.hpp")
 kido_generate_include_header_list(
   gui_headers
   "kido/gui/"

@@ -34,8 +34,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/osgKido.hpp"
-
 #include "kido/kido.hpp"
 
 using namespace kido::dynamics;
@@ -47,7 +45,7 @@ int main()
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.translation() = Eigen::Vector3d(4,-4,0);
-  osgKido::InteractiveFramePtr frame(new osgKido::InteractiveFrame(
+  kido::gui::InteractiveFramePtr frame(new kido::gui::InteractiveFrame(
           Frame::World(), "interactive frame", tf, 2.0));
   world->addSimpleFrame(frame);
 
@@ -82,9 +80,9 @@ int main()
   world->addSimpleFrame(z_marker);
 
 
-  osg::ref_ptr<osgKido::WorldNode> node = new osgKido::WorldNode(world);
+  osg::ref_ptr<kido::gui::WorldNode> node = new kido::gui::WorldNode(world);
 
-  osgKido::Viewer viewer;
+  kido::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.enableDragAndDrop(frame.get());
   viewer.enableDragAndDrop(draggable.get());

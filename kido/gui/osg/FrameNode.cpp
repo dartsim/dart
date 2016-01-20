@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/FrameNode.hpp"
-#include "osgKido/EntityNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/FrameNode.hpp"
+#include "kido/gui/osg/EntityNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/Frame.hpp"
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 FrameNode::FrameNode(kido::dynamics::Frame* _frame, WorldNode* _worldNode,
                      bool _relative, bool _recursive)
@@ -212,4 +212,5 @@ void FrameNode::createEntityNode(kido::dynamics::Entity* _entity)
   addChild(node);
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

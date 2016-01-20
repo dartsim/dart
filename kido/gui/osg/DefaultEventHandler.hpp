@@ -49,13 +49,13 @@
 #include "kido/common/Observer.hpp"
 
 namespace kido {
+
 namespace dynamics {
 class Entity;
 class Shape;
 } // dynamics
-} // kido
 
-namespace osgKido
+namespace gui
 {
 
 struct PickInfo
@@ -198,7 +198,7 @@ protected:
   virtual void handleDestructionNotification(
       const kido::common::Subject* _subject) override;
 
-  /// osgKido::Viewer that this event handler is tied to
+  /// kido::gui::Viewer that this event handler is tied to
   Viewer* mViewer;
 
   /// Set of MouseEventHandlers that are tied to this DefaultEventHandler
@@ -231,6 +231,7 @@ protected:
 
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_DEFAULTEVENTHANDLER_HPP

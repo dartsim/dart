@@ -47,19 +47,18 @@
 #include "DefaultEventHandler.hpp"
 
 namespace kido {
+
 namespace dynamics {
 class SimpleFrame;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido
-{
+namespace gui {
 
 class Viewer;
 class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of kido
-/// Entities to be dragged and dropped in an osgKido environment
+/// Entities to be dragged and dropped in an kido-gui-osg environment
 class DragAndDrop : public kido::common::Subject,
                     public kido::common::Observer
 {
@@ -245,7 +244,7 @@ class InteractiveFrameDnD : public DragAndDrop
 public:
 
   /// Constructor
-  InteractiveFrameDnD(Viewer* viewer, osgKido::InteractiveFrame* frame);
+  InteractiveFrameDnD(Viewer* viewer, kido::gui::InteractiveFrame* frame);
 
   /// Virtual destructor
   virtual ~InteractiveFrameDnD() = default;
@@ -357,7 +356,7 @@ protected:
   size_t mAdditionalBodyNodes;
 };
 
-} // namespace osgKido
-
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_DRAGANDDROP_HPP

@@ -41,7 +41,7 @@
 #include <map>
 #include <memory>
 
-#include "osgKido/Viewer.hpp"
+#include "kido/gui/osg/Viewer.hpp"
 
 namespace kido {
 
@@ -52,12 +52,9 @@ class World;
 namespace dynamics {
 class Frame;
 class Entity;
-}
+} // namespace dynamics
 
-} // namespace kido
-
-namespace osgKido
-{
+namespace gui {
 
 class FrameNode;
 class EntityNode;
@@ -138,9 +135,9 @@ protected:
   /// Destructor
   virtual ~WorldNode();
 
-  /// Called when this world gets added to an osgKido::Viewer. Override this
+  /// Called when this world gets added to an kido::gui::Viewer. Override this
   /// function to customize the way your WorldNode starts up in an
-  /// osgKido::Viewer. Default behavior does nothing.
+  /// kido::gui::Viewer. Default behavior does nothing.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -194,6 +191,7 @@ protected:
 
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_WORLDNODE_HPP

@@ -39,8 +39,8 @@
 
 #include <osgGA/OrbitManipulator>
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 class OSGGA_EXPORT TrackballManipulator : public osgGA::OrbitManipulator
 {
@@ -65,10 +65,11 @@ public:
                                                const double dx,
                                                const double dy) override;
 
-  META_Object( osgKido, TrackballManipulator )
-  // TODO(MXG): Consider applying the META macros to every osgKido Node
+  META_Object( kido-gui-osg, TrackballManipulator )
+  // TODO(MXG): Consider applying the META macros to every kido-gui-osg Node
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_TRACKBALLMANIPULATOR_HPP

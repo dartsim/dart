@@ -41,14 +41,13 @@
 #include <map>
 
 namespace kido {
+
 namespace dynamics {
 class Frame;
 class Entity;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido
-{
+namespace gui {
 
 class WorldNode;
 class EntityNode;
@@ -122,6 +121,7 @@ protected:
 
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_FRAMENODE_HPP

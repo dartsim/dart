@@ -40,9 +40,10 @@
 #include <osg/Node>
 #include <memory>
 
-#include "osgKido/render/ShapeNode.hpp"
+#include "kido/gui/osg/render/ShapeNode.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class WarningShapeNode : public ShapeNode, public osg::Node
@@ -61,6 +62,7 @@ protected:
 };
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_RENDER_WARNINGSHAPENODE_HPP

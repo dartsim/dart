@@ -34,16 +34,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/EntityNode.hpp"
-#include "osgKido/render/ShapeNode.hpp"
-#include "osgKido/render/BoxShapeNode.hpp"
-#include "osgKido/render/EllipsoidShapeNode.hpp"
-#include "osgKido/render/CylinderShapeNode.hpp"
-#include "osgKido/render/PlaneShapeNode.hpp"
-#include "osgKido/render/MeshShapeNode.hpp"
-#include "osgKido/render/SoftMeshShapeNode.hpp"
-#include "osgKido/render/LineSegmentShapeNode.hpp"
-#include "osgKido/render/WarningShapeNode.hpp"
+#include "kido/gui/osg/EntityNode.hpp"
+#include "kido/gui/osg/render/ShapeNode.hpp"
+#include "kido/gui/osg/render/BoxShapeNode.hpp"
+#include "kido/gui/osg/render/EllipsoidShapeNode.hpp"
+#include "kido/gui/osg/render/CylinderShapeNode.hpp"
+#include "kido/gui/osg/render/PlaneShapeNode.hpp"
+#include "kido/gui/osg/render/MeshShapeNode.hpp"
+#include "kido/gui/osg/render/SoftMeshShapeNode.hpp"
+#include "kido/gui/osg/render/LineSegmentShapeNode.hpp"
+#include "kido/gui/osg/render/WarningShapeNode.hpp"
 
 #include "kido/common/Console.hpp"
 #include "kido/dynamics/Entity.hpp"
@@ -55,7 +55,8 @@
 #include "kido/dynamics/SoftMeshShape.hpp"
 #include "kido/dynamics/LineSegmentShape.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 
 EntityNode::EntityNode(kido::dynamics::Entity* _entity, FrameNode* _parent)
   : mEntity(_entity),
@@ -156,7 +157,7 @@ void EntityNode::refreshShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
 static void warnAboutUnsuccessfulCast(const std::string& shapeType,
                                       const std::string& entityName)
 {
-  dtwarn << "[osgKido::EntityNode::createShapeNode] A Shape in '" << entityName
+  dtwarn << "[kido::gui::EntityNode::createShapeNode] A Shape in '" << entityName
          << "' claimed to be a '" << shapeType << "' but it failed to be "
          << "dynamically cast to that type. "
          << "It will not be added to the OSG tree, "
@@ -262,4 +263,5 @@ void EntityNode::createShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
   addChild(node->getNode());
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

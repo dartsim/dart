@@ -37,8 +37,6 @@
 
 #include "kido/kido.hpp"
 
-#include "osgKido/osgKido.hpp"
-
 #include <osgViewer/Viewer>
 
 int main()
@@ -48,12 +46,12 @@ int main()
   kido::simulation::WorldPtr world =
       kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/softBodies.skel");
 
-  osg::ref_ptr<osgKido::WorldNode> node = new osgKido::WorldNode(world);
+  osg::ref_ptr<kido::gui::WorldNode> node = new kido::gui::WorldNode(world);
 
   node->simulate(true);
   node->setNumStepsPerCycle(15);
 
-  osgKido::Viewer viewer;
+  kido::gui::Viewer viewer;
   viewer.addWorldNode(node);
 
   std::cout << viewer.getInstructions() << std::endl;

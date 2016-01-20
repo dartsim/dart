@@ -37,12 +37,13 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "osgKido/render/CylinderShapeNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/render/CylinderShapeNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/CylinderShape.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class CylinderShapeGeode : public ShapeNode, public osg::Geode
@@ -214,4 +215,5 @@ CylinderShapeDrawable::~CylinderShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

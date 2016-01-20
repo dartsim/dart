@@ -34,10 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/render/ShapeNode.hpp"
-#include "osgKido/EntityNode.hpp"
+#include "kido/gui/osg/render/ShapeNode.hpp"
+#include "kido/gui/osg/EntityNode.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 ShapeNode::ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
@@ -100,4 +101,5 @@ void ShapeNode::clearUtilization()
 }
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

@@ -43,14 +43,13 @@
 #include <osg/Group>
 
 namespace kido {
+
 namespace dynamics {
 class Entity;
 class Shape;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido
-{
+namespace gui {
 
 namespace render {
 class ShapeNode;
@@ -116,6 +115,7 @@ protected:
 
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_ENTITYNODE_HPP

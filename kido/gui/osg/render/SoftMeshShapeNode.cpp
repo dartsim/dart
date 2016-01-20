@@ -37,14 +37,15 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
-#include "osgKido/render/SoftMeshShapeNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/render/SoftMeshShapeNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/SoftMeshShape.hpp"
 #include "kido/dynamics/SoftBodyNode.hpp"
 #include "kido/dynamics/PointMass.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
@@ -295,4 +296,5 @@ SoftMeshShapeDrawable::~SoftMeshShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

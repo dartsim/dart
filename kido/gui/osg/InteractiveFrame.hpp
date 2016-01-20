@@ -40,13 +40,12 @@
 #include "kido/dynamics/SimpleFrame.hpp"
 
 namespace kido {
+
 namespace dynamics {
 class MeshShape;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido
-{
+namespace gui {
 
 class InteractiveFrame;
 
@@ -145,6 +144,7 @@ protected:
 
 typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_INTERACTIVEFRAME_HPP

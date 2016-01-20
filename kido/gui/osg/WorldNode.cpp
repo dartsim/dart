@@ -36,16 +36,16 @@
 
 #include <osg/NodeCallback>
 
-#include "osgKido/WorldNode.hpp"
-#include "osgKido/FrameNode.hpp"
-#include "osgKido/EntityNode.hpp"
+#include "kido/gui/osg/WorldNode.hpp"
+#include "kido/gui/osg/FrameNode.hpp"
+#include "kido/gui/osg/EntityNode.hpp"
 
 #include "kido/simulation/World.hpp"
 #include "kido/dynamics/Skeleton.hpp"
 #include "kido/dynamics/BodyNode.hpp"
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 class WorldNodeCallback : public osg::NodeCallback
 {
@@ -303,4 +303,5 @@ void WorldNode::createBaseEntityNode(kido::dynamics::Entity* _entity)
   mNodeToEntity[entityNode] = _entity;
 }
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

@@ -38,12 +38,13 @@
 #include <osg/Geometry>
 #include <osg/LineWidth>
 
-#include "osgKido/render/LineSegmentShapeNode.hpp"
-#include "osgKido/Utils.hpp"
+#include "kido/gui/osg/render/LineSegmentShapeNode.hpp"
+#include "kido/gui/osg/Utils.hpp"
 
 #include "kido/dynamics/LineSegmentShape.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 namespace render {
 
 class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
@@ -255,4 +256,5 @@ LineSegmentShapeDrawable::~LineSegmentShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido

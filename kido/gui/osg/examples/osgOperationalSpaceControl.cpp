@@ -35,20 +35,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/osgKido.hpp"
-
 #include "kido/kido.hpp"
 
 using namespace kido::common;
 using namespace kido::dynamics;
 using namespace kido::math;
 
-class OperationalSpaceControlWorld : public osgKido::WorldNode
+class OperationalSpaceControlWorld : public kido::gui::WorldNode
 {
 public:
 
   OperationalSpaceControlWorld(kido::simulation::WorldPtr _world)
-    : osgKido::WorldNode(_world)
+    : kido::gui::WorldNode(_world)
   {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -111,7 +109,7 @@ public:
     mRobot->setForces(mForces);
   }
 
-  osgKido::DragAndDrop* dnd;
+  kido::gui::DragAndDrop* dnd;
 
 protected:
 
@@ -143,7 +141,7 @@ class ConstraintEventHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  ConstraintEventHandler(osgKido::DragAndDrop* dnd = nullptr)
+  ConstraintEventHandler(kido::gui::DragAndDrop* dnd = nullptr)
     : mDnD(dnd)
   {
     clearConstraints();
@@ -249,7 +247,7 @@ public:
 
   bool mConstrained[3];
 
-  kido::sub_ptr<osgKido::DragAndDrop> mDnD;
+  kido::sub_ptr<kido::gui::DragAndDrop> mDnD;
 };
 
 int main()
@@ -296,7 +294,7 @@ int main()
   node->setNumStepsPerCycle(10);
 
   // Create the Viewer instance
-  osgKido::Viewer viewer;
+  kido::gui::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 

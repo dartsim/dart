@@ -34,13 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/InteractiveFrame.hpp"
+#include "kido/gui/osg/InteractiveFrame.hpp"
 #include "kido/dynamics/MeshShape.hpp"
 #include "kido/dynamics/ArrowShape.hpp"
 #include "kido/dynamics/LineSegmentShape.hpp"
 #include "kido/common/Console.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
@@ -515,5 +516,5 @@ void InteractiveFrame::deleteAllTools()
       delete mTools[i][j];
 }
 
-} // namespace osgKido
-
+} // namespace gui
+} // namespace kido

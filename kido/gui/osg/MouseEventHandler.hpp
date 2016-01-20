@@ -40,10 +40,10 @@
 #include "kido/common/Subject.hpp"
 #include "kido/common/Observer.hpp"
 
-#include "osgKido/DefaultEventHandler.hpp"
+#include "kido/gui/osg/DefaultEventHandler.hpp"
 
-namespace osgKido
-{
+namespace kido {
+namespace gui {
 
 class DefaultEventHandler;
 
@@ -72,6 +72,7 @@ protected:
 
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_MOUSEEVENTHANDLER_HPP

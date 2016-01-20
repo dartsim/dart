@@ -41,10 +41,11 @@
 
 #include "kido/dynamics/SmartPointer.hpp"
 
-#include "osgKido/Viewer.hpp"
+#include "kido/gui/osg/Viewer.hpp"
 #include "FrameNode.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 
 /// Attach this to a Viewer in order to visualize the support polygon of a
 /// Skeleton
@@ -196,6 +197,7 @@ protected:
   osg::ref_ptr<FrameNode> mComNode;
 };
 
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_SUPPORTPOLYGONVISUAL_HPP

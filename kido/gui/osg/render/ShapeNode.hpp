@@ -44,12 +44,12 @@ class Node;
 } // namespace osg
 
 namespace kido {
+
 namespace dynamics {
 class Shape;
 } // namespace dynamics
-} // namespace kido
 
-namespace osgKido {
+namespace gui {
 
 class EntityNode;
 
@@ -107,6 +107,7 @@ protected:
 };
 
 } // namespace render
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
 
 #endif // OSGKIDO_RENDER_SHAPEGEODE_HPP

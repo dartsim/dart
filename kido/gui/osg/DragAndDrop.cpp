@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgKido/DragAndDrop.hpp"
-#include "osgKido/DefaultEventHandler.hpp"
-#include "osgKido/Viewer.hpp"
-#include "osgKido/InteractiveFrame.hpp"
-#include "osgKido/MouseEventHandler.hpp"
+#include "kido/gui/osg/DragAndDrop.hpp"
+#include "kido/gui/osg/DefaultEventHandler.hpp"
+#include "kido/gui/osg/Viewer.hpp"
+#include "kido/gui/osg/InteractiveFrame.hpp"
+#include "kido/gui/osg/MouseEventHandler.hpp"
 
 #include "kido/dynamics/SimpleFrame.hpp"
 #include "kido/dynamics/MeshShape.hpp"
@@ -49,7 +49,8 @@
 
 #include "kido/math/Helpers.hpp"
 
-namespace osgKido {
+namespace kido {
+namespace gui {
 
 DragAndDrop::DragAndDrop(Viewer* viewer, kido::dynamics::Entity* entity)
   : mViewer(viewer),
@@ -83,12 +84,12 @@ void DragAndDrop::update()
   if(nullptr == mEntity)
     return;
 
-  osgKido::MouseButtonEvent event =
+  kido::gui::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgKido::BUTTON_RELEASE == event)
+    if(kido::gui::BUTTON_RELEASE == event)
     {
       mAmMoving = false;
       release();
@@ -98,13 +99,13 @@ void DragAndDrop::update()
   }
   else // not moving
   {
-    if(osgKido::BUTTON_PUSH == event)
+    if(kido::gui::BUTTON_PUSH == event)
     {
-      const std::vector<osgKido::PickInfo>& picks =
+      const std::vector<kido::gui::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgKido::LEFT_MOUSE, osgKido::BUTTON_PUSH);
+            kido::gui::LEFT_MOUSE, kido::gui::BUTTON_PUSH);
 
-      for(const osgKido::PickInfo& pick : picks)
+      for(const kido::gui::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity)
         {
@@ -332,25 +333,25 @@ void SimpleFrameShapeDnD::update()
   if(nullptr == mEntity || nullptr == mShape)
     return;
 
-  osgKido::MouseButtonEvent event =
+  kido::gui::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgKido::BUTTON_RELEASE == event)
+    if(kido::gui::BUTTON_RELEASE == event)
       mAmMoving = false;
 
     move();
   }
   else
   {
-    if(osgKido::BUTTON_PUSH == event)
+    if(kido::gui::BUTTON_PUSH == event)
     {
-      const std::vector<osgKido::PickInfo>& picks =
+      const std::vector<kido::gui::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgKido::LEFT_MOUSE, osgKido::BUTTON_PUSH);
+            kido::gui::LEFT_MOUSE, kido::gui::BUTTON_PUSH);
 
-      for(const osgKido::PickInfo& pick : picks)
+      for(const kido::gui::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity && pick.shape.get() == mShape)
         {
@@ -801,5 +802,5 @@ osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() cons
   return mJointRestrictionModKey;
 }
 
-
-} // namespace osgKido
+} // namespace gui
+} // namespace kido
