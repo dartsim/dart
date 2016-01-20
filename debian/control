@@ -1,4 +1,4 @@
-Source: kido0
+Source: kido
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
@@ -29,13 +29,12 @@ Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
-         libkido-core0.1 (= ${binary:Version}),
+         libkido0.1 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
          libfcl-dev,
          libboost-all-dev (>= 1.54.0.1ubuntu1)
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -65,8 +64,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -98,8 +96,7 @@ Depends: ${misc:Depends},
          libkido0-dev,
          libkido-planning0.1 (= ${binary:Version}),
          libflann-dev
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -129,8 +126,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -164,8 +160,7 @@ Depends: ${misc:Depends},
          libtinyxml-dev,
          libtinyxml2-dev,
          liburdfdom-dev
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -195,8 +190,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -231,8 +225,7 @@ Depends: ${misc:Depends},
          freeglut3-dev,
          libxi-dev,
          libxmu-dev
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -262,8 +255,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -295,8 +287,7 @@ Depends: ${misc:Depends},
          libkido0-dev,
          libkido-optimizer-nlopt0.1 (= ${binary:Version}),
          libnlopt-dev
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -326,8 +317,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -359,8 +349,7 @@ Depends: ${misc:Depends},
          libkido0-dev,
          libkido-optimizer-ipopt0.1 (= ${binary:Version}),
          coinor-libipopt-dev
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, development component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
@@ -390,8 +379,7 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Kinematics, Dynamics and Optimization Library for Animation and 
-Robotics, library component files
+Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, library component files
  KIDO is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
  structures and algorithms for kinematic and dynamic applications in robotics
