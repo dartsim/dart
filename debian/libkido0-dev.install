@@ -1,5 +1,5 @@
-usr/include/kido/kido.hh
-usr/include/kido/config.hh
+usr/include/kido/kido.hpp
+usr/include/kido/config.hpp
 usr/include/kido/collision/*
 usr/include/kido/common/*
 usr/include/kido/constraint/*
