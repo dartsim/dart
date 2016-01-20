@@ -28,4 +28,3 @@ install(
   COMPONENT headers
 )
 install(TARGETS kido-gui EXPORT KIDOTargets DESTINATION lib)
-

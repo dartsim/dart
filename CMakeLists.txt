@@ -434,8 +434,7 @@ set(KIDO_DEPENDENCIES ${CCD_LIBRARIES}
                       ${FCL_LIBRARIES}
                       ${ASSIMP_LIBRARIES}
                       ${Boost_LIBRARIES}
-                      ${OPENGL_LIBRARIES}
-                      ${GLUT_LIBRARY})
+                      ${OPENGL_LIBRARIES})
 if(HAVE_BULLET_COLLISION)
   set(KIDO_DEPENDENCIES ${KIDO_DEPENDENCIES} ${BULLET_LIBRARIES})
 endif()
