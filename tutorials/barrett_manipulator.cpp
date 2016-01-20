@@ -453,6 +453,8 @@ SkeletonPtr createManipulator()
   tf.translation() = Eigen::Vector3d(0, 0.2, -0.5);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
+  std::cout<<"The degreeo of freedom for this manipulator is:";
+  std::cout<<manipulator->getNumDofs()<<"."<<std::endl;
   //Degree of freedom for wam arms
   manipulator->getDof(0)->setPosition(0.0 * M_PI / 180.0);
   manipulator->getDof(1)->setPosition(45.0 * M_PI / 180.0);
