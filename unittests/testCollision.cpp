@@ -45,7 +45,6 @@
 #include "kido/common/common.hpp"
 #include "kido/math/math.hpp"
 #include "kido/dynamics/dynamics.hpp"
-//#include "kido/collision/unc/UNCCollisionDetector.hpp"
 #include "kido/simulation/simulation.hpp"
 #include "kido/utils/utils.hpp"
 
