@@ -1,11 +1,14 @@
-Source: kido
+Source: kido0
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
                cmake,
                libeigen3-dev,
                libfcl-dev (>= 0.2.7),
+               libbullet-dev,
                libassimp-dev (>= 3),
+               libnlopt-dev,
+               coinor-libipopt-dev,
                freeglut3-dev,
                libxi-dev,
                libxmu-dev,
@@ -33,6 +36,7 @@ Depends: ${misc:Depends},
          libeigen3-dev,
          libassimp-dev (>= 3),
          libfcl-dev,
+         libbullet-dev,
          libboost-all-dev (>= 1.54.0.1ubuntu1)
 Description: Kinematics Dynamics and Optimization Library for Animation and Robotics, development files
  KIDO is a collaborative, cross-platform, open source library created by the
