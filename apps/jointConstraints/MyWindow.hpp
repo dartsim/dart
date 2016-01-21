@@ -43,6 +43,7 @@
 #include "apps/jointConstraints/Controller.hpp"
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 class MyWindow : public kido::gui::SimWindow
 {

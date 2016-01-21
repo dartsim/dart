@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 #include "apps/bipedStand/MyWindow.hpp"
 

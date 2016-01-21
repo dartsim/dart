@@ -41,11 +41,7 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "kido/config.hpp"
-#include "kido/common/common.hpp"
-#include "kido/math/math.hpp"
-#include "kido/dynamics/dynamics.hpp"
-#include "kido/simulation/simulation.hpp"
+#include "kido/kido.hpp"
 #include "kido/utils/utils.hpp"
 
 using namespace kido;

@@ -84,11 +84,11 @@ foreach(test ${tests})
 endforeach(test)
 
 if(HAVE_IPOPT)
-  target_link_libraries(testOptimizer kido-optimizer-ipopt ${IPOPT_LIBRARIES})
+  target_link_libraries(testOptimizer kido-optimizer-ipopt)
 endif(HAVE_IPOPT)
 
 if(HAVE_NLOPT)
-  target_link_libraries(testOptimizer kido-optimizer-nlopt ${NLOPT_LIBRARIES})
+  target_link_libraries(testOptimizer kido-optimizer-nlopt)
 endif(HAVE_NLOPT)
 
 if(HAVE_SNOPT)

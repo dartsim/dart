@@ -11,7 +11,7 @@ add_subdirectory(render)
 
 # Library
 kido_add_library(kido-gui-osg ${kido_gui_osg_srcs} ${kido_gui_osg_hdrs})
-target_link_libraries(kido-gui-osg kido kido-utils ${OPENSCENEGRAPH_LIBRARIES})
+target_link_libraries(kido-gui-osg kido-gui ${OPENSCENEGRAPH_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "gui osg headers" ${hdrs})

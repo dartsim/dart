@@ -39,6 +39,7 @@
 #define APPS_VEHICLE_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 /// \brief
 class MyWindow : public kido::gui::SimWindow {

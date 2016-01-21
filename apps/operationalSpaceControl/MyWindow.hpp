@@ -38,6 +38,7 @@
 #define APPS_OPERATIONALSPACECONTROL_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 #include "Controller.hpp"
 

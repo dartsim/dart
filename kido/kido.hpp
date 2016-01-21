@@ -45,7 +45,3 @@
 #include "kido/dynamics/dynamics.hpp"
 #include "kido/renderer/renderer.hpp"
 #include "kido/simulation/simulation.hpp"
-
-#include "kido/planning/planning.hpp"
-#include "kido/gui/gui.hpp"
-#include "kido/utils/utils.hpp"

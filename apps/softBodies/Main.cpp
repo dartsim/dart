@@ -43,6 +43,7 @@
 #include <iostream>
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 #include "apps/softBodies/MyWindow.hpp"
 

@@ -35,6 +35,7 @@
  */
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 using namespace kido::dynamics;
 

@@ -25,12 +25,8 @@ target_link_libraries(
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "utils headers" ${hdrs})
-set(
-  header_names
-  ${header_names}
-  sdf/sdf.hpp
-  urdf/urdf.hpp
-)
+list(APPEND header_names "sdf/sdf.hpp")
+list(APPEND header_names "urdf/urdf.hpp")
 kido_generate_include_header_list(
   utils_headers
   "kido/utils/"

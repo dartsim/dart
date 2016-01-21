@@ -36,6 +36,7 @@
  */
 
 #include "kido/kido.hpp"
+#include "kido/gui/osg/osg.hpp"
 
 using namespace kido::common;
 using namespace kido::dynamics;

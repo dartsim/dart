@@ -39,6 +39,7 @@
 #include <iostream>
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 using namespace kido;
 using namespace dynamics;

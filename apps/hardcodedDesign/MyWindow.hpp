@@ -48,6 +48,7 @@
 #include <cstdarg>
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 class MyWindow : public kido::gui::Win3D {
 public:

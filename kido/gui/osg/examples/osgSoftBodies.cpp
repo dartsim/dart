@@ -36,6 +36,7 @@
  */
 
 #include "kido/kido.hpp"
+#include "kido/gui/osg/osg.hpp"
 
 #include <osgViewer/Viewer>
 
