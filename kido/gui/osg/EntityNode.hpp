@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_ENTITYNODE_HPP
-#define OSGKIDO_ENTITYNODE_HPP
+#ifndef KIDO_GUI_OSG_ENTITYNODE_HPP
+#define KIDO_GUI_OSG_ENTITYNODE_HPP
 
 #include <map>
 #include <memory>
@@ -120,4 +120,4 @@ protected:
 } // namespace gui
 } // namespace kido
 
-#endif // OSGKIDO_ENTITYNODE_HPP
+#endif // KIDO_GUI_OSG_ENTITYNODE_HPP

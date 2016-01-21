@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_MOUSEEVENTHANDLER_HPP
-#define OSGKIDO_MOUSEEVENTHANDLER_HPP
+#ifndef KIDO_GUI_OSG_MOUSEEVENTHANDLER_HPP
+#define KIDO_GUI_OSG_MOUSEEVENTHANDLER_HPP
 
 #include "kido/common/Subject.hpp"
 #include "kido/common/Observer.hpp"
@@ -77,4 +77,4 @@ protected:
 } // namespace gui
 } // namespace kido
 
-#endif // OSGKIDO_MOUSEEVENTHANDLER_HPP
+#endif // KIDO_GUI_OSG_MOUSEEVENTHANDLER_HPP

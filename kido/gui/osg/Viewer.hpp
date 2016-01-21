@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_VIEWER_HPP
-#define OSGKIDO_VIEWER_HPP
+#ifndef KIDO_GUI_OSG_VIEWER_HPP
+#define KIDO_GUI_OSG_VIEWER_HPP
 
 #include <map>
 #include <unordered_set>
@@ -382,4 +382,4 @@ protected:
 } // namespace gui
 } // namespace kido
 
-#endif // OSGKIDO_VIEWER_HPP
+#endif // KIDO_GUI_OSG_VIEWER_HPP

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGKIDO_DRAGANDDROP_HPP
-#define OSGKIDO_DRAGANDDROP_HPP
+#ifndef KIDO_GUI_OSG_DRAGANDDROP_HPP
+#define KIDO_GUI_OSG_DRAGANDDROP_HPP
 
 #include <functional>
 
@@ -361,4 +361,4 @@ protected:
 } // namespace gui
 } // namespace kido
 
-#endif // OSGKIDO_DRAGANDDROP_HPP
+#endif // KIDO_GUI_OSG_DRAGANDDROP_HPP
