@@ -69,7 +69,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON)
+option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON) # TODO(JS): Rename the option name to more relevant name to osg GUI and add more options for other extensions (#590).
 option(KIDO_BUILD_EXAMPLES "Build examples" ON)
 option(KIDO_BUILD_TUTORIALS "Build tutorials" ON)
 option(KIDO_BUILD_UNITTESTS "Build unit tests" ON)
@@ -254,6 +254,31 @@ else()
     message(STATUS "To enable component kido-gui, please install freeglut3-dev")
   endif()
 endif()
+
+# OpenSceneGraph
+find_package(OpenSceneGraph 3.0 QUIET
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+if(OPENSCENEGRAPH_FOUND)
+  message(STATUS "Looking for OpenSceneGraph -- ${OPENSCENEGRAPH_VERSION} found")
+  set(HAVE_OPENSCENEGRAPH TRUE)
+else(OPENSCENEGRAPH_FOUND)
+  # kido-gui-osg requires both OSG and OpenThreads. This section attempts to
+  # identify which of those are missing from the building machine and offer
+  # advice to the user for getting osgKido to build.
+  find_package(OpenThreads QUIET)
+  if(OPENTHREADS_FOUND)
+    set(warning_msg "Could NOT find OpenSceneGraph")
+  else(OPENTHREADS_FOUND)
+    if(OSG_LIBRARY)
+      set(warning_msg "Could NOT find OpenThreads")
+    else(OSG_LIBRARY)
+      set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
+    endif(OSG_LIBRARY)
+  endif(OPENTHREADS_FOUND)
+  message(WARNING "${warning_msg} -- we will skip kido-gui-osg\n"
+          "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+  set(HAVE_OPENSCENEGRAPH FALSE)
+endif(OPENSCENEGRAPH_FOUND)
 
 # FLANN
 find_package(FLANN 1.8.4 QUIET)
@@ -566,10 +591,6 @@ install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 # Add sub-directories
 #===============================================================================
 add_subdirectory(kido)
-
-if(KIDO_BUILD_OSGKIDO)
-  add_subdirectory(osgKido)
-endif(KIDO_BUILD_OSGKIDO)
 
 # Unit tests
 if(KIDO_BUILD_UNITTESTS)
