@@ -7,7 +7,7 @@ usr/include/kido/dynamics/*
 usr/include/kido/integration/*
 usr/include/kido/lcpsolver/*
 usr/include/kido/math/*
-usr/include/kido/optimizer/*
+usr/include/kido/optimizer/*.*
 usr/include/kido/renderer/*
 usr/include/kido/simulation/*
 usr/share/kido/KIDOConfig.cmake
