@@ -46,118 +46,164 @@ namespace dynamics {
 
 int Marker::msMarkerCount = 0;
 
-Marker::Properties::Properties(const std::string& _name,
-                               const Eigen::Vector3d& _offset,
-                               ConstraintType _type)
-  : mName(_name),
-    mOffset(_offset),
-    mType(_type)
+//==============================================================================
+Marker::Properties::Properties(const std::string& name,
+                               const Eigen::Vector3d& offset,
+                               const Eigen::Vector4d& color,
+                               ConstraintType type)
+  : mName(name), mOffset(offset), mColor(color), mType(type)
 {
   // Do nothing
 }
 
-Marker::Marker(const std::string& _name, const Eigen::Vector3d& _offset,
-               BodyNode* _bodyNode, ConstraintType _type)
-  : mProperties(_name, _offset, _type),
-    mBodyNode(_bodyNode),
-    mSkelIndex(0)
+//==============================================================================
+Marker::Marker(const std::string& name,
+               const Eigen::Vector3d& offset,
+               const Eigen::Vector4d& color,
+               BodyNode* bodyNode,
+               ConstraintType type)
+  : mProperties(name, offset, color, type),
+    mBodyNode(bodyNode),
+    mSkelIndex(0),
+    mID(Marker::msMarkerCount++)
 {
-  mID = Marker::msMarkerCount++;
+  // Do nothing
 }
 
+//==============================================================================
 Marker::~Marker()
 {
   // Do nothing
 }
 
-void Marker::draw(renderer::RenderInterface* _ri, bool _offset,
-                  const Eigen::Vector4d& _color, bool _useDefaultColor) const {
-  if (!_ri)
+//==============================================================================
+void Marker::draw(renderer::RenderInterface* ri,
+                  bool offset,
+                  const Eigen::Vector4d& color,
+                  bool useDefaultColor) const
+{
+  if (!ri)
     return;
 
-  _ri->pushName(getID());
+  ri->pushName(getID());
 
-  if (mProperties.mType == HARD) {
-    _ri->setPenColor(Eigen::Vector3d(1, 0, 0));
-  } else if (mProperties.mType == SOFT) {
-    _ri->setPenColor(Eigen::Vector3d(0, 1, 0));
-  } else {
-    if (_useDefaultColor)
-      _ri->setPenColor(Eigen::Vector3d(0, 0, 1));
+  if (mProperties.mType == HARD)
+  {
+    ri->setPenColor(Color::Red(1.0));
+  }
+  else if (mProperties.mType == SOFT)
+  {
+    ri->setPenColor(Color::Green(1.0));
+  }
+  else
+  {
+    if (useDefaultColor)
+      ri->setPenColor(mProperties.mColor);
     else
-      _ri->setPenColor(Eigen::Vector4d(
-                         _color[0], _color[1], _color[2],  _color[3]));
+      ri->setPenColor(color);
   }
 
-  if (_offset) {
-    _ri->pushMatrix();
-    _ri->translate(mProperties.mOffset);
-    _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
-    _ri->popMatrix();
-  } else {
-    _ri->drawEllipsoid(Eigen::Vector3d(0.01, 0.01, 0.01));
+  if (offset)
+  {
+    ri->pushMatrix();
+    ri->translate(mProperties.mOffset);
+    ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    ri->popMatrix();
+  }
+  else
+  {
+    ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
   }
 
-  _ri->popName();
+  ri->popName();
 }
 
+//==============================================================================
 BodyNode* Marker::getBodyNode()
 {
   return mBodyNode;
 }
 
-const BodyNode* Marker::getBodyNode() const {
+//==============================================================================
+const BodyNode* Marker::getBodyNode() const
+{
   return mBodyNode;
 }
 
-const Eigen::Vector3d& Marker::getLocalPosition() const {
+//==============================================================================
+const Eigen::Vector3d& Marker::getLocalPosition() const
+{
   return mProperties.mOffset;
 }
 
-void Marker::setLocalPosition(const Eigen::Vector3d& _offset) {
-    mProperties.mOffset = _offset;
+//==============================================================================
+void Marker::setLocalPosition(const Eigen::Vector3d& offset)
+{
+    mProperties.mOffset = offset;
 }
 
-Eigen::Vector3d Marker::getWorldPosition() const {
+//==============================================================================
+Eigen::Vector3d Marker::getWorldPosition() const
+{
   return mBodyNode->getTransform() * mProperties.mOffset;
 }
 
-int Marker::getIndexInSkeleton() const {
+//==============================================================================
+void Marker::setSkeletonIndex(int index)
+{
+  setIndexInSkeleton(index);
+}
+
+//==============================================================================
+void Marker::setIndexInSkeleton(int index)
+{
+  mSkelIndex = index;
+}
+
+//==============================================================================
+int Marker::getIndexInSkeleton() const
+{
   return mSkelIndex;
 }
 
-void Marker::setSkeletonIndex(int _idx) {
-  mSkelIndex = _idx;
-}
-
-int Marker::getID() const {
+//==============================================================================
+int Marker::getID() const
+{
   return mID;
 }
 
-void Marker::setName(const std::string& _name)
+//==============================================================================
+void Marker::setName(const std::string& name)
 {
-  mProperties.mName = _name;
+  mProperties.mName = name;
 }
 
+//==============================================================================
 const std::string& Marker::getName() const
 {
   return mProperties.mName;
 }
 
-Marker::ConstraintType Marker::getConstraintType() const {
+//==============================================================================
+void Marker::setConstraintType(Marker::ConstraintType type)
+{
+  mProperties.mType = type;
+}
+
+//==============================================================================
+Marker::ConstraintType Marker::getConstraintType() const
+{
   return mProperties.mType;
 }
 
-void Marker::setConstraintType(Marker::ConstraintType _type) {
-  mProperties.mType = _type;
-}
-
-Marker::Marker(const Properties& _properties, BodyNode* _parent)
-  : mProperties(_properties),
-    mBodyNode(_parent),
-    mSkelIndex(0)
+//==============================================================================
+Marker::Marker(const Properties& properties, BodyNode* parent)
+  : mProperties(properties),
+    mBodyNode(parent),
+    mSkelIndex(0),
+    mID(Marker::msMarkerCount++)
 {
-  mID = Marker::msMarkerCount++;
+  // Do nothing
 }
 
 }  // namespace dynamics

@@ -11,8 +11,9 @@ platform:
 
 # specify custom environment variables
 environment:
+  MSVC_DEFAULT_OPTIONS: ON
   BOOST_ROOT: C:\Libraries\boost
-  BOOST_LIBRARYDIR: C:\Libraries\boost\stage\lib
+  BOOST_LIBRARYDIR: C:\Libraries\boost\lib32-msvc-12.0
   BUILD_EXAMPLES: OFF  # don't build examples to not exceed allowed build time (40 min)
   BUILD_TUTORIALS: OFF  # don't build tutorials to not exceed allowed build time (40 min)
   matrix:
@@ -43,7 +44,7 @@ branches:
 
 # scripts that run after cloning repository
 install:
-  - ps: cd "C:\projects\dart\ci"
+  - ps: cd C:\projects\dart\ci
   - ps: .\appveyor_install.ps1
 
 # scripts to run before build
@@ -54,7 +55,7 @@ before_build:
   # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
   - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 12
   - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 12 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DDART_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" ..
+  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DDART_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project

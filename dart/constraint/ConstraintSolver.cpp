@@ -50,6 +50,7 @@
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
 #include "dart/constraint/JointLimitConstraint.h"
+#include "dart/constraint/ServoMotorConstraint.h"
 #include "dart/constraint/JointCoulombFrictionConstraint.h"
 #include "dart/constraint/DantzigLCPSolver.h"
 #include "dart/constraint/PGSLCPSolver.h"
@@ -181,7 +182,7 @@ void ConstraintSolver::removeAllSkeletons()
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
+void ConstraintSolver::addConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint);
 
@@ -196,7 +197,7 @@ void ConstraintSolver::addConstraint(ConstraintBase* _constraint)
 }
 
 //==============================================================================
-void ConstraintSolver::removeConstraint(ConstraintBase* _constraint)
+void ConstraintSolver::removeConstraint(const ConstraintBasePtr& _constraint)
 {
   assert(_constraint);
 
@@ -305,7 +306,8 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& _skeleton)
 }
 
 //==============================================================================
-bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) const
+bool ConstraintSolver::containConstraint(
+    const ConstConstraintBasePtr& _constraint) const
 {
   return std::find(mManualConstraints.begin(),
                    mManualConstraints.end(),
@@ -313,7 +315,8 @@ bool ConstraintSolver::containConstraint(const ConstraintBase* _constraint) cons
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddConstraint(ConstraintBase* _constraint)
+bool ConstraintSolver::checkAndAddConstraint(
+    const ConstraintBasePtr& _constraint)
 {
   if (!containConstraint(_constraint))
   {
@@ -351,13 +354,9 @@ void ConstraintSolver::updateConstraints()
   mCollisionDetector->detectCollision(true, true);
 
   // Destroy previous contact constraints
-  for (const auto& contactConstraint : mContactConstraints)
-    delete contactConstraint;
   mContactConstraints.clear();
 
   // Destroy previous soft contact constraints
-  for (const auto& softContactConstraint : mSoftContactConstraints)
-    delete softContactConstraint;
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
@@ -368,11 +367,12 @@ void ConstraintSolver::updateConstraints()
     if (isSoftContact(ct))
     {
       mSoftContactConstraints.push_back(
-            new SoftContactConstraint(ct, mTimeStep));
+            std::make_shared<SoftContactConstraint>(ct, mTimeStep));
     }
     else
     {
-      mContactConstraints.push_back(new ContactConstraint(ct, mTimeStep));
+      mContactConstraints.push_back(
+            std::make_shared<ContactConstraint>(ct, mTimeStep));
     }
   }
 
@@ -395,23 +395,42 @@ void ConstraintSolver::updateConstraints()
   }
 
   //----------------------------------------------------------------------------
-  // Update automatic constraints: joint limit constraints
+  // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
-  // Destroy previous joint limit constraints
-  for (const auto& jointLimitConstraint : mJointLimitConstraints)
-    delete jointLimitConstraint;
+  // Destroy previous joint constraints
   mJointLimitConstraints.clear();
+  mServoMotorConstraints.clear();
+  mJointCoulombFrictionConstraints.clear();
 
-  // Create new joint limit constraints
+  // Create new joint constraints
   for (const auto& skel : mSkeletons)
   {
-    const size_t numBodyNodes = skel->getNumBodyNodes();
-    for (size_t i = 0; i < numBodyNodes; i++)
+    const size_t numJoints = skel->getNumJoints();
+    for (size_t i = 0; i < numJoints; i++)
     {
-      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+      dynamics::Joint* joint = skel->getJoint(i);
 
-      if (joint->isDynamic() && joint->isPositionLimitEnforced())
-        mJointLimitConstraints.push_back(new JointLimitConstraint(joint));
+      if (joint->isKinematic())
+        continue;
+
+      const size_t dof = joint->getNumDofs();
+      for (size_t j = 0; j < dof; ++j)
+      {
+        if (joint->getCoulombFriction(j) != 0.0)
+        {
+          mJointCoulombFrictionConstraints.push_back(
+                std::make_shared<JointCoulombFrictionConstraint>(joint));
+          break;
+        }
+      }
+
+      if (joint->isPositionLimitEnforced())
+        mJointLimitConstraints.push_back(
+              std::make_shared<JointLimitConstraint>(joint));
+
+      if (joint->getActuatorType() == dynamics::Joint::SERVO)
+        mServoMotorConstraints.push_back(
+              std::make_shared<ServoMotorConstraint>(joint));
     }
   }
 
@@ -424,39 +443,14 @@ void ConstraintSolver::updateConstraints()
       mActiveConstraints.push_back(jointLimitConstraint);
   }
 
-  //----------------------------------------------------------------------------
-  // Update automatic constraints: joint Coulomb friction constraints
-  //----------------------------------------------------------------------------
-  // Destroy previous joint limit constraints
-  for (const auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
-    delete jointFrictionConstraint;
-  mJointCoulombFrictionConstraints.clear();
-
-  // Create new joint limit constraints
-  for (const auto& skel : mSkeletons)
+  for (auto& servoMotorConstraint : mServoMotorConstraints)
   {
-    const size_t numBodyNodes = skel->getNumBodyNodes();
-    for (size_t i = 0; i < numBodyNodes; i++)
-    {
-      dynamics::Joint* joint = skel->getBodyNode(i)->getParentJoint();
+    servoMotorConstraint->update();
 
-      if (joint->isDynamic())
-      {
-        const size_t dof = joint->getNumDofs();
-        for (size_t i = 0; i < dof; ++i)
-        {
-          if (joint->getCoulombFriction(i) != 0.0)
-          {
-            mJointCoulombFrictionConstraints.push_back(
-                  new JointCoulombFrictionConstraint(joint));
-            break;
-          }
-        }
-      }
-    }
+    if (servoMotorConstraint->isActive())
+      mActiveConstraints.push_back(servoMotorConstraint);
   }
 
-  // Add active joint limit
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
   {
     jointFrictionConstraint->update();
@@ -479,7 +473,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBase*>::iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     (*it)->uniteSkeletons();
@@ -488,7 +482,7 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     bool found = false;
@@ -515,7 +509,7 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (std::vector<ConstraintBase*>::const_iterator it = mActiveConstraints.begin();
+  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
        it != mActiveConstraints.end(); ++it)
   {
     dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();

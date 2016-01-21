@@ -58,6 +58,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  ZeroDofJoint(const ZeroDofJoint&) = delete;
+
   /// Destructor
   virtual ~ZeroDofJoint();
 

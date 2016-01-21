@@ -254,7 +254,7 @@ public:
   /// Return moment of inertia defined around the center of mass
   void getMomentOfInertia(
       double& _Ixx, double& _Iyy, double& _Izz,
-      double& _Ixy, double& _Ixz, double& _Iyz);
+      double& _Ixy, double& _Ixz, double& _Iyz) const;
 
   /// Return spatial inertia
   const Eigen::Matrix6d& getSpatialInertia() const;
@@ -814,7 +814,8 @@ public:
                             bool _isImpulseLocal = false,
                             bool _isOffsetLocal = true);
 
-  /// Clear constraint impulse
+  /// Clear constraint impulses and cache data used for impulse-based forward
+  /// dynamics algorithm
   virtual void clearConstraintImpulse();
 
   /// Return constraint impulse

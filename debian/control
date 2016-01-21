@@ -6,7 +6,6 @@ Build-Depends: debhelper (>= 9),
                libeigen3-dev,
                libfcl-dev (>= 0.2.7),
                libassimp-dev (>= 3),
-               libassimp-dev (<< 3.0~dfsg-4),
                freeglut3-dev,
                libxi-dev,
                libxmu-dev,
@@ -14,9 +13,11 @@ Build-Depends: debhelper (>= 9),
                libtinyxml-dev,
                libtinyxml2-dev,
                liburdfdom-dev,
-               libboost-dev (>= 1.54.0.1ubuntu1), 
+               libboost-dev (>= 1.54.0.1ubuntu1),
                libboost-system-dev (>= 1.54.0-4ubuntu3),
-               libboost-regex-dev (>= 1.54.0-4ubuntu3)
+               libboost-regex-dev (>= 1.54.0-4ubuntu3),
+               libopenthreads-dev,
+               libopenscenegraph-dev
 Standards-Version: 3.9.6
 Section: libs
 Homepage: http://dartsim.github.io/
@@ -26,15 +27,14 @@ Vcs-Browser: https://github.com/dartsim/dart
 Package: libdart-core5-dev
 Section: libdevel
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Conflicts: libdart-core3-dev, libdart-core4-dev
 Depends: ${misc:Depends},
          libdart-core5.1 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
-         libassimp-dev (<< 3.0~dfsg-4),
          libfcl-dev,
-         libboost-dev (>= 1.54.0.1ubuntu1)
+         libboost-all-dev (>= 1.54.0.1ubuntu1)
 Description: Dynamic Animation and Robotics Toolkit, core development files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
@@ -62,14 +62,17 @@ Description: Dynamic Animation and Robotics Toolkit, core development files
 Package: libdart5-dev
 Section: libdevel
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart-core5-dev,
          libdart5.1 (= ${binary:Version}),
          freeglut3-dev,
          libxi-dev,
          libxmu-dev,
-         libtinyxml2-dev
+         libtinyxml2-dev,
+         libopenthreads-dev,
+         libopenscenegraph-dev,
+         liburdfdom-dev
 Description: Dynamic Animation and Robotics Toolkit, development files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data
@@ -98,7 +101,7 @@ Description: Dynamic Animation and Robotics Toolkit, development files
 Package: libdart-core5.1
 Section: libs
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, core library files
@@ -128,7 +131,7 @@ Description: Dynamic Animation and Robotics Toolkit, core library files
 Package: libdart5.1
 Section: libs
 Architecture: any
-Pre-Depends: multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Dynamic Animation and Robotics Toolkit, library files

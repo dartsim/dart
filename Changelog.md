@@ -1,3 +1,37 @@
+### Version 6.0.0 (2015-12-19)
+
+1. Added missing `liburdfdom-dev` dependency in Ubuntu package
+    * [Pull request #574](https://github.com/dartsim/dart/pull/574)
+
+### Version 5.1.1 (2015-11-06)
+
+1. Add bullet dependency to package.xml
+    * [Pull request #523](https://github.com/dartsim/dart/pull/523)
+
+1. Improved handling of missing symbols of Assimp package
+    * [Pull request #542](https://github.com/dartsim/dart/pull/542)
+
+1. Improved travis-ci build log for Mac
+    * [Pull request #529](https://github.com/dartsim/dart/pull/529)
+
+1. Fixed warnings in Function.cpp
+    * [Pull request #550](https://github.com/dartsim/dart/pull/550)
+
+1. Fixed build failures on AppVeyor
+    * [Pull request #543](https://github.com/dartsim/dart/pull/543)
+
+1. Fixed const qualification of ResourceRetriever
+    * [Pull request #534](https://github.com/dartsim/dart/pull/534)
+    * [Issue #532](https://github.com/dartsim/dart/issues/532)
+
+1. Fixed aligned memory allocation with Eigen objects
+    * [Pull request #527](https://github.com/dartsim/dart/pull/527)
+
+1. Fixed copy safety for various classes
+    * [Pull request #526](https://github.com/dartsim/dart/pull/526)
+    * [Pull request #539](https://github.com/dartsim/dart/pull/539)
+    * [Issue #524](https://github.com/dartsim/dart/issues/524)
+
 ### Version 5.1.0 (2015-10-15)
 
 1. Fixed incorrect rotational motion of BallJoint and FreeJoint
@@ -292,7 +326,7 @@
     * [Pull request #277](https://github.com/dartsim/dart/pull/277)
 1. Added all-inclusive header and namespace headers
     * [Pull request #278](https://github.com/dartsim/dart/pull/278)
-1. Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates 
+1. Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates
     * [Pull request #288](https://github.com/dartsim/dart/pull/288)
 1. Added hybrid dynamics
     * [Pull request #298](https://github.com/dartsim/dart/pull/298)
@@ -445,4 +479,3 @@
 1. Clean-up of the Robot class
 1. Removed Object class
 1. More robust build and installation process on Linux
-

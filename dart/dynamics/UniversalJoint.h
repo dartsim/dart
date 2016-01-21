@@ -55,6 +55,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, UniversalJointAddon)
 
+  UniversalJoint(const UniversalJoint&) = delete;
+
   /// Destructor
   virtual ~UniversalJoint();
 

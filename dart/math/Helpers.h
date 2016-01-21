@@ -182,7 +182,7 @@ inline bool isInt(double _x) {
 /// \brief Returns whether _v is a NaN (Not-A-Number) value
 inline bool isNan(double _v) {
 #ifdef _WIN32
-  return _isnan(_v);
+  return _isnan(_v) != 0;
 #else
   return std::isnan(_v);
 #endif

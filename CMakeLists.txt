@@ -41,7 +41,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "5")
 set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "0")
+set(DART_PATCH_VERSION "1")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -62,6 +62,7 @@ option(BUILD_CORE_ONLY "Build only the core of DART" OFF)
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
+  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
@@ -150,6 +151,55 @@ endif()
 find_package(ASSIMP 3.0.0 QUIET)
 if(ASSIMP_FOUND)
   message(STATUS "Looking for ASSIMP - ${ASSIMP_VERSION} found")
+
+  # Check for missing symbols in ASSIMP (see #451)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
+
+  check_cxx_source_compiles(
+  "
+  #include <assimp/scene.h>
+  int main()
+  {
+    aiScene* scene = new aiScene;
+    delete scene;
+    return 1;
+  }
+  "
+  ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+
+  if(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+    message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
+                    "missing symbols for the constructor and/or destructor of "
+                    "aiScene. DART will use its own implementations of these "
+                    "functions. We recommend using a version of ASSIMP that "
+                    "does not have this issue, once one becomes available.")
+  endif(NOT ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
+
+  check_cxx_source_compiles(
+  "
+  #include <assimp/material.h>
+  int main()
+  {
+    aiMaterial* material = new aiMaterial;
+    delete material;
+    return 1;
+  }
+  "
+  ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+
+  if(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+    message(WARNING "The installed version of ASSIMP (${ASSIMP_VERSION}) is "
+                    "missing symbols for the constructor and/or destructor of "
+                    "aiMaterial. DART will use its own implementations of "
+                    "these functions. We recommend using a version of ASSIMP "
+                    "that does not have this issue, once one becomes available.")
+  endif(NOT ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
+
+  unset(CMAKE_REQUIRED_INCLUDES)
+  unset(CMAKE_REQUIRED_LIBRARIES)
+
 else()
   if(ASSIMP_VERSION)
     message(SEND_ERROR "Looking for ASSIMP - ${ASSIMP_VERSION} found, ${PROJECT_NAME} requires 3.0.0 or greater.")
@@ -410,7 +460,7 @@ endif()
 #===============================================================================
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
                 RESULT_VARIABLE FILESYSTEM_CASE_SENSITIVE_RETURN)
-if (${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
+if(${FILESYSTEM_CASE_SENSITIVE_RETURN} EQUAL 0)
   set(FILESYSTEM_CASE_SENSITIVE TRUE)
 else()
   set(FILESYSTEM_CASE_SENSITIVE FALSE)
@@ -420,14 +470,16 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
-  message(STATUS "Setup Visual Studio Specific Flags")
   # Visual Studio enables c++11 support by default
-  if(NOT MSVC12)
+  if(NOT MSVC12 AND NOT MSVC14)
     message(FATAL_ERROR "${PROJECT_NAME} requires VS 2013 or greater.")
   endif()
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP4")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
+  if(NOT DART_MSVC_DEFAULT_OPTIONS)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+  endif(NOT DART_MSVC_DEFAULT_OPTIONS)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "-Wall -msse2 -fPIC")
   execute_process(

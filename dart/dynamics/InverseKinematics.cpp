@@ -1056,7 +1056,7 @@ void InverseKinematics::Analytical::computeGradient(
 
   getSolutions(desiredTf);
 
-  if(mSolutions.size() == 0)
+  if(mSolutions.empty())
     return;
 
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;

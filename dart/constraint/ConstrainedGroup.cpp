@@ -36,6 +36,7 @@
 
 #include "dart/constraint/ConstrainedGroup.h"
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -57,11 +58,11 @@ ConstrainedGroup::~ConstrainedGroup()
 }
 
 //==============================================================================
-void ConstrainedGroup::addConstraint(ConstraintBase* _constraint)
+void ConstrainedGroup::addConstraint(const ConstraintBasePtr& _constraint)
 {
-  assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
-  assert(containConstraint(_constraint) == false
-         && "Don't try to add same constraint multiple times into Community.");
+  assert(_constraint != nullptr && "Attempted to add nullptr.");
+  assert(!containConstraint(_constraint)
+         && "Attempted to add a duplicate constraint.");
   assert(_constraint->isActive());
 
   mConstraints.push_back(_constraint);
@@ -74,18 +75,18 @@ size_t ConstrainedGroup::getNumConstraints() const
 }
 
 //==============================================================================
-ConstraintBase* ConstrainedGroup::getConstraint(size_t _index) const
+ConstraintBasePtr ConstrainedGroup::getConstraint(size_t _index) const
 {
   assert(_index < mConstraints.size());
   return mConstraints[_index];
 }
 
 //==============================================================================
-void ConstrainedGroup::removeConstraint(ConstraintBase* _constraint)
+void ConstrainedGroup::removeConstraint(const ConstraintBasePtr& _constraint)
 {
-  assert(_constraint != nullptr && "Null constraint pointer is now allowed.");
-  assert(containConstraint(_constraint) == true
-         && "Don't try to remove a constraint not contained in Community.");
+  assert(_constraint != nullptr && "Attempted to add nullptr.");
+  assert(containConstraint(_constraint)
+         && "Attempted to remove not existing constraint.");
 
   mConstraints.erase(
         remove(mConstraints.begin(), mConstraints.end(), _constraint),
@@ -95,35 +96,18 @@ void ConstrainedGroup::removeConstraint(ConstraintBase* _constraint)
 //==============================================================================
 void ConstrainedGroup::removeAllConstraints()
 {
-//  dtwarn << "ConstrainedGroup::removeAllConstraints(): "
-//         << "Not implemented." << std::endl;
-
-  // TODO(JS): Temporary implementation
-//  for (size_t i = 0; i < mConstraints.size(); ++i)
-//  {
-//    delete mConstraints[i];
-//  }
-
   mConstraints.clear();
 }
 
 //==============================================================================
-bool ConstrainedGroup::containConstraint(ConstraintBase* _constraint) const
+#ifndef NDEBUG
+bool ConstrainedGroup::containConstraint(
+    const ConstConstraintBasePtr& _constraint) const
 {
-//  std::cout << "CommunityTEST::_containConstraint(): Not implemented."
-//            << std::endl;
-
-  return false;
+  return std::find(mConstraints.begin(), mConstraints.end(), _constraint)
+      != mConstraints.end();
 }
-
-//==============================================================================
-bool ConstrainedGroup::checkAndAddConstraint(ConstraintBase* _constraint)
-{
-  std::cout << "CommunityTEST::_checkAndAddConstraint(): Not implemented."
-            << std::endl;
-
-  return false;
-}
+#endif
 
 //==============================================================================
 size_t ConstrainedGroup::getTotalDimension() const

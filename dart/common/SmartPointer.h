@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,35 +34,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_OPENGLCAMERA_H
-#define DART_RENDERER_OPENGLCAMERA_H
+#ifndef DART_COMMON_SMARTPOINTER_H_
+#define DART_COMMON_SMARTPOINTER_H_
 
-#include <Eigen/Eigen>
-#include "dart/renderer/Camera.h"
+#include <memory>
 
-namespace dart {
-namespace renderer {
+// -- Standard shared/weak pointers --
+// Define a typedef for const and non-const version of shared_ptr and weak_ptr
+// for the class X
+#define DART_COMMON_MAKE_SHARED_WEAK( X )\
+  class X ;\
+  typedef std::shared_ptr< X >       X ## Ptr;\
+  typedef std::shared_ptr< const X > Const ## X ## Ptr;\
+  typedef std::weak_ptr< X >         Weak ## X ## Ptr;\
+  typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
 
-class OpenGLCamera : public Camera
-{
-public:
-  OpenGLCamera() {}
-  virtual ~OpenGLCamera() {}
-  virtual void set(const Eigen::Vector3d& _Eye, const Eigen::Vector3d& _look, const Eigen::Vector3d& _up) {}
-  virtual void slide(double _delX, double _delY, double _delZ, bool _bLocal = false) {}
-  virtual void setFrustum(float _vAng, float _asp, float _nearD, float _farD) {}
-  virtual void setOrtho(float _width, float _height, float _nearD, float _farD) {}
-
-
-  virtual void roll(float _angle) {}
-  virtual void pitch(float _angle) {}
-  virtual void yaw(float _angle) {}
-  virtual void localRotate(float _angle, AXIS _axis) {}
-  virtual void globalRotate(float _angle, AXIS _axis) {}
-
-};
-
-} // namespace renderer
-} // namespace dart
-
-#endif // #ifndef DART_RENDERER_OPENGLCAMERA_H
+#endif // DART_COMMON_SMARTPOINTER_H_

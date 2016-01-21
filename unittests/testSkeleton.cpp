@@ -773,6 +773,23 @@ TEST(Skeleton, CloneNodeOrdering)
   }
 }
 
+TEST(Skeleton, ZeroDofJointInReferential)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly included in linkages.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  BodyNode* zeroDof2 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+
+  BranchPtr branch = Branch::create(skel->getBodyNode(0));
+  EXPECT_EQ(branch->getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_FALSE(branch->getIndexOf(zeroDof1) == INVALID_INDEX);
+  EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
@@ -987,6 +1004,19 @@ size_t checkForBodyNodes(
   return count;
 }
 
+void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
+{
+  EXPECT_TRUE(refSkel->getNumBodyNodes() == refSkel->getNumJoints());
+
+  // Linkages should have the property:
+  // getJoint(i) == getBodyNode(i)->getParentJoint()
+  for(size_t i=0; i < refSkel->getNumJoints(); ++i)
+  {
+    EXPECT_EQ(refSkel->getJoint(i), refSkel->getBodyNode(i)->getParentJoint());
+    EXPECT_EQ(refSkel->getIndexOf(refSkel->getJoint(i)), i);
+  }
+}
+
 TEST(Skeleton, Linkage)
 {
   // Test a variety of uses of Linkage::Criteria
@@ -999,6 +1029,7 @@ TEST(Skeleton, Linkage)
   ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
                  skel->getBodyNode("c3b4"), "midchain");
   checkForBodyNodes(midchain, skel, true, "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(midchain);
 
   Linkage::Criteria criteria;
   criteria.mStart = skel->getBodyNode("c5b2");
@@ -1007,6 +1038,7 @@ TEST(Skeleton, Linkage)
   LinkagePtr path = Linkage::create(criteria, "path");
   checkForBodyNodes(path, skel, true, "c5b2", "c5b1", "c1b3", "c3b1", "c3b2",
                                       "c3b3", "c4b1", "c4b2", "c4b3");
+  checkLinkageJointConsistency(path);
 
   skel->getBodyNode(0)->copyTo(nullptr);
   criteria.mTargets.clear();
@@ -1022,6 +1054,7 @@ TEST(Skeleton, Linkage)
                     "c3b1(1)", "c1b3(1)", "c2b1(1)", "c2b2(1)", "c2b3(1)",
                     "c5b1",    "c5b2",    "c1b2",    "c1b1",
                     "c5b1(1)", "c5b2(1)", "c1b2(1)", "c1b1(1)");
+  checkLinkageJointConsistency(combinedTreeBases);
 
   SkeletonPtr skel2 = skel->getBodyNode(0)->copyAs("skel2");
   criteria.mTargets.clear();
@@ -1041,23 +1074,28 @@ TEST(Skeleton, Linkage)
   ChainPtr downstreamFreeJoint = Chain::create(skel->getBodyNode("c1b1"),
       skel->getBodyNode("c1b3"), Chain::IncludeBoth, "downstreamFreeJoint");
   checkForBodyNodes(downstreamFreeJoint, skel, true, "c1b1");
+  checkLinkageJointConsistency(downstreamFreeJoint);
 
   ChainPtr emptyChain = Chain::create(skel->getBodyNode("c1b1"),
       skel->getBodyNode("c1b3"), "emptyChain");
   checkForBodyNodes(emptyChain, skel, true);
+  checkLinkageJointConsistency(emptyChain);
 
   ChainPtr chainFromNull = Chain::create(nullptr, skel->getBodyNode("c1b2"),
                                          "chainFromNull");
   checkForBodyNodes(chainFromNull, skel, true, "c1b1");
+  checkLinkageJointConsistency(chainFromNull);
 
   ChainPtr upstreamFreeJoint = Chain::create(skel->getBodyNode("c1b3"),
                           skel->getBodyNode("c1b1"), "upstreamFreeJoint");
   checkForBodyNodes(upstreamFreeJoint, skel, true, "c1b3", "c1b2");
+  checkLinkageJointConsistency(upstreamFreeJoint);
 
   // Using nullptr as the target should bring us towards the root of the tree
   ChainPtr upTowardsRoot =
       Chain::create(skel->getBodyNode("c1b3"), nullptr, "upTowardsRoot");
   checkForBodyNodes(upTowardsRoot, skel, true, "c1b3", "c1b2");
+  checkLinkageJointConsistency(upTowardsRoot);
 
   criteria.mTargets.clear();
   criteria.mTargets.push_back(skel->getBodyNode("c4b3"));
@@ -1066,6 +1104,7 @@ TEST(Skeleton, Linkage)
   LinkagePtr terminatedLinkage = Linkage::create(criteria, "terminatedLinkage");
   checkForBodyNodes(terminatedLinkage, skel, true,
                     "c1b3", "c3b1", "c3b2");
+  checkLinkageJointConsistency(terminatedLinkage);
 
   criteria.mStart = skel->getBodyNode("c1b1");
   criteria.mStart.mPolicy = Linkage::Criteria::DOWNSTREAM;
@@ -1078,12 +1117,81 @@ TEST(Skeleton, Linkage)
   checkForBodyNodes(terminatedSubtree, skel, true,
                     "c1b1", "c1b2", "c1b3", "c5b1",
                     "c5b2", "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(terminatedSubtree);
 
   criteria.mStart.mPolicy = Linkage::Criteria::UPSTREAM;
   criteria.mStart.mNode = skel->getBodyNode("c3b1");
   LinkagePtr terminatedUpstream = Linkage::create(criteria, "terminatedUpstream");
   checkForBodyNodes(terminatedUpstream, skel, true,
                     "c3b1", "c1b3", "c5b1", "c5b2", "c1b2", "c1b1");
+  checkLinkageJointConsistency(terminatedUpstream);
+}
+
+TEST(Skeleton, Group)
+{
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  // Make twice as many BodyNodes in the Skeleton
+  SkeletonPtr skel2 = constructLinkageTestSkeleton();
+  skel2->getRootBodyNode()->moveTo(skel, nullptr);
+
+  // Test nullptr construction
+  GroupPtr nullGroup = Group::create("null_group", nullptr);
+  EXPECT_EQ(nullGroup->getNumBodyNodes(), 0u);
+  EXPECT_EQ(nullGroup->getNumJoints(), 0u);
+  EXPECT_EQ(nullGroup->getNumDofs(), 0u);
+
+  // Test conversion from Skeleton
+  GroupPtr skel1Group = Group::create("skel1_group", skel);
+  EXPECT_EQ(skel1Group->getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_EQ(skel1Group->getNumJoints(), skel->getNumJoints());
+  EXPECT_EQ(skel1Group->getNumDofs(), skel->getNumDofs());
+
+  for(size_t i=0; i < skel1Group->getNumBodyNodes(); ++i)
+    EXPECT_EQ(skel1Group->getBodyNode(i), skel->getBodyNode(i));
+
+  for(size_t i=0; i < skel1Group->getNumJoints(); ++i)
+    EXPECT_EQ(skel1Group->getJoint(i), skel->getJoint(i));
+
+  for(size_t i=0; i < skel1Group->getNumDofs(); ++i)
+    EXPECT_EQ(skel1Group->getDof(i), skel->getDof(i));
+
+  // Test arbitrary Groups by plucking random BodyNodes, Joints, and
+  // DegreesOfFreedom from a Skeleton.
+  GroupPtr group = Group::create();
+  std::vector<BodyNode*> bodyNodes;
+  std::vector<Joint*> joints;
+  std::vector<DegreeOfFreedom*> dofs;
+  for(size_t i=0; i < 2*skel->getNumBodyNodes(); ++i)
+  {
+    size_t randomIndex = floor(random(0, skel->getNumBodyNodes()));
+    BodyNode* bn = skel->getBodyNode(randomIndex);
+    if(group->addBodyNode(bn, false))
+      bodyNodes.push_back(bn);
+
+    randomIndex = floor(random(0, skel->getNumJoints()));
+    Joint* joint = skel->getJoint(randomIndex);
+    if(group->addJoint(joint, false, false))
+      joints.push_back(joint);
+
+    randomIndex = floor(random(0, skel->getNumDofs()));
+    DegreeOfFreedom* dof = skel->getDof(randomIndex);
+    if(group->addDof(dof, false, false))
+      dofs.push_back(dof);
+  }
+
+  EXPECT_EQ(group->getNumBodyNodes(), bodyNodes.size());
+  EXPECT_EQ(group->getNumJoints(), joints.size());
+  EXPECT_EQ(group->getNumDofs(), dofs.size());
+
+  for(size_t i=0; i < group->getNumBodyNodes(); ++i)
+    EXPECT_EQ(group->getBodyNode(i), bodyNodes[i]);
+
+  for(size_t i=0; i < group->getNumJoints(); ++i)
+    EXPECT_EQ(group->getJoint(i), joints[i]);
+
+  for(size_t i=0; i < group->getNumDofs(); ++i)
+    EXPECT_EQ(group->getDof(i), dofs[i]);
 }
 
 TEST(Skeleton, Configurations)

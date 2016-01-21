@@ -416,7 +416,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   const Frame* oldParentFrame = mParentFrame;
 
-  if (!mAmQuiet && nullptr != mParentFrame)
+  if (!mAmQuiet && nullptr != mParentFrame && !mParentFrame->isWorld())
   {
     // If this entity has a parent Frame, tell that parent that it is losing
     // this child
@@ -432,8 +432,13 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 
   if (!mAmQuiet && nullptr != mParentFrame)
   {
-    mParentFrame->mChildEntities.insert(this);
-    mParentFrame->processNewEntity(this);
+    if(!mParentFrame->isWorld())
+    {
+      // The WorldFrame should not keep track of its children, or else we get
+      // concurrency issues (race conditions).
+      mParentFrame->mChildEntities.insert(this);
+      mParentFrame->processNewEntity(this);
+    }
     notifyTransformUpdate();
   }
 

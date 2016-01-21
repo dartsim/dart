@@ -73,6 +73,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
 
+  MultiDofJoint(const MultiDofJoint&) = delete;
+
   /// Destructor
   virtual ~MultiDofJoint();
 

@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
   bd2->getVisualizationShape(0)->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
   Eigen::Vector3d offset(0.0, 0.025, 0.0);
   Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  BallJointConstraint *cl = new BallJointConstraint( bd1, bd2, jointPos);
+  BallJointConstraintPtr cl =
+      std::make_shared<BallJointConstraint>( bd1, bd2, jointPos);
   //WeldJointConstraint *cl = new WeldJointConstraint(bd1, bd2);
   myWorld->getConstraintSolver()->addConstraint(cl);
 

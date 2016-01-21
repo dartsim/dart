@@ -1445,32 +1445,56 @@ Eigen::Matrix3d makeSkewSymmetric(const Eigen::Vector3d& _v) {
 }
 
 //==============================================================================
-Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
-                                      const Eigen::Vector3d& _axisZ)
+Eigen::Matrix3d computeRotation(const Eigen::Vector3d& axis,
+                                      const AxisType axisType)
+{
+  assert(axis != Eigen::Vector3d::Zero());
+
+  // First axis
+  const Eigen::Vector3d axis0 = axis.normalized();
+
+  // Second axis
+  Eigen::Vector3d axis1 = axis0.cross(Eigen::Vector3d::UnitX());
+  if (axis1.norm() < DART_EPSILON)
+    axis1 = axis0.cross(Eigen::Vector3d::UnitY());
+  axis1.normalize();
+
+  // Third axis
+  const Eigen::Vector3d axis2 = axis0.cross(axis1).normalized();
+
+  // Assign the three axes
+  Eigen::Matrix3d result;
+  int index = axisType;
+  result.col(index)       = axis0;
+  result.col(++index % 3) = axis1;
+  result.col(++index % 3) = axis2;
+
+  assert(verifyRotation(result));
+
+  return result;
+}
+
+//==============================================================================
+Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
+                                   const Eigen::Vector3d& translation,
+                                   AxisType axisType)
 {
   Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
 
-  // Compute orientation
-  const Eigen::Vector3d& axisZ = _axisZ.normalized();
-  Eigen::Vector3d axisY = axisZ.cross(Eigen::Vector3d::UnitX());
-  if (axisY.norm() < 1e-6)
-    axisY = axisZ.cross(Eigen::Vector3d::UnitY());
-  axisY.normalize();
-
-  const Eigen::Vector3d& axisX = (axisY.cross(axisZ)).normalized();
-
-  // Assign orientation
-  result.linear().col(0) = axisX;
-  result.linear().col(1) = axisY;
-  result.linear().col(2) = axisZ;
-
-  // Assign translation
-  result.translation() = _origin;
+  result.linear()      = computeRotation(axis, axisType);
+  result.translation() = translation;
 
   // Verification
   assert(verifyTransform(result));
 
   return result;
+}
+
+//==============================================================================
+Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
+                                      const Eigen::Vector3d& _axisZ)
+{
+  return computeTransform(_axisZ, _origin, AxisType::AXIS_Z);
 }
 
 //==============================================================================
@@ -1950,6 +1974,18 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(size_t& _index1, size_t& _in
 
   return result;
 }
+
+BoundingBox::BoundingBox() :
+        mMin(0, 0, 0), mMax(0, 0, 0)
+{
+
+}
+BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max) :
+        mMin(min), mMax(max)
+{
+
+}
+
 
 }  // namespace math
 }  // namespace dart

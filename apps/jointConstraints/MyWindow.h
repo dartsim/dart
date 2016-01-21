@@ -72,7 +72,7 @@ public:
 private:
   Eigen::Vector3d mForce;
   Controller* mController;
-  dart::constraint::WeldJointConstraint* mWeldJoint;
+  dart::constraint::WeldJointConstraintPtr mWeldJoint;
   int mImpulseDuration;
   bool mHarnessOn;
 

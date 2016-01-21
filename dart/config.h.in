@@ -28,6 +28,15 @@
   (DART_MAJOR_VERSION < x || (DART_MAJOR_VERSION <= x && \
   (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
 
+// Detect the compiler
+#if defined(__clang__)
+  #define DART_COMPILER_CLANG
+#elif defined(__GNUC__) || defined(__GNUG__)
+  #define DART_COMPILER_GCC
+#elif defined(_MSC_VER)
+  #define DART_COMPILER_MSVC
+#endif
+
 #cmakedefine BUILD_TYPE_DEBUG 1
 #cmakedefine BUILD_TYPE_RELEASE 1
 #cmakedefine BUILD_TYPE_RELWITHDEBINFO 1
@@ -40,5 +49,9 @@
 
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"
+
+// See #451
+#cmakedefine ASSIMP_AISCENE_CTOR_DTOR_DEFINED 1
+#cmakedefine ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED 1
 
 #endif // #ifndef DART_CONFIG_H_

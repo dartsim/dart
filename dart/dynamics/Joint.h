@@ -103,7 +103,6 @@ public:
     /// The constraint solver will try to track the desired velocity within the
     /// joint force limit. All the joint constarints are valid.
     SERVO,
-    // TODO: Not implemented yet.
 
     /// Command input is joint acceleration, and the output is joint force.
     ///

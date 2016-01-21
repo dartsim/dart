@@ -106,6 +106,12 @@ public:
     return mBodyNodePtr->getParentJoint();
   }
 
+  /// Get the BodyNode that this JointPtr is tied to
+  TemplateBodyNodePtr<BodyNodeT> getBodyNodePtr() const
+  {
+    return mBodyNodePtr;
+  }
+
   /// Set the Joint for this JointPtr
   void set(JointT* _ptr)
   {

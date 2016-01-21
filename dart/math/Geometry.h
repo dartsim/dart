@@ -40,6 +40,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
@@ -416,7 +417,28 @@ Eigen::Matrix3d parallelAxisTheorem(const Eigen::Matrix3d& _original,
                                     const Eigen::Vector3d& _comShift,
                                     double _mass);
 
+enum AxisType
+{
+  AXIS_X = 0,
+  AXIS_Y = 1,
+  AXIS_Z = 2
+};
+
+/// Compute a rotation matrix from a vector. One axis of the rotated coordinates
+/// by the rotation matrix matches the input axis where the axis is specified
+/// by axisType.
+Eigen::Matrix3d computeRotation(const Eigen::Vector3d& axis,
+                                AxisType axisType = AxisType::AXIS_X);
+
+/// Compute a transform from a vector and a position. The rotation of the result
+/// transform is computed by computeRotationMatrix(), and the translation is
+/// just the input translation.
+Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
+                                   const Eigen::Vector3d& translation,
+                                   AxisType axisType = AxisType::AXIS_X);
+
 /// Generate frame given origin and z-axis
+DEPRECATED(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 
@@ -428,20 +450,11 @@ bool verifyRotation(const Eigen::Matrix3d& _R);
 /// all the elements are not NaN values.
 bool verifyTransform(const Eigen::Isometry3d& _T);
 
-/// Get the remainder of dividing x by y
-inline double mod(double x, double y)
-{
-  if( 0.0 == y )
-    return x;
-
-  return x - y * floor(x/y);
-}
-
 /// Compute the angle (in the range of -pi to +pi) which ignores any full
 /// rotations
 inline double wrapToPi(double angle)
 {
-  return mod(angle+M_PI, 2*M_PI) - M_PI;
+  return std::fmod(angle+M_PI, 2*M_PI) - M_PI;
 }
 
 template <typename MatrixType, typename ReturnType>
@@ -548,6 +561,35 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     size_t& _index2,
     const Eigen::Vector2d& _p,
     const SupportPolygon& _support);
+
+
+// Represents a bounding box with minimum and maximum coordinates.
+class BoundingBox {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        BoundingBox();
+        BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+
+        inline const Eigen::Vector3d& getMin() const {  return mMin; }
+        inline const Eigen::Vector3d& getMax() const { return mMax; }
+
+        inline void setMin(const Eigen::Vector3d& min) { mMin = min; }
+        inline void setMax(const Eigen::Vector3d& max) { mMax = max; }
+
+        // \brief Centroid of the bounding box (i.e average of min and max)
+        inline Eigen::Vector3d computeCenter() const { return (mMax + mMin) * 0.5; }
+        // \brief Coordinates of the maximum corner with respect to the centroid.
+        inline Eigen::Vector3d computeHalfExtents() const { return (mMax - mMin) * 0.5; }
+        // \brief Length of each of the sides of the bounding box.
+        inline Eigen::Vector3d computeFullExtents() const { return (mMax - mMin); }
+
+    protected:
+        // \brief minimum coordinates of the bounding box
+        Eigen::Vector3d mMin;
+        // \brief maximum coordinates of the bounding box
+        Eigen::Vector3d mMax;
+};
 
 }  // namespace math
 }  // namespace dart

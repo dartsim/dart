@@ -581,7 +581,11 @@ public:
   /// Creating an Analytical solver will have the side effect of removing the
   /// error clamp and error weights from your ErrorMethod. If you still want
   /// your error computations to be clamped and weighted, you should set it
-  /// again after creating the Analytical solver.
+  /// again after creating the Analytical solver. Clamping and weighting the
+  /// error vector often helps iterative methods to converge smoothly, but it is
+  /// counter-productive for analytical methods which do not typically rely on
+  /// convergence; analytical methods can usually solve the entire error vector
+  /// directly.
   class Analytical : public GradientMethod
   {
   public:
@@ -590,9 +594,9 @@ public:
     /// solution produced by the analytical IK.
     enum Validity_t
     {
-      VALID = 0,
-      OUT_OF_REACH   = 1 << 0,
-      LIMIT_VIOLATED = 1 << 1
+      VALID = 0,                ///< The solution is completely valid and reaches the target
+      OUT_OF_REACH   = 1 << 0,  ///< The solution does not reach the target
+      LIMIT_VIOLATED = 1 << 1   ///< The solution has one or more joint positions that violate the joint limits
     };
 
     /// If there are extra DOFs in the IK module which your Analytical solver
@@ -776,7 +780,9 @@ public:
 
     /// Go through the mSolutions vector and tag entries with LIMIT_VIOLATED if
     /// any components of their configuration are outside of their position
-    /// limits.
+    /// limits. This will NOT clear the LIMIT_VIOLATED flag from entries of
+    /// mSolutions which are already tagged with it, even if they do not violate
+    /// any limits.
     void checkSolutionJointLimits();
 
     /// Vector of solutions
