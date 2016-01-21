@@ -39,9 +39,7 @@
 
 #include <memory>
 
-namespace osg {
-class Node;
-} // namespace osg
+#include <osg/Node>
 
 namespace kido {
 
@@ -50,6 +48,7 @@ class Shape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class EntityNode;
 
@@ -61,7 +60,7 @@ public:
 
   ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
             EntityNode* _parent,
-            osg::Node* _node);
+            ::osg::Node* _node);
 
   virtual ~ShapeNode();
 
@@ -69,10 +68,10 @@ public:
   std::shared_ptr<kido::dynamics::Shape> getShape() const;
 
   /// Cast this ShapeNode into an osg::Node
-  osg::Node* getNode();
+  ::osg::Node* getNode();
 
   /// Cast this ShapeNode into an osg::Node
-  const osg::Node* getNode() const;
+  const ::osg::Node* getNode() const;
 
   /// Pointer to the parent EntityNode of this ShapeNode
   EntityNode* getParentEntityNode();
@@ -94,7 +93,7 @@ protected:
   const std::shared_ptr<kido::dynamics::Shape> mShape;
 
   /// Should generally be equal to 'this'
-  osg::Node* const mNode;
+  ::osg::Node* const mNode;
 
   /// Pointer to the parent EntityNode of this ShapeNode
   EntityNode* mParentEntity;
@@ -107,6 +106,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

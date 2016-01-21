@@ -42,6 +42,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 FrameNode::FrameNode(kido::dynamics::Frame* _frame, WorldNode* _worldNode,
                      bool _relative, bool _recursive)
@@ -178,7 +179,7 @@ void FrameNode::refreshFrameNode(kido::dynamics::Frame* _frame)
 //==============================================================================
 void FrameNode::createFrameNode(kido::dynamics::Frame* _frame)
 {
-  osg::ref_ptr<FrameNode> node = new FrameNode(_frame, mWorldNode, true, true);
+  ::osg::ref_ptr<FrameNode> node = new FrameNode(_frame, mWorldNode, true, true);
 
   mFrameToNode[_frame] = node.get();
   mNodeToFrame[node.get()] = _frame;
@@ -204,7 +205,7 @@ void FrameNode::refreshEntityNode(kido::dynamics::Entity* _entity)
 //==============================================================================
 void FrameNode::createEntityNode(kido::dynamics::Entity* _entity)
 {
-  osg::ref_ptr<EntityNode> node = new EntityNode(_entity, this);
+  ::osg::ref_ptr<EntityNode> node = new EntityNode(_entity, this);
 
   mEntityToNode[_entity] = node.get();
   mNodeToEntity[node.get()] = _entity;
@@ -212,5 +213,6 @@ void FrameNode::createEntityNode(kido::dynamics::Entity* _entity)
   addChild(node);
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

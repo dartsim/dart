@@ -38,6 +38,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
@@ -49,7 +50,7 @@ TrackballManipulator::TrackballManipulator(int flags)
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
-                                           const osg::CopyOp& copyOp)
+                                           const ::osg::CopyOp& copyOp)
   : osgGA::OrbitManipulator(tm, copyOp)
 {
   // Do nothing
@@ -77,5 +78,6 @@ bool TrackballManipulator::performMovementRightMouseButton(
         eventTimeDelta, dx, dy);
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

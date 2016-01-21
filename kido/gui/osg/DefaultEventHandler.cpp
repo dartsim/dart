@@ -50,6 +50,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -103,7 +104,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
     ConstraintType _constraint,
     const Eigen::Vector3d& _constraintVector) const
 {
-  osg::Vec3d eye, center, up;
+  ::osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
 
   Eigen::Vector3d near, far;
@@ -150,15 +151,15 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(Eigen::Vector3d& near,
                                                         Eigen::Vector3d& far,
                                                         double distance) const
 {
-  osg::Camera* C = mViewer->getCamera();
-  osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
+  ::osg::Camera* C = mViewer->getCamera();
+  ::osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
       * C->getViewport()->computeWindowMatrix();
-  osg::Matrix invVPW;
+  ::osg::Matrix invVPW;
   invVPW.invert(VPW);
 
   double x = getWindowCursorX(), y = getWindowCursorY();
-  osg::Vec3 osgNear = osg::Vec3(x,y,0.0) * invVPW;
-  osg::Vec3 osgFar = osg::Vec3(x,y,distance) * invVPW;
+  ::osg::Vec3 osgNear = ::osg::Vec3(x,y,0.0) * invVPW;
+  ::osg::Vec3 osgFar = ::osg::Vec3(x,y,distance) * invVPW;
 
   near = osgToEigVec3(osgNear);
   far = osgToEigVec3(osgFar);
@@ -224,7 +225,7 @@ void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
     infoVector.reserve(hlist.size());
     for(const osgUtil::LineSegmentIntersector::Intersection& intersect : hlist)
     {
-      osg::Drawable* drawable = intersect.drawable;
+      ::osg::Drawable* drawable = intersect.drawable;
       render::ShapeNode* shape =
           dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
       if(shape)
@@ -442,5 +443,6 @@ void DefaultEventHandler::handleDestructionNotification(
     mMouseEventHandlers.erase(it);
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

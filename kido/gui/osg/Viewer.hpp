@@ -61,6 +61,7 @@ class BodyNode;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class WorldNode;
 class DefaultEventHandler;
@@ -73,7 +74,7 @@ class BodyNodeDnD;
 class Viewer;
 class SaveScreen;
 
-class ViewerAttachment : public virtual osg::Group
+class ViewerAttachment : public virtual ::osg::Group
 {
 public:
 
@@ -118,9 +119,9 @@ class Viewer : public osgViewer::Viewer, public kido::common::Subject
 {
 public:
 
-  /// Constructor for kido::gui::Viewer. This will automatically create the
+  /// Constructor for kido::gui::osg::Viewer. This will automatically create the
   /// default event handler.
-  Viewer(const osg::Vec4& clearColor = osg::Vec4(0.9,0.9,0.9,1.0));
+  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0));
 
   /// Destructor
   virtual ~Viewer();
@@ -154,7 +155,7 @@ public:
   /// Returns true if the Viewer is currently recording.
   bool isRecording() const;
 
-  /// Creates the default event handler for this kido::gui::Viewer
+  /// Creates the default event handler for this kido::gui::osg::Viewer
   virtual void switchDefaultEventHandler(bool _on);
 
   /// Return a pointer to the default event handler
@@ -193,17 +194,17 @@ public:
   const std::unordered_set<ViewerAttachment*>& getAttachments() const;
 
   /// Get the Group node that contains the LightSources for this Viewer
-  osg::Group* getLightGroup();
+  ::osg::Group* getLightGroup();
 
   /// Get the Group node that contains the LightSources for this Viewer
-  const osg::Group* getLightGroup() const;
+  const ::osg::Group* getLightGroup() const;
 
   /// Set up the default lighting scheme
   void setupDefaultLights();
 
   /// Set the direction that this Viewer should consider to be upwards (default
   /// is <0,0,1>)
-  void setUpwardsDirection(const osg::Vec3& _up);
+  void setUpwardsDirection(const ::osg::Vec3& _up);
 
   /// Set the direction that this Viewer should consider to be upwards (default
   /// is <0,0,1>)
@@ -287,7 +288,7 @@ public:
   void updateDragAndDrops();
 
   /// Get the root osg::Group of this Viewer
-  const osg::ref_ptr<osg::Group>& getRootGroup() const;
+  const ::osg::ref_ptr<::osg::Group>& getRootGroup() const;
 
 protected:
 
@@ -314,32 +315,32 @@ protected:
   /// Name for the next screen capture
   std::string mScreenCapName;
 
-  /// Default WorldNodeEventHandler for this kido::gui::Viewer
-  osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
+  /// Default WorldNodeEventHandler for this kido::gui::osg::Viewer
+  ::osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
 
   /// The root node of this Viewer
-  osg::ref_ptr<osg::Group> mRootGroup;
+  ::osg::ref_ptr<::osg::Group> mRootGroup;
 
   /// The Group Node containing light sources
-  osg::ref_ptr<osg::Group> mLightGroup;
+  ::osg::ref_ptr<::osg::Group> mLightGroup;
 
   /// Non-headlights Light #1
-  osg::ref_ptr<osg::Light> mLight1;
+  ::osg::ref_ptr<::osg::Light> mLight1;
 
   /// Non-headlights LightSource #1
-  osg::ref_ptr<osg::LightSource> mLightSource1;
+  ::osg::ref_ptr<::osg::LightSource> mLightSource1;
 
   /// Non-headlights Light #2
-  osg::ref_ptr<osg::Light> mLight2;
+  ::osg::ref_ptr<::osg::Light> mLight2;
 
   /// Non-headlights LightSource #2
-  osg::ref_ptr<osg::LightSource> mLightSource2;
+  ::osg::ref_ptr<::osg::LightSource> mLightSource2;
 
   /// Vector pointing upwards
-  osg::Vec3 mUpwards;
+  ::osg::Vec3 mUpwards;
 
   /// Vector pointing to the side
-  osg::Vec3 mOver;
+  ::osg::Vec3 mOver;
 
   /// True iff this Viewer is currently simulating
   bool mSimulating;
@@ -350,7 +351,7 @@ protected:
   /// True iff headlights were last set to be on
   bool mHeadlights;
 
-  /// Map of WorldNodes in this kido::gui::Viewer. A WorldNode will map to true
+  /// Map of WorldNodes in this kido::gui::osg::Viewer. A WorldNode will map to true
   /// iff it is currently active
   std::map<WorldNode*,bool> mWorldNodes;
 
@@ -377,6 +378,7 @@ protected:
   std::map<kido::dynamics::BodyNode*,BodyNodeDnD*> mBodyNodeDnDMap;
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

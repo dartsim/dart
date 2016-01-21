@@ -41,6 +41,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 class OSGGA_EXPORT TrackballManipulator : public osgGA::OrbitManipulator
 {
@@ -50,7 +51,7 @@ public:
 
   /// Copy-constructor
   TrackballManipulator(const TrackballManipulator& tm,
-                       const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
+                       const ::osg::CopyOp& copyOp = ::osg::CopyOp::SHALLOW_COPY);
 
   /// Destructor
   virtual ~TrackballManipulator();
@@ -65,10 +66,11 @@ public:
                                                const double dx,
                                                const double dy) override;
 
-  META_Object( kido-gui-osg, TrackballManipulator )
+  //META_Object( kido-gui-osg, TrackballManipulator )
   // TODO(MXG): Consider applying the META macros to every kido-gui-osg Node
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

@@ -48,11 +48,12 @@ class Entity;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class WorldNode;
 class EntityNode;
 
-class FrameNode : public osg::MatrixTransform
+class FrameNode : public ::osg::MatrixTransform
 {
 public:
 
@@ -121,6 +122,7 @@ protected:
 
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

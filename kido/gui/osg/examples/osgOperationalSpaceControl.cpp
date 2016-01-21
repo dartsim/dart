@@ -41,12 +41,12 @@ using namespace kido::common;
 using namespace kido::dynamics;
 using namespace kido::math;
 
-class OperationalSpaceControlWorld : public kido::gui::WorldNode
+class OperationalSpaceControlWorld : public kido::gui::osg::WorldNode
 {
 public:
 
   OperationalSpaceControlWorld(kido::simulation::WorldPtr _world)
-    : kido::gui::WorldNode(_world)
+    : kido::gui::osg::WorldNode(_world)
   {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -109,7 +109,7 @@ public:
     mRobot->setForces(mForces);
   }
 
-  kido::gui::DragAndDrop* dnd;
+  kido::gui::osg::DragAndDrop* dnd;
 
 protected:
 
@@ -141,7 +141,7 @@ class ConstraintEventHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  ConstraintEventHandler(kido::gui::DragAndDrop* dnd = nullptr)
+  ConstraintEventHandler(kido::gui::osg::DragAndDrop* dnd = nullptr)
     : mDnD(dnd)
   {
     clearConstraints();
@@ -247,7 +247,7 @@ public:
 
   bool mConstrained[3];
 
-  kido::sub_ptr<kido::gui::DragAndDrop> mDnD;
+  kido::sub_ptr<kido::gui::osg::DragAndDrop> mDnD;
 };
 
 int main()
@@ -289,12 +289,12 @@ int main()
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   // Create an instance of our customized WorldNode
-  osg::ref_ptr<OperationalSpaceControlWorld> node =
+  ::osg::ref_ptr<OperationalSpaceControlWorld> node =
       new OperationalSpaceControlWorld(world);
   node->setNumStepsPerCycle(10);
 
   // Create the Viewer instance
-  kido::gui::Viewer viewer;
+  kido::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
@@ -307,9 +307,9 @@ int main()
   // Set up the window to be 640x480 pixels
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 2.57,  3.14, 1.64),
-                                                 osg::Vec3( 0.00,  0.00, 0.00),
-                                                 osg::Vec3(-0.24, -0.25, 0.94));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3( 2.57,  3.14, 1.64),
+                                                 ::osg::Vec3( 0.00,  0.00, 0.00),
+                                                 ::osg::Vec3(-0.24, -0.25, 0.94));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());

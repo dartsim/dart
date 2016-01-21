@@ -42,6 +42,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
@@ -516,5 +517,6 @@ void InteractiveFrame::deleteAllTools()
       delete mTools[i][j];
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

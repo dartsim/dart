@@ -48,12 +48,13 @@ class PlaneShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class PlaneShapeGeode;
 class PlaneShapeDrawable;
 
-class PlaneShapeNode : public ShapeNode, public osg::MatrixTransform
+class PlaneShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -73,6 +74,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

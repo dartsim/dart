@@ -55,13 +55,14 @@ class Entity;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class FrameNode;
 class EntityNode;
 class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
-class WorldNode : public osg::Group
+class WorldNode : public ::osg::Group
 {
 public:
 
@@ -135,9 +136,9 @@ protected:
   /// Destructor
   virtual ~WorldNode();
 
-  /// Called when this world gets added to an kido::gui::Viewer. Override this
+  /// Called when this world gets added to an kido::gui::osg::Viewer. Override this
   /// function to customize the way your WorldNode starts up in an
-  /// kido::gui::Viewer. Default behavior does nothing.
+  /// kido::gui::osg::Viewer. Default behavior does nothing.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -191,6 +192,7 @@ protected:
 
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

@@ -43,6 +43,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
 WarningShapeNode::WarningShapeNode(std::shared_ptr<kido::dynamics::Shape> shape,
@@ -68,5 +69,6 @@ WarningShapeNode::~WarningShapeNode()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

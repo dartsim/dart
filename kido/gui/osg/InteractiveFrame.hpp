@@ -46,6 +46,7 @@ class MeshShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class InteractiveFrame;
 
@@ -144,6 +145,7 @@ protected:
 
 typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

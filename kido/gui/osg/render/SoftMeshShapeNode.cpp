@@ -46,9 +46,10 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
-class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
+class SoftMeshShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -69,7 +70,7 @@ protected:
 };
 
 //==============================================================================
-class SoftMeshShapeDrawable : public osg::Geometry
+class SoftMeshShapeDrawable : public ::osg::Geometry
 {
 public:
 
@@ -81,9 +82,9 @@ protected:
 
   virtual ~SoftMeshShapeDrawable();
 
-  osg::ref_ptr<osg::Vec3Array> mVertices;
-  osg::ref_ptr<osg::Vec3Array> mNormals;
-  osg::ref_ptr<osg::Vec4Array> mColors;
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mNormals;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
 
   std::vector<Eigen::Vector3d> mEigNormals;
 
@@ -148,8 +149,8 @@ SoftMeshShapeGeode::SoftMeshShapeGeode(
     mSoftMeshShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 
@@ -183,9 +184,9 @@ SoftMeshShapeGeode::~SoftMeshShapeGeode()
 //==============================================================================
 SoftMeshShapeDrawable::SoftMeshShapeDrawable(
     kido::dynamics::SoftMeshShape* shape)
-  : mVertices(new osg::Vec3Array),
-    mNormals(new osg::Vec3Array),
-    mColors(new osg::Vec4Array),
+  : mVertices(new ::osg::Vec3Array),
+    mNormals(new ::osg::Vec3Array),
+    mColors(new ::osg::Vec4Array),
     mSoftMeshShape(shape)
 {
   refresh(true);
@@ -230,17 +231,17 @@ static void computeNormals(std::vector<Eigen::Vector3d>& normals,
 void SoftMeshShapeDrawable::refresh(bool firstTime)
 {
   if(mSoftMeshShape->getDataVariance() == kido::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   const kido::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
 
   if(mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
-    osg::ref_ptr<osg::DrawElementsUInt> elements =
-        new osg::DrawElementsUInt(GL_TRIANGLES);
+    ::osg::ref_ptr<::osg::DrawElementsUInt> elements =
+        new ::osg::DrawElementsUInt(GL_TRIANGLES);
     elements->reserve(3*bn->getNumFaces());
 
     for(size_t i=0; i < bn->getNumFaces(); ++i)
@@ -274,7 +275,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     }
 
     setVertexArray(mVertices);
-    setNormalArray(mNormals, osg::Array::BIND_PER_VERTEX);
+    setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
   if(   mSoftMeshShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_COLOR)
@@ -285,7 +286,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
 
     (*mColors)[0] = eigToOsgVec4(mSoftMeshShape->getRGBA());
 
-    setColorArray(mColors, osg::Array::BIND_OVERALL);
+    setColorArray(mColors, ::osg::Array::BIND_OVERALL);
   }
 }
 
@@ -296,5 +297,6 @@ SoftMeshShapeDrawable::~SoftMeshShapeDrawable()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

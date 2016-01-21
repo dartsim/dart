@@ -57,6 +57,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 EntityNode::EntityNode(kido::dynamics::Entity* _entity, FrameNode* _parent)
   : mEntity(_entity),
@@ -263,5 +264,6 @@ void EntityNode::createShapeNode(std::shared_ptr<kido::dynamics::Shape> shape)
   addChild(node->getNode());
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

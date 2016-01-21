@@ -46,14 +46,15 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
-class WorldNodeCallback : public osg::NodeCallback
+class WorldNodeCallback : public ::osg::NodeCallback
 {
 public:
 
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  virtual void operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
   {
-    osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
+    ::osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
 
     if(currentNode)
       currentNode->refresh();
@@ -248,7 +249,7 @@ void WorldNode::refreshBaseFrameNode(kido::dynamics::Frame* _frame)
 //==============================================================================
 void WorldNode::createBaseFrameNode(kido::dynamics::Frame* _frame)
 {
-  osg::ref_ptr<FrameNode> node = new FrameNode(_frame, this, false, true);
+  ::osg::ref_ptr<FrameNode> node = new FrameNode(_frame, this, false, true);
 
   mFrameToNode[_frame] = node.get();
   mNodeToFrame[node.get()] = _frame;
@@ -291,11 +292,11 @@ void WorldNode::createBaseEntityNode(kido::dynamics::Entity* _entity)
   else
     parentFrame = _entity->getParentFrame();
 
-  osg::ref_ptr<FrameNode> parentFrameNode =
+  ::osg::ref_ptr<FrameNode> parentFrameNode =
       new FrameNode(parentFrame, this, false, false);
   addChild(parentFrameNode);
 
-  osg::ref_ptr<EntityNode> entityNode =
+  ::osg::ref_ptr<EntityNode> entityNode =
       new EntityNode(_entity, parentFrameNode);
   parentFrameNode->addChild(entityNode);
 
@@ -303,5 +304,6 @@ void WorldNode::createBaseEntityNode(kido::dynamics::Entity* _entity)
   mNodeToEntity[entityNode] = _entity;
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

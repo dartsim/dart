@@ -44,9 +44,10 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
-class CylinderShapeGeode : public ShapeNode, public osg::Geode
+class CylinderShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -67,7 +68,7 @@ protected:
 };
 
 //==============================================================================
-class CylinderShapeDrawable : public osg::ShapeDrawable
+class CylinderShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
@@ -141,8 +142,8 @@ CylinderShapeGeode::CylinderShapeGeode(kido::dynamics::CylinderShape* shape,
     mCylinderShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 
@@ -186,17 +187,17 @@ CylinderShapeDrawable::CylinderShapeDrawable(
 void CylinderShapeDrawable::refresh(bool firstTime)
 {
   if(mCylinderShape->getDataVariance() == kido::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   if(mCylinderShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     double R = mCylinderShape->getRadius();
     double h = mCylinderShape->getHeight();
-    osg::ref_ptr<osg::Cylinder> osg_shape =
-        new osg::Cylinder(osg::Vec3(0,0,0), R, h);
+    ::osg::ref_ptr<::osg::Cylinder> osg_shape =
+        new ::osg::Cylinder(::osg::Vec3(0,0,0), R, h);
     setShape(osg_shape);
     dirtyDisplayList();
   }
@@ -215,5 +216,6 @@ CylinderShapeDrawable::~CylinderShapeDrawable()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

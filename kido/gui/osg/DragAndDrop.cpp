@@ -51,6 +51,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 DragAndDrop::DragAndDrop(Viewer* viewer, kido::dynamics::Entity* entity)
   : mViewer(viewer),
@@ -84,12 +85,12 @@ void DragAndDrop::update()
   if(nullptr == mEntity)
     return;
 
-  kido::gui::MouseButtonEvent event =
+  kido::gui::osg::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(kido::gui::BUTTON_RELEASE == event)
+    if(kido::gui::osg::BUTTON_RELEASE == event)
     {
       mAmMoving = false;
       release();
@@ -99,13 +100,13 @@ void DragAndDrop::update()
   }
   else // not moving
   {
-    if(kido::gui::BUTTON_PUSH == event)
+    if(kido::gui::osg::BUTTON_PUSH == event)
     {
-      const std::vector<kido::gui::PickInfo>& picks =
+      const std::vector<kido::gui::osg::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            kido::gui::LEFT_MOUSE, kido::gui::BUTTON_PUSH);
+            kido::gui::osg::LEFT_MOUSE, kido::gui::osg::BUTTON_PUSH);
 
-      for(const kido::gui::PickInfo& pick : picks)
+      for(const kido::gui::osg::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity)
         {
@@ -333,25 +334,25 @@ void SimpleFrameShapeDnD::update()
   if(nullptr == mEntity || nullptr == mShape)
     return;
 
-  kido::gui::MouseButtonEvent event =
+  kido::gui::osg::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(kido::gui::BUTTON_RELEASE == event)
+    if(kido::gui::osg::BUTTON_RELEASE == event)
       mAmMoving = false;
 
     move();
   }
   else
   {
-    if(kido::gui::BUTTON_PUSH == event)
+    if(kido::gui::osg::BUTTON_PUSH == event)
     {
-      const std::vector<kido::gui::PickInfo>& picks =
+      const std::vector<kido::gui::osg::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            kido::gui::LEFT_MOUSE, kido::gui::BUTTON_PUSH);
+            kido::gui::osg::LEFT_MOUSE, kido::gui::osg::BUTTON_PUSH);
 
-      for(const kido::gui::PickInfo& pick : picks)
+      for(const kido::gui::osg::PickInfo& pick : picks)
       {
         if(pick.entity == mEntity && pick.shape.get() == mShape)
         {
@@ -802,5 +803,6 @@ osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() cons
   return mJointRestrictionModKey;
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

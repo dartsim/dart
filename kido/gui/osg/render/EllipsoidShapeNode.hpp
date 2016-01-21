@@ -49,12 +49,13 @@ class EllipsoidShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class EllipsoidShapeGeode;
 class EllipsoidShapeDrawable;
 
-class EllipsoidShapeNode : public ShapeNode, public osg::MatrixTransform
+class EllipsoidShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -75,6 +76,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

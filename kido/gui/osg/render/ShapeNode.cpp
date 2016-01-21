@@ -39,11 +39,12 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
 ShapeNode::ShapeNode(std::shared_ptr<kido::dynamics::Shape> _shape,
                      EntityNode* _parent,
-                     osg::Node* _node)
+                     ::osg::Node* _node)
   : mShape(_shape),
     mNode(_node),
     mParentEntity(_parent),
@@ -65,13 +66,13 @@ std::shared_ptr<kido::dynamics::Shape> ShapeNode::getShape() const
 }
 
 //==============================================================================
-osg::Node* ShapeNode::getNode()
+::osg::Node* ShapeNode::getNode()
 {
   return mNode;
 }
 
 //==============================================================================
-const osg::Node* ShapeNode::getNode() const
+const ::osg::Node* ShapeNode::getNode() const
 {
   return mNode;
 }
@@ -101,5 +102,6 @@ void ShapeNode::clearUtilization()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

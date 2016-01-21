@@ -48,12 +48,13 @@ class CylinderShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
-class CylinderShapeNode : public ShapeNode, public osg::MatrixTransform
+class CylinderShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -73,6 +74,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

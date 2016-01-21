@@ -55,8 +55,8 @@ class Entity;
 class Shape;
 } // dynamics
 
-namespace gui
-{
+namespace gui {
+namespace osg {
 
 struct PickInfo
 {
@@ -198,7 +198,7 @@ protected:
   virtual void handleDestructionNotification(
       const kido::common::Subject* _subject) override;
 
-  /// kido::gui::Viewer that this event handler is tied to
+  /// kido::gui::osg::Viewer that this event handler is tied to
   Viewer* mViewer;
 
   /// Set of MouseEventHandlers that are tied to this DefaultEventHandler
@@ -231,6 +231,7 @@ protected:
 
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

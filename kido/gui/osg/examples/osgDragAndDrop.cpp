@@ -45,7 +45,7 @@ int main()
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
   tf.translation() = Eigen::Vector3d(4,-4,0);
-  kido::gui::InteractiveFramePtr frame(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr frame(new kido::gui::osg::InteractiveFrame(
           Frame::World(), "interactive frame", tf, 2.0));
   world->addSimpleFrame(frame);
 
@@ -80,9 +80,9 @@ int main()
   world->addSimpleFrame(z_marker);
 
 
-  osg::ref_ptr<kido::gui::WorldNode> node = new kido::gui::WorldNode(world);
+  ::osg::ref_ptr<kido::gui::osg::WorldNode> node = new kido::gui::osg::WorldNode(world);
 
-  kido::gui::Viewer viewer;
+  kido::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.enableDragAndDrop(frame.get());
   viewer.enableDragAndDrop(draggable.get());
@@ -92,9 +92,9 @@ int main()
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3(20.0, 17.0, 17.0),
-                                                 osg::Vec3(0.0, 0.0, 0.0),
-                                                 osg::Vec3(0, 0, 1));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3(20.0, 17.0, 17.0),
+                                                 ::osg::Vec3(0.0, 0.0, 0.0),
+                                                 ::osg::Vec3(0, 0, 1));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
   viewer.run();

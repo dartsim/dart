@@ -690,7 +690,7 @@ protected:
 
 };
 
-class TeleoperationWorld : public kido::gui::WorldNode
+class TeleoperationWorld : public kido::gui::osg::WorldNode
 {
 public:
 
@@ -709,7 +709,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : kido::gui::WorldNode(_world),
+    : kido::gui::osg::WorldNode(_world),
       mHubo(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -831,7 +831,7 @@ class InputHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(kido::gui::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(kido::gui::osg::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& hubo, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -1031,7 +1031,7 @@ public:
 
 protected:
 
-  kido::gui::Viewer* mViewer;
+  kido::gui::osg::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -1148,7 +1148,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_hand");
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  kido::gui::InteractiveFramePtr lh_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr lh_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   l_hand->getIK(true)->setTarget(lh_target);
@@ -1175,7 +1175,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_hand");
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  kido::gui::InteractiveFramePtr rh_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr rh_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   r_hand->getIK(true)->setTarget(rh_target);
@@ -1218,7 +1218,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_foot");
   l_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  kido::gui::InteractiveFramePtr lf_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr lf_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   l_foot->getIK(true)->setTarget(lf_target);
@@ -1241,7 +1241,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_foot");
   r_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  kido::gui::InteractiveFramePtr rf_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr rf_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   r_foot->getIK(true)->setTarget(rf_target);
@@ -1272,7 +1272,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* l_peg = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
   l_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  kido::gui::InteractiveFramePtr lp_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr lp_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "lp_target"));
 
   l_peg->getIK(true)->setTarget(lp_target);
@@ -1290,7 +1290,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* r_peg = hubo->getBodyNode("Body_RWP")->createEndEffector("r_peg");
   r_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  kido::gui::InteractiveFramePtr rp_target(new kido::gui::InteractiveFrame(
+  kido::gui::osg::InteractiveFramePtr rp_target(new kido::gui::osg::InteractiveFrame(
                                            Frame::World(), "rp_target"));
 
   r_peg->getIK(true)->setTarget(rp_target);
@@ -1312,7 +1312,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
 
-void enableDragAndDrops(kido::gui::Viewer& viewer, const SkeletonPtr& hubo)
+void enableDragAndDrops(kido::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < hubo->getNumBodyNodes(); ++i)
@@ -1325,7 +1325,7 @@ void enableDragAndDrops(kido::gui::Viewer& viewer, const SkeletonPtr& hubo)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<kido::gui::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<kido::gui::osg::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -1385,9 +1385,9 @@ int main()
 
   setupWholeBodySolver(hubo);
 
-  osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
+  ::osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
 
-  kido::gui::Viewer viewer;
+  kido::gui::osg::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 
@@ -1396,7 +1396,7 @@ int main()
   viewer.addEventHandler(new InputHandler(&viewer, node, hubo, world));
 
   double display_elevation = 0.05;
-  viewer.addAttachment(new kido::gui::SupportPolygonVisual(
+  viewer.addAttachment(new kido::gui::osg::SupportPolygonVisual(
                          hubo, display_elevation));
 
   std::cout << viewer.getInstructions() << std::endl;
@@ -1420,9 +1420,9 @@ int main()
   viewer.setUpViewInWindow(0, 0, 1280, 960);
 
   // Set up the default viewing position
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 5.34,  3.00, 1.91),
-                                                 osg::Vec3( 0.00,  0.00, 0.50),
-                                                 osg::Vec3(-0.20, -0.08, 0.98));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3( 5.34,  3.00, 1.91),
+                                                 ::osg::Vec3( 0.00,  0.00, 0.50),
+                                                 ::osg::Vec3(-0.20, -0.08, 0.98));
 
   // Reset the camera manipulator so that it starts in the new viewing position
   viewer.setCameraManipulator(viewer.getCameraManipulator());

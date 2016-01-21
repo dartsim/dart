@@ -48,12 +48,13 @@ class BoxShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class BoxShapeGeode;
 class BoxShapeDrawable;
 
-class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
+class BoxShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -73,6 +74,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

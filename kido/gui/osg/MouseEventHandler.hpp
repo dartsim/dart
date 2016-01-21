@@ -44,6 +44,7 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
 class DefaultEventHandler;
 
@@ -72,6 +73,7 @@ protected:
 
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

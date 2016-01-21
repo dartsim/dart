@@ -54,13 +54,14 @@ class MeshShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class osgAiNode;
 class MeshShapeGeode;
 class MeshShapeGeometry;
 
-class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
+class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -70,7 +71,7 @@ public:
   void refresh();
   void extractData(bool firstTime);
 
-  osg::Material* getMaterial(size_t index) const;
+  ::osg::Material* getMaterial(size_t index) const;
 
 protected:
 
@@ -78,11 +79,12 @@ protected:
 
   std::shared_ptr<kido::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
-  std::vector< osg::ref_ptr<osg::Material> > mMaterials;
+  std::vector< ::osg::ref_ptr<::osg::Material> > mMaterials;
 
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

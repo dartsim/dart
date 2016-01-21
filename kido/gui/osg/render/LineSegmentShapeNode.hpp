@@ -48,12 +48,13 @@ class LineSegmentShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
-class LineSegmentShapeNode : public ShapeNode, public osg::MatrixTransform
+class LineSegmentShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -73,6 +74,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

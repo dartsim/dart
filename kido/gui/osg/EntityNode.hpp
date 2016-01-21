@@ -50,6 +50,7 @@ class Shape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 namespace render {
 class ShapeNode;
@@ -57,7 +58,7 @@ class ShapeNode;
 
 class FrameNode;
 
-class EntityNode : public osg::Group
+class EntityNode : public ::osg::Group
 {
 public:
 
@@ -115,6 +116,7 @@ protected:
 
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

@@ -44,9 +44,10 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
-class BoxShapeGeode : public ShapeNode, public osg::Geode
+class BoxShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -67,7 +68,7 @@ protected:
 };
 
 //==============================================================================
-class BoxShapeDrawable : public osg::ShapeDrawable
+class BoxShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
@@ -138,8 +139,8 @@ BoxShapeGeode::BoxShapeGeode(kido::dynamics::BoxShape* shape,
     mBoxShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 
@@ -181,16 +182,16 @@ BoxShapeDrawable::BoxShapeDrawable(kido::dynamics::BoxShape* shape)
 void BoxShapeDrawable::refresh(bool firstTime)
 {
   if(mBoxShape->getDataVariance() == kido::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   if(mBoxShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     const Eigen::Vector3d& d = mBoxShape->getSize();
-    osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
-                                                    d[0], d[1], d[2]);
+    ::osg::ref_ptr<::osg::Box> osg_shape = new ::osg::Box(::osg::Vec3(0,0,0),
+                                                          d[0], d[1], d[2]);
     setShape(osg_shape);
     dirtyDisplayList();
   }
@@ -209,5 +210,6 @@ BoxShapeDrawable::~BoxShapeDrawable()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

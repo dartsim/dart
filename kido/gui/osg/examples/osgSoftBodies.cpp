@@ -46,12 +46,12 @@ int main()
   kido::simulation::WorldPtr world =
       kido::utils::SkelParser::readWorld(KIDO_DATA_PATH"skel/softBodies.skel");
 
-  osg::ref_ptr<kido::gui::WorldNode> node = new kido::gui::WorldNode(world);
+  ::osg::ref_ptr<kido::gui::osg::WorldNode> node = new kido::gui::osg::WorldNode(world);
 
   node->simulate(true);
   node->setNumStepsPerCycle(15);
 
-  kido::gui::Viewer viewer;
+  kido::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
 
   std::cout << viewer.getInstructions() << std::endl;

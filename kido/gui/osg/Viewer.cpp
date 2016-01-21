@@ -54,28 +54,29 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 
-class SaveScreen : public osg::Camera::DrawCallback
+class SaveScreen : public ::osg::Camera::DrawCallback
 {
 public:
 
   SaveScreen(Viewer* viewer)
     : mViewer(viewer),
-      mImage(new osg::Image),
+      mImage(new ::osg::Image),
       mCamera(mViewer->getCamera())
   {
     // Do nothing
   }
 
-  virtual void operator () (osg::RenderInfo& renderInfo) const
+  virtual void operator () (::osg::RenderInfo& renderInfo) const
   {
-    osg::Camera::DrawCallback::operator ()(renderInfo);
+    ::osg::Camera::DrawCallback::operator ()(renderInfo);
 
     if(mViewer->mRecording || mViewer->mScreenCapture)
     {
       int x, y;
       unsigned int width, height;
-      osg::ref_ptr<osg::Viewport> vp = mCamera->getViewport();
+      ::osg::ref_ptr<::osg::Viewport> vp = mCamera->getViewport();
       x = vp->x();
       y = vp->y();
       width = vp->width();
@@ -127,19 +128,19 @@ protected:
 
   Viewer* mViewer;
 
-  osg::ref_ptr<osg::Image> mImage;
+  ::osg::ref_ptr<::osg::Image> mImage;
 
-  osg::ref_ptr<osg::Camera> mCamera;
+  ::osg::ref_ptr<::osg::Camera> mCamera;
 };
 
 //==============================================================================
-class ViewerAttachmentCallback : public osg::NodeCallback
+class ViewerAttachmentCallback : public ::osg::NodeCallback
 {
 public:
 
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  virtual void operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
   {
-    osg::ref_ptr<ViewerAttachment> attachment =
+    ::osg::ref_ptr<ViewerAttachment> attachment =
         dynamic_cast<ViewerAttachment*>(node);
 
     if(attachment)
@@ -193,22 +194,22 @@ void ViewerAttachment::attach(Viewer* newViewer)
 }
 
 //==============================================================================
-Viewer::Viewer(const osg::Vec4& clearColor)
+Viewer::Viewer(const ::osg::Vec4& clearColor)
   : mImageSequenceNum(0),
     mImageDigits(0),
-    mRootGroup(new osg::Group),
-    mLightGroup(new osg::Group),
-    mLight1(new osg::Light),
-    mLightSource1(new osg::LightSource),
-    mLight2(new osg::Light),
-    mLightSource2(new osg::LightSource),
-    mUpwards(osg::Vec3(0,0,1)),
-    mOver(osg::Vec3(0,1,0)),
+    mRootGroup(new ::osg::Group),
+    mLightGroup(new ::osg::Group),
+    mLight1(new ::osg::Light),
+    mLightSource1(new ::osg::LightSource),
+    mLight2(new ::osg::Light),
+    mLightSource2(new ::osg::LightSource),
+    mUpwards(::osg::Vec3(0,0,1)),
+    mOver(::osg::Vec3(0,1,0)),
     mSimulating(false),
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  setCameraManipulator(new kido::gui::TrackballManipulator);
+  setCameraManipulator(new kido::gui::osg::TrackballManipulator);
   addInstructionText("Left-click:   Interaction\n");
   addInstructionText("Right-click:  Rotate view\n");
   addInstructionText("Middle-click: Translate view\n");
@@ -320,46 +321,46 @@ void Viewer::switchHeadlights(bool _on)
   {
     if(getLight())
     {
-      getLight()->setAmbient(osg::Vec4(0.1,0.1,0.1,1.0));
-      getLight()->setDiffuse(osg::Vec4(0.8,0.8,0.8,1.0));
-      getLight()->setSpecular(osg::Vec4(1.0,1.0,1.0,1.0));
+      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0));
+      getLight()->setDiffuse(::osg::Vec4(0.8,0.8,0.8,1.0));
+      getLight()->setSpecular(::osg::Vec4(1.0,1.0,1.0,1.0));
     }
 
     if(mLight1)
     {
-      mLight1->setAmbient(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight1->setDiffuse(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight1->setSpecular(osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
     }
 
     if(mLight2)
     {
-      mLight2->setAmbient(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight2->setDiffuse(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight2->setSpecular(osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight2->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight2->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight2->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
     }
   }
   else
   {
     if(getLight())
     {
-      getLight()->setAmbient(osg::Vec4(0.1,0.1,0.1,1.0));
-      getLight()->setDiffuse(osg::Vec4(0.0,0.0,0.0,1.0));
-      getLight()->setSpecular(osg::Vec4(0.0,0.0,0.0,1.0));
+      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0));
+      getLight()->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
+      getLight()->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
     }
 
     if(mLight1)
     {
-      mLight1->setAmbient(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight1->setDiffuse(osg::Vec4(0.7,0.7,0.7,1.0));
-      mLight1->setSpecular(osg::Vec4(0.9,0.9,0.9,1.0));
+      mLight1->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setDiffuse(::osg::Vec4(0.7,0.7,0.7,1.0));
+      mLight1->setSpecular(::osg::Vec4(0.9,0.9,0.9,1.0));
     }
 
     if(mLight2)
     {
-      mLight2->setAmbient(osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight2->setDiffuse(osg::Vec4(0.3,0.3,0.3,1.0));
-      mLight2->setSpecular(osg::Vec4(0.4,0.4,0.4,1.0));
+      mLight2->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight2->setDiffuse(::osg::Vec4(0.3,0.3,0.3,1.0));
+      mLight2->setSpecular(::osg::Vec4(0.4,0.4,0.4,1.0));
     }
   }
 }
@@ -459,13 +460,13 @@ const std::unordered_set<ViewerAttachment*>& Viewer::getAttachments() const
 }
 
 //==============================================================================
-osg::Group* Viewer::getLightGroup()
+::osg::Group* Viewer::getLightGroup()
 {
   return mLightGroup;
 }
 
 //==============================================================================
-const osg::Group* Viewer::getLightGroup() const
+const ::osg::Group* Viewer::getLightGroup() const
 {
   return mLightGroup;
 }
@@ -476,19 +477,19 @@ void Viewer::setupDefaultLights()
   setUpwardsDirection(mUpwards);
   switchHeadlights(true);
 
-  osg::ref_ptr<osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
+  ::osg::ref_ptr<::osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
 
   mLight1->setLightNum(1);
   mLightSource1->setLight(mLight1);
-  mLightSource1->setLocalStateSetModes(osg::StateAttribute::ON);
-  mLightSource1->setStateSetModes(*lightSS, osg::StateAttribute::ON);
+  mLightSource1->setLocalStateSetModes(::osg::StateAttribute::ON);
+  mLightSource1->setStateSetModes(*lightSS, ::osg::StateAttribute::ON);
   mLightGroup->removeChild(mLightSource1); // Make sure the LightSource is not already present
   mLightGroup->addChild(mLightSource1);
 
   mLight2->setLightNum(2);
   mLightSource2->setLight(mLight2);
-  mLightSource2->setLocalStateSetModes(osg::StateAttribute::ON);
-  mLightSource2->setStateSetModes(*lightSS, osg::StateAttribute::ON);
+  mLightSource2->setLocalStateSetModes(::osg::StateAttribute::ON);
+  mLightSource2->setStateSetModes(*lightSS, ::osg::StateAttribute::ON);
   mLightGroup->removeChild(mLightSource2);
   mLightGroup->addChild(mLightSource2);
 
@@ -497,23 +498,23 @@ void Viewer::setupDefaultLights()
 }
 
 //==============================================================================
-void Viewer::setUpwardsDirection(const osg::Vec3& _up)
+void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
 {
   mUpwards = _up;
   if(mUpwards.length() > 0)
     mUpwards.normalize();
   else
-    mUpwards = osg::Vec3(0,0,1);
+    mUpwards = ::osg::Vec3(0,0,1);
 
-  mOver = _up^osg::Vec3(1,0,0); // Note: operator^ is the cross product operator in OSG
+  mOver = _up^::osg::Vec3(1,0,0); // Note: operator^ is the cross product operator in OSG
   if(mOver.length() < 1e-12)
-    mOver = osg::Vec3(0,0,1)^_up;
+    mOver = ::osg::Vec3(0,0,1)^_up;
   mOver.normalize();
 
-  osg::Vec3 p1 = mUpwards+mOver;
-  mLight1->setPosition(osg::Vec4(p1[0], p1[1], p1[2], 0.0));
-  osg::Vec3 p2 = mUpwards-mOver;
-  mLight2->setPosition(osg::Vec4(p2[0], p2[1], p2[2], 0.0));
+  ::osg::Vec3 p1 = mUpwards+mOver;
+  mLight1->setPosition(::osg::Vec4(p1[0], p1[1], p1[2], 0.0));
+  ::osg::Vec3 p2 = mUpwards-mOver;
+  mLight2->setPosition(::osg::Vec4(p2[0], p2[1], p2[2], 0.0));
 }
 
 //==============================================================================
@@ -660,7 +661,7 @@ SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
 
 //==============================================================================
 InteractiveFrameDnD* Viewer::enableDragAndDrop(
-    kido::gui::InteractiveFrame* _frame)
+    kido::gui::osg::InteractiveFrame* _frame)
 {
   if(nullptr == _frame)
     return nullptr;
@@ -822,10 +823,11 @@ void Viewer::updateDragAndDrops()
 }
 
 //==============================================================================
-const osg::ref_ptr<osg::Group>& Viewer::getRootGroup() const
+const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
 {
   return mRootGroup;
 }
 
+} // namespace osg
 } // namespace gui
 } // namespace kido

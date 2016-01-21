@@ -46,9 +46,10 @@
 
 namespace kido {
 namespace gui {
+namespace osg {
 namespace render {
 
-class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
+class EllipsoidShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -70,7 +71,7 @@ protected:
 };
 
 //==============================================================================
-class EllipsoidShapeDrawable : public osg::ShapeDrawable
+class EllipsoidShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
@@ -158,8 +159,8 @@ EllipsoidShapeGeode::EllipsoidShapeGeode(kido::dynamics::EllipsoidShape* shape,
     mEllipsoidShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
   extractData();
 }
 
@@ -203,15 +204,15 @@ EllipsoidShapeDrawable::EllipsoidShapeDrawable(
 void EllipsoidShapeDrawable::refresh(bool firstTime)
 {
   if(mEllipsoidShape->getDataVariance() == kido::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   if(mEllipsoidShape->checkDataVariance(kido::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
-    osg::ref_ptr<osg::Sphere> osg_shape = nullptr;
-    osg_shape = new osg::Sphere(osg::Vec3(0,0,0),
+    ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
+    osg_shape = new ::osg::Sphere(::osg::Vec3(0,0,0),
                           0.5*smallestComponent(mEllipsoidShape->getSize()));
 
     setShape(osg_shape);
@@ -232,5 +233,6 @@ EllipsoidShapeDrawable::~EllipsoidShapeDrawable()
 }
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido

@@ -48,12 +48,13 @@ class SoftMeshShape;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 namespace render {
 
 class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
-class SoftMeshShapeNode : public ShapeNode, public osg::MatrixTransform
+class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -74,6 +75,7 @@ protected:
 };
 
 } // namespace render
+} // namespace osg
 } // namespace gui
 } // namespace kido
 

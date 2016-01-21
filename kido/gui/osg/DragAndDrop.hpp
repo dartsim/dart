@@ -53,6 +53,7 @@ class SimpleFrame;
 } // namespace dynamics
 
 namespace gui {
+namespace osg {
 
 class Viewer;
 class InteractiveFrame;
@@ -244,7 +245,7 @@ class InteractiveFrameDnD : public DragAndDrop
 public:
 
   /// Constructor
-  InteractiveFrameDnD(Viewer* viewer, kido::gui::InteractiveFrame* frame);
+  InteractiveFrameDnD(Viewer* viewer, kido::gui::osg::InteractiveFrame* frame);
 
   /// Virtual destructor
   virtual ~InteractiveFrameDnD() = default;
@@ -356,6 +357,7 @@ protected:
   size_t mAdditionalBodyNodes;
 };
 
+} // namespace osg
 } // namespace gui
 } // namespace kido
 
