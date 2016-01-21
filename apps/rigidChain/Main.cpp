@@ -36,6 +36,7 @@
  */
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 #include "apps/rigidChain/MyWindow.hpp"
 

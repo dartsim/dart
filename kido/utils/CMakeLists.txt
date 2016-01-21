@@ -2,33 +2,31 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.hpp")
 
+set(kido_utils_hdrs ${hdrs})
+set(kido_utils_srcs ${srcs})
+
+include_directories(SYSTEM ${urdfdom_INCLUDE_DIRS})
+include_directories(SYSTEM ${TINYXML_INCLUDE_DIRS})
+include_directories(SYSTEM ${TINYXML2_INCLUDE_DIRS})
+
 # Add subdirectories
 add_subdirectory(sdf)
 add_subdirectory(urdf)
 
-set(kido_utils_hdrs ${hdrs} ${kido_utils_hdrs} PARENT_SCOPE)
-set(kido_utils_srcs ${srcs} ${kido_utils_srcs} PARENT_SCOPE)
-
 # Library
-#kido_add_library(kido_utils ${srcs} ${hdrs})
-#target_link_libraries(
-#  kido_utils
-#  kido_utils_sdf
-#  kido_utils_urdf
-#  kido_collision
-#  kido_dynamics
-#  kido_simulation
-#  ${KIDO_DEPENDENCIES}
-#)
+kido_add_library(kido-utils ${kido_utils_srcs} ${kido_utils_hdrs})
+target_link_libraries(
+  kido-utils
+  kido
+  ${urdfdom_LIBRARIES}
+  ${TINYXML_LIBRARIES}
+  ${TINYXML2_LIBRARIES}
+)
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "utils headers" ${hdrs})
-set(
-  header_names
-  ${header_names}
-  sdf/sdf.hpp
-  urdf/urdf.hpp
-)
+list(APPEND header_names "sdf/sdf.hpp")
+list(APPEND header_names "urdf/urdf.hpp")
 kido_generate_include_header_list(
   utils_headers
   "kido/utils/"
@@ -46,5 +44,5 @@ install(
   DESTINATION include/kido/utils
   COMPONENT headers
 )
-#install(TARGETS kido_utils EXPORT KIDOTargets DESTINATION lib)
+install(TARGETS kido-utils EXPORT KIDOTargets DESTINATION lib)
 

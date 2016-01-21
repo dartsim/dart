@@ -39,6 +39,7 @@
 #include <numeric>
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 double testForwardKinematicSpeed(kido::dynamics::SkeletonPtr skel,
                                  bool position=true,

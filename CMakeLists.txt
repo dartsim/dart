@@ -1,7 +1,11 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
+if(MSVC)
+  cmake_minimum_required(VERSION 3.1.3)
+else()
+  cmake_minimum_required(VERSION 2.8.6)
+endif()
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -58,7 +62,6 @@ message(STATUS "============================================")
 # Build options
 #===============================================================================
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
-option(BUILD_CORE_ONLY "Build only the core of KIDO" OFF)
 if(MSVC)
   set(KIDO_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
   set_property(CACHE KIDO_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
@@ -66,7 +69,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON)
+option(KIDO_BUILD_OSGKIDO "Build osgKido library" ON) # TODO(JS): Rename the option name to more relevant name to osg GUI and add more options for other extensions (#590).
 option(KIDO_BUILD_EXAMPLES "Build examples" ON)
 option(KIDO_BUILD_TUTORIALS "Build tutorials" ON)
 option(KIDO_BUILD_UNITTESTS "Build unit tests" ON)
@@ -135,7 +138,7 @@ endif()
 
 # FCL
 # TODO: We need to increate the minimum required fcl version to 0.4.0 for KIDO
-# 5.0 once fcl 0.4.0 is released.
+# 7.0 once fcl 0.4.0 is released.
 find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - ${FCL_VERSION} found")
@@ -156,6 +159,7 @@ if(ASSIMP_FOUND)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
+  set(CMAKE_REQUIRED_QUIET TRUE)
 
   check_cxx_source_compiles(
   "
@@ -199,6 +203,7 @@ if(ASSIMP_FOUND)
 
   unset(CMAKE_REQUIRED_INCLUDES)
   unset(CMAKE_REQUIRED_LIBRARIES)
+  unset(CMAKE_REQUIRED_QUIET)
 
 else()
   if(ASSIMP_VERSION)
@@ -231,80 +236,109 @@ else()
   message(SEND_ERROR "Please install system boost version ${KIDO_MIN_BOOST_VERSION} or higher.")
 endif()
 
-if(NOT BUILD_CORE_ONLY)
-
-  # GLUT
-  if(WIN32 AND NOT CYGWIN)
-    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
-    set(GLUT_LIBRARIES glut32)
-  else()
-    find_package(GLUT QUIET)
-    if(GLUT_FOUND)
-      message(STATUS "Looking for GLUT - found")
-      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-    else()
-      message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
-    endif()
-  endif()
-
-  # FLANN
-  find_package(FLANN 1.8.4 QUIET)
-  if(FLANN_FOUND)
-    message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
-  else()
-    if(FLANN_VERSION)
-      message(SEND_ERROR "Looking for FLANN - ${FLANN_VERSION} found, ${PROJECT_NAME} requires 1.8.4 or greater.")
-    else()
-      message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
-    endif()
-  endif()
-
-  # TINYXML
-  find_package(TINYXML 2.6.2 QUIET)
-  if(TINYXML_FOUND)
-    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
-  else()
-    if(TINYXML_VERSION)
-      message(SEND_ERROR "Looking for TINYXML - ${TINYXML_VERSION} found, ${PROJECT_NAME} requires 2.6.2 or greater.")
-    else()
-      message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev")
-    endif()
-  endif()
-
-  # TINYXML2
-  find_package(TINYXML2 QUIET)
-  if(TINYXML2_FOUND)
-    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
-  else()
-    if(TINYXML2_VERSION)
-      message(SEND_ERROR "Looking for TINYXML2 - ${TINYXML2_VERSION} found, ${PROJECT_NAME} requires 1.0.1 or greater.")
-    else()
-      message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev")
-    endif()
-  endif()
-
-  # urdfdom
-  find_package(urdfdom QUIET)
-  if(urdfdom_FOUND)
-    message(STATUS "Looking for urdfdom - found")
-  else()
-    message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
-  endif()
-  if(MSVC)
-    set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
-                          optimized urdfdom_model_state debug urdfdom_model_stated
-                          optimized urdfdom_model       debug urdfdom_modeld
-                          optimized urdfdom_world       debug urdfdom_worldd
-                          optimized console_bridge      debug console_bridged)
-  endif()
-
-endif()
-
 #-----------------------
 # Optional dependencies
 #-----------------------
 message(STATUS "")
 message(STATUS "[ Optional dependencies ]")
+
+# GLUT
+if(WIN32 AND NOT CYGWIN)
+  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+  set(GLUT_LIBRARIES glut32)
+else()
+  find_package(GLUT QUIET)
+  if(GLUT_FOUND)
+    message(STATUS "Looking for GLUT - found")
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+  else()
+    message(STATUS "Looking for GLUT - NOT found")
+    message(STATUS "To enable component kido-gui, please install freeglut3-dev")
+  endif()
+endif()
+
+# OpenSceneGraph
+find_package(OpenSceneGraph 3.0 QUIET
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+if(OPENSCENEGRAPH_FOUND)
+  message(STATUS "Looking for OpenSceneGraph -- ${OPENSCENEGRAPH_VERSION} found")
+  set(HAVE_OPENSCENEGRAPH TRUE)
+else(OPENSCENEGRAPH_FOUND)
+  # kido-gui-osg requires both OSG and OpenThreads. This section attempts to
+  # identify which of those are missing from the building machine and offer
+  # advice to the user for getting osgKido to build.
+  find_package(OpenThreads QUIET)
+  if(OPENTHREADS_FOUND)
+    set(warning_msg "Could NOT find OpenSceneGraph")
+  else(OPENTHREADS_FOUND)
+    if(OSG_LIBRARY)
+      set(warning_msg "Could NOT find OpenThreads")
+    else(OSG_LIBRARY)
+      set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
+    endif(OSG_LIBRARY)
+  endif(OPENTHREADS_FOUND)
+  message(WARNING "${warning_msg} -- we will skip kido-gui-osg\n"
+          "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+  set(HAVE_OPENSCENEGRAPH FALSE)
+endif(OPENSCENEGRAPH_FOUND)
+
+# FLANN
+find_package(FLANN 1.8.4 QUIET)
+if(FLANN_FOUND)
+  message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+else()
+  if(FLANN_VERSION)
+    message(STATUS "Looking for FLANN - ${FLANN_VERSION} (< 1.8.4) found")
+    message(STATUS "To enable component kido-planning, please install libflann-dev 1.8.4 or greater")
+  else()
+    message(STATUS "Looking for FLANN - NOT found")
+    message(STATUS "To enable component kido-planning, please install libflann-dev")
+  endif()
+endif()
+
+# TINYXML
+find_package(TINYXML 2.6.2 QUIET)
+if(TINYXML_FOUND)
+  message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
+else()
+  if(TINYXML_VERSION)
+    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} (< 2.6.2) found")
+    message(STATUS "To enable component kido-utils, please install libtinyxml-dev 2.6.2 or greater")
+  else()
+    message(STATUS "Looking for TINYXML - NOT found")
+    message(STATUS "To enable component kido-utils, please install libtinyxml-dev")
+  endif()
+endif()
+
+# TINYXML2
+find_package(TINYXML2 QUIET)
+if(TINYXML2_FOUND)
+  message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
+else()
+  if(TINYXML2_VERSION)
+    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} (< 1.0.1) found")
+    message(STATUS "To enable component kido-utils, please install libtinyxml2-dev 1.0.1 or greater")
+  else()
+    message(STATUS "Looking for TINYXML2 - NOT found")
+    message(STATUS "To enable component kido-utils, please install libtinyxml2-dev")
+  endif()
+endif()
+
+# urdfdom
+find_package(urdfdom QUIET)
+if(urdfdom_FOUND)
+  message(STATUS "Looking for urdfdom - found")
+else()
+  message(STATUS "Looking for urdfdom - NOT found, please install liburdfdom-dev")
+  message(STATUS "To enable component kido-utils, please install liburdfdom-dev")
+endif()
+if(MSVC)
+  set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
+                        optimized urdfdom_model_state debug urdfdom_model_stated
+                        optimized urdfdom_model       debug urdfdom_modeld
+                        optimized urdfdom_world       debug urdfdom_worldd
+                        optimized console_bridge      debug console_bridged)
+endif()
 
 # OpenMP
 if(ENABLE_OPENMP)
@@ -324,9 +358,11 @@ if(NLOPT_FOUND)
   set(HAVE_NLOPT TRUE)
 else()
   if(NLOPT_VERSION)
-    message(STATUS "Looking for NLOPT - ${NLOPT_VERSION} found, ${PROJECT_NAME} requires 2.4.1 or greater.")
+    message(STATUS "Looking for NLOPT - ${NLOPT_VERSION} (< 2.4.1) found")
+    message(STATUS "To enable component kido-optimizer-nlopt, please install libnlopt-dev 2.4.1 or greater")
   else()
-    message(STATUS "Looking for NLOPT - NOT found, please install libnlopt-dev")
+    message(STATUS "Looking for NLOPT - NOT found")
+    message(STATUS "To enable component kido-optimizer-nlopt, please install libnlopt-dev")
   endif()
   set(HAVE_NLOPT FALSE)
 endif()
@@ -338,9 +374,11 @@ if(IPOPT_FOUND)
   set(HAVE_IPOPT TRUE)
 else()
   if(IPOPT_VERSION)
-    message(STATUS "Looking for IPOPT - ${IPOPT_VERSION} found, ${PROJECT_NAME} requires 3.11.4 or greater.")
+    message(STATUS "Looking for IPOPT - ${IPOPT_VERSION} (< 3.11.4) found")
+    message(STATUS "To enable component kido-optimizer-ipopt, please install libipopt-dev 3.11.4 or greater")
   else()
-    message(STATUS "Looking for IPOPT - NOT found, please install coinor-libipopt-dev")
+    message(STATUS "Looking for IPOPT - NOT found")
+    message(STATUS "To enable component kido-optimizer-ipopt, please install libipopt-dev")
   endif()
   set(HAVE_IPOPT FALSE)
 endif()
@@ -369,7 +407,8 @@ if(BULLET_FOUND)
   set(HAVE_BULLET_COLLISION TRUE)
   add_definitions(-DHAVE_BULLET_COLLISION)
 else()
-  message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
+  message(STATUS "Looking for BulletCollision - NOT found")
+  message(STATUS "To enable bullet collision detection, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
@@ -390,28 +429,6 @@ else()
 endif()
 
 #===============================================================================
-# KIDO dependency variable settings
-#===============================================================================
-set(KIDO_CORE_DEPENDENCIES ${CCD_LIBRARIES}
-                           ${FCL_LIBRARIES}
-                           ${ASSIMP_LIBRARIES}
-                           ${Boost_LIBRARIES}
-                           ${OPENGL_LIBRARIES}
-                           ${GLUT_LIBRARY}
-)
-
-if(HAVE_BULLET_COLLISION)
-  set(KIDO_CORE_DEPENDENCIES ${KIDO_CORE_DEPENDENCIES} ${BULLET_LIBRARIES})
-endif()
-
-if(NOT BUILD_CORE_ONLY)
-  set(KIDO_DEPENDENCIES ${urdfdom_LIBRARIES}
-                        ${TINYXML_LIBRARIES}
-                        ${TINYXML2_LIBRARIES}
-  )
-endif()
-
-#===============================================================================
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
@@ -421,28 +438,10 @@ include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
 include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
-include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
   add_definitions(${BULLET_CFLAGS})
 endif()
-
-if(NOT BUILD_CORE_ONLY)
-  include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
-  include_directories(SYSTEM ${urdfdom_INCLUDE_DIRS})
-  include_directories(SYSTEM ${TINYXML_INCLUDE_DIRS})
-  include_directories(SYSTEM ${TINYXML2_INCLUDE_DIRS})
-  if(HAVE_NLOPT)
-    include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
-  endif()
-  if(HAVE_IPOPT)
-    include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
-  endif()
-  if(HAVE_SHARK)
-    include_directories(SYSTEM ${SHARK_INCLUDE_DIRS})
-  endif()
-endif()
-
 include_directories("${CMAKE_BINARY_DIR}")
 
 #===============================================================================
@@ -452,7 +451,19 @@ link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
 if(HAVE_BULLET_COLLISION)
-  link_directories("${BULLET_LIBRARY_DIRS}")
+  link_directories(${BULLET_LIBRARY_DIRS})
+endif()
+
+#===============================================================================
+# Link directories
+#===============================================================================
+set(KIDO_DEPENDENCIES ${CCD_LIBRARIES}
+                      ${FCL_LIBRARIES}
+                      ${ASSIMP_LIBRARIES}
+                      ${Boost_LIBRARIES}
+                      ${OPENGL_LIBRARIES})
+if(HAVE_BULLET_COLLISION)
+  set(KIDO_DEPENDENCIES ${KIDO_DEPENDENCIES} ${BULLET_LIBRARIES})
 endif()
 
 #===============================================================================
@@ -526,7 +537,6 @@ message(STATUS "Compiler version : ${CXX_COMPILER_VERSION}")
 message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
-message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
 message(STATUS "Build osgKido    : ${KIDO_BUILD_OSGKIDO}")
 message(STATUS "Build examples   : ${KIDO_BUILD_EXAMPLES}")
 message(STATUS "Build tutorials  : ${KIDO_BUILD_TUTORIALS}")
@@ -561,22 +571,13 @@ install(FILES ${KIDO_CONFIG_OUT} DESTINATION include/kido)
 
 # Generate the KIDO CMake Config and version files
 include(WriteBasicConfigVersionFile)
-set(KIDO_CORE_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOCoreConfig.cmake.in)
-set(KIDO_CORE_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfig.cmake)
-message(STATUS ${KIDO_CORE_CONFIG_OUT})
+set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOConfig.cmake.in)
+set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOConfig.cmake)
+message(STATUS ${KIDO_CONFIG_OUT})
 message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
-configure_file(${KIDO_CORE_CONFIG_IN} ${KIDO_CORE_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/KIDOCoreConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${KIDO_CORE_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOCoreConfigVersion.cmake DESTINATION share/kidocore)
-if(NOT BUILD_CORE_ONLY)
-  set(KIDO_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/KIDOConfig.cmake.in)
-  set(KIDO_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/KIDOConfig.cmake)
-  message(STATUS ${KIDO_CONFIG_OUT})
-  message(STATUS ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake)
-  configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
-  write_basic_config_version_file(cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
-  install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/kido)
-endif()
+configure_file(${KIDO_CONFIG_IN} ${KIDO_CONFIG_OUT} @ONLY)
+write_basic_config_version_file(${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake VERSION ${KIDO_VERSION} COMPATIBILITY SameMajorVersion)
+install(FILES ${KIDO_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/KIDOConfigVersion.cmake DESTINATION share/kido)
 
 # Generate the KIDO pkg-config
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/kido.pc.in)
@@ -593,36 +594,25 @@ install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 #===============================================================================
 add_subdirectory(kido)
 
-if(NOT BUILD_CORE_ONLY)
+# Unit tests
+if(KIDO_BUILD_UNITTESTS)
+  enable_testing()
+  add_subdirectory(unittests)
+endif(KIDO_BUILD_UNITTESTS)
 
-  if(KIDO_BUILD_OSGKIDO)
-    add_subdirectory(osgKido)
-  endif(KIDO_BUILD_OSGKIDO)
+# Examples
+if(KIDO_BUILD_EXAMPLES)
+  add_subdirectory(apps)
+endif(KIDO_BUILD_EXAMPLES)
 
-  # Unit tests
-  if(KIDO_BUILD_UNITTESTS)
-    enable_testing()
-    add_subdirectory(unittests)
-  endif(KIDO_BUILD_UNITTESTS)
-
-  # Examples
-  if(KIDO_BUILD_EXAMPLES)
-    add_subdirectory(apps)
-  endif(KIDO_BUILD_EXAMPLES)
-
-  if(KIDO_BUILD_TUTORIALS)
-    add_subdirectory(tutorials)
-  endif()
-
-endif(NOT BUILD_CORE_ONLY)
+if(KIDO_BUILD_TUTORIALS)
+  add_subdirectory(tutorials)
+endif()
 
 #===============================================================================
 # Export targets
 #===============================================================================
-install(EXPORT KIDOCoreTargets DESTINATION share/kidocore)
-if(NOT BUILD_CORE_ONLY)
-  install(EXPORT KIDOTargets DESTINATION share/kido)
-endif()
+install(EXPORT KIDOTargets DESTINATION share/kido)
 
 # Add an "uninstall" target
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F

@@ -2,17 +2,16 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.hpp")
 
-set(kido_gui_hdrs ${hdrs} PARENT_SCOPE)
-set(kido_gui_srcs ${srcs} PARENT_SCOPE)
+include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
+
+# Add subdirectories
+if(HAVE_OPENSCENEGRAPH)
+  add_subdirectory(osg)
+endif(HAVE_OPENSCENEGRAPH)
 
 # Library
-#kido_add_library(kido_gui ${srcs} ${hdrs})
-#target_link_libraries(
-#  kido_gui
-#  kido_collision
-#  kido_simulation
-#  ${KIDO_DEPENDENCIES}
-#)
+kido_add_library(kido-gui ${srcs} ${hdrs})
+target_link_libraries(kido-gui kido-utils ${GLUT_LIBRARY})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "gui headers" ${hdrs})
@@ -33,5 +32,4 @@ install(
   DESTINATION include/kido/gui
   COMPONENT headers
 )
-#install(TARGETS kido_gui EXPORT KIDOTargets DESTINATION lib)
-
+install(TARGETS kido-gui EXPORT KIDOTargets DESTINATION lib)

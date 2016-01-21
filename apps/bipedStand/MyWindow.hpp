@@ -43,6 +43,7 @@
 #include <Eigen/Dense>
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 #include "apps/bipedStand/Controller.hpp"
 

@@ -43,9 +43,6 @@
 #include "kido/dynamics/Skeleton.hpp"
 #include "kido/collision/fcl_mesh/FCLMeshCollisionDetector.hpp"
 #include "kido/collision/kido/KIDOCollisionDetector.hpp"
-#ifdef HAVE_BULLET_COLLISION
-  #include "kido/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "kido/constraint/ConstrainedGroup.hpp"
 #include "kido/constraint/ContactConstraint.hpp"
 #include "kido/constraint/SoftContactConstraint.hpp"

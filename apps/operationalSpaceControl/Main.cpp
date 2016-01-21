@@ -35,6 +35,7 @@
  */
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 #include "apps/operationalSpaceControl/MyWindow.hpp"
 

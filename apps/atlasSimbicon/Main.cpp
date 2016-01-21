@@ -38,6 +38,7 @@
 #include <iostream>
 
 #include "kido/kido.hpp"
+#include "kido/utils/utils.hpp"
 
 #include "apps/atlasSimbicon/MyWindow.hpp"
 #include "apps/atlasSimbicon/Controller.hpp"

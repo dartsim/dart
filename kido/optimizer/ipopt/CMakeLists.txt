@@ -2,9 +2,11 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.hpp")
 
+include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
+
 # Library
 kido_add_library(kido-optimizer-ipopt ${srcs} ${hdrs})
-target_link_libraries(kido-optimizer-ipopt kido-core ${IPOPT_LIBRARIES})
+target_link_libraries(kido-optimizer-ipopt kido ${IPOPT_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
@@ -25,4 +27,4 @@ install(
   DESTINATION include/kido/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS kido-optimizer-ipopt EXPORT KIDOIpoptTargets DESTINATION lib)
+install(TARGETS kido-optimizer-ipopt EXPORT KIDOTargets DESTINATION lib)

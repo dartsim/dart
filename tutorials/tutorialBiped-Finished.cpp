@@ -43,6 +43,7 @@ const double default_force =  50.0; // N
 const int default_countdown = 100;  // Number of timesteps for applying force
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 using namespace kido::common;
 using namespace kido::dynamics;

@@ -44,6 +44,7 @@
 #define APPS_RIGIDSHAPES_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 /// MyWindow
 class MyWindow : public kido::gui::SimWindow

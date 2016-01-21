@@ -38,6 +38,7 @@
 #define APPS_CLOSEDLOOP_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 class MyWindow : public kido::gui::SimWindow
 {

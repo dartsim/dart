@@ -2,12 +2,11 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.hpp")
 
-set(kido_planning_hdrs ${hdrs} PARENT_SCOPE)
-set(kido_planning_srcs ${srcs} PARENT_SCOPE)
+include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
 
 # Library
-#kido_add_library(kido_planning ${srcs} ${hdrs})
-#target_link_libraries(kido_planning ${KIDO_DEPENDENCIES})
+kido_add_library(kido-planning ${srcs} ${hdrs})
+target_link_libraries(kido-planning kido ${FLANN_LIBRARIES})
 
 # Generate header for this namespace
 kido_get_filename_components(header_names "planning headers" ${hdrs})
@@ -28,5 +27,4 @@ install(
   DESTINATION include/kido/planning
   COMPONENT headers
 )
-#install(TARGETS kido_planning EXPORT KIDOTargets DESTINATION lib)
-
+install(TARGETS kido-planning EXPORT KIDOTargets DESTINATION lib)

@@ -39,6 +39,7 @@
 #define APPS_ATLASROBOT_MYWINDOW_HPP_
 
 #include "kido/kido.hpp"
+#include "kido/gui/gui.hpp"
 
 #include "apps/atlasSimbicon/Controller.hpp"
 
