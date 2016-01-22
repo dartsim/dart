@@ -64,7 +64,7 @@ public:
   virtual ~NloptSolver();
 
   // Documentation inherited
-  virtual bool solve();
+  virtual bool solve() override;
 
   // Documentation inherited
   Eigen::VectorXd getLastConfiguration() const;

@@ -315,7 +315,7 @@ public:
     virtual ~TaskSpaceRegion() = default;
 
     // Documentation inherited
-    virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
+    virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const override;
 
     // Documentation inherited
     virtual Eigen::Vector6d computeError() override;
@@ -447,7 +447,7 @@ public:
 
     // Documentation inherited
     virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
     virtual void computeGradient(const Eigen::Vector6d& _error,
@@ -485,7 +485,7 @@ public:
 
     // Documentation inherited
     virtual std::unique_ptr<GradientMethod> clone(
-        InverseKinematics* _newIK) const;
+        InverseKinematics* _newIK) const override;
 
     // Documentation inherited
     virtual void computeGradient(const Eigen::Vector6d& _error,
