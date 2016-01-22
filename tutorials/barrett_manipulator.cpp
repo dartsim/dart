@@ -450,8 +450,12 @@ SkeletonPtr createManipulator()
       loader.parseSkeleton(DART_DATA_PATH"/my_urdf/customized_wam_7dof_wam_bhand.urdf");
   manipulator->setName("manipulator");
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0, 0.2, -0.5);
+  tf.translation() = Eigen::Vector3d(0.000908563, -0.208275, -0.0256744);
   manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
+
+  // output the origin of base 
+  // std::cout<<"The origin of the base is:"<<manipulator->getCOM()<<std::endl;
+
 
   std::cout<<"The degreeo of freedom for this manipulator is:";
   std::cout<<manipulator->getNumDofs()<<"."<<std::endl;
