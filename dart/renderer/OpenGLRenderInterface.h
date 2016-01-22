@@ -65,10 +65,6 @@ public:
 
     virtual void clear(const Eigen::Vector3d& _color) override;
 
-    virtual void setDefaultLight() override;
-    virtual void turnLightsOff() override;
-    virtual void turnLightsOn() override;
-
     virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) override;
     virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const override;
     virtual void setDefaultMaterial() override;

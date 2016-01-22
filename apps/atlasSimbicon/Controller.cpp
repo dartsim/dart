@@ -231,7 +231,7 @@ void Controller::harnessPelvis()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("pelvis");
-  mWeldJointConstraintPelvis = new WeldJointConstraint(bd);
+  mWeldJointConstraintPelvis = std::make_shared<WeldJointConstraint>(bd);
   mConstratinSolver->addConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = true;
 
@@ -257,7 +257,7 @@ void Controller::harnessLeftFoot()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("l_foot");
-  mWeldJointConstraintLeftFoot = new WeldJointConstraint(bd);
+  mWeldJointConstraintLeftFoot = std::make_shared<WeldJointConstraint>(bd);
   mLeftFootHarnessOn = true;
 
   dtmsg << "Left foot is harnessed." << std::endl;
@@ -282,7 +282,7 @@ void Controller::harnessRightFoot()
     return;
 
   BodyNode* bd = mAtlasRobot->getBodyNode("r_foot");
-  mWeldJointConstraintRightFoot = new WeldJointConstraint(bd);
+  mWeldJointConstraintRightFoot = std::make_shared<WeldJointConstraint>(bd);
   mRightFootHarnessOn = true;
 
   dtmsg << "Right foot is harnessed." << std::endl;

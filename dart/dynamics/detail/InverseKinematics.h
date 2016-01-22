@@ -81,7 +81,7 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
   setDofs(indices);
 }
 
-} // namespace dart
 } // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_

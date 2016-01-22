@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -26,52 +26,39 @@
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES) LOSS OF
+ *   USE, DATA, OR PROFITS) OR BUSINESS INTERRUPTION) HOWEVER CAUSED
  *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_LIGHT_H
-#define DART_RENDERER_LIGHT_H
+#ifndef DART_CONSTRAINT_SMARTPOINTER_H_
+#define DART_CONSTRAINT_SMARTPOINTER_H_
 
-#include <Eigen/Core>
+#include "dart/common/SmartPointer.h"
 
 namespace dart {
-namespace renderer {
+namespace constraint {
 
-enum LightType {
-    LT_PointLight,
-    LT_DirectionLight,
-};
+DART_COMMON_MAKE_SHARED_WEAK(ConstrainedGroup)
+DART_COMMON_MAKE_SHARED_WEAK(ConstraintBase)
+DART_COMMON_MAKE_SHARED_WEAK(ClosedLoopConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(ContactConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(SoftContactConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(JointLimitConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(ServoMotorConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(JointCoulombFrictionConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(JointConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(LCPSolver)
 
-class Light {
-public:
-    /* construction function */
-    Light();
-    Light(LightType type);
-    Light(const Eigen::Vector3d& _pos, const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, LightType _type);
+DART_COMMON_MAKE_SHARED_WEAK(BallJointConstraint)
+DART_COMMON_MAKE_SHARED_WEAK(WeldJointConstraint)
 
-    LightType GetType() const;
-    void SetPosition(const Eigen::Vector3d& _p);
-    void GetPosition(float* _pos) const;
-    void GetSpecular(float* _specular) const;
-    void GetDiffuse(float* _diffuse) const;
-    Eigen::Vector3d GetPosition() const;
-    Eigen::Vector3d GetSpecular() const;
-    Eigen::Vector3d GetDiffuse() const;
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    private:
-        Eigen::Vector3d mPosition;
-    Eigen::Vector3d mSpecular;
-    Eigen::Vector3d mDiffuse;
-    LightType mType;
-};
+DART_COMMON_MAKE_SHARED_WEAK(BalanceConstraint)
 
-} // namespace renderer
+} // namespace constraint
 } // namespace dart
 
-#endif // #ifndef DART_RENDERER_LIGHT_H
+#endif // DART_CONSTRAINT_SMARTPOINTER_H_

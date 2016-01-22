@@ -454,8 +454,9 @@ void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
 }
 
 //==============================================================================
-void BodyNode::getMomentOfInertia(double& _Ixx, double& _Iyy, double& _Izz,
-                                  double& _Ixy, double& _Ixz, double& _Iyz)
+void BodyNode::getMomentOfInertia(
+    double& _Ixx, double& _Iyy, double& _Izz,
+    double& _Ixy, double& _Ixz, double& _Iyz) const
 {
   _Ixx = mBodyP.mInertia.getParameter(Inertia::I_XX);
   _Iyy = mBodyP.mInertia.getParameter(Inertia::I_YY);

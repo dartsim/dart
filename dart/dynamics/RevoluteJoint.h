@@ -55,6 +55,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, RevoluteJointAddon)
 
+  RevoluteJoint(const RevoluteJoint&) = delete;
+
   /// Destructor
   virtual ~RevoluteJoint();
 

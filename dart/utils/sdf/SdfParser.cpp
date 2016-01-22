@@ -68,7 +68,7 @@ simulation::WorldPtr SdfParser::readSdfFile(
 
   //--------------------------------------------------------------------------
   // version attribute
-  std::string version = getAttribute(sdfElement, "version");
+  std::string version = getAttributeString(sdfElement, "version");
   // TODO: We need version aware SDF parser (see #264)
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
@@ -134,7 +134,7 @@ dynamics::SkeletonPtr SdfParser::readSkeleton(
 
   //--------------------------------------------------------------------------
   // version attribute
-  std::string version = getAttribute(sdfElement, "version");
+  std::string version = getAttributeString(sdfElement, "version");
   // TODO: We need version aware SDF parser (see #264)
   // We support 1.4 only for now.
   if (version != "1.4" && version != "1.5")
@@ -186,7 +186,7 @@ simulation::WorldPtr SdfParser::readWorld(
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_worldElement, "name");
+  std::string name = getAttributeString(_worldElement, "name");
   newWorld->setName(name);
 
   //--------------------------------------------------------------------------
@@ -392,7 +392,7 @@ dynamics::SkeletonPtr SdfParser::makeSkeleton(
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_skeletonElement, "name");
+  std::string name = getAttributeString(_skeletonElement, "name");
   newSkeleton->setName(name);
 
   //--------------------------------------------------------------------------
@@ -469,7 +469,7 @@ SdfParser::SDFBodyNode SdfParser::readBodyNode(
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
 
   // Name attribute
-  std::string name = getAttribute(_bodyNodeElement, "name");
+  std::string name = getAttributeString(_bodyNodeElement, "name");
   properties.mName = name;
 
   //--------------------------------------------------------------------------
@@ -716,12 +716,12 @@ SdfParser::SDFJoint SdfParser::readJoint(tinyxml2::XMLElement* _jointElement,
 
   //--------------------------------------------------------------------------
   // Type attribute
-  std::string type = getAttribute(_jointElement, "type");
+  std::string type = getAttributeString(_jointElement, "type");
   assert(!type.empty());
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttribute(_jointElement, "name");
+  std::string name = getAttributeString(_jointElement, "name");
 
   //--------------------------------------------------------------------------
   // parent

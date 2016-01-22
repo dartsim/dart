@@ -55,6 +55,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, ScrewJointAddon)
 
+  ScrewJoint(const ScrewJoint&) = delete;
+
   /// Destructor
   virtual ~ScrewJoint();
 

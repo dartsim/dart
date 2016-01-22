@@ -44,14 +44,16 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
+#include "dart/config.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/common/Console.h"
 #include "dart/dynamics/AssimpInputResourceAdaptor.h"
 #include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/Uri.h"
 
-// We define our own constructor for aiScene, because it seems to be missing
-// from the standard assimp library
+#ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
+// We define our own constructor and destructor for aiScene, because it seems to
+// be missing from the standard assimp library (see #451)
 aiScene::aiScene()
   : mFlags(0),
     mRootNode(nullptr),
@@ -70,8 +72,6 @@ aiScene::aiScene()
 
 }
 
-// We define our own destructor for aiScene, because it seems to be missing
-// from the standard assimp library
 aiScene::~aiScene()
 {
   delete mRootNode;
@@ -106,9 +106,11 @@ aiScene::~aiScene()
       delete mCameras[a];
   delete[] mCameras;
 }
+#endif  // #ifndef ASSIMP_AISCENE_CTOR_DTOR_DEFINED
 
-// We define our own constructor for aiMaterial, because it seems to be missing
-// from the standard assimp library
+// We define our own constructor and destructor for aiMaterial, because it seems
+// to be missing from the standard assimp library (see #451)
+#ifndef ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 aiMaterial::aiMaterial()
 {
   mNumProperties = 0;
@@ -118,8 +120,6 @@ aiMaterial::aiMaterial()
     mProperties[i] = nullptr;
 }
 
-// We define our own destructor for aiMaterial, because it seems to be missing
-// from the standard assimp library
 aiMaterial::~aiMaterial()
 {
   for(size_t i=0; i<mNumProperties; ++i)
@@ -127,6 +127,7 @@ aiMaterial::~aiMaterial()
 
   delete[] mProperties;
 }
+#endif  // #ifndef ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED
 
 namespace dart {
 namespace dynamics {
@@ -213,7 +214,7 @@ void MeshShape::setMesh(
   mResourceRetriever = _resourceRetriever;
 
   _updateBoundingBoxDim();
-  computeVolume();
+  updateVolume();
 }
 
 void MeshShape::setScale(const Eigen::Vector3d& _scale) {
@@ -221,7 +222,8 @@ void MeshShape::setScale(const Eigen::Vector3d& _scale) {
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
   mScale = _scale;
-  computeVolume();
+  updateVolume();
+  _updateBoundingBoxDim();
 }
 
 const Eigen::Vector3d& MeshShape::getScale() const {
@@ -278,9 +280,10 @@ void MeshShape::draw(renderer::RenderInterface* _ri,
 
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   // use bounding box to represent the mesh
-  double l = mScale[0] * mBoundingBoxDim[0];
-  double h = mScale[1] * mBoundingBoxDim[1];
-  double w = mScale[2] * mBoundingBoxDim[2];
+  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
+  double l = bounds.x();
+  double h = bounds.y();
+  double w = bounds.z();
 
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
   inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
@@ -290,16 +293,20 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
   return inertia;
 }
 
-void MeshShape::computeVolume() {
-  // Use bounding box to represent the mesh
-  double l = mScale[0] * mBoundingBoxDim[0];
-  double h = mScale[1] * mBoundingBoxDim[1];
-  double w = mScale[2] * mBoundingBoxDim[2];
-
-  mVolume = l * h * w;
+void MeshShape::updateVolume() {
+  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
+  mVolume = bounds.x() * bounds.y() * bounds.z();
 }
 
 void MeshShape::_updateBoundingBoxDim() {
+
+  if(!mMesh)
+  {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    return;
+  }
+
   double max_X = -std::numeric_limits<double>::infinity();
   double max_Y = -std::numeric_limits<double>::infinity();
   double max_Z = -std::numeric_limits<double>::infinity();
@@ -323,9 +330,8 @@ void MeshShape::_updateBoundingBoxDim() {
         min_Z = mMesh->mMeshes[i]->mVertices[j].z;
     }
   }
-  mBoundingBoxDim[0] = max_X - min_X;
-  mBoundingBoxDim[1] = max_Y - min_Y;
-  mBoundingBoxDim[2] = max_Z - min_Z;
+  mBoundingBox.setMin(Eigen::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
+  mBoundingBox.setMax(Eigen::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
 }
 
 const aiScene* MeshShape::loadMesh(

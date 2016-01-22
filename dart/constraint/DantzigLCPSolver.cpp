@@ -92,7 +92,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
   for (size_t i = 1; i < numConstraints; ++i)
   {
-    ConstraintBase* constraint = _group->getConstraint(i - 1);
+    const ConstraintBasePtr& constraint = _group->getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
     offset[i] = offset[i - 1] + constraint->getDimension();
 //    std::cout << "offset[" << i << "]: " << offset[i] << std::endl;
@@ -101,10 +101,9 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   // For each constraint
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
-  ConstraintBase* constraint;
   for (size_t i = 0; i < numConstraints; ++i)
   {
-    constraint = _group->getConstraint(i);
+    const ConstraintBasePtr& constraint = _group->getConstraint(i);
 
     constInfo.x      = x      + offset[i];
     constInfo.lo     = lo     + offset[i];
@@ -173,7 +172,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   // Apply constraint impulses
   for (size_t i = 0; i < numConstraints; ++i)
   {
-    constraint = _group->getConstraint(i);
+    const ConstraintBasePtr& constraint = _group->getConstraint(i);
     constraint->applyImpulse(x + offset[i]);
     constraint->excite();
   }

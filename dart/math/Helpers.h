@@ -66,34 +66,19 @@ inline int delta(int _i, int _j) {
   return 0;
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x, std::false_type)
 {
   return static_cast<T>(0) < x;
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x, std::true_type)
 {
   return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x)
 {
   return sign(x, std::is_signed<T>());
@@ -182,7 +167,7 @@ inline bool isInt(double _x) {
 /// \brief Returns whether _v is a NaN (Not-A-Number) value
 inline bool isNan(double _v) {
 #ifdef _WIN32
-  return _isnan(_v);
+  return _isnan(_v) != 0;
 #else
   return std::isnan(_v);
 #endif

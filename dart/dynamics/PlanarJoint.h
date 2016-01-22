@@ -61,6 +61,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PlanarJointAddon)
 
+  PlanarJoint(const PlanarJoint&) = delete;
+
   /// Destructor
   virtual ~PlanarJoint();
 

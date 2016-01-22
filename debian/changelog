@@ -1,3 +1,20 @@
+dart (6.0.0) unstable; urgency=medium
+
+  * Added missing 'liburdfdom-dev' dependency in Ubuntu package
+
+dart (5.1.1) unstable; urgency=medium
+
+  * Add bullet dependency to package.xml
+  * Improved handling of missing symbols of Assimp package
+  * Improved travis-ci build log for Mac
+  * Fixed warnings in Function.cpp
+  * Fixed build failures on AppVeyor
+  * Fixed const qualification of ResourceRetriever
+  * Fixed aligned memory allocation with Eigen objects
+  * Fixed copy safety for various classes
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 06 Nov 2015 00:00:00 -0500
+
 dart (5.1.0) unstable; urgency=medium
 
   * Fixed incorrect rotational motion of BallJoint and FreeJoint
@@ -116,7 +133,7 @@ dart (4.3.0) unstable; urgency=low
 
   * Added name manager for efficient name look-up and unique naming
   * Added all-inclusive header and namespace headers
-  * Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates 
+  * Added DegreeOfFreedom class for getting/setting data of individual generalized coordinates
   * Added hybrid dynamics
   * Added joint actuator types
   * Added Coulomb joint friction
@@ -196,4 +213,3 @@ dart (3.0.0) unstable; urgency=low
   * Add "common" namespace
 
  -- Tobias Kunz <tobias@gatech.edu>  Fri, 11 Oct 2013 22:00:00 -0400
- 

@@ -43,8 +43,10 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
+#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace renderer {
@@ -54,7 +56,6 @@ class RenderInterface;
 
 namespace dart {
 namespace dynamics {
-
 /// \brief
 class Shape : public virtual common::Subject
 {
@@ -114,14 +115,18 @@ public:
   /// \brief Set the transparency of this Shape
   virtual void setAlpha(double _alpha);
 
+
+  /// \brief Get the bounding box of the shape in its local coordinate frame.
+  ///        The dimension will be automatically determined by the sub-classes
+  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  const math::BoundingBox& getBoundingBox() const;
+
   /// \brief Get dimensions of bounding box.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
-  // TODO(JS): Single Vector3d does not fit to represent bounding box for
-  //           biased mesh shape. Two Vector3ds might be better; one is for
-  //           minimum verterx, and the other is for maximum verterx of the
-  //           bounding box.
-  const Eigen::Vector3d& getBoundingBoxDim() const;
+  /// \deprecated Please use getBoundingBox() instead
+  DEPRECATED(5.2)
+  Eigen::Vector3d getBoundingBoxDim() const;
 
   /// \brief Set local transformation of the shape w.r.t. parent frame.
   void setLocalTransform(const Eigen::Isometry3d& _Transform);
@@ -140,7 +145,18 @@ public:
   Eigen::Vector3d getOffset() const;
 
   /// \brief
-  virtual Eigen::Matrix3d computeInertia(double _mass) const = 0;
+  virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
+
+  Eigen::Matrix3d computeInertiaFromDensity(double density) const
+  {
+//    return computeInertiaFromMass(density * computeVolume());
+    return Eigen::Matrix3d();
+  }
+
+  virtual Eigen::Matrix3d computeInertiaFromMass(double density) const
+  {
+    return Eigen::Matrix3d();
+  }
 
   /// \brief Get volume of this shape.
   ///        The volume will be automatically calculated by the sub-classes
@@ -189,14 +205,17 @@ public:
   bool isHidden() const;
 
 protected:
-  /// \brief
-  virtual void computeVolume() = 0;
+  DEPRECATED(6.0)
+  virtual void computeVolume() { updateVolume(); }
 
-  /// \brief
+  /// \brief Update volume
+  virtual void updateVolume() = 0;
+
+  DEPRECATED(6.0)
   virtual void initMeshes() {}
 
-  /// \brief Dimensions for bounding box.
-  Eigen::Vector3d mBoundingBoxDim;
+  /// \brief The bounding box (in the local coordinate frame) of the shape.
+  math::BoundingBox mBoundingBox;
 
   /// \brief Volume enclosed by the geometry.
   double mVolume;

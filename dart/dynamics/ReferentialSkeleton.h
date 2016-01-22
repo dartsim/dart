@@ -327,21 +327,37 @@ protected:
   /// of ReferentialSkeleton.
   ReferentialSkeleton() = default;
 
-  /// Add a BodyNode to this ReferentialSkeleton. Only usable by derived classes
+  /// Add a BodyNode, along with its parent Joint and parent DegreesOfFreedom
+  /// to this ReferentialSkeleton. This can only be used by derived classes.
+  void registerComponent(BodyNode* _bn);
+
+  /// Add a BodyNode to this ReferentialSkeleton, ignoring its Joint and
+  /// DegreesOfFreedom. This can only be used by derived classes.
   void registerBodyNode(BodyNode* _bn);
 
-  /// Add a DegreeOfFreedom to this ReferentialSkeleton. Only usable by
-  /// derived classes.
+  /// Add a Joint to this Referential Skeleton, ignoring its DegreesOfFreedom.
+  /// This can only be used by derived classes.
+  void registerJoint(Joint* _joint);
+
+  /// Add a DegreeOfFreedom to this ReferentialSkeleton. This can only be used
+  /// by derived classes.
   void registerDegreeOfFreedom(DegreeOfFreedom* _dof);
 
-  /// Completely remove a BodyNode from this ReferentialSkeleton. Only usable
-  /// by derived classes
-  void unregisterBodyNode(BodyNode* _bn);
+  /// Completely remove a BodyNode and its parent DegreesOfFreedom from this
+  /// ReferentialSkeleton. This can only be used by derived classes.
+  void unregisterComponent(BodyNode* _bn);
 
-  /// Remove a DegreeOfFreedom from this ReferentialSkeleton. Only usable by
+  /// Remove a BodyNode from this ReferentialSkeleton, ignoring its parent
+  /// DegreesOfFreedom. This can only be used by derived classes.
+  void unregisterBodyNode(BodyNode* _bn, bool _unregisterDofs);
+
+  /// Remove a Joint from this ReferentialSkeleton. This can only be used by
   /// derived classes.
-  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex,
-                                 bool removeBnIfEmpty = true);
+  void unregisterJoint(BodyNode* _child);
+
+  /// Remove a DegreeOfFreedom from this ReferentialSkeleton. This can only be
+  /// used by derived classes.
+  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex);
 
   /// Update the caches to match any changes to the structure of this
   /// ReferentialSkeleton
@@ -357,8 +373,19 @@ protected:
     /// Index of the BodyNode
     size_t mBodyNodeIndex;
 
-    /// Indices of the DegreesOfFreedom
+    /// Index of the parent Joint
+    size_t mJointIndex;
+
+    /// Indices of the parent DegreesOfFreedom
     std::vector<size_t> mDofIndices;
+
+    /// Default constructor. Initializes mBodyNodeIndex and mJointIndex to
+    /// INVALID_INDEX
+    IndexMap();
+
+    /// Returns true if nothing in this entry is mapping to a valid index any
+    /// longer.
+    bool isExpired() const;
   };
 
   /// Name of this ReferentialSkeleton
@@ -373,6 +400,9 @@ protected:
 
   /// Raw const BodyNode pointers. This vector is used for the MetaSkeleton API
   mutable std::vector<const BodyNode*> mRawConstBodyNodes;
+
+  /// Joints that this ReferentialSkeleton references
+  std::vector<JointPtr> mJoints;
 
   /// DegreesOfFreedom that this ReferentialSkeleton references
   std::vector<DegreeOfFreedomPtr> mDofs;

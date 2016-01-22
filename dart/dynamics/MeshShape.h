@@ -139,17 +139,15 @@ public:
     const std::string& _uri, const common::ResourceRetrieverPtr& _retriever);
 
   // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double _mass) const override;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
   // Documentation inherited.
-  void computeVolume() override;
+  void updateVolume() override;
 
-private:
   /// \brief
   void _updateBoundingBoxDim();
 
-protected:
   /// \brief
   const aiScene* mMesh;
 

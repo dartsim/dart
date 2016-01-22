@@ -140,27 +140,19 @@ size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 //==============================================================================
 size_t ReferentialSkeleton::getNumJoints() const
 {
-  return mBodyNodes.size();
+  return mJoints.size();
 }
 
 //==============================================================================
 Joint* ReferentialSkeleton::getJoint(size_t _idx)
 {
-  BodyNode* bn = getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
-  if(nullptr == bn)
-    return nullptr;
-
-  return bn->getParentJoint();
+  return getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
 const Joint* ReferentialSkeleton::getJoint(size_t _idx) const
 {
-  const BodyNode* bn = getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
-  if(nullptr == bn)
-    return nullptr;
-
-  return bn->getParentJoint();
+  return getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
@@ -191,7 +183,7 @@ size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
     return INVALID_INDEX;
   }
 
-  return it->second.mBodyNodeIndex;
+  return it->second.mJointIndex;
 }
 
 //==============================================================================
@@ -944,13 +936,81 @@ math::LinearJacobian ReferentialSkeleton::getCOMLinearJacobianDeriv(
 }
 
 //==============================================================================
-void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
+void ReferentialSkeleton::registerComponent(BodyNode* _bn)
 {
+  registerBodyNode(_bn);
+  registerJoint(_bn->getParentJoint());
+
   size_t nDofs = _bn->getParentJoint()->getNumDofs();
   for(size_t i=0; i < nDofs; ++i)
-  {
     registerDegreeOfFreedom(_bn->getParentJoint()->getDof(i));
+}
+
+//==============================================================================
+void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
+{
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
+      mIndexMap.find(_bn);
+
+  if( it == mIndexMap.end() )
+  {
+    // Create an index map entry for this BodyNode, and only add the BodyNode's
+    // index to it.
+    IndexMap indexing;
+
+    mBodyNodes.push_back(_bn);
+    indexing.mBodyNodeIndex = mBodyNodes.size()-1;
+
+    mIndexMap[_bn] = indexing;
   }
+  else
+  {
+    IndexMap& indexing = it->second;
+
+    if(INVALID_INDEX == indexing.mBodyNodeIndex)
+    {
+      mBodyNodes.push_back(_bn);
+      indexing.mBodyNodeIndex = mBodyNodes.size()-1;
+    }
+  }
+
+  updateCaches();
+}
+
+//==============================================================================
+void ReferentialSkeleton::registerJoint(Joint* _joint)
+{
+  BodyNode* bn = _joint->getChildBodyNode();
+
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
+      mIndexMap.find(bn);
+
+  if( it == mIndexMap.end() )
+  {
+    // Create an index map entry for this Joint, and only add the Joint's index
+    // to it
+    IndexMap indexing;
+
+    mJoints.push_back(_joint);
+    indexing.mJointIndex = mJoints.size()-1;
+
+    mIndexMap[bn] = indexing;
+  }
+  else
+  {
+    IndexMap& indexing = it->second;
+
+    if(INVALID_INDEX == indexing.mJointIndex)
+    {
+      mJoints.push_back(_joint);
+      indexing.mJointIndex = mJoints.size()-1;
+    }
+  }
+
+  // Updating the caches isn't necessary after registering a joint right now,
+  // but it might matter in the future, so it might be better to be safe than
+  // sorry.
+  updateCaches();
 }
 
 //==============================================================================
@@ -964,9 +1024,9 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
 
   if( it == mIndexMap.end() )
   {
+    // Create an index map entry for this DegreeOfFreedom, and only add the
+    // DegreeOfFreedom's index to it
     IndexMap indexing;
-    mBodyNodes.push_back(bn);
-    indexing.mBodyNodeIndex = mBodyNodes.size()-1;
 
     indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
     mDofs.push_back(_dof);
@@ -977,17 +1037,30 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
   else
   {
     IndexMap& indexing = it->second;
+
     if(indexing.mDofIndices.size() < localIndex+1)
       indexing.mDofIndices.resize(localIndex+1, INVALID_INDEX);
-    mDofs.push_back(_dof);
-    indexing.mDofIndices[localIndex] = mDofs.size()-1;
+
+    if(INVALID_INDEX == indexing.mDofIndices[localIndex])
+    {
+      mDofs.push_back(_dof);
+      indexing.mDofIndices[localIndex] = mDofs.size()-1;
+    }
   }
 
   updateCaches();
 }
 
 //==============================================================================
-void ReferentialSkeleton::unregisterBodyNode(BodyNode* _bn)
+void ReferentialSkeleton::unregisterComponent(BodyNode* _bn)
+{
+  unregisterBodyNode(_bn, true);
+  unregisterJoint(_bn);
+}
+
+//==============================================================================
+void ReferentialSkeleton::unregisterBodyNode(
+    BodyNode* _bn, bool _unregisterDofs)
 {
   if(nullptr == _bn)
   {
@@ -1011,27 +1084,88 @@ void ReferentialSkeleton::unregisterBodyNode(BodyNode* _bn)
     return;
   }
 
-  const IndexMap& indexing = it->second;
-
-  for(size_t i=0; i<indexing.mDofIndices.size(); ++i)
-  {
-    if(indexing.mDofIndices[i] != INVALID_INDEX)
-      unregisterDegreeOfFreedom(_bn, i, false);
-  }
-
+  IndexMap& indexing = it->second;
   size_t bnIndex = indexing.mBodyNodeIndex;
-  mBodyNodes.erase(mBodyNodes.begin() + indexing.mBodyNodeIndex);
-  for(size_t i = bnIndex; i < mBodyNodes.size(); ++i)
+  mBodyNodes.erase(mBodyNodes.begin() + bnIndex);
+  indexing.mBodyNodeIndex = INVALID_INDEX;
+
+  for(size_t i=bnIndex; i < mBodyNodes.size(); ++i)
   {
-    IndexMap& indexing = mIndexMap[mBodyNodes[i]];
-    indexing.mBodyNodeIndex = i;
+    // Re-index all the BodyNodes in this ReferentialSkeleton which came after
+    // the one that was removed.
+    IndexMap& alteredIndexing = mIndexMap[mBodyNodes[i]];
+    alteredIndexing.mBodyNodeIndex = i;
   }
-  mIndexMap.erase(it);
+
+  if(_unregisterDofs)
+  {
+    for(size_t i=0; i < indexing.mDofIndices.size(); ++i)
+    {
+      if(indexing.mDofIndices[i] != INVALID_INDEX)
+        unregisterDegreeOfFreedom(_bn, i);
+    }
+  }
+
+  if(indexing.isExpired())
+    mIndexMap.erase(it);
+
+  updateCaches();
+}
+
+//==============================================================================
+void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
+{
+  if(nullptr == _child)
+  {
+    dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
+          << "a Joint from a nullptr BodyNode. This is most likely a bug. "
+          << "Please report this!\n";
+    assert(false);
+    return;
+  }
+
+  Joint* joint = _child->getParentJoint();
+
+  std::unordered_map<const BodyNode*, IndexMap>::iterator it =
+      mIndexMap.find(_child);
+
+  if( it == mIndexMap.end() || INVALID_INDEX == it->second.mJointIndex)
+  {
+    dterr << "[ReferentialSkeleton::unregisterJoint] Attempting to unregister "
+          << "a Joint named [" << joint->getName() << "] (" << joint << "), "
+          << "which is the parent Joint of BodyNode [" << _child->getName()
+          << "] (" << _child << "), but the Joint is not currently in this "
+          << "ReferentialSkeleton! This is most likely a bug. Please report "
+          << "this!\n";
+    assert(false);
+    return;
+  }
+
+  size_t jointIndex = it->second.mJointIndex;
+  mJoints.erase(mJoints.begin() + jointIndex);
+  it->second.mJointIndex = INVALID_INDEX;
+
+  for(size_t i = jointIndex; i < mJoints.size(); ++i)
+  {
+    // Re-index all of the Joints in this ReferentialSkeleton which came after
+    // the Joint that was removed.
+    JointPtr alteredJoint = mJoints[i];
+    IndexMap& indexing = mIndexMap[alteredJoint.getBodyNodePtr()];
+    indexing.mJointIndex = i;
+  }
+
+  if(it->second.isExpired())
+    mIndexMap.erase(it);
+
+  // Updating the caches isn't necessary after unregistering a joint right now,
+  // but it might matter in the future, so it might be better to be safe than
+  // sorry.
+  updateCaches();
 }
 
 //==============================================================================
 void ReferentialSkeleton::unregisterDegreeOfFreedom(
-    BodyNode* _bn, size_t _localIndex, bool removeBnIfEmpty)
+    BodyNode* _bn, size_t _localIndex)
 {
   if(nullptr == _bn)
   {
@@ -1050,10 +1184,10 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
       it->second.mDofIndices[_localIndex] == INVALID_INDEX)
   {
     dterr << "[ReferentialSkeleton::unregisterDegreeOfFreedom] Attempting to "
-          << "unregister a DegreeOfFreedom from a BodyNode named ["
-          << _bn->getName() << "] (" << _bn << ") that is not currently in the "
-          << "ReferentialSkeleton! This is most likely a bug. Please report "
-          << "this!\n";
+          << "unregister DegreeOfFreedom #" << _localIndex << " of a BodyNode "
+          << "named [" << _bn->getName() << "] (" << _bn << "), but it is not "
+          << "currently in the ReferentialSkeleton! This is most likely a bug. "
+          << "Please report this!\n";
     assert(false);
     return;
   }
@@ -1064,27 +1198,15 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
 
   for(size_t i = dofIndex; i < mDofs.size(); ++i)
   {
+    // Re-index all the DOFs in this ReferentialSkeleton which came after the
+    // DOF that was removed.
     DegreeOfFreedomPtr dof = mDofs[i];
     IndexMap& indexing = mIndexMap[dof.getBodyNodePtr()];
     indexing.mDofIndices[dof.getLocalIndex()] = i;
   }
 
-  if(removeBnIfEmpty)
-  {
-    const std::vector<size_t>& dofIndices = it->second.mDofIndices;
-    bool removeBn = true;
-    for(size_t i=0; i<dofIndices.size(); ++i)
-    {
-      if(dofIndices[i] != INVALID_INDEX)
-      {
-        removeBn = false;
-        break;
-      }
-    }
-
-    if(removeBn)
-      unregisterBodyNode(_bn);
-  }
+  if(it->second.isExpired())
+    mIndexMap.erase(it);
 
   updateCaches();
 }
@@ -1129,6 +1251,32 @@ void ReferentialSkeleton::updateCaches()
   mCg       = Eigen::VectorXd::Zero(nDofs);
   mFext     = Eigen::VectorXd::Zero(nDofs);
   mFc       = Eigen::VectorXd::Zero(nDofs);
+}
+
+//==============================================================================
+ReferentialSkeleton::IndexMap::IndexMap()
+  : mBodyNodeIndex(INVALID_INDEX),
+    mJointIndex(INVALID_INDEX)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool ReferentialSkeleton::IndexMap::isExpired() const
+{
+  if(INVALID_INDEX != mBodyNodeIndex)
+    return false;
+
+  if(INVALID_INDEX != mJointIndex)
+    return false;
+
+  for(size_t i=0; i < mDofIndices.size(); ++i)
+  {
+    if(mDofIndices[i] != INVALID_INDEX)
+      return false;
+  }
+
+  return true;
 }
 
 } // namespace dynamics

@@ -194,7 +194,7 @@ template <class T>
 void NameManager<T>::removeEntries(const std::string& _name, const T& _obj)
 {
   removeObject(_obj);
-  removeName(_name, false);
+  removeName(_name);
 }
 
 //==============================================================================

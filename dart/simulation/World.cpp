@@ -184,7 +184,6 @@ void World::step(bool _resetCommand)
     {
       skel->clearInternalForces();
       skel->clearExternalForces();
-//    skel->clearConstraintImpulses();
       skel->resetCommands();
     }
   }
@@ -277,8 +276,6 @@ size_t World::getNumSkeletons() const
 //==============================================================================
 std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 {
-  assert(_skeleton != nullptr && "Attempted to add nullptr skeleton to world.");
-
   if(nullptr == _skeleton)
   {
     dtwarn << "[World::addSkeleton] Attempting to add a nullptr Skeleton to "

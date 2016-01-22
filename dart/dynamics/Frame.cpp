@@ -565,7 +565,7 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     }
   }
 
-  if(mParentFrame)
+  if(mParentFrame && !mParentFrame->isWorld())
   {
     FramePtrSet::iterator it = mParentFrame->mChildFrames.find(this);
     if(it != mParentFrame->mChildFrames.end())
@@ -578,8 +578,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     return;
   }
 
-  if(!mAmQuiet)
+  if(!mAmQuiet && !_newParentFrame->isWorld())
     _newParentFrame->mChildFrames.insert(this);
+
   Entity::changeParentFrame(_newParentFrame);
 }
 

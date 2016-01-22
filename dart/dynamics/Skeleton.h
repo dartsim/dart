@@ -492,6 +492,9 @@ public:
   /// nullptr
   void clearIK();
 
+  /// Get total number of markers in this Skeleton
+  size_t getNumMarkers() const;
+
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
 
@@ -641,8 +644,9 @@ public:
   // Impulse-based dynamics algorithms
   //----------------------------------------------------------------------------
 
-  /// Clear constraint impulses: (a) spatial constraints on BodyNode and
-  /// (b) generalized constraints on Joint
+  /// Clear constraint impulses and cache data used for impulse-based forward
+  /// dynamics algorithm, where the constraint impulses are spatial constraints
+  /// on the BodyNodes and generalized constraints on the Joints.
   void clearConstraintImpulses();
 
   /// Update bias impulses
@@ -958,7 +962,7 @@ public:
   friend class EndEffector;
 
 protected:
-  class DataCache;
+  struct DataCache;
 
   /// Constructor called by create()
   Skeleton(const Properties& _properties);

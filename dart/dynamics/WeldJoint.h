@@ -59,6 +59,8 @@ public:
     virtual ~Properties() = default;
   };
 
+  WeldJoint(const WeldJoint&) = delete;
+
   /// Destructor
   virtual ~WeldJoint();
 

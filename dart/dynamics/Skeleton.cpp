@@ -891,6 +891,12 @@ void Skeleton::clearIK()
 }
 
 //==============================================================================
+size_t Skeleton::getNumMarkers() const
+{
+  return mNameMgrForMarkers.getCount();
+}
+
+//==============================================================================
 Marker* Skeleton::getMarker(const std::string& _name)
 {
   return mNameMgrForMarkers.getObject(_name);

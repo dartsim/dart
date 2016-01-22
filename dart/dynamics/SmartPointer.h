@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_SMARTPOINTER_H_
 #define DART_DYNAMICS_SMARTPOINTER_H_
 
+#include "dart/common/SmartPointer.h"
 #include "dart/dynamics/detail/BodyNodePtr.h"
 #include "dart/dynamics/detail/JointPtr.h"
 #include "dart/dynamics/detail/DegreeOfFreedomPtr.h"
@@ -52,22 +53,14 @@
 namespace dart {
 namespace dynamics {
 
-// -- Standard shared/weak pointers --
-// Define a typedef for const and non-const version of shared_ptr and weak_ptr
-// for the class X
-#define DART_DYNAMICS_MAKE_SHARED_WEAK( X )                 \
-  class X ;                                                 \
-  typedef std::shared_ptr< X >      X ## Ptr;               \
-  typedef std::shared_ptr< const X > Const ## X ## Ptr;     \
-  typedef std::weak_ptr< X >        Weak ## X ## Ptr;       \
-  typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
+DART_COMMON_MAKE_SHARED_WEAK(SimpleFrame)
 
-DART_DYNAMICS_MAKE_SHARED_WEAK(SimpleFrame)
+DART_COMMON_MAKE_SHARED_WEAK(NodeDestructor)
 
 //-----------------------------------------------------------------------------
 // Skeleton Smart Pointers
 //-----------------------------------------------------------------------------
-DART_DYNAMICS_MAKE_SHARED_WEAK(Skeleton)
+DART_COMMON_MAKE_SHARED_WEAK(Skeleton)
 // These pointers will take the form of:
 // std::shared_ptr<Skeleton>        --> SkeletonPtr
 // std::shared_ptr<const Skeleton>  --> ConstSkeletonPtr
@@ -75,29 +68,29 @@ DART_DYNAMICS_MAKE_SHARED_WEAK(Skeleton)
 // std::weak_ptr<const Skeleton>    --> WeakConstSkeletonPtr
 
 // MetaSkeleton smart pointers
-DART_DYNAMICS_MAKE_SHARED_WEAK(MetaSkeleton)
+DART_COMMON_MAKE_SHARED_WEAK(MetaSkeleton)
 
 // ReferentialSkeleton smart pointers
-DART_DYNAMICS_MAKE_SHARED_WEAK(ReferentialSkeleton)
+DART_COMMON_MAKE_SHARED_WEAK(ReferentialSkeleton)
 
-DART_DYNAMICS_MAKE_SHARED_WEAK(Group)
-DART_DYNAMICS_MAKE_SHARED_WEAK(Linkage)
-DART_DYNAMICS_MAKE_SHARED_WEAK(Branch)
-DART_DYNAMICS_MAKE_SHARED_WEAK(Chain)
+DART_COMMON_MAKE_SHARED_WEAK(Group)
+DART_COMMON_MAKE_SHARED_WEAK(Linkage)
+DART_COMMON_MAKE_SHARED_WEAK(Branch)
+DART_COMMON_MAKE_SHARED_WEAK(Chain)
 
 
 //-----------------------------------------------------------------------------
 // Shape Smart Pointers
 //-----------------------------------------------------------------------------
-DART_DYNAMICS_MAKE_SHARED_WEAK(Shape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(ArrowShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(BoxShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(CylinderShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(EllipsoidShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(LineSegmentShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(MeshShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(PlaneShape)
-DART_DYNAMICS_MAKE_SHARED_WEAK(SoftMeshShape)
+DART_COMMON_MAKE_SHARED_WEAK(Shape)
+DART_COMMON_MAKE_SHARED_WEAK(ArrowShape)
+DART_COMMON_MAKE_SHARED_WEAK(BoxShape)
+DART_COMMON_MAKE_SHARED_WEAK(CylinderShape)
+DART_COMMON_MAKE_SHARED_WEAK(EllipsoidShape)
+DART_COMMON_MAKE_SHARED_WEAK(LineSegmentShape)
+DART_COMMON_MAKE_SHARED_WEAK(MeshShape)
+DART_COMMON_MAKE_SHARED_WEAK(PlaneShape)
+DART_COMMON_MAKE_SHARED_WEAK(SoftMeshShape)
 
 
 //-----------------------------------------------------------------------------
@@ -176,7 +169,6 @@ DART_DYNAMICS_MAKE_NODEPTR(EndEffector)
 // TemplateWeakNodePtr<EndEffector>         --> WeakEndEffectorPtr
 // TemplateWeakNodePtr<const EndEffector>   --> WeakConstEndEffectorPtr
 
-DART_DYNAMICS_MAKE_SHARED_WEAK(NodeDestructor)
 
 //-----------------------------------------------------------------------------
 // InverseKinematics Smart Pointers

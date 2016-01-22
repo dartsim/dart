@@ -43,7 +43,7 @@ namespace dart {
 namespace dynamics {
 //==============================================================================
 Shape::Shape(ShapeType _type)
-  : mBoundingBoxDim(0, 0, 0),
+  : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
     mColor(0.5, 0.5, 1.0, 1.0),
@@ -102,9 +102,15 @@ void Shape::setAlpha(double _alpha) {
 }
 
 //==============================================================================
-const Eigen::Vector3d& Shape::getBoundingBoxDim() const
+const math::BoundingBox& Shape::getBoundingBox() const
 {
-  return mBoundingBoxDim;
+    return mBoundingBox;
+}
+
+//==============================================================================
+Eigen::Vector3d Shape::getBoundingBoxDim() const
+{
+  return mBoundingBox.computeFullExtents();
 }
 
 //==============================================================================

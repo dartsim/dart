@@ -575,7 +575,7 @@ And now we can add it to the world without any complaints:
 mWorld->addSkeleton(object);
 ```
 
-### Lesson 3d: Compute collisions
+### Lesson 3c: Compute collisions
 
 Now that we've added the Skeleton to the world, we want to make sure that it
 wasn't actually placed inside of something accidentally. If an object in a 
@@ -820,7 +820,7 @@ tail BodyNode.
 Now we have everything we need to construct the constraint:
 
 ```cpp
-auto constraint = new dart::constraint::BallJointConstraint(
+auto constraint = std::make_shared<dart::constraint::BallJointConstraint>(
       head, tail, offset);
 ```
 

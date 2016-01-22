@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- * Date: 06/12/2011
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,17 +34,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_KINEMATICS_PARSER_VSK_H
-#define DART_KINEMATICS_PARSER_VSK_H
+#include <chrono>
+#include <future>
 
-namespace kinematics {
-    class Skeleton;
-} // namespace kinematics
+#include <gtest/gtest.h>
 
-#define VERBOSE false
-#define VSK_OK 0
-#define VSK_ERROR 1
-int readVSKFile(const char* const filename, kinematics::Skeleton* skel);
+#include "dart/simulation/World.h"
 
-#endif // #ifndef DART_KINEMATICS_PARSER_VSK_H
+#include "TestHelpers.h"
 
+using namespace dart;
+using namespace dynamics;
+
+//==============================================================================
+void createAndDestroyFrames(int threadNum)
+{
+  for(size_t i=0; i < 100; ++i)
+  {
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+
+    SimpleFrame someFrame(Frame::World(),
+                          "Frame_"+std::to_string(threadNum)+std::to_string(i));
+
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+  }
+}
+
+//==============================================================================
+TEST(Concurrency, FrameDeletion)
+{
+  // Regression test for issue #576
+  std::vector<std::future<void>> futures;
+  for(size_t i=0; i < 10; ++i)
+    futures.push_back(std::async(std::launch::async,
+                                 &createAndDestroyFrames, i));
+
+  for(size_t i=0; i < futures.size(); ++i)
+  {
+    EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+    EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+    futures[i].get();
+  }
+
+  EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
+  EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
+}
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

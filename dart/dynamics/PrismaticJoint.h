@@ -55,6 +55,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PrismaticJointAddon)
 
+  PrismaticJoint(const PrismaticJoint&) = delete;
+
   /// Destructor
   virtual ~PrismaticJoint();
 

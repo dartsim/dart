@@ -41,6 +41,8 @@
 #include <memory>
 #include <Eigen/Dense>
 
+#include "dart/constraint/SmartPointer.h"
+
 namespace dart {
 
 namespace dynamics {
@@ -49,7 +51,7 @@ class Skeleton;
 
 namespace constraint {
 
-class ConstraintInfo;
+struct ConstraintInfo;
 class ConstraintBase;
 class ConstraintSolver;
 
@@ -74,16 +76,16 @@ public:
   //----------------------------------------------------------------------------
 
   /// Add constraint
-  void addConstraint(ConstraintBase* _constraint);
+  void addConstraint(const ConstraintBasePtr& _constraint);
 
   /// Return number of constraints in this constrained group
   size_t getNumConstraints() const;
 
   /// Return a constraint
-  ConstraintBase* getConstraint(size_t _index) const;
+  ConstraintBasePtr getConstraint(size_t _index) const;
 
   /// Remove constraint
-  void removeConstraint(ConstraintBase* _constraint);
+  void removeConstraint(const ConstraintBasePtr& _constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
@@ -98,14 +100,13 @@ public:
   friend class ConstraintSolver;
 
 private:
+#ifndef NDEBUG
   /// Return true if _constraint is contained
-  bool containConstraint(ConstraintBase* _constraint) const;
-
-  /// Return true and add the constraint if _constraint is contained
-  bool checkAndAddConstraint(ConstraintBase* _constraint);
+  bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
+#endif
 
   /// List of constraints
-  std::vector<ConstraintBase*> mConstraints;
+  std::vector<ConstraintBasePtr> mConstraints;
 
   ///
   std::shared_ptr<dynamics::Skeleton> mRootSkeleton;

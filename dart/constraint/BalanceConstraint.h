@@ -134,7 +134,7 @@ public:
   void setPseudoInverseDamping(double _damping);
 
   /// Get the damping factor that will be used when computing the pseudoinverse
-  double getPseudoInverseDamping();
+  double getPseudoInverseDamping() const;
 
   /// Get the last error vector that was computed by this BalanceConstraint
   const Eigen::Vector3d& getLastError() const;

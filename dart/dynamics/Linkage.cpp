@@ -517,11 +517,11 @@ void Linkage::satisfyCriteria()
 {
   std::vector<BodyNode*> bns = mCriteria.satisfy();
   while(getNumBodyNodes() > 0)
-    unregisterBodyNode(mBodyNodes.back());
+    unregisterComponent(mBodyNodes.back());
 
   for(BodyNode* bn : bns)
   {
-    registerBodyNode(bn);
+    registerComponent(bn);
   }
 
   update();

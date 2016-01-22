@@ -81,9 +81,16 @@ void SimWindow::timeStepping() {
   mWorld->step();
 }
 
-void SimWindow::drawSkels() {
-  for (size_t i = 0; i < mWorld->getNumSkeletons(); i++)
+//==============================================================================
+void SimWindow::drawSkels()
+{
+  for (size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
+  {
     mWorld->getSkeleton(i)->draw(mRI);
+
+    if (mShowMarkers)
+      mWorld->getSkeleton(i)->drawMarkers(mRI);
+  }
 }
 
 void SimWindow::drawEntities()

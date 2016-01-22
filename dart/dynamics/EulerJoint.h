@@ -56,6 +56,8 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, EulerJointAddon)
 
+  EulerJoint(const EulerJoint&) = delete;
+
   /// Destructor
   virtual ~EulerJoint();
 
