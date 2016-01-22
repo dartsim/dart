@@ -1,7 +1,11 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
+if(MSVC)
+  cmake_minimum_required(VERSION 3.1.3)
+else()
+  cmake_minimum_required(VERSION 2.8.6)
+endif()
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -218,7 +222,7 @@ endif()
 
 # Boost
 set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
-if(MSVC OR MSVC90 OR MSVC10)
+if(MSVC)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 add_definitions(-DBOOST_TEST_DYN_LINK)
@@ -471,8 +475,8 @@ endif()
 #===============================================================================
 if(MSVC)
   # Visual Studio enables c++11 support by default
-  if(NOT MSVC12 AND NOT MSVC14)
-    message(FATAL_ERROR "${PROJECT_NAME} requires VS 2013 or greater.")
+  if(NOT MSVC14)
+    message(FATAL_ERROR "${PROJECT_NAME} requires VS 2015 or greater.")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP4")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
