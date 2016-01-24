@@ -78,7 +78,7 @@ SkeletonPtr createManipulator()
 	//tf.translation() = Eigen::Vector3d(0.000908563, -0.208275, -0.0256744);
 	
 
-	//mainpulator->getJoint(0)->setTransformFromParentBodyNode(tf);
+	manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 	return manipulator;
 }
 
