@@ -61,6 +61,7 @@ Biped
 
   __PROTECTED:__
 	+ arguments: _mBiped, mForces, mKp, mKd, mTargetPosition (Target positions for the PD ocntroller), mPreOffset, mSpeed_
+	
 2. MyWindow
 	__PUBLIC:__
     + Mywindow
@@ -86,9 +87,9 @@ Biped
             `--mForceCountDown`
             `}`
 		- self-iteration
-    
-  __PROTECTED:__
+    __PROTECTED:__
     + arugments: _mController, mForceCountdown (number of iterations before clearing a force entry),  mPositiveSign_
+    
 3. loadBiped
 	+ __lesson 1__
 	+ load from file
