@@ -151,6 +151,9 @@ SkeletonPtr createManipulator()
 	}
 	
 	//manipulator->enableSelfCollision();
+	std::cout << "Whether check self Collision:" << manipulator->isEnabledSelfCollisionCheck() << std::endl;
+	std::cout << "Whether check adjacent Collision:" << manipulator->isEnabledAdjacentBodyCheck() << std::endl;
+	
 
 	return manipulator;
 }
