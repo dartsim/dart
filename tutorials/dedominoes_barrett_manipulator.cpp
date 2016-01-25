@@ -10,6 +10,32 @@ public:
 	Controller(const SkeletonPtr& manipulator)
 		: mManipulator(manipulator)
 	{
+		// Setup controller for static positions maintainance
+		mQDesired = mManipulator->getPositions();
+
+		mKpPD = 200.0;
+		mKdPD = 20.0;
+	}
+
+	void setPDForces()
+	{
+		Eigen::VectorXd current_coordinates = mManipulator->getPositions();
+		Eigen::VectorXd current_velocities = mManipulator->getVelocities();
+
+		//stable PD controller
+		//current_coordinates += current_velocities * mManipulator->getTimeStep();
+
+		Eigen::VectorXd current_coordinate_error = mQDesired - current_coordinates;
+		Eigen::VectorXd current_velocities_error = - current_velocities;
+
+		const Eigen::MatrixXd& M= mManipulator->getMassMatrix();
+
+		// compensate for gravity and coriolis forces
+		//const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+		
+		mForces = M * (mKpPD * current_coordinate_error + mKdPD * current_velocities_error) ;
+
+		mManipulator->setForces(mForces);
 	}
 protected:
 	SkeletonPtr mManipulator;
@@ -35,7 +61,7 @@ class MyWindow : public dart::gui::SimWindow
 {
 public:
 	MyWindow(const WorldPtr& world)
-		: mHasEverRun(false)
+		: mHasEverRun(false), mPushCountDown(0)
 	{
 		setWorld(world);
 		mController = std::unique_ptr<Controller> (
@@ -59,13 +85,21 @@ public:
 	
 	void timeStepping() override
 	{
+		if (mPushCountDown > 0)
+		{
+			--mPushCountDown;
+		}
+		else
+		{
+			mController->setPDForces();
+		}
 		SimWindow::timeStepping();
 	}
 protected:
 	SkeletonPtr mDomino;
 	SkeletonPtr mFloor;
 	bool mHasEverRun;
-	int mPushCountCount;
+	int mPushCountDown;
 	std::unique_ptr<Controller> mController;
 };
 
@@ -106,8 +140,9 @@ SkeletonPtr createManipulator()
 	manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
 	// set initial position for each DOF
-	manipulator->getDof(1)->setPosition(-100.0 * M_PI / 180.0);
-	manipulator->getDof(3)->setPosition(180.0 * M_PI / 180.0);
+	manipulator->getDof(1)->setPosition(75.0 * M_PI / 180.0);
+	manipulator->getDof(3)->setPosition(90.0 * M_PI / 180.0);
+	manipulator->getDof(5)->setPosition(-75.0 * M_PI / 180.0);
 	
 	//set Joint position limit to make the manipulator not collapse into itself.
 	for (size_t i = 0 ; i < manipulator->getNumJoints(); ++ i)
