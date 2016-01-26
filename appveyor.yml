@@ -12,8 +12,8 @@ platform:
 # specify custom environment variables
 environment:
   MSVC_DEFAULT_OPTIONS: ON
-  BOOST_ROOT: C:\Libraries\boost
-  BOOST_LIBRARYDIR: C:\Libraries\boost\lib32-msvc-14.0
+  BOOST_ROOT: C:\Libraries\boost_1_59_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_59_0\lib32-msvc-14.0
   BUILD_EXAMPLES: OFF  # don't build examples to not exceed allowed build time (40 min)
   BUILD_TUTORIALS: OFF  # don't build tutorials to not exceed allowed build time (40 min)
   matrix:
