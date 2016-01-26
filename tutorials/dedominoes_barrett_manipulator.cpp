@@ -3,6 +3,7 @@
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::math;
+using namespace dart::gui;
 
 class Controller
 {
@@ -105,17 +106,18 @@ protected:
 
 SkeletonPtr createFloor()
 {
+	
 	SkeletonPtr floor = Skeleton::create("floor");
 	
 	// Give the floor a body
-	BodyNodePtr body = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+	BodyNodePtr body = floor->createJointAndBodyNodePair<WeldJoint>().second;
 
 	// Give the body a shape
 	double floor_width = 5;
-	double floor_height = 0.25;
+	double floor_height = 0.1;
 
-	std::shared_ptr<BoxShape> box(
-			new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
+	std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
+			Eigen::Vector3d(floor_width, floor_width, floor_height));
 	box->setColor(dart::Color::Black());
 
 	body->addVisualizationShape(box);
@@ -158,15 +160,49 @@ SkeletonPtr createManipulator()
 	return manipulator;
 }
 
+SkeletonPtr createDomino()
+{
+	
+    SkeletonPtr domino = Skeleton::create("domino");
+
+	BodyNodePtr body = domino->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+
+	double domino_height = 0.3;
+	double domino_width = 0.4 * domino_height;
+	double domino_depth = domino_width / 5.0;
+
+	double domino_density = 2.6e3;
+	double domino_mass = domino_density * domino_height * domino_width * domino_depth;
+
+	std::shared_ptr<BoxShape> box(
+			new BoxShape(Eigen::Vector3d(domino_depth, domino_width, domino_height)));
+
+	body->addVisualizationShape(box);
+	body->addCollisionShape(box);
+	dart::dynamics::Inertia inertia;
+	inertia.setMass(domino_mass);
+	inertia.setMoment(box->computeInertia(domino_mass));
+	body->setInertia(inertia);
+	
+	domino->getDof("Joint_pos_z")->setPosition(domino_height / 2.0);
+
+	Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+	tf.translation() = Eigen::Vector3d(1, 0.0, 0.0);
+	domino->getJoint(0)->setTransformFromParentBodyNode(tf);
+	return domino;
+
+}
 
 int main(int argc, char*argv[])
 {
 	SkeletonPtr floor = createFloor();
 	SkeletonPtr manipulator = createManipulator();
+	SkeletonPtr domino = createDomino();
 
 	WorldPtr world = std::make_shared<World>();
 	world->addSkeleton(floor);
 	world->addSkeleton(manipulator);
+	world->addSkeleton(domino);
 
 
 
