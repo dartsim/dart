@@ -223,6 +223,16 @@ public:
 		}
 		SimWindow::timeStepping();
 	}
+
+	void drawSkels() override
+	{
+		// Makre sure lighting is turned on and that polygons get filled in
+		glEnable(GL_LIGHTING);
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		SimWindow::drawSkels();
+	}
 protected:
 	SkeletonPtr mDomino;
 	SkeletonPtr mFloor;
@@ -242,7 +252,7 @@ SkeletonPtr createFloor()
 	// Give the body a shape
 	std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
 			Eigen::Vector3d(floor_width, floor_width, floor_height));
-	box->setColor(dart::Color::Black());
+	box->setColor(dart::Color::Fuschia(0.3));
 
 	body->addVisualizationShape(box);
 	body->addCollisionShape(box);
