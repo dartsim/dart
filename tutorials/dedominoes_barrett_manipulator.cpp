@@ -11,7 +11,7 @@ double push_force = 8.0;
 double floor_width = 5;
 double floor_height = 0.1;
 
-double domino_height = 0.3;
+double domino_height = 0.25;
 double domino_width = 0.4 * domino_height;
 double domino_depth = domino_width / 5.0;
 
@@ -28,8 +28,9 @@ public:
 		// Setup controller for static positions maintenance
 		mQDesired = mManipulator->getPositions();
 
-		// Setup information needed for operational space controller
+		Positions_for_fingers();
 
+		// Setup information needed for operational space controller
 		for (size_t i =0; i<mManipulator->getNumBodyNodes() ; i++)
 		{
 			std::cout<<"the "<<i<<"th BodyNode is: "<<mManipulator->getBodyNode(i)->getName()<<std::endl;
@@ -58,7 +59,24 @@ public:
 		mKdOS = 0.01;
 	}
 
-	void setPDForces()
+	void Positions_for_fingers()
+	{	
+		// finger1
+		mManipulator->getDof(7)->setPosition(0.0 * M_PI /180.0);
+		mManipulator->getDof(8)->setPosition(140.0 * M_PI /180.0);
+		mManipulator->getDof(9)->setPosition(45.0 * M_PI /180.0);
+		// finger2
+		mManipulator->getDof(10)->setPosition(0.0 * M_PI /180.0);
+		mManipulator->getDof(11)->setPosition(140.0 * M_PI /180.0);
+		mManipulator->getDof(12)->setPosition(45.0 * M_PI /180.0);
+		// finger3
+		mManipulator->getDof(13)->setPosition(140.0 * M_PI /180.0);
+		mManipulator->getDof(14)->setPosition(45.0 * M_PI /180.0);
+		mQDesired_fingers = mManipulator->getPositions() - mQDesired;
+		mManipulator->setPositions(mQDesired);
+	}
+
+	void setPDForces(bool mHasControlFingers)
 	{
 		Eigen::VectorXd current_coordinates = mManipulator->getPositions();
 		Eigen::VectorXd current_velocities = mManipulator->getVelocities();
@@ -76,10 +94,13 @@ public:
 		
 		mForces = M * (mKpPD * current_coordinate_error + mKdPD * current_velocities_error) /*+ Cg*/;
 
+		// Whether Control fingers
+		mForces += M * (mKpPD * (mQDesired_fingers * mHasControlFingers));
 
 		mManipulator->setForces(mForces);
 	}
-	void setOperationalSpaceForces()
+
+	void setOperationalSpaceForces(bool mHasControlFingers)
 	{
 		// Mass Matrix is 15 by 15
 		const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
@@ -148,9 +169,9 @@ public:
 		Eigen::VectorXd dq = mManipulator->getVelocities();
 		mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e) - Kd * dq + Kd * pinv_J * Kp * e + f +Cg ;
 
-
+		// Whether control fingers
+		mForces += M * (mKpPD * (mQDesired_fingers * mHasControlFingers));
 		mManipulator->setForces(mForces);
-
 
 	}
 protected:
@@ -163,6 +184,9 @@ protected:
 
 	//desired joint positions when not applying the operational space controller
 	Eigen::VectorXd mQDesired;
+
+	//Extra positions for fingers;
+	Eigen::VectorXd mQDesired_fingers;
 
 	Eigen::Vector3d mOffset;
 
@@ -179,7 +203,7 @@ class MyWindow : public dart::gui::SimWindow
 {
 public:
 	MyWindow(const WorldPtr& world)
-		: mHasEverRun(false), mPushCountDown(0)
+		: mHasEverRun(false), mPushCountDown(0), mHasControlFingers(false)
 	{
 		setWorld(world);
 		mController = std::unique_ptr<Controller> (
@@ -204,6 +228,9 @@ public:
 				case 'r':
 					mPushCountDown = push_duration;
 				break;
+				case 'f':
+					mHasControlFingers = !mHasControlFingers;
+				break;
 			}
 		}
 		SimWindow::keyboard(key, x, y);
@@ -214,13 +241,14 @@ public:
 	{
 		if (mPushCountDown > 0)
 		{
-			mController->setOperationalSpaceForces();
+			mController->setOperationalSpaceForces(mHasControlFingers);
 			--mPushCountDown;
 		}
 		else
 		{
-			mController->setPDForces();
+			mController->setPDForces(mHasControlFingers);
 		}
+
 		SimWindow::timeStepping();
 	}
 
@@ -238,6 +266,7 @@ protected:
 	SkeletonPtr mFloor;
 	bool mHasEverRun;
 	int mPushCountDown;
+	bool mHasControlFingers;
 	std::unique_ptr<Controller> mController;
 };
 
