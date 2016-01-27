@@ -184,8 +184,8 @@ protected:
 /// specialization.
 template <class SpecAddon1, class... OtherSpecAddons>
 class SpecializedAddonManager<SpecAddon1, OtherSpecAddons...> :
-    public AddonManagerJoiner< SpecializedAddonManager<SpecAddon1>,
-                              SpecializedAddonManager<OtherSpecAddons...> > { };
+    public AddonManagerJoiner< Virtual< SpecializedAddonManager<SpecAddon1> >,
+                               Virtual< SpecializedAddonManager<OtherSpecAddons...> > > { };
 
 } // namespace common
 } // namespace dart
