@@ -88,18 +88,40 @@ public:
 		// Jacobian is 6 by 7, which should be 6 by 15
 		Jacobian J = mEndEffector->getWorldJacobian(mOffset);
 
-		//Eigen::MatrixXd tmp_J(6,15);
-		//Eigen::MatrixXd tmp = Eigen::MatrixXi::Zero(6,8);
-		//tmp_J << J, tmp;
+		// ##########################################################################################
+		// ################ Augument Jacobian matrix for Model with BHand ###########################
+		// ##########################################################################################
+		
+		Eigen::MatrixXd tmp(6,8);
+		tmp.setZero();
+
+		Eigen::MatrixXd tmp_J(6,15);
+		tmp_J << J, tmp;
+
+		J = tmp_J;
 
 		//std::cout<<"#########debug####Jacobian size####"<<std::endl;
-		//std::cout<<J.cols()<<std::endl;  
+		//std::cout<<J<<std::endl;  
 		//std::cout<<"###################################"<<std::endl;
+		// ##########################################################################################
+		// ##########################################################################################
+		// ##########################################################################################
 
 
 		Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose() + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
 		Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
+
+		// ##########################################################################################
+		// ############### Augument Derivative Jacobian Matrix for Model with BHand##################
+		// ##########################################################################################
+		Eigen::MatrixXd tmp_dJ(6,15);
+		tmp_dJ << dJ , tmp;
+
+		dJ = tmp_dJ;
+		// ##########################################################################################
+		// ##########################################################################################
+		// ##########################################################################################
 
 		Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 
@@ -236,8 +258,8 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
 	dart::utils::DartLoader loader;
-	SkeletonPtr manipulator = loader.parseSkeleton(DART_DATA_PATH"/my_urdf/wam7.urdf");
-	//SkeletonPtr manipulator = loader.parseSkeleton(DART_DATA_PATH"/my_urdf/customized_wam_7dof_wam_bhand.urdf");
+	//SkeletonPtr manipulator = loader.parseSkeleton(DART_DATA_PATH"/my_urdf/wam7.urdf");
+	SkeletonPtr manipulator = loader.parseSkeleton(DART_DATA_PATH"/my_urdf/customized_wam_7dof_wam_bhand.urdf");
 	manipulator->setName("manipulator");
 	Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
 
