@@ -68,6 +68,26 @@ Joint::Properties::Properties(const std::string& _name,
 }
 
 //==============================================================================
+Joint::ExtendedProperties::ExtendedProperties(
+    const Properties& standardProperties,
+    const AddonProperties& addonProperties)
+  : Properties(standardProperties),
+    mAddonProperties(addonProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Joint::ExtendedProperties::ExtendedProperties(
+    Properties&& standardProperties,
+    AddonProperties&& addonProperties)
+  : Properties(std::move(standardProperties)),
+    mAddonProperties(std::move(addonProperties))
+{
+  // Do nothing
+}
+
+//==============================================================================
 Joint::~Joint()
 {
   // Do nothing
