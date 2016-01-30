@@ -136,13 +136,6 @@ std::unique_ptr<T> AddonManager::release()
 template <class T>
 constexpr bool AddonManager::isSpecializedFor()
 {
-  return _isSpecializedFor(type<T>());
-}
-
-//==============================================================================
-template <class T>
-constexpr bool AddonManager::_isSpecializedFor(type<T>)
-{
   return false;
 }
 

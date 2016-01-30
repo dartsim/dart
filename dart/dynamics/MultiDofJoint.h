@@ -71,7 +71,7 @@ public:
   using Properties = detail::MultiDofJointProperties<DOF>;
   using Addon = detail::MultiDofJointAddon<DOF>;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( typename MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
 
   MultiDofJoint(const MultiDofJoint&) = delete;
 
