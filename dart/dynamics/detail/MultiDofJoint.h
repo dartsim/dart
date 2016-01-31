@@ -1725,8 +1725,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitDynamic(
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitKinematic(
-    const Eigen::Matrix6d& _artInertia,
-    double _timeStep)
+    const Eigen::Matrix6d& /*_artInertia*/,
+    double /*_timeStep*/)
 {
   // Do nothing
 }
@@ -1873,7 +1873,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseToDynamic(
 template <size_t DOF>
 void MultiDofJoint<DOF>::addChildBiasImpulseToKinematic(
     Eigen::Vector6d& _parentBiasImpulse,
-    const Eigen::Matrix6d& _childArtInertia,
+    const Eigen::Matrix6d& /*_childArtInertia*/,
     const Eigen::Vector6d& _childBiasImpulse)
 {
   // Add child body's bias force to parent body's bias force. Note that mT
@@ -1944,8 +1944,8 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateTotalForceKinematic(
-    const Eigen::Vector6d& _bodyForce,
-    double _timeStep)
+    const Eigen::Vector6d& /*_bodyForce*/,
+    double /*_timeStep*/)
 {
   // Do nothing
 }
@@ -1986,7 +1986,7 @@ void MultiDofJoint<DOF>::updateTotalImpulseDynamic(
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateTotalImpulseKinematic(
-    const Eigen::Vector6d& _bodyImpulse)
+    const Eigen::Vector6d& /*_bodyImpulse*/)
 {
   // Do nothing
 }
@@ -2040,8 +2040,8 @@ void MultiDofJoint<DOF>::updateAccelerationDynamic(
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateAccelerationKinematic(
-    const Eigen::Matrix6d& _artInertia,
-    const Eigen::Vector6d& _spatialAcc)
+    const Eigen::Matrix6d& /*_artInertia*/,
+    const Eigen::Vector6d& /*_spatialAcc*/)
 {
   // Do nothing
 }
@@ -2089,8 +2089,8 @@ void MultiDofJoint<DOF>::updateVelocityChangeDynamic(
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateVelocityChangeKinematic(
-    const Eigen::Matrix6d& _artInertia,
-    const Eigen::Vector6d& _velocityChange)
+    const Eigen::Matrix6d& /*_artInertia*/,
+    const Eigen::Vector6d& /*_velocityChange*/)
 {
   // Do nothing
 }

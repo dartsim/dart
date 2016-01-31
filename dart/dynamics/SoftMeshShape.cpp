@@ -71,17 +71,17 @@ const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
   return mSoftBodyNode;
 }
 
-Eigen::Matrix3d SoftMeshShape::computeInertia(double mass) const
+Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
   dtwarn << "[SoftMeshShape::computeInertia] Not implemented yet.\n";
   // TODO(JS): Not implemented.
 
-  return Eigen::Matrix3d();
+  return Eigen::Matrix3d::Identity();
 }
 
-void SoftMeshShape::draw(renderer::RenderInterface* _ri,
-                         const Eigen::Vector4d&     _col,
-                         bool                       _default) const
+void SoftMeshShape::draw(renderer::RenderInterface* /*_ri*/,
+                         const Eigen::Vector4d&     /*_col*/,
+                         bool                       /*_default*/) const
 {
   // TODO(JS): Not implemented.
 }

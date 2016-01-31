@@ -435,7 +435,7 @@ bool Frame::isWorld() const
 
 //==============================================================================
 void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                 bool _useDefaultColor, int _depth) const
+                 bool _useDefaultColor, int /*_depth*/) const
 {
   if(nullptr == _ri)
     return;

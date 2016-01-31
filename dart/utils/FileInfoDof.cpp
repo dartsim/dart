@@ -116,7 +116,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 
 //==============================================================================
 bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
-                           double _sampleRate )
+                           double /*_sampleRate*/ )
 {
   if (_end < _start) return false;
 

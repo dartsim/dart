@@ -146,7 +146,7 @@ RRT::StepResult RRT::tryStepFromNode(const VectorXd &qtry, int NNidx) {
 }
 
 /* ********************************************************************************************* */
-bool RRT::newConfig(list<VectorXd> &intermediatePoints, VectorXd &qnew, const VectorXd &qnear, const VectorXd &qtarget) {
+bool RRT::newConfig(list<VectorXd> &/*intermediatePoints*/, VectorXd &qnew, const VectorXd &/*qnear*/, const VectorXd &/*qtarget*/) {
 	return !checkCollisions(qnew);
 }
 

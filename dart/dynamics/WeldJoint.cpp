@@ -71,7 +71,7 @@ const std::string& WeldJoint::getStaticType()
 }
 
 //==============================================================================
-bool WeldJoint::isCyclic(size_t _index) const
+bool WeldJoint::isCyclic(size_t /*_index*/) const
 {
   return false;
 }
