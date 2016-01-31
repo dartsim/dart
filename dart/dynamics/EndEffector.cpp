@@ -37,96 +37,92 @@
 #include "dart/common/Console.h"
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
 
-//==============================================================================
-Support::Support(EndEffector* _ee)
-  : mActive(false),
-    mEndEffector(_ee)
+namespace detail {
+
+void SupportUpdate(Support* support)
 {
-  if(nullptr == mEndEffector)
-  {
-    dterr << "[Support::Support] It is not permissible to construct a Support "
-          << "with a nullptr EndEffector!\n";
-    assert(false);
-  }
+  if(EndEffector* ee = support->getManager())
+    ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
 }
 
-//==============================================================================
-void Support::setGeometry(const math::SupportGeometry& _newSupport)
-{
-  mGeometry = _newSupport;
-  mEndEffector->getSkeleton()->notifySupportUpdate(
-        mEndEffector->getTreeIndex());
-}
-
-//==============================================================================
-const math::SupportGeometry& Support::getGeometry() const
-{
-  return mGeometry;
-}
+} // namespace detail
 
 //==============================================================================
 void Support::setActive(bool _supporting)
 {
-  if(mActive == _supporting)
+  if(mState.mActive == _supporting)
     return;
 
-  mActive = _supporting;
-  mEndEffector->getSkeleton()->notifySupportUpdate(
-        mEndEffector->getTreeIndex());
+  mState.mActive = _supporting;
+  UpdateState(this);
 }
 
 //==============================================================================
 bool Support::isActive() const
 {
-  return mActive;
+  return mState.mActive;
 }
 
 //==============================================================================
-EndEffector::UniqueProperties::UniqueProperties(const Eigen::Isometry3d& _defaultTransform,
-    const math::SupportGeometry& _supportGeometry, bool _supporting)
+EndEffector::StateData::StateData(
+    const Eigen::Isometry3d& relativeTransform,
+    const common::AddonManager::State& addonStates)
+  : mRelativeTransform(relativeTransform),
+    mAddonStates(addonStates)
+{
+  // Do nothing
+}
+
+//==============================================================================
+EndEffector::UniqueProperties::UniqueProperties(
+    const Eigen::Isometry3d& _defaultTransform)
   : mDefaultTransform(_defaultTransform)
 {
   // Do nothing
 }
 
 //==============================================================================
-EndEffector::Properties::Properties(
+EndEffector::PropertiesData::PropertiesData(
     const Entity::Properties& _entityProperties,
-    const UniqueProperties& _effectorProperties)
+    const UniqueProperties& _effectorProperties,
+    const common::AddonManager::Properties& _addonProperties)
   : Entity::Properties(_entityProperties),
-    UniqueProperties(_effectorProperties)
+    UniqueProperties(_effectorProperties),
+    mAddonProperties(_addonProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-EndEffector::~EndEffector()
+void EndEffector::setState(const StateData& _state)
 {
-  size_t index = mIndexInBodyNode;
-  assert(mBodyNode->mEndEffectors[index] == this);
-  mBodyNode->mEndEffectors.erase(mBodyNode->mEndEffectors.begin() + index);
-
-  for(size_t i=index; i<mBodyNode->mEndEffectors.size(); ++i)
-  {
-    EndEffector* ee = mBodyNode->mEndEffectors[i];
-    ee->mIndexInBodyNode = i;
-  }
-
-  SkeletonPtr skel = getSkeleton();
-  if(skel)
-    skel->unregisterEndEffector(this);
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(_state.mAddonStates);
 }
 
 //==============================================================================
-void EndEffector::setProperties(const Properties& _properties, bool _useNow)
+void EndEffector::setState(StateData&& _state)
+{
+  setRelativeTransform(_state.mRelativeTransform);
+  setAddonStates(std::move(_state.mAddonStates));
+}
+
+//==============================================================================
+EndEffector::StateData EndEffector::getEndEffectorState() const
+{
+  return StateData(mRelativeTf, getAddonStates());
+}
+
+//==============================================================================
+void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
+  setAddonProperties(_properties.mAddonProperties);
 }
 
 //==============================================================================
@@ -137,9 +133,10 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
 }
 
 //==============================================================================
-EndEffector::Properties EndEffector::getEndEffectorProperties() const
+EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
-  return Properties(getEntityProperties(), mEndEffectorP);
+  return PropertiesData(getEntityProperties(), mEndEffectorP,
+                        getAddonProperties());
 }
 
 //==============================================================================
@@ -148,11 +145,8 @@ void EndEffector::copy(const EndEffector& _otherEndEffector)
   if(this == &_otherEndEffector)
     return;
 
+  setState(_otherEndEffector.getEndEffectorState());
   setProperties(_otherEndEffector.getEndEffectorProperties());
-
-  // We should also copy the relative transform, because it could be different
-  // than the default relative transform
-  setRelativeTransform(_otherEndEffector.getRelativeTransform());
 }
 
 //==============================================================================
@@ -178,13 +172,72 @@ const std::string& EndEffector::setName(const std::string& _name)
   if(mEntityP.mName == _name && !_name.empty())
     return mEntityP.mName;
 
-  // Remove the current name entry and add a new name entry
-  getSkeleton()->mNameMgrForEndEffectors.removeName(mEntityP.mName);
-  mEntityP.mName = _name;
-  getSkeleton()->addEntryToEndEffectorNameMgr(this);
+  mEntityP.mName = registerNameChange(_name);
 
   // Return the resulting name, after it has been checked for uniqueness
   return mEntityP.mName;
+}
+
+//==============================================================================
+void EndEffector::setNodeState(const Node::State& otherState)
+{
+  setState(static_cast<const State&>(otherState));
+}
+
+//==============================================================================
+std::unique_ptr<Node::State> EndEffector::getNodeState() const
+{
+  return std::unique_ptr<EndEffector::State>(
+        new EndEffector::State(getEndEffectorState()));
+}
+
+//==============================================================================
+void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const
+{
+  if(outputState)
+  {
+    EndEffector::State* state =
+        static_cast<EndEffector::State*>(outputState.get());
+
+    state->mRelativeTransform = mRelativeTf;
+    copyAddonStatesTo(state->mAddonStates);
+  }
+  else
+  {
+    outputState = getNodeState();
+  }
+}
+
+//==============================================================================
+void EndEffector::setNodeProperties(const Node::Properties& otherProperties)
+{
+  setProperties(static_cast<const Properties&>(otherProperties));
+}
+
+//==============================================================================
+std::unique_ptr<Node::Properties> EndEffector::getNodeProperties() const
+{
+  return std::unique_ptr<EndEffector::Properties>(
+        new EndEffector::Properties(getEndEffectorProperties()));
+}
+
+//==============================================================================
+void EndEffector::copyNodePropertiesTo(
+    std::unique_ptr<Node::Properties>& outputProperties) const
+{
+  if(outputProperties)
+  {
+    EndEffector::Properties* properties =
+        static_cast<EndEffector::Properties*>(outputProperties.get());
+
+    static_cast<Entity::Properties&>(*properties) = getEntityProperties();
+    static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
+    copyAddonPropertiesTo(properties->mAddonProperties);
+  }
+  else
+  {
+    outputProperties = getNodeProperties();
+  }
 }
 
 //==============================================================================
@@ -215,29 +268,10 @@ void EndEffector::resetRelativeTransform()
 //==============================================================================
 Support* EndEffector::getSupport(bool _createIfNull)
 {
-  if(nullptr == mSupport && _createIfNull)
+  if(nullptr == getSupport() && _createIfNull)
     createSupport();
 
-  return mSupport.get();
-}
-
-//==============================================================================
-const Support* EndEffector::getSupport() const
-{
-  return mSupport.get();
-}
-
-//==============================================================================
-Support* EndEffector::createSupport()
-{
-  mSupport = std::unique_ptr<Support>(new Support(this));
-  return mSupport.get();
-}
-
-//==============================================================================
-void EndEffector::eraseSupport()
-{
-  mSupport = nullptr;
+  return getSupport();
 }
 
 //==============================================================================
@@ -313,30 +347,6 @@ const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
 }
 
 //==============================================================================
-BodyNode* EndEffector::getParentBodyNode()
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-const BodyNode* EndEffector::getParentBodyNode() const
-{
-  return mBodyNode;
-}
-
-//==============================================================================
-size_t EndEffector::getIndexInSkeleton() const
-{
-  return mIndexInSkeleton;
-}
-
-//==============================================================================
-size_t EndEffector::getTreeIndex() const
-{
-  return mBodyNode->getTreeIndex();
-}
-
-//==============================================================================
 const math::Jacobian& EndEffector::getJacobian() const
 {
   if (mIsBodyJacobianDirty)
@@ -392,26 +402,25 @@ void EndEffector::notifyVelocityUpdate()
 }
 
 //==============================================================================
-EndEffector::EndEffector(BodyNode* _parent, const Properties& _properties)
+EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
   : Entity(ConstructFrame),
     Frame(_parent, ""),
-    Node(ConstructNode, _parent),
     FixedFrame(_parent, "", _properties.mDefaultTransform),
-    mIndexInSkeleton(0),
-    mIndexInBodyNode(0)
-
+    TemplatedJacobianNode<EndEffector>(_parent)
 {
   setProperties(_properties);
-
-  _parent->mEndEffectors.push_back(this);
-  mIndexInBodyNode = _parent->mEndEffectors.size()-1;
 }
 
 //==============================================================================
-EndEffector* EndEffector::clone(BodyNode* _parent) const
+Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
-  EndEffector* ee = new EndEffector(_parent, Properties());
+  EndEffector* ee = new EndEffector(_parent, PropertiesData());
+  ee->duplicateAddons(this);
+
   ee->copy(this);
+
+  if(mIK)
+    ee->mIK = mIK->clone(ee);
 
   return ee;
 }

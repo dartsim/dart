@@ -323,10 +323,10 @@ TEST_F(JOINTS, EULER_JOINT)
 {
   EulerJoint::Properties properties;
 
-  properties.mAxisOrder = EulerJoint::AO_XYZ;
+  properties.mAxisOrder = EulerJoint::AxisOrder::XYZ;
   kinematicsTest<EulerJoint>(properties);
 
-  properties.mAxisOrder = EulerJoint::AO_ZYX;
+  properties.mAxisOrder = EulerJoint::AxisOrder::ZYX;
   kinematicsTest<EulerJoint>(properties);
 }
 

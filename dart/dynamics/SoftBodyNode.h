@@ -211,7 +211,8 @@ protected:
 
   /// Create a clone of this SoftBodyNode. This may only be called by the
   /// Skeleton class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const override;
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const override;
 
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms

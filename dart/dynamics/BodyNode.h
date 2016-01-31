@@ -40,7 +40,6 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -51,11 +50,10 @@
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Inertia.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/SpecializedNodeManager.h"
 
 const double DART_DEFAULT_FRICTION_COEFF = 1.0;
 const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
@@ -73,6 +71,7 @@ class GenCoord;
 class Skeleton;
 class Joint;
 class DegreeOfFreedom;
+class EndEffector;
 class Shape;
 class Marker;
 
@@ -84,6 +83,8 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
+    public virtual common::AddonManager,
+    public virtual SpecializedNodeManagerForBodyNode<EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -146,19 +147,61 @@ public:
     virtual ~Properties() = default;
   };
 
+  using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
+  using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
+  using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
+  using AddonProperties = common::AddonManager::Properties;
+
+  struct ExtendedProperties : Properties
+  {
+    /// Composed constructor
+    ExtendedProperties(
+        const Properties& standardProperties = Properties(),
+        const NodeProperties& nodeProperties = NodeProperties(),
+        const AddonProperties& addonProperties = AddonProperties());
+
+    /// Composed move constructor
+    ExtendedProperties(
+        Properties&& standardProperties,
+        NodeProperties&& nodeProperties,
+        AddonProperties&& addonProperties);
+
+    /// Properties of all the Nodes attached to this BodyNode
+    NodeProperties mNodeProperties;
+
+    /// Properties of all the Addons attached to this BodyNode
+    AddonProperties mAddonProperties;
+  };
+
   BodyNode(const BodyNode&) = delete;
 
   /// Destructor
   virtual ~BodyNode();
 
+  /// Set the ExtendedProperties of this BodyNode
+  void setProperties(const ExtendedProperties& _properties);
+
+  /// Set the Properties of the attached Nodes
+  void setProperties(const NodeProperties& _properties);
+
+  /// Same as setAddonProperties()
+  void setProperties(const AddonProperties& _properties);
+
   /// Set the Properties of this BodyNode
   void setProperties(const Properties& _properties);
 
-  /// Set the Properties of this BodyNode
+  /// Set the UniqueProperties of this BodyNode
   void setProperties(const UniqueProperties& _properties);
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
+
+  /// Get the the Properties of the Nodes attached to this BodyNode
+  NodeProperties getAttachedNodeProperties() const;
+
+  /// The the full extended Properties of this BodyNode, including the
+  /// Properties of its Addons, its attached Nodes, and the BodyNode itself.
+  ExtendedProperties getExtendedProperties() const;
 
   /// Copy the Properties of another BodyNode
   void copy(const BodyNode& _otherBodyNode);
@@ -168,6 +211,13 @@ public:
 
   /// Same as copy(const BodyNode&)
   BodyNode& operator=(const BodyNode& _otherBodyNode);
+
+  /// Give this BodyNode a copy of each Node from otherBodyNode
+  void duplicateNodes(const BodyNode* otherBodyNode);
+
+  /// Make the Nodes of this BodyNode match the Nodes of otherBodyNode. All
+  /// existing Nodes in this BodyNode will be removed.
+  void matchNodes(const BodyNode* otherBodyNode);
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
@@ -559,20 +609,20 @@ public:
   /// Return the (const) _index-th child Joint of this BodyNode
   const Joint* getChildJoint(size_t _index) const;
 
-  /// Return the number of EndEffectors attached to this BodyNode
-  size_t getNumEndEffectors() const;
+  /// Create some Node type and attach it to this BodyNode.
+  template <class NodeType, typename ...Args>
+  NodeType* createNode(Args&&... args);
 
-  /// Return an EndEffector attached to this BodyNode
-  EndEffector* getEndEffector(size_t _index);
-
-  /// Return an EndEffector attached to this BodyNode
-  const EndEffector* getEndEffector(size_t _index) const;
-
-  /// Create an EndEffector attached to this BodyNode
-  EndEffector* createEndEffector(const EndEffector::Properties& _properties);
+  /// Create an EndEffector attached to this BodyNode. Pass an
+  /// EndEffector::Properties argument into this function.
+  template <class EndEffectorProperties>
+  EndEffector* createEndEffector(const EndEffectorProperties& _properties);
 
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const std::string& _name = "EndEffector");
+
+  /// Create an EndEffector with the specified name
+  EndEffector* createEndEffector(const char* _name);
 
   /// Add a marker into the bodynode
   void addMarker(Marker* _marker);
@@ -839,7 +889,11 @@ protected:
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const;
+  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const;
+
+  /// This is needed in order to inherit the Node class, but it does nothing
+  Node* cloneNode(BodyNode* bn) const override final;
 
   /// Initialize the vector members with proper sizes.
   virtual void init(const SkeletonPtr& _skeleton);
@@ -1036,14 +1090,8 @@ protected:
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
 
-  /// List of EndEffectors that are attached to this BodyNode
-  std::vector<EndEffector*> mEndEffectors;
-
   /// List of markers associated
   std::vector<Marker*> mMarkers;
-
-  /// Map that retrieves the destructors for a given Node
-  std::unordered_map<const Node*, std::shared_ptr<NodeDestructor>> mNodeMap;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;
@@ -1185,9 +1233,11 @@ private:
 
 };
 
-#include "dart/dynamics/detail/BodyNode.h"
-
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/Skeleton.h"
+// These headers need to be included after the BodyNode class is defined in
+// order for the header dependencies to work out correctly.
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

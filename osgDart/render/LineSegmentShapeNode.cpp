@@ -143,7 +143,6 @@ LineSegmentShapeGeode::LineSegmentShapeGeode(
     mLineWidth(new osg::LineWidth)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
   getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
   extractData(true);
 }

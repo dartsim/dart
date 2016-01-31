@@ -37,42 +37,23 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_H_
 #define DART_DYNAMICS_REVOLUTEJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/detail/RevoluteJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class RevoluteJoint : public SingleDofJoint
+class RevoluteJoint : public detail::RevoluteJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::RevoluteJointUniqueProperties;
+  using Properties = detail::RevoluteJointProperties;
+  using Addon = detail::RevoluteJointAddon;
+  using Base = detail::RevoluteJointBase;
 
-  struct UniqueProperties
-  {
-    Eigen::Vector3d mAxis;
-
-    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : SingleDofJoint::Properties,
-                      RevoluteJoint::UniqueProperties
-  {
-    Properties(
-        const SingleDofJoint::Properties& _singleDofJointProperties=
-                                            SingleDofJoint::Properties(),
-        const RevoluteJoint::UniqueProperties& _revoluteProperties =
-                                            RevoluteJoint::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, RevoluteJointAddon)
 
   RevoluteJoint(const RevoluteJoint&) = delete;
 
@@ -129,12 +110,10 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
 
-protected:
-
-  /// RevoluteJoint Properties
-  UniqueProperties mRevoluteP;
-
 public:
+
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

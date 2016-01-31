@@ -37,46 +37,23 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_H_
 #define DART_DYNAMICS_SCREWJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/detail/ScrewJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class ScrewJoint
-class ScrewJoint : public SingleDofJoint
+class ScrewJoint : public detail::ScrewJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::ScrewJointUniqueProperties;
+  using Properties = detail::ScrewJointProperties;
+  using Addon = detail::ScrewJointAddon;
+  using Base = detail::ScrewJointBase;
 
-  struct UniqueProperties
-  {
-    /// Rotational axis
-    Eigen::Vector3d mAxis;
-
-    /// Translational pitch
-    double mPitch;
-
-    UniqueProperties(const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ(),
-                     double _pitch = 0.1);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : SingleDofJoint::Properties,
-                      ScrewJoint::UniqueProperties
-  {
-    Properties(
-        const SingleDofJoint::Properties& _singleDofProperties =
-                                              SingleDofJoint::Properties(),
-        const ScrewJoint::UniqueProperties& _screwProperties =
-                                              ScrewJoint::UniqueProperties());
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, ScrewJointAddon)
 
   ScrewJoint(const ScrewJoint&) = delete;
 
@@ -122,6 +99,8 @@ public:
   ///
   double getPitch() const;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -138,11 +117,6 @@ protected:
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
-
-protected:
-
-  /// ScrewJoint Properties
-  UniqueProperties mScrewP;
 
 public:
   // To get byte-aligned Eigen vectors

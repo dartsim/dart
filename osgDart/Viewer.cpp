@@ -196,6 +196,7 @@ void ViewerAttachment::attach(Viewer* newViewer)
 Viewer::Viewer(const osg::Vec4& clearColor)
   : mImageSequenceNum(0),
     mImageDigits(0),
+    mRecording(false),
     mRootGroup(new osg::Group),
     mLightGroup(new osg::Group),
     mLight1(new osg::Light),

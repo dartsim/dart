@@ -283,7 +283,6 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            const Properties& _properties)
   : Entity(Frame::World(), "", false),
     Frame(Frame::World(), ""),
-    Node(ConstructBodyNode),
     BodyNode(_parentBodyNode, _parentJoint, _properties)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
@@ -292,10 +291,17 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
 
 //==============================================================================
 BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
-                              Joint* _parentJoint) const
+                              Joint* _parentJoint, bool cloneNodes) const
 {
-  return new SoftBodyNode(_parentBodyNode, _parentJoint,
-                          getSoftBodyNodeProperties());
+  SoftBodyNode* clonedBn = new SoftBodyNode(
+        _parentBodyNode, _parentJoint, getSoftBodyNodeProperties());
+
+  clonedBn->matchAddons(this);
+
+  if(cloneNodes)
+    clonedBn->matchNodes(this);
+
+  return clonedBn;
 }
 
 //==============================================================================

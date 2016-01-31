@@ -43,6 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
+#include "dart/common/AddonManager.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -85,6 +86,8 @@ public:
 
   using VizShapeRemovedSignal = VizShapeAddedSignal;
 
+  // TODO(MXG): Deprecate this with class the next major version-up, and move
+  // mName into the properties of inheriting classes.
   struct Properties
   {
     /// Name of the Entity

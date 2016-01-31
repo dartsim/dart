@@ -37,49 +37,24 @@
 #ifndef DART_DYNAMICS_EULERJOINT_H_
 #define DART_DYNAMICS_EULERJOINT_H_
 
-#include <string>
-
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/detail/EulerJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class EulerJoint
-class EulerJoint : public MultiDofJoint<3>
+class EulerJoint : public detail::EulerJointBase
 {
 public:
 
   friend class Skeleton;
+  using AxisOrder = detail::AxisOrder;
+  using UniqueProperties = detail::EulerJointUniqueProperties;
+  using Properties = detail::EulerJointProperties;
+  using Addon = detail::EulerJointAddon;
+  using Base = detail::EulerJointBase;
 
-  /// Axis order
-  enum AxisOrder
-  {
-    AO_ZYX = 0,
-    AO_XYZ = 1
-  };
-
-  struct UniqueProperties
-  {
-    /// Euler angle order
-    AxisOrder mAxisOrder;
-
-    /// Constructor
-    UniqueProperties(AxisOrder _axisOrder = AO_XYZ);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : MultiDofJoint<3>::Properties, EulerJoint::UniqueProperties
-  {
-    /// Composed constructor
-    Properties(
-        const MultiDofJoint<3>::Properties& _multiDofProperties =
-                                                MultiDofJoint<3>::Properties(),
-        const EulerJoint::UniqueProperties& _eulerJointProperties =
-                                                EulerJoint::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, EulerJointAddon)
 
   EulerJoint(const EulerJoint&) = delete;
 
@@ -134,13 +109,13 @@ public:
   {
     switch(_ordering)
     {
-      case AO_XYZ:
+      case AxisOrder::XYZ:
         return math::matrixToEulerXYZ(_rotation);
-      case AO_ZYX:
+      case AxisOrder::ZYX:
         return math::matrixToEulerZYX(_rotation);
       default:
         dtwarn << "[EulerJoint::convertToPositions] Unsupported AxisOrder ("
-               << _ordering << "), returning a zero vector\n";
+               << static_cast<int>(_ordering) << "), returning a zero vector\n";
         return Eigen::Vector3d::Zero();
     }
   }
@@ -151,7 +126,7 @@ public:
   template <typename RotationType>
   Eigen::Vector3d convertToPositions(const RotationType& _rotation) const
   {
-    return convertToPositions(_rotation, mEulerP.mAxisOrder);
+    return convertToPositions(_rotation, getAxisOrder());
   }
 
   /// Convert a set of Euler angle positions into a transform
@@ -172,6 +147,8 @@ public:
   // Documentation inherited
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
+
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
 
 protected:
 
@@ -195,11 +172,6 @@ protected:
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
-
-protected:
-
-  /// EulerJoint Properties
-  UniqueProperties mEulerP;
 
 public:
   // To get byte-aligned Eigen vectors

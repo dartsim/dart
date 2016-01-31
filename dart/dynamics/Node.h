@@ -40,6 +40,7 @@
 #include <memory>
 
 #include "dart/common/Subject.h"
+#include "dart/common/Extensible.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
@@ -61,6 +62,8 @@ public:
   /// Non-virtual destructor (this class cannot be inherited)
   ~NodeDestructor();
 
+  Node* getNode() const;
+
 private:
 
   /// Node that this Destructor is responsible for
@@ -71,16 +74,91 @@ private:
 /// The Node class is a base class for BodyNode and any object that attaches to
 /// a BodyNode. This base class handles ownership and reference counting for the
 /// classes that inherit it.
+///
+/// In most cases, when creating your own custom Node class, you will also want
+/// to inherit from AccessoryNode using CRTP.
 class Node : public virtual common::Subject
 {
 public:
 
   friend class BodyNode;
+  friend class Skeleton;
+  template<class> friend class AccessoryNode;
   template<class, class> friend class TemplateNodePtr;
   template<class, class> friend class TemplateWeakNodePtr;
 
+  /// If your Node has a State class, then that State class should inherit this
+  /// Node::State class. This allows us to safely serialize, store, and clone
+  /// the states of arbitrary Node extensions. If your Node is stateless, then
+  /// you do not have to worry about extending this class, because
+  /// Node::getNodeState() will simply return a nullptr by default, which is
+  /// taken to indicate that it is stateless.
+  ///
+  /// The distinction between the State class and the Properties class is that
+  /// State will get stored in BodyNode::ExtendedState whereas Properties will
+  /// get stored in BodyNode::ExtendedProperties. Typically Properties are
+  /// values that only change rarely if ever, whereas State contains values that
+  /// might change as often as every time step.
+  class State : public common::Extensible<State> { };
+
+  /// Use the StateMixer class to easily create a State extension from an
+  /// existing class or struct
+  template <class Mixin>
+  using StateMixer = common::ExtensibleMixer<State, Mixin>;
+
+  /// If your Node has a Properties class, then that Properties class should
+  /// inherit this Node::Properties class. This allows us to safely serialize,
+  /// store, and clone the properties of arbitrary Node extensions. If your
+  /// Node has no properties, then you do not have to worry about extending
+  /// this class, because Node::getNodeProperties() will simply return a nullptr
+  /// by default, which is taken to indicate that it has no properties.
+  ///
+  /// The distinction between the State class and the Properties class is that
+  /// State will get stored in BodyNode::ExtendedState whereas Properties will
+  /// get stored in BodyNode::ExtendedProperties. Typically Properties are
+  /// values that only change rarely if ever, whereas State contains values that
+  /// might change as often as every time step.
+  class Properties : public common::Extensible<Properties> { };
+
+  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// from an existing class or struct.
+  template <class Mixin>
+  using PropertiesMixer = common::ExtensibleMixer<Properties, Mixin>;
+
   /// Virtual destructor
   virtual ~Node() = default;
+
+  /// Set the name of this Node
+  virtual const std::string& setName(const std::string& newName) = 0;
+
+  /// Get the name of this Node
+  virtual const std::string& getName() const = 0;
+
+  /// Set the State of this Node. By default, this does nothing.
+  virtual void setNodeState(const State& otherState);
+
+  /// Get the State of this Node. By default, this returns a nullptr which
+  /// implies that the Node is stateless.
+  virtual std::unique_ptr<State> getNodeState() const;
+
+  /// Copy the State of this Node into a unique_ptr. By default, this simply
+  /// calls getNodeState() and passes the result into the outputState, but this
+  /// function can be overriden to be more performant by avoiding allocations.
+  virtual void copyNodeStateTo(std::unique_ptr<State>& outputState) const;
+
+  /// Set the Properties of this Node. By default, this does nothing.
+  virtual void setNodeProperties(const Properties& properties);
+
+  /// Get the Properties of this Node. By default, this returns a nullptr which
+  /// implies that the Node has no properties.
+  virtual std::unique_ptr<Properties> getNodeProperties() const;
+
+  /// Copy the Properties of this Node into a unique_ptr. By default, this
+  /// simply calls getNodeProperties() and passes the result into the
+  /// outputProperties, but this function can be overriden to be more
+  /// performant.
+  virtual void copyNodePropertiesTo(
+      std::unique_ptr<Properties>& outputProperties) const;
 
   /// Get a pointer to the BodyNode that this Node is associated with
   BodyNodePtr getBodyNodePtr();
@@ -99,24 +177,17 @@ private:
 
 protected:
 
-  /// Construct a typical Node that will be attached to a BodyNode
-  enum ConstructNode_t { ConstructNode };
+  /// Allow your Node implementation to be cloned into a new BodyNode
+  virtual Node* cloneNode(BodyNode* bn) const = 0;
 
-  /// Construct the Node base of a BodyNode
-  enum ConstructBodyNode_t { ConstructBodyNode };
+  /// Constructor
+  Node(BodyNode* _bn);
 
-  /// Used when constructing a pure abstract class, because calling the Node
-  /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
-
-  /// Used when constructing a Node type that does NOT inherit from BodyNode
-  Node(ConstructNode_t, BodyNode* _bn);
-
-  /// Used when constructing a BodyNode
-  Node(ConstructBodyNode_t);
-
-  /// Used when constructing a pure abstract type
-  Node(ConstructAbstract_t);
+  /// Inform the Skeleton that the name of this Node has changed. If the name is
+  /// already taken by another Node of the same type, then this function will
+  /// return a modified version which is unique. If the name is not already
+  /// taken, then it will just return the same name that the function was given.
+  std::string registerNameChange(const std::string& newName);
 
   /// Attach the Node to its BodyNode
   void attach();
@@ -133,14 +204,42 @@ protected:
 
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;
+
+  /// bool that tracks whether this Node is attached to its BodyNode
+  bool mAmAttached;
+
+  /// The index of this Node within its vector in its BodyNode's NodeMap
+  size_t mIndexInBodyNode;
+
+  /// The index of this Node within its vector in its Skeleton's NodeMap
+  size_t mIndexInSkeleton;
+
+  /// Index of this Node within its tree
+  size_t mIndexInTree;
 };
 
-class AccessoryNode : public virtual Node
+/// AccessoryNode provides an interface for Nodes to get their index within the
+/// list of Nodes, as well as detach and reattach. This uses CRTP to get around
+/// the diamond of death problem.
+template <class NodeType>
+class AccessoryNode
 {
 public:
 
   /// Virtual destructor
   virtual ~AccessoryNode() = default;
+
+  /// Get the index of this Node within its BodyNode.
+  size_t getIndexInBodyNode() const;
+
+  /// Get the index of this Node within its Skeleton.
+  size_t getIndexInSkeleton() const;
+
+  /// Get the index of this Node within its tree.
+  size_t getIndexInTree() const;
+
+  /// Get the index of this Node's tree within its Skeleton
+  size_t getTreeIndex() const;
 
   /// Stage the Node for removal. When all strong references to the Node expire,
   /// the Node will be removed from its BodyNode and deleted.
@@ -153,11 +252,13 @@ public:
 protected:
 
   /// Prevent a non-inheriting class from constructing one
-  AccessoryNode();
+  AccessoryNode() = default;
 
 };
 
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/Node.h"
 
 #endif // DART_DYNAMICS_NODE_H_

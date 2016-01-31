@@ -42,19 +42,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-JacobianNode::JacobianNode()
-  : Entity(nullptr, "", false),
-    Frame(nullptr, ""),
-    Node(Node::ConstructAbstract),
-    mIsBodyJacobianDirty(true),
-    mIsWorldJacobianDirty(true),
-    mIsBodyJacobianSpatialDerivDirty(true),
-    mIsWorldJacobianClassicDerivDirty(true)
-{
-  // Do nothing
-}
-
-//==============================================================================
 // This destructor needs to be defined somewhere that the definition of
 // InverseKinematics is visible, because it's needed by the
 // std::unique_ptr<InverseKinematics> class member
@@ -93,6 +80,25 @@ const std::shared_ptr<InverseKinematics>& JacobianNode::createIK()
 void JacobianNode::clearIK()
 {
   mIK = nullptr;
+}
+
+//==============================================================================
+const std::string& JacobianNode::getName() const
+{
+  return mEntityP.mName;
+}
+
+//==============================================================================
+JacobianNode::JacobianNode(BodyNode* bn)
+  : Entity(Entity::ConstructAbstract),
+    Frame(Frame::ConstructAbstract),
+    Node(bn),
+    mIsBodyJacobianDirty(true),
+    mIsWorldJacobianDirty(true),
+    mIsBodyJacobianSpatialDerivDirty(true),
+    mIsWorldJacobianClassicDerivDirty(true)
+{
+  // Do nothing
 }
 
 //==============================================================================

@@ -532,6 +532,16 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
   changeParentFrame(_refFrame);
 }
 
+//==============================================================================
+Frame::Frame(ConstructAbstract_t)
+  : Entity(Entity::ConstructAbstract),
+    mAmWorld(false)
+{
+  dterr << "[Frame::constructor] You are calling a constructor for the Frame "
+        << "class which is only meant to be used by pure abstract classes. If "
+        << "you are seeing this, then there is a bug!\n";
+  assert(false);
+}
 
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)

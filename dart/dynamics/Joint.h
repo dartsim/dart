@@ -44,6 +44,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
+#include "dart/common/AddonManager.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -61,9 +62,11 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
-class Joint : public virtual common::Subject
+class Joint : public virtual common::Subject,
+              public virtual common::AddonManager
 {
 public:
+
   /// Actuator type
   ///
   /// The command is taken by setCommand() or setCommands(), and the meaning of
@@ -153,6 +156,24 @@ public:
   public:
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
+  using AddonProperties = common::AddonManager::Properties;
+
+  struct ExtendedProperties : Properties
+  {
+    /// Composed constructor
+    ExtendedProperties(
+        const Properties& standardProperties = Properties(),
+        const AddonProperties& addonProperties = AddonProperties());
+
+    /// Composed move constructor
+    ExtendedProperties(
+        Properties&& standardProperties,
+        AddonProperties&& addonProperties);
+
+    /// Properties of all the Addons attached to this Joint
+    AddonProperties mAddonProperties;
   };
 
   /// Default actuator type
@@ -674,6 +695,22 @@ public:
   /// \sa BodyNode::updateArticulatedInertia(double).
 //  Eigen::VectorXd getDampingForces() const;
 
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Update Notifiers
+  //----------------------------------------------------------------------------
+
+  /// Notify that a position update is needed
+  void notifyPositionUpdate();
+
+  /// Notify that a velocity update is needed
+  void notifyVelocityUpdate();
+
+  /// Notify that an acceleration update is needed
+  void notifyAccelerationUpdate();
+
+  /// \}
+
   //----------------------------------------------------------------------------
   // Rendering
   //----------------------------------------------------------------------------
@@ -891,15 +928,6 @@ protected:
 
   /// \}
 
-  /// Notify that a position update is needed
-  void notifyPositionUpdate();
-
-  /// Notify that a velocity update is needed
-  void notifyVelocityUpdate();
-
-  /// Notify that an acceleration update is needed
-  void notifyAccelerationUpdate();
-
 protected:
 
   /// Properties of this Joint
@@ -955,9 +983,21 @@ protected:
   mutable bool mIsLocalJacobianTimeDerivDirty;
 
 public:
+
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+namespace detail {
+
+template <class AddonType>
+void JointPropertyUpdate(AddonType* addon)
+{
+  addon->getManager()->notifyPositionUpdate();
+  addon->getManager()->updateLocalJacobian();
+}
+
+} // namespace detail
 
 }  // namespace dynamics
 }  // namespace dart

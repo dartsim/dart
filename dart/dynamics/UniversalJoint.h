@@ -37,41 +37,23 @@
 #ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
 #define DART_DYNAMICS_UNIVERSALJOINT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/detail/UniversalJointProperties.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class UniversalJoint
-class UniversalJoint : public MultiDofJoint<2>
+class UniversalJoint : public detail::UniversalJointBase
 {
 public:
 
   friend class Skeleton;
+  using UniqueProperties = detail::UniversalJointUniqueProperties;
+  using Properties = detail::UniversalJointProperties;
+  using Addon = detail::UniversalJointAddon;
+  using Base = detail::UniversalJointBase;
 
-  struct UniqueProperties
-  {
-    std::array<Eigen::Vector3d,2> mAxis;
-
-    UniqueProperties(const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
-                     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : MultiDofJoint<2>::Properties,
-                      UniversalJoint::UniqueProperties
-  {
-    Properties(const MultiDofJoint<2>::Properties& _multiDofProperties =
-                                            MultiDofJoint<2>::Properties(),
-               const UniversalJoint::UniqueProperties& _universalProperties =
-                                            UniversalJoint::UniqueProperties());
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, UniversalJointAddon)
 
   UniversalJoint(const UniversalJoint&) = delete;
 
@@ -121,6 +103,8 @@ public:
   Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -142,11 +126,6 @@ protected:
 
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv() const override;
-
-protected:
-
-  /// UniversalJoint Properties
-  UniqueProperties mUniversalP;
 
 public:
   // To get byte-aligned Eigen vectors

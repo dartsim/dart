@@ -55,6 +55,8 @@ namespace dynamics {
 
 DART_COMMON_MAKE_SHARED_WEAK(SimpleFrame)
 
+DART_COMMON_MAKE_SHARED_WEAK(NodeDestructor)
+
 //-----------------------------------------------------------------------------
 // Skeleton Smart Pointers
 //-----------------------------------------------------------------------------

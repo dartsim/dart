@@ -532,7 +532,6 @@ FreeJoint::FreeJoint(const Properties& _properties)
   mJacobianDeriv = Eigen::Matrix6d::Zero();
 
   setProperties(_properties);
-  updateDegreeOfFreedomNames();
 }
 
 //==============================================================================

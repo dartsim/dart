@@ -47,6 +47,8 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/SpecializedAddonManager.h"
+#include "dart/dynamics/detail/MultiDofJointProperties.h"
 
 namespace dart {
 namespace dynamics {
@@ -56,107 +58,22 @@ class Skeleton;
 
 /// class MultiDofJoint
 template<size_t DOF>
-class MultiDofJoint : public Joint
+class MultiDofJoint :
+    public Joint,
+    public virtual common::SpecializedAddonManager< detail::MultiDofJointAddon<DOF> >
 {
 public:
 
-  typedef Eigen::Matrix<double, DOF, 1> Vector;
+  constexpr static size_t NumDofs = DOF;
+  using Vector = Eigen::Matrix<double, DOF, 1>;
+
+  using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
+  using Properties = detail::MultiDofJointProperties<DOF>;
+  using Addon = detail::MultiDofJointAddon<DOF>;
+
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( typename MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
 
   MultiDofJoint(const MultiDofJoint&) = delete;
-
-  struct UniqueProperties
-  {
-    /// Lower limit of position
-    Vector mPositionLowerLimits;
-
-    /// Upper limit of position
-    Vector mPositionUpperLimits;
-
-    /// Initial positions
-    Vector mInitialPositions;
-
-    /// Min value allowed.
-    Vector mVelocityLowerLimits;
-
-    /// Max value allowed.
-    Vector mVelocityUpperLimits;
-
-    /// Initial velocities
-    Vector mInitialVelocities;
-
-    /// Min value allowed.
-    Vector mAccelerationLowerLimits;
-
-    /// upper limit of generalized acceleration
-    Vector mAccelerationUpperLimits;
-
-    /// Min value allowed.
-    Vector mForceLowerLimits;
-
-    /// Max value allowed.
-    Vector mForceUpperLimits;
-
-    /// Joint spring stiffness
-    Vector mSpringStiffnesses;
-
-    /// Rest joint position for joint spring
-    Vector mRestPositions;
-
-    /// Joint damping coefficient
-    Vector mDampingCoefficients;
-
-    /// Joint Coulomb friction
-    Vector mFrictions;
-
-    /// True if the name of the corresponding DOF is not allowed to be
-    /// overwritten
-    std::array<bool, DOF> mPreserveDofNames;
-
-    /// The name of the DegreesOfFreedom for this Joint
-    std::array<std::string, DOF> mDofNames;
-
-    /// Default constructor
-    UniqueProperties(
-      const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _velocityUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _forceLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _forceUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _springStiffness = Vector::Constant(0.0),
-      const Vector& _restPosition = Vector::Constant(0.0),
-      const Vector& _dampingCoefficient = Vector::Constant(0.0),
-      const Vector& _coulombFrictions = Vector::Constant(0.0));
-    // TODO(MXG): In version 6.0, we should add mInitialPositions and
-    // mInitialVelocities to the constructor arguments. For now we must wait in
-    // order to avoid breaking the API.
-
-    /// Copy constructor
-    // Note: we only need this because VS2013 lacks full support for std::array
-    // Once std::array is properly supported, this should be removed.
-    UniqueProperties(const UniqueProperties& _other);
-
-    virtual ~UniqueProperties() = default;
-
-  public:
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  struct Properties : Joint::Properties, UniqueProperties
-  {
-    Properties(
-        const Joint::Properties& _jointProperties = Joint::Properties(),
-        const UniqueProperties& _multiDofProperties = UniqueProperties());
-
-    virtual ~Properties();
-
-  public:
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
 
   /// Destructor
   virtual ~MultiDofJoint();
@@ -678,9 +595,6 @@ protected:
 
 protected:
 
-  /// Properties of this MultiDofJoint
-  typename MultiDofJoint<DOF>::UniqueProperties mMultiDofP;
-
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
 
@@ -873,9 +787,9 @@ private:
   /// \}
 };
 
-#include "dart/dynamics/detail/MultiDofJoint.h"
-
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/MultiDofJoint.h"
 
 #endif  // DART_DYNAMICS_MULTIDOFJOINT_H_

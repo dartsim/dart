@@ -50,6 +50,7 @@
 #include "dart/dynamics/Chain.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/EndEffector.h"
 
 namespace dart {
 namespace dynamics {
@@ -110,17 +111,6 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
-{
-  assert(_index < _vec.size());
-  if(_index < _vec.size())
-    return _vec[_index];
-
-  return nullptr;
-}
-
-//==============================================================================
 size_t BodyNode::msBodyNodeCount = 0;
 
 //==============================================================================
@@ -149,6 +139,29 @@ BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
 }
 
 //==============================================================================
+BodyNode::ExtendedProperties::ExtendedProperties(
+    const Properties& standardProperties,
+    const NodeProperties& nodeProperties,
+    const AddonProperties& addonProperties)
+  : Properties(standardProperties),
+    mNodeProperties(nodeProperties),
+    mAddonProperties(addonProperties)
+{
+  // Do nothing
+}
+
+//==============================================================================
+BodyNode::ExtendedProperties::ExtendedProperties(
+    Properties&& standardProperties,
+    NodeProperties&& nodeProperties,
+    AddonProperties&& addonProperties)
+  : Properties(std::move(standardProperties))
+{
+  mNodeProperties = std::move(nodeProperties);
+  mAddonProperties = std::move(addonProperties);
+}
+
+//==============================================================================
 BodyNode::~BodyNode()
 {
   // Delete all Nodes
@@ -162,6 +175,61 @@ BodyNode::~BodyNode()
   }
 
   delete mParentJoint;
+}
+
+//==============================================================================
+void BodyNode::setProperties(const ExtendedProperties& _properties)
+{
+  setProperties(static_cast<const Properties&>(_properties));
+
+  setProperties(_properties.mNodeProperties);
+
+  setProperties(_properties.mAddonProperties);
+}
+
+//==============================================================================
+void BodyNode::setProperties(const NodeProperties& _properties)
+{
+  const NodePropertiesMap& propertiesMap = _properties.getMap();
+
+  NodeMap::iterator node_it = mNodeMap.begin();
+  NodePropertiesMap::const_iterator prop_it = propertiesMap.begin();
+
+  while( mNodeMap.end() != node_it && propertiesMap.end() != prop_it )
+  {
+    if( node_it->first == prop_it->first )
+    {
+      if( prop_it->second )
+      {
+        const std::vector<Node*>& node_vec = node_it->second;
+        const std::vector< std::unique_ptr<Node::Properties> >& prop_vec =
+            prop_it->second->getVector();
+        size_t stop = std::min(node_vec.size(), prop_vec.size());
+        for(size_t i=0; i < stop; ++i)
+        {
+          if(prop_vec[i])
+            node_vec[i]->setNodeProperties(*prop_vec[i]);
+        }
+      }
+
+      ++node_it;
+      ++prop_it;
+    }
+    else if( node_it->first < prop_it->first )
+    {
+      ++node_it;
+    }
+    else
+    {
+      ++prop_it;
+    }
+  }
+}
+
+//==============================================================================
+void BodyNode::setProperties(const AddonProperties& _properties)
+{
+  setAddonProperties(_properties);
 }
 
 //==============================================================================
@@ -201,12 +269,45 @@ BodyNode::Properties BodyNode::getBodyNodeProperties() const
 }
 
 //==============================================================================
+BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
+{
+  // TODO(MXG): Make a version of this function that will fill in a
+  // NodeProperties instance instead of creating a new one
+  NodePropertiesMap nodeProperties;
+
+  for(const auto& entry : mNodeMap)
+  {
+    const std::vector<Node*>& nodes = entry.second;
+    std::vector< std::unique_ptr<Node::Properties> > vec;
+    for(size_t i=0; i < nodes.size(); ++i)
+    {
+      std::unique_ptr<Node::Properties> prop = nodes[i]->getNodeProperties();
+      if(prop)
+        vec.push_back(std::move(prop));
+    }
+
+    nodeProperties[entry.first] = std::unique_ptr<NodePropertiesVector>(
+          new NodePropertiesVector(std::move(vec)));
+  }
+
+  return nodeProperties;
+}
+
+//==============================================================================
+BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
+{
+  return ExtendedProperties(getBodyNodeProperties(),
+                            getAttachedNodeProperties(),
+                            getAddonProperties());
+}
+
+//==============================================================================
 void BodyNode::copy(const BodyNode& _otherBodyNode)
 {
   if(this == &_otherBodyNode)
     return;
 
-  setProperties(_otherBodyNode.getBodyNodeProperties());
+  setProperties(_otherBodyNode.getExtendedProperties());
 }
 
 //==============================================================================
@@ -223,6 +324,42 @@ BodyNode& BodyNode::operator=(const BodyNode& _otherBodyNode)
 {
   copy(_otherBodyNode);
   return *this;
+}
+
+//==============================================================================
+void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
+{
+  if(nullptr == otherBodyNode)
+  {
+    dterr << "[BodyNode::duplicateNodes] You have asked to duplicate the Nodes "
+          << "of a nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  const NodeMap& otherMap = otherBodyNode->mNodeMap;
+  for(const auto& vec : otherMap)
+  {
+    for(const auto& node : vec.second)
+      node->cloneNode(this)->attach();
+  }
+}
+
+//==============================================================================
+void BodyNode::matchNodes(const BodyNode* otherBodyNode)
+{
+  if(nullptr == otherBodyNode)
+  {
+    dterr << "[BodyNode::matchNodes] You have asked to match the Nodes of a "
+          << "nullptr, which is not allowed!\n";
+    assert(false);
+    return;
+  }
+
+  for(auto& cleaner : mNodeDestructors)
+    cleaner->getNode()->stageForRemoval();
+
+  duplicateNodes(otherBodyNode);
 }
 
 //==============================================================================
@@ -736,43 +873,6 @@ const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 }
 
 //==============================================================================
-size_t BodyNode::getNumEndEffectors() const
-{
-  return mEndEffectors.size();
-}
-
-//==============================================================================
-EndEffector* BodyNode::getEndEffector(size_t _index)
-{
-  return getVectorObjectIfAvailable(_index, mEndEffectors);
-}
-
-//==============================================================================
-const EndEffector* BodyNode::getEndEffector(size_t _index) const
-{
-  return getVectorObjectIfAvailable(_index, mEndEffectors);
-}
-
-//==============================================================================
-EndEffector* BodyNode::createEndEffector(
-    const EndEffector::Properties& _properties)
-{
-  EndEffector* ee = new EndEffector(this, _properties);
-  getSkeleton()->registerEndEffector(ee);
-
-  return ee;
-}
-
-//==============================================================================
-EndEffector* BodyNode::createEndEffector(const std::string& _name)
-{
-  EndEffector::Properties properties;
-  properties.mName = _name;
-
-  return createEndEffector(properties);
-}
-
-//==============================================================================
 size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
@@ -793,6 +893,21 @@ Joint* BodyNode::getChildJoint(size_t _index)
 const Joint* BodyNode::getChildJoint(size_t _index) const
 {
   return const_cast<BodyNode*>(this)->getChildJoint(_index);
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(const std::string& _name)
+{
+  EndEffector::Properties properties;
+  properties.mName = _name;
+
+  return createNode<EndEffector>(properties);
+}
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(const char* _name)
+{
+  return createEndEffector(std::string(_name));
 }
 
 //==============================================================================
@@ -1065,7 +1180,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
   : Entity(ConstructFrame),
     Frame(Frame::World(), ""), // Name gets set later by setProperties
-    Node(ConstructBodyNode),
+    TemplatedJacobianNode<BodyNode>(this),
     mID(BodyNode::msBodyNodeCount++),
     mIsColliding(false),
     mParentJoint(_parentJoint),
@@ -1099,6 +1214,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
   // double-delete this BodyNode when it gets destroyed.
   mSelfDestructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(nullptr));
   mDestructor = mSelfDestructor;
+  mAmAttached = true;
 
   mParentJoint->mChildBodyNode = this;
   setProperties(_properties);
@@ -1108,9 +1224,27 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 }
 
 //==============================================================================
-BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint) const
+BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                          bool cloneNodes) const
 {
-  return new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+  BodyNode* clonedBn =
+      new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
+
+  clonedBn->matchAddons(this);
+
+  if(cloneNodes)
+    clonedBn->matchNodes(this);
+
+  return clonedBn;
+}
+
+//==============================================================================
+Node* BodyNode::cloneNode(BodyNode* /*bn*/) const
+{
+  dterr << "[BodyNode::cloneNode] This function should never be called! Please "
+        << "report this as an error!\n";
+  assert(false);
+  return nullptr;
 }
 
 //==============================================================================

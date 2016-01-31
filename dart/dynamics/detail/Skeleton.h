@@ -37,6 +37,11 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETON_H_
 #define DART_DYNAMICS_DETAIL_SKELETON_H_
 
+#include "dart/dynamics/Skeleton.h"
+
+namespace dart {
+namespace dynamics {
+
 //==============================================================================
 template <class JointType>
 JointType* Skeleton::moveBodyNodeTree(
@@ -84,5 +89,8 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
 
   return std::pair<JointType*, NodeType*>(joint, node);
 }
+
+} // namespace dynamics
+} // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_SKELETON_H_

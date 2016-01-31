@@ -134,6 +134,8 @@ public:
   /// It is recommended that you end the filename with ".png". That is the type
   /// of file that will be produced, but the extension will not be added on
   /// automatically.
+  // TODO(MXG): Add a bool argument that instructs the viewer to append a date
+  // and time to the name of the file.
   void captureScreen(const std::string& filename);
 
   /// As the screen refreshes, save screen capture images to the specified
