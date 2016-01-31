@@ -1723,8 +1723,8 @@ void BodyNode::updateVelocityChangeFD()
 
 //==============================================================================
 void BodyNode::updateJointForceID(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces)
+                                  bool _withDampingForces,
+                                  bool _withSpringForces)
 {
   assert(mParentJoint != nullptr);
   mParentJoint->updateForceID(mF, _timeStep,
@@ -1733,8 +1733,8 @@ void BodyNode::updateJointForceID(double _timeStep,
 
 //==============================================================================
 void BodyNode::updateJointForceFD(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces)
+                                  bool _withDampingForces,
+                                  bool _withSpringForces)
 {
   assert(mParentJoint != nullptr);
   mParentJoint->updateForceFD(mF, _timeStep,

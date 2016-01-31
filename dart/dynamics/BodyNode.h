@@ -972,13 +972,13 @@ protected:
 
   /// Update the joint force for inverse dynamics.
   virtual void updateJointForceID(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces);
+                                  bool _withDampingForces,
+                                  bool _withSpringForces);
 
   /// Update the joint force for forward dynamics.
   virtual void updateJointForceFD(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces);
+                                  bool _withDampingForces,
+                                  bool _withSpringForces);
 
   /// Update the joint impulse for forward dynamics.
   virtual void updateJointImpulseFD();

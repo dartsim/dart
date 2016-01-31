@@ -571,8 +571,8 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 
 //==============================================================================
 void SoftBodyNode::updateJointForceID(double _timeStep,
-                                      double _withDampingForces,
-                                      double _withSpringForces)
+                                      bool _withDampingForces,
+                                      bool _withSpringForces)
 {
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateJointForceID(_timeStep,
@@ -586,8 +586,8 @@ void SoftBodyNode::updateJointForceID(double _timeStep,
 
 //==============================================================================
 void SoftBodyNode::updateJointForceFD(double _timeStep,
-                                      double _withDampingForces,
-                                      double _withSpringForces)
+                                      bool _withDampingForces,
+                                      bool _withSpringForces)
 {
   BodyNode::updateJointForceFD(_timeStep,
                                _withDampingForces,

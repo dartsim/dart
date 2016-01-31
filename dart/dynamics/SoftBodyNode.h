@@ -274,13 +274,13 @@ protected:
 
   // Documentation inherited.
   virtual void updateJointForceID(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces) override;
+                                  bool _withDampingForces,
+                                  bool _withSpringForces) override;
 
   // Documentation inherited.
   virtual void updateJointForceFD(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces) override;
+                                  bool _withDampingForces,
+                                  bool _withSpringForces) override;
 
   // Documentation inherited.
   virtual void updateJointImpulseFD() override;
