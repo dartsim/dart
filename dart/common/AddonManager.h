@@ -128,7 +128,9 @@ public:
   template <class T>
   std::unique_ptr<T> release();
 
-  /// Check if this Manager is specialized for a specific type of Addon
+  /// Check if this Manager is specialized for a specific type of Addon.
+  ///
+  /// By default, this simply returns false.
   template <class T>
   static constexpr bool isSpecializedFor();
 
@@ -170,10 +172,6 @@ protected:
   /// Become the AddonManager of the given Addon. This allows derived
   /// AddonManager types to call the protected Addon::setManager function.
   void becomeManager(Addon* addon, bool transfer);
-
-  /// Always returns false
-  template <class T>
-  static constexpr bool _isSpecializedFor(type<T>);
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;

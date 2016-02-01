@@ -162,10 +162,17 @@ public:
 
   struct ExtendedProperties : Properties
   {
+    /// Composed constructor
     ExtendedProperties(
         const Properties& standardProperties = Properties(),
         const AddonProperties& addonProperties = AddonProperties());
 
+    /// Composed move constructor
+    ExtendedProperties(
+        Properties&& standardProperties,
+        AddonProperties&& addonProperties);
+
+    /// Properties of all the Addons attached to this Joint
     AddonProperties mAddonProperties;
   };
 

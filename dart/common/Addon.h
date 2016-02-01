@@ -128,9 +128,9 @@ protected:
 
   /// Constructor
   ///
-  // We require the AddonManager argument in this constructor to make it clear
-  // to extensions that they must have an AddonManager argument in their
-  // constructors.
+  /// We require the AddonManager argument in this constructor to make it clear
+  /// to extensions that they must have an AddonManager argument in their
+  /// constructors.
   Addon(AddonManager* manager);
 
   /// This function will be triggered (1) after the Addon has been created

@@ -810,6 +810,118 @@ TEST_F(JOINTS, SERVO_MOTOR)
 }
 
 //==============================================================================
+TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
+{
+  const double timeStep = 1e-3;
+  const double tol = 1e-2;
+
+  simulation::WorldPtr myWorld
+      = utils::SkelParser::readWorld(
+        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+  EXPECT_TRUE(myWorld != nullptr);
+
+  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+  myWorld->setTimeStep(timeStep);
+
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != nullptr);
+  pendulum->disableSelfCollision();
+
+  dynamics::Joint* joint0 = pendulum->getJoint("joint0");
+  dynamics::Joint* joint1 = pendulum->getJoint("joint1");
+
+  EXPECT_TRUE(joint0 != nullptr);
+  EXPECT_TRUE(joint1 != nullptr);
+
+  double frictionForce  = 5.0;
+
+  joint0->setPositionLimitEnforced(true);
+  joint1->setPositionLimitEnforced(true);
+
+  const double ll = -DART_PI/12.0; // -15 degree
+  const double ul = +DART_PI/12.0; // +15 degree
+
+  size_t dof0 = joint0->getNumDofs();
+  for (size_t i = 0; i < dof0; ++i)
+  {
+    joint0->setPosition(i, 0.0);
+    joint0->setPosition(i, 0.0);
+    joint0->setPositionLowerLimit(i, ll);
+    joint0->setPositionUpperLimit(i, ul);
+  }
+
+  size_t dof1 = joint1->getNumDofs();
+  for (size_t i = 0; i < dof1; ++i)
+  {
+    joint1->setPosition(i, 0.0);
+    joint1->setPosition(i, 0.0);
+    joint1->setPositionLowerLimit(i, ll);
+    joint1->setPositionUpperLimit(i, ul);
+  }
+
+  joint0->setCoulombFriction(0, frictionForce);
+  joint1->setCoulombFriction(0, frictionForce);
+
+  EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
+  EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
+
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
+  double simTime = 2.0;
+#endif // ------- Debug mode
+  int nSteps = simTime / timeStep;
+
+  // First two seconds rotating in positive direction with higher control forces
+  // than the friction forces
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, 100.0);
+    joint1->setForce(0, 100.0);
+    myWorld->step();
+
+    double jointPos0 = joint0->getPosition(0);
+    double jointPos1 = joint1->getPosition(0);
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_GE(std::abs(jointVel0), 0.0);
+    EXPECT_GE(std::abs(jointVel1), 0.0);
+
+    EXPECT_GE(jointPos0, ll - tol);
+    EXPECT_LE(jointPos0, ul + tol);
+
+    EXPECT_GE(jointPos1, ll - tol);
+    EXPECT_LE(jointPos1, ul + tol);
+  }
+
+  // Another two seconds rotating in negative direction with higher control
+  // forces than the friction forces
+  for (int i = 0; i < nSteps; i++)
+  {
+    joint0->setForce(0, -100.0);
+    joint1->setForce(0, -100.0);
+    myWorld->step();
+
+    double jointPos0 = joint0->getPosition(0);
+    double jointPos1 = joint1->getPosition(0);
+
+    double jointVel0 = joint0->getVelocity(0);
+    double jointVel1 = joint1->getVelocity(0);
+
+    EXPECT_GE(std::abs(jointVel0), 0.0);
+    EXPECT_GE(std::abs(jointVel1), 0.0);
+
+    EXPECT_GE(jointPos0, ll - tol);
+    EXPECT_LE(jointPos0, ul + tol);
+
+    EXPECT_GE(jointPos1, ll - tol);
+    EXPECT_LE(jointPos1, ul + tol);
+  }
+}
+
+//==============================================================================
 template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {

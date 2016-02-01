@@ -198,6 +198,9 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     return;
   }
 
+  if(this == otherManager)
+    return;
+
   const AddonMap& otherMap = otherManager->mAddonMap;
 
   AddonMap::iterator receiving = mAddonMap.begin();
