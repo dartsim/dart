@@ -167,7 +167,7 @@ VskParser::Options::Options(
     double newJointPositionUpperLimit,
     double newJointDampingCoefficient,
     double newJointFriction,
-    bool newRemoveEndBodyNode)
+    bool newRemoveEndBodyNodes)
   : retrieverOrNullptr(newRetrieverOrNullptr),
     defaultEllipsoidSize(newDefaultEllipsoidSize),
     thicknessRatio(newThicknessRatio),
@@ -176,7 +176,7 @@ VskParser::Options::Options(
     jointPositionUpperLimit(newJointPositionUpperLimit),
     jointDampingCoefficient(newJointDampingCoefficient),
     jointFriction(newJointFriction),
-    removeEndBodyNode(newRemoveEndBodyNode)
+    removeEndBodyNodes(newRemoveEndBodyNodes)
 {
   // Do nothing
 }
@@ -918,6 +918,25 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     parent->addCollisionShape(shape);
   }
 
+  // Remove redundant leaf body nodes with no shape
+  if (vskData.options.removeEndBodyNodes)
+  {
+    std::vector<dynamics::BodyNode*> emptynodes;
+    for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+    {
+      dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
+
+      if (bodyNode->getVisualizationShapes().empty()
+          && bodyNode->getNumChildBodyNodes() == 0)
+      {
+        emptynodes.push_back(bodyNode);
+      }
+    }
+
+    for (auto& bodyNode : emptynodes)
+      bodyNode->remove();
+  }
+
   // Update mass and moments of inertia of the bodies based on the their shapes
   const double& density = vskData.options.density;
   for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
@@ -960,25 +979,6 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     const dynamics::Inertia inertia(totalMass, Eigen::Vector3d::Zero(),
                                     totalMoi);
     bodyNode->setInertia(inertia);
-  }
-
-  // Remove redundant leaf body nodes with no shape
-  if (vskData.options.removeEndBodyNode)
-  {
-    std::vector<dynamics::BodyNode*> emptynodes;
-    for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
-    {
-      dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
-
-      if (bodyNode->getVisualizationShapes().empty()
-          && bodyNode->getNumChildBodyNodes() == 0)
-      {
-        emptynodes.push_back(bodyNode);
-      }
-    }
-
-    for (auto& bodyNode : emptynodes)
-      bodyNode->remove();
   }
 }
 

@@ -83,7 +83,7 @@ namespace VskParser
     double jointFriction;
 
     /// Remove end BodyNodes with no Shape segment
-    bool removeEndBodyNode;
+    bool removeEndBodyNodes;
 
     /// Constructor
     Options(const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
@@ -95,7 +95,7 @@ namespace VskParser
             double jointPositionUpperLimit = +DART_PI,
             double jointDampingCoefficient = 0.1,
             double jointFriction = 0.0,
-            bool removeEndBodyNode = false);
+            bool removeEndBodyNodes = false);
   };
 
   /// Read Skeleton from VSK file
