@@ -231,7 +231,7 @@ protected:
 //==============================================================================
 #define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties)\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties = PropertiesData())\
     : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdatePropertiesMacro, Optional>(mgr, properties) { }
 
 //==============================================================================
