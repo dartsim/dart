@@ -136,12 +136,12 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  /// Composition of Entity and BodyNode properties
-  struct Properties : Entity::Properties, UniqueProperties
+  /// Composition of Frame and BodyNode properties
+  struct Properties : Frame::Properties, UniqueProperties
   {
     /// Composed constructor
     Properties(
-        const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
+        const Frame::Properties& _frameProperties = Frame::Properties("BodyNode"),
         const UniqueProperties& _bodyNodeProperties = UniqueProperties());
 
     virtual ~Properties() = default;

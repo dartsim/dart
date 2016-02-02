@@ -69,9 +69,13 @@ struct VisualDataProperties
   /// Color for the primitive shape
   Eigen::Vector4d mRGBA;
 
+  /// True if this shape node should be kept from rendering
+  bool mHidden;
+
   /// Constructor
   VisualDataProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0));
+      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
+      const bool hidden = false);
 
   /// Destructor
   virtual ~VisualDataProperties() = default;
@@ -80,10 +84,10 @@ struct VisualDataProperties
 struct CollisionDataProperties
 {
   /// This object is collidable if true
-  bool mCollisionMode;
+  bool mCollidable;
 
   /// Constructor
-  CollisionDataProperties(const bool collisionMode = true);
+  CollisionDataProperties(const bool collidable = true);
 
   /// Destructor
   virtual ~CollisionDataProperties() = default;
@@ -129,6 +133,9 @@ public:
   DART_DYNAMICS_SET_GET_ADDON_PROPERTY( Eigen::Vector4d, RGBA )
   // void setRGBA(const Eigen::Vector4d& value);
   // const Eigen::Vector4d& getRGBA() const;
+  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( bool, Hidden )
+  // void setRGBA(const Eigen::Vector4d& value);
+  // const Eigen::Vector4d& getRGBA() const;
 
   /// Identical to setRGB(const Eigen::Vector3d&)
   void setColor(const Eigen::Vector3d& color);
@@ -151,6 +158,16 @@ public:
   /// Get the transparency of the Shape
   const double getAlpha() const;
 
+  /// Hide the ShapeNode
+  void hide();
+
+  /// Show the ShapeNode
+  void show();
+
+  /// True iff the ShapeNode is set to be hidden. Use hide(bool) to change this
+  /// setting
+  bool isHidden() const;
+
 };
 
 class CollisionData final :
@@ -168,9 +185,12 @@ public:
 
   // This macro defines following setter/getter of the addon property obeying
   // the skeleton version increment mechanism.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( bool, CollisionMode )
+  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( bool, Collidable )
   // void setCollisionMode(const bool& value);
   // const bool& getCollisionMode() const;
+
+  /// Return true if this body can collide with others bodies
+  bool isCollidable() const;
 
 };
 
@@ -203,10 +223,11 @@ public:
 //==============================================================================
 
 class ShapeNode final :
-//    public Node,
-    // public FixedFrame
     public virtual common::SpecializedAddonManager<
-        VisualData, CollisionData, DynamicsData>
+        VisualData, CollisionData, DynamicsData>,
+    public FixedFrame,
+    public AccessoryNode<ShapeNode>,
+    public TemplatedJacobianNode<ShapeNode>
 {
 public:
 
@@ -220,22 +241,19 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  struct Properties
+  struct UniqueProperties
   {
     ShapePtr mShape;
 
     /// Transformation of this shape node relative to the parent frame
     Eigen::Isometry3d mTransform;
 
-    /// True if this shape node should be kept from rendering
-    bool mHidden;
-
     /// Constructor
-    Properties(const ShapePtr& shape = nullptr,  // TODO(JS)
+    UniqueProperties(const ShapePtr& shape = nullptr,  // TODO(JS)
                const Eigen::Isometry3d tf = Eigen::Isometry3d::Identity(),
                const bool hidden = false);
 
-    virtual ~Properties() = default;
+    virtual ~UniqueProperties() = default;
 
     // To get byte-aligned Eigen vectors
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -243,31 +261,30 @@ public:
 
   using AddonProperties = common::AddonManager::Properties;
 
-  struct ExtendedProperties : Properties
+  struct Properties : Frame::Properties, UniqueProperties
   {
     /// Composed constructor
-    ExtendedProperties(
-        const Properties& standardProperties = Properties(),
+    Properties(
+        const UniqueProperties& standardProperties = UniqueProperties(),
         const AddonProperties& addonProperties = AddonProperties());
 
     /// Composed move constructor
-    ExtendedProperties(
-        const Properties&& standardProperties,
+    Properties(
+        const UniqueProperties&& standardProperties,
         const AddonProperties&& addonProperties);
 
+    /// The properties of the ShapeNode's Addons
     AddonProperties mAddonProperties;
   };
-
-  ShapeNode(BodyNode* bodyNode);
 
   /// Destructor
   virtual ~ShapeNode() = default;
 
   /// Set the Properties of this ShapeNode
-  void setProperties(const Properties& properties);
+  void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
-  const Properties getProperties() const;
+  const UniqueProperties getProperties() const;
 
   /// Copy the properties of another ShapeNode
   void copy(const ShapeNode& other);
@@ -277,6 +294,9 @@ public:
 
   /// Same as copy(const ShapeNode&)
   ShapeNode& operator=(const ShapeNode& other);
+
+  // Documentation inherited
+  const std::string& setName(const std::string& newName) override;
 
   /// Set shape
   void setShape(const ShapePtr& shape);
@@ -311,19 +331,71 @@ public:
   /// Same as getRelativeTranslation()
   Eigen::Vector3d getOffset() const;
 
-  /// Pass in true to prevent this ShapeNode from being rendered. Pass in false
-  /// to allow it to render again.
-  void setHidden(const bool hide = true);
+  // Documentation inherited
+  std::shared_ptr<Skeleton> getSkeleton() override;
 
-  /// True iff this ShapeNode is set to be hidden. Use hide(bool) to change this
-  /// setting
-  bool isHidden() const;
+  // Documentation inherited
+  std::shared_ptr<const Skeleton> getSkeleton() const override;
 
-  /// Return the Skeleton this ShapeNode is attached to
-  std::shared_ptr<Skeleton> getSkeleton();
+  // Documentation inherited
+  bool dependsOn(size_t genCoordIndex) const override;
 
-  /// Return the Skeleton this ShapeNode is attached to
-  std::shared_ptr<const Skeleton> getSkeleton() const;
+  // Documentation inherited
+  size_t getNumDependentGenCoords() const override;
+
+  // Documentation inherited
+  size_t getDependentGenCoordIndex(size_t arrayIndex) const override;
+
+  // Documentation inherited
+  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+
+  // Documentation inherited
+  size_t getNumDependentDofs() const override;
+
+  // Documentation inherited
+  DegreeOfFreedom* getDependentDof(size_t index) override;
+
+  // Documentation inherited
+  const DegreeOfFreedom* getDependentDof(size_t index) const override;
+
+  // Documentation inherited
+  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
+
+  // Documentation inherited
+  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Jacobian Functions
+  //----------------------------------------------------------------------------
+
+  // Documentation inherited
+  const math::Jacobian& getJacobian() const override final;
+
+  // Prevent the inherited getJacobian functions from being shadowed
+  using TemplatedJacobianNode<ShapeNode>::getJacobian;
+
+  // Documentation inherited
+  const math::Jacobian& getWorldJacobian() const override final;
+
+  // Prevent the inherited getWorldJacobian functions from being shadowed
+  using TemplatedJacobianNode<ShapeNode>::getWorldJacobian;
+
+  // Documentation inherited
+  const math::Jacobian& getJacobianSpatialDeriv() const override final;
+
+  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
+  using TemplatedJacobianNode<ShapeNode>::getJacobianSpatialDeriv;
+
+  // Documentation inherited
+  const math::Jacobian& getJacobianClassicDeriv() const override final;
+
+  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
+  using TemplatedJacobianNode<ShapeNode>::getJacobianClassicDeriv;
+
+  /// \}
 
   DART_BAKE_SPECIALIZED_ADDON(VisualData)
 
@@ -346,13 +418,60 @@ public:
   /// does not already exist.
   DynamicsData* getDynamicsData(const bool createIfNull);
 
+  /// Render this Entity
+  virtual void draw(renderer::RenderInterface* ri = nullptr,
+                    const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
+                    bool useDefaultColor = true) const;
+
 protected:
-  /// Pointer to the BodyNode that this Node is attached to
-  BodyNode* mBodyNode;
-  // TODO(JS): Remove once ShapeNode inherit Node
+  /// Constructor used by the Skeleton class
+  ShapeNode(BodyNode* bodyNode, const Properties& properties);
+
+  /// Create a clone of this ShapeNode. This may only be called by the Skeleton
+  /// class.
+  Node* cloneNode(BodyNode* parent) const override;
+
+  /// Update the Jacobian of this ShapeNode. getJacobian() calls this function
+  /// if mIsShapeNodeJacobianDirty is true.
+  void updateShapeNodeJacobian() const;
+
+  /// Update the World Jacobian cache.
+  void updateWorldJacobian() const;
+
+  /// Update the spatial time derivative of the ShapeNode Jacobian.
+  /// getJacobianSpatialDeriv() calls this function if
+  /// mIsShapeNodeJacobianSpatialDerivDirty is true.
+  void updateShapeNodeJacobianSpatialDeriv() const;
+
+  /// Update the classic time derivative of the ShapeNode Jacobian.
+  /// getJacobianClassicDeriv() calls this function if
+  /// mIsWorldJacobianClassicDerivDirty is true.
+  void updateWorldJacobianClassicDeriv() const;
+
+protected:
 
   /// ShapeNode properties
-  Properties mShapeNodeProp;
+  UniqueProperties mShapeNodeProp;
+
+  /// Cached Jacobian of this ShapeNode
+  ///
+  /// Do not use directly! Use getJacobian() to access this quantity
+  mutable math::Jacobian mShapeNodeJacobian;
+
+  /// Cached World Jacobian of this ShapeNode
+  ///
+  /// Do not use directly! Use getWorldJacobian() to access this quantity
+  mutable math::Jacobian mWorldJacobian;
+
+  /// Spatial time derivative of ShapeNode Jacobian
+  ///
+  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
+  mutable math::Jacobian mShapeNodeJacobianSpatialDeriv;
+
+  /// Classic time derivative of the ShapeNode Jacobian
+  ///
+  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
+  mutable math::Jacobian mWorldJacobianClassicDeriv;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

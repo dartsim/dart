@@ -60,16 +60,18 @@ void DynamicsUpdate(DynamicsData* /*dynamicsData*/)
 }
 
 //==============================================================================
-VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color)
-  : mRGBA(color)
+VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color,
+                                           const bool hidden)
+  : mRGBA(color),
+    mHidden(hidden)
 {
   // Do nothing
 }
 
 //==============================================================================
 CollisionDataProperties::CollisionDataProperties(
-    const bool collisionMode)
-  : mCollisionMode(collisionMode)
+    const bool collidable)
+  : mCollidable(collidable)
 {
   // Do nothing
 }
@@ -146,60 +148,68 @@ const double VisualData::getAlpha() const
 }
 
 //==============================================================================
-ShapeNode::ExtendedProperties::ExtendedProperties(
-    const ShapeNode::Properties &standardProperties,
+void VisualData::hide()
+{
+  setHidden(false);
+}
+
+//==============================================================================
+void VisualData::show()
+{
+  setHidden(true);
+}
+
+//==============================================================================
+bool VisualData::isHidden() const
+{
+  return getHidden();
+}
+
+//==============================================================================
+bool CollisionData::isCollidable() const
+{
+  return getCollidable();
+}
+
+//==============================================================================
+ShapeNode::Properties::Properties(
+    const ShapeNode::UniqueProperties &standardProperties,
     const ShapeNode::AddonProperties &addonProperties)
-  : Properties(standardProperties),
+  : UniqueProperties(standardProperties),
     mAddonProperties(addonProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-ShapeNode::ExtendedProperties::ExtendedProperties(
-    const ShapeNode::Properties&& standardProperties,
+ShapeNode::Properties::Properties(
+    const ShapeNode::UniqueProperties&& standardProperties,
     const ShapeNode::AddonProperties&& addonProperties)
-  : Properties(std::move(standardProperties)),
+  : UniqueProperties(std::move(standardProperties)),
     mAddonProperties(std::move(addonProperties))
 {
   // Do nothing
 }
 
 //==============================================================================
-ShapeNode::Properties::Properties(const ShapePtr& shape,
+ShapeNode::UniqueProperties::UniqueProperties(const ShapePtr& shape,
                                   const Eigen::Isometry3d tf,
                                   const bool hidden)
   : mShape(shape),
-    mTransform(tf),
-    mHidden(hidden)
+    mTransform(tf)
 {
   // Do nothing
 }
 
 //==============================================================================
-ShapeNode::ShapeNode(BodyNode* bodyNode)
-  : //Node(bn),
-    common::AddonManager(),
-    mBodyNode(bodyNode),
-    mShapeNodeProp(),
-    mShapeUpdatedSignal(),
-    mRelativeTransformUpdatedSignal(),
-    onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ShapeNode::setProperties(const ShapeNode::Properties& properties)
+void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
 {
   setShape(properties.mShape);
   setRelativeTransform(properties.mTransform);
-  setHidden(properties.mHidden);
 }
 
 //==============================================================================
-const ShapeNode::Properties ShapeNode::getProperties() const
+const ShapeNode::UniqueProperties ShapeNode::getProperties() const
 {
   return mShapeNodeProp;
 }
@@ -227,6 +237,19 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 {
   copy(other);
   return *this;
+}
+
+//==============================================================================
+const std::string& ShapeNode::setName(const std::string& newName)
+{
+  // If it already has the requested name, do nothing
+  if(mEntityP.mName == newName && !newName.empty())
+    return mEntityP.mName;
+
+  mEntityP.mName = registerNameChange(newName);
+
+  // Return the resulting name, after it has been checked for uniqueness
+  return mEntityP.mName;
 }
 
 //==============================================================================
@@ -314,18 +337,6 @@ Eigen::Vector3d ShapeNode::getOffset() const
 }
 
 //==============================================================================
-void ShapeNode::setHidden(const bool hide)
-{
-  mShapeNodeProp.mHidden = hide;
-}
-
-//==============================================================================
-bool ShapeNode::isHidden() const
-{
-  return mShapeNodeProp.mHidden;
-}
-
-//==============================================================================
 std::shared_ptr<Skeleton> ShapeNode::getSkeleton()
 {
   return mBodyNode->getSkeleton();
@@ -335,6 +346,102 @@ std::shared_ptr<Skeleton> ShapeNode::getSkeleton()
 std::shared_ptr<const Skeleton> ShapeNode::getSkeleton() const
 {
   return mBodyNode->getSkeleton();
+}
+
+//==============================================================================
+bool ShapeNode::dependsOn(size_t genCoordIndex) const
+{
+  return mBodyNode->dependsOn(genCoordIndex);
+}
+
+//==============================================================================
+size_t ShapeNode::getNumDependentGenCoords() const
+{
+  return mBodyNode->getNumDependentGenCoords();
+}
+
+//==============================================================================
+size_t ShapeNode::getDependentGenCoordIndex(size_t arrayIndex) const
+{
+  return mBodyNode->getDependentGenCoordIndex(arrayIndex);
+}
+
+//==============================================================================
+const std::vector<size_t>& ShapeNode::getDependentGenCoordIndices() const
+{
+  return mBodyNode->getDependentGenCoordIndices();
+}
+
+//==============================================================================
+size_t ShapeNode::getNumDependentDofs() const
+{
+  return mBodyNode->getNumDependentDofs();
+}
+
+//==============================================================================
+DegreeOfFreedom* ShapeNode::getDependentDof(size_t index)
+{
+  return mBodyNode->getDependentDof(index);
+}
+
+//==============================================================================
+const DegreeOfFreedom* ShapeNode::getDependentDof(size_t index) const
+{
+  return mBodyNode->getDependentDof(index);
+}
+
+//==============================================================================
+const std::vector<DegreeOfFreedom*>& ShapeNode::getDependentDofs()
+{
+  return mBodyNode->getDependentDofs();
+}
+
+//==============================================================================
+const std::vector<const DegreeOfFreedom*>& ShapeNode::getDependentDofs() const
+{
+  return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
+}
+
+//==============================================================================
+const std::vector<const DegreeOfFreedom*> ShapeNode::getChainDofs() const
+{
+  return mBodyNode->getChainDofs();
+}
+
+//==============================================================================
+const math::Jacobian& ShapeNode::getJacobian() const
+{
+  if (mIsBodyJacobianDirty)
+    updateShapeNodeJacobian();
+
+  return mShapeNodeJacobian;
+}
+
+//==============================================================================
+const math::Jacobian& ShapeNode::getWorldJacobian() const
+{
+  if(mIsWorldJacobianDirty)
+    updateWorldJacobian();
+
+  return mWorldJacobian;
+}
+
+//==============================================================================
+const math::Jacobian& ShapeNode::getJacobianSpatialDeriv() const
+{
+  if(mIsBodyJacobianSpatialDerivDirty)
+    updateShapeNodeJacobianSpatialDeriv();
+
+  return mShapeNodeJacobianSpatialDeriv;
+}
+
+//==============================================================================
+const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
+{
+  if(mIsWorldJacobianClassicDerivDirty)
+    updateWorldJacobianClassicDeriv();
+
+  return mWorldJacobianClassicDeriv;
 }
 
 //==============================================================================
@@ -368,6 +475,99 @@ DynamicsData* ShapeNode::getDynamicsData(const bool createIfNull)
     return createDynamicsData();
 
   return dynamicsData;
+}
+
+//==============================================================================
+void ShapeNode::draw(renderer::RenderInterface* ri,
+                     const Eigen::Vector4d& color,
+                     bool useDefaultColor) const
+{
+  auto visualData = getVisualData();
+
+  if (!visualData && visualData->isHidden())
+    return;
+
+  if (useDefaultColor)
+    mShapeNodeProp.mShape->draw(ri, visualData->getRGBA(), false);
+  else
+    mShapeNodeProp.mShape->draw(ri, color, false);
+}
+
+//==============================================================================
+ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
+  : common::AddonManager(),
+    Entity(ConstructFrame),
+    Frame(bodyNode, ""),
+    FixedFrame(bodyNode, "", properties.mTransform),
+    TemplatedJacobianNode<ShapeNode>(bodyNode),
+    mShapeNodeProp(),
+    mShapeUpdatedSignal(),
+    mRelativeTransformUpdatedSignal(),
+    onShapeUpdated(mShapeUpdatedSignal),
+    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Node* ShapeNode::cloneNode(BodyNode* parent) const
+{
+  ShapeNode* shapeNode = new ShapeNode(parent, Properties());
+  shapeNode->duplicateAddons(this);
+
+  shapeNode->copy(this);
+
+  if(mIK)
+    shapeNode->mIK = mIK->clone(shapeNode);
+
+  return shapeNode;
+}
+
+//==============================================================================
+void ShapeNode::updateShapeNodeJacobian() const
+{
+  mShapeNodeJacobian = math::AdInvTJac(getRelativeTransform(),
+                                       mBodyNode->getJacobian());
+  mIsBodyJacobianDirty = false;
+}
+
+//==============================================================================
+void ShapeNode::updateWorldJacobian() const
+{
+  mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
+
+  mIsWorldJacobianDirty = false;
+}
+
+//==============================================================================
+void ShapeNode::updateShapeNodeJacobianSpatialDeriv() const
+{
+  mShapeNodeJacobianSpatialDeriv =
+      math::AdInvTJac(getRelativeTransform(),
+                      mBodyNode->getJacobianSpatialDeriv());
+
+  mIsBodyJacobianSpatialDerivDirty = false;
+}
+
+//==============================================================================
+void ShapeNode::updateWorldJacobianClassicDeriv() const
+{
+  const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
+  const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
+
+  const Eigen::Vector3d& v_local =
+      getLinearVelocity(mBodyNode, Frame::World());
+
+  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
+  const Eigen::Vector3d& p = (getWorldTransform().translation()
+                  - mBodyNode->getWorldTransform().translation()).eval();
+
+  mWorldJacobianClassicDeriv = dJ_parent;
+  mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
+      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
+      + dJ_parent.topRows<3>().colwise().cross(p);
+
+  mIsWorldJacobianClassicDerivDirty = false;
 }
 
 } // namespace dynamics

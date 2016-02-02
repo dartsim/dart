@@ -78,7 +78,6 @@ DART_COMMON_MAKE_SHARED_WEAK(Linkage)
 DART_COMMON_MAKE_SHARED_WEAK(Branch)
 DART_COMMON_MAKE_SHARED_WEAK(Chain)
 
-
 //-----------------------------------------------------------------------------
 // Shape Smart Pointers
 //-----------------------------------------------------------------------------
@@ -92,6 +91,9 @@ DART_COMMON_MAKE_SHARED_WEAK(MeshShape)
 DART_COMMON_MAKE_SHARED_WEAK(PlaneShape)
 DART_COMMON_MAKE_SHARED_WEAK(SoftMeshShape)
 
+
+// ShapeNode smart pointers
+DART_COMMON_MAKE_SHARED_WEAK(ShapeNode)
 
 //-----------------------------------------------------------------------------
 // BodyNode Smart Pointers

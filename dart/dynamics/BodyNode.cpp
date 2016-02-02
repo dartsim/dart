@@ -130,9 +130,9 @@ BodyNode::UniqueProperties::UniqueProperties(
 }
 
 //==============================================================================
-BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
+BodyNode::Properties::Properties(const Frame::Properties& _frameProperties,
                                  const UniqueProperties& _bodyNodeProperties)
-  : Entity::Properties(_entityProperties),
+  : Frame::Properties(_frameProperties),
     UniqueProperties(_bodyNodeProperties)
 {
   // Do nothing
@@ -235,7 +235,7 @@ void BodyNode::setProperties(const AddonProperties& _properties)
 //==============================================================================
 void BodyNode::setProperties(const Properties& _properties)
 {
-  Entity::setProperties(static_cast<const Entity::Properties&>(_properties));
+  Frame::setProperties(static_cast<const Frame::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 

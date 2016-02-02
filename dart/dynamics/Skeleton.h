@@ -56,9 +56,10 @@ namespace dart {
 namespace dynamics {
 
 /// class Skeleton
-class Skeleton :  public virtual common::AddonManager,
-                  public MetaSkeleton,
-                  public virtual SpecializedNodeManagerForSkeleton<EndEffector>
+class Skeleton :
+    public virtual common::AddonManager,
+    public MetaSkeleton,
+    public virtual SpecializedNodeManagerForSkeleton<ShapeNode, EndEffector>
 {
 public:
 
@@ -500,6 +501,8 @@ public:
 
   /// Get const marker whose name is _name
   const Marker* getMarker(const std::string& _name) const;
+
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( ShapeNode )
 
   DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( EndEffector )
 
@@ -959,6 +962,7 @@ public:
   template<size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
   friend class Node;
+  friend class ShapeNode;
   friend class EndEffector;
 
 protected:
@@ -1317,6 +1321,7 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
+#include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/detail/SpecializedNodeManager.h"
 

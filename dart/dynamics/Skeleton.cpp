@@ -48,6 +48,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Joint.h"
+#include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/Marker.h"
@@ -907,6 +908,9 @@ const Marker* Skeleton::getMarker(const std::string& _name) const
 {
   return const_cast<Skeleton*>(this)->getMarker(_name);
 }
+
+//==============================================================================
+DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
