@@ -61,6 +61,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+
+template <size_t DOF>
+constexpr size_t MultiDofJoint<DOF>::NumDofs;
+
+//==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::~MultiDofJoint()
 {

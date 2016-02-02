@@ -206,6 +206,10 @@ private:
 
 //==============================================================================
 template <size_t DOF>
+constexpr size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
+
+//==============================================================================
+template <size_t DOF>
 MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const Vector& _positionLowerLimits,
     const Vector& _positionUpperLimits,
@@ -277,6 +281,10 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
 {
   // Do nothing
 }
+
+//==============================================================================
+template <size_t DOF>
+constexpr size_t MultiDofJointAddon<DOF>::NumDofs;
 
 //==============================================================================
 template <size_t DOF>
