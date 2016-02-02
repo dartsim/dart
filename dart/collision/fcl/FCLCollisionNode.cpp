@@ -347,9 +347,15 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  for (auto i = 0u; i < _bodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
-    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
+    auto shapeNode = _bodyNode->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode->get<dynamics::CollisionData>();
+    if (!collisionAddon)
+      continue;
+
+    auto shape = shapeNode->getShape();
 
     boost::shared_ptr<fcl::CollisionGeometry> fclCollGeom;
 

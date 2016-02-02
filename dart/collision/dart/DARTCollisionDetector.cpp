@@ -77,17 +77,27 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
       if (!isCollidable(collNode1, collNode2))
         continue;
 
-      for (size_t k = 0; k < BodyNode1->getNumCollisionShapes(); k++) {
-        for (size_t l = 0; l < BodyNode2->getNumCollisionShapes(); l++) {
+      for (auto k = 0u; k < BodyNode1->getNumNodes<dynamics::ShapeNode>(); ++k)
+      {
+        auto shapeNode1 = BodyNode1->getNode<dynamics::ShapeNode>(k);
+
+        auto collisionAddon = shapeNode1->get<dynamics::CollisionData>();
+        if (!collisionAddon)
+          continue;
+
+        for (auto l = 0u; l < BodyNode2->getNumNodes<dynamics::ShapeNode>(); ++l)
+        {
+          auto shapeNode2 = BodyNode2->getNode<dynamics::ShapeNode>(l);
+
+          auto collisionAddon = shapeNode2->get<dynamics::CollisionData>();
+          if (!collisionAddon)
+            continue;
+
           int currContactNum = mContacts.size();
 
           contacts.clear();
-          collide(BodyNode1->getCollisionShape(k),
-                  BodyNode1->getTransform()
-                  * BodyNode1->getCollisionShape(k)->getLocalTransform(),
-                  BodyNode2->getCollisionShape(l),
-                  BodyNode2->getTransform()
-                  * BodyNode2->getCollisionShape(l)->getLocalTransform(),
+          collide(shapeNode1->getShape(), shapeNode1->getWorldTransform(),
+                  shapeNode2->getShape(), shapeNode2->getWorldTransform(),
                   &contacts);
 
           size_t numContacts = contacts.size();
@@ -143,14 +153,24 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
   dynamics::BodyNode* BodyNode1 = _collNode1->getBodyNode();
   dynamics::BodyNode* BodyNode2 = _collNode2->getBodyNode();
 
-  for (size_t i = 0; i < BodyNode1->getNumCollisionShapes(); i++) {
-    for (size_t j = 0; j < BodyNode2->getNumCollisionShapes(); j++) {
-      collide(BodyNode1->getCollisionShape(i),
-              BodyNode1->getTransform()
-              * BodyNode1->getCollisionShape(i)->getLocalTransform(),
-              BodyNode2->getCollisionShape(j),
-              BodyNode2->getTransform()
-              * BodyNode2->getCollisionShape(j)->getLocalTransform(),
+  for (auto i = 0u; i < BodyNode1->getNumNodes<dynamics::ShapeNode>(); ++i)
+  {
+    auto shapeNode1 = BodyNode1->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode1->get<dynamics::CollisionData>();
+    if (!collisionAddon)
+      continue;
+
+    for (auto j = 0u; j < BodyNode2->getNumNodes<dynamics::ShapeNode>(); ++j)
+    {
+      auto shapeNode2 = BodyNode2->getNode<dynamics::ShapeNode>(j);
+
+      auto collisionAddon = shapeNode2->get<dynamics::CollisionData>();
+      if (!collisionAddon)
+        continue;
+
+      collide(shapeNode1->getShape(), shapeNode1->getWorldTransform(),
+              shapeNode2->getShape(), shapeNode2->getWorldTransform(),
               &contacts);
     }
   }

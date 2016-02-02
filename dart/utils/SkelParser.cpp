@@ -535,12 +535,10 @@ dynamics::ShapeNode* readShapeNode(
 {
   assert(bodyNode);
 
-  auto shapeNode = bodyNode->createShapeNode(bodyNode->getName() + "-shape");
+  auto shape = readShape(shapeNodeEle, bodyNode->getName(), baseUri, retriever);
+  auto shapeNode = bodyNode->createShapeNode(
+        shape, bodyNode->getName() + "-shape");
   // TODO(JS): probably need name for shape node in skel file format
-
-  // Shape
-  shapeNode->setShape(readShape(shapeNodeEle, bodyNode->getName(), baseUri,
-                                retriever));
 
   // Transformation
   if (hasElement(shapeNodeEle, "transformation"))

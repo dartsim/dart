@@ -71,10 +71,17 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   using dart::dynamics::SoftMeshShape;
 
   // Create meshes according to types of the shapes
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  for (auto i = 0u; i < _bodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
-    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+    auto shapeNode = _bodyNode->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode->get<dynamics::CollisionData>();
+    if (!collisionAddon)
+      continue;
+
+    auto shape = shapeNode->getShape();
+    auto shapeT = getFclTransform(shapeNode->getRelativeTransform());
+
     switch (shape->getShapeType())
     {
       case Shape::ELLIPSOID:
@@ -307,10 +314,17 @@ void FCLMeshCollisionNode::updateShape()
   // using-declaration
   using dart::dynamics::SoftMeshShape;
 
-  for (size_t i = 0; i < mBodyNode->getNumCollisionShapes(); i++)
+  for (auto i = 0u; i < mBodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
-    dynamics::ShapePtr shape = mBodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+    auto shapeNode = mBodyNode->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode->get<dynamics::CollisionData>();
+    if (!collisionAddon)
+      continue;
+
+    auto shape = shapeNode->getShape();
+    auto shapeT = getFclTransform(shapeNode->getRelativeTransform());
+
     switch (shape->getShapeType())
     {
       case dynamics::Shape::SOFT_MESH:

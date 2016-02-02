@@ -55,9 +55,16 @@ namespace collision {
 BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode)
 {
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  for (auto i = 0u; i < _bodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
-    dynamics::ConstShapePtr shape = _bodyNode->getCollisionShape(i);
+    auto shapeNode = _bodyNode->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode->get<dynamics::CollisionData>();
+    if (!collisionAddon)
+      continue;
+
+    auto shape = shapeNode->getShape();
+
     switch (shape->getShapeType())
     {
       case dynamics::Shape::BOX:

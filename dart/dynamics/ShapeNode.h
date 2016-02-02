@@ -248,13 +248,9 @@ public:
   {
     ShapePtr mShape;
 
-    /// Transformation of this shape node relative to the parent frame
-    Eigen::Isometry3d mTransform;
-
     /// Constructor
-    UniqueProperties(const ShapePtr& shape = nullptr,  // TODO(JS)
-               const Eigen::Isometry3d tf = Eigen::Isometry3d::Identity(),
-               const bool hidden = false);
+    UniqueProperties(const ShapePtr& shape = nullptr,
+                     const bool hidden = false);
 
     virtual ~UniqueProperties() = default;
 
@@ -264,17 +260,19 @@ public:
 
   using AddonProperties = common::AddonManager::Properties;
 
-  struct Properties : Frame::Properties, UniqueProperties
+  struct Properties : Entity::Properties, UniqueProperties
   {
     /// Composed constructor
     Properties(
-        const UniqueProperties& standardProperties = UniqueProperties(),
+        const Entity::Properties& entityProperties = Entity::Properties(),
+        const UniqueProperties& shapeNodeProperties = UniqueProperties(),
         const AddonProperties& addonProperties = AddonProperties());
 
     /// Composed move constructor
     Properties(
-        const UniqueProperties&& standardProperties,
-        const AddonProperties&& addonProperties);
+        Entity::Properties&& entityProperties,
+        UniqueProperties&& shapeNodeProperties,
+        AddonProperties&& addonProperties);
 
     /// The properties of the ShapeNode's Addons
     AddonProperties mAddonProperties;
@@ -284,10 +282,13 @@ public:
   virtual ~ShapeNode() = default;
 
   /// Set the Properties of this ShapeNode
+  void setProperties(const Properties& properties);
+
+  /// Set the Properties of this ShapeNode
   void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
-  const UniqueProperties getProperties() const;
+  const Properties getShapeNodeProperties() const;
 
   /// Copy the properties of another ShapeNode
   void copy(const ShapeNode& other);
@@ -312,9 +313,6 @@ public:
 
   /// Set transformation of this shape node relative to the parent frame
   void setRelativeTransform(const Eigen::Isometry3d& transform);
-
-  /// Get transformation of this shape node relative to the parent frame
-  const Eigen::Isometry3d& getRelativeTransform() const;
 
   /// Set rotation of this shape node relative to the parent frame
   void setRelativeRotation(const Eigen::Matrix3d& rotation);

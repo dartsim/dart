@@ -896,18 +896,20 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 }
 
 //==============================================================================
-ShapeNode* BodyNode::createShapeNode(const std::string& name)
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
+                                     const std::string& name)
 {
   ShapeNode::Properties properties;
   properties.mName = name;
+  properties.mShape = shape;
 
   return createNode<ShapeNode>(properties);
 }
 
 //==============================================================================
-ShapeNode* BodyNode::createShapeNode(const char* name)
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
 {
-  return createShapeNode(std::string(name));
+  return createShapeNode(shape, std::string(name));
 }
 
 //==============================================================================

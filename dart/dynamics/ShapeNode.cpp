@@ -173,9 +173,11 @@ bool CollisionData::isCollidable() const
 
 //==============================================================================
 ShapeNode::Properties::Properties(
-    const ShapeNode::UniqueProperties &standardProperties,
+    const Entity::Properties& entityProperties,
+    const ShapeNode::UniqueProperties &shapeNodeProperties,
     const ShapeNode::AddonProperties &addonProperties)
-  : UniqueProperties(standardProperties),
+  : Entity::Properties(entityProperties),
+    UniqueProperties(shapeNodeProperties),
     mAddonProperties(addonProperties)
 {
   // Do nothing
@@ -183,9 +185,11 @@ ShapeNode::Properties::Properties(
 
 //==============================================================================
 ShapeNode::Properties::Properties(
-    const ShapeNode::UniqueProperties&& standardProperties,
-    const ShapeNode::AddonProperties&& addonProperties)
-  : UniqueProperties(std::move(standardProperties)),
+    Entity::Properties&& entityProperties,
+    UniqueProperties&& shapeNodeProperties,
+    AddonProperties&& addonProperties)
+  : Entity::Properties(std::move(entityProperties)),
+    UniqueProperties(std::move(shapeNodeProperties)),
     mAddonProperties(std::move(addonProperties))
 {
   // Do nothing
@@ -193,25 +197,31 @@ ShapeNode::Properties::Properties(
 
 //==============================================================================
 ShapeNode::UniqueProperties::UniqueProperties(const ShapePtr& shape,
-                                  const Eigen::Isometry3d tf,
-                                  const bool hidden)
-  : mShape(shape),
-    mTransform(tf)
+                                              const bool hidden)
+  : mShape(shape)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
+void ShapeNode::setProperties(const Properties& properties)
 {
-  setShape(properties.mShape);
-  setRelativeTransform(properties.mTransform);
+  Entity::setProperties(properties);
+  setProperties(static_cast<const UniqueProperties&>(properties));
+  setAddonProperties(properties.mAddonProperties);
 }
 
 //==============================================================================
-const ShapeNode::UniqueProperties ShapeNode::getProperties() const
+void ShapeNode::setProperties(const UniqueProperties& properties)
 {
-  return mShapeNodeProp;
+  setShape(properties.mShape);
+}
+
+//==============================================================================
+const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
+{
+  return Properties(getEntityProperties(), mShapeNodeProp,
+                    getAddonProperties());
 }
 
 //==============================================================================
@@ -220,7 +230,7 @@ void ShapeNode::copy(const ShapeNode& other)
   if (this == &other)
     return;
 
-  setProperties(other.getProperties());
+  setProperties(other.getShapeNodeProperties());
 }
 
 //==============================================================================
@@ -280,18 +290,14 @@ ConstShapePtr ShapeNode::getShape() const
 //==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  const Eigen::Isometry3d& oldTransform = mShapeNodeProp.mTransform;
+  const Eigen::Isometry3d& oldTransform = mRelativeTf;
 
-  mShapeNodeProp.mTransform = transform;
+  mRelativeTf = transform;
+  notifyTransformUpdate();
+  notifyJacobianUpdate();
+  notifyJacobianDerivUpdate();
 
-  mRelativeTransformUpdatedSignal.raise(
-        this, oldTransform, mShapeNodeProp.mTransform);
-}
-
-//==============================================================================
-const Eigen::Isometry3d& ShapeNode::getRelativeTransform() const
-{
-  return mShapeNodeProp.mTransform;
+  mRelativeTransformUpdatedSignal.raise(this, oldTransform, mRelativeTf);
 }
 
 //==============================================================================
@@ -306,7 +312,7 @@ void ShapeNode::setRelativeRotation(const Eigen::Matrix3d& rotation)
 //==============================================================================
 Eigen::Matrix3d ShapeNode::getRelativeRotation() const
 {
-  return mShapeNodeProp.mTransform.linear();
+  return getRelativeTransform().linear();
 }
 
 //==============================================================================
@@ -327,7 +333,7 @@ void ShapeNode::setOffset(const Eigen::Vector3d& offset)
 //==============================================================================
 Eigen::Vector3d ShapeNode::getRelativeTranslation() const
 {
-  return mShapeNodeProp.mTransform.translation();
+  return getRelativeTransform().translation();
 }
 
 //==============================================================================
@@ -498,15 +504,14 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
   : common::AddonManager(),
     Entity(ConstructFrame),
     Frame(bodyNode, ""),
-    FixedFrame(bodyNode, "", properties.mTransform),
+    FixedFrame(bodyNode, ""),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
-    mShapeNodeProp(),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
-  // Do nothing
+  setProperties(properties);
 }
 
 //==============================================================================

@@ -620,10 +620,11 @@ public:
   ShapeNode* createShapeNode(const ShapeNodeProperties& properties);
 
   /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const std::string& name = "ShapeNode");
+  ShapeNode* createShapeNode(
+      const ShapePtr& shape, const std::string& name = "ShapeNode");
 
   /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const char* name);
+  ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
