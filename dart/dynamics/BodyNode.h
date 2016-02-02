@@ -855,6 +855,12 @@ public:
   //----------------------------------------------------------------------------
 
   /// Render the markers
+  void draw(renderer::RenderInterface* ri = nullptr,
+            const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
+            bool useDefaultColor = true,
+            int depth = 0) const override;
+
+  /// Render the markers
   void drawMarkers(renderer::RenderInterface* _ri = nullptr,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;

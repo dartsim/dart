@@ -1382,6 +1382,39 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 }
 
 //==============================================================================
+void BodyNode::draw(renderer::RenderInterface* ri,
+                    const Eigen::Vector4d& color,
+                    bool useDefaultColor, int depth) const
+{
+  if (nullptr == ri)
+    return;
+
+  ri->pushMatrix();
+
+  // Use the relative transform of this Frame. We assume that we are being
+  // called from the parent Frame's renderer.
+  // TODO(MXG): This can cause trouble if the draw function is originally called
+  // on an Entity or Frame which is not a child of the World Frame
+  ri->transform(getRelativeTransform());
+
+  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
+  const auto numShapeNodes = getNumNodes<ShapeNode>();
+  for (auto i = 0u; i < numShapeNodes; ++i)
+  {
+    ri->pushMatrix();
+    getNode<ShapeNode>(i)->draw(ri, color, useDefaultColor);
+    ri->popMatrix();
+  }
+  // _ri.popName();
+
+  // render the subtree
+  for(Entity* entity : mChildEntities)
+    entity->draw(ri, color, useDefaultColor);
+
+  ri->popMatrix();
+}
+
+//==============================================================================
 void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
                            bool _useDefaultColor) const

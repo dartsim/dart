@@ -484,7 +484,7 @@ void ShapeNode::draw(renderer::RenderInterface* ri,
 {
   auto visualData = getVisualData();
 
-  if (!visualData && visualData->isHidden())
+  if (!visualData || visualData->isHidden())
     return;
 
   if (useDefaultColor)
