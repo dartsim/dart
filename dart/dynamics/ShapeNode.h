@@ -43,6 +43,7 @@
 #include "dart/common/SpecializedAddonManager.h"
 #include "dart/dynamics/Addon.h"
 #include "dart/dynamics/Node.h"
+#include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
