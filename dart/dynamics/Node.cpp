@@ -187,13 +187,11 @@ void Node::attach()
     return;
 #endif
 
-  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
+  using NodeMapPair = std::pair<std::type_index, std::vector<Node*>>;
 
-  if(mBodyNode->mNodeMap.end() == it)
-  {
-    mBodyNode->mNodeMap[typeid(*this)] = std::vector<Node*>();
-    it = mBodyNode->mNodeMap.find(typeid(*this));
-  }
+  // Add empty list of Node pointers only when typeid(*this) doesn't exist.
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.insert(
+      NodeMapPair(typeid(*this), std::vector<Node*>())).first;
 
   std::vector<Node*>& nodes = it->second;
   BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
