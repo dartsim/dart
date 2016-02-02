@@ -166,7 +166,7 @@ Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
 //==============================================================================
 Chain::Chain(BodyNode* _start, BodyNode* _target,
              IncludeBoth_t, const std::string& _name)
-  : Linkage(Chain::Criteria(_start, _target, true))
+  : Linkage(Chain::Criteria(_start, _target, true), _name)
 {
   // Do nothing
 }

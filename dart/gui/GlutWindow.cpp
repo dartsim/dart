@@ -145,7 +145,7 @@ void GlutWindow::displayTimer(int _val) {
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
 
-void GlutWindow::simTimer(int _val) {
+void GlutWindow::simTimer(int /*_val*/) {
 }
 
 void GlutWindow::runTimer(int _val) {
@@ -197,19 +197,20 @@ inline GlutWindow* GlutWindow::current() {
   exit(0);
 }
 
-void GlutWindow::keyboard(unsigned char _key, int _x, int _y) {
+void GlutWindow::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/) {
+  // TODO(JS): Is 2d point information necessary for keyboard event?
 }
 
-void GlutWindow::specKey(int _key, int _x, int _y) {
+void GlutWindow::specKey(int /*_key*/, int /*_x*/, int /*_y*/) {
 }
 
-void GlutWindow::click(int _button, int _state, int _x, int _y) {
+void GlutWindow::click(int /*_button*/, int /*_state*/, int /*_x*/, int /*_y*/) {
 }
 
-void GlutWindow::drag(int _x, int _y) {
+void GlutWindow::drag(int /*_x*/, int /*_y*/) {
 }
 
-void GlutWindow::move(int _x, int _y) {
+void GlutWindow::move(int /*_x*/, int /*_y*/) {
 }
 
 }  // namespace gui

@@ -50,7 +50,8 @@ TrackballManipulator::TrackballManipulator(int flags)
 //==============================================================================
 TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
                                            const osg::CopyOp& copyOp)
-  : osgGA::OrbitManipulator(tm, copyOp)
+  : osg::Object(tm, copyOp),
+    osgGA::OrbitManipulator(tm, copyOp)
 {
   // Do nothing
 }

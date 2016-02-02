@@ -510,7 +510,7 @@ bool readJointFree(const tinyxml2::XMLElement* /*jointEle*/,
 }
 
 //==============================================================================
-bool readJointBall(const tinyxml2::XMLElement* jointEle,
+bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
                    JointPropPtr& jointProperties,
                    const Eigen::Isometry3d& tfFromParent,
                    const VskData& vskData)
