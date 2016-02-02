@@ -162,6 +162,10 @@ public:
   template <class NodeType>
   const NodeType* getNode(const std::string& name) const;
 
+  /// Check if this Manager is specialized for a specific type of Node
+  template <class T>
+  static constexpr bool isSpecializedForNode();
+
 protected:
 
   /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(size_t)
@@ -184,6 +188,13 @@ protected:
 
   /// Specialized implementation of getNode(const std::string&)
   SpecNode* _getNode(type<SpecNode>, const std::string& name);
+
+  /// Return false
+  template <class T>
+  static constexpr bool _isSpecializedForNode(type<T>);
+
+  /// Return true
+  static constexpr bool _isSpecializedForNode(type<SpecNode>);
 
   /// std::vector of iterators that allow direct access to the specialized Nodes
   /// of each tree

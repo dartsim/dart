@@ -43,15 +43,18 @@
 /// NodeManagerJoinerForSkeleton. The member functions of those classes share
 /// essentially the same logic, so it makes sense to have a single macro that
 /// provides the implementation for all of them.
-#define DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(ReturnType, ClassName, Function, Suffix, Args)\
+#define DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(ReturnType, ClassName, Function, Suffix, SpecializationChecker, Args)\
   template <class Base1, class Base2>\
   template <class T>\
   ReturnType ClassName <Base1, Base2>:: Function Suffix\
   {\
-    if(Base1::template isSpecializedFor<T>())\
+    if(Base1::template SpecializationChecker <T>())\
       return Base1::template Function <T> Args ;\
   \
     return Base2::template Function <T> Args ;\
   }
+
+#define DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(ReturnType, ClassName, Function, Suffix, Args)\
+  DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(ReturnType, ClassName, Function, Suffix, isSpecializedFor, Args)
 
 #endif // DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_H_
