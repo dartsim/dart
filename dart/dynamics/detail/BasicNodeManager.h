@@ -53,7 +53,7 @@ class BasicNodeManagerForBodyNode
 {
 public:
 
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+  using NodeMap = std::map< std::type_index, std::vector<Node*> >;
   using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
   using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
   using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;

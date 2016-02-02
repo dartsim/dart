@@ -174,6 +174,13 @@ NodeType* BodyNode::createNode(Args&&... args)
 }
 
 //==============================================================================
+template <class ShapeNodeProperties>
+ShapeNode* BodyNode::createShapeNode(const ShapeNodeProperties& properties)
+{
+  return createNode<ShapeNode>(properties);
+}
+
+//==============================================================================
 template <class EndEffectorProperties>
 EndEffector* BodyNode::createEndEffector(
     const EndEffectorProperties& _properties)

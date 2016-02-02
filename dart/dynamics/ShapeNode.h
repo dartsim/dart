@@ -232,6 +232,8 @@ class ShapeNode final :
 {
 public:
 
+  friend class BodyNode;
+
   using ShapeUpdatedSignal
       = common::Signal<void(const ShapeNode* thisShapeNode,
                             const ShapePtr& oldShape,

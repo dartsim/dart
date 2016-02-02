@@ -71,8 +71,9 @@ class GenCoord;
 class Skeleton;
 class Joint;
 class DegreeOfFreedom;
-class EndEffector;
 class Shape;
+class ShapeNode;
+class EndEffector;
 class Marker;
 
 /// BodyNode class represents a single node of the skeleton.
@@ -84,7 +85,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public virtual common::AddonManager,
-    public virtual SpecializedNodeManagerForBodyNode<EndEffector>,
+    public virtual SpecializedNodeManagerForBodyNode<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -612,6 +613,17 @@ public:
   /// Create some Node type and attach it to this BodyNode.
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
+
+  /// Create an ShapeNode attached to this BodyNode. Pass an
+  /// ShapeNode::Properties argument into this function.
+  template <class ShapeNodeProperties>
+  ShapeNode* createShapeNode(const ShapeNodeProperties& properties);
+
+  /// Create an ShapeNode with the specified name
+  ShapeNode* createShapeNode(const std::string& name = "ShapeNode");
+
+  /// Create an ShapeNode with the specified name
+  ShapeNode* createShapeNode(const char* name);
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
