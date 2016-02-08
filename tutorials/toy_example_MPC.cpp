@@ -28,6 +28,7 @@ public:
 	{
 		setWorld(world);
 	}
+
 	void drawSkels() override
 	{
 		glEnable(GL_LIGHTING);
