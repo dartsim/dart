@@ -646,7 +646,7 @@ dynamics::ShapePtr SdfParser::readShape(
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
 
     if (model)
-      newShape = std::make_shared<dynamics::MeshShape>(
+      newShape = Eigen::make_aligned_shared<dynamics::MeshShape>(
         scale, model, meshUri, _retriever);
     else
     {
