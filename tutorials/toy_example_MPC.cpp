@@ -28,15 +28,29 @@ class Controller
 public:
 	Controller(const SkeletonPtr& cube):mCube(cube)
 	{
-		mSpeed = 0.1;
+		mSpeed = 0.05;
+		mAcceleration = 0.01;
 	}
 	void setCubeVelocity()
 	{
-		mCube->getDof(0)->setVelocity(mSpeed);
+		// set horizontal velocity;
+		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
+		//mCube->getDof(0)->setVelocity(mSpeed);
+		int index1 = mCube->getDof(0)->getIndexInSkeleton();
+		mCube->setCommand(index1, mSpeed);
+	}
+	void setCubeAcceleration()
+	{
+		// set vertical acceleration
+		mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+		//mCube->getDof(1)->setAcceleration(mAcceleration);
+		int index1 = mCube->getDof(1)->getIndexInSkeleton();
+		mCube->setCommand(index1, mAcceleration);
 	}
 protected:
 	SkeletonPtr mCube;
 	double mSpeed;
+	double mAcceleration;
 };
 
 class MyWindow : public dart::gui::SimWindow
@@ -51,6 +65,7 @@ public:
 	void timeStepping() override
 	{
 		mController->setCubeVelocity();
+		mController->setCubeAcceleration();
 		
 		SimWindow::timeStepping();
 	}
