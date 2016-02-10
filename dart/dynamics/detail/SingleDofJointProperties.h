@@ -37,6 +37,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 #define DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 
+#include "dart/common/RequiresAddon.h"
+
 #include "dart/dynamics/Addon.h"
 #include "dart/dynamics/Joint.h"
 
@@ -137,7 +139,7 @@ struct SingleDofJointProperties :
 class SingleDofJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         SingleDofJointAddon, SingleDofJointUniqueProperties,
-        SingleDofJoint, common::detail::NoOp, false>
+        SingleDofJoint, common::detail::NoOp>
 {
 public:
   DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( SingleDofJointAddon, &common::detail::NoOp )
@@ -164,6 +166,10 @@ public:
 
   friend class dart::dynamics::SingleDofJoint;
 };
+
+//==============================================================================
+using SingleDofJointBase = common::AddonManagerJoiner<
+    Joint, common::RequiresAddon<SingleDofJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

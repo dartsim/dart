@@ -84,7 +84,7 @@ struct ScrewJointProperties : SingleDofJoint::Properties,
 class ScrewJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         ScrewJointAddon, ScrewJointUniqueProperties, ScrewJoint,
-        detail::JointPropertyUpdate<ScrewJointAddon>, false >
+        detail::JointPropertyUpdate<ScrewJointAddon> >
 {
 public:
   DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( ScrewJointAddon )
@@ -97,7 +97,7 @@ public:
 
 //==============================================================================
 using ScrewJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<ScrewJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<ScrewJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

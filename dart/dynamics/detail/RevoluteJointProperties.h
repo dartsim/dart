@@ -80,7 +80,7 @@ struct RevoluteJointProperties :
 class RevoluteJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         RevoluteJointAddon, RevoluteJointUniqueProperties, RevoluteJoint,
-        detail::JointPropertyUpdate<RevoluteJointAddon>, false >
+        detail::JointPropertyUpdate<RevoluteJointAddon> >
 {
 public:
   DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
@@ -91,7 +91,7 @@ public:
 
 //==============================================================================
 using RevoluteJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<RevoluteJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<RevoluteJointAddon> >;
 
 } // namespace detail
 

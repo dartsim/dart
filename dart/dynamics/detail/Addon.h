@@ -44,9 +44,9 @@ namespace dynamics {
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 AddonWithProtectedPropertiesInSkeleton(
     common::AddonManager* mgr, const PropertiesData& properties)
   : Addon(mgr),
@@ -59,9 +59,9 @@ AddonWithProtectedPropertiesInSkeleton(
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 std::unique_ptr<common::Addon> AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 cloneAddon(common::AddonManager* newManager) const
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
@@ -71,9 +71,9 @@ cloneAddon(common::AddonManager* newManager) const
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 setAddonProperties(const Addon::Properties& someProperties)
 {
   setProperties(static_cast<const Properties&>(someProperties));
@@ -81,9 +81,9 @@ setAddonProperties(const Addon::Properties& someProperties)
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 const common::Addon::Properties* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 getAddonProperties() const
 {
   return &mProperties;
@@ -91,9 +91,9 @@ getAddonProperties() const
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
@@ -104,9 +104,9 @@ setProperties(const PropertiesData& properties)
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 auto AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 getProperties() const -> const Properties&
 {
   return mProperties;
@@ -114,24 +114,9 @@ getProperties() const -> const Properties&
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
-bool AddonWithProtectedPropertiesInSkeleton<
-  BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
-isOptional(common::AddonManager* oldManager)
-{
-  if(Optional)
-    return true;
-
-  // If the Addon is not optional, we should check whether the Manager type is
-  // the kind that this Addon belongs to.
-  return (nullptr == dynamic_cast<ManagerType*>(oldManager));
-}
-
-//==============================================================================
-template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 SkeletonPtr AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getSkeleton()
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::getSkeleton()
 {
   if(mManager)
     return mManager->getSkeleton();
@@ -141,9 +126,9 @@ SkeletonPtr AddonWithProtectedPropertiesInSkeleton<
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 ConstSkeletonPtr AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getSkeleton() const
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::getSkeleton() const
 {
   if(mManager)
     return mManager->getSkeleton();
@@ -153,27 +138,27 @@ ConstSkeletonPtr AddonWithProtectedPropertiesInSkeleton<
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 ManagerT* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getManager()
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::getManager()
 {
   return mManager;
 }
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 const ManagerT* AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::getManager() const
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::getManager() const
 {
   return mManager;
 }
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 incrementSkeletonVersion()
 {
   if(const SkeletonPtr& skel = getSkeleton())
@@ -182,9 +167,9 @@ incrementSkeletonVersion()
 
 //==============================================================================
 template <class BaseT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
+          class ManagerT, void (*updateProperties)(BaseT*)>
 void AddonWithProtectedPropertiesInSkeleton<
-    BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>::
+    BaseT, PropertiesDataT, ManagerT, updateProperties>::
 setManager(common::AddonManager* newManager, bool /*transfer*/)
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(
@@ -201,10 +186,10 @@ setManager(common::AddonManager* newManager, bool /*transfer*/)
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
     common::AddonManager* mgr,
     const StateData& state,
@@ -221,10 +206,10 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 AddonWithProtectedStateAndPropertiesInSkeleton(
     common::AddonManager* mgr,
     const PropertiesData& properties,
@@ -241,10 +226,10 @@ AddonWithProtectedStateAndPropertiesInSkeleton(
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 std::unique_ptr<common::Addon> AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 cloneAddon(common::AddonManager* newManager) const
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
@@ -255,10 +240,10 @@ cloneAddon(common::AddonManager* newManager) const
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 setAddonState(const Addon::State& otherState)
 {
   setState(static_cast<const State&>(otherState));
@@ -267,10 +252,10 @@ setAddonState(const Addon::State& otherState)
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 const common::Addon::State* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getAddonState() const
 {
   return &mState;
@@ -279,10 +264,10 @@ getAddonState() const
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 setState(const StateData& state)
 {
   static_cast<StateData&>(mState) = state;
@@ -292,10 +277,10 @@ setState(const StateData& state)
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 auto AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getState() const -> const State&
 {
   return mState;
@@ -304,10 +289,10 @@ getState() const -> const State&
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 setAddonProperties(const Addon::Properties& properties)
 {
   setProperties(static_cast<const Properties&>(properties));
@@ -316,10 +301,10 @@ setAddonProperties(const Addon::Properties& properties)
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 const common::Addon::Properties* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getAddonProperties() const
 {
   return &mProperties;
@@ -328,10 +313,10 @@ getAddonProperties() const
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
@@ -343,10 +328,10 @@ setProperties(const PropertiesData& properties)
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 auto AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getProperties() const -> const Properties&
 {
   return mProperties;
@@ -355,27 +340,10 @@ getProperties() const -> const Properties&
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
-bool AddonWithProtectedStateAndPropertiesInSkeleton<
-    BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
-isOptional(common::AddonManager* oldManager)
-{
-  if(Optional)
-    return true;
-
-  // If the Addon is not optional, we should check whether the Manager type is
-  // the kind that this Addon belongs to.
-  return (nullptr == dynamic_cast<ManagerType*>(oldManager));
-}
-
-//==============================================================================
-template <class BaseT, typename StateDataT, typename PropertiesDataT,
-          class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 SkeletonPtr AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getSkeleton()
 {
   if(mManager)
@@ -387,10 +355,10 @@ getSkeleton()
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 ConstSkeletonPtr AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getSkeleton() const
 {
   if(mManager)
@@ -402,10 +370,10 @@ getSkeleton() const
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 ManagerT* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getManager()
 {
   return mManager;
@@ -414,10 +382,10 @@ getManager()
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 const ManagerT* AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 getManager() const
 {
   return mManager;
@@ -426,10 +394,10 @@ getManager() const
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 incrementSkeletonVersion()
 {
   if(const SkeletonPtr& skel = getSkeleton())
@@ -439,10 +407,10 @@ incrementSkeletonVersion()
 //==============================================================================
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
-          void (*updateProperties)(BaseT*), bool OptionalT>
+          void (*updateProperties)(BaseT*)>
 void AddonWithProtectedStateAndPropertiesInSkeleton<
     BaseT, StateDataT, PropertiesDataT,
-    ManagerT, updateState, updateProperties, OptionalT>::
+    ManagerT, updateState, updateProperties>::
 setManager(common::AddonManager* newManager, bool /*transfer*/)
 {
   DART_COMMON_CAST_NEW_MANAGER_TYPE(

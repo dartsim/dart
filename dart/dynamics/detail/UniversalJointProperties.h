@@ -81,7 +81,7 @@ struct UniversalJointProperties :
 class UniversalJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         UniversalJointAddon, UniversalJointUniqueProperties, UniversalJoint,
-        detail::JointPropertyUpdate<UniversalJointAddon>, false >
+        detail::JointPropertyUpdate<UniversalJointAddon> >
 {
 public:
   DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( UniversalJointAddon )
@@ -93,7 +93,7 @@ public:
 
 //==============================================================================
 using UniversalJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<2>, common::SpecializedAddonManager<UniversalJointAddon> >;
+    MultiDofJoint<2>, common::RequiresAddon<UniversalJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

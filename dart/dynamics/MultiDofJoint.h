@@ -47,7 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/RequiresAddon.h"
 #include "dart/dynamics/detail/MultiDofJointProperties.h"
 
 namespace dart {
@@ -60,7 +60,7 @@ class Skeleton;
 template<size_t DOF>
 class MultiDofJoint :
     public Joint,
-    public virtual common::SpecializedAddonManager< detail::MultiDofJointAddon<DOF> >
+    public virtual common::RequiresAddon< detail::MultiDofJointAddon<DOF> >
 {
 public:
 
