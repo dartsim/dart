@@ -310,52 +310,6 @@ protected:
 #define DART_DYNAMICS_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
   DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
 
-//==============================================================================
-#define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateProperties( GetAddon () );\
-  GetAddon ()->incrementSkeletonVersion();
-
-//==============================================================================
-#define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateState( GetAddon () );\
-  DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon );
-
-//==============================================================================
-// Used for Addons that have Properties (but no State) inside of a Skeleton
-#define DART_DYNAMICS_SKEL_PROPERTIES_ADDON_INLINE( AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
-      DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
-
-//==============================================================================
-// Used for Addons that have both State and Properties inside of a Skeleton
-#define DART_DYNAMICS_SKEL_ADDON_INLINE( AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
-      DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
-
-//==============================================================================
-// Used for edge cases, such as nested template classes, that have Properties
-// (but no State) inside of a Skeleton
-#define DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( TypeName, HomogenizedName )\
-  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
-    DETAIL_DART_ADDON_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
-
-//==============================================================================
-// Used for edge cases, such as nested template classes, that have both State
-// and Properties inside of a Skeleton
-#define DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( TypeName, HomogenizedName )\
-  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
-    DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
-
-//==============================================================================
-// Used for nested-class Addons that have Properties (but no State) inside of a Skeleton
-#define DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( ParentName, AddonName )\
-  DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
-
-//==============================================================================
-// Used for nested-class Addons that have both State and Properties inside of a Skeleton
-#define DART_DYNAMICS_NESTED_SKEL_ADDON_INLINE( ParentName, AddonName )\
-  DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
-
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/detail/Addon.h"
 
