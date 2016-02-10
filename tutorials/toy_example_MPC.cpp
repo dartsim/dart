@@ -21,12 +21,38 @@ const double wall_length = floor_length;
 const double obstacle_radius = 0.1;
 const double obstacle_height = wall_height / 4.0;
 
+const double cube_length = 0.01;
+
+class Controller
+{
+public:
+	Controller(const SkeletonPtr& cube):mCube(cube)
+	{
+		mSpeed = 0.1;
+	}
+	void setCubeVelocity()
+	{
+		mCube->getDof(0)->setVelocity(mSpeed);
+	}
+protected:
+	SkeletonPtr mCube;
+	double mSpeed;
+};
+
 class MyWindow : public dart::gui::SimWindow
 {
 public:
 	MyWindow(const WorldPtr& world)
 	{
 		setWorld(world);
+		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube")));
+	}
+
+	void timeStepping() override
+	{
+		mController->setCubeVelocity();
+		
+		SimWindow::timeStepping();
 	}
 
 	void drawSkels() override
@@ -38,6 +64,7 @@ public:
 		SimWindow::drawSkels();
 	}
 protected:
+	std::unique_ptr<Controller> mController;
 };
 
 SkeletonPtr createFloor()
@@ -148,6 +175,33 @@ SkeletonPtr createObstacle(int obstacle_index)
 	return obstacle;
 }
 
+SkeletonPtr createCube()
+{
+	// create a Skeleton
+	SkeletonPtr cube = Skeleton::create("cube");
+
+	// create a BodyNode
+	BodyNodePtr body = cube->createJointAndBodyNodePair<PlanarJoint>().second;
+
+	// create a shape
+	std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
+				Eigen::Vector3d(cube_length, cube_length, cube_length));
+	box->setColor(dart::Color::Black(2*transparency));
+	body->addVisualizationShape(box);
+	body->addCollisionShape(box);
+	
+	// put it in the right position
+	Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+	tf.translation() = Eigen::Vector3d(0.0, 0.0, cube_length/2.0);
+	body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+	// set Actuator type to velocity
+	std::cout<<"The cube has "<<cube->getNumJoints()<<" joints"<<std::endl;
+	std::cout<<"The cube has "<<cube->getNumDofs()<<" Dofs"<<std::endl;
+
+	return cube;
+}
+
 int main(int argc, char* argv[])
 {
 	std::cout<<"This is a toy example for Model Predictive Control"<<std::endl;
@@ -159,6 +213,7 @@ int main(int argc, char* argv[])
 	SkeletonPtr obstacle_1 = createObstacle(1);
 	SkeletonPtr obstacle_2 = createObstacle(2);
 	SkeletonPtr obstacle_3 = createObstacle(3);
+	SkeletonPtr cube = createCube();
 
 	WorldPtr world = std::make_shared<World>();
 	world->addSkeleton(floor);
@@ -169,6 +224,7 @@ int main(int argc, char* argv[])
 	world->addSkeleton(obstacle_1);
 	world->addSkeleton(obstacle_2);
 	world->addSkeleton(obstacle_3);
+	world->addSkeleton(cube);
 
 	MyWindow window(world);
 
