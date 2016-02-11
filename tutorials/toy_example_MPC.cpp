@@ -5,6 +5,7 @@
     > Created Time: Sun Feb  7 21:14:13 2016
  ************************************************************************/
 #include "dart/dart.h"
+#include <iostream>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -26,19 +27,32 @@ const double cube_length = 0.01;
 class Controller
 {
 public:
-	Controller(const SkeletonPtr& cube):mCube(cube)
+	Controller(const SkeletonPtr& cube, dart::collision::CollisionDetector* detector)
+		:mCube(cube),mDetector(detector)
 	{
-		mSpeed = 0.05;
-		mAcceleration = 0.01;
+		mSpeed = 0.2;
+		mAcceleration = 0.2;
+
 		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
+
+		//mVelocity_old_in_set_Acc_fun = 0;
+		//mVelocity_new_in_set_Acc_fun = 0;
+
+		//mTimer = new dart::common::Timer("mTimer_for_int_Acc");
+		//mTime_old = 0;
+		//mTime_new = 0;
+		//mTimer->start();
 	}
 	void setCubeVelocity()
 	{
 		// set horizontal velocity;
-
+		
 		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
 		
-		mCube->getDof(0)->setVelocity(mSpeed);
+		if (mDetector->getNumContacts() == 15)
+		{
+			mCube->getDof(0)->setVelocity(mSpeed);
+		}
 
 		//int index1 = mCube->getDof(0)->getIndexInSkeleton();
 		//mCube->setCommand(index1, mSpeed);
@@ -47,17 +61,50 @@ public:
 	{
 		// set vertical acceleration
 
-		mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+		// using servo actuator type (input velocity) integrate on velocity
+		/*
+		mTime_new = mTimer->getElapsedTime();
 
-		mCube->getDof(1)->setAcceleration(mAcceleration);
+		randomizeAcceleration();
+
+		mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + mAcceleration * (mTime_new - mTime_old);
+
+		mCube->getDof(1)->setVelocity(mVelocity_new_in_set_Acc_fun);
+
+		mTime_old = mTime_new;
+		mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
+		*/
+
+		// set Acceleration directly
+		//std::cout<<mDetector->getNumContacts()<<std::endl;	
+		if (mDetector->getNumContacts() == 15)
+		{
+			mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+			mCube->getDof(1)->setAcceleration(mAcceleration);
+		}
 
 		//int index1 = mCube->getDof(1)->getIndexInSkeleton();
 		//mCube->setCommand(index1, mAcceleration);
 	}
+
+	void randomizeAcceleration()
+	{
+		mAcceleration = 10 * std::rand() / double(RAND_MAX);
+	}
+
 protected:
 	SkeletonPtr mCube;
 	double mSpeed;
 	double mAcceleration;
+
+	//double mVelocity_old_in_set_Acc_fun;
+	//double mVelocity_new_in_set_Acc_fun;
+
+	//dart::common::Timer *mTimer;
+	//double mTime_old;
+	//double mTime_new;
+	
+	dart::collision::CollisionDetector* mDetector;
 };
 
 class MyWindow : public dart::gui::SimWindow
@@ -66,14 +113,18 @@ public:
 	MyWindow(const WorldPtr& world)
 	{
 		setWorld(world);
-		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube")));
+
+		detector = mWorld->getConstraintSolver()->getCollisionDetector();
+		detector->detectCollision(true, true);
+
+		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector));
 	}
 
 	void timeStepping() override
 	{
 		mController->setCubeVelocity();
 		mController->setCubeAcceleration();
-		
+
 		SimWindow::timeStepping();
 	}
 
@@ -87,6 +138,8 @@ public:
 	}
 protected:
 	std::unique_ptr<Controller> mController;
+
+	dart::collision::CollisionDetector* detector;
 };
 
 SkeletonPtr createFloor()
