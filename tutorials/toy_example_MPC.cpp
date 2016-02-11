@@ -30,22 +30,29 @@ public:
 	{
 		mSpeed = 0.05;
 		mAcceleration = 0.01;
+		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
 	}
 	void setCubeVelocity()
 	{
 		// set horizontal velocity;
-		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
-		//mCube->getDof(0)->setVelocity(mSpeed);
-		int index1 = mCube->getDof(0)->getIndexInSkeleton();
-		mCube->setCommand(index1, mSpeed);
+
+		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
+		
+		mCube->getDof(0)->setVelocity(mSpeed);
+
+		//int index1 = mCube->getDof(0)->getIndexInSkeleton();
+		//mCube->setCommand(index1, mSpeed);
 	}
 	void setCubeAcceleration()
 	{
 		// set vertical acceleration
+
 		mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
-		//mCube->getDof(1)->setAcceleration(mAcceleration);
-		int index1 = mCube->getDof(1)->getIndexInSkeleton();
-		mCube->setCommand(index1, mAcceleration);
+
+		mCube->getDof(1)->setAcceleration(mAcceleration);
+
+		//int index1 = mCube->getDof(1)->getIndexInSkeleton();
+		//mCube->setCommand(index1, mAcceleration);
 	}
 protected:
 	SkeletonPtr mCube;
