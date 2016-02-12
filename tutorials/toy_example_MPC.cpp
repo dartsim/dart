@@ -15,21 +15,23 @@ using namespace dart::gui;
 
 const double transparency = 0.3;
 
-const double floor_length = 1;
+const double floor_length = 0.4;
 const double floor_height = 0.01;
 const double wall_height = floor_length / 8.0;
 const double wall_thickness = floor_height;
 const double wall_length = floor_length;
-const double obstacle_radius = 0.1;
+const double obstacle_radius = 0.05;
 const double obstacle_height = wall_height / 4.0;
 
-const double cube_length = 0.01;
+const double cube_length = 0.005;
+
+const double obstacle_2_wall = 2*wall_thickness;
 
 class Controller
 {
 public:
-	Controller(const SkeletonPtr& cube, dart::collision::CollisionDetector* detector)
-		:mCube(cube),mDetector(detector)
+	Controller(const SkeletonPtr& cube, dart::collision::CollisionDetector* detector, size_t default_Num_contact)
+		:mCube(cube),mDetector(detector),mdefault_Num_contact(default_Num_contact)
 	{
 		mSpeed = 0.2;
 		mAcceleration = 0.2;
@@ -54,7 +56,7 @@ public:
 		
 		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
 		
-		if (mDetector->getNumContacts() == 15)
+		if (mDetector->getNumContacts() <= mdefault_Num_contact)
 		{
 			mCube->getDof(0)->setVelocity(mSpeed);
 		}
@@ -62,7 +64,7 @@ public:
 		//int index1 = mCube->getDof(0)->getIndexInSkeleton();
 		//mCube->setCommand(index1, mSpeed);
 	}
-	void setCubeAcceleration()
+	double setCubeAcceleration()
 	{
 		// set vertical acceleration
 
@@ -82,7 +84,7 @@ public:
 
 		// set Acceleration directly
 		//std::cout<<mDetector->getNumContacts()<<std::endl;	
-		if (mDetector->getNumContacts() == 15)
+		if (mDetector->getNumContacts() <= mdefault_Num_contact)
 		{
 			randomizeAcceleration();
 			mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
@@ -91,6 +93,8 @@ public:
 
 		//int index1 = mCube->getDof(1)->getIndexInSkeleton();
 		//mCube->setCommand(index1, mAcceleration);
+
+		return mAcceleration;
 	}
 
 	void randomizeAcceleration()
@@ -113,6 +117,7 @@ protected:
 	double mAcceleration_random;
 	
 	dart::collision::CollisionDetector* mDetector;
+	size_t mdefault_Num_contact;
 };
 
 class MyWindow : public dart::gui::SimWindow
@@ -125,11 +130,13 @@ public:
 		detector = mWorld->getConstraintSolver()->getCollisionDetector();
 		detector->detectCollision(true, true);
 
-		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector));
+		size_t default_Num_contact = detector->getNumContacts();
+		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector, default_Num_contact));
 	}
 
 	void timeStepping() override
 	{
+		double desire_Acceleration;
 		mController->setCubeVelocity();
 		mController->setCubeAcceleration();
 
@@ -246,11 +253,11 @@ SkeletonPtr createObstacle(int obstacle_index)
 	Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 	if (obstacle_index < 2)
 	{
-		tf.translation() = Eigen::Vector3d(0.0, -floor_length/8.0, obstacle_height/2.0);
+		tf.translation() = Eigen::Vector3d(0.0, -floor_length/4 + obstacle_radius +  obstacle_2_wall, obstacle_height/2.0);
 	}
 	else
 	{
-		tf.translation() = Eigen::Vector3d(((obstacle_index - 2.5)*2)*floor_length/4.0, floor_length/8.0, obstacle_height/2.0);
+		tf.translation() = Eigen::Vector3d(((obstacle_index - 2.5)*2)*floor_length/4.0, floor_length/4 - obstacle_radius/2.0 - obstacle_2_wall , obstacle_height/2.0);
 	}
 
 	body->getParentJoint()->setTransformFromParentBodyNode(tf);
@@ -275,10 +282,10 @@ SkeletonPtr createCube()
 	
 	// put it in the right position
 	Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-	tf.translation() = Eigen::Vector3d(0.0, 0.0, cube_length/2.0);
+	tf.translation() = Eigen::Vector3d(-floor_length/2.0 + obstacle_2_wall, 0.0, cube_length/2.0);
 	body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
-	// set Actuator type to velocity
+	// output number of joint and DOF
 	std::cout<<"The cube has "<<cube->getNumJoints()<<" joints"<<std::endl;
 	std::cout<<"The cube has "<<cube->getNumDofs()<<" Dofs"<<std::endl;
 
