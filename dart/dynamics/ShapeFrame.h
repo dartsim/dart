@@ -109,7 +109,8 @@ struct DynamicsDataProperties
 } // namespace detail
 
 class VisualAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::detail::AddonWithVersionedProperties<
+        common::Addon,
         VisualAddon,
         detail::VisualDataProperties,
         ShapeFrame,
@@ -173,7 +174,8 @@ protected:
 };
 
 class CollisionAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::detail::AddonWithVersionedProperties<
+        common::Addon,
         CollisionAddon,
         detail::CollisionDataProperties,
         ShapeFrame,
@@ -181,7 +183,8 @@ class CollisionAddon final :
 {
 public:
 
-  using AddonType = common::AddonWithProtectedProperties<
+  using AddonType = common::detail::AddonWithVersionedProperties<
+      common::Addon,
       CollisionAddon,
       detail::CollisionDataProperties,
       ShapeFrame,
@@ -201,7 +204,8 @@ public:
 };
 
 class DynamicsAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::detail::AddonWithVersionedProperties<
+        common::Addon,
         DynamicsAddon,
         detail::DynamicsDataProperties,
         ShapeFrame,

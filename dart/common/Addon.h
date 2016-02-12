@@ -142,25 +142,29 @@ protected:
 
 };
 
+namespace detail {
 //==============================================================================
 /// AddonWithProtectedState generates implementations of the State managing
 /// functions for an Addon class.
-template <class Base, typename StateData,
-          class ManagerType = AddonManager,
-          void (*updateState)(Base*) = &detail::NoOp<Base*> >
-class AddonWithProtectedState : public Addon
+template <class BaseT, class DerivedT, typename StateDataT,
+          class ManagerT = AddonManager,
+          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
+class AddonWithState : public BaseT
 {
 public:
 
+  using Base = BaseT;
+  using Derived = DerivedT;
+  using StateData = StateDataT;
+  using ManagerType = ManagerT;
   using State = Addon::StateMixer<StateData>;
-  constexpr static void (*UpdateState)(Base*) = updateState;
+  constexpr static void (*UpdateState)(Derived*) = updateState;
 
-  AddonWithProtectedState() = delete;
-  AddonWithProtectedState(const AddonWithProtectedState&) = delete;
+  AddonWithState() = delete;
+  AddonWithState(const AddonWithState&) = delete;
 
   /// Construct using a StateData instance
-  AddonWithProtectedState(
-      AddonManager* mgr, const StateData& state = StateData());
+  AddonWithState(AddonManager* mgr, const StateData& state = StateData());
 
   // Documentation inherited
   void setAddonState(const Addon::State& otherState) override final;
@@ -187,24 +191,25 @@ protected:
 //==============================================================================
 /// AddonWithProtectedProperties generates implementations of the Property
 /// managing functions for an Addon class.
-template <class BaseT, typename PropertiesDataT,
+template <class BaseT, class DerivedT, typename PropertiesDataT,
           class ManagerT = AddonManager,
-          void (*updateProperties)(BaseT*) = &detail::NoOp<BaseT*> >
-class AddonWithProtectedProperties : public Addon
+          void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
+class AddonWithVersionedProperties : public BaseT
 {
 public:
 
   using Base = BaseT;
+  using Derived = DerivedT;
   using PropertiesData = PropertiesDataT;
   using ManagerType = ManagerT;
   using Properties = Addon::PropertiesMixer<PropertiesData>;
-  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
+  constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
-  AddonWithProtectedProperties() = delete;
-  AddonWithProtectedProperties(const AddonWithProtectedProperties&) = delete;
+  AddonWithVersionedProperties() = delete;
+  AddonWithVersionedProperties(const AddonWithVersionedProperties&) = delete;
 
   /// Construct using a PropertiesData instance
-  AddonWithProtectedProperties(
+  AddonWithVersionedProperties(
       AddonManager* mgr, const PropertiesData& properties = PropertiesData());
 
   // Documentation inherited
@@ -228,6 +233,13 @@ protected:
   /// Properties of this Addon
   Properties mProperties;
 };
+
+} // namespace detail
+
+//template <class Derived, typename StateData, class ManagerType = AddonManager,
+//          void (*updateState)(Derived*) = &detail::NoOp<Derived*> >
+//using AddonWithState =
+//  detail::AddonWithState<Addon, Derived, StateData, ManagerType, updateState>;
 
 //==============================================================================
 /// AddonWithProtectedStateAndProperties combines the
@@ -306,7 +318,7 @@ protected:
 #define DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties = PropertiesData())\
-    : AddonWithProtectedProperties< Base, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
+    : AddonWithVersionedProperties< Base, Derived, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
 
 //==============================================================================
 #define DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ClassName )\

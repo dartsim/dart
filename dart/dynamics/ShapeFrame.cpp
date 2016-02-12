@@ -94,7 +94,8 @@ DynamicsDataProperties::DynamicsDataProperties(
 //==============================================================================
 VisualAddon::VisualAddon(common::AddonManager* mgr,
                          const PropertiesData& properties)
-  : AddonWithProtectedProperties<
+  : AddonWithVersionedProperties<
+      common::Addon,
       VisualAddon,
       detail::VisualDataProperties,
       ShapeFrame,

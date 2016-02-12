@@ -50,6 +50,20 @@
 
 using namespace dart::common;
 
+// Testing the creation of an Addon using the AddonWithState template class
+class StateAddonTest : public dart::common::detail::AddonWithState<
+    Addon, StateAddonTest, dart::common::Empty>
+{
+public:
+
+  StateAddonTest(AddonManager* mgr, const StateData& state = StateData())
+    : AddonWithState<Base, Derived, StateData, ManagerType, UpdateState>(mgr, state)
+  {
+
+  }
+
+};
+
 class GenericAddon : public Addon, public Subject
 {
 public:
@@ -424,6 +438,8 @@ TEST(Addon, StateAndProperties)
   AddonManager mgr2;
   mgr2.create<DoubleAddon>();
   mgr2.create<FloatAddon>();
+
+  mgr1.create<StateAddonTest>();
 
   // ---- Test state transfer ----
 
