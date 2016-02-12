@@ -34,6 +34,8 @@ public:
 		mSpeed = 0.2;
 		mAcceleration = 0.2;
 
+		mAcceleration_random = 5;
+
 		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
 
 		//mVelocity_old_in_set_Acc_fun = 0;
@@ -93,7 +95,7 @@ public:
 
 	void randomizeAcceleration()
 	{
-		mAcceleration = 10 * std::rand() / double(RAND_MAX);
+		mAcceleration = mAcceleration_random * (std::rand() / double(RAND_MAX) - 0.5)*2;
 	}
 
 protected:
@@ -107,6 +109,8 @@ protected:
 	//dart::common::Timer *mTimer;
 	//double mTime_old;
 	//double mTime_new;
+	
+	double mAcceleration_random;
 	
 	dart::collision::CollisionDetector* mDetector;
 };
