@@ -79,9 +79,8 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double mass) const
   return Eigen::Matrix3d();
 }
 
-void SoftMeshShape::draw(renderer::RenderInterface* _ri,
-                         const Eigen::Vector4d&     _col,
-                         bool                       _default) const
+void SoftMeshShape::draw(renderer::RenderInterface* ri,
+                         const Eigen::Vector4d& col) const
 {
   // TODO(JS): Not implemented.
 }

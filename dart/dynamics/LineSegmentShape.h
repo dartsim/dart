@@ -102,8 +102,7 @@ public:
 
   // Documentation inherited
   virtual void draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color,
-                    bool _useDefaultColor) const override;
+                    const Eigen::Vector4d& _color) const override;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.

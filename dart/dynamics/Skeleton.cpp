@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
@@ -619,25 +620,29 @@ const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
 //==============================================================================
 BodyNode* Skeleton::getBodyNode(size_t _idx)
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_idx, mSkelCache.mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(
+        _idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
 const BodyNode* Skeleton::getBodyNode(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_idx, mSkelCache.mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(
+        _idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
 SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx)
 {
-  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
+  return common::getVectorObjectIfAvailable<SoftBodyNode*>(
+        _idx, mSoftBodyNodes);
 }
 
 //==============================================================================
 const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<SoftBodyNode*>(_idx, mSoftBodyNodes);
+  return common::getVectorObjectIfAvailable<SoftBodyNode*>(
+        _idx, mSoftBodyNodes);
 }
 
 //==============================================================================
@@ -759,7 +764,7 @@ size_t Skeleton::getNumJoints() const
 //==============================================================================
 Joint* Skeleton::getJoint(size_t _idx)
 {
-  BodyNode* bn = getVectorObjectIfAvailable<BodyNode*>(
+  BodyNode* bn = common::getVectorObjectIfAvailable<BodyNode*>(
                    _idx, mSkelCache.mBodyNodes);
   if (bn)
     return bn->getParentJoint();
@@ -801,13 +806,15 @@ size_t Skeleton::getNumDofs() const
 //==============================================================================
 DegreeOfFreedom* Skeleton::getDof(size_t _idx)
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mSkelCache.mDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _idx, mSkelCache.mDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_idx, mSkelCache.mDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _idx, mSkelCache.mDofs);
 }
 
 //==============================================================================

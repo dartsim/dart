@@ -187,13 +187,16 @@ protected:
 //==============================================================================
 /// AddonWithProtectedProperties generates implementations of the Property
 /// managing functions for an Addon class.
-template <class Base, typename PropertiesData,
-          class ManagerType = AddonManager,
-          void (*updateProperties)(Base*) = &detail::NoOp<Base*> >
+template <class BaseT, typename PropertiesDataT,
+          class ManagerT = AddonManager,
+          void (*updateProperties)(BaseT*) = &detail::NoOp<BaseT*> >
 class AddonWithProtectedProperties : public Addon
 {
 public:
 
+  using Base = BaseT;
+  using PropertiesData = PropertiesDataT;
+  using ManagerType = ManagerT;
   using Properties = Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
 
@@ -298,6 +301,108 @@ protected:
 
 } // namespace common
 } // namespace dart
+
+//==============================================================================
+#define DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
+  ClassName (const ClassName &) = delete;\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties = PropertiesData())\
+    : AddonWithProtectedProperties< Base, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
+
+//==============================================================================
+#define DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ClassName )\
+  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
+
+//==============================================================================
+#define DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\
+  ClassName (const ClassName &) = delete;\
+  inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
+    : AddonWithProtectedProperties< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, state, properties) { }\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
+    : AddonWithProtectedProperties< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, properties, state) { }
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
+  inline void set ## Name (const Type & value)\
+  { mProperties.m ## Name = value; Update(this); }
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, UpdateProperties )
+
+//==============================================================================
+#define DART_COMMON_GET_ADDON_PROPERTY( Type, Name )\
+  inline const Type& get ## Name () const\
+  { return mProperties.m ## Name; }
+
+//==============================================================================
+#define DART_COMMON_SET_GET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_GET_ADDON_PROPERTY( Type, Name )
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+  void set ## SingleName (size_t index, const SingleType & value)\
+  {\
+    if( index >= Size )\
+    {\
+      dterr << "[" #Class << "::set" #SingleName << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); return;\
+    }\
+    this->mProperties.m ## PluralName [index] = value;\
+    UpdatePrefix :: UpdateProperties(this);\
+    this->incrementSkeletonVersion();\
+  }\
+  void set ## PluralName (const VectorType & vec)\
+  {\
+    this->mProperties.m ## PluralName = vec;\
+    UpdatePrefix :: UpdateProperties(this);\
+    this->incrementSkeletonVersion();\
+  }
+
+//==============================================================================
+#define DART_COMMON_GET_ADDON_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
+  inline const SingleType& get ## SingleName (size_t index) const\
+  {\
+    if(index >= Size)\
+    {\
+      dterr << "[" #Class << "::get" #SingleName << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); index = 0;\
+    }\
+    return this->mProperties.m ## PluralName [index];\
+  }\
+  inline const VectorType& get ## PluralName () const\
+  {\
+    return this->mProperties.m ## PluralName;\
+  }
+
+//==============================================================================
+#define DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+  DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+  DART_COMMON_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
+
+//==============================================================================
+#define DART_COMMON_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size, UpdatePrefix )\
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size, UpdatePrefix )
+
+//==============================================================================
+#define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, PluralName )\
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF, MultiDofJoint<DOF>::Addon )
+
+//==============================================================================
+#define DART_COMMON_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
+
+//==============================================================================
+#define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
+  AddonName :: UpdateProperties( GetAddon () );\
+  GetAddon ()->incrementSkeletonVersion();
+
+//==============================================================================
+#define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\
+  AddonName :: UpdateState( GetAddon () );\
+  DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon );
 
 #include "dart/common/detail/Addon.h"
 

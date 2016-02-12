@@ -72,7 +72,6 @@ class Skeleton;
 class Joint;
 class DegreeOfFreedom;
 class Shape;
-class ShapeNode;
 class EndEffector;
 class Marker;
 
@@ -104,9 +103,6 @@ public:
     /// Inertia information for the BodyNode
     Inertia mInertia;
 
-    /// Array of collision shapes
-    std::vector<ShapePtr> mColShapes;
-
     /// Indicates whether this node is collidable;
     bool mIsCollidable;
 
@@ -125,7 +121,6 @@ public:
     /// Constructor
     UniqueProperties(
         const Inertia& _inertia = Inertia(),
-        const std::vector<ShapePtr>& _collisionShapes = std::vector<ShapePtr>(),
         bool _isCollidable = true,
         double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
         double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
@@ -327,24 +322,6 @@ public:
   //--------------------------------------------------------------------------
   // Structural Properties
   //--------------------------------------------------------------------------
-
-  /// Add a collision Shape into the BodyNode
-  void addCollisionShape(const ShapePtr& _shape);
-
-  /// Remove a collision Shape from this BodyNode
-  void removeCollisionShape(const ShapePtr& _shape);
-
-  /// Remove all collision Shapes from this BodyNode
-  void removeAllCollisionShapes();
-
-  /// Return the number of collision shapes
-  size_t getNumCollisionShapes() const;
-
-  /// Return _index-th collision shape
-  ShapePtr getCollisionShape(size_t _index);
-
-  /// Return (const) _index-th collision shape
-  ConstShapePtr getCollisionShape(size_t _index) const;
 
   /// Return the index of this BodyNode within its Skeleton
   size_t getIndexInSkeleton() const;
@@ -625,6 +602,48 @@ public:
 
   /// Create an ShapeNode with the specified name
   ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
+
+  /// Create an ShapeNode with the specified name and addons
+  template <class... Addons>
+  ShapeNode* createShapeNode(const ShapePtr& shape,
+                             const std::string& name = "ShapeNode");
+
+  /// Return the number of all the ShapeNodes in this BodyNode
+  size_t getNumShapeNodes() const;
+
+  /// Return the number of ShapeNodes containing given Addon in this BodyNode
+  template <class Addon>
+  size_t getNumShapeNodes() const;
+
+  /// Return the index-th ShapeNode
+  ShapeNode* getShapeNode(size_t index);
+
+  /// Return the index-th (const) ShapeNode
+  const ShapeNode* getShapeNode(size_t index) const;
+
+  /// Return the list of ShapeNodes
+  std::vector<ShapeNode*> getShapeNodes();
+
+  /// Return the list of ShapeNodes containing given Addon
+  template <class Addon>
+  std::vector<ShapeNode*> getShapeNodes();
+
+  /// Return the list of ShapeNodes containing given Addon
+  template <class Addon>
+  std::vector<const ShapeNode*> getShapeNodes() const;
+
+  /// Remove all ShapeNodes from this BodyNode
+  void removeAllShapeNodes();
+
+  /// Remove all ShapeNodes containing given Addon from this BodyNode
+  template <class Addon>
+  void removeAllShapeNodes();
+
+  /// Add a collision Shape into the BodyNode
+  void addCollisionShapeNode(const ShapePtr& shape);
+
+  /// Remove a collision Shape from this BodyNode
+  void removeCollisionShapeNode(const ShapePtr& shape);
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.

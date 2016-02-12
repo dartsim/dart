@@ -130,6 +130,12 @@ private:
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
+    static bool createShapeNodes(
+      const urdf::Link* lk,
+      dynamics::BodyNode* bodyNode,
+      const common::Uri& baseUri,
+      const common::ResourceRetrieverPtr& resourceRetriever);
+
     common::ResourceRetrieverPtr getResourceRetriever(
       const common::ResourceRetrieverPtr& _resourceRetriever);
 

@@ -131,35 +131,6 @@ SoftBodyNode::~SoftBodyNode()
 }
 
 //==============================================================================
-ShapePtr SoftBodyNode::removeSoftBodyShapes()
-{
-  ShapePtr oldShape;
-  for(size_t i=0; i<mBodyP.mColShapes.size(); )
-  {
-    if(dynamic_cast<dynamics::SoftMeshShape*>(mBodyP.mColShapes[i].get()))
-    {
-      oldShape = mBodyP.mColShapes[i];
-      removeCollisionShape(oldShape);
-    }
-    else
-      ++i;
-  }
-
-  for(size_t i=0; i<mEntityP.mVizShapes.size(); )
-  {
-    if(dynamic_cast<dynamics::SoftMeshShape*>(mEntityP.mVizShapes[i].get()))
-    {
-      oldShape = mEntityP.mVizShapes[i];
-      removeVisualizationShape(oldShape);
-    }
-    else
-      ++i;
-  }
-
-  return oldShape;
-}
-
-//==============================================================================
 void SoftBodyNode::setProperties(const Properties& _properties)
 {
   BodyNode::setProperties(
@@ -171,9 +142,6 @@ void SoftBodyNode::setProperties(const Properties& _properties)
 //==============================================================================
 void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 {
-  // SoftMeshShape pointers should not be copied between bodies
-  ShapePtr oldShape = removeSoftBodyShapes();
-
   size_t newCount = _properties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
   if(newCount < oldCount)
@@ -213,15 +181,24 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
   mSoftP.mFaces = _properties.mFaces;
 
   // Create a new SoftMeshShape for this SoftBodyNode
-  mSoftShape = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
-  addVisualizationShape(mSoftShape);
-  addCollisionShape(mSoftShape);
+  auto softMesh = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
+  auto newSoftShapeNode
+      = createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+          softMesh, "soft mesh");
 
-  if(oldShape) // Copy the properties of the previous soft shape, if it exists
+  // Copy the properties of the previous soft shape, if it exists
+  if(mSoftShapeNode)
   {
-    mSoftShape->setColor(oldShape->getRGBA());
-    mSoftShape->setLocalTransform(oldShape->getLocalTransform());
+    newSoftShapeNode->getVisualAddon()->setColor(
+          mSoftShapeNode->getVisualAddon()->getRGBA());
+
+    newSoftShapeNode->setRelativeTransform(
+          mSoftShapeNode->getRelativeTransform());
+
+    mSoftShapeNode->remove();
   }
+
+  mSoftShapeNode = newSoftShapeNode;
 }
 
 //==============================================================================
@@ -283,7 +260,8 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            const Properties& _properties)
   : Entity(Frame::World(), "", false),
     Frame(Frame::World(), ""),
-    BodyNode(_parentBodyNode, _parentJoint, _properties)
+    BodyNode(_parentBodyNode, _parentJoint, _properties),
+    mSoftShapeNode(nullptr)
 {
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
   setProperties(_properties);
@@ -1174,13 +1152,8 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
   _ri->transform(getRelativeTransform());
 
   _ri->pushName((unsigned)mID);
-  // rigid body
-  for (size_t i = 0; i < mEntityP.mVizShapes.size(); i++)
-  {
-    _ri->pushMatrix();
-    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
-    _ri->popMatrix();
-  }
+
+  Entity::draw(_ri, _color, _useDefaultColor, _depth);
 
   // vertex
 //  if (_showPointMasses)
@@ -1199,7 +1172,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 //  _ri->setPenColor(fleshColor);
 //  if (_showMeshs)
   {
-    _ri->setPenColor(mSoftShape->getRGBA());
+    _ri->setPenColor(mSoftShapeNode->get<VisualAddon>()->getRGBA());
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

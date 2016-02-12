@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         DART_DATA_PATH"sdf/atlas/ground.urdf");
 //  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
 //        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
-  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
+  SkeletonPtr atlas = SdfParser::readSkeleton(
         DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);

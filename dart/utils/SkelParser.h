@@ -50,19 +50,19 @@ namespace SkelParser {
 
   /// Read World from skel file
   simulation::WorldPtr readWorld(
-    const common::Uri& _uri,
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read World from an xml-formatted string
   simulation::WorldPtr readWorldXML(
-    const std::string& _xmlString,
-    const common::Uri& _baseUri = "",
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+    const std::string& xmlString,
+    const common::Uri& baseUri = "",
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read Skeleton from skel file
   dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& _fileUri,
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
 } // namespace SkelParser
 

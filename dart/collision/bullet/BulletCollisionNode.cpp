@@ -55,14 +55,9 @@ namespace collision {
 BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
   : CollisionNode(_bodyNode)
 {
-  for (auto i = 0u; i < _bodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
+  auto collShapeNodes = _bodyNode->getShapeNodes<dynamics::CollisionAddon>();
+  for (auto shapeNode : collShapeNodes)
   {
-    auto shapeNode = _bodyNode->getNode<dynamics::ShapeNode>(i);
-
-    auto collisionAddon = shapeNode->get<dynamics::CollisionData>();
-    if (!collisionAddon)
-      continue;
-
     auto shape = shapeNode->getShape();
 
     switch (shape->getShapeType())
@@ -78,8 +73,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btBox);
         BulletUserData* userData = new BulletUserData;
-        userData->bodyNode = _bodyNode;
-        userData->shape = shape;
+        userData->shapeNode = shapeNode;
         userData->btCollNode = this;
         btCollObj->setUserPointer(userData);
         mbtCollsionObjects.push_back(btCollObj);
@@ -98,8 +92,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
           btCollisionObject* btCollObj = new btCollisionObject();
           btCollObj->setCollisionShape(btSphere);
           BulletUserData* userData = new BulletUserData;
-          userData->bodyNode = _bodyNode;
-          userData->shape = shape;
+          userData->shapeNode = shapeNode;
           userData->btCollNode = this;
           btCollObj->setUserPointer(userData);
           mbtCollsionObjects.push_back(btCollObj);
@@ -107,6 +100,9 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         else
         {
           // TODO(JS): Add mesh for ellipsoid
+          dtwarn << "[BulletCollisionNode::constructor] Attempting to add an "
+                 << "ellipsoid shape for BulletCollisionDetector, which is not "
+                 << "supported.\n";
         }
 
         break;
@@ -123,8 +119,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btCylinder);
         BulletUserData* userData = new BulletUserData;
-        userData->bodyNode = _bodyNode;
-        userData->shape = shape;
+        userData->shapeNode = shapeNode;
         userData->btCollNode = this;
         btCollObj->setUserPointer(userData);
         mbtCollsionObjects.push_back(btCollObj);
@@ -143,8 +138,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         btCollisionObject* btCollObj = new btCollisionObject();
         btCollObj->setCollisionShape(btStaticPlane);
         BulletUserData* userData = new BulletUserData;
-        userData->bodyNode = _bodyNode;
-        userData->shape = shape;
+        userData->shapeNode = shapeNode;
         userData->btCollNode = this;
         btCollObj->setUserPointer(userData);
         mbtCollsionObjects.push_back(btCollObj);
@@ -162,8 +156,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
         // Add user data
         btCollObj->setCollisionShape(btMesh);
         BulletUserData* userData = new BulletUserData;
-        userData->bodyNode   = _bodyNode;
-        userData->shape      = shape;
+        userData->shapeNode = shapeNode;
         userData->btCollNode = this;
         btCollObj->setUserPointer(userData);
 
@@ -195,9 +188,8 @@ void BulletCollisionNode::updateBulletCollisionObjects()
   {
     BulletUserData* userData =
         static_cast<BulletUserData*>(mbtCollsionObjects[i]->getUserPointer());
-    dynamics::ConstShapePtr shape = userData->shape;
-    btTransform T = convertTransform(mBodyNode->getTransform() *
-                                     shape->getLocalTransform());
+    dynamics::ShapeNode* shapeNode = userData->shapeNode;
+    btTransform T = convertTransform(shapeNode->getWorldTransform());
     mbtCollsionObjects[i]->setWorldTransform(T);
   }
 }

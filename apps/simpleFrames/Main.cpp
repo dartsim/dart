@@ -54,13 +54,13 @@ int main(int argc, char* argv[])
   tf3.rotate(Eigen::AngleAxisd(60*M_PI/180.0, Eigen::Vector3d(0,1,0)));
 
   SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
-  F1->addVisualizationShape(std::shared_ptr<Shape>(
+  F1->setShape(std::shared_ptr<Shape>(
                              new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F2(F1.get(), "F2", tf2);
-  F2.addVisualizationShape(std::shared_ptr<Shape>(
+  F2.setShape(std::shared_ptr<Shape>(
                              new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
   SimpleFrame F3(&F2, "F3", tf3);
-  F3.addVisualizationShape(std::shared_ptr<Shape>(
+  F3.setShape(std::shared_ptr<Shape>(
                              new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
 
   // Note: Adding a Frame to the world will also cause all Entities that descend
@@ -68,22 +68,22 @@ int main(int argc, char* argv[])
   myWorld->addSimpleFrame(F1);
 
   SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
-  A->addVisualizationShape(std::shared_ptr<Shape>(
+  A->setShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.02,0.02,0.02))));
   SimpleFrame A1(A.get(), "A1", F1->getTransform(A.get()));
-  A1.addVisualizationShape(std::shared_ptr<Shape>(
+  A1.setShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
   SimpleFrame A2(A.get(), "A2", F2.getTransform(A.get()));
-  A2.addVisualizationShape(std::shared_ptr<Shape>(
+  A2.setShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
   SimpleFrame A3(A.get(), "A3", F3.getTransform(A.get()));
-  A3.addVisualizationShape(std::shared_ptr<Shape>(
+  A3.setShape(std::shared_ptr<Shape>(
                           new EllipsoidShape(Eigen::Vector3d(0.01,0.01,0.01))));
 
   myWorld->addSimpleFrame(A);
 
   SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
-  arrow->addVisualizationShape(
+  arrow->setShape(
         std::shared_ptr<Shape>(
           new ArrowShape(Eigen::Vector3d(0.1,-0.1, 0.0),
                          Eigen::Vector3d(0.1, 0.0, 0.0),

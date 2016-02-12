@@ -77,22 +77,12 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
       if (!isCollidable(collNode1, collNode2))
         continue;
 
-      for (auto k = 0u; k < BodyNode1->getNumNodes<dynamics::ShapeNode>(); ++k)
+      auto collShapeNodes1 = BodyNode1->getShapeNodes<dynamics::CollisionAddon>();
+      for (auto shapeNode1 : collShapeNodes1)
       {
-        auto shapeNode1 = BodyNode1->getNode<dynamics::ShapeNode>(k);
-
-        auto collisionAddon = shapeNode1->get<dynamics::CollisionData>();
-        if (!collisionAddon)
-          continue;
-
-        for (auto l = 0u; l < BodyNode2->getNumNodes<dynamics::ShapeNode>(); ++l)
+        auto collShapeNodes2 = BodyNode2->getShapeNodes<dynamics::CollisionAddon>();
+        for (auto shapeNode2 : collShapeNodes2)
         {
-          auto shapeNode2 = BodyNode2->getNode<dynamics::ShapeNode>(l);
-
-          auto collisionAddon = shapeNode2->get<dynamics::CollisionData>();
-          if (!collisionAddon)
-            continue;
-
           int currContactNum = mContacts.size();
 
           contacts.clear();
@@ -157,7 +147,7 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
   {
     auto shapeNode1 = BodyNode1->getNode<dynamics::ShapeNode>(i);
 
-    auto collisionAddon = shapeNode1->get<dynamics::CollisionData>();
+    auto collisionAddon = shapeNode1->get<dynamics::CollisionAddon>();
     if (!collisionAddon)
       continue;
 
@@ -165,7 +155,7 @@ bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
     {
       auto shapeNode2 = BodyNode2->getNode<dynamics::ShapeNode>(j);
 
-      auto collisionAddon = shapeNode2->get<dynamics::CollisionData>();
+      auto collisionAddon = shapeNode2->get<dynamics::CollisionAddon>();
       if (!collisionAddon)
         continue;
 

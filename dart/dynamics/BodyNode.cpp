@@ -42,6 +42,7 @@
 #include <string>
 
 #include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/math/Helpers.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/Joint.h"
@@ -116,11 +117,9 @@ size_t BodyNode::msBodyNodeCount = 0;
 //==============================================================================
 BodyNode::UniqueProperties::UniqueProperties(
     const Inertia& _inertia,
-    const std::vector<ShapePtr>& _collisionShapes,
     bool _isCollidable, double _frictionCoeff,
     double _restitutionCoeff, bool _gravityMode)
   : mInertia(_inertia),
-    mColShapes(_collisionShapes),
     mIsCollidable(_isCollidable),
     mFrictionCoeff(_frictionCoeff),
     mRestitutionCoeff(_restitutionCoeff),
@@ -246,10 +245,6 @@ void BodyNode::setProperties(const UniqueProperties& _properties)
   setGravityMode(_properties.mGravityMode);
   setFrictionCoeff(_properties.mFrictionCoeff);
   setRestitutionCoeff(_properties.mRestitutionCoeff);
-
-  removeAllCollisionShapes();
-  for(size_t i=0; i<_properties.mColShapes.size(); ++i)
-    addCollisionShape(_properties.mColShapes[i]);
 
   mBodyP.mMarkerProperties = _properties.mMarkerProperties;
   // Remove current markers
@@ -599,78 +594,6 @@ double BodyNode::getRestitutionCoeff() const
 }
 
 //==============================================================================
-void BodyNode::addCollisionShape(const ShapePtr& _shape)
-{
-  if(nullptr == _shape)
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
-           << "collision shape\n";
-    return;
-  }
-
-  if(_shape->getShapeType() == Shape::LINE_SEGMENT)
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
-           << "type shape as a collision shape. This is not supported.\n";
-    return;
-  }
-
-  if(std::find(mBodyP.mColShapes.begin(), mBodyP.mColShapes.end(), _shape)
-     != mBodyP.mColShapes.end())
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a duplicate "
-           << "collision shape.\n";
-    return;
-  }
-
-  mBodyP.mColShapes.push_back(_shape);
-
-  mColShapeAddedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void BodyNode::removeCollisionShape(const ShapePtr& _shape)
-{
-  if (nullptr == _shape)
-    return;
-
-  mBodyP.mColShapes.erase(std::remove(mBodyP.mColShapes.begin(),
-                                      mBodyP.mColShapes.end(), _shape),
-                          mBodyP.mColShapes.end());
-
-  mColShapeRemovedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void BodyNode::removeAllCollisionShapes()
-{
-  std::vector<ShapePtr>::iterator it = mBodyP.mColShapes.begin();
-  while (it != mBodyP.mColShapes.end())
-  {
-    removeCollisionShape(*it);
-    it = mBodyP.mColShapes.begin();
-  }
-}
-
-//==============================================================================
-size_t BodyNode::getNumCollisionShapes() const
-{
-  return mBodyP.mColShapes.size();
-}
-
-//==============================================================================
-ShapePtr BodyNode::getCollisionShape(size_t _index)
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
-}
-
-//==============================================================================
-ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
-}
-
-//==============================================================================
 size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
@@ -863,13 +786,13 @@ size_t BodyNode::getNumChildBodyNodes() const
 //==============================================================================
 BodyNode* BodyNode::getChildBodyNode(size_t _index)
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
 const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
@@ -900,7 +823,6 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
                                      const std::string& name)
 {
   ShapeNode::Properties properties;
-  properties.mName = name;
   properties.mShape = shape;
 
   return createNode<ShapeNode>(properties);
@@ -910,6 +832,44 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
 {
   return createShapeNode(shape, std::string(name));
+}
+
+//==============================================================================
+size_t BodyNode::getNumShapeNodes() const
+{
+  return getNumNodes<ShapeNode>();
+}
+
+//==============================================================================
+ShapeNode* BodyNode::getShapeNode(size_t index)
+{
+  return getNode<ShapeNode>(index);
+}
+
+//==============================================================================
+const ShapeNode* BodyNode::getShapeNode(size_t index) const
+{
+  return getNode<ShapeNode>(index);
+}
+
+//==============================================================================
+std::vector<ShapeNode*> BodyNode::getShapeNodes()
+{
+  std::vector<ShapeNode*> shapeNodes(getNumShapeNodes());
+
+  auto numShapeNode = getNumShapeNodes();
+  for (auto i = 0u; i < numShapeNode; ++i)
+    shapeNodes[i] = getShapeNode(i);
+
+  return shapeNodes;
+}
+
+//==============================================================================
+void BodyNode::removeAllShapeNodes()
+{
+  auto shapeNodes = getShapeNodes();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->remove();
 }
 
 //==============================================================================
@@ -945,13 +905,13 @@ size_t BodyNode::getNumMarkers() const
 //==============================================================================
 Marker* BodyNode::getMarker(size_t _index)
 {
-  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
 }
 
 //==============================================================================
 const Marker* BodyNode::getMarker(size_t _index) const
 {
-  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
 }
 
 //==============================================================================
@@ -991,13 +951,15 @@ size_t BodyNode::getNumDependentDofs() const
 //==============================================================================
 DegreeOfFreedom* BodyNode::getDependentDof(size_t _index)
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _index, mDependentDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* BodyNode::getDependentDof(size_t _index) const
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _index, mDependentDofs);
 }
 
 //==============================================================================
@@ -1400,13 +1362,9 @@ void BodyNode::draw(renderer::RenderInterface* ri,
   ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  const auto numShapeNodes = getNumNodes<ShapeNode>();
-  for (auto i = 0u; i < numShapeNodes; ++i)
-  {
-    ri->pushMatrix();
-    getNode<ShapeNode>(i)->draw(ri, color, useDefaultColor);
-    ri->popMatrix();
-  }
+  auto shapeNodes = getShapeNodes<VisualAddon>();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->draw(ri, color, useDefaultColor);
   // _ri.popName();
 
   // render the subtree

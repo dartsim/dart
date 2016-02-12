@@ -335,8 +335,9 @@ void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
   for(size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
-    for(size_t j=0; j < bn->getNumVisualizationShapes(); ++j)
-      bn->getVisualizationShape(j)->setColor(color);
+    auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+    for(auto visualShapeNode : visualShapeNodes)
+      visualShapeNode->getVisualAddon()->setColor(color);
   }
 }
 
@@ -422,10 +423,9 @@ SkeletonPtr createGround()
   std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
         Eigen::Vector3d(default_ground_width, default_ground_width,
                         default_wall_thickness));
-  shape->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
-
-  bn->addCollisionShape(shape);
-  bn->addVisualizationShape(shape);
+  auto shapeNode
+      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
 }
@@ -439,10 +439,9 @@ SkeletonPtr createWall()
   std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
         Eigen::Vector3d(default_wall_thickness, default_ground_width,
                         default_wall_height));
-  shape->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
-
-  bn->addCollisionShape(shape);
-  bn->addVisualizationShape(shape);
+  auto shapeNode
+      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(

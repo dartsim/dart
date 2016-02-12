@@ -394,8 +394,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
           default_shape_height*Eigen::Vector3d::Ones());
   }
 
-  bn->addVisualizationShape(shape);
-  bn->addCollisionShape(shape);
+  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
 
   // Setup the inertia for the body
   Inertia inertia;
@@ -497,9 +496,10 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   bn->setInertia(inertia);
 
   // Make the shape transparent
-  Eigen::Vector4d color = bn->getVisualizationShape(0)->getRGBA();
+  auto visualAddon = bn->getShapeNodes<VisualAddon>()[0]->getVisualAddon();
+  Eigen::Vector4d color = visualAddon->getRGBA();
   color[3] = 0.4;
-  bn->getVisualizationShape(0)->setRGBA(color);
+  visualAddon->setRGBA(color);
 
   return bn;
 }
@@ -510,8 +510,9 @@ void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
   for(size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
-    for(size_t j=0; j < bn->getNumVisualizationShapes(); ++j)
-      bn->getVisualizationShape(j)->setColor(color);
+    auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+    for(auto visualShapeNode : visualShapeNodes)
+      visualShapeNode->getVisualAddon()->setColor(color);
   }
 }
 
@@ -570,9 +571,7 @@ SkeletonPtr createSoftBody()
   Eigen::Vector3d dims(width, width, height);
   dims *= 0.6;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
-
-  bn->addCollisionShape(box);
-  bn->addVisualizationShape(box);
+  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
 
   Inertia inertia;
   inertia.setMass(default_shape_density * box->getVolume());
@@ -598,9 +597,7 @@ SkeletonPtr createHybridBody()
   double box_shape_height = default_shape_height;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
         box_shape_height*Eigen::Vector3d::Ones());
-
-  bn->addCollisionShape(box);
-  bn->addVisualizationShape(box);
+  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
@@ -625,10 +622,9 @@ SkeletonPtr createGround()
   std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
         Eigen::Vector3d(default_ground_width, default_ground_width,
                         default_wall_thickness));
-  shape->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
-
-  bn->addCollisionShape(shape);
-  bn->addVisualizationShape(shape);
+  auto shapeNode
+      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
 }
@@ -642,10 +638,9 @@ SkeletonPtr createWall()
   std::shared_ptr<BoxShape> shape = std::make_shared<BoxShape>(
         Eigen::Vector3d(default_wall_thickness, default_ground_width,
                         default_wall_height));
-  shape->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
-
-  bn->addCollisionShape(shape);
-  bn->addVisualizationShape(shape);
+  auto shapeNode
+      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(

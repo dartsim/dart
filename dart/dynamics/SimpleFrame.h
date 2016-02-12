@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_SIMPLEFRAME_H_
 #define DART_DYNAMICS_SIMPLEFRAME_H_
 
-#include "dart/dynamics/Frame.h"
+#include "dart/dynamics/ShapeNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -52,7 +52,7 @@ namespace dynamics {
 /// (such as position, velocity, and acceleration) can be modified. Conversely,
 /// the SimpleFrame class is nothing but a simple abstract Frame whose
 /// properties can be arbitrarily set and modified by the user.
-class SimpleFrame : public Detachable, public Frame
+class SimpleFrame : public Detachable, public ShapeFrame
 {
 public:
 
@@ -87,6 +87,12 @@ public:
   /// Same as copy(const Frame&) except the parent frame of this SimpleFrame is
   /// left the same, and _copyProperties is set to false.
   SimpleFrame& operator=(const SimpleFrame& _otherFrame);
+
+  /// Create a child SimpleFrame to this SimpleFrame
+  std::shared_ptr<SimpleFrame> createChildSimpleFrame(
+      const std::string& name = "SimpleFrame",
+      const Eigen::Isometry3d& relativeTransform
+          = Eigen::Isometry3d::Identity());
 
   //--------------------------------------------------------------------------
   // Transform

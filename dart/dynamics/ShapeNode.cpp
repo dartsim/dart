@@ -35,149 +35,16 @@
  */
 
 #include "dart/dynamics/ShapeNode.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
-//==============================================================================
-void VisualUpdate(VisualData* /*visualData*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void CollisionUpdate(CollisionData* /*collisionData*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void DynamicsUpdate(DynamicsData* /*dynamicsData*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color,
-                                           const bool hidden)
-  : mRGBA(color),
-    mHidden(hidden)
-{
-  // Do nothing
-}
-
-//==============================================================================
-CollisionDataProperties::CollisionDataProperties(
-    const bool collidable)
-  : mCollidable(collidable)
-{
-  // Do nothing
-}
-
-//==============================================================================
-DynamicsDataProperties::DynamicsDataProperties(
-    const double frictionCoeff,
-    const double restitutionCoeff)
-  :
-    mFrictionCoeff(frictionCoeff),
-    mRestitutionCoeff(restitutionCoeff)
-{
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-//VisualData::VisualData(
-//    common::AddonManager* mgr,
-//    const AddonWithProtectedPropertiesInSkeleton::Properties& properties)
-//  : AddonWithProtectedPropertiesInSkeleton<VisualData, VisualDataProperties>(
-//      mgr, properties)
-//{
-//  // Do nothing
-//}
-
-//==============================================================================
-void VisualData::setColor(const Eigen::Vector3d& color)
-{
-  setRGB(color);
-}
-
-//==============================================================================
-void VisualData::setColor(const Eigen::Vector4d& color)
-{
-  setRGBA(color);
-}
-
-//==============================================================================
-void VisualData::setRGB(const Eigen::Vector3d& rgb)
-{
-  Eigen::Vector4d rgba = getRGBA();
-  rgba.head<3>() = rgb;
-
-  setRGBA(rgba);
-}
-
-//==============================================================================
-void VisualData::setAlpha(const double alpha)
-{
-  Eigen::Vector4d rgba = getRGBA();
-  rgba[3] = alpha;
-
-  setRGBA(rgba);
-}
-
-//==============================================================================
-Eigen::Vector3d VisualData::getColor() const
-{
-  return getRGB();
-}
-
-//==============================================================================
-Eigen::Vector3d VisualData::getRGB() const
-{
-  return getRGBA().head<3>();
-}
-
-//==============================================================================
-const double VisualData::getAlpha() const
-{
-  return getRGBA()[3];
-}
-
-//==============================================================================
-void VisualData::hide()
-{
-  setHidden(false);
-}
-
-//==============================================================================
-void VisualData::show()
-{
-  setHidden(true);
-}
-
-//==============================================================================
-bool VisualData::isHidden() const
-{
-  return getHidden();
-}
-
-//==============================================================================
-bool CollisionData::isCollidable() const
-{
-  return getCollidable();
-}
-
 //==============================================================================
 ShapeNode::Properties::Properties(
-    const Entity::Properties& entityProperties,
-    const ShapeNode::UniqueProperties &shapeNodeProperties,
-    const ShapeNode::AddonProperties &addonProperties)
-  : Entity::Properties(entityProperties),
-    UniqueProperties(shapeNodeProperties),
+    const ShapeFrame::Properties& shapeFrameProperties,
+    const ShapeNode::AddonProperties& addonProperties)
+  : ShapeFrame::Properties(shapeFrameProperties),
     mAddonProperties(addonProperties)
 {
   // Do nothing
@@ -185,20 +52,10 @@ ShapeNode::Properties::Properties(
 
 //==============================================================================
 ShapeNode::Properties::Properties(
-    Entity::Properties&& entityProperties,
-    UniqueProperties&& shapeNodeProperties,
-    AddonProperties&& addonProperties)
-  : Entity::Properties(std::move(entityProperties)),
-    UniqueProperties(std::move(shapeNodeProperties)),
+    ShapeFrame::Properties&& shapeFrameProperties,
+    ShapeNode::AddonProperties&& addonProperties)
+  : ShapeFrame::Properties(std::move(shapeFrameProperties)),
     mAddonProperties(std::move(addonProperties))
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeNode::UniqueProperties::UniqueProperties(const ShapePtr& shape,
-                                              const bool hidden)
-  : mShape(shape)
 {
   // Do nothing
 }
@@ -206,22 +63,15 @@ ShapeNode::UniqueProperties::UniqueProperties(const ShapePtr& shape,
 //==============================================================================
 void ShapeNode::setProperties(const Properties& properties)
 {
-  Entity::setProperties(properties);
-  setProperties(static_cast<const UniqueProperties&>(properties));
+  ShapeFrame::setProperties(
+        static_cast<const ShapeFrame::Properties&>(properties));
   setAddonProperties(properties.mAddonProperties);
-}
-
-//==============================================================================
-void ShapeNode::setProperties(const UniqueProperties& properties)
-{
-  setShape(properties.mShape);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(getEntityProperties(), mShapeNodeProp,
-                    getAddonProperties());
+  return Properties(getShapeFrameProperties(), getAddonProperties());
 }
 
 //==============================================================================
@@ -250,47 +100,22 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 }
 
 //==============================================================================
-const std::string& ShapeNode::setName(const std::string& newName)
+const std::string& ShapeNode::setName(const std::string& name)
 {
   // If it already has the requested name, do nothing
-  if(mEntityP.mName == newName && !newName.empty())
+  if(mEntityP.mName == name && !name.empty())
     return mEntityP.mName;
 
-  mEntityP.mName = registerNameChange(newName);
+  mEntityP.mName = registerNameChange(name);
 
   // Return the resulting name, after it has been checked for uniqueness
   return mEntityP.mName;
 }
 
 //==============================================================================
-void ShapeNode::setShape(const ShapePtr& shape)
-{
-  if (shape == mShapeNodeProp.mShape)
-    return;
-
-  ShapePtr oldShape = mShapeNodeProp.mShape;
-
-  mShapeNodeProp.mShape = shape;
-
-  mShapeUpdatedSignal.raise(this, oldShape, mShapeNodeProp.mShape);
-}
-
-//==============================================================================
-ShapePtr ShapeNode::getShape()
-{
-  return mShapeNodeProp.mShape;
-}
-
-//==============================================================================
-ConstShapePtr ShapeNode::getShape() const
-{
-  return mShapeNodeProp.mShape;
-}
-
-//==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  const Eigen::Isometry3d& oldTransform = mRelativeTf;
+  const Eigen::Isometry3d oldTransform = mRelativeTf;
 
   mRelativeTf = transform;
   notifyTransformUpdate();
@@ -451,63 +276,14 @@ const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
 }
 
 //==============================================================================
-VisualData* ShapeNode::getVisualData(const bool createIfNull)
-{
-  VisualData* visualData = getVisualData();
-
-  if (createIfNull && nullptr == visualData)
-    return createVisualData();
-
-  return visualData;
-}
-
-//==============================================================================
-CollisionData* ShapeNode::getCollisionData(const bool createIfNull)
-{
-  CollisionData* collisionData = getCollisionData();
-
-  if (createIfNull && nullptr == collisionData)
-    return createCollisionData();
-
-  return collisionData;
-}
-
-//==============================================================================
-DynamicsData* ShapeNode::getDynamicsData(const bool createIfNull)
-{
-  DynamicsData* dynamicsData = getDynamicsData();
-
-  if (createIfNull && nullptr == dynamicsData)
-    return createDynamicsData();
-
-  return dynamicsData;
-}
-
-//==============================================================================
-void ShapeNode::draw(renderer::RenderInterface* ri,
-                     const Eigen::Vector4d& color,
-                     bool useDefaultColor) const
-{
-  auto visualData = getVisualData();
-
-  if (!visualData || visualData->isHidden())
-    return;
-
-  if (useDefaultColor)
-    mShapeNodeProp.mShape->draw(ri, visualData->getRGBA(), false);
-  else
-    mShapeNodeProp.mShape->draw(ri, color, false);
-}
-
-//==============================================================================
 ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
-  : common::AddonManager(),
-    Entity(ConstructFrame),
+  : Entity(ConstructFrame),
     Frame(bodyNode, ""),
     FixedFrame(bodyNode, ""),
+    ShapeFrame(bodyNode),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
-    mShapeUpdatedSignal(),
-    mRelativeTransformUpdatedSignal(),
+    mShapeUpdatedSignal(ShapeUpdatedSignal()),
+    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {

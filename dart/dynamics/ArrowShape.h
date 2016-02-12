@@ -90,7 +90,7 @@ public:
   void setProperties(const Properties& _properties);
 
   /// Set the color of this arrow
-  void setRGBA(const Eigen::Vector4d& _color) override;
+  void notifyColorUpdate(const Eigen::Vector4d& _color) override;
 
   /// Get the properties of this arrow
   const Properties& getProperties() const;

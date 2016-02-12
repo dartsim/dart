@@ -48,6 +48,7 @@ namespace dynamics {
 class Skeleton;
 class BodyNode;
 class Shape;
+class ShapeFrame;
 }
 
 namespace renderer {
@@ -87,6 +88,7 @@ public:
     virtual void draw(dynamics::Skeleton* _skel, bool _vizCol = false, bool _colMesh = false);
     virtual void draw(dynamics::BodyNode* _node, bool _vizCol = false, bool _colMesh = false);
     virtual void draw(dynamics::Shape* _shape);
+    virtual void draw(dynamics::ShapeFrame* shapeFrame);
 
     virtual void drawEllipsoid(const Eigen::Vector3d& _size) override;
     virtual void drawCube(const Eigen::Vector3d& _size) override;

@@ -69,10 +69,9 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
   // Documentation inherited.
-  virtual void draw(
-      renderer::RenderInterface* _ri      = nullptr,
-      const Eigen::Vector4d&     _col     = Eigen::Vector4d::Ones(),
-      bool                       _default = true) const;
+  void draw(
+      renderer::RenderInterface* ri = nullptr,
+      const Eigen::Vector4d& col = Eigen::Vector4d::Ones()) const override;
 
 protected:
   // Documentation inherited.

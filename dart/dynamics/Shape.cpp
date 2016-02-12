@@ -46,10 +46,7 @@ Shape::Shape(ShapeType _type)
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mColor(0.5, 0.5, 1.0, 1.0),
-    mTransform(Eigen::Isometry3d::Identity()),
     mVariance(STATIC),
-    mHidden(false),
     mType(_type)
 {
 }
@@ -61,80 +58,9 @@ Shape::~Shape()
 }
 
 //==============================================================================
-void Shape::setColor(const Eigen::Vector3d& _color) {
-  setRGB(_color);
-}
-
-//==============================================================================
-void Shape::setColor(const Eigen::Vector4d &_color) {
-  setRGBA(_color);
-}
-
-//==============================================================================
-void Shape::setRGB(const Eigen::Vector3d& _rgb) {
-  mColor << _rgb, mColor[3];
-  setRGBA(mColor);
-}
-
-//==============================================================================
-void Shape::setRGBA(const Eigen::Vector4d& _rgba) {
-  mColor = _rgba;
-}
-
-//==============================================================================
-Eigen::Vector3d Shape::getColor() const {
-  return getRGB();
-}
-
-//==============================================================================
-Eigen::Vector3d Shape::getRGB() const {
-  return Eigen::Vector3d(mColor[0], mColor[1], mColor[2]);
-}
-
-//==============================================================================
-const Eigen::Vector4d& Shape::getRGBA() const {
-  return mColor;
-}
-
-//==============================================================================
-void Shape::setAlpha(double _alpha) {
-  mColor[3] = _alpha;
-}
-
-//==============================================================================
 const math::BoundingBox& Shape::getBoundingBox() const
 {
     return mBoundingBox;
-}
-
-//==============================================================================
-Eigen::Vector3d Shape::getBoundingBoxDim() const
-{
-  return mBoundingBox.computeFullExtents();
-}
-
-//==============================================================================
-void Shape::setLocalTransform(const Eigen::Isometry3d& _Transform)
-{
-  mTransform = _Transform;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& Shape::getLocalTransform() const
-{
-  return mTransform;
-}
-
-//==============================================================================
-void Shape::setOffset(const Eigen::Vector3d& _offset)
-{
-  mTransform.translation() = _offset;
-}
-
-//==============================================================================
-Eigen::Vector3d Shape::getOffset() const
-{
-  return mTransform.translation();
 }
 
 //==============================================================================
@@ -195,15 +121,9 @@ void Shape::refreshData()
 }
 
 //==============================================================================
-void Shape::setHidden(bool _hide)
+void Shape::notifyColorUpdate(const Eigen::Vector4d& /*color*/)
 {
-  mHidden = _hide;
-}
-
-//==============================================================================
-bool Shape::isHidden() const
-{
-  return mHidden;
+  // Do nothing
 }
 
 //==============================================================================

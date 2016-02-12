@@ -40,195 +40,23 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
-#include "dart/common/SpecializedAddonManager.h"
-#include "dart/dynamics/Addon.h"
-#include "dart/dynamics/Node.h"
 #include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/Node.h"
+#include "dart/dynamics/TemplatedJacobianNode.h"
 
 namespace dart {
 namespace dynamics {
 
-class VisualData;
-class CollisionData;
-class DynamicsData;
-class ShapeNode;
+class VisualAddon;
+class CollisionAddon;
+class DynamicsAddon;
+class ShapeFrame;
 
-//==============================================================================
-// Addon data
-//==============================================================================
-
-namespace detail
-{
-
-void VisualUpdate(VisualData* visualData);
-void CollisionUpdate(CollisionData* collisionData);
-void DynamicsUpdate(DynamicsData* dynamicsData);
-
-struct VisualDataProperties
-{
-  /// Color for the primitive shape
-  Eigen::Vector4d mRGBA;
-
-  /// True if this shape node should be kept from rendering
-  bool mHidden;
-
-  /// Constructor
-  VisualDataProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
-      const bool hidden = false);
-
-  /// Destructor
-  virtual ~VisualDataProperties() = default;
-};
-
-struct CollisionDataProperties
-{
-  /// This object is collidable if true
-  bool mCollidable;
-
-  /// Constructor
-  CollisionDataProperties(const bool collidable = true);
-
-  /// Destructor
-  virtual ~CollisionDataProperties() = default;
-};
-
-struct DynamicsDataProperties
-{
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  double mRestitutionCoeff;
-
-  /// Constructor
-  DynamicsDataProperties(const double frictionCoeff = 1.0,
-                         const double restitutionCoeff = 0.0);
-
-  /// Destructor
-  virtual ~DynamicsDataProperties() = default;
-};
-
-} // namespace detail
-
-
-//==============================================================================
-// Addons
-//==============================================================================
-
-class VisualData final :
-    public AddonWithProtectedPropertiesInSkeleton<
-        VisualData,
-        detail::VisualDataProperties,
-        ShapeNode,
-        &detail::VisualUpdate,
-        true>
-{
-public:
-
-  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( VisualData, &detail::VisualUpdate )
-
-  // This macro defines following setter/getter of the addon property obeying
-  // the skeleton version increment mechanism.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( Eigen::Vector4d, RGBA )
-  // void setRGBA(const Eigen::Vector4d& value);
-  // const Eigen::Vector4d& getRGBA() const;
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( bool, Hidden )
-  // void setRGBA(const Eigen::Vector4d& value);
-  // const Eigen::Vector4d& getRGBA() const;
-
-  /// Identical to setRGB(const Eigen::Vector3d&)
-  void setColor(const Eigen::Vector3d& color);
-
-  /// Identical to setRGBA(const Eigen::Vector4d&)
-  void setColor(const Eigen::Vector4d& color);
-
-  /// Set RGB color components (leave alpha alone)
-  void setRGB(const Eigen::Vector3d& rgb);
-
-  /// Set the transparency of the Shape
-  void setAlpha(const double alpha);
-
-  /// Get color
-  Eigen::Vector3d getColor() const;
-
-  /// Get RGB color components
-  Eigen::Vector3d getRGB() const;
-
-  /// Get the transparency of the Shape
-  const double getAlpha() const;
-
-  /// Hide the ShapeNode
-  void hide();
-
-  /// Show the ShapeNode
-  void show();
-
-  /// True iff the ShapeNode is set to be hidden. Use hide(bool) to change this
-  /// setting
-  bool isHidden() const;
-
-};
-
-class CollisionData final :
-    public AddonWithProtectedPropertiesInSkeleton<
-        CollisionData,
-        detail::CollisionDataProperties,
-        ShapeNode,
-        &detail::CollisionUpdate,
-        true>
-{
-public:
-
-  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( CollisionData,
-                                            &detail::CollisionUpdate )
-
-  // This macro defines following setter/getter of the addon property obeying
-  // the skeleton version increment mechanism.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( bool, Collidable )
-  // void setCollisionMode(const bool& value);
-  // const bool& getCollisionMode() const;
-
-  /// Return true if this body can collide with others bodies
-  bool isCollidable() const;
-
-};
-
-class DynamicsData final :
-    public AddonWithProtectedPropertiesInSkeleton<
-        DynamicsData,
-        detail::DynamicsDataProperties,
-        ShapeNode,
-        &detail::DynamicsUpdate,
-        true>
-{
-public:
-
-  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( DynamicsData,
-                                            &detail::DynamicsUpdate )
-
-  // This macro defines following setter/getter of the addon property obeying
-  // the skeleton version increment mechanism.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( double, FrictionCoeff )
-  // void setFrictionCoeff(const double& value);
-  // const double& getFrictionCoeff() const;
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( double, RestitutionCoeff )
-  // void setRestitutionCoeff(const double& value);
-  // const double& getRestitutionCoeff() const;
-
-};
-
-//==============================================================================
-// ShapeNode
-//==============================================================================
-
-class ShapeNode final :
-    public virtual common::SpecializedAddonManager<
-        VisualData, CollisionData, DynamicsData>,
-    public FixedFrame,
-    public AccessoryNode<ShapeNode>,
-    public TemplatedJacobianNode<ShapeNode>
+class ShapeNode : public virtual FixedFrame,
+                  public ShapeFrame,
+                  public AccessoryNode<ShapeNode>,
+                  public TemplatedJacobianNode<ShapeNode>
 {
 public:
 
@@ -244,34 +72,19 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  struct UniqueProperties
-  {
-    ShapePtr mShape;
-
-    /// Constructor
-    UniqueProperties(const ShapePtr& shape = nullptr,
-                     const bool hidden = false);
-
-    virtual ~UniqueProperties() = default;
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
   using AddonProperties = common::AddonManager::Properties;
 
-  struct Properties : Entity::Properties, UniqueProperties
+  struct Properties : ShapeFrame::Properties
   {
     /// Composed constructor
     Properties(
-        const Entity::Properties& entityProperties = Entity::Properties(),
-        const UniqueProperties& shapeNodeProperties = UniqueProperties(),
+        const ShapeFrame::Properties& shapeFrameProperties
+            = ShapeFrame::Properties(),
         const AddonProperties& addonProperties = AddonProperties());
 
     /// Composed move constructor
     Properties(
-        Entity::Properties&& entityProperties,
-        UniqueProperties&& shapeNodeProperties,
+        ShapeFrame::Properties&& shapeFrameProperties,
         AddonProperties&& addonProperties);
 
     /// The properties of the ShapeNode's Addons
@@ -283,9 +96,6 @@ public:
 
   /// Set the Properties of this ShapeNode
   void setProperties(const Properties& properties);
-
-  /// Set the Properties of this ShapeNode
-  void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
   const Properties getShapeNodeProperties() const;
@@ -299,17 +109,9 @@ public:
   /// Same as copy(const ShapeNode&)
   ShapeNode& operator=(const ShapeNode& other);
 
-  // Documentation inherited
-  const std::string& setName(const std::string& newName) override;
-
-  /// Set shape
-  void setShape(const ShapePtr& shape);
-
-  /// Return shape
-  ShapePtr getShape();
-
-  /// Return (const) shape
-  ConstShapePtr getShape() const;
+  /// Set name. If the name is already taken, this will return an altered
+  /// version which will be used by the Skeleton
+  const std::string& setName(const std::string& _name) override;
 
   /// Set transformation of this shape node relative to the parent frame
   void setRelativeTransform(const Eigen::Isometry3d& transform);
@@ -398,32 +200,6 @@ public:
 
   /// \}
 
-  DART_BAKE_SPECIALIZED_ADDON(VisualData)
-
-  DART_BAKE_SPECIALIZED_ADDON(CollisionData)
-
-  DART_BAKE_SPECIALIZED_ADDON(DynamicsData)
-
-  /// Get a pointer to the VisualData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the VisualData will be generated if one does
-  /// not already exist.
-  VisualData* getVisualData(const bool createIfNull);
-
-  /// Get a pointer to the CollisionData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the CollisionData will be generated if one
-  /// does not already exist.
-  CollisionData* getCollisionData(const bool createIfNull);
-
-  /// Get a pointer to the DynamicsData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the DynamicsData will be generated if one
-  /// does not already exist.
-  DynamicsData* getDynamicsData(const bool createIfNull);
-
-  /// Render this Entity
-  virtual void draw(renderer::RenderInterface* ri = nullptr,
-                    const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
-                    bool useDefaultColor = true) const;
-
 protected:
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const Properties& properties);
@@ -450,9 +226,6 @@ protected:
   void updateWorldJacobianClassicDeriv() const;
 
 protected:
-
-  /// ShapeNode properties
-  UniqueProperties mShapeNodeProp;
 
   /// Cached Jacobian of this ShapeNode
   ///

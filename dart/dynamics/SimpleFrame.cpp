@@ -46,6 +46,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(ConstructFrame),
     Frame(_refFrame, _name),
+    ShapeFrame(_refFrame, _name),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
     mRelativeAcceleration(Eigen::Vector6d::Zero()),
@@ -58,6 +59,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
   : Entity(ConstructFrame),
     Frame(_refFrame, ""),
+    ShapeFrame(_refFrame, ""),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
     mRelativeAcceleration(Eigen::Vector6d::Zero()),
@@ -82,22 +84,7 @@ SimpleFramePtr SimpleFrame::clone(Frame* _refFrame) const
 void SimpleFrame::copy(const Frame& _otherFrame, Frame* _refFrame,
                        bool _copyProperties)
 {
-  if( (this == &_otherFrame) && (_refFrame == getParentFrame()) )
-    return;
-
-  Eigen::Isometry3d relativeTf = _otherFrame.getTransform(_refFrame);
-  Eigen::Vector6d relativeVelocity =
-      _otherFrame.getSpatialVelocity(_refFrame, Frame::World());
-  Eigen::Vector6d relativeAcceleration =
-      _otherFrame.getSpatialAcceleration(_refFrame, Frame::World());
-
-  setParentFrame(_refFrame);
-  setRelativeTransform(relativeTf);
-  setRelativeSpatialVelocity(relativeVelocity, Frame::World());
-  setRelativeSpatialAcceleration(relativeAcceleration, Frame::World());
-
-  if(_copyProperties)
-    setProperties(_otherFrame.getEntityProperties());
+  copy(&_otherFrame, _refFrame, _copyProperties);
 }
 
 //==============================================================================
@@ -107,7 +94,30 @@ void SimpleFrame::copy(const Frame* _otherFrame, Frame* _refFrame,
   if(nullptr == _otherFrame || nullptr == _refFrame)
     return;
 
-  copy(*_otherFrame, _refFrame, _copyProperties);
+  if( (this == _otherFrame) && (_refFrame == getParentFrame()) )
+    return;
+
+  Eigen::Isometry3d relativeTf = _otherFrame->getTransform(_refFrame);
+  Eigen::Vector6d relativeVelocity =
+      _otherFrame->getSpatialVelocity(_refFrame, Frame::World());
+  Eigen::Vector6d relativeAcceleration =
+      _otherFrame->getSpatialAcceleration(_refFrame, Frame::World());
+
+  setParentFrame(_refFrame);
+  setRelativeTransform(relativeTf);
+  setRelativeSpatialVelocity(relativeVelocity, Frame::World());
+  setRelativeSpatialAcceleration(relativeAcceleration, Frame::World());
+
+  if(_copyProperties)
+  {
+    const auto shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame);
+    if(shapeFrame)
+      setProperties(shapeFrame->getShapeFrameProperties());
+
+    const auto simpleFrame = dynamic_cast<const SimpleFrame*>(_otherFrame);
+    if(simpleFrame)
+      setName(simpleFrame->getName());
+  }
 }
 
 //==============================================================================
@@ -115,6 +125,13 @@ SimpleFrame& SimpleFrame::operator=(const SimpleFrame& _otherFrame)
 {
   copy(_otherFrame, getParentFrame(), false);
   return *this;
+}
+
+//==============================================================================
+std::shared_ptr<SimpleFrame> SimpleFrame::createChildSimpleFrame(
+    const std::string& name, const Eigen::Isometry3d& relativeTransform)
+{
+  return std::make_shared<SimpleFrame>(this, name, relativeTransform);
 }
 
 //==============================================================================

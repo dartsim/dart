@@ -245,6 +245,7 @@ common::ResourceRetrieverPtr getRetriever(
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* shapeNodeEle,
+    const std::string& shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -530,15 +531,14 @@ namespace {
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* shapeNodeEle,
+    const std::string& shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
   assert(bodyNode);
 
   auto shape = readShape(shapeNodeEle, bodyNode->getName(), baseUri, retriever);
-  auto shapeNode = bodyNode->createShapeNode(
-        shape, bodyNode->getName() + "-shape");
-  // TODO(JS): probably need name for shape node in skel file format
+  auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
 
   // Transformation
   if (hasElement(shapeNodeEle, "transformation"))
@@ -558,9 +558,11 @@ void readVisualizationShapeNode(
     const common::ResourceRetrieverPtr& retriever)
 {
   dynamics::ShapeNode* newShapeNode
-      = readShapeNode(bodyNode, vizShapeNodeEle, baseUri, retriever);
+      = readShapeNode(bodyNode, vizShapeNodeEle,
+                      bodyNode->getName() + " - visual shape",
+                      baseUri, retriever);
 
-  auto visualData = newShapeNode->getVisualData(true);
+  auto visualData = newShapeNode->getVisualAddon(true);
 
   // color
   if (hasElement(vizShapeNodeEle, "color"))
@@ -578,9 +580,12 @@ void readCollisionShapeNode(
     const common::ResourceRetrieverPtr& retriever)
 {
   dynamics::ShapeNode* newShapeNode
-      = readShapeNode(bodyNode, collShapeNodeEle, baseUri, retriever);
+      = readShapeNode(bodyNode, collShapeNodeEle,
+                      bodyNode->getName() + " - collision shape",
+                      baseUri, retriever);
 
-  auto collisionData = newShapeNode->getCollisionData(true);
+  auto collisionData = newShapeNode->getCollisionAddon(true);
+  newShapeNode->createDynamicsAddon();
 
   // collidable
   if (hasElement(collShapeNodeEle, "collidable"))
@@ -609,10 +614,30 @@ void readAddons(
     while (vizShapes.next())
       readVisualizationShapeNode(bodyNode, vizShapes.get(), baseUri, retriever);
 
-    // visualization_shape
+    // collision_shape
     ElementEnumerator collShapes(bodyElement, "collision_shape");
     while (collShapes.next())
       readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+
+    // Update inertia if unspecified
+    if (hasElement(bodyElement, "inertia"))
+    {
+      tinyxml2::XMLElement* inertiaElement = getElement(bodyElement, "inertia");
+
+      if (!hasElement(inertiaElement, "moment_of_inertia"))
+      {
+        if (bodyNode->getNumNodes<dynamics::ShapeNode>() > 0)
+        {
+          auto mass = bodyNode->getMass();
+          auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(0);
+          Eigen::Matrix3d Ic = shapeNode->getShape()->computeInertia(mass);
+
+          auto inertia = bodyNode->getInertia();
+          inertia.setMoment(Ic);
+          bodyNode->setInertia(inertia);
+        }
+      }
+    }
   }
 }
 
@@ -988,7 +1013,7 @@ dynamics::SkeletonPtr readSkeleton(
     it = joints.find(nextJoint->second);
   }
 
-  // Add addons here since addons cannot be added if the BodyNodes haven't
+  // Read addons here since addons cannot be added if the BodyNodes haven't
   // created yet.
   readAddons(newSkeleton, _skeletonElement, _baseUri, _retriever);
 
@@ -1066,15 +1091,6 @@ SkelBodyNode readBodyNode(
       double iyz = getValueDouble(moiElement, "iyz");
 
       newBodyNode->mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
-    }
-    else if (newBodyNode->mVizShapes.size() > 0)
-    {
-      Eigen::Matrix3d Ic =
-          newBodyNode->mVizShapes[0]->computeInertia(mass);
-
-      newBodyNode->mInertia.setMoment(Ic);
-      // TODO(JS): take all the shape node into account that have dynamics
-      // addons.
     }
 
     // offset

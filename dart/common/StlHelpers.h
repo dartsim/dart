@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -19,12 +19,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,47 +34,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_COMMON_STLHELPERS_H_
+#define DART_COMMON_STLHELPERS_H_
 
-#include "dart/dart.h"
+#include <cassert>
+#include <cstddef>
+#include <vector>
 
-#include "apps/softBodies/MyWindow.h"
+namespace dart {
+namespace common {
 
-int main(int argc, char* argv[])
+template <typename T>
+static T getVectorObjectIfAvailable(size_t index, const std::vector<T>& vec)
 {
-  // load a skeleton file
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(
-        DART_DATA_PATH"skel/softBodies.skel");
-  assert(myWorld != nullptr);
+  assert(index < vec.size());
+  if(index < vec.size())
+    return vec[index];
 
-  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
-  {
-    dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
-    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
-    {
-      dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
-      Eigen::Vector3d color = dart::Color::Random();
-      auto shapeNodes = bn->getShapeNodes<dart::dynamics::VisualAddon>();
-      for(auto shapeNode : shapeNodes)
-        shapeNode->getVisualAddon(true)->setColor(color);
-    }
-  }
-
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
-
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'6': programmed interaction" << std::endl;
-
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Soft Bodies");
-  glutMainLoop();
-
-  return 0;
+  return nullptr;
 }
+
+} // namespace common
+} // namespace dart
+
+#endif // DART_COMMON_EMPTY_H_

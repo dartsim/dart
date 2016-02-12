@@ -257,19 +257,17 @@ public:
     for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
       BodyNode* bn = mPendulum->getBodyNode(i);
+      auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
       for(size_t j = 0; j < 2; ++j)
-      {
-        const ShapePtr& shape = bn->getVisualizationShape(j);
-
-        shape->setColor(dart::Color::Blue());
-      }
+        visualShapeNodes[j]->getVisualAddon()->setColor(dart::Color::Blue());
 
       // If we have three visualization shapes, that means the arrow is
       // attached. We should remove it in case this body is no longer
       // experiencing a force
-      if(bn->getNumVisualizationShapes() == 3)
+      if(visualShapeNodes.size() == 3u)
       {
-        bn->removeVisualizationShape(mArrow);
+        assert(visualShapeNodes[2]->getShape() == mArrow);
+        visualShapeNodes[2]->remove();
       }
     }
 
@@ -284,8 +282,8 @@ public:
           dof->setForce( mPositiveSign? default_torque : -default_torque );
 
           BodyNode* bn = dof->getChildBodyNode();
-          const ShapePtr& shape = bn->getVisualizationShape(0);
-          shape->setColor(dart::Color::Red());
+          auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+          visualShapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
 
           --mForceCountDown[i];
         }
@@ -309,9 +307,9 @@ public:
           }
           bn->addExtForce(force, location, true, true);
 
-          const ShapePtr& shape = bn->getVisualizationShape(1);
-          shape->setColor(dart::Color::Red());
-          bn->addVisualizationShape(mArrow);
+          auto shapeNodes = bn->getShapeNodes<VisualAddon>();
+          shapeNodes[1]->getVisualAddon()->setColor(dart::Color::Red());
+          bn->createShapeNode<VisualAddon>(mArrow);
 
           --mForceCountDown[i];
         }
@@ -349,17 +347,17 @@ void setGeometry(const BodyNodePtr& bn)
   // Create a BoxShape to be used for both visualization and collision checking
   std::shared_ptr<BoxShape> box(new BoxShape(
       Eigen::Vector3d(default_width, default_depth, default_height)));
-  box->setColor(dart::Color::Blue());
 
-  // Set the location of the Box
+  // Create a shpae node for visualization and collision checking
+  auto shapeNode
+      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
+
+  // Set the location of the shape node
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
   Eigen::Vector3d center = Eigen::Vector3d(0, 0, default_height / 2.0);
   box_tf.translation() = center;
-  box->setLocalTransform(box_tf);
-
-  // Add it as a visualization and collision shape
-  bn->addVisualizationShape(box);
-  bn->addCollisionShape(box);
+  shapeNode->setRelativeTransform(box_tf);
 
   // Move the center of mass to the center of the object
   bn->setLocalCOM(center);
@@ -379,9 +377,9 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   // Make a shape for the Joint
   const double& R = default_width;
   std::shared_ptr<EllipsoidShape> ball(
-        new EllipsoidShape(sqrt(2)*Eigen::Vector3d(R, R, R)));
-  ball->setColor(dart::Color::Blue());
-  bn->addVisualizationShape(ball);
+        new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
+  auto shapeNode = bn->createShapeNode<VisualAddon>(ball);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
 
   // Set the geometry of the Body
   setGeometry(bn);
@@ -409,17 +407,16 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
   // Make a shape for the Joint
   const double R = default_width / 2.0;
   const double h = default_depth;
-  std::shared_ptr<CylinderShape> cyl(
-        new CylinderShape(R, h));
-  cyl->setColor(dart::Color::Blue());
+  std::shared_ptr<CylinderShape> cyl(new CylinderShape(R, h));
 
   // Line up the cylinder with the Joint axis
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.linear() = dart::math::eulerXYZToMatrix(
         Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
-  cyl->setLocalTransform(tf);
 
-  bn->addVisualizationShape(cyl);
+  auto shapeNode = bn->createShapeNode<VisualAddon>(cyl);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
+  shapeNode->setRelativeTransform(tf);
 
   // Set the geometry of the Body
   setGeometry(bn);

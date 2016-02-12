@@ -50,6 +50,7 @@
 namespace dart {
 namespace dynamics {
 class BodyNode;
+class ShapeNode;
 }  // namespace dynamics
 }  // namespace dart
 
@@ -59,11 +60,11 @@ namespace collision {
 class BulletCollisionNode;
 class BulletCollisionDetector;
 
-struct BulletUserData {
-    dynamics::BodyNode* bodyNode;
-    dynamics::ConstShapePtr shape;
-    BulletCollisionNode* btCollNode;
-    BulletCollisionDetector* btCollDet;
+struct BulletUserData
+{
+  dynamics::ShapeNode* shapeNode;
+  BulletCollisionNode* btCollNode;
+  BulletCollisionDetector* btCollDet;
 };
 
 /// @brief class BulletCollisionNode

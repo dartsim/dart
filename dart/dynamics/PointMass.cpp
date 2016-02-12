@@ -1026,7 +1026,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   _ri->transform(T);
   Eigen::Vector4d color1;
   color1 << 0.8, 0.3, 0.3, 1.0;
-  mShape->draw(_ri, color1, false);
+  mShape->draw(_ri, color1);
   _ri->popMatrix();
 
   //  _ri->pushName((unsigned)mID);
@@ -1035,7 +1035,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
   _ri->transform(T);
   Eigen::Vector4d color2;
   color2 << 0.3, 0.8, 0.3, 1.0;
-  mShape->draw(_ri, color2, false);
+  mShape->draw(_ri, color2);
   _ri->popMatrix();
   //  _ri->popName();
 
@@ -1048,7 +1048,7 @@ PointMassNotifier::PointMassNotifier(SoftBodyNode* _parentSoftBody,
     mNeedPartialAccelerationUpdate(true),
     mParentSoftBodyNode(_parentSoftBody)
 {
-
+  // Do nothing
 }
 
 //==============================================================================

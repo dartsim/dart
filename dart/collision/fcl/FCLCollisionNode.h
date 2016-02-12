@@ -51,6 +51,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Shape;
+class ShapeNode;
 }  // namespace dynamics
 }  // namespace dart
 
@@ -62,12 +63,10 @@ class FCLCollisionNode;
 struct FCLUserData
 {
   FCLCollisionNode* fclCollNode;
-  dynamics::BodyNode* bodyNode;
-  dynamics::Shape* shape;
+  dynamics::ShapeNode* shapeNode;
 
-  FCLUserData(FCLCollisionNode* _fclCollNode,
-              dynamics::BodyNode* _bodyNode,
-              dynamics::Shape* _shape);
+  FCLUserData(FCLCollisionNode* fclCollNode,
+              dynamics::ShapeNode* shape);
 };
 
 /// FCLCollisionNode
@@ -85,9 +84,6 @@ public:
 
   /// Get FCL collision object given index
   fcl::CollisionObject* getCollisionObject(size_t _idx) const;
-
-  /// Get FCL transformation of shape given index
-  fcl::Transform3f getFCLTransform(size_t _idx) const;
 
   /// Update transformation and AABB of all the fcl collision objects.
   void updateFCLCollisionObjects();

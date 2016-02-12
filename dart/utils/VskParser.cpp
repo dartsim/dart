@@ -822,12 +822,14 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
                                                     math::AxisType::AXIS_X);
     localTransform.translation() = 0.5 * tf.translation();
 
-    dynamics::ShapePtr shape(new dynamics::EllipsoidShape(size));
-    shape->setLocalTransform(localTransform);
-    shape->setColor(vskData.bodyNodeColorMap[parent]);
+    auto shapeNode = parent->createShapeNode(
+          dynamics::ShapePtr(new dynamics::EllipsoidShape(size)));
+    shapeNode->setRelativeTransform(localTransform);
 
-    parent->addVisualizationShape(shape);
-    parent->addCollisionShape(shape);
+    auto visualAddon = shapeNode->createVisualAddon();
+    visualAddon->setColor(vskData.bodyNodeColorMap[parent]);
+    shapeNode->createCollisionAddon();
+    shapeNode->createDynamicsAddon();
   }
 
   // Generate shpae for bodies with no shape
@@ -835,17 +837,19 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
-    if (bodyNode->getNumVisualizationShapes() > 0)
+    if (bodyNode->getNumNodes<dynamics::ShapeNode>() > 0)
       continue;
 
     // Use hard-coded size ellipsoid
     const Eigen::Vector3d& size = vskData.options.defaultEllipsoidSize;
 
-    dynamics::ShapePtr shape(new dynamics::EllipsoidShape(size));
-    shape->setColor(vskData.bodyNodeColorMap[bodyNode]);
+    auto shapeNode = bodyNode->createShapeNode(
+          dynamics::ShapePtr(new dynamics::EllipsoidShape(size)));
 
-    bodyNode->addVisualizationShape(shape);
-    bodyNode->addCollisionShape(shape);
+    auto visualAddon = shapeNode->createVisualAddon();
+    visualAddon->setColor(vskData.bodyNodeColorMap[bodyNode]);
+    shapeNode->createCollisionAddon();
+    shapeNode->createDynamicsAddon();
   }
 
   // Update mass and moments of inertia of the bodies based on the their shapes
@@ -854,17 +858,19 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
-    // Now all the bodies should have at least one shape
-    assert(bodyNode->getNumVisualizationShapes() > 0);
+    // Now all the bodies should have at least one shape node
+    assert(bodyNode->getNumNodes<dynamics::ShapeNode>() > 0);
 
     double totalMass = 0.0;
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
-    const auto& shapes = bodyNode->getVisualizationShapes();
+    auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (const dynamics::ShapePtr& shape : shapes)
+    for (auto i = 0u; i < numShapeNodes; ++i)
     {
+      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(i);
+      auto shape     = shapeNode->getShape();
       const double             mass    = density * shape->getVolume();
-      const Eigen::Isometry3d& localTf = shape->getLocalTransform();
+      const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
       const Eigen::Matrix3d    moi     = shape->computeInertia(mass);
 
       totalMass += mass;

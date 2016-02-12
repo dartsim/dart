@@ -69,13 +69,13 @@ size_t ReferentialSkeleton::getNumBodyNodes() const
 //==============================================================================
 BodyNode* ReferentialSkeleton::getBodyNode(size_t _idx)
 {
-  return getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
 }
 
 //==============================================================================
 const BodyNode* ReferentialSkeleton::getBodyNode(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
 }
 
 //==============================================================================
@@ -146,13 +146,13 @@ size_t ReferentialSkeleton::getNumJoints() const
 //==============================================================================
 Joint* ReferentialSkeleton::getJoint(size_t _idx)
 {
-  return getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
+  return common::getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
 const Joint* ReferentialSkeleton::getJoint(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
+  return common::getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
@@ -195,13 +195,13 @@ size_t ReferentialSkeleton::getNumDofs() const
 //==============================================================================
 DegreeOfFreedom* ReferentialSkeleton::getDof(size_t _idx)
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* ReferentialSkeleton::getDof(size_t _idx) const
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
 }
 
 //==============================================================================

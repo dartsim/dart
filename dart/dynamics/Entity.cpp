@@ -34,8 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
 #include "dart/dynamics/Entity.h"
+
+#include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
 
@@ -48,23 +50,10 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-Entity::Properties::Properties(const std::string& _name,
-                               const std::vector<ShapePtr>& _vizShapes)
-  : mName(_name),
-    mVizShapes(_vizShapes)
+Entity::Properties::Properties(const std::string& _name)
+  : mName(_name)
 {
  // Do nothing
-}
-
-//==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
-{
-  assert(_index < _vec.size());
-  if (_index < _vec.size())
-    return _vec[_index];
-
-  return nullptr;
 }
 
 //==============================================================================
@@ -76,13 +65,11 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
     mNeedAccelerationUpdate(true),
     mFrameChangedSignal(),
     mNameChangedSignal(),
-    mVizShapeAddedSignal(),
     mTransformUpdatedSignal(),
     mVelocityChangedSignal(),
     mAccelerationChangedSignal(),
     onFrameChanged(mFrameChangedSignal),
     onNameChanged(mNameChangedSignal),
-    onVizShapeAdded(mVizShapeAddedSignal),
     onTransformUpdated(mTransformUpdatedSignal),
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
@@ -103,11 +90,6 @@ void Entity::setProperties(const Properties& _properties)
 {
   // Set name
   setName(_properties.mName);
-
-  // Set visualization shapes
-  removeAllVisualizationShapes();
-  for(size_t i=0; i<_properties.mVizShapes.size(); ++i)
-    addVisualizationShape(_properties.mVizShapes[i]);
 }
 
 //==============================================================================
@@ -161,114 +143,12 @@ const std::string& Entity::getName() const
 }
 
 //==============================================================================
-void Entity::addVisualizationShape(const ShapePtr& _shape)
+void Entity::draw(renderer::RenderInterface* /*_ri*/,
+                  const Eigen::Vector4d& /*_color*/,
+                  bool /*_useDefaultColor*/,
+                  int /*depth*/) const
 {
-  if (nullptr == _shape)
-    return;
-
-  if (std::find(mEntityP.mVizShapes.begin(), mEntityP.mVizShapes.end(), _shape)
-      != mEntityP.mVizShapes.end())
-  {
-    dtwarn << "[Entity::addVisualizationShape] Attempting to add a "
-           << "duplicate visualization shape.\n";
-    return;
-  }
-
-  mEntityP.mVizShapes.push_back(_shape);
-
-  mVizShapeAddedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void Entity::removeVisualizationShape(const ShapePtr& _shape)
-{
-  if (nullptr == _shape)
-    return;
-
-  mEntityP.mVizShapes.erase(std::remove(mEntityP.mVizShapes.begin(),
-                                        mEntityP.mVizShapes.end(), _shape),
-                            mEntityP.mVizShapes.end());
-
-  mVizShapeRemovedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void Entity::removeAllVisualizationShapes()
-{
-  std::vector<ShapePtr>::iterator it = mEntityP.mVizShapes.begin();
-  while (it != mEntityP.mVizShapes.end())
-  {
-    removeVisualizationShape(*it);
-    it = mEntityP.mVizShapes.begin();
-  }
-}
-
-//==============================================================================
-size_t Entity::getNumVisualizationShapes() const
-{
-  return mEntityP.mVizShapes.size();
-}
-
-//==============================================================================
-ShapePtr Entity::getVisualizationShape(size_t _index)
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
-}
-
-//==============================================================================
-ConstShapePtr Entity::getVisualizationShape(size_t _index) const
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mEntityP.mVizShapes);
-}
-
-//==============================================================================
-template <class T>
-static std::vector<std::shared_ptr<const T>>& convertToConstSharedPtrVector(
-    const std::vector<std::shared_ptr<T>>& vec,
-          std::vector<std::shared_ptr<const T>>& const_vec)
-{
-  const_vec.resize(vec.size());
-  for(size_t i=0; i<vec.size(); ++i)
-    const_vec[i] = vec[i];
-  return const_vec;
-}
-
-//==============================================================================
-const std::vector<ShapePtr>& Entity::getVisualizationShapes()
-{
-  return mEntityP.mVizShapes;
-}
-
-//==============================================================================
-const std::vector<ConstShapePtr>& Entity::getVisualizationShapes() const
-{
-  static std::vector<ConstShapePtr> constVizShapes;
-
-  return convertToConstSharedPtrVector<Shape>(
-        mEntityP.mVizShapes, constVizShapes);
-}
-
-//==============================================================================
-void Entity::draw(renderer::RenderInterface *_ri, const Eigen::Vector4d &_color,
-                  bool _useDefaultColor, int) const
-{
-  if(nullptr == _ri)
-    return;
-
-//  _ri->pushMatrix();
-//  _ri->transform(mParentFrame->getTransform());
-  // ^ I am skeptical about this. Shouldn't the matrix be pushed by its parent
-  // frame? And then we're not popping this matrix at the end of this function.
-  // This all seems questionable to me.
-
-  // _ri->pushName(???); TODO(MXG): How should this pushName be handled for entities?
-  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
-  {
-    _ri->pushMatrix();
-    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
-    _ri->popMatrix();
-  }
-  // _ri->popName();
+  // Do nothing
 }
 
 //==============================================================================
@@ -377,13 +257,11 @@ Entity::Entity(ConstructFrame_t)
     mNeedAccelerationUpdate(true),
     mFrameChangedSignal(),
     mNameChangedSignal(),
-    mVizShapeAddedSignal(),
     mTransformUpdatedSignal(),
     mVelocityChangedSignal(),
     mAccelerationChangedSignal(),
     onFrameChanged(mFrameChangedSignal),
     onNameChanged(mNameChangedSignal),
-    onVizShapeAdded(mVizShapeAddedSignal),
     onTransformUpdated(mTransformUpdatedSignal),
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
@@ -397,7 +275,6 @@ Entity::Entity(ConstructFrame_t)
 Entity::Entity(ConstructAbstract_t)
   : onFrameChanged(mFrameChangedSignal),
     onNameChanged(mNameChangedSignal),
-    onVizShapeAdded(mVizShapeAddedSignal),
     onTransformUpdated(mTransformUpdatedSignal),
     onVelocityChanged(mVelocityChangedSignal),
     onAccelerationChanged(mAccelerationChangedSignal),
@@ -449,7 +326,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 Detachable::Detachable(Frame* _refFrame, const std::string& _name, bool _quiet)
   : Entity(_refFrame, _name, _quiet)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -462,7 +339,7 @@ void Detachable::setParentFrame(Frame* _newParentFrame)
 Detachable::Detachable()
   : Entity(ConstructAbstract)
 {
-
+  // Do nothing
 }
 
 } // namespace dynamics

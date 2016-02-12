@@ -133,36 +133,6 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
         this, _jointProperties, _bodyProperties);
 }
 
-////==============================================================================
-//template <class NodeType>
-//size_t BodyNode::getNumNodes() const
-//{
-//  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-//  if(mNodeMap.end() == it)
-//    return 0;
-
-//  return it->second.size();
-//}
-
-////==============================================================================
-//template <class NodeType>
-//NodeType* BodyNode::getNode(size_t index)
-//{
-//  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-//  if(mNodeMap.end() == it)
-//    return nullptr;
-
-//  return static_cast<NodeType*>(
-//        getVectorObjectIfAvailable(index, it->second));
-//}
-
-////==============================================================================
-//template <class NodeType>
-//const NodeType* BodyNode::getNode(size_t index) const
-//{
-//  return const_cast<BodyNode*>(this)->getNode<NodeType>(index);
-//}
-
 //==============================================================================
 template <class NodeType, typename ...Args>
 NodeType* BodyNode::createNode(Args&&... args)
@@ -178,6 +148,107 @@ template <class ShapeNodeProperties>
 ShapeNode* BodyNode::createShapeNode(const ShapeNodeProperties& properties)
 {
   return createNode<ShapeNode>(properties);
+}
+
+//==============================================================================
+template <class... Addons>
+struct AddonAdder;
+
+//==============================================================================
+template <class Addon>
+struct AddonAdder<Addon>
+{
+  static void add(ShapeNode* shapeNode)
+  {
+    shapeNode->create<Addon>();
+  }
+};
+
+//==============================================================================
+template <class Addon, class... OtherAddons>
+struct AddonAdder<Addon, OtherAddons...>
+{
+  static void add(ShapeNode* shapeNode)
+  {
+    shapeNode->create<Addon>();
+
+    AddonAdder<OtherAddons...>::add(shapeNode);
+  }
+};
+
+//==============================================================================
+template <class... Addons>
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
+                                     const std::string& name)
+{
+  auto shapeNode = createShapeNode(shape, name);
+
+  AddonAdder<Addons...>::add(shapeNode);
+
+  return shapeNode;
+}
+
+//==============================================================================
+template <class Addon>
+size_t BodyNode::getNumShapeNodes() const
+{
+  auto count = 0u;
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    if (getShapeNode(i)->has<Addon>())
+      ++count;
+  }
+
+  return count;
+}
+
+//==============================================================================
+template <class Addon>
+std::vector<ShapeNode*> BodyNode::getShapeNodes()
+{
+  std::vector<ShapeNode*> shapeNodes;
+
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    auto shapeNode = getShapeNode(i);
+
+    if (shapeNode->has<Addon>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class Addon>
+std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
+{
+  std::vector<const ShapeNode*> shapeNodes;
+
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    const auto shapeNode = getShapeNode(i);
+
+    if (shapeNode->has<Addon>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class Addon>
+void BodyNode::removeAllShapeNodes()
+{
+  auto shapeNodes = getShapeNodes<Addon>();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->remove();
 }
 
 //==============================================================================
