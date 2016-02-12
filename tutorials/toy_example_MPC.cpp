@@ -6,6 +6,7 @@
  ************************************************************************/
 #include "dart/dart.h"
 #include <iostream>
+#include <time.h>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -42,6 +43,8 @@ public:
 		//mTime_old = 0;
 		//mTime_new = 0;
 		//mTimer->start();
+
+		std::srand((unsigned int)time(NULL));
 	}
 	void setCubeVelocity()
 	{
@@ -79,6 +82,7 @@ public:
 		//std::cout<<mDetector->getNumContacts()<<std::endl;	
 		if (mDetector->getNumContacts() == 15)
 		{
+			randomizeAcceleration();
 			mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
 			mCube->getDof(1)->setAcceleration(mAcceleration);
 		}
