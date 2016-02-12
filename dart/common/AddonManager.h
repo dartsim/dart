@@ -90,6 +90,16 @@ public:
   /// Virtual destructor
   virtual ~AddonManager() = default;
 
+  /// Default constructor
+  AddonManager() = default;
+
+  /// It is currently unsafe to copy an AddonManager
+  // TODO(MXG): Consider making this safe by cloning Addons into the new copy
+  AddonManager(const AddonManager&) = delete;
+
+  /// It is currently unsafe to move an AddonManager
+  AddonManager(AddonManager&&) = delete;
+
   /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
   bool has() const;

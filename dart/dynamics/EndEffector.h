@@ -233,12 +233,6 @@ public:
   Support* getSupport(bool _createIfNull);
 
   // Documentation inherited
-  std::shared_ptr<Skeleton> getSkeleton() override;
-
-  // Documentation inherited
-  std::shared_ptr<const Skeleton> getSkeleton() const override;
-
-  // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;
 
   // Documentation inherited

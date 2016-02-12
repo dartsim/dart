@@ -127,6 +127,30 @@ bool Node::isRemoved() const
 }
 
 //==============================================================================
+std::shared_ptr<Skeleton> Node::getSkeleton()
+{
+  return mBodyNode->getSkeleton();
+}
+
+//==============================================================================
+std::shared_ptr<const Skeleton> Node::getSkeleton() const
+{
+  return mBodyNode->getSkeleton();
+}
+
+//==============================================================================
+size_t Node::incrementVersion()
+{
+  return getSkeleton()->incrementVersion();
+}
+
+//==============================================================================
+size_t Node::getVersion() const
+{
+  return getSkeleton()->getVersion();
+}
+
+//==============================================================================
 std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
   std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();

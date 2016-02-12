@@ -40,6 +40,7 @@
 
 #include <mutex>
 #include "dart/common/NameManager.h"
+#include "dart/common/VersionCounter.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/HierarchicalIK.h"
@@ -57,6 +58,7 @@ namespace dynamics {
 
 /// class Skeleton
 class Skeleton :
+    public virtual common::VersionCounter,
     public virtual common::AddonManager,
     public MetaSkeleton,
     public virtual SpecializedNodeManagerForSkeleton<ShapeNode, EndEffector>
@@ -316,10 +318,10 @@ public:
 
   /// Increment the version number of this Skeleton and return the resulting
   /// (new) version number.
-  size_t incrementVersion();
+  size_t incrementVersion() override;
 
   /// Get the current version number of this Skeleton
-  size_t getVersion() const;
+  size_t getVersion() const override;
 
   /// \}
 
