@@ -6,7 +6,7 @@ if(${OPENSCENEGRAPH_FOUND})
 
   message(STATUS "Found OpenSceneGraph -- Building osgDart")
 
-  include_directories(${OpenSceneGraph_INCLUDE_DIRS})
+  include_directories(SYSTEM ${OpenSceneGraph_INCLUDE_DIRS})
 
   file(GLOB osgDart_srcs "*.cpp" "render/*.cpp" "render/*.h")
   file(GLOB osgDart_hdrs "*.h")

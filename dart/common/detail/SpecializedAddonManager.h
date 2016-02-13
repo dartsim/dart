@@ -280,7 +280,7 @@ void SpecializedAddonManager<SpecAddon>::_erase(type<SpecAddon>)
   usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, mSpecAddonIterator, DART_BLANK);
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, SpecAddon, DART_BLANK);
   mSpecAddonIterator->second = nullptr;
 }
 
@@ -301,7 +301,7 @@ std::unique_ptr<SpecAddon> SpecializedAddonManager<SpecAddon>::_release(
   usedSpecializedAddonAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
 
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, mSpecAddonIterator, nullptr);
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, SpecAddon, nullptr);
   std::unique_ptr<SpecAddon> extraction(
         static_cast<SpecAddon*>(mSpecAddonIterator->second.release()));
 

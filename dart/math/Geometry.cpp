@@ -316,7 +316,7 @@ Eigen::Matrix3d quatDeriv(const Eigen::Quaterniond& _q, int _el) {
   return 2*mat;
 }
 
-Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& _q,
+Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& /*_q*/,
                                 int _el1, int _el2) {
   Eigen::Matrix3d mat = Eigen::Matrix3d::Zero();
 

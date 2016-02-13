@@ -98,16 +98,9 @@ public:
   /// \brief
   virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
 
-  Eigen::Matrix3d computeInertiaFromDensity(double density) const
-  {
-//    return computeInertiaFromMass(density * computeVolume());
-    return Eigen::Matrix3d();
-  }
+  Eigen::Matrix3d computeInertiaFromDensity(double density) const;
 
-  virtual Eigen::Matrix3d computeInertiaFromMass(double density) const
-  {
-    return Eigen::Matrix3d();
-  }
+  Eigen::Matrix3d computeInertiaFromMass(double mass) const;
 
   /// \brief Get volume of this shape.
   ///        The volume will be automatically calculated by the sub-classes

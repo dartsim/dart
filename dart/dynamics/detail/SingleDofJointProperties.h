@@ -37,6 +37,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 #define DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 
+#include "dart/common/RequiresAddon.h"
+
 #include "dart/common/AddonWithVersion.h"
 #include "dart/dynamics/Joint.h"
 
@@ -164,6 +166,10 @@ public:
 
   friend class dart::dynamics::SingleDofJoint;
 };
+
+//==============================================================================
+using SingleDofJointBase = common::AddonManagerJoiner<
+    Joint, common::RequiresAddon<SingleDofJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

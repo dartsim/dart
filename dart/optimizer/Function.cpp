@@ -68,7 +68,7 @@ const std::string& Function::getName() const
 }
 
 //==============================================================================
-double Function::eval(Eigen::Map<const Eigen::VectorXd>& _x)
+double Function::eval(Eigen::Map<const Eigen::VectorXd>& /*_x*/)
 {
   dterr << "[Function::eval(Eigen::Map<const Eigen::VectorXd>&)] Using a "
         << "deprecated member function! Please override "
@@ -91,8 +91,8 @@ double Function::eval(const Eigen::VectorXd& _x)
 }
 
 //==============================================================================
-void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad)
+void Function::evalGradient(Eigen::Map<const Eigen::VectorXd>& /*_x*/,
+                            Eigen::Map<Eigen::VectorXd> /*_grad*/)
 {
   // TODO(MXG): This content should be moved into the other evalGradient
   // function and this version of the function should be removed during the next
@@ -122,8 +122,9 @@ void Function::evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad)
 }
 
 //==============================================================================
-void Function::evalHessian(const Eigen::VectorXd& _x,
-                           Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+void Function::evalHessian(
+    const Eigen::VectorXd& /*_x*/,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
 {
   dterr << "Hessian is not provided by funciton named [" << mName
         << "]. Use Hessian-free algorithm.\n";

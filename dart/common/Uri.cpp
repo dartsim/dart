@@ -359,7 +359,8 @@ bool Uri::fromRelativeUri(const Uri& _base, const char* _relative, bool _strict)
 }
 
 //==============================================================================
-bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative, bool _strict)
+bool Uri::fromRelativeUri(const Uri& _base, const Uri& _relative,
+                          bool /*_strict*/)
 {
   assert(_base.mPath && "The path component is always defined.");
   assert(_relative.mPath && "The path component is always defined.");

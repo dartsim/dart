@@ -352,9 +352,9 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
 //==============================================================================
 bool DartTNLP::eval_jac_g(Ipopt::Index _n,
                           const Ipopt::Number* _x,
-                          bool _new_x,
+                          bool /*_new_x*/,
                           Ipopt::Index _m,
-                          Ipopt::Index _nele_jac,
+                          Ipopt::Index /*_nele_jac*/,
                           Ipopt::Index* _iRow,
                           Ipopt::Index* _jCol,
                           Ipopt::Number* _values)
@@ -431,17 +431,17 @@ bool DartTNLP::eval_h(Ipopt::Index _n,
 }
 
 //==============================================================================
-void DartTNLP::finalize_solution(Ipopt::SolverReturn _status,
+void DartTNLP::finalize_solution(Ipopt::SolverReturn /*_status*/,
                                  Ipopt::Index _n,
                                  const Ipopt::Number* _x,
-                                 const Ipopt::Number* _z_L,
-                                 const Ipopt::Number* _z_U,
-                                 Ipopt::Index _m,
-                                 const Ipopt::Number* _g,
-                                 const Ipopt::Number* _lambda,
+                                 const Ipopt::Number* /*_z_L*/,
+                                 const Ipopt::Number* /*_z_U*/,
+                                 Ipopt::Index /*_m*/,
+                                 const Ipopt::Number* /*_g*/,
+                                 const Ipopt::Number* /*_lambda*/,
                                  Ipopt::Number _obj_value,
-                                 const Ipopt::IpoptData* _ip_data,
-                                 Ipopt::IpoptCalculatedQuantities* _ip_cq)
+                                 const Ipopt::IpoptData* /*_ip_data*/,
+                                 Ipopt::IpoptCalculatedQuantities* /*_ip_cq*/)
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 

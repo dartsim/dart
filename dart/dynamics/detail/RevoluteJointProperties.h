@@ -90,7 +90,7 @@ public:
 
 //==============================================================================
 using RevoluteJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<RevoluteJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<RevoluteJointAddon> >;
 
 } // namespace detail
 

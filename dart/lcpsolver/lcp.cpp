@@ -373,7 +373,7 @@ struct dLCP {
     bool *_state, int *_findex, int *_p, int *_C, dReal **Arows);
   int getNub() const { return m_nub; }
   void transfer_i_to_C (int i);
-  void transfer_i_to_N (int i) { m_nN++; }			// because we can assume C and N span 1:i-1
+  void transfer_i_to_N (int /*i*/) { m_nN++; }			// because we can assume C and N span 1:i-1
   void transfer_i_from_N_to_C (int i);
   void transfer_i_from_C_to_N (int i, void *tmpbuf);
   static size_t estimate_transfer_i_from_C_to_N_mem_req(int nC, int nskip) { return dEstimateLDLTRemoveTmpbufSize(nC, nskip); }

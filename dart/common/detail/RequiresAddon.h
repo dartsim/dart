@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,66 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_PRISMATICJOINTPROPERTIES_H_
+#ifndef DART_COMMON_DETAIL_REQUIRESADDON_H_
+#define DART_COMMON_DETAIL_REQUIRESADDON_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/common/RequiresAddon.h"
 
 namespace dart {
-namespace dynamics {
-
-class PrismaticJoint;
-
-namespace detail {
+namespace common {
 
 //==============================================================================
-struct PrismaticJointUniqueProperties
+template <class ReqAddon>
+RequiresAddon<ReqAddon>::RequiresAddon()
 {
-  Eigen::Vector3d mAxis;
+  AddonManager::mRequiredAddons.insert(typeid(ReqAddon));
+}
 
-  PrismaticJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-
-  virtual ~PrismaticJointUniqueProperties() = default;
-};
-
-//==============================================================================
-struct PrismaticJointProperties :
-    SingleDofJoint::Properties,
-    PrismaticJointUniqueProperties
-{
-  PrismaticJointProperties(
-      const SingleDofJoint::Properties& _singleDofProperties =
-          SingleDofJoint::Properties(),
-      const PrismaticJointUniqueProperties& _prismaticProperties =
-          PrismaticJointUniqueProperties());
-
-  virtual ~PrismaticJointProperties() = default;
-};
-
-//==============================================================================
-class PrismaticJointAddon final :
-    public common::AddonWithVersionedProperties<
-        PrismaticJointAddon, PrismaticJointUniqueProperties, PrismaticJoint,
-        detail::JointPropertyUpdate<PrismaticJointAddon> >
-{
-public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( PrismaticJointAddon )
-
-  void setAxis(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis() const;
-};
-
-//==============================================================================
-using PrismaticJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::RequiresAddon<PrismaticJointAddon> >;
-
-} // namespace detail
-} // namespace dynamics
+} // namespace common
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTPROPERTIES_H_
+#endif // DART_COMMON_DETAIL_REQUIRESADDON_H_

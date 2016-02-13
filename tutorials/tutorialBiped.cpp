@@ -245,13 +245,13 @@ SkeletonPtr loadBiped()
 }
 
 // Load a skateboard model and connect it to the biped model via an Euler joint
-void modifyBipedWithSkateboard(SkeletonPtr biped)
+void modifyBipedWithSkateboard(SkeletonPtr /*biped*/)
 {
   // Lesson 5
 }
 
 // Set the actuator type for four wheel joints to "VELOCITY"
-void setVelocityAccuators(SkeletonPtr biped)
+void setVelocityAccuators(SkeletonPtr /*biped*/)
 {
   // Lesson 6
 }

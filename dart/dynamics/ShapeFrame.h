@@ -154,7 +154,7 @@ public:
   Eigen::Vector3d getRGB() const;
 
   /// Get the transparency of the Shape
-  const double getAlpha() const;
+  double getAlpha() const;
 
   /// Hide the ShapeNode
   void hide();

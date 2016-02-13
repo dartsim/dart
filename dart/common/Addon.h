@@ -111,19 +111,6 @@ public:
   /// which implies that the Addon has no properties.
   virtual const Properties* getAddonProperties() const;
 
-  /// This function will be called if the user is attempting to delete the Addon
-  /// but not immediately replacing it with another Addon of the same type. The
-  /// incoming argument will point to the AddonManager that had been holding
-  /// this Addon.
-  ///
-  /// If your Addon is mandatory for the AddonManager type that is passed in
-  /// here, then you should perform error handling in this function, and you
-  /// should return false to indicate that the operation is not permitted. If
-  /// you return false, then the Addon will NOT be removed from its Manager.
-  ///
-  /// By default, this simply returns true.
-  virtual bool isOptional(AddonManager* oldManager);
-
 protected:
 
   /// Constructor

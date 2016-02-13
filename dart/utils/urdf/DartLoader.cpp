@@ -288,8 +288,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _resourceRetriever)
+    const common::Uri& /*_baseUri*/,
+    const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
 {
   dynamics::Joint::Properties basicProperties;
 
@@ -470,7 +470,7 @@ void setMaterial(dynamics::ShapePtr _shape, const urdf::Visual* _viz)
   }
 }
 
-void setMaterial(dynamics::ShapePtr _shape, const urdf::Collision* _col) {
+void setMaterial(dynamics::ShapePtr /*_shape*/, const urdf::Collision* /*_col*/) {
 }
 
 /**

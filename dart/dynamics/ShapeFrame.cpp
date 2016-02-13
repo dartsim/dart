@@ -157,7 +157,7 @@ Eigen::Vector3d VisualAddon::getRGB() const
 }
 
 //==============================================================================
-const double VisualAddon::getAlpha() const
+double VisualAddon::getAlpha() const
 {
   return getRGBA()[3];
 }

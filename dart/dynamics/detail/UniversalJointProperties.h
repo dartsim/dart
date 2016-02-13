@@ -92,7 +92,7 @@ public:
 
 //==============================================================================
 using UniversalJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<2>, common::SpecializedAddonManager<UniversalJointAddon> >;
+    MultiDofJoint<2>, common::RequiresAddon<UniversalJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

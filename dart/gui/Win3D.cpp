@@ -84,7 +84,7 @@ void Win3D::resize(int _w, int _h) {
   glutPostRedisplay();
 }
 
-void Win3D::keyboard(unsigned char _key, int _x, int _y) {
+void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
   switch (_key) {
     case ',':  // slow down
       mDisplayTimeout +=2;

@@ -60,7 +60,7 @@ bool FileInfoC3D::loadFile(const char* _fName)
     }
 }
 
-bool FileInfoC3D::saveFile(const char* _fName, int _start, int _end, double _sampleRate)
+bool FileInfoC3D::saveFile(const char* _fName, int _start, int _end, double /*_sampleRate*/)
 {
     Eigen::EIGEN_VV_VEC3D tmpData = mData;
 
