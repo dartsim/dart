@@ -87,7 +87,7 @@ Controller::~Controller()
 }
 
 //==============================================================================
-void Controller::update(double _currentTime)
+void Controller::update(double /*_currentTime*/)
 {
   // Compute control force
   mCurrentStateMachine->computeControlForce(mAtlasRobot->getTimeStep());
@@ -150,7 +150,7 @@ void Controller::changeStateMachine(size_t _idx, double _currentTime)
 }
 
 //==============================================================================
-void Controller::keyboard(unsigned char _key, int _x, int _y,
+void Controller::keyboard(unsigned char _key, int /*_x*/, int /*_y*/,
                           double _currentTime)
 {
   switch (_key)

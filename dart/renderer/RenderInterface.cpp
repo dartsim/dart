@@ -47,24 +47,24 @@ void RenderInterface::destroy()
 {
 }
 
-void RenderInterface::setViewport(int _x,int _y,int _width,int _height)
+void RenderInterface::setViewport(int /*_x*/,int /*_y*/,int /*_width*/,int /*_height*/)
 {
 }
 
-void RenderInterface::getViewport(int& _x, int& _y,int& _width,int& _height) const
+void RenderInterface::getViewport(int& /*_x*/, int& /*_y*/,int& /*_width*/,int& /*_height*/) const
 {
 }
 
-void RenderInterface::clear(const Eigen::Vector3d& _color)
+void RenderInterface::clear(const Eigen::Vector3d& /*_color*/)
 {
 }
 
-void RenderInterface::setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow)
+void RenderInterface::setMaterial(const Eigen::Vector3d& /*_diffuse*/, const Eigen::Vector3d& /*_specular*/, double /*_cosinePow*/)
 {
 
 }
 
-void RenderInterface::getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& cosinePow) const
+void RenderInterface::getMaterial(Eigen::Vector3d& /*_diffuse*/, Eigen::Vector3d& /*_specular*/, double& /*cosinePow*/) const
 {
 
 }
@@ -82,7 +82,7 @@ void RenderInterface::popMatrix()
 {
 }
 
-void RenderInterface::pushName(int _id)
+void RenderInterface::pushName(int /*_id*/)
 {
 }
 
@@ -90,31 +90,31 @@ void RenderInterface::popName()
 {
 }
 
-void RenderInterface::translate(const Eigen::Vector3d& _offset)
+void RenderInterface::translate(const Eigen::Vector3d& /*_offset*/)
 {
 }
 
-void RenderInterface::rotate(const Eigen::Vector3d& _axis, double _rad)
+void RenderInterface::rotate(const Eigen::Vector3d& /*_axis*/, double /*_rad*/)
 {
 }
 
-void RenderInterface::transform(const Eigen::Isometry3d& _transform)
+void RenderInterface::transform(const Eigen::Isometry3d& /*_transform*/)
 {
 }
 
-void RenderInterface::scale(const Eigen::Vector3d& _scale)
+void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
-void RenderInterface::drawEllipsoid(const Eigen::Vector3d& _size)
+void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh)
+void RenderInterface::drawMesh(const Eigen::Vector3d& /*_scale*/, const aiScene* /*_mesh*/)
 {
 }
 
-void RenderInterface::drawList(unsigned int indeX)
+void RenderInterface::drawList(unsigned int /*indeX*/)
 {
 }
 
@@ -123,24 +123,24 @@ void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&,
 {
 }
 
-unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh)
+unsigned int RenderInterface::compileDisplayList(const Eigen::Vector3d& /*_size*/, const aiScene* /*_mesh*/)
 {
     return 0;
 }
 
-void RenderInterface::drawCube(const Eigen::Vector3d& _size)
+void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawCylinder(double _radius, double _height)
+void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
 {
 }
 
-void RenderInterface::setPenColor(const Eigen::Vector4d& _col)
+void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/)
 {
 }
 
-void RenderInterface::setPenColor(const Eigen::Vector3d& _col)
+void RenderInterface::setPenColor(const Eigen::Vector3d& /*_col*/)
 {
 }
 
@@ -149,12 +149,12 @@ void RenderInterface::setLineWidth(float)
 }
 
 
-void RenderInterface::saveToImage(const char* _filename, DecoBufferType _buffType)
+void RenderInterface::saveToImage(const char* /*_filename*/, DecoBufferType /*_buffType*/)
 {
 
 }
 
-void RenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels)
+void RenderInterface::readFrameBuffer(DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/)
 {
 
 }

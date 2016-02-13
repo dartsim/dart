@@ -121,7 +121,7 @@ dart::dynamics::BodyNode* Controller::getEndEffector() const
 }
 
 //==============================================================================
-void Controller::keyboard(unsigned char _key, int _x, int _y)
+void Controller::keyboard(unsigned char /*_key*/, int /*_x*/, int /*_y*/)
 {
 }
 

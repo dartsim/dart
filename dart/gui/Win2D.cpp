@@ -64,7 +64,7 @@ void Win2D::resize(int _w, int _h) {
   glutPostRedisplay();
 }
 
-void Win2D::keyboard(unsigned char _key, int _x, int _y) {
+void Win2D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
   switch (_key) {
     case ',':  // slow down
       mDisplayTimeout += 2;
@@ -86,7 +86,7 @@ void Win2D::keyboard(unsigned char _key, int _x, int _y) {
   // printf("ascii key: %lu\n", key);
 }
 
-void Win2D::click(int _button, int _state, int _x, int _y) {
+void Win2D::click(int /*_button*/, int /*_state*/, int _x, int _y) {
   mMouseDown = !mMouseDown;
   if (mMouseDown) {
     mTranslate = true;

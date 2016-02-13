@@ -1478,7 +1478,7 @@ static void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
 //==============================================================================
 SkelParser::JointPropPtr SkelParser::readWeldJoint(
     tinyxml2::XMLElement* _jointElement,
-    SkelJoint& _joint,
+    SkelJoint& /*_joint*/,
     const std::string&)
 {
   assert(_jointElement != nullptr);

@@ -40,6 +40,7 @@
 
 // Standard Library
 #include <map>
+#include <sstream>
 #include <stdexcept>
 
 #include <Eigen/Dense>
@@ -54,8 +55,6 @@
 
 namespace dart {
 namespace utils {
-
-namespace VskParser {
 
 namespace {
 
@@ -89,6 +88,10 @@ bool readSegment(const tinyxml2::XMLElement* segment,
                  dynamics::BodyNode* parent,
                  const dynamics::SkeletonPtr& skel,
                  VskData& vskData);
+
+bool readShape(const tinyxml2::XMLElement* shapeEle,
+               dynamics::BodyNode* bodyNode,
+               VskData& vskData);
 
 bool readJoint(const std::string& jointType,
                const tinyxml2::XMLElement* jointEle,
@@ -148,9 +151,6 @@ bool readStick(const tinyxml2::XMLElement* stickEle,
 void generateShapes(const dynamics::SkeletonPtr& skel,
                     VskData& vskData);
 
-common::ResourceRetrieverPtr getRetriever(
-  const common::ResourceRetrieverPtr& retriever);
-
 void tokenize(const std::string& str,
               std::vector<std::string>& tokens,
               const std::string& delimiters = " ");
@@ -158,38 +158,38 @@ void tokenize(const std::string& str,
 } // anonymous namespace
 
 //==============================================================================
-VskParser::Options::Options(const Eigen::Vector3d& newDefaultEllipsoidSize,
-                            double newThicknessRatio,
-                            double newDensity,
-                            double newJointPositionLowerLimit,
-                            double newJointPositionUpperLimit,
-                            double newJointDampingCoefficient,
-                            double newJointFriction)
-  : defaultEllipsoidSize(newDefaultEllipsoidSize),
+VskParser::Options::Options(
+    const common::ResourceRetrieverPtr& newRetrieverOrNullptr,
+    const Eigen::Vector3d& newDefaultEllipsoidSize,
+    double newThicknessRatio,
+    double newDensity,
+    double newJointPositionLowerLimit,
+    double newJointPositionUpperLimit,
+    double newJointDampingCoefficient,
+    double newJointFriction,
+    bool newRemoveEndBodyNodes)
+  : retrieverOrNullptr(newRetrieverOrNullptr),
+    defaultEllipsoidSize(newDefaultEllipsoidSize),
     thicknessRatio(newThicknessRatio),
     density(newDensity),
     jointPositionLowerLimit(newJointPositionLowerLimit),
     jointPositionUpperLimit(newJointPositionUpperLimit),
     jointDampingCoefficient(newJointDampingCoefficient),
-    jointFriction(newJointFriction)
+    jointFriction(newJointFriction),
+    removeEndBodyNodes(newRemoveEndBodyNodes)
 {
   // Do nothing
 }
 
 //==============================================================================
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri,
-    const common::ResourceRetrieverPtr& retrieverOrNullptr,
-    const Options options)
+dynamics::SkeletonPtr VskParser::readSkeleton(const common::Uri& fileUri,
+                                              const Options options)
 {
-  const common::ResourceRetrieverPtr retriever
-      = getRetriever(retrieverOrNullptr);
-
   // Load VSK file and create document
   tinyxml2::XMLDocument vskDocument;
   try
   {
-    openXMLFile(vskDocument, fileUri, retriever);
+    openXMLFile(vskDocument, fileUri, options.retrieverOrNullptr);
   }
   catch (std::exception const& e)
   {
@@ -293,6 +293,12 @@ bool readSkeletonElement(const tinyxml2::XMLElement* skeletonEle,
                          VskData& vskData)
 {
   skel = dynamics::Skeleton::create();
+
+  if (hasAttribute(skeletonEle, "DENSITY"))
+  {
+    double density = getAttributeDouble(skeletonEle, "DENSITY");
+    vskData.options.density = density;
+  }
 
   // Read all segments
   ConstElementEnumerator segment(skeletonEle, "Segment");
@@ -440,7 +446,27 @@ bool readSegment(const tinyxml2::XMLElement* segment,
   bodyNode = pair.second;
   assert(bodyNode != nullptr);
 
+  if (hasAttribute(segment, "MASS"))
+  {
+    // Assign the given mass
+    double mass = getAttributeDouble(segment, "MASS");
+    bodyNode->setMass(mass);
+  }
+  else
+  {
+    // Assign zero mass. The empty mass will be updated in generateShapes().
+    bodyNode->setMass(0.0);
+  }
+
   vskData.bodyNodeColorMap[bodyNode] = rgb;
+
+  // Read the shape, if there's any
+  ConstElementEnumerator childShape(segment, "Shape");
+  while (childShape.next())
+  {
+    if (!readShape(childShape->ToElement(), bodyNode, vskData))
+      return false;
+  }
 
   // Read the subtree segments
   ConstElementEnumerator childSegment(segment, "Segment");
@@ -449,6 +475,63 @@ bool readSegment(const tinyxml2::XMLElement* segment,
     if (!readSegment(childSegment->ToElement(), bodyNode, skel, vskData))
       return false;
   }
+  return true;
+}
+
+//==============================================================================
+bool readShape(const tinyxml2::XMLElement* shapeEle,
+               dynamics::BodyNode* bodyNode,
+               VskData& vskData)
+{
+  std::string type;
+  if (hasAttribute(shapeEle, "TYPE"))
+    type = getAttributeString(shapeEle, "TYPE");
+
+  Eigen::Vector3d size;
+  if (hasAttribute(shapeEle, "SIZE"))
+  {
+    size = readAttributeVector<3>(shapeEle, "SIZE", vskData.parameterMap);
+  }
+  else
+  {
+    dynamics::Joint*    joint    = bodyNode->getParentJoint();
+    Eigen::Isometry3d   tf       = joint->getTransformFromParentBodyNode();
+    size[0] = tf.translation().norm();
+    size[1] = size[2] = vskData.options.thicknessRatio * size[0];
+  }
+
+  dynamics::Joint*    joint  = bodyNode->getParentJoint();
+  dynamics::BodyNode* parent = bodyNode->getParentBodyNode();
+  Eigen::Isometry3d   tf     = joint->getTransformFromParentBodyNode();
+
+  // Determine the local transform of the shape
+  Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
+  localTransform.linear() = math::computeRotation(tf.translation(),
+                                                  math::AxisType::AXIS_X);
+  localTransform.translation() = 0.5 * tf.translation();
+
+  dynamics::ShapePtr shape;
+  if (type == "Box")
+  {
+    shape.reset(new dynamics::BoxShape(size));
+  }
+  else if (type == "Ellipsoid")
+  {
+    shape.reset(new dynamics::EllipsoidShape(size));
+  }
+  else
+  {
+    dtwarn << "[VskParser::readShape] Attempting to add a shape with type '"
+           << type << "', which is unsupported type.\n";
+    return false;
+  }
+
+  shape->setLocalTransform(localTransform);
+  shape->setColor(vskData.bodyNodeColorMap[parent]);
+
+  parent->addVisualizationShape(shape);
+  parent->addCollisionShape(shape);
+
   return true;
 }
 
@@ -510,7 +593,7 @@ bool readJointFree(const tinyxml2::XMLElement* /*jointEle*/,
 }
 
 //==============================================================================
-bool readJointBall(const tinyxml2::XMLElement* jointEle,
+bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
                    JointPropPtr& jointProperties,
                    const Eigen::Isometry3d& tfFromParent,
                    const VskData& vskData)
@@ -804,9 +887,14 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     Eigen::Isometry3d   tf       = joint->getTransformFromParentBodyNode();
     dynamics::BodyNode* parent   = bodyNode->getParentBodyNode();
 
-    // Don't add shape for a body doesn't have parent or a body is too close to
-    // the parent.
+    // Don't add a shape for a body doesn't have parent or a body is too close
+    // to the parent.
     if (!parent || tf.translation().norm() < DART_EPSILON)
+      continue;
+
+    // If a body already has enough shapes, do NOT automatically generate a new
+    // shape.
+    if (parent->getNumCollisionShapes() >= parent->getNumChildBodyNodes())
       continue;
 
     // Determine the diameters of the ellipsoid shape. The diameter along X-axis
@@ -830,22 +918,23 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     parent->addCollisionShape(shape);
   }
 
-  // Generate shpae for bodies with no shape
-  for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+  // Remove redundant leaf body nodes with no shape
+  if (vskData.options.removeEndBodyNodes)
   {
-    dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
+    std::vector<dynamics::BodyNode*> emptynodes;
+    for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+    {
+      dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
-    if (bodyNode->getNumVisualizationShapes() > 0)
-      continue;
+      if (bodyNode->getVisualizationShapes().empty()
+          && bodyNode->getNumChildBodyNodes() == 0)
+      {
+        emptynodes.push_back(bodyNode);
+      }
+    }
 
-    // Use hard-coded size ellipsoid
-    const Eigen::Vector3d& size = vskData.options.defaultEllipsoidSize;
-
-    dynamics::ShapePtr shape(new dynamics::EllipsoidShape(size));
-    shape->setColor(vskData.bodyNodeColorMap[bodyNode]);
-
-    bodyNode->addVisualizationShape(shape);
-    bodyNode->addCollisionShape(shape);
+    for (auto& bodyNode : emptynodes)
+      bodyNode->remove();
   }
 
   // Update mass and moments of inertia of the bodies based on the their shapes
@@ -853,9 +942,6 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
-
-    // Now all the bodies should have at least one shape
-    assert(bodyNode->getNumVisualizationShapes() > 0);
 
     double totalMass = 0.0;
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
@@ -873,20 +959,27 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
       // but Inertia class doens't support it for now. See #234.
     }
 
+    if (bodyNode->getMass() > 1e-5)
+    {
+      const double givenMass = bodyNode->getMass();
+      const double ratio = givenMass / totalMass;
+      totalMass = givenMass;
+      totalMoi *= ratio;
+    }
+
+    if (totalMass <= 0.0 || totalMoi.diagonal().norm() <= 0.0)
+    {
+      dtwarn << "[VskParser::generateShapes] A BodyNode '"
+             << bodyNode->getName() << "' of Skelelton '"
+             << bodyNode->getSkeleton()->getName()
+             << "' has zero mass or zero inertia. Set sufficient mass and "
+             << "inertia properties for meaningful dynamic simulation.\n";
+    }
+
     const dynamics::Inertia inertia(totalMass, Eigen::Vector3d::Zero(),
                                     totalMoi);
     bodyNode->setInertia(inertia);
   }
-}
-
-//==============================================================================
-common::ResourceRetrieverPtr getRetriever(
-  const common::ResourceRetrieverPtr& retriever)
-{
-  if (retriever)
-    return retriever;
-  else
-    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 //==============================================================================
@@ -914,8 +1007,6 @@ void tokenize(const std::string& str,
 }
 
 } // anonymous namespace
-
-} // namespace VskParser
 
 } // namespace utils
 } // namespace dart

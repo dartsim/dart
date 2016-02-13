@@ -100,7 +100,7 @@ const std::vector<std::string>& ConstraintTest::getList()
 }
 
 //==============================================================================
-void ConstraintTest::SingleContactTest(const std::string& _fileName)
+void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 {
   using namespace std;
   using namespace Eigen;

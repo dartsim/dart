@@ -51,7 +51,7 @@ using namespace dart::dynamics;
 using namespace dart::constraint;
 
 //==============================================================================
-Humanoid::Humanoid(Skeleton* _skeleton)
+Humanoid::Humanoid(Skeleton* /*_skeleton*/)
   : mSkeleton(nullptr),
     mPelvis(nullptr),
     mLeftThigh(nullptr),

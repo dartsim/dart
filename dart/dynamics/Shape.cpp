@@ -138,6 +138,18 @@ Eigen::Vector3d Shape::getOffset() const
 }
 
 //==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromDensity(double density) const
+{
+  return computeInertiaFromMass(density * getVolume());
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
+{
+  return computeInertia(mass);
+}
+
+//==============================================================================
 double Shape::getVolume() const
 {
   return mVolume;
