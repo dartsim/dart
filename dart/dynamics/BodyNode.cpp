@@ -114,8 +114,10 @@ typedef std::set<Entity*> EntityPtrSet;
 //==============================================================================
 size_t BodyNode::msBodyNodeCount = 0;
 
+namespace detail {
+
 //==============================================================================
-BodyNode::UniqueProperties::UniqueProperties(
+BodyNodeUniqueProperties::BodyNodeUniqueProperties(
     const Inertia& _inertia,
     bool _isCollidable, double _frictionCoeff,
     double _restitutionCoeff, bool _gravityMode)
@@ -129,20 +131,21 @@ BodyNode::UniqueProperties::UniqueProperties(
 }
 
 //==============================================================================
-BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
-                                 const UniqueProperties& _bodyNodeProperties)
+BodyNodeProperties::BodyNodeProperties(
+    const Entity::Properties& _entityProperties,
+    const BodyNodeUniqueProperties& _bodyNodeProperties)
   : Entity::Properties(_entityProperties),
-    UniqueProperties(_bodyNodeProperties)
+    BodyNodeUniqueProperties(_bodyNodeProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-BodyNode::ExtendedProperties::ExtendedProperties(
-    const Properties& standardProperties,
+BodyNodeExtendedProperties::BodyNodeExtendedProperties(
+    const BodyNodeProperties& standardProperties,
     const NodeProperties& nodeProperties,
     const AddonProperties& addonProperties)
-  : Properties(standardProperties),
+  : BodyNodeProperties(standardProperties),
     mNodeProperties(nodeProperties),
     mAddonProperties(addonProperties)
 {
@@ -150,15 +153,17 @@ BodyNode::ExtendedProperties::ExtendedProperties(
 }
 
 //==============================================================================
-BodyNode::ExtendedProperties::ExtendedProperties(
-    Properties&& standardProperties,
+BodyNodeExtendedProperties::BodyNodeExtendedProperties(
+    BodyNodeProperties&& standardProperties,
     NodeProperties&& nodeProperties,
     AddonProperties&& addonProperties)
-  : Properties(std::move(standardProperties))
+  : BodyNodeProperties(std::move(standardProperties))
 {
   mNodeProperties = std::move(nodeProperties);
   mAddonProperties = std::move(addonProperties);
 }
+
+} // namespace detail
 
 //==============================================================================
 BodyNode::~BodyNode()

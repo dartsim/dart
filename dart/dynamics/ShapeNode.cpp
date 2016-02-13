@@ -113,6 +113,20 @@ const std::string& ShapeNode::setName(const std::string& name)
 }
 
 //==============================================================================
+size_t ShapeNode::incrementVersion()
+{
+  ++mShapeFrameP.mVersion;
+  getSkeleton()->incrementVersion();
+  return mShapeFrameP.mVersion;
+}
+
+//==============================================================================
+size_t ShapeNode::getVersion() const
+{
+  return mShapeFrameP.mVersion;
+}
+
+//==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
   const Eigen::Isometry3d oldTransform = mRelativeTf;

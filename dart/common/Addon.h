@@ -142,173 +142,29 @@ protected:
 
 };
 
-namespace detail {
 //==============================================================================
-/// AddonWithProtectedState generates implementations of the State managing
-/// functions for an Addon class.
-template <class BaseT, class DerivedT, typename StateDataT,
-          class ManagerT = AddonManager,
-          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
-class AddonWithState : public BaseT
+template <class ManagerType>
+class ManagerTrackingAddon : public Addon
 {
 public:
 
-  using Base = BaseT;
-  using Derived = DerivedT;
-  using StateData = StateDataT;
-  using ManagerType = ManagerT;
-  using State = Addon::StateMixer<StateData>;
-  constexpr static void (*UpdateState)(Derived*) = updateState;
+  /// Default constructor
+  ManagerTrackingAddon(AddonManager* mgr);
 
-  AddonWithState() = delete;
-  AddonWithState(const AddonWithState&) = delete;
+  /// Get the Manager of this Addon
+  ManagerType* getManager();
 
-  /// Construct using a StateData instance
-  AddonWithState(AddonManager* mgr, const StateData& state = StateData());
-
-  // Documentation inherited
-  void setAddonState(const Addon::State& otherState) override final;
-
-  // Documentation inherited
-  const Addon::State* getAddonState() const override final;
-
-  /// Set the State of this Addon
-  void setState(const StateData& state);
-
-  /// Get the State of this Addon
-  const State& getState() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
+  /// Get the Manager of this Addon
+  const ManagerType* getManager() const;
 
 protected:
 
-  /// State of this Addon
-  State mState;
-};
+  /// Grab the new manager
+  void setManager(AddonManager* newManager, bool transfer);
 
-//==============================================================================
-/// AddonWithProtectedProperties generates implementations of the Property
-/// managing functions for an Addon class.
-template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class ManagerT = AddonManager,
-          void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
-class AddonWithVersionedProperties : public BaseT
-{
-public:
+  /// Pointer to the current Manager of this Addon
+  ManagerType* mManager;
 
-  using Base = BaseT;
-  using Derived = DerivedT;
-  using PropertiesData = PropertiesDataT;
-  using ManagerType = ManagerT;
-  using Properties = Addon::PropertiesMixer<PropertiesData>;
-  constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
-
-  AddonWithVersionedProperties() = delete;
-  AddonWithVersionedProperties(const AddonWithVersionedProperties&) = delete;
-
-  /// Construct using a PropertiesData instance
-  AddonWithVersionedProperties(
-      AddonManager* mgr, const PropertiesData& properties = PropertiesData());
-
-  // Documentation inherited
-  void setAddonProperties(const Addon::Properties& someProperties) override final;
-
-  // Documentation inherited
-  const Addon::Properties* getAddonProperties() const override final;
-
-  /// Set the Properties of this Addon
-  void setProperties(const PropertiesData& properties);
-
-  /// Get the Properties of this Addon
-  const Properties& getProperties() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
-
-protected:
-
-  /// Properties of this Addon
-  Properties mProperties;
-};
-
-} // namespace detail
-
-//template <class Derived, typename StateData, class ManagerType = AddonManager,
-//          void (*updateState)(Derived*) = &detail::NoOp<Derived*> >
-//using AddonWithState =
-//  detail::AddonWithState<Addon, Derived, StateData, ManagerType, updateState>;
-
-//==============================================================================
-/// AddonWithProtectedStateAndProperties combines the
-/// AddonWithProtectedState and AddonWithProtectedProperties classes into a
-/// single templated class
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType = AddonManager,
-          void (*updateState)(Base*) = &detail::NoOp<Base*>,
-          void (*updateProperties)(Base*) = updateState>
-class AddonWithProtectedStateAndProperties : public Addon
-{
-public:
-
-  using State = Addon::StateMixer<StateData>;
-  using Properties = Addon::PropertiesMixer<PropertiesData>;
-  constexpr static void (*UpdateState)(Base*) = updateState;
-  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
-
-  AddonWithProtectedStateAndProperties() = delete;
-  AddonWithProtectedStateAndProperties(
-      const AddonWithProtectedStateAndProperties&) = delete;
-
-  /// Construct using a StateData and a PropertiesData instance
-  AddonWithProtectedStateAndProperties(
-      AddonManager* mgr,
-      const StateData& state = StateData(),
-      const PropertiesData& properties = PropertiesData());
-
-  /// Construct using a StateData and a PropertiesData instance, flipped
-  AddonWithProtectedStateAndProperties(
-      AddonManager* mgr,
-      const PropertiesData& properties,
-      const StateData& state = StateData());
-
-  // Documentation inherited
-  void setAddonState(const Addon::State& otherState) override final;
-
-  // Documentation inherited
-  const Addon::State* getAddonState() const override final;
-
-  /// Set the State of this Addon
-  void setState(const StateData& state);
-
-  /// Get the State of this Addon
-  const State& getState() const;
-
-  // Documentation inherited
-  void setAddonProperties(const Addon::Properties& otherProperties) override final;
-
-  // Documentation inherited
-  const Addon::Properties* getAddonProperties() const override final;
-
-  /// Set the Properties of this Addon
-  void setProperties(const PropertiesData& properties);
-
-  /// Get the Properties of this Addon
-  const Properties& getProperties() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
-
-protected:
-
-  /// State of this Addon
-  State mState;
-
-  /// Properties of this Addon
-  Properties mProperties;
 };
 
 } // namespace common
@@ -325,12 +181,12 @@ protected:
   DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
 
 //==============================================================================
-#define DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\
+#define DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AddonWithProtectedProperties< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, state, properties) { }\
+    : AddonImplementation(mgr, state, properties) { }\
   inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AddonWithProtectedProperties< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, properties, state) { }
+    : AddonImplementation(mgr, properties, state) { }
 
 //==============================================================================
 #define DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
@@ -363,13 +219,13 @@ protected:
     }\
     this->mProperties.m ## PluralName [index] = value;\
     UpdatePrefix :: UpdateProperties(this);\
-    this->incrementSkeletonVersion();\
+    this->incrementVersion();\
   }\
   void set ## PluralName (const VectorType & vec)\
   {\
     this->mProperties.m ## PluralName = vec;\
     UpdatePrefix :: UpdateProperties(this);\
-    this->incrementSkeletonVersion();\
+    this->incrementVersion();\
   }
 
 //==============================================================================
@@ -409,7 +265,7 @@ protected:
 //==============================================================================
 #define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
   AddonName :: UpdateProperties( GetAddon () );\
-  GetAddon ()->incrementSkeletonVersion();
+  GetAddon ()->incrementVersion();
 
 //==============================================================================
 #define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\

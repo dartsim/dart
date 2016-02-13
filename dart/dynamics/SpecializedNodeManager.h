@@ -219,4 +219,6 @@ class SpecializedNodeManagerForSkeleton<SpecNode1, OtherSpecNodes...> :
 } // namespace dynamics
 } // namespace dart
 
+#include "dart/dynamics/detail/SpecializedNodeManager.h"
+
 #endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_

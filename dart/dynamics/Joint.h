@@ -44,6 +44,7 @@
 
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
+#include "dart/common/VersionCounter.h"
 #include "dart/common/AddonManager.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
@@ -63,6 +64,7 @@ class DegreeOfFreedom;
 
 /// class Joint
 class Joint : public virtual common::Subject,
+              public virtual common::VersionCounter,
               public virtual common::AddonManager
 {
 public:
@@ -210,6 +212,12 @@ public:
 
   /// Get joint name
   const std::string& getName() const;
+
+  /// Increments Skeleton version number
+  size_t incrementVersion() override;
+
+  /// Gets the Skeleton version number
+  size_t getVersion() const override;
 
   /// Gets a string representing the joint type
   virtual const std::string& getType() const = 0;

@@ -185,8 +185,8 @@ Skeleton::Properties::Properties(
 
 //==============================================================================
 Skeleton::ExtendedProperties::ExtendedProperties(
-    const BodyNodeProperties& bodyNodeProperties,
-    const JointProperties& jointProperties,
+    const BodyNodeExtendedProperties& bodyNodeProperties,
+    const JointExtendedProperties& jointProperties,
     const std::vector<std::string>& parentNames,
     const AddonProperties& addonProperties)
   : mBodyNodeProperties(bodyNodeProperties),

@@ -39,8 +39,8 @@
 
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/Addon.h"
 #include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/AddonWithVersion.h"
 
 namespace dart {
 namespace dynamics {
@@ -70,7 +70,7 @@ void SupportUpdate(Support* support);
 } // namespace detail
 
 class Support final :
-    public AddonWithProtectedStateAndPropertiesInSkeleton<
+    public common::AddonWithStateAndVersionedProperties<
         Support,
         detail::SupportStateData,
         detail::SupportPropertiesData,
@@ -79,12 +79,13 @@ class Support final :
 {
 public:
 
-  DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
+//  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
+  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(Support)
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
   /// when solving balancing or manipulation constraints.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
   // void setGeometry(const math::SupportGeometry&);
   // const math::SupportGeometry& getGeometry() const;
 

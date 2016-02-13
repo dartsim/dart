@@ -45,294 +45,45 @@
 namespace dart {
 namespace common {
 
-#define DART_COMMON_CAST_NEW_MANAGER_TYPE(Base, ManagerType, newManager,\
-                                          castedManager, func)\
-  ManagerType* castedManager = dynamic_cast<ManagerType*>(newManager);\
-  if(nullptr == castedManager)\
-  {\
-    dterr << "[" << typeid(Base).name() << "::" << #func << "] Attempting to "\
-          << "use a [" << typeid(newManager).name() << "] type manager, but "\
-          << "this Addon is only designed to be attached to a ["\
-          << typeid(ManagerType).name() << "] type manager. This may cause "\
-          << "undefined behavior!\n";\
-    assert(false);\
+//==============================================================================
+template <class ManagerType>
+ManagerTrackingAddon<ManagerType>::ManagerTrackingAddon(
+    AddonManager* mgr)
+  : Addon(mgr),
+    mManager(nullptr) // This will be set later when the Manager calls setManager
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class ManagerType>
+ManagerType* ManagerTrackingAddon<ManagerType>::getManager()
+{
+  return mManager;
+}
+
+//==============================================================================
+template <class ManagerType>
+const ManagerType* ManagerTrackingAddon<ManagerType>::getManager() const
+{
+  return mManager;
+}
+
+//==============================================================================
+template <class ManagerType>
+void ManagerTrackingAddon<ManagerType>::setManager(
+    AddonManager* newManager, bool)
+{
+  mManager = dynamic_cast<ManagerType*>(newManager);
+  if(nullptr == mManager)
+  {
+    dterr << "[" << typeid(*this).name() << "::setManager] Attempting to use a "
+          << "[" << typeid(newManager).name() << "] type manager, but this "
+          << "Addon is only designed to be attached to a ["
+          << typeid(ManagerType).name() << "] type manager. This may cause "
+          << "undefined behavior!\n";
+    assert(false);
   }
-
-#define DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(\
-  Base, ManagerType, newManager, castedManager, func)\
-  DART_COMMON_CAST_NEW_MANAGER_TYPE(Base, ManagerType, newManager, castedManager, func)\
-  if(nullptr == castedManager) return nullptr;
-
-namespace detail {
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateDataT,
-          class ManagerT, void (*updateState)(DerivedT*)>
-AddonWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
-AddonWithState(AddonManager* mgr, const StateDataT& state)
-  : BaseT(mgr),
-    mState(state)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class ManagerType, void (*updateState)(DerivedT*)>
-void AddonWithState<BaseT, DerivedT, StateData, ManagerType, updateState>::
-setAddonState(const Addon::State& otherState)
-{
-  setState(static_cast<const State&>(otherState));
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class ManagerType, void (*updateState)(DerivedT*)>
-const Addon::State*
-AddonWithState<BaseT, DerivedT, StateData, ManagerType, updateState>::
-getAddonState() const
-{
-  return &mState;
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class ManagerType, void (*updateState)(DerivedT*)>
-void AddonWithState<BaseT, DerivedT, StateData, ManagerType, updateState>::
-setState(const StateData& state)
-{
-  static_cast<StateData&>(mState) = state;
-  UpdateState(static_cast<Derived*>(this));
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateDataT,
-          class ManagerT, void (*updateState)(DerivedT*)>
-auto AddonWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
-getState() const -> const State&
-{
-  return mState;
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename StateData,
-          class ManagerType, void (*updateState)(DerivedT*)>
-std::unique_ptr<Addon>
-AddonWithState<BaseT, DerivedT, StateData, ManagerType, updateState>::
-    cloneAddon(AddonManager* newManager) const
-{
-  DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
-        Base, ManagerType, newManager, castedManager, clone);
-  return std::unique_ptr<Derived>(new Derived(newManager, mState));
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class ManagerT, void (*updateProperties)(DerivedT*)>
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
-                             ManagerT, updateProperties>::
-AddonWithVersionedProperties(
-    AddonManager* mgr, const PropertiesData& properties)
-  : BaseT(mgr),
-    mProperties(properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class ManagerType, void (*updateProperties)(DerivedT*)>
-void AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  ManagerType, updateProperties>::
-setAddonProperties(const Addon::Properties& someProperties)
-{
-  setProperties(static_cast<const Properties&>(someProperties));
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class ManagerType, void (*updateProperties)(DerivedT*)>
-const Addon::Properties*
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                             ManagerType, updateProperties>::
-getAddonProperties() const
-{
-  return &mProperties;
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class ManagerType, void (*updateProperties)(DerivedT*)>
-void AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  ManagerType, updateProperties>::
-setProperties(const PropertiesData& properties)
-{
-  static_cast<PropertiesData&>(mProperties) = properties;
-  UpdateProperties(static_cast<Derived*>(this));
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class ManagerType, void (*updateProperties)(DerivedT*)>
-auto AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                                  ManagerType, updateProperties>::
-getProperties() const -> const Properties&
-{
-  return mProperties;
-}
-
-//==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesData,
-          class ManagerType, void (*updateProperties)(DerivedT*)>
-std::unique_ptr<Addon>
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
-                             ManagerType, updateProperties>::
-cloneAddon(AddonManager* newManager) const
-{
-  DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
-        Derived, ManagerType, newManager, castedManager, clone);
-  return std::unique_ptr<Derived>(new Derived(newManager, mProperties));
-}
-
-} // namespace detail
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-                                     ManagerType,
-                                     updateState, updateProperties>::
-AddonWithProtectedStateAndProperties(
-    AddonManager* mgr, const StateData& state, const PropertiesData& properties)
-  : Addon(mgr),
-    mState(state),
-    mProperties(properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-                                     ManagerType,
-                                     updateState, updateProperties>::
-AddonWithProtectedStateAndProperties(
-    AddonManager* mgr, const PropertiesData& properties, const StateData& state)
-  : Addon(mgr),
-    mState(state),
-    mProperties(properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-    ManagerType, updateState, updateProperties>::
-setAddonState(const Addon::State& otherState)
-{
-  setState(static_cast<const State&>(otherState));
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-const Addon::State* AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::getAddonState() const
-{
-  return &mState;
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-void AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::setState(const StateData& state)
-{
-  static_cast<StateData&>(mState) = state;
-  UpdateState(static_cast<Base*>(this));
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-auto AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::getState() const -> const State&
-{
-  return mState;
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-void AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-    ManagerType, updateState, updateProperties>::
-setAddonProperties(const Addon::Properties& otherProperties)
-{
-  setProperties(static_cast<const Properties&>(otherProperties));
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-const Addon::Properties* AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::getAddonProperties() const
-{
-  return &mProperties;
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-void AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::
-setProperties(const PropertiesData& properties)
-{
-  static_cast<PropertiesData&>(mProperties) = properties;
-  UpdateProperties(static_cast<Base*>(this));
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-auto AddonWithProtectedStateAndProperties<
-    Base, StateData, PropertiesData, ManagerType,
-    updateState, updateProperties>::
-getProperties() const -> const Properties&
-{
-  return mProperties;
-}
-
-//==============================================================================
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType,
-          void (*updateState)(Base*), void (*updateProperties)(Base*)>
-std::unique_ptr<Addon>
-AddonWithProtectedStateAndProperties<Base, StateData, PropertiesData,
-                                     ManagerType,
-                                     updateState, updateProperties>::
-cloneAddon(AddonManager* newManager) const
-{
-  DART_COMMON_CAST_NEW_MANAGER_TYPE_AND_RETURN_NULL_IF_BAD(
-        Base, ManagerType, newManager, castedManager, clone);
-  return std::unique_ptr<Base>(new Base(castedManager, mState, mProperties));
 }
 
 } // namespace common

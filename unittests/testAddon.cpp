@@ -51,8 +51,8 @@
 using namespace dart::common;
 
 // Testing the creation of an Addon using the AddonWithState template class
-class StateAddonTest : public dart::common::detail::AddonWithState<
-    Addon, StateAddonTest, dart::common::Empty>
+class StateAddonTest : public dart::common::AddonWithState<
+    StateAddonTest, dart::common::Empty>
 {
 public:
 
@@ -61,6 +61,12 @@ public:
   {
 
   }
+
+};
+
+class StateAndPropertiesAddonTest : public dart::common::AddonWithVersionedProperties<
+    StateAndPropertiesAddonTest, dart::common::Empty>
+{
 
 };
 

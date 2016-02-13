@@ -113,6 +113,12 @@ public:
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
 
+  // Documentation inherited
+  size_t incrementVersion() override;
+
+  // Documentation inherited
+  size_t getVersion() const override;
+
   /// Set transformation of this shape node relative to the parent frame
   void setRelativeTransform(const Eigen::Isometry3d& transform);
 

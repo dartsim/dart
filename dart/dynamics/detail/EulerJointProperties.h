@@ -40,7 +40,6 @@
 #include <string>
 
 #include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -86,13 +85,13 @@ struct EulerJointProperties :
 
 //==============================================================================
 class EulerJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         EulerJointAddon, EulerJointUniqueProperties, EulerJoint,
-        detail::JointPropertyUpdate<EulerJointAddon>, false >
+        detail::JointPropertyUpdate<EulerJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( EulerJointAddon )
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( EulerJointAddon )
+  DART_COMMON_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
 };
 
 //==============================================================================
