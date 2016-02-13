@@ -45,7 +45,7 @@ namespace dynamics {
 SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(ConstructFrame),
-    Frame(ConstructAbstract),
+    Frame(_refFrame, _name),
     Detachable(),
     ShapeFrame(_refFrame, _name),
     mRelativeTf(_relativeTransform),
@@ -60,7 +60,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
   : Entity(ConstructFrame),
     common::AddonManager(),
-    Frame(ConstructAbstract),
+    Frame(_refFrame, ""),
     Detachable(),
     ShapeFrame(_refFrame, ""),
     mRelativeTf(Eigen::Isometry3d::Identity()),
