@@ -154,6 +154,18 @@ TEST(SkelParser, SerialChain)
 }
 
 //==============================================================================
+TEST(SkelParser, VariousShapes)
+{
+  // Check if the parser can load various shapes without any problems and the
+  // world can simulate it successfully.
+
+  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/shapes.skel");
+
+  for (auto i = 0u; i < 100; ++i)
+    world->step();
+}
+
+//==============================================================================
 TEST(SkelParser, RigidAndSoftBodies)
 {
   using namespace dart;

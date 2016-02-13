@@ -1,0 +1,41 @@
+<sdf version='1.4'>
+  <model name='mesh_skeleton'>
+    <link name='pelvis'>
+      <pose>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0.0111 0 0.0271 0 -0 0</pose>
+        <mass>17.882</mass>
+        <inertia>
+          <ixx>0.1244</ixx>
+          <ixy>0.0008</ixy>
+          <ixz>-0.0007</ixz>
+          <iyy>0.0958</iyy>
+          <iyz>-0.0005</iyz>
+          <izz>0.1167</izz>
+        </inertia>
+      </inertial>
+      <collision name='pelvis_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>pelvis.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='pelvis_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>pelvis.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <velocity_decay>
+        <linear>0</linear>
+        <angular>0</angular>
+      </velocity_decay>
+    </link>
+  </model>
+</sdf>
