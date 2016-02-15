@@ -34,12 +34,66 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObjectData.h"
+#ifndef DART_COLLISION_COLLISIONGROUP_H_
+#define DART_COLLISION_COLLISIONGROUP_H_
 
-#include "dart/dynamics/BodyNode.h"
+#include <vector>
+
+#include "dart/collision/CollisionNode.h"
+#include "dart/collision/Engine.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
+class Engine;
+class CollisionNode;
+class CollisionGroupData;
+
+class CollisionGroup
+{
+public:
+
+  using CollisionObjects = std::vector<CollisionObject*>;
+
+  /// Default constructor
+  CollisionGroup(
+      Engine* engine,
+      const CollisionObjects& collObjects = CollisionObjects());
+
+  /// Default destructor
+  virtual ~CollisionGroup();
+
+  Engine* getEngine() const;
+
+  CollisionGroupData* getEngineData();
+
+  void updateEngineData();
+
+  void addCollisionObject(CollisionObject* object);
+
+//  virtual void addCollisionNode(const CollisionNodes& nodes);
+
+  bool detect(const Option& option, Result& result);
+
+  bool detect(CollisionGroup* group, const Option& option, Result& result);
+
+protected:
+
+  /// Collision engine
+  Engine* mEngine;
+
+  CollisionObjects mCollisionObjects;
+
+  /// Engine specific data
+  std::shared_ptr<CollisionGroupData> mEngineData;
+
+};
+// TODO(JS): make this class iterable for collision objects
+
+using CollisionGroupPtr = std::shared_ptr<CollisionGroup>;
+
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_COLLISIONGROUP_H_

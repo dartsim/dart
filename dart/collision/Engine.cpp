@@ -74,57 +74,5 @@ bool Result::empty() const
   return contacts.empty();
 }
 
-//=============================================================================
-CollisionObjectData* Engine::createCollisionObjectData(
-    EngineType type,
-    CollisionObject* parent,
-    const dynamics::ShapePtr& shape)
-{
-  switch (type)
-  {
-  case FCL:
-    return FCLEngine::createCollisionObjectData(parent, shape);
-    break;
-  default:
-    dtwarn << "Unsupported collision detection engine '" << type << "'.\n";
-    return nullptr;
-    break;
-  }
-}
-
-//==============================================================================
-bool Engine::detect(CollisionObject* object1,
-                    CollisionObject* object2,
-                    const Option& option, Result& result)
-{
-  if (!object1 || !object2)
-  {
-    result.clear();
-    return false;
-  }
-
-  auto engineType1 = object1->getEngineType();
-  auto engineType2 = object2->getEngineType();
-
-  if (engineType1 != engineType2)
-  {
-    result.clear();
-    return false;
-  }
-  // TODO(JS): we can consider changing one engine of the two objects, or
-  // cloning one object whose engine is the same with other's.
-
-  switch (engineType1)
-  {
-  case FCL:
-    return FCLEngine::detect(object1, object2, option, result);
-    break;
-  default:
-    dtwarn << "Unsupported collision detection engine '" << engineType1 << "'.\n";
-    return nullptr;
-    break;
-  }
-}
-
 }  // namespace collision
 }  // namespace dart

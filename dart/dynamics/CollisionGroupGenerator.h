@@ -2,7 +2,7 @@
  * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,51 +34,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
+#ifndef DART_DYNAMICS_COLLISIONGROUPGENERATOR_H_
+#define DART_DYNAMICS_COLLISIONGROUPGENERATOR_H_
 
-#include "dart/collision/Engine.h"
+#include <memory>
+
+#include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-class FCLCollisionGroup;
-
-/// FCL Collidion detection engine
-class FCLEngine : public Engine
+namespace CollisionNodeGenerator
 {
-public:
+//  collision::CollisionNode2* create(const BodyNodePtr& bodyNode);
+}
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+namespace CollisionGroupGenerator
+{
+//  collision::CollisionGroupPtr generate(
+//      const collision::CollisionDetectorPtr& cd,
+//      const SkeletonPtr& skeleton);
 
-  // Documentation inherit
-  const std::string& getType() const override;
+//  CollisionGroupPtr
+//  createGroup(const ShapeNodePair& shape) { return nullptr; }
 
-  // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
+//  CollisionGroupPtr
+//  createGroup(const dynamics::BodyNodePtr& bodyNode) { return nullptr; }
 
-  // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
+//  CollisionGroupPtr
+//  createGroup(const dynamics::SkeletonPtr& Skeleton) { return nullptr; }
+}
 
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
+} // namespace dynamics
+} // namespace dart
 
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
-
-};
-
-}  // namespace collision
-}  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLEngine_H_
+#endif // DART_DYNAMICS_NODE_H_

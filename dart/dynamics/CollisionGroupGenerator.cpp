@@ -2,7 +2,7 @@
  * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,51 +34,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
-
-#include "dart/collision/Engine.h"
+#include "dart/dynamics/CollisionGroupGenerator.h"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-class FCLCollisionGroup;
+//==============================================================================
+//collision::CollisionGroupPtr CollisionGroupGenerator::generate(
+//    const collision::CollisionDetectorPtr& cd,
+//    const SkeletonPtr& skeleton)
+//{
+//  // get list of collision node
+//  std::vector<collision::CollisionNode*> collisionNodes;
 
-/// FCL Collidion detection engine
-class FCLEngine : public Engine
-{
-public:
+//  collision::CollisionGroupPtr group = cd->createGroup(collisionNodes);
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+//  return group;
+//}
 
-  // Documentation inherit
-  const std::string& getType() const override;
-
-  // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
-
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
-
-};
-
-}  // namespace collision
-}  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLEngine_H_
+} // namespace dynamics
+} // namespace dart

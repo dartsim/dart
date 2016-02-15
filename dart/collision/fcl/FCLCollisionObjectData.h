@@ -50,17 +50,6 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionGeometryUserData;
 
-//struct FCLCollisionObjectUserData
-//{
-//  CollisionObject* collisionObject;
-//  dynamics::ShapePtr shape;
-
-//  FCLCollisionObjectUserData(CollisionObject* collisionObject,
-//                             const dynamics::ShapePtr& shape)
-//    : collisionObject(collisionObject),
-//      shape(shape) {}
-//};
-
 class FCLCollisionObjectData : public CollisionObjectData
 {
 public:

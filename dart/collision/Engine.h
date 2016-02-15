@@ -44,8 +44,7 @@
 
 #include "dart/config.h"
 #include "dart/common/Console.h"
-#include "dart/collision/Contact.h"
-#include "dart/collision/CollisionGroup.h"
+//#include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -55,15 +54,7 @@ namespace collision {
 class CollisionGroup;
 class CollisionObject;
 class CollisionObjectData;
-
-enum EngineType
-{
-  FCL    = 0,
-#ifdef HAVE_BULLET_COLLISION
-  Bullet,
-#endif
-  DART,
-};
+class CollisionGroupData;
 
 struct Option
 {
@@ -83,19 +74,31 @@ struct Result
   bool empty() const;
 };
 
-namespace Engine
+class Engine
 {
+public:
 
-CollisionObjectData* createCollisionObjectData(EngineType type,
-                                               CollisionObject* parent,
-                                               const dynamics::ShapePtr& shape);
+  virtual const std::string& getType() const = 0;
 
-bool detect(CollisionObject* object1,
-            CollisionObject* object2,
-            const collision::Option& option,
-            collision::Result& result);
+  virtual CollisionObjectData* createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) = 0;
+  // TODO(JS): shared_ptr
 
-}
+  virtual CollisionGroupData* createCollisionGroupData(
+      std::vector<CollisionObject*> collObjects) = 0;
+  // TODO(JS): shared_ptr
+
+  virtual bool detect(CollisionObject* object1, CollisionObject* object2,
+                      const Option& option, Result& result) = 0;
+
+  virtual bool detect(CollisionGroup* group,
+                      const Option& option, Result& result) = 0;
+
+  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
+                      const Option& option, Result& result) = 0;
+
+};
 
 }  // namespace collision
 }  // namespace dart

@@ -34,51 +34,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
+#ifndef DART_COLLISION_COLLISIONGROUPDATA_H_
+#define DART_COLLISION_COLLISIONGROUPDATA_H_
 
-#include "dart/collision/Engine.h"
+#include <Eigen/Dense>
+
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionGroup;
+class CollisionObject;
 
-/// FCL Collidion detection engine
-class FCLEngine : public Engine
+class CollisionGroupData
 {
 public:
+  virtual void update() = 0;
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+  virtual void notifyCollisionObjectAdded(CollisionObject* object) = 0;
 
-  // Documentation inherit
-  const std::string& getType() const override;
+  // TODO(JS): notifyCollisionObjectUpdated()?
 
-  // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
-
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
+  virtual void notifyCollisionObjectRemoved(CollisionObject* object) = 0;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLEngine_H_
+#endif  // DART_COLLISION_COLLISIONGROUPDATA_H_

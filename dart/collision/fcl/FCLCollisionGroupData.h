@@ -34,51 +34,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_
 
-#include "dart/collision/Engine.h"
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionGroup;
+class CollisionObject;
+class FCLCollisionGeometryUserData;
 
-/// FCL Collidion detection engine
-class FCLEngine : public Engine
+class FCLCollisionGroupData : public CollisionGroupData
 {
 public:
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using CollisionObjects = CollisionGroup::CollisionObjects;
 
-  // Documentation inherit
-  const std::string& getType() const override;
+  /// Constructor
+  FCLCollisionGroupData(const CollisionObjects& collObjects);
 
-  // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
+  void update() override;
 
-  // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
+  void notifyCollisionObjectAdded(CollisionObject* object) override;
 
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
+  void notifyCollisionObjectRemoved(CollisionObject* object) override;
 
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
+  FCLCollisionManager* getFCLCollisionManager() const;
 
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
+protected:
+
+  /// Broad-phase collision checker of FCL
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLEngine_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_

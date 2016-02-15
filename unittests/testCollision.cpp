@@ -45,7 +45,8 @@
 #include "dart/common/common.h"
 #include "dart/math/math.h"
 #include "dart/dynamics/dynamics.h"
-//#include "dart/collision/unc/UNCCollisionDetector.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/fcl/FCLEngine.h"
 #include "dart/simulation/simulation.h"
 #include "dart/utils/utils.h"
 
@@ -507,11 +508,13 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //==============================================================================
 TEST_F(COLLISION, FreeCollisionObject)
 {
+  collision::FCLEngine fclEngine;
+
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
 
-  collision::FreeCollisionObject obj1(shape1);
-  collision::FreeCollisionObject obj2(shape2);
+  collision::FreeCollisionObject obj1(&fclEngine, shape1);
+  collision::FreeCollisionObject obj2(&fclEngine, shape2);
 
   obj1.setTranslation(Eigen::Vector3d::Zero());
   obj2.setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
@@ -523,6 +526,92 @@ TEST_F(COLLISION, FreeCollisionObject)
 
   obj2.setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
   EXPECT_TRUE(obj1.detect(&obj2, option, result));
+
+  EXPECT_EQ(result.contacts.size(), 4u);
+
+  for (auto contact : result.contacts)
+  {
+    auto freeCollObj1 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject1);
+    auto freeCollObj2 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject2);
+
+    EXPECT_NE(freeCollObj1, nullptr);
+    EXPECT_NE(freeCollObj2, nullptr);
+  }
+}
+
+//==============================================================================
+TEST_F(COLLISION, FreeCollisionGroup)
+{
+  collision::FCLEngine fclEngine;
+
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  collision::FreeCollisionObject obj1(&fclEngine, shape1);
+  collision::FreeCollisionObject obj2(&fclEngine, shape2);
+
+  collision::CollisionGroup group(&fclEngine);
+  group.addCollisionObject(&obj1);
+  group.addCollisionObject(&obj2);
+
+  obj1.setTranslation(Eigen::Vector3d::Zero());
+  obj2.setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+
+  collision::Option option;
+  collision::Result result;
+
+  EXPECT_FALSE(group.detect(option, result));
+
+  obj2.setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
+  EXPECT_TRUE(group.detect(option, result));
+
+  EXPECT_EQ(result.contacts.size(), 4u);
+
+  for (auto contact : result.contacts)
+  {
+    auto freeCollObj1 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject1);
+    auto freeCollObj2 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject2);
+
+    EXPECT_NE(freeCollObj1, nullptr);
+    EXPECT_NE(freeCollObj2, nullptr);
+  }
+}
+
+//==============================================================================
+TEST_F(COLLISION, FreeCollisionGroupGroup)
+{
+  collision::FCLEngine fclEngine;
+
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape3(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  collision::FreeCollisionObject obj1(&fclEngine, shape1);
+  collision::FreeCollisionObject obj2(&fclEngine, shape2);
+  collision::FreeCollisionObject obj3(&fclEngine, shape3);
+
+  collision::CollisionGroup group1(&fclEngine);
+  group1.addCollisionObject(&obj1);
+  group1.addCollisionObject(&obj2);
+
+  collision::CollisionGroup group2(&fclEngine);
+  group2.addCollisionObject(&obj3);
+
+  obj1.setTranslation(Eigen::Vector3d::Zero());
+  obj2.setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+  obj3.setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
+
+  collision::Option option;
+  collision::Result result;
+
+  EXPECT_FALSE(group1.detect(&group2, option, result));
+
+  obj3.setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_TRUE(group1.detect(&group2, option, result));
 
   EXPECT_EQ(result.contacts.size(), 4u);
 

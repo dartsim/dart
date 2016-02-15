@@ -40,7 +40,6 @@
 #include <cstddef>
 #include <Eigen/Dense>
 
-#include "dart/collision/Contact.h"
 #include "dart/collision/Engine.h"
 #include "dart/collision/CollisionObjectData.h"
 
@@ -61,7 +60,7 @@ public:
 
   // virtual void reportCollision();
 
-  EngineType getEngineType() const;
+  Engine* getEngine() const;
 
   // virtual void changeEngine(EngineType type) {}
 
@@ -74,9 +73,7 @@ public:
   /// Perform collision detection with other CollisionObject. Return false if
   /// the engine type of the other CollisionObject is different from this
   /// CollisionObject's.
-  bool detect(CollisionObject* other,
-              const collision::Option& option,
-              collision::Result& result);
+  bool detect(CollisionObject* other, const Option& option, Result& result);
 
   // bool detect(CollisionGroup* group,
   //             const collision::Option& option,
@@ -85,15 +82,15 @@ public:
 protected:
 
   /// Contructor
-  CollisionObject(const dynamics::ShapePtr& shape, EngineType type);
+  CollisionObject(Engine* engine, const dynamics::ShapePtr& shape);
 
 protected:
 
+  /// Collision engine
+  Engine* mEngine;
+
   /// Shape
   dynamics::ShapePtr mShape;
-
-  /// Collision engine type
-  EngineType mEngineType;
 
   /// Engine specific data
   std::shared_ptr<CollisionObjectData> mEngineData;
@@ -108,9 +105,10 @@ public:
 
   /// Constructor
   FreeCollisionObject(
+      Engine* engine,
       const dynamics::ShapePtr& shape,
-      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity(),
-      EngineType type = FCL);
+      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
+  // TODO(JS): change to engine pointer
 
   /// Set world transformation of this FreeCollisionObject
   void setTransform(const Eigen::Isometry3d& tf);

@@ -34,51 +34,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
+#include "dart/collision/fcl/FCLCollisionGroupData.h"
 
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/fcl/FCLCollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionGroup;
-
-/// FCL Collidion detection engine
-class FCLEngine : public Engine
+//==============================================================================
+FCLCollisionGroupData::FCLCollisionGroupData(
+    const FCLCollisionGroupData::CollisionObjects& collObjects)
+  : mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
 {
-public:
+  for (auto collObj : collObjects)
+  {
+    auto data = static_cast<FCLCollisionObjectData*>(collObj->getEngineData());
+    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  }
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+  mBroadPhaseAlg->setup();
+}
 
-  // Documentation inherit
-  const std::string& getType() const override;
+//==============================================================================
+void FCLCollisionGroupData::update()
+{
+  mBroadPhaseAlg->update();
+}
 
-  // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
+//==============================================================================
+void FCLCollisionGroupData::notifyCollisionObjectAdded(CollisionObject* object)
+{
+  auto data = static_cast<FCLCollisionObjectData*>(object->getEngineData());
+  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  mBroadPhaseAlg->setup();
+}
 
-  // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
+//==============================================================================
+void FCLCollisionGroupData::notifyCollisionObjectRemoved(
+    CollisionObject* object)
+{
+  auto data = static_cast<FCLCollisionObjectData*>(object->getEngineData());
+  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
+  mBroadPhaseAlg->setup();
+}
 
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
+//==============================================================================
+FCLCollisionGroupData::FCLCollisionManager*
+FCLCollisionGroupData::getFCLCollisionManager() const
+{
+  return mBroadPhaseAlg.get();
+}
 
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
-
-};
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLEngine_H_

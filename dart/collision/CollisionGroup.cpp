@@ -34,95 +34,83 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionGroup.h"
 
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionGroupData.h"
+
+#include <cassert>
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-dynamics::ShapePtr CollisionObject::getShape() const
+CollisionGroup::CollisionGroup(
+    Engine* engine,
+    const CollisionGroup::CollisionObjects& collObjects)
+  : mEngine(engine)
 {
-  return mShape;
+  assert(mEngine);
+
+  mCollisionObjects = collObjects;
+
+  mEngineData.reset(mEngine->createCollisionGroupData(mCollisionObjects));
 }
 
 //==============================================================================
-//void CollisionObject::reportCollision()
-//{
-//  // Do nothing
-//}
+CollisionGroup::~CollisionGroup()
+{
+}
 
 //==============================================================================
-Engine* CollisionObject::getEngine() const
+Engine* CollisionGroup::getEngine() const
 {
   return mEngine;
 }
 
 //==============================================================================
-CollisionObjectData* CollisionObject::getEngineData() const
+CollisionGroupData* CollisionGroup::getEngineData()
 {
   return mEngineData.get();
 }
 
 //==============================================================================
-void CollisionObject::updateEngineData()
+void CollisionGroup::updateEngineData()
 {
-  mEngineData->updateTransform(getTransform());
+  for (auto collObj : mCollisionObjects)
+    collObj->updateEngineData();
+
+  mEngineData->update();
 }
 
 //==============================================================================
-bool CollisionObject::detect(CollisionObject* other,
-                             const Option& option,
-                             Result& result)
+void CollisionGroup::addCollisionObject(CollisionObject* object)
 {
-  return mEngine->detect(this, other, option, result);
+  auto found = std::find(mCollisionObjects.begin(),
+                         mCollisionObjects.end(), object)
+      != mCollisionObjects.end();
+
+  if (found)
+  {
+    // TODO(JS): print warning message
+    return;
+  }
+
+  mCollisionObjects.push_back(object);
+  mEngineData->notifyCollisionObjectAdded(object);
 }
 
 //==============================================================================
-CollisionObject::CollisionObject(Engine* engine,
-                                 const dynamics::ShapePtr& shape)
-  : mEngine(engine),
-    mShape(shape)
+bool CollisionGroup::detect(const Option& option, Result& result)
 {
-  assert(mEngine);
-  assert(mShape);
-
-  mEngineData.reset(mEngine->createCollisionObjectData(this, mShape));
+  return mEngine->detect(this, option, result);
 }
 
 //==============================================================================
-FreeCollisionObject::FreeCollisionObject(Engine* engine,
-                                         const dynamics::ShapePtr& shape,
-                                         const Eigen::Isometry3d& tf)
-  : CollisionObject(engine, shape),
-    mW(tf)
+bool CollisionGroup::detect(CollisionGroup* otherGroup,
+                            const Option& option, Result& result)
 {
-  // Do nothing
-}
-
-//==============================================================================
-void FreeCollisionObject::setTransform(const Eigen::Isometry3d& tf)
-{
-  mW = tf;
-}
-
-//==============================================================================
-void FreeCollisionObject::setRotation(const Eigen::Matrix3d& rotation)
-{
-  mW.linear() = rotation;
-}
-
-//==============================================================================
-void FreeCollisionObject::setTranslation(const Eigen::Vector3d& translation)
-{
-  mW.translation() = translation;
-}
-
-//==============================================================================
-const Eigen::Isometry3d FreeCollisionObject::getTransform() const
-{
-  return mW;
+  return mEngine->detect(this, otherGroup, option, result);
 }
 
 }  // namespace collision
