@@ -865,6 +865,253 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
+bool Skeleton::checkIndexingConsistency() const
+{
+  bool consistent = true;
+
+  // Check each BodyNode in the Skeleton cache
+  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
+  {
+    const BodyNode* bn = mSkelCache.mBodyNodes[i];
+    if(bn->mIndexInSkeleton != i)
+    {
+      dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
+            << bn->getName() << "] in Skeleton [" << getName() << "] is "
+            << "mistaken about its index in the Skeleton (" << i << " | "
+            << bn->mIndexInSkeleton << "). Please report this as a bug!"
+            << std::endl;
+      consistent = false;
+      assert(false);
+    }
+
+    const BodyNode* nameEntryForBodyNode = getBodyNode(bn->getName());
+    if(nameEntryForBodyNode != bn)
+    {
+      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
+            << getName() << "] (" << this << ") is mistaken about the name of "
+            << "BodyNode [" << bn->getName() << "] (" << bn << "). The name "
+            << "instead maps to [" << nameEntryForBodyNode->getName() << "] ("
+            << nameEntryForBodyNode << "). Please report this as a bug!"
+            << std::endl;
+      consistent = false;
+      assert(false);
+    }
+
+    const Joint* joint = bn->getParentJoint();
+    const Joint* nameEntryForJoint = getJoint(joint->getName());
+    if(nameEntryForJoint != joint)
+    {
+      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
+            << getName() << "] (" << this << ") is mistaken about the name of "
+            << "Joint [" << joint->getName() << "] (" << joint << "). The name "
+            << "instead maps to [" << nameEntryForJoint->getName() << "] ("
+            << nameEntryForJoint << "). Please report this as a bug!"
+            << std::endl;
+      consistent = false;
+      assert(false);
+    }
+
+    const BodyNode::NodeMap& nodeMap = bn->mNodeMap;
+    for(const auto& nodeType : nodeMap)
+    {
+      const std::vector<Node*>& nodes = nodeType.second;
+      for(size_t k=0; k < nodes.size(); ++k)
+      {
+        const Node* node = nodes[k];
+        if(node->getBodyNodePtr() != bn)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "BodyNode [" << node->getBodyNodePtr()->getName() << "] ("
+                << node->getBodyNodePtr() << "). Please report this as a bug!"
+                << std::endl;
+          consistent = false;
+          assert(false);
+        }
+
+        if(node->mIndexInBodyNode != k)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "index in its BodyNode (" << k << "|"
+                << node->mIndexInBodyNode << "). Please report this as a bug!"
+                << std::endl;
+          consistent = false;
+          assert(false);
+        }
+
+        // TODO(MXG): Consider checking Node names here
+      }
+    }
+  }
+
+  // Check DegreesOfFreedom indexing
+  for(size_t i=0; i < getNumDofs(); ++i)
+  {
+    const DegreeOfFreedom* dof = getDof(i);
+    if(dof->getIndexInSkeleton() != i)
+    {
+      dterr << "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named ["
+            << dof->getName() << "] (" << dof << ") in Skeleton ["
+            << getName() << "] (" << this << ") is mistaken about its index "
+            << "in its Skeleton (" << i << "|" << dof->getIndexInSkeleton()
+            << "). Please report this as a bug!" << std::endl;
+      consistent = false;
+      assert(false);
+    }
+
+    const DegreeOfFreedom* nameEntryForDof = getDof(dof->getName());
+    if(nameEntryForDof != dof)
+    {
+      dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
+            << getName() << "] (" << this << ") is mistaken about the name of "
+            << "DegreeOfFreedom [" << dof->getName() << "] (" << dof << "). "
+            << "The name instead maps to [" << nameEntryForDof->getName()
+            << "] (" << nameEntryForDof << "). Please report this as a bug!"
+            << std::endl;
+      consistent = false;
+      assert(false);
+    }
+  }
+
+  // Check each Node in the Skeleton-scope NodeMap
+  {
+    const Skeleton::NodeMap& nodeMap = mNodeMap;
+    for(const auto& nodeType : nodeMap)
+    {
+      const std::vector<Node*>& nodes = nodeType.second;
+      for(size_t k=0; k < nodes.size(); ++k)
+      {
+        const Node* node = nodes[k];
+        if(node->getSkeleton().get() != this)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "Skeleton [" << node->getSkeleton()->getName() << "] ("
+                << node->getSkeleton()<< "). Please report this as a bug!"
+                << std::endl;
+          consistent = false;
+          assert(false);
+        }
+
+        if(node->mIndexInSkeleton != k)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "index in its Skeleton (" << k << "|"
+                << node->mIndexInSkeleton << "). Please report this as a bug!"
+                << std::endl;
+          consistent = false;
+          assert(false);
+        }
+      }
+    }
+  }
+
+  // Check each BodyNode in each Tree cache
+  for(size_t i=0; i<mTreeCache.size(); ++i)
+  {
+    const DataCache& cache = mTreeCache[i];
+    for(size_t j=0; j<cache.mBodyNodes.size(); ++j)
+    {
+      const BodyNode* bn = cache.mBodyNodes[j];
+      if(bn->mTreeIndex != i)
+      {
+        dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
+              << bn->getName() << "] in Skeleton [" << getName() << "] is "
+              << "mistaken about its tree's index (" << i << "|"
+              << bn->mTreeIndex << "). Please report this as a bug!"
+              << std::endl;
+        consistent = false;
+        assert(false);
+      }
+
+      if(bn->mIndexInTree != j)
+      {
+        dterr << "[Skeleton::checkIndexingConsistency] BodyNode named ["
+              << bn->getName() << "] (" << bn << ") in Skeleton ["
+              << getName() << "] (" << this << ") is mistaken about its index "
+              << "in the tree (" << j << "|" << bn->mIndexInTree << "). Please "
+              << "report this as a bug!" << std::endl;
+        consistent = false;
+        assert(false);
+      }
+    }
+
+    for(size_t j=0; j < cache.mDofs.size(); ++j)
+    {
+      const DegreeOfFreedom* dof = cache.mDofs[j];
+      if(dof->getTreeIndex() != i)
+      {
+        dterr << "[Skeleton::checkIndexingConsistency] DegreeOfFreedom named ["
+              << dof->getName() << "] (" << dof << ") in Skeleton ["
+              << getName() << "] (" << this << ") is mistaken about its tree's "
+              << "index (" << i << "|" << dof->getTreeIndex() << "). Please "
+              << "report this as a bug!" << std::endl;
+        consistent = false;
+        assert(false);
+      }
+    }
+  }
+
+  // Check that the Tree cache and the number of Tree NodeMaps match up
+  if(mTreeCache.size() != mTreeNodeMaps.size())
+  {
+    consistent = false;
+    dterr << "[Skeleton::checkIndexingConsistency] Skeleton named ["
+              << getName() << "] (" << this << ") has inconsistent tree cache "
+              << " and tree Node map sizes (" << mTreeCache.size() << "|"
+              << mTreeNodeMaps.size() << "). Please report this as a bug!"
+              << std::endl;
+    assert(false);
+  }
+
+  // Check each Node in the NodeMap of each Tree
+  for(size_t i=0; i < mTreeNodeMaps.size(); ++i)
+  {
+    const NodeMap& nodeMap = mTreeNodeMaps[i];
+
+    for(const auto& nodeType : nodeMap)
+    {
+      const std::vector<Node*>& nodes = nodeType.second;
+      for(size_t k=0; k < nodes.size(); ++k)
+      {
+        const Node* node = nodes[k];
+        if(node->getBodyNodePtr()->mTreeIndex != i)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "Tree Index (" << i << "|"
+                << node->getBodyNodePtr()->mTreeIndex << "). Please report "
+                << "this as a bug!" << std::endl;
+          consistent = false;
+          assert(false);
+        }
+
+        if(node->mIndexInTree != k)
+        {
+          dterr << "[Skeleton::checkIndexingConsistency] Node named ["
+                << node->getName() << "] (" << node << ") in Skeleton ["
+                << getName() << "] (" << this << ") is mistaken about its "
+                << "index in its tree (" << k << "|"
+                << node->mIndexInTree << "). Please report this as a bug!"
+                << std::endl;
+          consistent = false;
+          assert(false);
+        }
+      }
+    }
+  }
+
+  return consistent;
+}
+
+//==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
 {
   if(nullptr == mWholeBodyIK && _createIfNull)
@@ -1775,6 +2022,7 @@ void Skeleton::registerNode(Node* _newNode)
 void Skeleton::destructOldTree(size_t tree)
 {
   mTreeCache.erase(mTreeCache.begin() + tree);
+  mTreeNodeMaps.erase(mTreeNodeMaps.begin() + tree);
 
   // Decrease the tree index of every BodyNode whose tree index is higher than
   // the one which is being removed. None of the BodyNodes that predate the

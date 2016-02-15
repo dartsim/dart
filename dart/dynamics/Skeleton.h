@@ -474,6 +474,11 @@ public:
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
 
+  /// This function is only meant for debugging purposes. It will verify that
+  /// all objects held in the Skeleton have the correct information about their
+  /// indexing.
+  bool checkIndexingConsistency() const;
+
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
   /// exist.
