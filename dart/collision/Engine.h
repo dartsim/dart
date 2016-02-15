@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,43 +34,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLTTYPES_H_
-#define DART_COLLISION_FCL_FCLTTYPES_H_
+#ifndef DART_COLLISION_ENGINE_H_
+#define DART_COLLISION_ENGINE_H_
+
+#include <vector>
+#include <map>
 
 #include <Eigen/Dense>
-#include <fcl/math/vec_3f.h>
-#include <fcl/math/matrix_3f.h>
-#include <fcl/math/transform.h>
 
-#define FCL_VERSION_AT_LEAST(x,y,z) \
-  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
-  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
-  FCL_PATCH_VERSION >= z))))
-
-#define FCL_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
-  (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
-  (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
+#include "dart/config.h"
+#include "dart/common/Console.h"
+#include "dart/collision/Contact.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-class FCLTypes
+class CollisionGroup;
+class CollisionObject;
+class CollisionObjectData;
+
+enum EngineType
 {
-public:
-  /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const fcl::Vec3f& _vec);
-
-  /// Convert Eigen vector3 type to FCL vector3 type
-  static fcl::Vec3f convertVector3(const Eigen::Vector3d& _vec);
-
-  /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static fcl::Matrix3f convertMatrix3x3(const Eigen::Matrix3d& _R);
-
-  /// Convert FCL transformation type to Eigen transformation type
-  static fcl::Transform3f convertTransform(const Eigen::Isometry3d& _T);
+  FCL    = 0,
+#ifdef HAVE_BULLET_COLLISION
+  Bullet,
+#endif
+  DART,
 };
+
+struct Option
+{
+  bool enableContact;
+  size_t maxNumContacts;
+
+  Option(bool enableContact = true,
+         size_t maxNumContacts = 100);
+};
+
+struct Result
+{
+  std::vector<Contact> contacts;
+
+  void clear();
+
+  bool empty() const;
+};
+
+namespace Engine
+{
+
+CollisionObjectData* createCollisionObjectData(EngineType type,
+                                               CollisionObject* parent,
+                                               const dynamics::ShapePtr& shape);
+
+bool detect(CollisionObject* object1,
+            CollisionObject* object2,
+            const collision::Option& option,
+            collision::Result& result);
+
+}
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLTTYPES_H_
+#endif  // DART_COLLISION_ENGINE_H_

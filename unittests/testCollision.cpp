@@ -505,6 +505,40 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //}
 
 //==============================================================================
+TEST_F(COLLISION, FreeCollisionObject)
+{
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  collision::FreeCollisionObject obj1(shape1);
+  collision::FreeCollisionObject obj2(shape2);
+
+  obj1.setTranslation(Eigen::Vector3d::Zero());
+  obj2.setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+
+  collision::Option option;
+  collision::Result result;
+
+  EXPECT_FALSE(obj1.detect(&obj2, option, result));
+
+  obj2.setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
+  EXPECT_TRUE(obj1.detect(&obj2, option, result));
+
+  EXPECT_EQ(result.contacts.size(), 4u);
+
+  for (auto contact : result.contacts)
+  {
+    auto freeCollObj1 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject1);
+    auto freeCollObj2 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject2);
+
+    EXPECT_NE(freeCollObj1, nullptr);
+    EXPECT_NE(freeCollObj2, nullptr);
+  }
+}
+
+//==============================================================================
 TEST_F(COLLISION, CollisionOfPrescribedJoints)
 {
   // There are one red plate (static skeleton) and 5 pendulums with different

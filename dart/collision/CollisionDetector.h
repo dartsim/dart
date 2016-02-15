@@ -49,6 +49,8 @@
 namespace dart {
 namespace collision {
 
+class CollisionObject;
+
 /// Contact information
 struct Contact {
   // To get byte-aligned Eigen vectors
@@ -77,6 +79,10 @@ struct Contact {
 
   /// Second colliding shape of the first body node
   dynamics::ShapePtr shape2;
+
+  collision::CollisionObject* collisionObject1;
+  collision::CollisionObject* collisionObject2;
+  // TODO(JS): shared_ptr
 
   /// Penetration depth
   double penetrationDepth;

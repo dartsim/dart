@@ -257,7 +257,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
 FCLCollisionNode* FCLCollisionDetector::findCollisionNode(
     const fcl::CollisionObject* _fclCollObj) const
 {
-  FCLUserData* userData = static_cast<FCLUserData*>(_fclCollObj->getUserData());
+  FCLCollisionGeometryUserData* userData = static_cast<FCLCollisionGeometryUserData*>(_fclCollObj->getUserData());
   return userData->fclCollNode;
 }
 

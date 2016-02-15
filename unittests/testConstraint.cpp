@@ -158,7 +158,7 @@ void ConstraintTest::SingleContactTest(const std::string& _fileName)
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
   ConstraintSolver* cs = world->getConstraintSolver();
-  CollisionDetector* cd = cs->getCollisionDetector();
+  dart::collision::CollisionDetector* cd = cs->getCollisionDetector();
 
   // Lower and upper bound of configuration for system
   // double lb = -1.5 * DART_PI;

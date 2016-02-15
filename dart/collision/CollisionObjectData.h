@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,43 +34,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLTTYPES_H_
-#define DART_COLLISION_FCL_FCLTTYPES_H_
+#ifndef DART_COLLISION_COLLISIONOBJECTDATA_H_
+#define DART_COLLISION_COLLISIONOBJECTDATA_H_
 
 #include <Eigen/Dense>
-#include <fcl/math/vec_3f.h>
-#include <fcl/math/matrix_3f.h>
-#include <fcl/math/transform.h>
 
-#define FCL_VERSION_AT_LEAST(x,y,z) \
-  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
-  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
-  FCL_PATCH_VERSION >= z))))
-
-#define FCL_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
-  (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
-  (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-class FCLTypes
+class CollisionObjectData
 {
 public:
-  /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const fcl::Vec3f& _vec);
 
-  /// Convert Eigen vector3 type to FCL vector3 type
-  static fcl::Vec3f convertVector3(const Eigen::Vector3d& _vec);
+  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
-  /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static fcl::Matrix3f convertMatrix3x3(const Eigen::Matrix3d& _R);
+  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
 
-  /// Convert FCL transformation type to Eigen transformation type
-  static fcl::Transform3f convertTransform(const Eigen::Isometry3d& _T);
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLTTYPES_H_
+#endif  // DART_COLLISION_COLLISIONOBJECTDATA_H_

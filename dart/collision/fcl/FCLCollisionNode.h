@@ -58,22 +58,47 @@ namespace dart {
 namespace collision {
 
 class FCLCollisionNode;
+class CollisionObject;
 
-struct FCLUserData
+struct FCLCollisionGeometryUserData
 {
   FCLCollisionNode* fclCollNode;
+  CollisionObject* collisionObject;
   dynamics::BodyNode* bodyNode;
-  dynamics::Shape* shape;
+  dynamics::ShapePtr shape;
 
-  FCLUserData(FCLCollisionNode* _fclCollNode,
-              dynamics::BodyNode* _bodyNode,
-              dynamics::Shape* _shape);
+  FCLCollisionGeometryUserData(FCLCollisionNode* fclCollNode,
+                               dynamics::BodyNode* bodyNode,
+                               const dynamics::ShapePtr& shape);
+
+  FCLCollisionGeometryUserData(CollisionObject* fclCollNode,
+                               const dynamics::ShapePtr& shape);
+
+};
+
+class ConstFCLCollisionObjects
+{
+public:
+  using ConstIterator = std::vector<fcl::CollisionObject*>::const_iterator;
+
+  ConstFCLCollisionObjects(const std::vector<fcl::CollisionObject*>& container)
+    : mContainer(container)
+  {}
+
+  ConstIterator begin() const { return mContainer.cbegin(); }
+  ConstIterator end() const;
+
+protected:
+  std::vector<fcl::CollisionObject*> mContainer;
 };
 
 /// FCLCollisionNode
 class FCLCollisionNode : public CollisionNode
 {
 public:
+
+  using FCLCollisionObjects = std::vector<fcl::CollisionObject*>;
+
   /// Constructor
   explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
 
@@ -82,6 +107,8 @@ public:
 
   /// Get number of collision objects
   size_t getNumCollisionObjects() const;
+
+  const FCLCollisionObjects& getCollisionObjects();
 
   /// Get FCL collision object given index
   fcl::CollisionObject* getCollisionObject(size_t _idx) const;
@@ -93,8 +120,10 @@ public:
   void updateFCLCollisionObjects();
 
 private:
+
   /// Array of FCL collision object that continas geometry and transform
-  std::vector<fcl::CollisionObject*> mCollisionObjects;
+  FCLCollisionObjects mCollisionObjects;
+
 };
 
 }  // namespace collision
