@@ -34,58 +34,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionGroupData.h"
+#ifndef DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_
+#define DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_
 
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
+#include <Eigen/Dense>
+
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-FCLCollisionGroupData::FCLCollisionGroupData(
-    const FCLCollisionGroupData::CollisionObjects& collObjects)
-  : mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+class CollisionObjectEngineData
 {
-  for (auto collObj : collObjects)
-  {
-    auto data = static_cast<FCLCollisionObjectData*>(collObj->getEngineData());
-    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  }
+public:
 
-  mBroadPhaseAlg->setup();
-}
+  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
-//==============================================================================
-void FCLCollisionGroupData::update()
-{
-  mBroadPhaseAlg->update();
-}
+  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
 
-//==============================================================================
-void FCLCollisionGroupData::notifyCollisionObjectAdded(CollisionObject* object)
-{
-  auto data = static_cast<FCLCollisionObjectData*>(object->getEngineData());
-  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-void FCLCollisionGroupData::notifyCollisionObjectRemoved(
-    CollisionObject* object)
-{
-  auto data = static_cast<FCLCollisionObjectData*>(object->getEngineData());
-  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-FCLCollisionGroupData::FCLCollisionManager*
-FCLCollisionGroupData::getFCLCollisionManager() const
-{
-  return mBroadPhaseAlg.get();
-}
-
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_

@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_
 
 #include <cstddef>
 #include <Eigen/Dense>
 
 #include <fcl/collision_object.h>
 
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/CollisionObjectEngineData.h"
 
 namespace dart {
 namespace collision {
@@ -50,12 +50,12 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionGeometryUserData;
 
-class FCLCollisionObjectData : public CollisionObjectData
+class FCLCollisionObjectEngineData : public CollisionObjectEngineData
 {
 public:
 
   /// Constructor
-  FCLCollisionObjectData(CollisionObject* parent,
+  FCLCollisionObjectEngineData(CollisionObject* parent,
                          const dynamics::ShapePtr& shape);
 
   // Documentation inherited
@@ -78,4 +78,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_

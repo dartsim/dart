@@ -36,22 +36,10 @@
 
 #include "dart/collision/CollisionObject.h"
 
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/CollisionObjectEngineData.h"
 
 namespace dart {
 namespace collision {
-
-//==============================================================================
-dynamics::ShapePtr CollisionObject::getShape() const
-{
-  return mShape;
-}
-
-//==============================================================================
-//void CollisionObject::reportCollision()
-//{
-//  // Do nothing
-//}
 
 //==============================================================================
 Engine* CollisionObject::getEngine() const
@@ -60,15 +48,9 @@ Engine* CollisionObject::getEngine() const
 }
 
 //==============================================================================
-CollisionObjectData* CollisionObject::getEngineData() const
+dynamics::ShapePtr CollisionObject::getShape() const
 {
-  return mEngineData.get();
-}
-
-//==============================================================================
-void CollisionObject::updateEngineData()
-{
-  mEngineData->updateTransform(getTransform());
+  return mShape;
 }
 
 //==============================================================================
@@ -77,6 +59,25 @@ bool CollisionObject::detect(CollisionObject* other,
                              Result& result)
 {
   return mEngine->detect(this, other, option, result);
+}
+
+//==============================================================================
+bool CollisionObject::detect(CollisionGroup* group,
+                             const Option& option, Result& result)
+{
+  return mEngine->detect(this, group, option, result);
+}
+
+//==============================================================================
+CollisionObjectEngineData* CollisionObject::getEngineData() const
+{
+  return mEngineData.get();
+}
+
+//==============================================================================
+void CollisionObject::updateEngineData()
+{
+  mEngineData->updateTransform(getTransform());
 }
 
 //==============================================================================

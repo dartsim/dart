@@ -34,27 +34,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECTDATA_H_
-#define DART_COLLISION_COLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_
 
-#include <Eigen/Dense>
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroupEngineData.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObjectData
+class CollisionObject;
+class FCLCollisionGeometryUserData;
+
+class FCLCollisionGroupEngineData : public CollisionGroupEngineData
 {
 public:
 
-  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using CollisionObjects = CollisionGroup::CollisionObjects;
 
-  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
+  /// Constructor
+  FCLCollisionGroupEngineData(const CollisionObjects& collObjects);
+
+  void update() override;
+
+  void notifyCollisionObjectAdded(CollisionObject* object) override;
+
+  void notifyCollisionObjectRemoved(CollisionObject* object) override;
+
+  FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// Broad-phase collision checker of FCL
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_

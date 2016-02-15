@@ -37,6 +37,8 @@
 #ifndef DART_COLLISION_FCL_FCLENGINE_H_
 #define DART_COLLISION_FCL_FCLENGINE_H_
 
+#include <vector>
+
 #include "dart/collision/Engine.h"
 
 namespace dart {
@@ -56,16 +58,20 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherit
-  CollisionObjectData* createCollisionObjectData(
+  CollisionObjectEngineData* createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) override;
 
   // Documentation inherit
-  CollisionGroupData* createCollisionGroupData(
+  CollisionGroupEngineData* createCollisionGroupData(
       std::vector<CollisionObject*> collObjects) override;
 
   // Documentation inherit
   bool detect(CollisionObject* object1, CollisionObject* object2,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionObject* object, CollisionGroup* group,
               const Option& option, Result& result) override;
 
   // Documentation inherit

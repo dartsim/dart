@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
+#include "dart/collision/fcl/FCLCollisionObjectEngineData.h"
 
 #include <assimp/scene.h>
 #include <fcl/BVH/BVH_model.h>
@@ -52,11 +52,6 @@
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
-
-#define FCL_VERSION_AT_LEAST(x,y,z) \
-  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
-  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
-  FCL_PATCH_VERSION >= z))))
 
 namespace dart {
 namespace collision {
@@ -475,10 +470,10 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 } // anonymous namespace
 
 //==============================================================================
-FCLCollisionObjectData::FCLCollisionObjectData(
+FCLCollisionObjectEngineData::FCLCollisionObjectEngineData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
-  : CollisionObjectData(),
+  : CollisionObjectEngineData(),
     mFCLCollisionGeometryUserData(
       new FCLCollisionGeometryUserData(parent, shape))
 {
@@ -486,14 +481,14 @@ FCLCollisionObjectData::FCLCollisionObjectData(
 }
 
 //==============================================================================
-void FCLCollisionObjectData::updateTransform(const Eigen::Isometry3d& tf)
+void FCLCollisionObjectEngineData::updateTransform(const Eigen::Isometry3d& tf)
 {
   mFCLCollisionObject->setTransform(FCLTypes::convertTransform(tf));
   mFCLCollisionObject->computeAABB();
 }
 
 //==============================================================================
-void FCLCollisionObjectData::updateShape(const dynamics::ShapePtr& shape)
+void FCLCollisionObjectEngineData::updateShape(const dynamics::ShapePtr& shape)
 {
   using dynamics::Shape;
   using dynamics::BoxShape;
@@ -613,7 +608,7 @@ void FCLCollisionObjectData::updateShape(const dynamics::ShapePtr& shape)
 }
 
 //==============================================================================
-fcl::CollisionObject* FCLCollisionObjectData::getFCLCollisionObject() const
+fcl::CollisionObject* FCLCollisionObjectEngineData::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }

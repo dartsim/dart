@@ -37,7 +37,7 @@
 #include "dart/collision/CollisionGroup.h"
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroupData.h"
+#include "dart/collision/CollisionGroupEngineData.h"
 
 #include <cassert>
 
@@ -69,21 +69,6 @@ Engine* CollisionGroup::getEngine() const
 }
 
 //==============================================================================
-CollisionGroupData* CollisionGroup::getEngineData()
-{
-  return mEngineData.get();
-}
-
-//==============================================================================
-void CollisionGroup::updateEngineData()
-{
-  for (auto collObj : mCollisionObjects)
-    collObj->updateEngineData();
-
-  mEngineData->update();
-}
-
-//==============================================================================
 void CollisionGroup::addCollisionObject(CollisionObject* object)
 {
   auto found = std::find(mCollisionObjects.begin(),
@@ -107,10 +92,32 @@ bool CollisionGroup::detect(const Option& option, Result& result)
 }
 
 //==============================================================================
+bool CollisionGroup::detect(CollisionObject* object,
+                            const Option& option, Result& result)
+{
+  return mEngine->detect(object, this, option, result);
+}
+
+//==============================================================================
 bool CollisionGroup::detect(CollisionGroup* otherGroup,
                             const Option& option, Result& result)
 {
   return mEngine->detect(this, otherGroup, option, result);
+}
+
+//==============================================================================
+CollisionGroupEngineData* CollisionGroup::getEngineData()
+{
+  return mEngineData.get();
+}
+
+//==============================================================================
+void CollisionGroup::updateEngineData()
+{
+  for (auto collObj : mCollisionObjects)
+    collObj->updateEngineData();
+
+  mEngineData->update();
 }
 
 }  // namespace collision

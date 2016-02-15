@@ -37,47 +37,48 @@
 #ifndef DART_COLLISION_COLLISIONOBJECT_H_
 #define DART_COLLISION_COLLISIONOBJECT_H_
 
-#include <cstddef>
 #include <Eigen/Dense>
 
 #include "dart/collision/Engine.h"
-#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObjectData;
+class CollisionObjectEngineData;
 
 class CollisionObject
 {
 public:
 
-  virtual const Eigen::Isometry3d getTransform() const = 0;
+  /// Return collision detection engine associated with this CollisionObject
+  Engine* getEngine() const;
 
   /// Return shape pointer that associated with this CollisionObject
   dynamics::ShapePtr getShape() const;
   // TODO(JS): Shape should be in common or math
 
-  // virtual void reportCollision();
+  /// Return the transformation of this CollisionObject in world coordinates
+  virtual const Eigen::Isometry3d getTransform() const = 0;
 
-  Engine* getEngine() const;
+  /// Perform collision detection with other CollisionObject.
+  ///
+  /// Return false if the engine type of the other CollisionObject is different
+  /// from this CollisionObject engine.
+  bool detect(CollisionObject* other, const Option& option, Result& result);
 
-  // virtual void changeEngine(EngineType type) {}
+  /// Perform collision detection with other CollisionGroup.
+  ///
+  /// Return false if the engine type of the other CollisionGroup is different
+  /// from this CollisionObject engine.
+  bool detect(CollisionGroup* group, const Option& option, Result& result);
 
-  CollisionObjectData* getEngineData() const;
+  /// Return the collision detection engine specific data of this
+  /// CollisionObject
+  CollisionObjectEngineData* getEngineData() const;
 
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
-
-  /// Perform collision detection with other CollisionObject. Return false if
-  /// the engine type of the other CollisionObject is different from this
-  /// CollisionObject's.
-  bool detect(CollisionObject* other, const Option& option, Result& result);
-
-  // bool detect(CollisionGroup* group,
-  //             const collision::Option& option,
-  //             collision::Result& result);
 
 protected:
 
@@ -93,7 +94,7 @@ protected:
   dynamics::ShapePtr mShape;
 
   /// Engine specific data
-  std::shared_ptr<CollisionObjectData> mEngineData;
+  std::shared_ptr<CollisionObjectEngineData> mEngineData;
 
 };
 

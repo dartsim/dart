@@ -36,28 +36,16 @@
 
 #include "dart/collision/fcl/FCLEngine.h"
 
-#include <vector>
-
+#include <fcl/collision.h>
 #include <fcl/collision_object.h>
 #include <fcl/collision_data.h>
 #include <fcl/broadphase/broadphase.h>
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/fcl/FCLCollisionNode.h"
-#include "dart/collision/fcl/FCLCollisionGroupData.h"
 #include "dart/collision/fcl/FCLTypes.h"
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/collision/fcl/FCLCollisionNode.h"
+#include "dart/collision/fcl/FCLCollisionObjectEngineData.h"
+#include "dart/collision/fcl/FCLCollisionGroupEngineData.h"
 
 namespace dart {
 namespace collision {
@@ -68,7 +56,6 @@ namespace {
 // collision algorithm.
 struct CollisionData
 {
-
   // Collision request
   fcl::CollisionRequest request;
 
@@ -114,18 +101,18 @@ const std::string& FCLEngine::getTypeStatic()
 }
 
 //==============================================================================
-CollisionObjectData* FCLEngine::createCollisionObjectData(
+CollisionObjectEngineData* FCLEngine::createCollisionObjectData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
 {
-  return new FCLCollisionObjectData(parent, shape);
+  return new FCLCollisionObjectEngineData(parent, shape);
 }
 
 //==============================================================================
-CollisionGroupData* FCLEngine::createCollisionGroupData(
+CollisionGroupEngineData* FCLEngine::createCollisionGroupData(
     std::vector<CollisionObject*> collObjects)
 {
-  return new FCLCollisionGroupData(collObjects);
+  return new FCLCollisionGroupEngineData(collObjects);
 }
 
 //==============================================================================
@@ -134,7 +121,7 @@ bool FCLEngine::detect(CollisionObject* object1,
                        const Option& option,
                        Result& result)
 {
-  result.clear();
+  result.contacts.clear();
 
   assert(object1->getEngine()->getType() == FCLEngine::getTypeStatic());
   assert(object2->getEngine()->getType() == FCLEngine::getTypeStatic());
@@ -142,8 +129,8 @@ bool FCLEngine::detect(CollisionObject* object1,
   object1->updateEngineData();
   object2->updateEngineData();
 
-  auto data1 = static_cast<FCLCollisionObjectData*>(object1->getEngineData());
-  auto data2 = static_cast<FCLCollisionObjectData*>(object2->getEngineData());
+  auto data1 = static_cast<FCLCollisionObjectEngineData*>(object1->getEngineData());
+  auto data2 = static_cast<FCLCollisionObjectEngineData*>(object2->getEngineData());
 
   auto fclCollObj1 = data1->getFCLCollisionObject();
   auto fclCollObj2 = data2->getFCLCollisionObject();
@@ -155,21 +142,51 @@ bool FCLEngine::detect(CollisionObject* object1,
 
   convert(collData.result, result);
 
-  return !result.empty();
+  return !result.contacts.empty();
+}
+
+//==============================================================================
+bool FCLEngine::detect(CollisionObject* object, CollisionGroup* group,
+                       const Option& option, Result& result)
+{
+  result.contacts.clear();
+
+  assert(object);
+  assert(group);
+  assert(object->getEngine()->getType() == FCLEngine::getTypeStatic());
+  assert(group->getEngine()->getType() == FCLEngine::getTypeStatic());
+
+  object->updateEngineData();
+  group->updateEngineData();
+
+  auto objData = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
+  auto groupData = static_cast<FCLCollisionGroupEngineData*>(group->getEngineData());
+
+  auto fclObject = objData->getFCLCollisionObject();
+  auto broadPhaseAlg = groupData->getFCLCollisionManager();
+
+  CollisionData collData;
+  convert(option, collData.request);
+
+  broadPhaseAlg->collide(fclObject, &collData, collisionCallBack);
+
+  convert(collData.result, result);
+
+  return !result.contacts.empty();
 }
 
 //==============================================================================
 bool FCLEngine::detect(CollisionGroup* group,
                        const Option& option, Result& result)
 {
-  result.clear();
+  result.contacts.clear();
 
   assert(group);
   assert(group->getEngine()->getType() == FCLEngine::getTypeStatic());
 
   group->updateEngineData();
 
-  auto data = static_cast<FCLCollisionGroupData*>(group->getEngineData());
+  auto data = static_cast<FCLCollisionGroupEngineData*>(group->getEngineData());
 
   auto broadPhaseAlg = data->getFCLCollisionManager();
 
@@ -180,14 +197,14 @@ bool FCLEngine::detect(CollisionGroup* group,
 
   convert(collData.result, result);
 
-  return !result.empty();
+  return !result.contacts.empty();
 }
 
 //==============================================================================
 bool FCLEngine::detect(CollisionGroup* group1, CollisionGroup* group2,
                        const Option& option, Result& result)
 {
-  result.clear();
+  result.contacts.clear();
 
   assert(group1);
   assert(group2);
@@ -197,8 +214,8 @@ bool FCLEngine::detect(CollisionGroup* group1, CollisionGroup* group2,
   group1->updateEngineData();
   group2->updateEngineData();
 
-  auto data1 = static_cast<FCLCollisionGroupData*>(group1->getEngineData());
-  auto data2 = static_cast<FCLCollisionGroupData*>(group2->getEngineData());
+  auto data1 = static_cast<FCLCollisionGroupEngineData*>(group1->getEngineData());
+  auto data2 = static_cast<FCLCollisionGroupEngineData*>(group2->getEngineData());
 
   auto broadPhaseAlg1 = data1->getFCLCollisionManager();
   auto broadPhaseAlg2 = data2->getFCLCollisionManager();
@@ -210,33 +227,8 @@ bool FCLEngine::detect(CollisionGroup* group1, CollisionGroup* group2,
 
   convert(collData.result, result);
 
-  return !result.empty();
+  return !result.contacts.empty();
 }
-
-//==============================================================================
-//bool FCLEngine::detect(CollisionGroup* group,
-//                       const Option& option, Result& result)
-//{
-//  result.clear();
-
-//  assert(group->getEngineType() == FCL);
-
-//  auto data = static_cast<FCLCollisionGroupData*>(group->getEngineData());
-
-//  auto broadPhaseAlg = data->getFCLBroadPhaseAlg();
-
-////  object1->updateEngineData();
-////  object2->updateEngineData();
-
-//  CollisionData collData;
-//  convert(option, collData.request);
-
-////  collisionCallBack(fclCollObj1, fclCollObj2, &collData);
-
-//  convert(collData.result, result);
-
-//  return !result.empty();
-//}
 
 
 

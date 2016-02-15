@@ -34,19 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONGROUPDATA_H_
-#define DART_COLLISION_COLLISIONGROUPDATA_H_
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SmartPointer.h"
+#ifndef DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
+#define DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
 
-class CollisionGroupData
+class CollisionGroupEngineData
 {
 public:
   virtual void update() = 0;
@@ -62,4 +58,4 @@ public:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_COLLISIONGROUPENGINEDATA_H_

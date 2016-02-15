@@ -38,13 +38,7 @@
 #define DART_COLLISION_ENGINE_H_
 
 #include <vector>
-#include <map>
 
-#include <Eigen/Dense>
-
-#include "dart/config.h"
-#include "dart/common/Console.h"
-//#include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -52,49 +46,66 @@ namespace dart {
 namespace collision {
 
 class CollisionGroup;
+class CollisionGroupEngineData;
 class CollisionObject;
-class CollisionObjectData;
-class CollisionGroupData;
+class CollisionObjectEngineData;
 
 struct Option
 {
+  /// Flag whether compute contact information such as point, normal, and
+  /// penetration depth. If this flag is set to false, the Engine returns only
+  /// simple information whether there is a collision of not.
   bool enableContact;
+
+  /// Maximum number of contacts to detect
   size_t maxNumContacts;
 
+  /// Constructor
   Option(bool enableContact = true,
          size_t maxNumContacts = 100);
 };
 
 struct Result
 {
+  /// List of contact information for each contact
   std::vector<Contact> contacts;
-
-  void clear();
-
-  bool empty() const;
 };
 
 class Engine
 {
 public:
 
+  /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
-  virtual CollisionObjectData* createCollisionObjectData(
+  /// Create collision detection engine specific data for CollisionObject
+  virtual CollisionObjectEngineData* createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
   // TODO(JS): shared_ptr
 
-  virtual CollisionGroupData* createCollisionGroupData(
+  /// Create collision detection engine specific data for CollisionGroup
+  virtual CollisionGroupEngineData* createCollisionGroupData(
       std::vector<CollisionObject*> collObjects) = 0;
   // TODO(JS): shared_ptr
 
+  /// Perform collision detection for object1-object2.
   virtual bool detect(CollisionObject* object1, CollisionObject* object2,
                       const Option& option, Result& result) = 0;
 
+  /// Perform collision detection for object-group.
+  virtual bool detect(CollisionObject* object, CollisionGroup* group,
+                      const Option& option, Result& result) = 0;
+
+  /// Identical with detect(object, group, option, result)
+  bool detect(CollisionGroup* group, CollisionObject* object,
+              const Option& option, Result& result);
+
+  /// Perform collision detection for group.
   virtual bool detect(CollisionGroup* group,
                       const Option& option, Result& result) = 0;
 
+  /// Perform collision detection for group1-group2.
   virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
                       const Option& option, Result& result) = 0;
 

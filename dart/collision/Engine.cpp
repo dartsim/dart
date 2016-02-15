@@ -36,21 +36,6 @@
 
 #include "dart/collision/Engine.h"
 
-#include <algorithm>
-#include <iostream>
-#include <vector>
-
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/CollisionNode.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionObjectData.h"
-#include "dart/collision/fcl/FCLEngine.h"
-#ifdef HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionObjectData.h"
-#endif
-
 namespace dart {
 namespace collision {
 
@@ -62,16 +47,11 @@ Option::Option(bool enableContact, size_t maxNumContacts)
   // Do nothing
 }
 
-//==============================================================================
-void Result::clear()
-{
-  contacts.clear();
-}
-
 //=============================================================================
-bool Result::empty() const
+bool Engine::detect(CollisionGroup* group, CollisionObject* object,
+                    const Option& option, Result& result)
 {
-  return contacts.empty();
+  return detect(object, group, option, result);
 }
 
 }  // namespace collision

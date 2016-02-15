@@ -39,16 +39,14 @@
 
 #include <vector>
 
-#include "dart/collision/CollisionNode.h"
 #include "dart/collision/Engine.h"
-#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
 class Engine;
 class CollisionNode;
-class CollisionGroupData;
+class CollisionGroupEngineData;
 
 class CollisionGroup
 {
@@ -64,29 +62,47 @@ public:
   /// Default destructor
   virtual ~CollisionGroup();
 
+  /// Return collision detection engine associated with this CollisionGroup
   Engine* getEngine() const;
 
-  CollisionGroupData* getEngineData();
-
-  void updateEngineData();
-
+  /// Add collision object to this CollisionGroup
   void addCollisionObject(CollisionObject* object);
 
 //  virtual void addCollisionNode(const CollisionNodes& nodes);
 
+  /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
 
+  /// Perform collision detection with other CollisionObject.
+  ///
+  /// Return false if the engine type of the other CollisionObject is different
+  /// from this CollisionObject engine.
+  bool detect(CollisionObject* object, const Option& option, Result& result);
+
+  /// Perform collision detection with other CollisionGroup.
+  ///
+  /// Return false if the engine type of the other CollisionGroup is different
+  /// from this CollisionObject engine.
   bool detect(CollisionGroup* group, const Option& option, Result& result);
+
+  /// Return the collision detection engine specific data of this
+  /// CollisionObject
+  CollisionGroupEngineData* getEngineData();
+
+  /// Update engine data. This function should be called before the collision
+  /// detection is performed by the engine in most cases.
+  void updateEngineData();
 
 protected:
 
   /// Collision engine
   Engine* mEngine;
 
+  /// Collision objects
   CollisionObjects mCollisionObjects;
 
   /// Engine specific data
-  std::shared_ptr<CollisionGroupData> mEngineData;
+  std::shared_ptr<CollisionGroupEngineData> mEngineData;
 
 };
 // TODO(JS): make this class iterable for collision objects
