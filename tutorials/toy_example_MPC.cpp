@@ -8,6 +8,8 @@
 #include <iostream>
 #include <time.h>
 
+using namespace dart::common;
+using namespace dart::utils;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::math;
@@ -38,7 +40,7 @@ public:
 
 		mAcceleration_random = 5;
 
-		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
+		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
 
 		mVelocity_old_in_set_Acc_fun = 0;
 		mVelocity_new_in_set_Acc_fun = 0;
@@ -50,15 +52,22 @@ public:
 	{
 		// set horizontal velocity;
 		
-		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
-		
+		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
+
 		if (mDetector->getNumContacts() <= mdefault_Num_contact)
 		{
-			mCube->getDof(0)->setVelocity(mSpeed);
+			//mCube->getDof(0)->setVelocity(mSpeed);
+			
+			mCube->getDof(0)->setCommand(mSpeed);
+		
 		}
+		else
+		{
+			//mCube->getDof(0)->setVelocity(0);
 
-		//int index1 = mCube->getDof(0)->getIndexInSkeleton();
-		//mCube->setCommand(index1, mSpeed);
+			mCube->getDof(0)->setCommand(0);
+
+		}
 	}
 	double setCubeAcceleration()
 	{
@@ -66,10 +75,26 @@ public:
 
 		// using servo actuator type (input velocity) integrate on velocity
 		
-		randomizeAcceleration();
-		mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + mAcceleration * mTime_step_in_Acc_fun;
-		mCube->getDof(1)->setVelocity(mVelocity_new_in_set_Acc_fun);
-		mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
+		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
+
+		if (mDetector->getNumContacts() <= mdefault_Num_contact)
+		{
+			randomizeAcceleration();
+			mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + mAcceleration * mTime_step_in_Acc_fun;
+
+			//mCube->getDof(1)->setVelocity(mVelocity_new_in_set_Acc_fun);
+
+			mCube->getDof(1)->setCommand(mVelocity_new_in_set_Acc_fun);
+
+			mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
+		}
+		else
+		{
+			//mCube->getDof(1)->setVelocity(0);
+
+			mCube->getDof(1)->setCommand(0);
+
+		}
 
 		// set Acceleration directly
 		/*
@@ -81,8 +106,6 @@ public:
 		}
 		*/
 
-		//int index1 = mCube->getDof(1)->getIndexInSkeleton();
-		//mCube->setCommand(index1, mAcceleration);
 		return mAcceleration;
 	}
 
@@ -130,7 +153,9 @@ public:
 		mController->setCubeAcceleration();
 
 		if (detector->getNumContacts() != default_Num_contact)
-		std::cout<<detector->getNumContacts();	
+		{
+			std::cout<<detector->getNumContacts();	
+		}
 
 		SimWindow::timeStepping();
 	}
