@@ -72,7 +72,6 @@ public:
 		mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
 
 		// set Acceleration directly
-		//std::cout<<mDetector->getNumContacts()<<std::endl;	
 		/*
 		if (mDetector->getNumContacts() <= mdefault_Num_contact)
 		{
@@ -117,7 +116,10 @@ public:
 		detector = mWorld->getConstraintSolver()->getCollisionDetector();
 		detector->detectCollision(true, true);
 
-		size_t default_Num_contact = detector->getNumContacts();
+		default_Num_contact = detector->getNumContacts();
+
+		std::cout<<"Default number of contacts is "<<default_Num_contact<<std::endl;
+
 		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector, default_Num_contact));
 	}
 
@@ -126,6 +128,9 @@ public:
 		double desire_Acceleration;
 		mController->setCubeVelocity();
 		mController->setCubeAcceleration();
+
+		if (detector->getNumContacts() != default_Num_contact)
+		std::cout<<detector->getNumContacts();	
 
 		SimWindow::timeStepping();
 	}
@@ -142,6 +147,8 @@ protected:
 	std::unique_ptr<Controller> mController;
 
 	dart::collision::CollisionDetector* detector;
+
+	size_t default_Num_contact;
 };
 
 SkeletonPtr createFloor()
