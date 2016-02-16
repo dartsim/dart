@@ -101,12 +101,12 @@ public:
   // TODO(JS): Not implemented yet.
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
-  void compareVelocities(const std::string& _fileName) {}
+  //void compareVelocities(const std::string& _fileName) {}
 
   // TODO(JS): Not implemented yet.
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
-  void compareAccelerations(const std::string& _fileName) {}
+  //void compareAccelerations(const std::string& _fileName) {}
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external

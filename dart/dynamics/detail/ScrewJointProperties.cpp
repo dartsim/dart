@@ -64,7 +64,7 @@ void ScrewJointAddon::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
   UpdateProperties(this);
-  incrementSkeletonVersion();
+  incrementVersion();
 }
 
 //==============================================================================

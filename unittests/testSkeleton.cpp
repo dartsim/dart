@@ -96,33 +96,6 @@ std::vector<SkeletonPtr> getSkeletons()
   return skeletons;
 }
 
-void check_self_consistency(SkeletonPtr skeleton)
-{
-  for(size_t i=0; i<skeleton->getNumBodyNodes(); ++i)
-  {
-    BodyNode* bn = skeleton->getBodyNode(i);
-    EXPECT_TRUE(bn->getIndexInSkeleton() == i);
-    EXPECT_TRUE(skeleton->getBodyNode(bn->getName()) == bn);
-
-    Joint* joint = bn->getParentJoint();
-    EXPECT_TRUE(skeleton->getJoint(joint->getName()) == joint);
-
-    for(size_t j=0; j<joint->getNumDofs(); ++j)
-    {
-      DegreeOfFreedom* dof = joint->getDof(j);
-      EXPECT_TRUE(dof->getIndexInJoint() == j);
-      EXPECT_TRUE(skeleton->getDof(dof->getName()) == dof);
-    }
-  }
-
-  for(size_t i=0; i<skeleton->getNumDofs(); ++i)
-  {
-    DegreeOfFreedom* dof = skeleton->getDof(i);
-    EXPECT_TRUE(dof->getIndexInSkeleton() == i);
-    EXPECT_TRUE(skeleton->getDof(dof->getName()) == dof);
-  }
-}
-
 void constructSubtree(std::vector<BodyNode*>& _tree, BodyNode* bn)
 {
   _tree.push_back(bn);
@@ -140,13 +113,18 @@ TEST(Skeleton, Restructuring)
   size_t numIterations = 2*skeletons.size();
 #endif
 
+  for(const auto& skeleton : skeletons)
+    EXPECT_TRUE(skeleton->checkIndexingConsistency());
+
   // Test moves within the current Skeleton
   for(size_t i=0; i<numIterations; ++i)
   {
     size_t index = floor(math::random(0, skeletons.size()));
     index = std::min(index, skeletons.size()-1);
     SkeletonPtr skeleton = skeletons[index];
+    EXPECT_TRUE(skeleton->checkIndexingConsistency());
     SkeletonPtr original = skeleton->clone();
+    EXPECT_TRUE(original->checkIndexingConsistency());
 
     size_t maxNode = skeleton->getNumBodyNodes()-1;
     BodyNode* bn1 = skeleton->getBodyNode(floor(math::random(0, maxNode)));
@@ -268,6 +246,8 @@ TEST(Skeleton, Restructuring)
 
     // Move to a new Skeleton
     childBn->moveTo(parentBn);
+    EXPECT_TRUE(childBn->getSkeleton()->checkIndexingConsistency());
+    EXPECT_TRUE(parentBn->getSkeleton()->checkIndexingConsistency());
 
     // Make sure all the objects have moved
     for(size_t j=0; j<subtree.size(); ++j)
@@ -327,12 +307,12 @@ TEST(Skeleton, Restructuring)
     }
 
     // Check that the mangled Skeletons are all self-consistent
-    check_self_consistency(fromSkel);
-    check_self_consistency(toSkel);
-    check_self_consistency(temporary);
-    check_self_consistency(other_temporary);
-    check_self_consistency(another_temporary);
-    check_self_consistency(last_temporary);
+    EXPECT_TRUE(fromSkel->checkIndexingConsistency());
+    EXPECT_TRUE(toSkel->checkIndexingConsistency());
+    EXPECT_TRUE(temporary->checkIndexingConsistency());
+    EXPECT_TRUE(other_temporary->checkIndexingConsistency());
+    EXPECT_TRUE(another_temporary->checkIndexingConsistency());
+    EXPECT_TRUE(last_temporary->checkIndexingConsistency());
   }
 }
 

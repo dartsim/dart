@@ -42,7 +42,6 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -82,22 +81,22 @@ struct ScrewJointProperties : SingleDofJoint::Properties,
 
 //==============================================================================
 class ScrewJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         ScrewJointAddon, ScrewJointUniqueProperties, ScrewJoint,
-        detail::JointPropertyUpdate<ScrewJointAddon>, false >
+        detail::JointPropertyUpdate<ScrewJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( ScrewJointAddon )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ScrewJointAddon )
 
   void setAxis(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis() const;
 
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Pitch)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Pitch)
 };
 
 //==============================================================================
 using ScrewJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<ScrewJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<ScrewJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

@@ -171,6 +171,24 @@ const std::string& Joint::getName() const
 }
 
 //==============================================================================
+size_t Joint::incrementVersion()
+{
+  if(const auto& skel = getSkeleton())
+    return skel->incrementVersion();
+
+  return 0;
+}
+
+//==============================================================================
+size_t Joint::getVersion() const
+{
+  if(const auto& skel = getSkeleton())
+    return skel->getVersion();
+
+  return 0;
+}
+
+//==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
   mJointP.mActuatorType = _actuatorType;

@@ -1145,7 +1145,7 @@ double SingleDofJoint::getPotentialEnergy() const
 
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const Properties& _properties)
-  : Joint(_properties),
+  : detail::SingleDofJointBase(_properties, common::NoArg),
     mDof(createDofPointer(0)),
     mCommand(0.0),
     mPosition(0.0),

@@ -92,7 +92,7 @@ size_t AssimpInputResourceAdaptor::Read(
 
 //==============================================================================
 size_t AssimpInputResourceAdaptor::Write(
-  const void* pvBuffer, size_t pSize, size_t pCount)
+  const void* /*pvBuffer*/, size_t /*pSize*/, size_t /*pCount*/)
 {
   dtwarn << "[AssimpInputResourceAdaptor::Write] Write is not implemented."
             " This is a read-only stream.\n";

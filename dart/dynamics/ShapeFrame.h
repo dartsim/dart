@@ -40,6 +40,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
+#include "dart/common/AddonWithVersion.h"
 #include "dart/common/SpecializedAddonManager.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
@@ -109,7 +110,7 @@ struct DynamicsDataProperties
 } // namespace detail
 
 class VisualAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::AddonWithVersionedProperties<
         VisualAddon,
         detail::VisualDataProperties,
         ShapeFrame,
@@ -153,7 +154,7 @@ public:
   Eigen::Vector3d getRGB() const;
 
   /// Get the transparency of the Shape
-  const double getAlpha() const;
+  double getAlpha() const;
 
   /// Hide the ShapeNode
   void hide();
@@ -173,19 +174,13 @@ protected:
 };
 
 class CollisionAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::AddonWithVersionedProperties<
         CollisionAddon,
         detail::CollisionDataProperties,
         ShapeFrame,
         &detail::CollisionShapeFrameAddonUpdate>
 {
 public:
-
-  using AddonType = common::AddonWithProtectedProperties<
-      CollisionAddon,
-      detail::CollisionDataProperties,
-      ShapeFrame,
-      &detail::CollisionShapeFrameAddonUpdate>;
 
   CollisionAddon(const CollisionAddon &) = delete;
   CollisionAddon(dart::common::AddonManager* mgr,
@@ -201,7 +196,7 @@ public:
 };
 
 class DynamicsAddon final :
-    public common::AddonWithProtectedProperties<
+    public common::AddonWithVersionedProperties<
         DynamicsAddon,
         detail::DynamicsDataProperties,
         ShapeFrame,
@@ -226,6 +221,7 @@ public:
 };
 
 class ShapeFrame :
+    public virtual common::VersionCounter,
     public common::SpecializedAddonManager<
         VisualAddon, CollisionAddon, DynamicsAddon>,
     public virtual Frame
@@ -250,6 +246,8 @@ public:
   {
     /// Shape pointer
     ShapePtr mShape;
+
+    size_t mVersion;
 
     /// Composed constructor
     UniqueProperties(const ShapePtr& shape
@@ -336,6 +334,12 @@ public:
   virtual void draw(renderer::RenderInterface* ri = nullptr,
                     const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
                     bool useDefaultColor = true) const;
+
+  // Documentation inherited
+  size_t incrementVersion() override;
+
+  // Documentation inherited
+  size_t getVersion() const override;
 
 protected:
 

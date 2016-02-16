@@ -255,8 +255,8 @@ bool PGSLCPSolver::isSymmetric(size_t _n, double* _A,
 
 //==============================================================================
 void PGSLCPSolver::print(size_t _n, double* _A, double* _x,
-                             double* lo, double* hi, double* b,
-                             double* w, int* findex)
+                         double* /*lo*/, double* /*hi*/, double* b,
+                         double* w, int* findex)
 {
   size_t nSkip = dPAD(_n);
   std::cout << "A: " << std::endl;

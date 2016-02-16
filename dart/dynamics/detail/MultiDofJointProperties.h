@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
 
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Addon.h"
+#include "dart/common/AddonWithVersion.h"
 
 namespace dart {
 namespace dynamics {
@@ -157,9 +157,9 @@ public:
 //==============================================================================
 template <size_t DOF>
 class MultiDofJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         MultiDofJointAddon<DOF>, MultiDofJointUniqueProperties<DOF>, MultiDofJoint<DOF>,
-        common::detail::NoOp<MultiDofJointAddon<DOF>*>, false >
+        common::detail::NoOp<MultiDofJointAddon<DOF>*> >
 {
 public:
   MultiDofJointAddon(const MultiDofJointAddon&) = delete;
@@ -177,24 +177,24 @@ public:
 //      MultiDofJoint<DOF>::Addon::UpdateProperties(this);
 //    }
 
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, PositionLowerLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, PositionUpperLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, InitialPosition)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityLowerLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityUpperLimit)
-  DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, InitialVelocity, InitialVelocities)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationLowerLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationUpperLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, ForceLowerLimit)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, ForceUpperLimit)
-  DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, SpringStiffness, SpringStiffnesses)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, RestPosition)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, DampingCoefficient)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(double, Vector, Friction)
-  DART_DYNAMICS_SET_GET_MULTIDOF_ADDON(bool, BoolArray, PreserveDofName)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionUpperLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, InitialPosition)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityUpperLimit)
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, InitialVelocity, InitialVelocities)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationUpperLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, ForceLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, ForceUpperLimit)
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, SpringStiffness, SpringStiffnesses)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, RestPosition)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, DampingCoefficient)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, Friction)
+  DART_COMMON_SET_GET_MULTIDOF_ADDON(bool, BoolArray, PreserveDofName)
 
   const std::string& setDofName(size_t index, const std::string& name, bool preserveName);
-  DART_DYNAMICS_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, std::string, StringArray, DofName, DofNames, DOF)
+  DART_COMMON_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, std::string, StringArray, DofName, DofNames, DOF)
 
   friend class MultiDofJoint<DOF>;
 
@@ -283,12 +283,12 @@ template <size_t DOF>
 MultiDofJointAddon<DOF>::MultiDofJointAddon(
     common::AddonManager* mgr,
     const typename MultiDofJointAddon::PropertiesData& properties)
-  : AddonWithProtectedPropertiesInSkeleton<
-        typename MultiDofJointAddon<DOF>::Base,
+  : common::AddonWithVersionedProperties<
+        typename MultiDofJointAddon<DOF>::Derived,
         typename MultiDofJointAddon<DOF>::PropertiesData,
         typename MultiDofJointAddon<DOF>::ManagerType,
-        &common::detail::NoOp<typename MultiDofJointAddon<DOF>::Base*>,
-        MultiDofJointAddon<DOF>::Optional>(mgr, properties)
+        &common::detail::NoOp<typename MultiDofJointAddon<DOF>::Derived*> >(
+      mgr, properties)
 {
   // Do nothing
 }

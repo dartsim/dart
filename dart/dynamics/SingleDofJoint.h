@@ -40,7 +40,6 @@
 #include <string>
 
 #include "dart/dynamics/Joint.h"
-#include "dart/common/SpecializedAddonManager.h"
 #include "dart/dynamics/detail/SingleDofJointProperties.h"
 
 namespace dart {
@@ -51,7 +50,7 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class SingleDofJoint
-class SingleDofJoint : public Joint
+class SingleDofJoint : public detail::SingleDofJointBase
 {
 public:
 

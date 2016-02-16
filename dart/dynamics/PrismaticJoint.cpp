@@ -111,7 +111,7 @@ const std::string& PrismaticJoint::getStaticType()
 }
 
 //==============================================================================
-bool PrismaticJoint::isCyclic(size_t _index) const
+bool PrismaticJoint::isCyclic(size_t /*_index*/) const
 {
   return false;
 }

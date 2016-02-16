@@ -49,14 +49,11 @@
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Inertia.h"
-#include "dart/dynamics/Marker.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
-
-const double DART_DEFAULT_FRICTION_COEFF = 1.0;
-const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+#include "dart/dynamics/detail/BodyNodeProperties.h"
+#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace renderer {
@@ -98,76 +95,14 @@ public:
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
 
-  struct UniqueProperties
-  {
-    /// Inertia information for the BodyNode
-    Inertia mInertia;
-
-    /// Indicates whether this node is collidable;
-    bool mIsCollidable;
-
-    /// Coefficient of friction
-    double mFrictionCoeff;
-
-    /// Coefficient of restitution
-    double mRestitutionCoeff;
-
-    /// Gravity will be applied if true
-    bool mGravityMode;
-
-    /// Properties of the Markers belonging to this BodyNode
-    std::vector<Marker::Properties> mMarkerProperties;
-
-    /// Constructor
-    UniqueProperties(
-        const Inertia& _inertia = Inertia(),
-        bool _isCollidable = true,
-        double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
-        double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
-        bool _gravityMode = true);
-
-    virtual ~UniqueProperties() = default;
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  /// Composition of Entity and BodyNode properties
-  struct Properties : Entity::Properties, UniqueProperties
-  {
-    /// Composed constructor
-    Properties(
-        const Entity::Properties& _entityProperties = Entity::Properties("BodyNode"),
-        const UniqueProperties& _bodyNodeProperties = UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
-
   using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
   using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
   using AddonProperties = common::AddonManager::Properties;
 
-  struct ExtendedProperties : Properties
-  {
-    /// Composed constructor
-    ExtendedProperties(
-        const Properties& standardProperties = Properties(),
-        const NodeProperties& nodeProperties = NodeProperties(),
-        const AddonProperties& addonProperties = AddonProperties());
-
-    /// Composed move constructor
-    ExtendedProperties(
-        Properties&& standardProperties,
-        NodeProperties&& nodeProperties,
-        AddonProperties&& addonProperties);
-
-    /// Properties of all the Nodes attached to this BodyNode
-    NodeProperties mNodeProperties;
-
-    /// Properties of all the Addons attached to this BodyNode
-    AddonProperties mAddonProperties;
-  };
+  using UniqueProperties = detail::BodyNodeUniqueProperties;
+  using Properties = detail::BodyNodeProperties;
+  using ExtendedProperties = detail::BodyNodeExtendedProperties;
 
   BodyNode(const BodyNode&) = delete;
 
@@ -1274,8 +1209,6 @@ private:
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/Skeleton.h"
-// These headers need to be included after the BodyNode class is defined in
-// order for the header dependencies to work out correctly.
+#include "dart/dynamics/detail/BodyNode.h"
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

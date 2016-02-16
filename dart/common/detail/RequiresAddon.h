@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,58 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/UniversalJoint.h"
+#ifndef DART_COMMON_DETAIL_REQUIRESADDON_H_
+#define DART_COMMON_DETAIL_REQUIRESADDON_H_
+
+#include "dart/common/RequiresAddon.h"
 
 namespace dart {
-namespace dynamics {
-namespace detail {
+namespace common {
 
 //==============================================================================
-UniversalJointUniqueProperties::UniversalJointUniqueProperties(
-    const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2)
-  : mAxis({_axis1.normalized(), _axis2.normalized()})
+template <class ReqAddon>
+RequiresAddon<ReqAddon>::RequiresAddon()
 {
-  // Do nothing
+  AddonManager::mRequiredAddons.insert(typeid(ReqAddon));
 }
 
-//==============================================================================
-UniversalJointProperties::UniversalJointProperties(
-    const MultiDofJoint<2>::Properties& _multiDofProperties,
-    const UniversalJointUniqueProperties& _universalProperties)
-  : MultiDofJoint<2>::Properties(_multiDofProperties),
-    UniversalJointUniqueProperties(_universalProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void UniversalJointAddon::setAxis1(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[0] = _axis.normalized();
-  UpdateProperties(this);
-  incrementVersion();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJointAddon::getAxis1() const
-{
-  return mProperties.mAxis[0];
-}
-
-//==============================================================================
-void UniversalJointAddon::setAxis2(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[1] = _axis.normalized();
-  UpdateProperties(this);
-  incrementVersion();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJointAddon::getAxis2() const
-{
-  return mProperties.mAxis[1];
-}
-
-} // namespace detail
-} // namespace dynamics
+} // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_DETAIL_REQUIRESADDON_H_

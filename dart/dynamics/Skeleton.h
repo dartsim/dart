@@ -40,11 +40,15 @@
 
 #include <mutex>
 #include "dart/common/NameManager.h"
+#include "dart/common/VersionCounter.h"
 #include "dart/dynamics/MetaSkeleton.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/HierarchicalIK.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/ShapeNode.h"
+#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/detail/BodyNodeProperties.h"
+#include "dart/dynamics/SpecializedNodeManager.h"
 
 namespace dart {
 namespace renderer {
@@ -57,6 +61,7 @@ namespace dynamics {
 
 /// class Skeleton
 class Skeleton :
+    public virtual common::VersionCounter,
     public virtual common::AddonManager,
     public MetaSkeleton,
     public virtual SpecializedNodeManagerForSkeleton<ShapeNode, EndEffector>
@@ -169,8 +174,8 @@ public:
         size_t _version = 0);
   };
 
-  using BodyNodeProperties = std::vector<BodyNode::ExtendedProperties>;
-  using JointProperties = std::vector<Joint::ExtendedProperties>;
+  using BodyNodeExtendedProperties = std::vector<detail::BodyNodeExtendedProperties>;
+  using JointExtendedProperties = std::vector<Joint::ExtendedProperties>;
   using AddonProperties = common::AddonManager::Properties;
 
   /// The Properties of this Skeleton and everything within the Skeleton,
@@ -178,10 +183,10 @@ public:
   struct ExtendedProperties : Properties
   {
     /// Properties of all the BodyNodes in this Skeleton
-    BodyNodeProperties mBodyNodeProperties;
+    BodyNodeExtendedProperties mBodyNodeProperties;
 
     /// Properties of all the Joints in this Skeleton
-    JointProperties mJointProperties;
+    JointExtendedProperties mJointProperties;
 
     /// A list of the name of the parent of each BodyNode in this Skeleton. This
     /// allows the layout of the Skeleton to be reconstructed.
@@ -194,8 +199,8 @@ public:
 
     /// Default constructor
     ExtendedProperties(
-        const BodyNodeProperties& bodyNodeProperties = BodyNodeProperties(),
-        const JointProperties& jointProperties = JointProperties(),
+        const BodyNodeExtendedProperties& bodyNodeProperties = BodyNodeExtendedProperties(),
+        const JointExtendedProperties& jointProperties = JointExtendedProperties(),
         const std::vector<std::string>& parentNames = std::vector<std::string>(),
         const AddonProperties& addonProperties = AddonProperties());
   };
@@ -316,10 +321,10 @@ public:
 
   /// Increment the version number of this Skeleton and return the resulting
   /// (new) version number.
-  size_t incrementVersion();
+  size_t incrementVersion() override;
 
   /// Get the current version number of this Skeleton
-  size_t getVersion() const;
+  size_t getVersion() const override;
 
   /// \}
 
@@ -468,6 +473,11 @@ public:
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
   const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
+
+  /// This function is only meant for debugging purposes. It will verify that
+  /// all objects held in the Skeleton have the correct information about their
+  /// indexing.
+  bool checkIndexingConsistency() const;
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
@@ -1321,11 +1331,6 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/detail/SpecializedNodeManager.h"
-
 #include "dart/dynamics/detail/Skeleton.h"
-#include "dart/dynamics/detail/BodyNode.h"
 
 #endif  // DART_DYNAMICS_SKELETON_H_

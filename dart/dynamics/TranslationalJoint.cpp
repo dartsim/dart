@@ -101,7 +101,7 @@ const std::string& TranslationalJoint::getStaticType()
 }
 
 //==============================================================================
-bool TranslationalJoint::isCyclic(size_t _index) const
+bool TranslationalJoint::isCyclic(size_t /*_index*/) const
 {
   return false;
 }

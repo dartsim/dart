@@ -104,11 +104,11 @@ void OpenGLRenderInterface::clear(const Eigen::Vector3d& _color) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void OpenGLRenderInterface::setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) {
+void OpenGLRenderInterface::setMaterial(const Eigen::Vector3d& /*_diffuse*/, const Eigen::Vector3d& /*_specular*/, double /*_cosinePow*/) {
 
 }
 
-void OpenGLRenderInterface::getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const {
+void OpenGLRenderInterface::getMaterial(Eigen::Vector3d& /*_diffuse*/, Eigen::Vector3d& /*_specular*/, double& /*_cosinePow*/) const {
 
 }
 
@@ -715,11 +715,11 @@ void OpenGLRenderInterface::setLineWidth(float _width) {
     glLineWidth(_width);
 }
 
-void OpenGLRenderInterface::readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) {
+void OpenGLRenderInterface::readFrameBuffer(DecoBufferType /*_buffType*/, DecoColorChannel /*_ch*/, void* /*_pixels*/) {
 
 }
 
-void OpenGLRenderInterface::saveToImage(const char* _filename, DecoBufferType _buffType) {
+void OpenGLRenderInterface::saveToImage(const char* /*_filename*/, DecoBufferType /*_buffType*/) {
 
 }
 

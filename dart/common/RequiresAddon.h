@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,73 +34,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_EULERJOINTPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_EULERJOINTPROPERTIES_H_
+#ifndef DART_COMMON_REQUIRESADDON_H_
+#define DART_COMMON_REQUIRESADDON_H_
 
-#include <string>
-
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/common/SpecializedAddonManager.h"
 
 namespace dart {
-namespace dynamics {
-
-class EulerJoint;
-
-namespace detail {
+namespace common {
 
 //==============================================================================
-/// Axis order
-enum class AxisOrder : int
-{
-  ZYX = 0,
-  XYZ = 1
-};
+/// RequiresAddon allows classes that inherit AddonManager to know which Addons
+/// are required for their operation. This guarantees that there is no way for
+/// a required Addon do not get unexpectedly removed from their manager.
+///
+/// Required Addons are also automatically specialized for.
+template <class... OtherRequiredAddons>
+class RequiresAddon { };
 
 //==============================================================================
-struct EulerJointUniqueProperties
-{
-  /// Euler angle order
-  AxisOrder mAxisOrder;
-
-  /// Constructor
-  EulerJointUniqueProperties(AxisOrder _axisOrder = AxisOrder::XYZ);
-
-  virtual ~EulerJointUniqueProperties() = default;
-};
-
-//==============================================================================
-struct EulerJointProperties :
-    MultiDofJoint<3>::Properties,
-    EulerJointUniqueProperties
-{
-  /// Composed constructor
-  EulerJointProperties(
-      const MultiDofJoint<3>::Properties& _multiDofProperties =
-          MultiDofJoint<3>::Properties(),
-      const EulerJointUniqueProperties& _eulerJointProperties =
-          EulerJointUniqueProperties());
-
-  virtual ~EulerJointProperties() = default;
-};
-
-//==============================================================================
-class EulerJointAddon final :
-    public common::AddonWithVersionedProperties<
-        EulerJointAddon, EulerJointUniqueProperties, EulerJoint,
-        detail::JointPropertyUpdate<EulerJointAddon> >
+template <class ReqAddon>
+class RequiresAddon<ReqAddon> : public virtual SpecializedAddonManager<ReqAddon>
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( EulerJointAddon )
-  DART_COMMON_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
+
+  /// Default constructor. This is where the base AddonManager is informed that
+  /// the Addon type is required.
+  RequiresAddon();
+
 };
 
 //==============================================================================
-using EulerJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<3>, common::RequiresAddon<EulerJointAddon> >;
+template <class ReqAddon1, class... OtherReqAddons>
+class RequiresAddon<ReqAddon1, OtherReqAddons...> :
+    public AddonManagerJoiner< Virtual< RequiresAddon<ReqAddon1> >,
+                               Virtual< RequiresAddon<OtherReqAddons...> > > { };
 
-} // namespace detail
-} // namespace dynamics
+} // namespace common
 } // namespace dart
 
+#include "dart/common/detail/RequiresAddon.h"
 
-#endif // DART_DYNAMICS_DETAIL_EULERJOINTPROPERTIES_H_
+#endif // DART_COMMON_REQUIRESADDON_H_

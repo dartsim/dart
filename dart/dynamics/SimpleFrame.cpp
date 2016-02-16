@@ -46,6 +46,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(ConstructFrame),
     Frame(_refFrame, _name),
+    Detachable(),
     ShapeFrame(_refFrame, _name),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
@@ -58,7 +59,9 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 //==============================================================================
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
   : Entity(ConstructFrame),
+    common::AddonManager(),
     Frame(_refFrame, ""),
+    Detachable(),
     ShapeFrame(_refFrame, ""),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
@@ -66,6 +69,7 @@ SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
     mPartialAcceleration(Eigen::Vector6d::Zero())
 {
   copy(_otherFrame, _refFrame);
+  duplicateAddons(&_otherFrame);
 }
 
 //==============================================================================

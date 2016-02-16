@@ -94,7 +94,7 @@ DynamicsDataProperties::DynamicsDataProperties(
 //==============================================================================
 VisualAddon::VisualAddon(common::AddonManager* mgr,
                          const PropertiesData& properties)
-  : AddonWithProtectedProperties<
+  : common::AddonWithVersionedProperties<
       VisualAddon,
       detail::VisualDataProperties,
       ShapeFrame,
@@ -157,7 +157,7 @@ Eigen::Vector3d VisualAddon::getRGB() const
 }
 
 //==============================================================================
-const double VisualAddon::getAlpha() const
+double VisualAddon::getAlpha() const
 {
   return getRGBA()[3];
 }
@@ -183,8 +183,8 @@ bool VisualAddon::isHidden() const
 //==============================================================================
 CollisionAddon::CollisionAddon(
     common::AddonManager* mgr,
-    const AddonType::PropertiesData& properties)
-  : AddonType(mgr, properties)
+    const PropertiesData& properties)
+  : AddonImplementation(mgr, properties)
 {
 //  mIsShapeNode = dynamic_cast<ShapeNode*>(mgr);
 }
@@ -197,14 +197,16 @@ bool CollisionAddon::isCollidable() const
 
 //==============================================================================
 ShapeFrame::UniqueProperties::UniqueProperties(const ShapePtr& shape)
-  : mShape(shape)
+  : mShape(shape),
+    mVersion(0)
 {
   // Do nothing
 }
 
 //==============================================================================
 ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
-  : mShape(std::move(shape))
+  : mShape(std::move(shape)),
+    mVersion(0)
 {
   // Do nothing
 }
@@ -358,6 +360,18 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
     mShapeFrameP.mShape->draw(ri, color);
 
   ri->popMatrix();
+}
+
+//==============================================================================
+size_t ShapeFrame::incrementVersion()
+{
+  return ++mShapeFrameP.mVersion;
+}
+
+//==============================================================================
+size_t ShapeFrame::getVersion() const
+{
+  return mShapeFrameP.mVersion;
 }
 
 //==============================================================================

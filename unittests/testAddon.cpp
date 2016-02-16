@@ -48,7 +48,29 @@
 #include "dart/common/AddonManager.h"
 #include "dart/common/SpecializedAddonManager.h"
 
+#include "dart/dynamics/EulerJoint.h"
+
 using namespace dart::common;
+
+// Testing the creation of an Addon using the AddonWithState template class
+class StateAddonTest : public dart::common::AddonWithState<
+    StateAddonTest, dart::common::Empty>
+{
+public:
+
+  StateAddonTest(AddonManager* mgr, const StateData& state = StateData())
+    : AddonWithState<Base, Derived, StateData, ManagerType, UpdateState>(mgr, state)
+  {
+
+  }
+
+};
+
+class StateAndPropertiesAddonTest : public dart::common::AddonWithVersionedProperties<
+    StateAndPropertiesAddonTest, dart::common::Empty>
+{
+
+};
 
 class GenericAddon : public Addon, public Subject
 {
@@ -425,6 +447,8 @@ TEST(Addon, StateAndProperties)
   mgr2.create<DoubleAddon>();
   mgr2.create<FloatAddon>();
 
+  mgr1.create<StateAddonTest>();
+
   // ---- Test state transfer ----
 
   mgr2.setAddonStates(mgr1.getAddonStates());
@@ -500,6 +524,55 @@ TEST(Addon, Construction)
   double p = dart::math::random(0, 100);
   mgr.create<DoubleAddon>(dart::math::random(0, 100), p);
   EXPECT_EQ(mgr.get<DoubleAddon>()->mProperties.val, p);
+}
+
+TEST(Addon, Joints)
+{
+  usedSpecializedAddonAccess = false;
+
+  dart::dynamics::SkeletonPtr skel = Skeleton::create();
+
+  dart::dynamics::EulerJoint* euler =
+      skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
+  euler->getMultiDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  euler->getEulerJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  dart::dynamics::PlanarJoint* planar =
+      skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
+  planar->getMultiDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  planar->getPlanarJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  dart::dynamics::PrismaticJoint* prismatic =
+      skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
+  prismatic->getSingleDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  prismatic->getPrismaticJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  dart::dynamics::RevoluteJoint* revolute =
+      skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
+  revolute->getSingleDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  revolute->getRevoluteJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  dart::dynamics::ScrewJoint* screw =
+      skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
+  screw->getSingleDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  screw->getScrewJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  dart::dynamics::UniversalJoint* universal =
+      skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
+  universal->getMultiDofJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  universal->getUniversalJointAddon();
+  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
 }
 
 int main(int argc, char* argv[])
