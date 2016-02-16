@@ -44,24 +44,6 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-void VisualShapeFrameAddonUpdate(VisualAddon* /*addon*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void CollisionShapeFrameAddonUpdate(CollisionAddon* /*addon*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void DynamicsShapeFrameAddonUpdate(DynamicsAddon* /*addon*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
 VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color,
                                            const bool hidden)
   : mRGBA(color),
@@ -94,11 +76,7 @@ DynamicsDataProperties::DynamicsDataProperties(
 //==============================================================================
 VisualAddon::VisualAddon(common::AddonManager* mgr,
                          const PropertiesData& properties)
-  : common::AddonWithVersionedProperties<
-      VisualAddon,
-      detail::VisualDataProperties,
-      ShapeFrame,
-      &detail::VisualShapeFrameAddonUpdate>(mgr, properties),
+  : VisualAddon::BaseClass(mgr, properties),
     mShapeFrame(dynamic_cast<ShapeFrame*>(mgr))
 {
   assert(mShapeFrame);
@@ -165,13 +143,13 @@ double VisualAddon::getAlpha() const
 //==============================================================================
 void VisualAddon::hide()
 {
-  setHidden(false);
+  setHidden(true);
 }
 
 //==============================================================================
 void VisualAddon::show()
 {
-  setHidden(true);
+  setHidden(false);
 }
 
 //==============================================================================
@@ -193,6 +171,15 @@ CollisionAddon::CollisionAddon(
 bool CollisionAddon::isCollidable() const
 {
   return getCollidable();
+}
+
+//==============================================================================
+DynamicsAddon::DynamicsAddon(
+    common::AddonManager* mgr,
+    const PropertiesData& properties)
+  : BaseClass(mgr, properties)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -268,13 +255,6 @@ void ShapeFrame::copy(const ShapeFrame* other)
 }
 
 //==============================================================================
-ShapeFrame& ShapeFrame::operator=(const ShapeFrame& other)
-{
-  copy(other);
-  return *this;
-}
-
-//==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
   if (nullptr == shape)
@@ -331,7 +311,7 @@ CollisionAddon* ShapeFrame::getCollisionAddon(const bool createIfNull)
 }
 
 //==============================================================================
-DynamicsAddon* ShapeFrame::getDynamicsShapeNode(const bool createIfNull)
+DynamicsAddon* ShapeFrame::getDynamicsAddon(const bool createIfNull)
 {
   DynamicsAddon* dynamicsData = getDynamicsAddon();
 

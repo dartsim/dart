@@ -305,6 +305,27 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
 }
 
 //==============================================================================
+ShapeNode::ShapeNode(BodyNode* bodyNode,
+                     const ShapePtr& shape,
+                     const std::string& name)
+  : Entity(ConstructFrame),
+    Frame(bodyNode, ""),
+    FixedFrame(bodyNode, ""),
+    ShapeFrame(bodyNode),
+    TemplatedJacobianNode<ShapeNode>(bodyNode),
+    mShapeUpdatedSignal(ShapeUpdatedSignal()),
+    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
+    onShapeUpdated(mShapeUpdatedSignal),
+    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+{
+  Properties prop;
+  prop.mShape = shape;
+  prop.mName = name;
+
+  setProperties(prop);
+}
+
+//==============================================================================
 Node* ShapeNode::cloneNode(BodyNode* parent) const
 {
   ShapeNode* shapeNode = new ShapeNode(parent, Properties());

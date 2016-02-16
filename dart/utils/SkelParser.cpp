@@ -1027,8 +1027,8 @@ dynamics::SkeletonPtr readSkeleton(
 SkelBodyNode readBodyNode(
     tinyxml2::XMLElement* _bodyNodeElement,
     const Eigen::Isometry3d& _skeletonFrame,
-    const common::Uri& _baseUri,
-    const common::ResourceRetrieverPtr& _retriever)
+    const common::Uri& /*_baseUri*/,
+    const common::ResourceRetrieverPtr& /*_retriever*/)
 {
   assert(_bodyNodeElement != nullptr);
 

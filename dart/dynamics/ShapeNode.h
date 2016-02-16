@@ -207,8 +207,13 @@ public:
   /// \}
 
 protected:
+
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const Properties& properties);
+
+  /// Constructor used by the Skeleton class
+  ShapeNode(BodyNode* bodyNode, const ShapePtr& shape,
+            const std::string& name = "ShapeNode");
 
   /// Create a clone of this ShapeNode. This may only be called by the Skeleton
   /// class.

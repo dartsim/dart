@@ -398,8 +398,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 bool DartLoader::createDartNodeProperties(
   const urdf::Link* _lk,
   dynamics::BodyNode::Properties &node,
-  const common::Uri& _baseUri,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& /*_baseUri*/,
+  const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
 {
   node.mName = _lk->name;
   
@@ -459,7 +459,7 @@ bool DartLoader::createShapeNodes(
   return true;
 }
 
-void setMaterial(dynamics::ShapePtr _shape, const urdf::Visual* _viz)
+void setMaterial(dynamics::ShapePtr /*_shape*/, const urdf::Visual* _viz)
 {
   if(_viz->material)
   {

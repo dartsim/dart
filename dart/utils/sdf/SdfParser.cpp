@@ -689,8 +689,8 @@ BodyMap readAllBodyNodes(
 SDFBodyNode readBodyNode(
         tinyxml2::XMLElement* bodyNodeElement,
         const Eigen::Isometry3d& skeletonFrame,
-        const std::string& skelPath,
-        const common::ResourceRetrieverPtr& retriever)
+        const std::string& /*skelPath*/,
+        const common::ResourceRetrieverPtr& /*retriever*/)
 {
   assert(bodyNodeElement != nullptr);
 

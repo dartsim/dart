@@ -829,6 +829,7 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
 {
   ShapeNode::Properties properties;
   properties.mShape = shape;
+  properties.mName = name;
 
   return createNode<ShapeNode>(properties);
 }
@@ -858,11 +859,27 @@ const ShapeNode* BodyNode::getShapeNode(size_t index) const
 }
 
 //==============================================================================
-std::vector<ShapeNode*> BodyNode::getShapeNodes()
+const std::vector<ShapeNode*>& BodyNode::getShapeNodes()
 {
-  std::vector<ShapeNode*> shapeNodes(getNumShapeNodes());
-
   auto numShapeNode = getNumShapeNodes();
+
+  static std::vector<ShapeNode*> shapeNodes;
+  shapeNodes.resize(numShapeNode);
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+    shapeNodes[i] = getShapeNode(i);
+
+  return shapeNodes;
+}
+
+//==============================================================================
+const std::vector<const ShapeNode*>& BodyNode::getShapeNodes() const
+{
+  auto numShapeNode = getNumShapeNodes();
+
+  static std::vector<const ShapeNode*> shapeNodes;
+  shapeNodes.resize(numShapeNode);
+
   for (auto i = 0u; i < numShapeNode; ++i)
     shapeNodes[i] = getShapeNode(i);
 
@@ -1353,7 +1370,7 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 //==============================================================================
 void BodyNode::draw(renderer::RenderInterface* ri,
                     const Eigen::Vector4d& color,
-                    bool useDefaultColor, int depth) const
+                    bool useDefaultColor, int /*depth*/) const
 {
   if (nullptr == ri)
     return;

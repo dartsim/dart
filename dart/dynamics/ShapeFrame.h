@@ -56,10 +56,6 @@ class ShapeFrame;
 
 namespace detail {
 
-void VisualShapeFrameAddonUpdate(VisualAddon* visualData);
-void CollisionShapeFrameAddonUpdate(CollisionAddon* collisionData);
-void DynamicsShapeFrameAddonUpdate(DynamicsAddon* dynamicsData);
-
 struct VisualDataProperties
 {
   /// Color for the primitive shape
@@ -113,10 +109,12 @@ class VisualAddon final :
     public common::AddonWithVersionedProperties<
         VisualAddon,
         detail::VisualDataProperties,
-        ShapeFrame,
-        &detail::VisualShapeFrameAddonUpdate>
+        ShapeFrame>
 {
 public:
+
+  using BaseClass = common::AddonWithVersionedProperties<
+      VisualAddon, detail::VisualDataProperties, ShapeFrame>;
 
   /// Constructor
   VisualAddon(common::AddonManager* mgr,
@@ -177,8 +175,7 @@ class CollisionAddon final :
     public common::AddonWithVersionedProperties<
         CollisionAddon,
         detail::CollisionDataProperties,
-        ShapeFrame,
-        &detail::CollisionShapeFrameAddonUpdate>
+        ShapeFrame>
 {
 public:
 
@@ -199,17 +196,17 @@ class DynamicsAddon final :
     public common::AddonWithVersionedProperties<
         DynamicsAddon,
         detail::DynamicsDataProperties,
-        ShapeFrame,
-        &detail::DynamicsShapeFrameAddonUpdate>
+        ShapeFrame>
 {
 public:
 
-//  DynamicsAddon(const CollisionAddon &) = delete;
-//  DynamicsAddon(dart::common::AddonManager* mgr,
-//                      const PropertiesData& properties = PropertiesData());
+  using BaseClass = common::AddonWithVersionedProperties<
+      DynamicsAddon, detail::DynamicsDataProperties, ShapeFrame>;
 
-  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( DynamicsAddon,
-                                            &detail::DynamicsShapeFrameAddonUpdate )
+  DynamicsAddon(const DynamicsAddon&) = delete;
+
+  DynamicsAddon(dart::common::AddonManager* mgr,
+                const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ADDON_PROPERTY( double, FrictionCoeff )
   // void setFrictionCoeff(const double& value);
@@ -297,9 +294,6 @@ public:
   /// Copy the properties of another ShapeFrame
   void copy(const ShapeFrame* other);
 
-  /// Same as copy(const ShapeFrame&)
-  ShapeFrame& operator=(const ShapeFrame& other);
-
   /// Set shape
   void setShape(const ShapePtr& shape);
 
@@ -328,7 +322,7 @@ public:
   /// Get a pointer to the DynamicsData Addon for this ShapeNode. If
   /// _createIfNull is true, then the DynamicsData will be generated if one
   /// does not already exist.
-  DynamicsAddon* getDynamicsShapeNode(const bool createIfNull);
+  DynamicsAddon* getDynamicsAddon(const bool createIfNull);
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* ri = nullptr,
