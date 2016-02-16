@@ -34,59 +34,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionGroupEngineData.h"
-
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLCollisionObjectEngineData.h"
+#include "dart/dynamics/CollisionDetector.h"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
-FCLCollisionGroupEngineData::FCLCollisionGroupEngineData(
-    const FCLCollisionGroupEngineData::CollisionObjects& collObjects)
-  : mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+ShapeNodeCollisionObject::ShapeNodeCollisionObject(
+    const collision::EnginePtr& engine,
+    const dynamics::ShapePtr& shape,
+    const dynamics::BodyNodePtr& bodyNode)
+  : CollisionObject(engine, shape),
+    mBodyNode(bodyNode)
 {
-  for (auto collObj : collObjects)
+  auto found = false;
+  auto numShapes = mBodyNode->getNumCollisionShapes();
+  for (auto i = 0u; i < numShapes; ++i)
   {
-    auto data = static_cast<FCLCollisionObjectEngineData*>(collObj->getEngineData());
-    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+    auto shapeIt = mBodyNode->getCollisionShape(i);
+    if (shape == shapeIt)
+    {
+      found = true;
+      break;
+    }
   }
 
-  mBroadPhaseAlg->setup();
+  if (!found)
+  {
+    dtwarn << "[ShapeNodeCollisionObject::constructor] Attempting to create "
+           << "ShapeNodeCollisionObject with invalid pair of Shape and "
+           << "BodyNode.\n";
+    assert(false);
+  }
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::update()
+const Eigen::Isometry3d ShapeNodeCollisionObject::getTransform() const
 {
-  mBroadPhaseAlg->update();
+  return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectAdded(
-    CollisionObject* object)
+BodyNodePtr ShapeNodeCollisionObject::getBodyNode() const
 {
-  auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
-  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
+  return mBodyNode;
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectRemoved(
-    CollisionObject* object)
+std::shared_ptr<ShapeNodeCollisionObject>
+CollisionDetector::createCollisionNode(
+    const collision::EnginePtr engine,
+    const ShapePtr& shape,
+    const BodyNodePtr& bodyNode)
 {
-  auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
-  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
+  return std::make_shared<ShapeNodeCollisionObject>(engine, shape, bodyNode);
 }
 
-//==============================================================================
-FCLCollisionGroupEngineData::FCLCollisionManager*
-FCLCollisionGroupEngineData::getFCLCollisionManager() const
-{
-  return mBroadPhaseAlg.get();
-}
-
-
-}  // namespace collision
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

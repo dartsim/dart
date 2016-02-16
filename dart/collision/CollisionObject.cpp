@@ -44,7 +44,7 @@ namespace collision {
 //==============================================================================
 Engine* CollisionObject::getEngine() const
 {
-  return mEngine;
+  return mEngine.get();
 }
 
 //==============================================================================
@@ -81,7 +81,7 @@ void CollisionObject::updateEngineData()
 }
 
 //==============================================================================
-CollisionObject::CollisionObject(Engine* engine,
+CollisionObject::CollisionObject(const EnginePtr& engine,
                                  const dynamics::ShapePtr& shape)
   : mEngine(engine),
     mShape(shape)
@@ -89,11 +89,11 @@ CollisionObject::CollisionObject(Engine* engine,
   assert(mEngine);
   assert(mShape);
 
-  mEngineData.reset(mEngine->createCollisionObjectData(this, mShape));
+  mEngineData = mEngine->createCollisionObjectData(this, mShape);
 }
 
 //==============================================================================
-FreeCollisionObject::FreeCollisionObject(Engine* engine,
+FreeCollisionObject::FreeCollisionObject(const EnginePtr& engine,
                                          const dynamics::ShapePtr& shape,
                                          const Eigen::Isometry3d& tf)
   : CollisionObject(engine, shape),

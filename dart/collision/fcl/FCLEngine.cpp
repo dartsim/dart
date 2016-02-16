@@ -94,6 +94,12 @@ const std::string& FCLEngine::getType() const
 }
 
 //==============================================================================
+FCLEnginePtr FCLEngine::create()
+{
+  return std::make_shared<FCLEngine>();
+}
+
+//==============================================================================
 const std::string& FCLEngine::getTypeStatic()
 {
   static const std::string& type("FCL");
@@ -101,18 +107,18 @@ const std::string& FCLEngine::getTypeStatic()
 }
 
 //==============================================================================
-CollisionObjectEngineData* FCLEngine::createCollisionObjectData(
+CollisionObjectEngineDataPtr FCLEngine::createCollisionObjectData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
 {
-  return new FCLCollisionObjectEngineData(parent, shape);
+  return std::make_shared<FCLCollisionObjectEngineData>(parent, shape);
 }
 
 //==============================================================================
-CollisionGroupEngineData* FCLEngine::createCollisionGroupData(
-    std::vector<CollisionObject*> collObjects)
+CollisionGroupEngineDataPtr FCLEngine::createCollisionGroupData(
+    const CollisionObjects& collObjects)
 {
-  return new FCLCollisionGroupEngineData(collObjects);
+  return std::make_shared<FCLCollisionGroupEngineData>(collObjects);
 }
 
 //==============================================================================
@@ -313,10 +319,10 @@ void convert(const fcl::Contact& fclContact, Contact& contact)
       = static_cast<FCLCollisionGeometryUserData*>(fclContact.o2->getUserData());
   assert(userData1);
   assert(userData2);
-  contact.shape1 = userData1->shape;
-  contact.shape2 = userData2->shape;
-  contact.collisionObject1 = userData1->collisionObject;
-  contact.collisionObject2 = userData2->collisionObject;
+  contact.shape1 = userData1->mShape;
+  contact.shape2 = userData2->mShape;
+  contact.collisionObject1 = userData1->mCollisionObject;
+  contact.collisionObject2 = userData2->mCollisionObject;
 }
 
 } // anonymous namespace

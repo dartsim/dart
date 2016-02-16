@@ -472,9 +472,9 @@ FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
     FCLCollisionNode* fclCollNode,
     dynamics::BodyNode* bodyNode,
     const dynamics::ShapePtr& shape)
-  : fclCollNode(fclCollNode),
-    bodyNode(bodyNode),
-    shape(shape)
+  : mFclCollNode(fclCollNode),
+    mBodyNode(bodyNode),
+    mShape(shape)
 {
   // Do nothing
 }
@@ -483,8 +483,8 @@ FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
 FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
     CollisionObject* collisionObject,
     const dynamics::ShapePtr& shape)
-  : collisionObject(collisionObject),
-    shape(shape)
+  : mCollisionObject(collisionObject),
+    mShape(shape)
 {
   // Do nothing
 }
@@ -674,8 +674,8 @@ void FCLCollisionNode::updateFCLCollisionObjects()
     FCLCollisionGeometryUserData* userData
         = static_cast<FCLCollisionGeometryUserData*>(fclCollObj->collisionGeometry()->getUserData());
 
-    BodyNode* bodyNode = userData->bodyNode;
-    Shape*    shape    = userData->shape.get();
+    BodyNode* bodyNode = userData->mBodyNode;
+    Shape*    shape    = userData->mShape.get();
 
     // Update soft-body's vertices
     if (shape->getShapeType() == Shape::SOFT_MESH)

@@ -51,6 +51,8 @@ class FCLEngine : public Engine
 {
 public:
 
+  static FCLEnginePtr create();
+
   /// Return engine type "FCL"
   static const std::string& getTypeStatic();
 
@@ -58,13 +60,13 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherit
-  CollisionObjectEngineData* createCollisionObjectData(
+  CollisionObjectEngineDataPtr createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) override;
 
   // Documentation inherit
-  CollisionGroupEngineData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) override;
+  CollisionGroupEngineDataPtr createCollisionGroupData(
+      const CollisionObjects& collObjects) override;
 
   // Documentation inherit
   bool detect(CollisionObject* object1, CollisionObject* object2,

@@ -40,15 +40,11 @@
 #include <vector>
 
 #include "dart/collision/CollisionDetector.h"
+#include "dart/collision/SmartPointer.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
-
-class CollisionGroup;
-class CollisionGroupEngineData;
-class CollisionObject;
-class CollisionObjectEngineData;
 
 struct Option
 {
@@ -75,18 +71,20 @@ class Engine
 {
 public:
 
+  using CollisionObjects = std::vector<CollisionObjectPtr>;
+
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
   /// Create collision detection engine specific data for CollisionObject
-  virtual CollisionObjectEngineData* createCollisionObjectData(
+  virtual CollisionObjectEngineDataPtr createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
   // TODO(JS): shared_ptr
 
   /// Create collision detection engine specific data for CollisionGroup
-  virtual CollisionGroupEngineData* createCollisionGroupData(
-      std::vector<CollisionObject*> collObjects) = 0;
+  virtual CollisionGroupEngineDataPtr createCollisionGroupData(
+      const CollisionObjects& collObjects) = 0;
   // TODO(JS): shared_ptr
 
   /// Perform collision detection for object1-object2.

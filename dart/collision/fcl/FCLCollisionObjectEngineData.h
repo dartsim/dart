@@ -56,7 +56,7 @@ public:
 
   /// Constructor
   FCLCollisionObjectEngineData(CollisionObject* parent,
-                         const dynamics::ShapePtr& shape);
+                               const dynamics::ShapePtr& shape);
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
@@ -64,6 +64,7 @@ public:
   // Documentation inherited
   void updateShape(const dynamics::ShapePtr& shape) override;
 
+  /// Return FCL collision object
   fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
@@ -71,6 +72,7 @@ protected:
   /// FCL collision object
   std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
 
+  /// FCL collision geometry user data
   std::unique_ptr<FCLCollisionGeometryUserData> mFCLCollisionGeometryUserData;
 
 };

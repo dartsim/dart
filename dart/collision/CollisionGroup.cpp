@@ -46,15 +46,24 @@ namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(
-    Engine* engine,
+    const EnginePtr engine,
     const CollisionGroup::CollisionObjects& collObjects)
-  : mEngine(engine)
+  : mEngine(engine),
+    mCollisionObjects(collObjects),
+    mEngineData(mEngine->createCollisionGroupData(mCollisionObjects))
 {
   assert(mEngine);
+}
 
-  mCollisionObjects = collObjects;
-
-  mEngineData.reset(mEngine->createCollisionGroupData(mCollisionObjects));
+//==============================================================================
+CollisionGroup::CollisionGroup(
+    const EnginePtr& engine,
+    const CollisionObjectPtr& collObject)
+  : mEngine(engine),
+    mCollisionObjects{collObject}
+{
+  assert(mEngine);
+  assert(collObject);
 }
 
 //==============================================================================
@@ -65,11 +74,11 @@ CollisionGroup::~CollisionGroup()
 //==============================================================================
 Engine* CollisionGroup::getEngine() const
 {
-  return mEngine;
+  return mEngine.get();
 }
 
 //==============================================================================
-void CollisionGroup::addCollisionObject(CollisionObject* object)
+void CollisionGroup::addCollisionObject(const CollisionObjectPtr& object)
 {
   auto found = std::find(mCollisionObjects.begin(),
                          mCollisionObjects.end(), object)
@@ -82,7 +91,7 @@ void CollisionGroup::addCollisionObject(CollisionObject* object)
   }
 
   mCollisionObjects.push_back(object);
-  mEngineData->notifyCollisionObjectAdded(object);
+  mEngineData->notifyCollisionObjectAdded(object.get());
 }
 
 //==============================================================================

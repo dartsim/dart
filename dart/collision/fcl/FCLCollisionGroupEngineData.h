@@ -58,17 +58,21 @@ public:
   /// Constructor
   FCLCollisionGroupEngineData(const CollisionObjects& collObjects);
 
+  // Documentation inherited
   void update() override;
 
+  // Documentation inherited
   void notifyCollisionObjectAdded(CollisionObject* object) override;
 
+  // Documentation inherited
   void notifyCollisionObjectRemoved(CollisionObject* object) override;
 
+  /// Return FCL collision manager that is also a broad-phase algorithm
   FCLCollisionManager* getFCLCollisionManager() const;
 
 protected:
 
-  /// Broad-phase collision checker of FCL
+  /// FCL broad-phase algorithm
   std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 
 };

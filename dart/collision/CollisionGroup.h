@@ -52,23 +52,25 @@ class CollisionGroup
 {
 public:
 
-  using CollisionObjects = std::vector<CollisionObject*>;
+  using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
+  using CollisionObjects = std::vector<CollisionObjectPtr>;
 
-  /// Default constructor
-  CollisionGroup(
-      Engine* engine,
-      const CollisionObjects& collObjects = CollisionObjects());
+  /// Constructor
+  CollisionGroup(const EnginePtr engine,
+                 const CollisionObjects& collObjects = CollisionObjects());
 
-  /// Default destructor
+  /// Constructor
+  CollisionGroup(const EnginePtr& engine,
+                 const CollisionObjectPtr& collObject);
+
+  /// Destructor
   virtual ~CollisionGroup();
 
   /// Return collision detection engine associated with this CollisionGroup
   Engine* getEngine() const;
 
   /// Add collision object to this CollisionGroup
-  void addCollisionObject(CollisionObject* object);
-
-//  virtual void addCollisionNode(const CollisionNodes& nodes);
+  void addCollisionObject(const CollisionObjectPtr& object);
 
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
@@ -96,7 +98,7 @@ public:
 protected:
 
   /// Collision engine
-  Engine* mEngine;
+  EnginePtr mEngine;
 
   /// Collision objects
   CollisionObjects mCollisionObjects;

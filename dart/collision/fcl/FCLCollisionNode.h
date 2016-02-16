@@ -45,6 +45,7 @@
 #include <fcl/BVH/BVH_model.h>
 
 #include "dart/collision/CollisionNode.h"
+#include "dart/collision/SmartPointer.h"
 #include "dart/dynamics/Shape.h"
 
 namespace dart {
@@ -62,17 +63,17 @@ class CollisionObject;
 
 struct FCLCollisionGeometryUserData
 {
-  FCLCollisionNode* fclCollNode;
-  CollisionObject* collisionObject;
-  dynamics::BodyNode* bodyNode;
-  dynamics::ShapePtr shape;
+  FCLCollisionNode* mFclCollNode;
+  CollisionObject* mCollisionObject;
+  dynamics::BodyNode* mBodyNode;
+  dynamics::ShapePtr mShape;
 
-  FCLCollisionGeometryUserData(FCLCollisionNode* fclCollNode,
-                               dynamics::BodyNode* bodyNode,
-                               const dynamics::ShapePtr& shape);
+  FCLCollisionGeometryUserData(FCLCollisionNode* mFclCollNode,
+                               dynamics::BodyNode* mBodyNode,
+                               const dynamics::ShapePtr& mShape);
 
-  FCLCollisionGeometryUserData(CollisionObject* fclCollNode,
-                               const dynamics::ShapePtr& shape);
+  FCLCollisionGeometryUserData(CollisionObject* mFclCollNode,
+                               const dynamics::ShapePtr& mShape);
 
 };
 

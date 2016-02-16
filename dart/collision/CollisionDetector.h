@@ -80,9 +80,8 @@ struct Contact {
   /// Second colliding shape of the first body node
   dynamics::ShapePtr shape2;
 
-  collision::CollisionObject* collisionObject1;
-  collision::CollisionObject* collisionObject2;
-  // TODO(JS): shared_ptr
+  CollisionObject* collisionObject1;
+  CollisionObject* collisionObject2;
 
   /// Penetration depth
   double penetrationDepth;

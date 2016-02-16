@@ -34,59 +34,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionGroupEngineData.h"
+#ifndef DART_COLLISION_SMARTPOINTER_H_
+#define DART_COLLISION_SMARTPOINTER_H_
 
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLCollisionObjectEngineData.h"
+#include "dart/common/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-FCLCollisionGroupEngineData::FCLCollisionGroupEngineData(
-    const FCLCollisionGroupEngineData::CollisionObjects& collObjects)
-  : mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
-{
-  for (auto collObj : collObjects)
-  {
-    auto data = static_cast<FCLCollisionObjectEngineData*>(collObj->getEngineData());
-    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  }
+DART_COMMON_MAKE_SHARED_WEAK(Engine)
+DART_COMMON_MAKE_SHARED_WEAK(FCLEngine)
 
-  mBroadPhaseAlg->setup();
-}
+DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
+DART_COMMON_MAKE_SHARED_WEAK(CollisionObjectEngineData)
+DART_COMMON_MAKE_SHARED_WEAK(FreeCollisionObject)
 
-//==============================================================================
-void FCLCollisionGroupEngineData::update()
-{
-  mBroadPhaseAlg->update();
-}
-
-//==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectAdded(
-    CollisionObject* object)
-{
-  auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
-  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectRemoved(
-    CollisionObject* object)
-{
-  auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
-  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-FCLCollisionGroupEngineData::FCLCollisionManager*
-FCLCollisionGroupEngineData::getFCLCollisionManager() const
-{
-  return mBroadPhaseAlg.get();
-}
-
+DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
+DART_COMMON_MAKE_SHARED_WEAK(CollisionGroupEngineData)
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_SMARTPOINTER_H_

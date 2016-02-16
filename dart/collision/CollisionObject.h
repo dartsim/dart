@@ -40,6 +40,7 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/Engine.h"
+#include "dart/collision/SmartPointer.h"
 
 namespace dart {
 namespace collision {
@@ -83,17 +84,17 @@ public:
 protected:
 
   /// Contructor
-  CollisionObject(Engine* engine, const dynamics::ShapePtr& shape);
+  CollisionObject(const EnginePtr& engine, const dynamics::ShapePtr& shape);
 
 protected:
 
-  /// Collision engine
-  Engine* mEngine;
+  /// Collision detection engine
+  EnginePtr mEngine;
 
   /// Shape
   dynamics::ShapePtr mShape;
 
-  /// Engine specific data
+  /// Collision detection engine specific data
   std::shared_ptr<CollisionObjectEngineData> mEngineData;
 
 };
@@ -105,8 +106,7 @@ class FreeCollisionObject : public CollisionObject
 public:
 
   /// Constructor
-  FreeCollisionObject(
-      Engine* engine,
+  FreeCollisionObject(const EnginePtr& engine,
       const dynamics::ShapePtr& shape,
       const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
   // TODO(JS): change to engine pointer
@@ -129,8 +129,6 @@ protected:
   Eigen::Isometry3d mW;
 
 };
-
-using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
 
 }  // namespace collision
 }  // namespace dart
