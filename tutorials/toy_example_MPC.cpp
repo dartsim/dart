@@ -34,19 +34,15 @@ public:
 		:mCube(cube),mDetector(detector),mdefault_Num_contact(default_Num_contact)
 	{
 		mSpeed = 0.2;
-		mAcceleration = 0.2;
+		mAcceleration = 0.5;
 
 		mAcceleration_random = 5;
 
 		mCube->getJoint(0)->setActuatorType(Joint::SERVO);
 
-		//mVelocity_old_in_set_Acc_fun = 0;
-		//mVelocity_new_in_set_Acc_fun = 0;
-
-		//mTimer = new dart::common::Timer("mTimer_for_int_Acc");
-		//mTime_old = 0;
-		//mTime_new = 0;
-		//mTimer->start();
+		mVelocity_old_in_set_Acc_fun = 0;
+		mVelocity_new_in_set_Acc_fun = 0;
+		mTime_step_in_Acc_fun = 0.001;
 
 		std::srand((unsigned int)time(NULL));
 	}
@@ -69,31 +65,25 @@ public:
 		// set vertical acceleration
 
 		// using servo actuator type (input velocity) integrate on velocity
-		/*
-		mTime_new = mTimer->getElapsedTime();
-
+		
 		randomizeAcceleration();
-
-		mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + mAcceleration * (mTime_new - mTime_old);
-
+		mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + mAcceleration * mTime_step_in_Acc_fun;
 		mCube->getDof(1)->setVelocity(mVelocity_new_in_set_Acc_fun);
-
-		mTime_old = mTime_new;
 		mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
-		*/
 
 		// set Acceleration directly
 		//std::cout<<mDetector->getNumContacts()<<std::endl;	
+		/*
 		if (mDetector->getNumContacts() <= mdefault_Num_contact)
 		{
 			randomizeAcceleration();
 			mCube->getJoint(0)->setActuatorType(Joint::ACCELERATION);
 			mCube->getDof(1)->setAcceleration(mAcceleration);
 		}
+		*/
 
 		//int index1 = mCube->getDof(1)->getIndexInSkeleton();
 		//mCube->setCommand(index1, mAcceleration);
-
 		return mAcceleration;
 	}
 
@@ -107,13 +97,10 @@ protected:
 	double mSpeed;
 	double mAcceleration;
 
-	//double mVelocity_old_in_set_Acc_fun;
-	//double mVelocity_new_in_set_Acc_fun;
+	double mVelocity_old_in_set_Acc_fun;
+	double mVelocity_new_in_set_Acc_fun;
+	double mTime_step_in_Acc_fun;
 
-	//dart::common::Timer *mTimer;
-	//double mTime_old;
-	//double mTime_new;
-	
 	double mAcceleration_random;
 	
 	dart::collision::CollisionDetector* mDetector;

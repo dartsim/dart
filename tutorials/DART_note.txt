@@ -1,0 +1,10 @@
+1. Typo:
+conver
+
+biped->getJoint(i)->setPositionLimited(true);
+biped->getJoint(i)->setPositionLimitEnforced(true);
+
+2. Notes:
+
+void glutTimerFunc( unsigned int msecs, void (*func)(int value), int value);
+	将glut设置为调用func前等待msecs毫秒，与windows定时器不同，该函数只激发一次，因此为了实现连续的动画效果，必须在定时器函数中重新设置定时器。	

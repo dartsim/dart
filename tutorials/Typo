@@ -1,6 +1,0 @@
-conver
-
-biped->getJoint(i)->setPositionLimited(true);
-biped->getJoint(i)->setPositionLimitEnforced(true);
-
-
