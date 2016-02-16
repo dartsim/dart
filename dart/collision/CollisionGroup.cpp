@@ -46,29 +46,43 @@ namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(
-    const EnginePtr engine,
-    const CollisionGroup::CollisionObjects& collObjects)
+    const EnginePtr& engine,
+    const CollisionGroup::CollisionObjectPtrs& collObjects)
   : mEngine(engine),
     mCollisionObjects(collObjects),
-    mEngineData(mEngine->createCollisionGroupData(mCollisionObjects))
+    mEngineData(mEngine->createCollisionGroupData(mCollisionObjects).release())
 {
   assert(mEngine);
 }
 
 //==============================================================================
-CollisionGroup::CollisionGroup(
-    const EnginePtr& engine,
-    const CollisionObjectPtr& collObject)
-  : mEngine(engine),
-    mCollisionObjects{collObject}
+CollisionGroup::CollisionGroup(const CollisionGroup& other)
+  : mEngine(other.mEngine),
+    mCollisionObjects(other.mCollisionObjects),
+    mEngineData(other.mEngineData->clone(mCollisionObjects))
 {
-  assert(mEngine);
-  assert(collObject);
+  // Do nothing
+}
+
+//==============================================================================
+CollisionGroup& CollisionGroup::operator=(const CollisionGroup& other)
+{
+  copy(other);
+  return *this;
 }
 
 //==============================================================================
 CollisionGroup::~CollisionGroup()
 {
+  // Do nothing
+}
+
+//==============================================================================
+void CollisionGroup::copy(const CollisionGroup& other)
+{
+  mEngine = other.mEngine;
+  mCollisionObjects = other.mCollisionObjects;
+  mEngineData.reset(other.mEngineData->clone(mCollisionObjects).release());
 }
 
 //==============================================================================
@@ -78,20 +92,45 @@ Engine* CollisionGroup::getEngine() const
 }
 
 //==============================================================================
+bool CollisionGroup::hasCollisionObject(
+    const CollisionGroup::CollisionObjectPtr& object) const
+{
+  return std::find(mCollisionObjects.begin(),
+                   mCollisionObjects.end(), object)
+      != mCollisionObjects.end();
+}
+
+//==============================================================================
 void CollisionGroup::addCollisionObject(const CollisionObjectPtr& object)
 {
-  auto found = std::find(mCollisionObjects.begin(),
-                         mCollisionObjects.end(), object)
-      != mCollisionObjects.end();
-
-  if (found)
+  if (hasCollisionObject(object))
   {
     // TODO(JS): print warning message
     return;
   }
 
   mCollisionObjects.push_back(object);
-  mEngineData->notifyCollisionObjectAdded(object.get());
+  mEngineData->addCollisionObject(object);
+}
+
+//==============================================================================
+void CollisionGroup::addCollisionObjects(
+    const CollisionGroup::CollisionObjectPtrs& objects)
+{
+  bool added = false;
+
+  for (auto object : objects)
+  {
+    if (!hasCollisionObject(object))
+    {
+      added = true;
+      mCollisionObjects.push_back(object);
+      mEngineData->addCollisionObject(object, false);
+    }
+  }
+
+  if (added)
+    mEngineData->init();
 }
 
 //==============================================================================

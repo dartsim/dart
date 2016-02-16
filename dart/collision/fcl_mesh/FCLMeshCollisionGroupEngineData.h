@@ -46,26 +46,35 @@ namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionGeometryUserData;
+class FCLCollisionObjectUserData;
 
 class FCLMeshCollisionGroupEngineData : public CollisionGroupEngineData
 {
 public:
 
   using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
-  using CollisionObjects = CollisionGroup::CollisionObjects;
+  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
   FCLMeshCollisionGroupEngineData(const CollisionObjects& collObjects);
 
   // Documentation inherited
+  std::unique_ptr<CollisionGroupEngineData> clone(
+      const CollisionObjectPtrs& collObjects) const override;
+
+  // Documentation inherited
+  void init() override;
+
+  // Documentation inherited
+  void addCollisionObject(const CollisionObjectPtr& object,
+                          const bool init) override;
+
+  // Documentation inherited
+  void removeCollisionObject(const CollisionObjectPtr& object,
+                             const bool init) override;
+
+  // Documentation inherited
   void update() override;
-
-  // Documentation inherited
-  void notifyCollisionObjectAdded(CollisionObject* object) override;
-
-  // Documentation inherited
-  void notifyCollisionObjectRemoved(CollisionObject* object) override;
 
   /// Return FCL collision manager that is also a broad-phase algorithm
   FCLCollisionManager* getFCLCollisionManager() const;

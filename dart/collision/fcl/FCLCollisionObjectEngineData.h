@@ -48,7 +48,7 @@ namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionGeometryUserData;
+class FCLCollisionObjectUserData;
 
 class FCLCollisionObjectEngineData : public CollisionObjectEngineData
 {
@@ -73,10 +73,13 @@ public:
 protected:
 
   /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionGeometryUserData> mFCLCollisionGeometryUserData;
+  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
   std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  // Note: We can consider sharing fcl::CollisionGeometry with other
+  // CollisionObjects that are associated with the same Shape of DART to avoid
+  // unnecessary copy of fcl::CollisionGeometry.
 
 };
 

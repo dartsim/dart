@@ -57,27 +57,45 @@ FCLCollisionGroupEngineData::FCLCollisionGroupEngineData(
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::update()
+std::unique_ptr<CollisionGroupEngineData>
+FCLCollisionGroupEngineData::clone(const CollisionObjectPtrs& collObjects) const
 {
-  mBroadPhaseAlg->update();
+  return std::unique_ptr<CollisionGroupEngineData>(
+        new FCLCollisionGroupEngineData(collObjects));
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectAdded(
-    CollisionObject* object)
+void FCLCollisionGroupEngineData::init()
+{
+  mBroadPhaseAlg->setup();
+}
+
+//==============================================================================
+void FCLCollisionGroupEngineData::addCollisionObject(
+    const CollisionObjectPtr& object, const bool init)
 {
   auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
   mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
+
+  if (init)
+    this->init();
 }
 
 //==============================================================================
-void FCLCollisionGroupEngineData::notifyCollisionObjectRemoved(
-    CollisionObject* object)
+void FCLCollisionGroupEngineData::removeCollisionObject(
+    const CollisionObjectPtr& object, const bool init)
 {
   auto data = static_cast<FCLCollisionObjectEngineData*>(object->getEngineData());
   mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
-  mBroadPhaseAlg->setup();
+
+  if (init)
+    this->init();
+}
+
+//==============================================================================
+void FCLCollisionGroupEngineData::update()
+{
+  mBroadPhaseAlg->update();
 }
 
 //==============================================================================

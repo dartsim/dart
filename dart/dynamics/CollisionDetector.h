@@ -68,6 +68,7 @@ public:
 protected:
 
   dynamics::BodyNodePtr mBodyNode;
+  // TODO(JS): this should be changed to ShapeNode
 
 };
 
@@ -75,10 +76,15 @@ class CollisionDetector
 {
 public:
 
-  static std::shared_ptr<ShapeNodeCollisionObject> createCollisionNode(
+  static std::shared_ptr<ShapeNodeCollisionObject> createCollisionObject(
       const collision::EnginePtr engine,
       const dynamics::ShapePtr& shape,
       const BodyNodePtr& bodyNode);
+
+  static std::vector<collision::CollisionObjectPtr>
+  createCollisionObjects(
+      const collision::EnginePtr& engine,
+      const dynamics::SkeletonPtr& skel);
 
   template <class ColDecEngine = collision::FCLEngine>
   static bool detect(const dynamics::ShapePtr& shape1,
@@ -93,11 +99,6 @@ public:
                      const dynamics::SkeletonPtr& skel2,
                      const collision::Option& option,
                      collision::Result& result);
-
-  static std::vector<collision::CollisionObjectPtr>
-  createShapeNodeCollisionObjects(
-      const collision::EnginePtr& engine,
-      const dynamics::SkeletonPtr& skel);
 
 };
 
@@ -125,39 +126,13 @@ bool CollisionDetector::detect(
 {
   auto engine = ColDecEngine::create();
 
-  std::vector<collision::CollisionObjectPtr> objects1
-      = createShapeNodeCollisionObjects(engine, skel1);
-  std::vector<collision::CollisionObjectPtr> objects2
-      = createShapeNodeCollisionObjects(engine, skel2);
+  auto objects1 = createCollisionObjects(engine, skel1);
+  auto objects2 = createCollisionObjects(engine, skel2);
 
   auto group1 = collision::CollisionGroup(engine, objects1);
   auto group2 = collision::CollisionGroup(engine, objects2);
 
   return group1.detect(&group2, option, result);
-}
-
-//==============================================================================
-std::vector<collision::CollisionObjectPtr>
-CollisionDetector::createShapeNodeCollisionObjects(
-    const collision::EnginePtr& engine,
-    const dynamics::SkeletonPtr& skel)
-{
-  std::vector<collision::CollisionObjectPtr> objects;
-
-  auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
-  {
-    auto bodyNode = skel->getBodyNode(i);
-    auto numColShapes = bodyNode->getNumCollisionShapes();
-
-    for (auto j = 0u; j < numColShapes; ++j)
-    {
-      auto shape = bodyNode->getCollisionShape(j);
-      objects.push_back(createCollisionNode(engine, shape, bodyNode));
-    }
-  }
-
-  return objects;
 }
 
 } // namespace dynamics

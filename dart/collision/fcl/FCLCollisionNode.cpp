@@ -468,7 +468,7 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 }
 
 //==============================================================================
-FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
+FCLCollisionObjectUserData::FCLCollisionObjectUserData(
     FCLCollisionNode* fclCollNode,
     dynamics::BodyNode* bodyNode,
     const dynamics::ShapePtr& shape)
@@ -480,7 +480,7 @@ FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
 }
 
 //==============================================================================
-FCLCollisionGeometryUserData::FCLCollisionGeometryUserData(
+FCLCollisionObjectUserData::FCLCollisionObjectUserData(
     CollisionObject* collisionObject,
     const dynamics::ShapePtr& shape)
   : mCollisionObject(collisionObject),
@@ -611,7 +611,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
     assert(nullptr != fclCollGeom);
     fcl::CollisionObject* fclCollObj
         = new fcl::CollisionObject(fclCollGeom, getFCLTransform(i));
-    fclCollGeom->setUserData(new FCLCollisionGeometryUserData(this, _bodyNode, shape));
+    fclCollGeom->setUserData(new FCLCollisionObjectUserData(this, _bodyNode, shape));
     mCollisionObjects.push_back(fclCollObj);
   }
 }
@@ -623,7 +623,7 @@ FCLCollisionNode::~FCLCollisionNode()
   {
     assert(collObj);
 
-    delete static_cast<FCLCollisionGeometryUserData*>(collObj->getUserData());
+    delete static_cast<FCLCollisionObjectUserData*>(collObj->getUserData());
     delete collObj;
   }
 }
@@ -671,8 +671,8 @@ void FCLCollisionNode::updateFCLCollisionObjects()
 
   for (auto& fclCollObj : mCollisionObjects)
   {
-    FCLCollisionGeometryUserData* userData
-        = static_cast<FCLCollisionGeometryUserData*>(fclCollObj->collisionGeometry()->getUserData());
+    FCLCollisionObjectUserData* userData
+        = static_cast<FCLCollisionObjectUserData*>(fclCollObj->collisionGeometry()->getUserData());
 
     BodyNode* bodyNode = userData->mBodyNode;
     Shape*    shape    = userData->mShape.get();

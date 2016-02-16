@@ -84,12 +84,11 @@ void CollisionObject::updateEngineData()
 CollisionObject::CollisionObject(const EnginePtr& engine,
                                  const dynamics::ShapePtr& shape)
   : mEngine(engine),
-    mShape(shape)
+    mShape(shape),
+    mEngineData(mEngine->createCollisionObjectData(this, mShape).release())
 {
   assert(mEngine);
   assert(mShape);
-
-  mEngineData = mEngine->createCollisionObjectData(this, mShape);
 }
 
 //==============================================================================

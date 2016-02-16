@@ -470,8 +470,7 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 //==============================================================================
 boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
-    const dynamics::ShapePtr& shape,
-    FCLCollisionGeometryUserData* userData)
+    const dynamics::ShapePtr& shape)
 {
   using ::dart::dynamics::Shape;
   using ::dart::dynamics::BoxShape;
@@ -551,8 +550,6 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     }
   }
 
-  fclCollGeom->setUserData(userData);
-
   return fclCollGeom;
 }
 
@@ -563,13 +560,11 @@ FCLMeshCollisionObjectEngineData::FCLMeshCollisionObjectEngineData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
   : CollisionObjectEngineData(),
-    mFCLCollisionGeometryUserData(
-      new FCLCollisionGeometryUserData(parent, shape)),
-    mFCLCollisionObject(
-      new fcl::CollisionObject(
-        createFCLCollisionGeometry(shape, mFCLCollisionGeometryUserData.get())))
+    mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent, shape)),
+    mFCLCollisionObject(new fcl::CollisionObject(
+                        createFCLCollisionGeometry(shape)))
 {
-  // Do nothing
+  mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());
 }
 
 //==============================================================================
@@ -584,8 +579,7 @@ void FCLMeshCollisionObjectEngineData::updateTransform(
 void FCLMeshCollisionObjectEngineData::updateShape(
     const dynamics::ShapePtr& shape)
 {
-  auto fclCollGeom = createFCLCollisionGeometry(
-        shape, mFCLCollisionGeometryUserData.get());
+  auto fclCollGeom = createFCLCollisionGeometry(shape);
 
   mFCLCollisionObject.reset(new fcl::CollisionObject(fclCollGeom));
   mFCLCollisionObject.reset(new fcl::CollisionObject(fclCollGeom));
@@ -598,7 +592,7 @@ void FCLMeshCollisionObjectEngineData::update()
   using dart::dynamics::Shape;
   using dart::dynamics::SoftMeshShape;
 
-  auto collisionObject = mFCLCollisionGeometryUserData->mCollisionObject;
+  auto collisionObject = mFCLCollisionObjectUserData->mCollisionObject;
   auto shape = collisionObject->getShape().get();
 
   if (shape->getShapeType() == dynamics::Shape::SOFT_MESH)

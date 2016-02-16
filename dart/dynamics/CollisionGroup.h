@@ -34,63 +34,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLENGINE_H_
-#define DART_COLLISION_FCL_FCLENGINE_H_
+#ifndef DART_DYNAMICS_COLLISIONGROUP_H_
+#define DART_DYNAMICS_COLLISIONGROUP_H_
 
-#include <vector>
+#include <memory>
 
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-class FCLCollisionGroup;
-
-/// FCL Collision detection engine
-class FCLEngine : public Engine
+class CollisionGroup : public collision::CollisionGroup
 {
 public:
 
-  static FCLEnginePtr create();
+  CollisionGroup(const collision::EnginePtr& engine);
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
-
-  // Documentation inherit
-  const std::string& getType() const override;
-
-  // Documentation inherit
-  std::unique_ptr<CollisionObjectEngineData> createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherit
-  std::unique_ptr<CollisionGroupEngineData> createCollisionGroupData(
-      const CollisionObjectPtrs& collObjects) override;
-
-  // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionObject* object, CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
-
-protected:
-
-  FCLEngine() = default;
+  void addCollisionObjects(const SkeletonPtr& skeleton);
 
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLEngine_H_
+#endif // DART_DYNAMICS_COLLISIONDETECTOR_H_

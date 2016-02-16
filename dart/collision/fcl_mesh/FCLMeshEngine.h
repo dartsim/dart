@@ -53,20 +53,20 @@ public:
 
   static FCLMeshEnginePtr create();
 
-  /// Return engine type "FCL"
+  /// Return engine type "FCLMesh"
   static const std::string& getTypeStatic();
 
   // Documentation inherit
   const std::string& getType() const override;
 
   // Documentation inherit
-  CollisionObjectEngineDataPtr createCollisionObjectData(
+  std::unique_ptr<CollisionObjectEngineData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) override;
 
   // Documentation inherit
-  CollisionGroupEngineDataPtr createCollisionGroupData(
-      const CollisionObjects& collObjects) override;
+  std::unique_ptr<CollisionGroupEngineData> createCollisionGroupData(
+      const CollisionObjectPtrs& collObjects) override;
 
   // Documentation inherit
   bool detect(CollisionObject* object1, CollisionObject* object2,

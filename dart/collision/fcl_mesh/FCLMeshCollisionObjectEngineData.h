@@ -48,7 +48,7 @@ namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionGeometryUserData;
+class FCLCollisionObjectUserData;
 
 class FCLMeshCollisionObjectEngineData : public CollisionObjectEngineData
 {
@@ -56,7 +56,7 @@ public:
 
   /// Constructor
   FCLMeshCollisionObjectEngineData(CollisionObject* parent,
-                               const dynamics::ShapePtr& shape);
+                                   const dynamics::ShapePtr& shape);
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
@@ -73,7 +73,7 @@ public:
 protected:
 
   /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionGeometryUserData> mFCLCollisionGeometryUserData;
+  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
   std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;

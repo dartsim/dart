@@ -40,37 +40,48 @@
 #include <vector>
 
 #include "dart/collision/Engine.h"
+#include "dart/collision/CollisionGroupEngineData.h"
 
 namespace dart {
 namespace collision {
 
 class Engine;
 class CollisionNode;
-class CollisionGroupEngineData;
 
 class CollisionGroup
 {
 public:
 
   using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
-  using CollisionObjects = std::vector<CollisionObjectPtr>;
-
-  /// Constructor
-  CollisionGroup(const EnginePtr engine,
-                 const CollisionObjects& collObjects = CollisionObjects());
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
 
   /// Constructor
   CollisionGroup(const EnginePtr& engine,
-                 const CollisionObjectPtr& collObject);
+                 const CollisionObjectPtrs& collObjects = CollisionObjectPtrs());
+
+  /// Copy constructor
+  CollisionGroup(const CollisionGroup& other);
 
   /// Destructor
   virtual ~CollisionGroup();
 
+  /// Assignment operator
+  CollisionGroup& operator=(const CollisionGroup& other);
+
+  /// Copy another CollisionGroup into this CollisionGroup
+  void copy(const CollisionGroup& other);
+
   /// Return collision detection engine associated with this CollisionGroup
   Engine* getEngine() const;
 
+  /// Return true if this CollisionGroup contains given object
+  bool hasCollisionObject(const CollisionObjectPtr& object) const;
+
   /// Add collision object to this CollisionGroup
   void addCollisionObject(const CollisionObjectPtr& object);
+
+  /// Add collision objects to this CollisionGroup
+  void addCollisionObjects(const CollisionObjectPtrs& objects);
 
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
@@ -102,10 +113,10 @@ protected:
   // TODO(JS): Engine* ?
 
   /// Collision objects
-  CollisionObjects mCollisionObjects;
+  CollisionObjectPtrs mCollisionObjects;
 
   /// Engine specific data
-  std::shared_ptr<CollisionGroupEngineData> mEngineData;
+  std::unique_ptr<CollisionGroupEngineData> mEngineData;
 
 };
 // TODO(JS): make this class iterable for collision objects

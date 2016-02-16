@@ -37,6 +37,9 @@
 #ifndef DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
 #define DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
 
+#include <vector>
+#include "dart/collision/SmartPointer.h"
+
 namespace dart {
 namespace collision {
 
@@ -45,13 +48,26 @@ class CollisionObject;
 class CollisionGroupEngineData
 {
 public:
-  virtual void update() = 0;
 
-  virtual void notifyCollisionObjectAdded(CollisionObject* object) = 0;
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+
+  virtual void init() = 0;
+
+  virtual void addCollisionObject(const CollisionObjectPtr& object,
+                                  bool init = true) = 0;
+//  virtual void addCollisionObjects(const CollisionObjectPtr& object) = 0;
 
   // TODO(JS): notifyCollisionObjectUpdated()?
 
-  virtual void notifyCollisionObjectRemoved(CollisionObject* object) = 0;
+  virtual void removeCollisionObject(const CollisionObjectPtr& object,
+                                     bool init = true) = 0;
+
+  /// Update engine data. This function will be called ahead of every collision
+  /// checking
+  virtual void update() = 0;
+
+  virtual std::unique_ptr<CollisionGroupEngineData> clone(
+      const CollisionObjectPtrs& collObjects) const = 0;
 
 };
 

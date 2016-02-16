@@ -41,11 +41,10 @@
 
 #include "dart/collision/Engine.h"
 #include "dart/collision/SmartPointer.h"
+#include "dart/collision/CollisionObjectEngineData.h"
 
 namespace dart {
 namespace collision {
-
-class CollisionObjectEngineData;
 
 class CollisionObject
 {
@@ -95,7 +94,7 @@ protected:
   dynamics::ShapePtr mShape;
 
   /// Collision detection engine specific data
-  std::shared_ptr<CollisionObjectEngineData> mEngineData;
+  std::unique_ptr<CollisionObjectEngineData> mEngineData;
 
 };
 

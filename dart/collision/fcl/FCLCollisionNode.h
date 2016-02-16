@@ -61,18 +61,18 @@ namespace collision {
 class FCLCollisionNode;
 class CollisionObject;
 
-struct FCLCollisionGeometryUserData
+struct FCLCollisionObjectUserData
 {
   FCLCollisionNode* mFclCollNode;
   CollisionObject* mCollisionObject;
   dynamics::BodyNode* mBodyNode;
   dynamics::ShapePtr mShape;
 
-  FCLCollisionGeometryUserData(FCLCollisionNode* mFclCollNode,
+  FCLCollisionObjectUserData(FCLCollisionNode* mFclCollNode,
                                dynamics::BodyNode* mBodyNode,
                                const dynamics::ShapePtr& mShape);
 
-  FCLCollisionGeometryUserData(CollisionObject* mFclCollNode,
+  FCLCollisionObjectUserData(CollisionObject* mFclCollNode,
                                const dynamics::ShapePtr& mShape);
 
 };

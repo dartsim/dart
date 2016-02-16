@@ -52,36 +52,52 @@ namespace collision {
 
 namespace {
 
-// Collision data stores the collision request and the result given by
-// collision algorithm.
-struct CollisionData
-{
-  // Collision request
-  fcl::CollisionRequest request;
-
-  // Collision result
-  fcl::CollisionResult result;
-
-  // FCL collision detector
-//  FCLEngine* collisionDetector;
-
-  // Whether the collision iteration can stop
-  bool done;
-
-  bool checkAllCollisions;
-
-  CollisionData();
-};
-
 bool collisionCallBack(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata);
 
-void convert(const Option& fclResult, fcl::CollisionRequest& request);
+void postProcess(const fcl::CollisionResult& fclResult,
+                 fcl::CollisionObject* o1,
+                 fcl::CollisionObject* o2,
+                 Result& result);
 
-void convert(const fcl::CollisionResult& fclResult, Result& result);
+void convertOption(const Option& fclOption, fcl::CollisionRequest& request);
 
-void convert(const fcl::Contact& fclContact, Contact& contact);
+Contact convertContact(const fcl::Contact& fclContact,
+                       fcl::CollisionObject* o1,
+                       fcl::CollisionObject* o2);
+
+/// Collision data stores the collision request and the result given by
+/// collision algorithm.
+struct FCLCollisionData
+{
+  /// FCL collision request
+  fcl::CollisionRequest mFclRequest;
+
+  /// FCL collision result
+  fcl::CollisionResult mFclResult;
+
+  /// Collision option of DART
+  const Option* mOption;
+
+  /// Collision result of DART
+  Result* mResult;
+
+  /// Whether the collision iteration can stop
+  bool done;
+
+  /// Constructor
+  FCLCollisionData(
+      const Option* option = nullptr,
+      Result* result = nullptr)
+    : mOption(option),
+      mResult(result),
+      done(false)
+  {
+    if (mOption)
+      convertOption(*mOption, mFclRequest);
+  }
+};
 
 } // anonymous namespace
 
@@ -107,18 +123,20 @@ const std::string& FCLEngine::getTypeStatic()
 }
 
 //==============================================================================
-CollisionObjectEngineDataPtr FCLEngine::createCollisionObjectData(
+std::unique_ptr<CollisionObjectEngineData> FCLEngine::createCollisionObjectData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
 {
-  return std::make_shared<FCLCollisionObjectEngineData>(parent, shape);
+  return std::unique_ptr<CollisionObjectEngineData>(
+        new FCLCollisionObjectEngineData(parent, shape));
 }
 
 //==============================================================================
-CollisionGroupEngineDataPtr FCLEngine::createCollisionGroupData(
-    const CollisionObjects& collObjects)
+std::unique_ptr<CollisionGroupEngineData> FCLEngine::createCollisionGroupData(
+    const CollisionObjectPtrs& collObjects)
 {
-  return std::make_shared<FCLCollisionGroupEngineData>(collObjects);
+  return std::unique_ptr<CollisionGroupEngineData>(
+        new FCLCollisionGroupEngineData(collObjects));
 }
 
 //==============================================================================
@@ -141,12 +159,8 @@ bool FCLEngine::detect(CollisionObject* object1,
   auto fclCollObj1 = data1->getFCLCollisionObject();
   auto fclCollObj2 = data2->getFCLCollisionObject();
 
-  CollisionData collData;
-  convert(option, collData.request);
-
+  FCLCollisionData collData(&option, &result);
   collisionCallBack(fclCollObj1, fclCollObj2, &collData);
-
-  convert(collData.result, result);
 
   return !result.contacts.empty();
 }
@@ -171,12 +185,8 @@ bool FCLEngine::detect(CollisionObject* object, CollisionGroup* group,
   auto fclObject = objData->getFCLCollisionObject();
   auto broadPhaseAlg = groupData->getFCLCollisionManager();
 
-  CollisionData collData;
-  convert(option, collData.request);
-
+  FCLCollisionData collData(&option, &result);
   broadPhaseAlg->collide(fclObject, &collData, collisionCallBack);
-
-  convert(collData.result, result);
 
   return !result.contacts.empty();
 }
@@ -196,12 +206,8 @@ bool FCLEngine::detect(CollisionGroup* group,
 
   auto broadPhaseAlg = data->getFCLCollisionManager();
 
-  CollisionData collData;
-  convert(option, collData.request);
-
+  FCLCollisionData collData(&option, &result);
   broadPhaseAlg->collide(&collData, collisionCallBack);
-
-  convert(collData.result, result);
 
   return !result.contacts.empty();
 }
@@ -226,12 +232,8 @@ bool FCLEngine::detect(CollisionGroup* group1, CollisionGroup* group2,
   auto broadPhaseAlg1 = data1->getFCLCollisionManager();
   auto broadPhaseAlg2 = data2->getFCLCollisionManager();
 
-  CollisionData collData;
-  convert(option, collData.request);
-
+  FCLCollisionData collData(&option, &result);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallBack);
-
-  convert(collData.result, result);
 
   return !result.contacts.empty();
 }
@@ -241,20 +243,15 @@ bool FCLEngine::detect(CollisionGroup* group1, CollisionGroup* group2,
 namespace {
 
 //==============================================================================
-CollisionData::CollisionData()
-{
-  done = false;
-}
-
-//==============================================================================
 bool collisionCallBack(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata)
 {
-  CollisionData* collData = static_cast<CollisionData*>(cdata);
+  FCLCollisionData* collData = static_cast<FCLCollisionData*>(cdata);
 
-  const fcl::CollisionRequest& request = collData->request;
-        fcl::CollisionResult&  result  = collData->result;
+  const fcl::CollisionRequest& fclRequest = collData->mFclRequest;
+        fcl::CollisionResult&  fclResult  = collData->mFclResult;
+        Result&                result     = *(collData->mResult);
 //  FCLEngine*        cd      = collData->collisionDetector;
   // TODO(JS): take filter object instead of collision detector
 
@@ -267,44 +264,53 @@ bool collisionCallBack(fcl::CollisionObject* o1,
   // TODO(JS): disabled until other functionalities are implemented
 
   // Perform narrow-phase detection
-  fcl::collide(o1, o2, request, result);
+  fcl::collide(o1, o2, fclRequest, fclResult);
 
-  if (!request.enable_cost
-      && (result.isCollision())
-      && ((result.numContacts() >= request.num_max_contacts)
-          || !collData->checkAllCollisions))
+  if (!fclRequest.enable_cost
+      && (fclResult.isCollision())
+      && ((fclResult.numContacts() >= fclRequest.num_max_contacts)))
+          //|| !collData->checkAllCollisions))
+    // TODO(JS): checkAllCollisions should be in FCLCollisionData
   {
     collData->done = true;
   }
+
+  postProcess(fclResult, o1, o2, result);
 
   return collData->done;
 }
 
 //==============================================================================
-void convert(const Option& fclResult, fcl::CollisionRequest& request)
+void postProcess(const fcl::CollisionResult& fclResult,
+                 fcl::CollisionObject* o1,
+                 fcl::CollisionObject* o2,
+                 Result& result)
 {
-  request.num_max_contacts = fclResult.maxNumContacts;
-  request.enable_contact   = fclResult.enableContact;
+  auto numContacts = fclResult.numContacts();
+  for (auto i = 0u; i < numContacts; ++i)
+  {
+    const auto fclContact = fclResult.getContact(i);
+    result.contacts.push_back(convertContact(fclContact, o1, o2));
+  }
+}
+
+//==============================================================================
+void convertOption(const Option& fclOption, fcl::CollisionRequest& request)
+{
+  request.num_max_contacts = fclOption.maxNumContacts;
+  request.enable_contact   = fclOption.enableContact;
 #if FCL_VERSION_AT_LEAST(0,3,0)
   request.gjk_solver_type  = fcl::GST_LIBCCD;
 #endif
 }
 
 //==============================================================================
-void convert(const fcl::CollisionResult& fclResult, Result& result)
+Contact convertContact(const fcl::Contact& fclContact,
+                       fcl::CollisionObject* o1,
+                       fcl::CollisionObject* o2)
 {
-  result.contacts.resize(fclResult.numContacts());
+  Contact contact;
 
-  // TODO(JS): Check if there is contact point sufficiently close to the new
-  // contact point
-
-  for (auto i = 0u; i < result.contacts.size(); ++i)
-    convert(fclResult.getContact(i), result.contacts[i]);
-}
-
-//==============================================================================
-void convert(const fcl::Contact& fclContact, Contact& contact)
-{
   Eigen::Vector3d point = FCLTypes::convertVector3(fclContact.pos);
 
   contact.point = point;
@@ -313,16 +319,18 @@ void convert(const fcl::Contact& fclContact, Contact& contact)
   contact.triID1 = fclContact.b1;
   contact.triID2 = fclContact.b2;
 
-  FCLCollisionGeometryUserData* userData1
-      = static_cast<FCLCollisionGeometryUserData*>(fclContact.o1->getUserData());
-  FCLCollisionGeometryUserData* userData2
-      = static_cast<FCLCollisionGeometryUserData*>(fclContact.o2->getUserData());
+  FCLCollisionObjectUserData* userData1
+      = static_cast<FCLCollisionObjectUserData*>(o1->getUserData());
+  FCLCollisionObjectUserData* userData2
+      = static_cast<FCLCollisionObjectUserData*>(o2->getUserData());
   assert(userData1);
   assert(userData2);
   contact.shape1 = userData1->mShape;
   contact.shape2 = userData2->mShape;
   contact.collisionObject1 = userData1->mCollisionObject;
   contact.collisionObject2 = userData2->mCollisionObject;
+
+  return contact;
 }
 
 } // anonymous namespace

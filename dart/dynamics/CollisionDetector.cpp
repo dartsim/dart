@@ -82,12 +82,36 @@ BodyNodePtr ShapeNodeCollisionObject::getBodyNode() const
 
 //==============================================================================
 std::shared_ptr<ShapeNodeCollisionObject>
-CollisionDetector::createCollisionNode(
+CollisionDetector::createCollisionObject(
     const collision::EnginePtr engine,
     const ShapePtr& shape,
     const BodyNodePtr& bodyNode)
 {
   return std::make_shared<ShapeNodeCollisionObject>(engine, shape, bodyNode);
+}
+
+//==============================================================================
+std::vector<collision::CollisionObjectPtr>
+CollisionDetector::createCollisionObjects(
+    const collision::EnginePtr& engine,
+    const SkeletonPtr& skel)
+{
+  std::vector<collision::CollisionObjectPtr> objects;
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+  {
+    auto bodyNode = skel->getBodyNode(i);
+    auto numColShapes = bodyNode->getNumCollisionShapes();
+
+    for (auto j = 0u; j < numColShapes; ++j)
+    {
+      auto shape = bodyNode->getCollisionShape(j);
+      objects.push_back(createCollisionObject(engine, shape, bodyNode));
+    }
+  }
+
+  return objects;
 }
 
 } // namespace dynamics

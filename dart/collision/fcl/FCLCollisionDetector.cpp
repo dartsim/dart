@@ -56,9 +56,9 @@ namespace collision {
 //==============================================================================
 // Collision data stores the collision request and the result given by
 // collision algorithm.
-struct CollisionData
+struct FCLCollisionData
 {
-  CollisionData() { done = false; }
+  FCLCollisionData() { done = false; }
 
   // Collision request
   fcl::CollisionRequest request;
@@ -78,7 +78,7 @@ bool collisionCallBack(fcl::CollisionObject* _o1,
                        fcl::CollisionObject* _o2,
                        void* _cdata)
 {
-  CollisionData* cdata = static_cast<CollisionData*>(_cdata);
+  FCLCollisionData* cdata = static_cast<FCLCollisionData*>(_cdata);
   const fcl::CollisionRequest& request = cdata->request;
   fcl::CollisionResult& result = cdata->result;
   FCLCollisionDetector* cd = cdata->collisionDetector;
@@ -174,7 +174,7 @@ bool FCLCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
     static_cast<FCLCollisionNode*>(collNode)->updateFCLCollisionObjects();
   mBroadPhaseAlg->update();
 
-  CollisionData collData;
+  FCLCollisionData collData;
   collData.request.enable_contact = _calculateContactPoints;
   // TODO: Uncomment below once we strict to use fcl 0.3.0 or greater
   // collData.request.gjk_solver_type = fcl::GST_LIBCCD;
@@ -257,7 +257,7 @@ CollisionNode* FCLCollisionDetector::findCollisionNode(
 FCLCollisionNode* FCLCollisionDetector::findCollisionNode(
     const fcl::CollisionObject* _fclCollObj) const
 {
-  FCLCollisionGeometryUserData* userData = static_cast<FCLCollisionGeometryUserData*>(_fclCollObj->getUserData());
+  FCLCollisionObjectUserData* userData = static_cast<FCLCollisionObjectUserData*>(_fclCollObj->getUserData());
   return userData->mFclCollNode;
 }
 

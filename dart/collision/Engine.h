@@ -71,21 +71,31 @@ class Engine
 {
 public:
 
-  using CollisionObjects = std::vector<CollisionObjectPtr>;
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+
+  /// Create a collision object
+  template <class CollisionObjectType, typename... Args>
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapePtr& shape,
+      const Args&... args);
+
+  /// Create a collision group
+  template <class CollisionObjectType, typename... Args>
+  std::unique_ptr<CollisionGroup> createCollisionGroup(
+      const CollisionObjectPtrs& collObjects,
+      const Args&... args);
 
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
   /// Create collision detection engine specific data for CollisionObject
-  virtual CollisionObjectEngineDataPtr createCollisionObjectData(
+  virtual std::unique_ptr<CollisionObjectEngineData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
-  // TODO(JS): shared_ptr
 
   /// Create collision detection engine specific data for CollisionGroup
-  virtual CollisionGroupEngineDataPtr createCollisionGroupData(
-      const CollisionObjects& collObjects) = 0;
-  // TODO(JS): shared_ptr
+  virtual std::unique_ptr<CollisionGroupEngineData> createCollisionGroupData(
+      const CollisionObjectPtrs& collObjects) = 0;
 
   /// Perform collision detection for object1-object2.
   virtual bool detect(CollisionObject* object1, CollisionObject* object2,
@@ -108,6 +118,24 @@ public:
                       const Option& option, Result& result) = 0;
 
 };
+
+//==============================================================================
+template <class CollisionObjectType, typename... Args>
+std::unique_ptr<CollisionObject> Engine::createCollisionObject(
+    const dynamics::ShapePtr& shape, const Args&... args)
+{
+  return std::unique_ptr<CollisionObject>(
+        new CollisionObjectType(this, shape, args...));
+}
+
+//==============================================================================
+template <class CollisionGroupType, typename... Args>
+std::unique_ptr<CollisionGroup> Engine::createCollisionGroup(
+    const Engine::CollisionObjectPtrs& collObjects, const Args&... args)
+{
+  return std::unique_ptr<CollisionObject>(
+        new CollisionGroupType(this, collObjects, args...));
+}
 
 }  // namespace collision
 }  // namespace dart
