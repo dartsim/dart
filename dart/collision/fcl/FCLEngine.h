@@ -46,7 +46,7 @@ namespace collision {
 
 class FCLCollisionGroup;
 
-/// FCL Collidion detection engine
+/// FCL Collision detection engine
 class FCLEngine : public Engine
 {
 public:
@@ -83,6 +83,10 @@ public:
   // Documentation inherit
   bool detect(CollisionGroup* group1, CollisionGroup* group2,
               const Option& option, Result& result) override;
+
+protected:
+
+  FCLEngine() = default;
 
 };
 

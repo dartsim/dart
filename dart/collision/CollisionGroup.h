@@ -99,6 +99,7 @@ protected:
 
   /// Collision engine
   EnginePtr mEngine;
+  // TODO(JS): Engine* ?
 
   /// Collision objects
   CollisionObjects mCollisionObjects;

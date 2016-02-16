@@ -52,6 +52,10 @@ public:
 
   virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
 
+  /// Update engine data. This function will be called ahead of every collision
+  /// checking
+  virtual void update() = 0;
+
 };
 
 }  // namespace collision

@@ -77,7 +77,7 @@ CollisionObjectEngineData* CollisionObject::getEngineData() const
 //==============================================================================
 void CollisionObject::updateEngineData()
 {
-  mEngineData->updateTransform(getTransform());
+  mEngineData->update();
 }
 
 //==============================================================================

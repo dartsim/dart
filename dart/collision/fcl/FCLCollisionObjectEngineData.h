@@ -64,16 +64,19 @@ public:
   // Documentation inherited
   void updateShape(const dynamics::ShapePtr& shape) override;
 
+  // Documentation inherited
+  void update() override;
+
   /// Return FCL collision object
   fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-
   /// FCL collision geometry user data
   std::unique_ptr<FCLCollisionGeometryUserData> mFCLCollisionGeometryUserData;
+
+  /// FCL collision object
+  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
 
 };
 

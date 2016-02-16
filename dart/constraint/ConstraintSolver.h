@@ -44,6 +44,7 @@
 #include "dart/constraint/SmartPointer.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
+#include "dart/collision/Engine.h"
 
 namespace dart {
 
@@ -137,6 +138,12 @@ private:
 
   /// Collision detector
   collision::CollisionDetector* mCollisionDetector;
+
+  /// Collision detection engine
+  std::shared_ptr<collision::Engine> mCollisionEngine;
+
+  /// Collision group
+  std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
 
   /// Time step
   double mTimeStep;

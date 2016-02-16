@@ -34,30 +34,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_SMARTPOINTER_H_
-#define DART_COLLISION_SMARTPOINTER_H_
+#include "dart/collision/fcl_mesh/FCLMeshCollisionGroupEngineData.h"
 
-#include "dart/config.h"
-#include "dart/common/SmartPointer.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionObjectEngineData.h"
 
 namespace dart {
 namespace collision {
 
-DART_COMMON_MAKE_SHARED_WEAK(Engine)
-DART_COMMON_MAKE_SHARED_WEAK(FCLEngine)
-DART_COMMON_MAKE_SHARED_WEAK(FCLMeshEngine)
-#ifdef HAVE_BULLET_COLLISION
-  DART_COMMON_MAKE_SHARED_WEAK(BulletEngine)
-#endif
+//==============================================================================
+FCLMeshCollisionGroupEngineData::FCLMeshCollisionGroupEngineData(
+    const FCLMeshCollisionGroupEngineData::CollisionObjects& collObjects)
+  : mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+{
+  for (auto collObj : collObjects)
+  {
+    auto data = static_cast<FCLMeshCollisionObjectEngineData*>(collObj->getEngineData());
+    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  }
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObjectEngineData)
-DART_COMMON_MAKE_SHARED_WEAK(FreeCollisionObject)
+  mBroadPhaseAlg->setup();
+}
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroupEngineData)
+//==============================================================================
+void FCLMeshCollisionGroupEngineData::update()
+{
+  mBroadPhaseAlg->update();
+}
+
+//==============================================================================
+void FCLMeshCollisionGroupEngineData::notifyCollisionObjectAdded(
+    CollisionObject* object)
+{
+  auto data = static_cast<FCLMeshCollisionObjectEngineData*>(object->getEngineData());
+  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  mBroadPhaseAlg->setup();
+}
+
+//==============================================================================
+void FCLMeshCollisionGroupEngineData::notifyCollisionObjectRemoved(
+    CollisionObject* object)
+{
+  auto data = static_cast<FCLMeshCollisionObjectEngineData*>(object->getEngineData());
+  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
+  mBroadPhaseAlg->setup();
+}
+
+//==============================================================================
+FCLMeshCollisionGroupEngineData::FCLCollisionManager*
+FCLMeshCollisionGroupEngineData::getFCLCollisionManager() const
+{
+  return mBroadPhaseAlg.get();
+}
+
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_SMARTPOINTER_H_

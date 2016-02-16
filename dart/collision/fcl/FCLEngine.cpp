@@ -96,7 +96,7 @@ const std::string& FCLEngine::getType() const
 //==============================================================================
 FCLEnginePtr FCLEngine::create()
 {
-  return std::make_shared<FCLEngine>();
+  return FCLEnginePtr(new FCLEngine());
 }
 
 //==============================================================================
