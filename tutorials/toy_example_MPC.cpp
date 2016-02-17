@@ -29,6 +29,8 @@ const double cube_length = 0.005;
 
 const double obstacle_2_wall = 2*wall_thickness;
 
+const double default_density = 1000;
+
 class Controller
 {
 public:
@@ -190,6 +192,12 @@ SkeletonPtr createFloor()
 	body->addVisualizationShape(box);
 	body->addCollisionShape(box);
 
+	// set inertia
+	dart::dynamics::Inertia inertia;
+	inertia.setMass(default_density * box->getVolume());
+	inertia.setMoment(box->computeInertia(inertia.getMass()));
+	body->setInertia(inertia);
+
 	// put the body into the right position
 	Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 	tf.translation() = Eigen::Vector3d(0.0, 0.0, -floor_height / 2.0);
@@ -217,6 +225,12 @@ SkeletonPtr createWall(int wall_index)
 		box->setColor(dart::Color::Gray(transparency));
 		body->addVisualizationShape(box);
 		body->addCollisionShape(box);
+		
+		// set inertia
+		dart::dynamics::Inertia inertia;
+		inertia.setMass(default_density * box->getVolume());
+		inertia.setMoment(box->computeInertia(inertia.getMass()));
+		body->setInertia(inertia);
 	}
 	else
 	{
@@ -225,6 +239,12 @@ SkeletonPtr createWall(int wall_index)
 		box->setColor(dart::Color::Fuschia(transparency));
 		body->addVisualizationShape(box);
 		body->addCollisionShape(box);
+
+		// set inertia
+		dart::dynamics::Inertia inertia;
+		inertia.setMass(default_density * box->getVolume());
+		inertia.setMoment(box->computeInertia(inertia.getMass()));
+		body->setInertia(inertia);
 	}
 
 	// put the body node into the right position
@@ -258,6 +278,11 @@ SkeletonPtr createObstacle(int obstacle_index)
 		cylinder->setColor(dart::Color::Red(transparency));
 		body->addVisualizationShape(cylinder);
 		body->addCollisionShape(cylinder);
+		// set inertia
+		dart::dynamics::Inertia inertia;
+		inertia.setMass(2 * default_density * cylinder->getVolume());
+		inertia.setMoment(cylinder->computeInertia(inertia.getMass()));
+		body->setInertia(inertia);
 	}
 	else
 	{
@@ -266,6 +291,11 @@ SkeletonPtr createObstacle(int obstacle_index)
 		cylinder->setColor(dart::Color::Red(transparency));
 		body->addVisualizationShape(cylinder);
 		body->addCollisionShape(cylinder);
+		// set inertia
+		dart::dynamics::Inertia inertia;
+		inertia.setMass(2 * default_density * cylinder->getVolume());
+		inertia.setMoment(cylinder->computeInertia(inertia.getMass()));
+		body->setInertia(inertia);
 	}
 
 	// put it in the position
@@ -299,6 +329,13 @@ SkeletonPtr createCube()
 	body->addVisualizationShape(box);
 	body->addCollisionShape(box);
 	
+
+	// set inertia
+	dart::dynamics::Inertia inertia;
+	inertia.setMass(0.5 * default_density * box->getVolume());
+	inertia.setMoment(box->computeInertia(inertia.getMass()));
+	body->setInertia(inertia);
+
 	// put it in the right position
 	Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 	tf.translation() = Eigen::Vector3d(-floor_length/2.0 + obstacle_2_wall, 0.0, cube_length/2.0);
