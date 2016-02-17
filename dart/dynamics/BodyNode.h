@@ -557,18 +557,18 @@ public:
   const ShapeNode* getShapeNode(size_t index) const;
 
   /// Return the list of ShapeNodes
-  const std::vector<ShapeNode*>& getShapeNodes();
+  const std::vector<ShapeNode*> getShapeNodes();
 
   /// Return the list of (const) ShapeNodes
-  const std::vector<const ShapeNode*>& getShapeNodes() const;
+  const std::vector<const ShapeNode*> getShapeNodes() const;
 
   /// Return the list of ShapeNodes containing given Addon
   template <class Addon>
-  std::vector<ShapeNode*> getShapeNodes();
+  const std::vector<ShapeNode*> getShapeNodes();
 
   /// Return the list of ShapeNodes containing given Addon
   template <class Addon>
-  std::vector<const ShapeNode*> getShapeNodes() const;
+  const std::vector<const ShapeNode*> getShapeNodes() const;
 
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();

@@ -859,28 +859,26 @@ const ShapeNode* BodyNode::getShapeNode(size_t index) const
 }
 
 //==============================================================================
-const std::vector<ShapeNode*>& BodyNode::getShapeNodes()
+const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 {
-  auto numShapeNode = getNumShapeNodes();
+  const auto numShapeNodes = getNumShapeNodes();
 
-  static std::vector<ShapeNode*> shapeNodes;
-  shapeNodes.resize(numShapeNode);
+  std::vector<ShapeNode*> shapeNodes(numShapeNodes);
 
-  for (auto i = 0u; i < numShapeNode; ++i)
+  for (auto i = 0u; i < numShapeNodes; ++i)
     shapeNodes[i] = getShapeNode(i);
 
   return shapeNodes;
 }
 
 //==============================================================================
-const std::vector<const ShapeNode*>& BodyNode::getShapeNodes() const
+const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
 {
-  auto numShapeNode = getNumShapeNodes();
+  const auto numShapeNodes = getNumShapeNodes();
 
-  static std::vector<const ShapeNode*> shapeNodes;
-  shapeNodes.resize(numShapeNode);
+  std::vector<const ShapeNode*> shapeNodes(numShapeNodes);
 
-  for (auto i = 0u; i < numShapeNode; ++i)
+  for (auto i = 0u; i < numShapeNodes; ++i)
     shapeNodes[i] = getShapeNode(i);
 
   return shapeNodes;
