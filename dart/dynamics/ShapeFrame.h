@@ -184,8 +184,8 @@ public:
                       const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ADDON_PROPERTY( bool, Collidable )
-  // void setCollisionMode(const bool& value);
-  // const bool& getCollisionMode() const;
+  // void setCollidable(const bool& value);
+  // const bool& getCollidable() const;
 
   /// Return true if this body can collide with others bodies
   bool isCollidable() const;
