@@ -7,6 +7,8 @@
 #include "dart/dart.h"
 #include <iostream>
 #include <time.h>
+#include <vector>
+#include <algorithm>
 
 using namespace dart::common;
 using namespace dart::utils;
@@ -34,19 +36,18 @@ const double default_density = 1000;
 class Controller
 {
 public:
-	Controller(const SkeletonPtr& cube, dart::collision::CollisionDetector* detector, size_t default_Num_contact)
-		:mCube(cube),mDetector(detector),mdefault_Num_contact(default_Num_contact)
+	Controller(const SkeletonPtr& cube, dart::collision::CollisionDetector* detector, size_t default_Num_contact, double time_step)
+		:mCube(cube),mDetector(detector),mdefault_Num_contact(default_Num_contact), mTime_step_in_Acc_fun(time_step)
 	{
 		mSpeed = 0.2;
 		mAcceleration = 0.5;
 
-		mAcceleration_random = 5;
+		mAcceleration_random = 10;
 
 		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
 
 		mVelocity_old_in_set_Acc_fun = 0;
 		mVelocity_new_in_set_Acc_fun = 0;
-		mTime_step_in_Acc_fun = 0.001;
 
 		std::srand((unsigned int)time(NULL));
 	}
@@ -71,6 +72,7 @@ public:
 
 		}
 	}
+
 	double setCubeAcceleration()
 	{
 		// set vertical acceleration
@@ -111,6 +113,34 @@ public:
 		return mAcceleration;
 	}
 
+
+	void setCubeAcceleration(double desire_Acceleration)
+	{
+		// set vertical acceleration based on desired acceleration passed into
+
+		// using servo actuator type (input velocity) integrate on velocity
+		
+		mCube->getJoint(0)->setActuatorType(Joint::VELOCITY);
+
+		if (mDetector->getNumContacts() <= mdefault_Num_contact)
+		{
+			mVelocity_new_in_set_Acc_fun = mVelocity_old_in_set_Acc_fun + desire_Acceleration * mTime_step_in_Acc_fun;
+
+			//mCube->getDof(1)->setVelocity(mVelocity_new_in_set_Acc_fun);
+
+			mCube->getDof(1)->setCommand(mVelocity_new_in_set_Acc_fun);
+
+			mVelocity_old_in_set_Acc_fun = mVelocity_new_in_set_Acc_fun;
+		}
+		else
+		{
+			//mCube->getDof(1)->setVelocity(0);
+
+			mCube->getDof(1)->setCommand(0);
+
+		}
+	}
+
 	void randomizeAcceleration()
 	{
 		mAcceleration = mAcceleration_random * (std::rand() / double(RAND_MAX) - 0.5)*2;
@@ -145,14 +175,52 @@ public:
 
 		std::cout<<"Default number of contacts is "<<default_Num_contact<<std::endl;
 
-		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector, default_Num_contact));
+		mController = std::unique_ptr<Controller>(new Controller(mWorld->getSkeleton("cube"),detector, default_Num_contact, mWorld->getTimeStep()));
+	}
+
+	double MyMPC()
+	{
+		int num_samples = 5;
+		int plan_horizon = 1;
+		double desire_Acceleration = 0;
+		std::vector<WorldPtr> world_array(num_samples);
+		std::vector<std::unique_ptr<Controller>> controller_array(num_samples);
+		std::vector<double> acceleration_array(num_samples);
+		std::vector<int> cost_array(num_samples);
+		
+		// save the world
+		// have best_acceleration vector and cost vector
+		// cost vector is based on the number of contacts.
+		for (int i = 0; i<num_samples; i++)
+		{
+			// states of the skeleton will not be cloned?
+			world_array[i] = mWorld->clone();
+			controller_array[i] = std::unique_ptr<Controller>(new Controller(world_array[i]->getSkeleton("cube"), 
+																			 world_array[i]->getConstraintSolver()->getCollisionDetector(),
+																			 default_Num_contact,
+																			 world_array[i]->getTimeStep()));
+			controller_array[i]->setCubeVelocity();
+			acceleration_array[i] = controller_array[i]->setCubeAcceleration();
+			for (int j = 0; j<plan_horizon; j++)
+			{
+				world_array[i]->step();
+				controller_array[i]->setCubeVelocity();
+				controller_array[i]->setCubeAcceleration();
+			}
+			cost_array[i] = world_array[i]->getConstraintSolver()->getCollisionDetector()->getNumContacts();
+		}
+		
+		desire_Acceleration = acceleration_array[std::distance(cost_array.begin(), std::min_element(cost_array.begin(), cost_array.end()))];
+		
+		// compute forward
+		// find the best acceleration
+		return desire_Acceleration;
 	}
 
 	void timeStepping() override
 	{
-		double desire_Acceleration;
 		mController->setCubeVelocity();
-		mController->setCubeAcceleration();
+		mController->setCubeAcceleration(MyMPC());
 
 		if (detector->getNumContacts() != default_Num_contact)
 		{
