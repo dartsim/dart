@@ -41,10 +41,20 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+ShapeNode::UniqueProperties::UniqueProperties(
+    const Eigen::Isometry3d& relativeTransform)
+  : mRelativeTransform(relativeTransform)
+{
+  // Do nothing
+}
+
+//==============================================================================
 ShapeNode::Properties::Properties(
     const ShapeFrame::Properties& shapeFrameProperties,
+    const ShapeNode::UniqueProperties& shapeNodeProperties,
     const ShapeNode::AddonProperties& addonProperties)
   : ShapeFrame::Properties(shapeFrameProperties),
+    ShapeNode::UniqueProperties(shapeNodeProperties),
     mAddonProperties(addonProperties)
 {
   // Do nothing
@@ -53,8 +63,10 @@ ShapeNode::Properties::Properties(
 //==============================================================================
 ShapeNode::Properties::Properties(
     ShapeFrame::Properties&& shapeFrameProperties,
+    ShapeNode::UniqueProperties&& shapeNodeProperties,
     ShapeNode::AddonProperties&& addonProperties)
   : ShapeFrame::Properties(std::move(shapeFrameProperties)),
+    ShapeNode::UniqueProperties(std::move(shapeNodeProperties)),
     mAddonProperties(std::move(addonProperties))
 {
   // Do nothing
@@ -65,13 +77,21 @@ void ShapeNode::setProperties(const Properties& properties)
 {
   ShapeFrame::setProperties(
         static_cast<const ShapeFrame::Properties&>(properties));
+  setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
   setAddonProperties(properties.mAddonProperties);
+}
+
+//==============================================================================
+void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
+{
+  setRelativeTransform(properties.mRelativeTransform);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(getShapeFrameProperties(), getAddonProperties());
+  return Properties(getShapeFrameProperties(), mShapeNodeP,
+                    getAddonProperties());
 }
 
 //==============================================================================
@@ -81,7 +101,6 @@ void ShapeNode::copy(const ShapeNode& other)
     return;
 
   setProperties(other.getShapeNodeProperties());
-  mRelativeTf = other.mRelativeTf;
 }
 
 //==============================================================================
@@ -133,11 +152,13 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
   const Eigen::Isometry3d oldTransform = mRelativeTf;
 
   mRelativeTf = transform;
+  mShapeNodeP.mRelativeTransform = transform;
   notifyTransformUpdate();
   notifyJacobianUpdate();
   notifyJacobianDerivUpdate();
 
-  mRelativeTransformUpdatedSignal.raise(this, oldTransform, mRelativeTf);
+  mRelativeTransformUpdatedSignal.raise(this, oldTransform,
+                                        mShapeNodeP.mRelativeTransform);
 }
 
 //==============================================================================

@@ -74,17 +74,34 @@ public:
 
   using AddonProperties = common::AddonManager::Properties;
 
-  struct Properties : ShapeFrame::Properties
+  struct UniqueProperties
+  {
+    /// The current relative transform of the Shape in the ShapeNode
+    Eigen::Isometry3d mRelativeTransform;
+    // TODO(JS): Consider moving this to a FixedFrame::State
+    // (or FixedFrame::Properties) struct and the inheriting that struct.
+    // Endeffector has similar issue.
+
+    /// Composed constructor
+    UniqueProperties(
+        const Eigen::Isometry3d& relativeTransform
+            = Eigen::Isometry3d::Identity());
+  };
+
+  struct Properties : ShapeFrame::Properties, UniqueProperties
   {
     /// Composed constructor
     Properties(
         const ShapeFrame::Properties& shapeFrameProperties
             = ShapeFrame::Properties(),
+        const ShapeNode::UniqueProperties& shapeNodeProperties
+            = ShapeNode::UniqueProperties(),
         const AddonProperties& addonProperties = AddonProperties());
 
     /// Composed move constructor
     Properties(
         ShapeFrame::Properties&& shapeFrameProperties,
+        ShapeNode::UniqueProperties&& shapeNodeProperties,
         AddonProperties&& addonProperties);
 
     /// The properties of the ShapeNode's Addons
@@ -96,6 +113,9 @@ public:
 
   /// Set the Properties of this ShapeNode
   void setProperties(const Properties& properties);
+
+  /// Set the Properties of this ShapeNode
+  void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
   const Properties getShapeNodeProperties() const;
@@ -237,6 +257,9 @@ protected:
   void updateWorldJacobianClassicDeriv() const;
 
 protected:
+
+  /// Properties of this ShapeNode
+  UniqueProperties mShapeNodeP;
 
   /// Cached Jacobian of this ShapeNode
   ///
