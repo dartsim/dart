@@ -151,8 +151,8 @@ CollisionNode* BulletCollisionDetector::createCollisionNode(
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
-                                              bool _calculateContactPoints)
+bool BulletCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
+                                              bool /*_calculateContactPoints*/)
 {
   // Update all the transformations of the collision nodes
   for (size_t i = 0; i < mCollisionNodes.size(); ++i)
@@ -217,9 +217,9 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detectCollision(CollisionNode* _node1,
-                                              CollisionNode* _node2,
-                                              bool _calculateContactPoints)
+bool BulletCollisionDetector::detectCollision(CollisionNode* /*_node1*/,
+                                              CollisionNode* /*_node2*/,
+                                              bool /*_calculateContactPoints*/)
 {
   assert(false);
   return false;
