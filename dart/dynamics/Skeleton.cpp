@@ -308,6 +308,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 
   skelClone->setProperties(getSkeletonProperties());
   skelClone->setName(cloneName);
+  skelClone->mSkeletonP.mVersion = getVersion();
 
   return skelClone;
 }
