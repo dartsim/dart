@@ -81,6 +81,7 @@ void ShapeNode::copy(const ShapeNode& other)
     return;
 
   setProperties(other.getShapeNodeProperties());
+  mRelativeTf = other.mRelativeTf;
 }
 
 //==============================================================================
