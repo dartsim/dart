@@ -1286,12 +1286,10 @@ static void readAxisElement(
 }
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     const Eigen::Isometry3d&,
     const std::string&)
 {
-    assert(_jointElement != nullptr);
-
     return dynamics::WeldJoint::Properties();
 }
 
@@ -1451,32 +1449,26 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 }
 
 dynamics::BallJoint::Properties readBallJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     const Eigen::Isometry3d&,
     const std::string&)
 {
-  assert(_jointElement != nullptr);
-
   return dynamics::BallJoint::Properties();
 }
 
 dynamics::TranslationalJoint::Properties readTranslationalJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     const Eigen::Isometry3d&,
     const std::string&)
 {
-  assert(_jointElement != nullptr);
-
   return dynamics::TranslationalJoint::Properties();
 }
 
 dynamics::FreeJoint::Properties readFreeJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     const Eigen::Isometry3d&,
     const std::string&)
 {
-  assert(_jointElement != nullptr);
-
   return dynamics::FreeJoint::Properties();
 }
 
