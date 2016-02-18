@@ -9,8 +9,8 @@ function InstallPrerequisites($work_dir, $install_dir)
   $old_dir = $pwd
   cd $work_dir
 
-  $msi = "dart-prerequisites.msi"
-  $uri = "https://github.com/dartsim/dart-prerequisites-windows/raw/3e34167fd29fcc870ebed50bf318f3f31f491e6a/DART%205.0-prerequisites-msvc12-md-32bit.msi"
+  $msi = "dart-dependencies.msi"
+  $uri = "https://github.com/dartsim/dart-prerequisites-windows-installers/raw/master/02/DART-dependencies-msvc14-md-32bit.msi"
   Invoke-WebRequest $uri -OutFile $msi
 
   $install_command = "msiexec.exe"

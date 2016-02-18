@@ -71,7 +71,7 @@ const std::string& WeldJoint::getStaticType()
 }
 
 //==============================================================================
-bool WeldJoint::isCyclic(size_t _index) const
+bool WeldJoint::isCyclic(size_t /*_index*/) const
 {
   return false;
 }
@@ -102,7 +102,9 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 WeldJoint::WeldJoint(const Properties& _properties)
   : ZeroDofJoint(_properties)
 {
-  setProperties(_properties);
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  ZeroDofJoint::setProperties(_properties);
 }
 
 //==============================================================================

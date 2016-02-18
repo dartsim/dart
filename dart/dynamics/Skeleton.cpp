@@ -65,6 +65,102 @@ namespace dynamics {
 
 #define ON_ALL_TREES( X ) for(size_t i=0; i < mTreeCache.size(); ++i) X (i);
 
+
+#define CHECK_CONFIG_VECTOR_SIZE( V )                                           \
+  if( V .size() > 0 )                                                           \
+  {                                                                             \
+    if(nonzero_size != INVALID_INDEX                                            \
+       && V .size() != static_cast<int>(nonzero_size))                          \
+    {                                                                           \
+      dterr << "[Skeleton::Configuration] Mismatch in size of vector [" << #V   \
+            << "] (expected " << nonzero_size << " | found " << V . size()      \
+            << "\n";                                                            \
+      assert(false);                                                            \
+    }                                                                           \
+    else if(nonzero_size == INVALID_INDEX)                                      \
+      nonzero_size = V .size();                                                 \
+  }
+
+//==============================================================================
+Skeleton::Configuration::Configuration(
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities,
+    const Eigen::VectorXd& accelerations,
+    const Eigen::VectorXd& forces,
+    const Eigen::VectorXd& commands)
+  : mPositions(positions),
+    mVelocities(velocities),
+    mAccelerations(accelerations),
+    mForces(forces),
+    mCommands(commands)
+{
+  size_t nonzero_size = INVALID_INDEX;
+
+  CHECK_CONFIG_VECTOR_SIZE(positions);
+  CHECK_CONFIG_VECTOR_SIZE(velocities);
+  CHECK_CONFIG_VECTOR_SIZE(accelerations);
+  CHECK_CONFIG_VECTOR_SIZE(forces);
+  CHECK_CONFIG_VECTOR_SIZE(commands);
+
+  if(nonzero_size != INVALID_INDEX)
+  {
+    for(size_t i=0; i < nonzero_size; ++i)
+      mIndices.push_back(i);
+  }
+}
+
+//==============================================================================
+Skeleton::Configuration::Configuration(
+    const std::vector<size_t>& indices,
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities,
+    const Eigen::VectorXd& accelerations,
+    const Eigen::VectorXd& forces,
+    const Eigen::VectorXd& commands)
+  : mIndices(indices),
+    mPositions(positions),
+    mVelocities(velocities),
+    mAccelerations(accelerations),
+    mForces(forces),
+    mCommands(commands)
+{
+  size_t nonzero_size = indices.size();
+
+  CHECK_CONFIG_VECTOR_SIZE(positions);
+  CHECK_CONFIG_VECTOR_SIZE(velocities);
+  CHECK_CONFIG_VECTOR_SIZE(accelerations);
+  CHECK_CONFIG_VECTOR_SIZE(forces);
+  CHECK_CONFIG_VECTOR_SIZE(commands);
+}
+
+//==============================================================================
+#define RETURN_IF_CONFIG_VECTOR_IS_INEQ( V )                                    \
+  if( V .size() != other. V .size() )                                           \
+    return false;                                                               \
+  if( V != other. V )                                                           \
+    return false;
+
+//==============================================================================
+bool Skeleton::Configuration::operator==(const Configuration& other) const
+{
+  if(mIndices != other.mIndices)
+    return false;
+
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mPositions);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mVelocities);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mAccelerations);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mForces);
+  RETURN_IF_CONFIG_VECTOR_IS_INEQ(mCommands);
+
+  return true;
+}
+
+//==============================================================================
+bool Skeleton::Configuration::operator!=(const Configuration& other) const
+{
+  return !(*this == other);
+}
+
 //==============================================================================
 Skeleton::Properties::Properties(
     const std::string& _name,
@@ -72,13 +168,29 @@ Skeleton::Properties::Properties(
     const Eigen::Vector3d& _gravity,
     double _timeStep,
     bool _enabledSelfCollisionCheck,
-    bool _enableAdjacentBodyCheck)
+    bool _enableAdjacentBodyCheck,
+    size_t _version)
   : mName(_name),
     mIsMobile(_isMobile),
     mGravity(_gravity),
     mTimeStep(_timeStep),
     mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
-    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck)
+    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck),
+    mVersion(_version)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Skeleton::ExtendedProperties::ExtendedProperties(
+    const BodyNodeProperties& bodyNodeProperties,
+    const JointProperties& jointProperties,
+    const std::vector<std::string>& parentNames,
+    const AddonProperties& addonProperties)
+  : mBodyNodeProperties(bodyNodeProperties),
+    mJointProperties(jointProperties),
+    mParentBodyNodeNames(parentNames),
+    mAddonProperties(addonProperties)
 {
   // Do nothing
 }
@@ -110,6 +222,18 @@ ConstSkeletonPtr Skeleton::getPtr() const
 }
 
 //==============================================================================
+SkeletonPtr Skeleton::getSkeleton()
+{
+  return mPtr.lock();
+}
+
+//==============================================================================
+ConstSkeletonPtr Skeleton::getSkeleton() const
+{
+  return mPtr.lock();
+}
+
+//==============================================================================
 std::mutex& Skeleton::getMutex() const
 {
   return mMutex;
@@ -125,7 +249,13 @@ Skeleton::~Skeleton()
 //==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
-  SkeletonPtr skelClone = Skeleton::create(getName());
+  return clone(getName());
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::clone(const std::string& cloneName) const
+{
+  SkeletonPtr skelClone = Skeleton::create(cloneName);
 
   for(size_t i=0; i<getNumBodyNodes(); ++i)
   {
@@ -149,7 +279,7 @@ SkeletonPtr Skeleton::clone() const
             << "a bug!\n";
     }
 
-    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint);
+    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
 
     // The IK module gets cloned by the Skeleton and not by the BodyNode,
     // because IK modules rely on the Skeleton's structure and indexing. If the
@@ -162,28 +292,84 @@ SkeletonPtr Skeleton::clone() const
     skelClone->registerBodyNode(newBody);
   }
 
-  for(size_t i=0; i<getNumEndEffectors(); ++i)
+  // Clone over the nodes in such a way that their indexing will match up with
+  // the original
+  for(const auto& nodeType : mNodeMap)
   {
-    // Grab the EndEffector we want to clone
-    const EndEffector* originalEE = getEndEffector(i);
-
-    // Identify the original parent BodyNode
-    const BodyNode* originalParent = originalEE->getParentBodyNode();
-
-    // Grab the clone of the original parent
-    BodyNode* parentClone = skelClone->getBodyNode(originalParent->getName());
-
-    EndEffector* newEE = originalEE->clone(parentClone);
-
-    if(originalEE->getIK())
-      newEE->mIK = originalEE->getIK()->clone(newEE);
-
-    skelClone->registerEndEffector(newEE);
+    for(const auto& node : nodeType.second)
+    {
+      const BodyNode* originalBn = node->getBodyNodePtr();
+      BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
+      node->cloneNode(newBn)->attach();
+    }
   }
 
   skelClone->setProperties(getSkeletonProperties());
+  skelClone->setName(cloneName);
 
   return skelClone;
+}
+
+//==============================================================================
+#define SET_CONFIG_VECTOR( V )                                                  \
+  if(configuration.m ## V . size() > 0)                                         \
+  {                                                                             \
+    if(static_cast<int>(configuration.mIndices.size()) !=                       \
+        configuration.m ## V .size())                                           \
+    {                                                                           \
+      dterr << "[Skeleton::setConfiguration] Mismatch in size of vector ["      \
+            << #V << "] (expected " << configuration.mIndices.size()            \
+            << " | found " << configuration.m ## V .size() << "\n";             \
+      assert(false);                                                            \
+    }                                                                           \
+    else                                                                        \
+      set ## V ( configuration.mIndices, configuration.m ## V );                \
+  }
+
+//==============================================================================
+void Skeleton::setConfiguration(const Configuration& configuration)
+{
+  SET_CONFIG_VECTOR(Positions);
+  SET_CONFIG_VECTOR(Velocities);
+  SET_CONFIG_VECTOR(Accelerations);
+  SET_CONFIG_VECTOR(Forces);
+  SET_CONFIG_VECTOR(Commands);
+}
+
+//==============================================================================
+Skeleton::Configuration Skeleton::getConfiguration(int flags) const
+{
+  std::vector<size_t> indices;
+  for(size_t i=0; i < getNumDofs(); ++i)
+    indices.push_back(i);
+
+  return getConfiguration(indices, flags);
+}
+
+//==============================================================================
+Skeleton::Configuration Skeleton::getConfiguration(
+    const std::vector<size_t>& indices, int flags) const
+{
+  Configuration config(indices);
+  if(flags == CONFIG_NOTHING)
+    return config;
+
+  if( (flags & CONFIG_POSITIONS) == CONFIG_POSITIONS )
+    config.mPositions = getPositions(indices);
+
+  if( (flags & CONFIG_VELOCITIES) == CONFIG_VELOCITIES )
+    config.mVelocities = getVelocities(indices);
+
+  if( (flags & CONFIG_ACCELERATIONS) == CONFIG_ACCELERATIONS )
+    config.mAccelerations = getAccelerations(indices);
+
+  if( (flags & CONFIG_FORCES) == CONFIG_FORCES )
+    config.mForces = getForces(indices);
+
+  if( (flags & CONFIG_COMMANDS) == CONFIG_COMMANDS )
+    config.mCommands = getCommands(indices);
+
+  return config;
 }
 
 //==============================================================================
@@ -225,8 +411,10 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
   mNameMgrForMarkers.setManagerName(
         "Skeleton::Marker | "+mSkeletonP.mName);
-  mNameMgrForEndEffectors.setManagerName(
-        "Skeleton::EndEffector | "+mSkeletonP.mName);
+
+  for(auto& mgr : mNodeNameMgrMap)
+    mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
+                               + " | " + mSkeletonP.mName );
 
   ConstMetaSkeletonPtr me = mPtr.lock();
   mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
@@ -260,13 +448,6 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
     _newJoint->updateDegreeOfFreedomNames();
 
   return _newJoint->mJointP.mName;
-}
-
-//==============================================================================
-void Skeleton::addEntryToEndEffectorNameMgr(EndEffector* _ee)
-{
-  _ee->mEntityP.mName =
-      mNameMgrForEndEffectors.issueNewNameAndAdd(_ee->getName(), _ee);
 }
 
 //==============================================================================
@@ -370,6 +551,18 @@ const Eigen::Vector3d& Skeleton::getGravity() const
 }
 
 //==============================================================================
+size_t Skeleton::incrementVersion()
+{
+  return ++mSkeletonP.mVersion;
+}
+
+//==============================================================================
+size_t Skeleton::getVersion() const
+{
+  return mSkeletonP.mVersion;
+}
+
+//==============================================================================
 size_t Skeleton::getNumBodyNodes() const
 {
   return mSkelCache.mBodyNodes.size();
@@ -391,17 +584,6 @@ size_t Skeleton::getNumSoftBodyNodes() const
 size_t Skeleton::getNumTrees() const
 {
   return mTreeCache.size();
-}
-
-//==============================================================================
-template<typename T>
-static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
-{
-  if (_idx < _vec.size())
-    return _vec[_idx];
-
-  assert( _idx < _vec.size() );
-  return nullptr;
 }
 
 //==============================================================================
@@ -546,6 +728,16 @@ size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 //==============================================================================
 const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
 {
+  if(_treeIdx >= mTreeCache.size())
+  {
+    size_t count = mTreeCache.size();
+    dterr << "[Skeleton::getTreeBodyNodes] Requesting an invalid tree ("
+          << _treeIdx << ") "
+          << (count > 0? (std::string("when the max tree index is (") + std::to_string(count-1) + ")\n" ) :
+                         std::string("when there are no trees in this Skeleton\n") );
+    assert(false);
+  }
+
   return mTreeCache[_treeIdx].mBodyNodes;
 }
 
@@ -665,36 +857,6 @@ const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
 }
 
 //==============================================================================
-size_t Skeleton::getNumEndEffectors() const
-{
-  return mEndEffectors.size();
-}
-
-//==============================================================================
-EndEffector* Skeleton::getEndEffector(size_t _idx)
-{
-  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
-}
-
-//==============================================================================
-const EndEffector* Skeleton::getEndEffector(size_t _idx) const
-{
-  return getVectorObjectIfAvailable<EndEffector*>(_idx, mEndEffectors);
-}
-
-//==============================================================================
-EndEffector* Skeleton::getEndEffector(const std::string& _name)
-{
-  return mNameMgrForEndEffectors.getObject(_name);
-}
-
-//==============================================================================
-const EndEffector* Skeleton::getEndEffector(const std::string& _name) const
-{
-  return mNameMgrForEndEffectors.getObject(_name);
-}
-
-//==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
 {
   if(nullptr == mWholeBodyIK && _createIfNull)
@@ -745,6 +907,9 @@ const Marker* Skeleton::getMarker(const std::string& _name) const
 {
   return const_cast<Skeleton*>(this)->getMarker(_name);
 }
+
+//==============================================================================
+DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
 
 //==============================================================================
 void Skeleton::setState(const Eigen::VectorXd& _state)
@@ -1397,6 +1562,27 @@ void Skeleton::setPtr(const SkeletonPtr& _ptr)
 }
 
 //==============================================================================
+void Skeleton::constructNewTree()
+{
+  mTreeCache.push_back(DataCache());
+
+  mTreeNodeMaps.push_back(NodeMap());
+  NodeMap& nodeMap = mTreeNodeMaps.back();
+
+  // Create the machinery needed to directly call on specialized node types
+  for(auto& nodeType : mSpecializedTreeNodes)
+  {
+    const std::type_index& index = nodeType.first;
+    nodeMap[index] = std::vector<Node*>();
+
+    std::vector<NodeMap::iterator>* nodeVec = nodeType.second;
+    nodeVec->push_back(nodeMap.find(index));
+
+    assert(nodeVec->size() == mTreeCache.size());
+  }
+}
+
+//==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
 #ifndef NDEBUG  // Debug mode
@@ -1417,8 +1603,9 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   mSkelCache.mBodyNodes.push_back(_newBodyNode);
   if(nullptr == _newBodyNode->getParentBodyNode())
   {
+    // Create a new tree and add the new BodyNode to it
     _newBodyNode->mIndexInTree = 0;
-    mTreeCache.push_back(DataCache());
+    constructNewTree();
     mTreeCache.back().mBodyNodes.push_back(_newBodyNode);
     _newBodyNode->mTreeIndex = mTreeCache.size()-1;
   }
@@ -1445,9 +1632,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 
   _newBodyNode->init(getPtr());
 
-  std::vector<EndEffector*>& endEffectors = _newBodyNode->mEndEffectors;
-  for(EndEffector* ee : endEffectors)
-    registerEndEffector(ee);
+  BodyNode::NodeMap& nodeMap = _newBodyNode->mNodeMap;
+  for(auto& nodeType : nodeMap)
+    for(auto& node : nodeType.second)
+      registerNode(node);
 
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
@@ -1524,30 +1712,74 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
+void Skeleton::registerNode(NodeMap& nodeMap, Node* _newNode, size_t& _index)
 {
-#ifndef NDEBUG // Debug mode
-  std::vector<EndEffector*>::iterator it = find(mEndEffectors.begin(),
-                                                mEndEffectors.end(),
-                                                _newEndEffector);
+  NodeMap::iterator it = nodeMap.find(typeid(*_newNode));
 
-  if(it != mEndEffectors.end())
+  if(nodeMap.end() == it)
   {
-    dterr << "[Skeleton::registerEndEffector] Attempting to double-register "
-           << "an EndEffector named [" << _newEndEffector->getName() << "] ("
-           << _newEndEffector << ") in the Skeleton named [" << getName()
-           << "] (" << this << "). This is most likely a bug. Please report "
-           << "this!\n";
-    assert(false);
-    return;
+    nodeMap[typeid(*_newNode)] = std::vector<Node*>();
+    it = nodeMap.find(typeid(*_newNode));
   }
-#endif // ------- Debug mode
 
-  mEndEffectors.push_back(_newEndEffector);
-  _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
+  std::vector<Node*>& nodes = it->second;
 
-  // The EndEffector name gets added when the EndEffector is constructed, so we
-  // don't need to add it here.
+  if(INVALID_INDEX == _index)
+  {
+    // If this Node believes its index is invalid, then it should not exist
+    // anywhere in the vector
+    assert(std::find(nodes.begin(), nodes.end(), _newNode) == nodes.end());
+
+    nodes.push_back(_newNode);
+    _index = nodes.size()-1;
+  }
+
+  assert(std::find(nodes.begin(), nodes.end(), _newNode) != nodes.end());
+}
+
+//==============================================================================
+void Skeleton::registerNode(Node* _newNode)
+{
+  registerNode(mNodeMap, _newNode, _newNode->mIndexInSkeleton);
+
+  registerNode(mTreeNodeMaps[_newNode->getBodyNodePtr()->getTreeIndex()],
+      _newNode, _newNode->mIndexInTree);
+
+  const std::type_info& info = typeid(*_newNode);
+  NodeNameMgrMap::iterator it = mNodeNameMgrMap.find(info);
+  if(mNodeNameMgrMap.end() == it)
+  {
+    mNodeNameMgrMap[info] = common::NameManager<Node*>(
+          std::string("Skeleton::") + info.name() + " | " + mSkeletonP.mName,
+          info.name() );
+
+    it = mNodeNameMgrMap.find(info);
+  }
+
+  common::NameManager<Node*>& mgr = it->second;
+  _newNode->setName(mgr.issueNewNameAndAdd(_newNode->getName(), _newNode));
+}
+
+//==============================================================================
+void Skeleton::destructOldTree(size_t tree)
+{
+  mTreeCache.erase(mTreeCache.begin() + tree);
+
+  // Decrease the tree index of every BodyNode whose tree index is higher than
+  // the one which is being removed. None of the BodyNodes that predate the
+  // current one can have a higher tree index, so they can be ignored.
+  for(size_t i=tree; i < mTreeCache.size(); ++i)
+  {
+    DataCache& loweredTree = mTreeCache[i];
+    for(size_t j=0; j < loweredTree.mBodyNodes.size(); ++j)
+      loweredTree.mBodyNodes[j]->mTreeIndex = i;
+  }
+
+  for(auto& nodeType : mSpecializedTreeNodes)
+  {
+    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
+    nodeRepo->erase(nodeRepo->begin() + tree);
+  }
 }
 
 //==============================================================================
@@ -1555,9 +1787,10 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 {
   unregisterJoint(_oldBodyNode->getParentJoint());
 
-  std::vector<EndEffector*>& endEffectors = _oldBodyNode->mEndEffectors;
-  for(EndEffector* ee : endEffectors)
-    unregisterEndEffector(ee);
+  BodyNode::NodeMap& nodeMap = _oldBodyNode->mNodeMap;
+  for(auto& nodeType : nodeMap)
+    for(auto& node : nodeType.second)
+      unregisterNode(node);
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
@@ -1583,18 +1816,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     size_t tree = _oldBodyNode->getTreeIndex();
     assert(mTreeCache[tree].mBodyNodes.size() == 1);
     assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
-    mTreeCache.erase(mTreeCache.begin() + tree);
 
-    // Decrease the tree index of every BodyNode whose tree index is higher than
-    // the one which is being removed. None of the BodyNodes that predate the
-    // current one can have a higher tree index, so they can be ignored.
-    for(size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
-    {
-      BodyNode* bn = mSkelCache.mBodyNodes[i];
-      if(bn->mTreeIndex > tree)
-        --bn->mTreeIndex;
-    }
-
+    destructOldTree(tree);
     updateCacheDimensions(mSkelCache);
   }
   else
@@ -1670,19 +1893,59 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterEndEffector(EndEffector* _oldEndEffector)
+void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index)
 {
-  size_t index = _oldEndEffector->getIndexInSkeleton();
-  assert(mEndEffectors[index] == _oldEndEffector);
-  mEndEffectors.erase(mEndEffectors.begin() + index);
+  NodeMap::iterator it = nodeMap.find(typeid(*_oldNode));
 
-  for(size_t i=index; i < mEndEffectors.size(); ++i)
+  if(nodeMap.end() == it)
   {
-    EndEffector* ee = mEndEffectors[i];
-    ee->mIndexInSkeleton = i;
+    // If the Node was not in the map, then its index should be invalid
+    assert(INVALID_INDEX == _index);
+    return;
   }
 
-  mNameMgrForEndEffectors.removeName(_oldEndEffector->getName());
+  std::vector<Node*>& nodes = it->second;
+
+  // This Node's index in the vector should be referring to this Node
+  assert(nodes[_index] == _oldNode);
+  nodes.erase(nodes.begin() + _index);
+
+  _index = INVALID_INDEX;
+}
+
+//==============================================================================
+void Skeleton::unregisterNode(Node* _oldNode)
+{
+  const size_t indexInSkel = _oldNode->mIndexInSkeleton;
+  unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
+
+  NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
+  assert(mNodeMap.end() != node_it);
+
+  const std::vector<Node*>& skelNodes = node_it->second;
+  for(size_t i=indexInSkel; i < skelNodes.size(); ++i)
+    skelNodes[i]->mIndexInSkeleton = i;
+
+  const size_t indexInTree = _oldNode->mIndexInTree;
+  const size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
+  NodeMap& treeNodeMap = mTreeNodeMaps[treeIndex];
+  unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree);
+
+  node_it = treeNodeMap.find(typeid(*_oldNode));
+  assert(treeNodeMap.end() != node_it);
+
+  const std::vector<Node*>& treeNodes = node_it->second;
+  for(size_t i=indexInTree; i < treeNodes.size(); ++i)
+    treeNodes[i]->mIndexInTree = i;
+
+  // Remove it from the NameManager, if a NameManager is being used for this
+  // type.
+  NodeNameMgrMap::iterator name_it = mNodeNameMgrMap.find(typeid(*_oldNode));
+  if(mNodeNameMgrMap.end() != name_it)
+  {
+    common::NameManager<Node*>& mgr = name_it->second;
+    mgr.removeObject(_oldNode);
+  }
 }
 
 //==============================================================================
@@ -1822,7 +2085,7 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
     BodyNode* newParent = i==0 ? _parentNode :
         nameMap[original->getParentBodyNode()->getName()];
 
-    BodyNode* clone = original->clone(newParent, joint);
+    BodyNode* clone = original->clone(newParent, joint, true);
     clones.push_back(clone);
     nameMap[clone->getName()] = clone;
 

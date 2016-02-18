@@ -76,8 +76,9 @@ TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperti
 TranslationalJoint::TranslationalJoint(const Properties& _properties)
   : MultiDofJoint<3>(_properties)
 {
-  setProperties(_properties);
-  updateDegreeOfFreedomNames();
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  MultiDofJoint<3>::setProperties(_properties);
 }
 
 //==============================================================================
@@ -100,7 +101,7 @@ const std::string& TranslationalJoint::getStaticType()
 }
 
 //==============================================================================
-bool TranslationalJoint::isCyclic(size_t _index) const
+bool TranslationalJoint::isCyclic(size_t /*_index*/) const
 {
   return false;
 }

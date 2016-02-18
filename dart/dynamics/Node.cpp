@@ -60,6 +60,49 @@ NodeDestructor::~NodeDestructor()
 }
 
 //==============================================================================
+Node* NodeDestructor::getNode() const
+{
+  return mNode;
+}
+
+//==============================================================================
+void Node::setNodeState(const State& /*otherState*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+std::unique_ptr<Node::State> Node::getNodeState() const
+{
+  return nullptr;
+}
+
+//==============================================================================
+void Node::copyNodeStateTo(std::unique_ptr<State>& outputState) const
+{
+  outputState = getNodeState();
+}
+
+//==============================================================================
+void Node::setNodeProperties(const Properties& /*properties*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+std::unique_ptr<Node::Properties> Node::getNodeProperties() const
+{
+  return nullptr;
+}
+
+//==============================================================================
+void Node::copyNodePropertiesTo(
+    std::unique_ptr<Properties>& outputProperties) const
+{
+  outputProperties = getNodeProperties();
+}
+
+//==============================================================================
 BodyNodePtr Node::getBodyNodePtr()
 {
   return mBodyNode;
@@ -80,7 +123,7 @@ bool Node::isRemoved() const
     return true;
   }
 
-  return (mBodyNode->mNodeMap.find(this) == mBodyNode->mNodeMap.end());
+  return !mAmAttached;
 }
 
 //==============================================================================
@@ -97,31 +140,35 @@ std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 }
 
 //==============================================================================
-Node::Node(ConstructNode_t, BodyNode* _bn)
-  : mBodyNode(_bn)
+Node::Node(BodyNode* _bn)
+  : mBodyNode(_bn),
+    mAmAttached(false),
+    mIndexInBodyNode(INVALID_INDEX),
+    mIndexInSkeleton(INVALID_INDEX),
+    mIndexInTree(INVALID_INDEX)
 {
   if(nullptr == mBodyNode)
   {
     REPORT_INVALID_NODE(Node);
     return;
   }
-
-  attach();
 }
 
 //==============================================================================
-Node::Node(ConstructBodyNode_t)
-  : mBodyNode(nullptr)
+std::string Node::registerNameChange(const std::string& newName)
 {
-  // BodyNodes do not get "attached" to themselves, so we do nothing here
-}
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(nullptr == skel)
+    return newName;
 
-//==============================================================================
-Node::Node(ConstructAbstract_t)
-{
-  dterr << "[Node::Node] Your class implementation is calling the Node "
-        << "constructor that is meant to be reserved for abstract classes!\n";
-  assert(false);
+  Skeleton::NodeNameMgrMap& nodeNameMgrMap = skel->mNodeNameMgrMap;
+  Skeleton::NodeNameMgrMap::iterator it = nodeNameMgrMap.find(typeid(*this));
+
+  if(nodeNameMgrMap.end() == it)
+    return newName;
+
+  common::NameManager<Node*>& mgr = it->second;
+  return mgr.changeObjectName(this, newName);
 }
 
 //==============================================================================
@@ -133,8 +180,48 @@ void Node::attach()
     return;
   }
 
-  if(mBodyNode->mNodeMap.end() == mBodyNode->mNodeMap.find(this))
-    mBodyNode->mNodeMap[this] = getOrCreateDestructor();
+  // If we are in release mode, and the Node believes it is attached, then we
+  // can shortcut this procedure
+#ifdef NDEBUG
+  if(mAmAttached)
+    return;
+#endif
+
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
+
+  if(mBodyNode->mNodeMap.end() == it)
+  {
+    mBodyNode->mNodeMap[typeid(*this)] = std::vector<Node*>();
+    it = mBodyNode->mNodeMap.find(typeid(*this));
+  }
+
+  std::vector<Node*>& nodes = it->second;
+  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
+
+  NodeDestructorPtr destructor = getOrCreateDestructor();
+  if(INVALID_INDEX == mIndexInBodyNode)
+  {
+    // If the Node was not in the map, then its destructor should not be in the set
+    assert(destructors.find(destructor) == destructors.end());
+
+    // If this Node believes its index is invalid, then it should not exist
+    // anywhere in the vector
+    assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+
+    nodes.push_back(this);
+    mIndexInBodyNode = nodes.size()-1;
+
+    destructors.insert(destructor);
+  }
+
+  assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
+  assert(destructors.find(destructor) != destructors.end());
+
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(skel)
+    skel->registerNode(this);
+
+  mAmAttached = true;
 }
 
 //==============================================================================
@@ -146,31 +233,51 @@ void Node::stageForRemoval()
     return;
   }
 
-  const auto it = mBodyNode->mNodeMap.find(this);
+  // If we are in release mode, and the Node believes it is detached, then we
+  // can shortcut this procedure.
+#ifdef NDEBUG
+  if(!mAmAttached)
+    return;
+#endif
+
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
+  NodeDestructorPtr destructor = getOrCreateDestructor();
+
+  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
   if(mBodyNode->mNodeMap.end() == it)
+  {
+    // If the Node was not in the map, then its index should be invalid
+    assert(INVALID_INDEX == mIndexInBodyNode);
+
+    // If the Node was not in the map, then its destructor should not be in the set
+    assert(destructors.find(destructor) == destructors.end());
     return;
+  }
 
-  mBodyNode->mNodeMap.erase(it);
-}
+  BodyNode::NodeDestructorSet::iterator destructor_iter = destructors.find(destructor);
+  // This Node's destructor should be in the set of destructors
+  assert(destructors.end() != destructor_iter);
 
-//==============================================================================
-void AccessoryNode::remove()
-{
-  stageForRemoval();
-}
+  std::vector<Node*>& nodes = it->second;
 
-//==============================================================================
-void AccessoryNode::reattach()
-{
-  attach();
-}
+  // This Node's index in the vector should be referring to this Node
+  assert(nodes[mIndexInBodyNode] == this);
+  nodes.erase(nodes.begin() + mIndexInBodyNode);
+  destructors.erase(destructor_iter);
 
-//==============================================================================
-AccessoryNode::AccessoryNode()
-  : Node(ConstructAbstract)
-{
-  // Do nothing
+  // Reset all the Node indices that have been altered
+  for(size_t i=mIndexInBodyNode; i < nodes.size(); ++i)
+    nodes[i]->mIndexInBodyNode = i;
+
+  assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+
+  const SkeletonPtr& skel = mBodyNode->getSkeleton();
+  if(skel)
+    skel->unregisterNode(this);
+
+  mIndexInBodyNode = INVALID_INDEX;
+  mAmAttached = false;
 }
 
 } // namespace dynamics

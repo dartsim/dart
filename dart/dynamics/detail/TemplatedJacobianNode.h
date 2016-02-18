@@ -40,7 +40,9 @@
 namespace dart {
 namespace dynamics {
 
-// Documentation inherited
+#include "dart/dynamics/TemplatedJacobianNode.h"
+
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobian(
@@ -55,7 +57,7 @@ TemplatedJacobianNode<NodeType>::getJacobian(
                       static_cast<const NodeType*>(this)->getJacobian());
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobian(
@@ -67,7 +69,7 @@ TemplatedJacobianNode<NodeType>::getJacobian(
   return J;
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobian(
@@ -85,7 +87,7 @@ TemplatedJacobianNode<NodeType>::getJacobian(
   return math::AdTJac(T, static_cast<const NodeType*>(this)->getJacobian());
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getWorldJacobian(
@@ -98,7 +100,7 @@ TemplatedJacobianNode<NodeType>::getWorldJacobian(
   return J;
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::LinearJacobian
 TemplatedJacobianNode<NodeType>::getLinearJacobian(
@@ -125,7 +127,7 @@ TemplatedJacobianNode<NodeType>::getLinearJacobian(
   return getTransform(_inCoordinatesOf).linear() * J.bottomRows<3>();
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::LinearJacobian
 TemplatedJacobianNode<NodeType>::getLinearJacobian(
@@ -144,7 +146,7 @@ TemplatedJacobianNode<NodeType>::getLinearJacobian(
   return getTransform(_inCoordinatesOf).linear() * JLinear;
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::AngularJacobian
 TemplatedJacobianNode<NodeType>::getAngularJacobian(
@@ -169,7 +171,7 @@ TemplatedJacobianNode<NodeType>::getAngularJacobian(
   return getTransform(_inCoordinatesOf).linear() * J.topRows<3>();
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
@@ -182,7 +184,7 @@ TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
         static_cast<const NodeType*>(this)->getJacobianSpatialDeriv());
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
@@ -196,7 +198,7 @@ TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
   return J_d;
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
@@ -213,7 +215,7 @@ TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
         T, static_cast<const NodeType*>(this)->getJacobianSpatialDeriv());
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
@@ -226,7 +228,7 @@ TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
         static_cast<const NodeType*>(this)->getJacobianClassicDeriv());
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::Jacobian
 TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
@@ -251,7 +253,7 @@ TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
   return math::AdRInvJac(_inCoordinatesOf->getWorldTransform(), J_d);
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::LinearJacobian
 TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
@@ -267,7 +269,7 @@ TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
           * J_d.bottomRows<3>();
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::LinearJacobian
 TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
@@ -292,7 +294,7 @@ TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
             + J.topRows<3>().colwise().cross(w.cross(p)));
 }
 
-// Documentation inherited
+//==============================================================================
 template<class NodeType>
 math::AngularJacobian
 TemplatedJacobianNode<NodeType>::getAngularJacobianDeriv(
@@ -308,13 +310,12 @@ TemplatedJacobianNode<NodeType>::getAngularJacobianDeriv(
          * J_d.topRows<3>();
 }
 
-/// Default constructor. This is only a formality, because Entity and Frame
-/// do not offer default constructors.
+//==============================================================================
 template<class NodeType>
-TemplatedJacobianNode<NodeType>::TemplatedJacobianNode()
+TemplatedJacobianNode<NodeType>::TemplatedJacobianNode(BodyNode* bn)
   : Entity(Entity::ConstructAbstract),
-    Frame(nullptr, ""),
-    Node(Node::ConstructAbstract)
+    Frame(Frame::ConstructAbstract),
+    JacobianNode(bn)
 {
   // Do nothing
 }

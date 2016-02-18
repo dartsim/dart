@@ -1,5 +1,5 @@
 # Search all header and source files
-file(GLOB srcs "*.cpp")
+file(GLOB srcs "*.cpp" "detail/*.cpp")
 file(GLOB hdrs "*.h")
 file(GLOB detail "detail/*.h")
 

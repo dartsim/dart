@@ -45,24 +45,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-UniversalJoint::UniqueProperties::UniqueProperties(
-    const Eigen::Vector3d& _axis1, const Eigen::Vector3d& _axis2)
-  : mAxis({_axis1.normalized(), _axis2.normalized()})
-{
-  // Do nothing
-}
-
-//==============================================================================
-UniversalJoint::Properties::Properties(
-    const MultiDofJoint::Properties& _multiDofProperties,
-    const UniversalJoint::UniqueProperties& _universalProperties)
-  : MultiDofJoint::Properties(_multiDofProperties),
-    UniversalJoint::UniqueProperties(_universalProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 UniversalJoint::~UniversalJoint()
 {
   // Do nothing
@@ -86,7 +68,8 @@ void UniversalJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mUniversalP);
+  return Properties(getMultiDofJointProperties(),
+                    getUniversalJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -136,27 +119,25 @@ bool UniversalJoint::isCyclic(size_t _index) const
 //==============================================================================
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
-  mUniversalP.mAxis[0] = _axis.normalized();
-  notifyPositionUpdate();
+  getUniversalJointAddon()->setAxis1(_axis);
 }
 
 //==============================================================================
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
-  mUniversalP.mAxis[1] = _axis.normalized();
-  notifyPositionUpdate();
+  getUniversalJointAddon()->setAxis2(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis1() const
 {
-  return mUniversalP.mAxis[0];
+  return getUniversalJointAddon()->getAxis1();
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
-  return mUniversalP.mAxis[1];
+  return getUniversalJointAddon()->getAxis2();
 }
 
 //==============================================================================
@@ -166,20 +147,21 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
   Eigen::Matrix<double, 6, 2> J;
   J.col(0) = math::AdTAngular(
                mJointP.mT_ChildBodyToJoint
-               * math::expAngular(-mUniversalP.mAxis[1] * _positions[1]),
-                                  mUniversalP.mAxis[0]);
-  J.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint,
-                              mUniversalP.mAxis[1]);
+               * math::expAngular(-getAxis2() * _positions[1]), getAxis1());
+  J.col(1) = math::AdTAngular(mJointP.mT_ChildBodyToJoint, getAxis2());
   assert(!math::isNan(J));
   return J;
 }
 
 //==============================================================================
 UniversalJoint::UniversalJoint(const Properties& _properties)
-  : MultiDofJoint<2>(_properties)
+  : detail::UniversalJointBase(_properties, common::NoArg)
 {
-  setProperties(_properties);
-  updateDegreeOfFreedomNames();
+  createUniversalJointAddon(_properties);
+
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  MultiDofJoint<2>::setProperties(_properties);
 }
 
 //==============================================================================
@@ -202,8 +184,8 @@ void UniversalJoint::updateLocalTransform() const
 {
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = mJointP.mT_ParentBodyToJoint
-       * Eigen::AngleAxisd(positions[0], mUniversalP.mAxis[0])
-       * Eigen::AngleAxisd(positions[1], mUniversalP.mAxis[1])
+       * Eigen::AngleAxisd(positions[0], getAxis1())
+       * Eigen::AngleAxisd(positions[1], getAxis2())
        * mJointP.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -220,12 +202,11 @@ void UniversalJoint::updateLocalJacobianTimeDeriv() const
   Eigen::Vector6d tmpV1 = getLocalJacobianStatic().col(1)
                         * getVelocitiesStatic()[1];
 
-  Eigen::Isometry3d tmpT = math::expAngular(-mUniversalP.mAxis[1]
-                                            * getPositionsStatic()[1]);
+  Eigen::Isometry3d tmpT = math::expAngular(
+        -getAxis2() * getPositionsStatic()[1]);
 
   Eigen::Vector6d tmpV2
-      = math::AdTAngular(mJointP.mT_ChildBodyToJoint * tmpT,
-                         mUniversalP.mAxis[0]);
+      = math::AdTAngular(mJointP.mT_ChildBodyToJoint * tmpT, getAxis1());
 
   mJacobianDeriv.col(0) = -math::ad(tmpV1, tmpV2);
 

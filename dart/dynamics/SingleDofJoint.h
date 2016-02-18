@@ -40,6 +40,8 @@
 #include <string>
 
 #include "dart/dynamics/Joint.h"
+#include "dart/common/SpecializedAddonManager.h"
+#include "dart/dynamics/detail/SingleDofJointProperties.h"
 
 namespace dart {
 namespace dynamics {
@@ -53,86 +55,11 @@ class SingleDofJoint : public Joint
 {
 public:
 
-  struct UniqueProperties
-  {
-    /// Lower limit of position
-    double mPositionLowerLimit;
+  using UniqueProperties = detail::SingleDofJointUniqueProperties;
+  using Properties = detail::SingleDofJointProperties;
+  using Addon = detail::SingleDofJointAddon;
 
-    /// Upper limit of position
-    double mPositionUpperLimit;
-
-    /// Initial position
-    double mInitialPosition;
-
-    /// Lower limit of velocity
-    double mVelocityLowerLimit;
-
-    /// Upper limit of velocity
-    double mVelocityUpperLimit;
-
-    /// Initial velocity
-    double mInitialVelocity;
-
-    /// Lower limit of acceleration
-    double mAccelerationLowerLimit;
-
-    /// Upper limit of acceleration
-    double mAccelerationUpperLimit;
-
-    /// Lower limit of force
-    double mForceLowerLimit;
-
-    /// Upper limit of force
-    double mForceUpperLimit;
-
-    /// Joint spring stiffness
-    double mSpringStiffness;
-
-    /// Rest position for joint spring
-    double mRestPosition;
-
-    /// Joint damping coefficient
-    double mDampingCoefficient;
-
-    /// Coulomb friction force
-    double mFriction;
-
-    /// True if the name of this Joint's DOF is not allowed to be overwritten
-    bool mPreserveDofName;
-
-    /// The name of the DegreeOfFreedom for this Joint
-    std::string mDofName;
-
-    /// Constructor
-    UniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
-                     double _positionUpperLimit =  DART_DBL_INF,
-                     double _velocityLowerLimit = -DART_DBL_INF,
-                     double _velocityUpperLimit =  DART_DBL_INF,
-                     double _accelerationLowerLimit = -DART_DBL_INF,
-                     double _accelerationUpperLimit =  DART_DBL_INF,
-                     double _forceLowerLimit = -DART_DBL_INF,
-                     double _forceUpperLimit =  DART_DBL_INF,
-                     double _springStiffness = 0.0,
-                     double _restPosition = 0.0,
-                     double _dampingCoefficient = 0.0,
-                     double _coulombFriction = 0.0,
-                     bool _preserveDofName = false,
-                     std::string _dofName = "");
-    // TODO(MXG): In version 6.0, we should add mInitialPosition and
-    // mInitialVelocity to the constructor arguments. For now we must wait in
-    // order to avoid breaking the API
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  struct Properties : Joint::Properties, UniqueProperties
-  {
-    Properties(
-        const Joint::Properties& _jointProperties = Joint::Properties(),
-        const UniqueProperties& _singleDofProperties = UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, SingleDofJointAddon)
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -471,6 +398,8 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
+  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+
 protected:
 
   /// Constructor called inheriting classes
@@ -478,6 +407,9 @@ protected:
 
   // Documentation inherited
   void registerDofs() override;
+
+  ///
+  std::string changeDofName(const std::string& name);
 
   // Documentation inherited
   virtual void updateDegreeOfFreedomNames() override;
@@ -652,8 +584,6 @@ protected:
   /// \}
 
 protected:
-
-  UniqueProperties mSingleDofP;
 
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;

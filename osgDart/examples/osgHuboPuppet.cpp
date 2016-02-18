@@ -178,28 +178,18 @@ class HuboArmIK : public InverseKinematics::Analytical
 {
 public:
 
-  HuboArmIK(InverseKinematics* _ik, BodyNode* baseLink,
+  HuboArmIK(InverseKinematics* _ik, const std::string& baseLinkName,
             const Analytical::Properties& properties = Analytical::Properties())
-    : Analytical(_ik, "HuboArmIK_"+baseLink->getName(), properties),
-      mBaseLink(BodyNodePtr(baseLink))
+    : Analytical(_ik, "HuboArmIK_"+baseLinkName, properties),
+      configured(false),
+      mBaseLinkName(baseLinkName)
   {
-    configure();
+    // Do nothing
   }
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    BodyNode* base = mBaseLink.lock();
-    if(nullptr == base)
-    {
-      dterr << "[HuboArmIK::clone] Could not clone IK because its base link "
-            << "can no longer be referenced\n";
-      assert(false);
-      return nullptr;
-    }
-
-    return std::unique_ptr<GradientMethod>(
-          new HuboArmIK(_newIK, _newIK->getNode()->getSkeleton()->getBodyNode(
-                          base->getName()), getAnalyticalProperties()));
+    return std::unique_ptr<GradientMethod>(new HuboArmIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
@@ -210,17 +200,30 @@ public:
 
     if(!configured)
     {
-      dtwarn << "[HuboArmIK::computeSolutions] This analytical IK was not able "
-             << "to configure properly, so it will not be able to compute "
-             << "solutions\n";
-      return mSolutions;
+      configure();
+
+      if(!configured)
+      {
+        dtwarn << "[HuboArmIK::computeSolutions] This analytical IK was not able "
+               << "to configure properly, so it will not be able to compute "
+               << "solutions\n";
+        return mSolutions;
+      }
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if(nullptr == base || nullptr == mWristEnd)
+    if(nullptr == base)
     {
       dterr << "[HuboArmIK::computeSolutions] Attempting to perform an IK on a "
-            << "limb that no longer exists!\n";
+            << "limb that no longer exists [" << getMethodName() << "]!\n";
+      assert(false);
+      return mSolutions;
+    }
+
+    if(nullptr == mWristEnd)
+    {
+      dterr << "[HuboArmIK::computeSolutions] Attempting to perform IK without "
+            << "a wrist!\n";
       assert(false);
       return mSolutions;
     }
@@ -349,6 +352,9 @@ public:
 
   const std::vector<size_t>& getDofs() const override
   {
+    if(!configured)
+      configure();
+
     return mDofs;
   }
 
@@ -356,15 +362,16 @@ public:
 
 protected:
 
-  void configure()
+  void configure() const
   {
     configured = false;
 
-    const BodyNodePtr& base = mBaseLink.lock();
+    mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
+
+    BodyNode* base = mBaseLink.lock();
     if(nullptr == base)
     {
-      dterr << "[HuboArmIK::configure] Cannot configure with a nullptr base "
-            << "link\n";
+      dterr << "[HuboArmIK::configure] base link is a nullptr\n";
       assert(false);
       return;
     }
@@ -438,19 +445,21 @@ protected:
     configured = true;
   }
 
-  bool configured;
+  mutable bool configured;
 
-  Eigen::Isometry3d shoulderTf;
-  Eigen::Isometry3d wristTfInv;
-  Eigen::Isometry3d mNodeOffsetTfInv;
-  double L3, L4, L5;
+  mutable Eigen::Isometry3d shoulderTf;
+  mutable Eigen::Isometry3d wristTfInv;
+  mutable Eigen::Isometry3d mNodeOffsetTfInv;
+  mutable double L3, L4, L5;
 
-  Eigen::Matrix<int, 8, 3> alterantives;
+  mutable Eigen::Matrix<int, 8, 3> alterantives;
 
-  std::vector<size_t> mDofs;
+  mutable std::vector<size_t> mDofs;
 
-  WeakBodyNodePtr mBaseLink;
-  JacobianNode* mWristEnd;
+  std::string mBaseLinkName;
+  mutable WeakBodyNodePtr mBaseLink;
+
+  mutable JacobianNode* mWristEnd;
 };
 
 class HuboLegIK : public InverseKinematics::Analytical
@@ -458,28 +467,18 @@ class HuboLegIK : public InverseKinematics::Analytical
 public:
 
   /// baseLink should be Body_LHY or Body_RHY
-  HuboLegIK(InverseKinematics* _ik, BodyNode* baseLink,
+  HuboLegIK(InverseKinematics* _ik, const std::string& baseLinkName,
             const Analytical::Properties& properties = Analytical::Properties())
-    : Analytical(_ik, "HuboLegIK_"+baseLink->getName(), properties),
-      mBaseLink(BodyNodePtr(baseLink))
+    : Analytical(_ik, "HuboLegIK_"+baseLinkName, properties),
+      configured(false),
+      mBaseLinkName(baseLinkName)
   {
-    configure();
+    // Do nothing
   }
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    BodyNode* base = mBaseLink.lock();
-    if(nullptr == base)
-    {
-      dterr << "[HuboLegIK::clone] Could not clone IK because its base link "
-            << "can no longer be referenced\n";
-      assert(false);
-      return nullptr;
-    }
-
-    return std::unique_ptr<GradientMethod>(
-          new HuboLegIK(_newIK, _newIK->getNode()->getSkeleton()->getBodyNode(
-                          base->getName()), getAnalyticalProperties()));
+    return std::unique_ptr<GradientMethod>(new HuboLegIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
   }
 
   const std::vector<Solution>& computeSolutions(
@@ -490,10 +489,15 @@ public:
 
     if(!configured)
     {
-      dtwarn << "[HuboLegIK::computeSolutions] This analytical IK was not able "
-            << "to configure properly, so it will not be able to compute "
-            << "solutions\n";
-      return mSolutions;
+      configure();
+
+      if(!configured)
+      {
+        dtwarn << "[HuboLegIK::computeSolutions] This analytical IK was not able "
+              << "to configure properly, so it will not be able to compute "
+              << "solutions\n";
+        return mSolutions;
+      }
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
@@ -585,6 +589,9 @@ public:
 
   const std::vector<size_t>& getDofs() const override
   {
+    if(!configured)
+      configure();
+
     return mDofs;
   }
 
@@ -592,9 +599,11 @@ public:
 
 protected:
 
-  void configure()
+  void configure() const
   {
     configured = false;
+
+    mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
 
     BodyNode* base = mBaseLink.lock();
     if(nullptr == base)
@@ -679,17 +688,19 @@ protected:
     configured = true;
   }
 
-  double L4, L5, L6;
-  Eigen::Isometry3d waist;
-  Eigen::Isometry3d hipRotation;
-  Eigen::Isometry3d footTfInv;
-  Eigen::Matrix<int, 8, 3> alternatives;
+  mutable double L4, L5, L6;
+  mutable Eigen::Isometry3d waist;
+  mutable Eigen::Isometry3d hipRotation;
+  mutable Eigen::Isometry3d footTfInv;
+  mutable Eigen::Matrix<int, 8, 3> alternatives;
 
-  std::vector<size_t> mDofs;
+  mutable std::vector<size_t> mDofs;
 
-  bool configured;
+  mutable bool configured;
 
-  WeakBodyNodePtr mBaseLink;
+  std::string mBaseLinkName;
+
+  mutable WeakBodyNodePtr mBaseLink;
 
 };
 
@@ -1157,8 +1168,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   l_hand->getIK(true)->setTarget(lh_target);
   l_hand->getIK()->useWholeBody();
 
-  l_hand->getIK()->setGradientMethod<HuboArmIK>(
-        hubo->getBodyNode("Body_LSP"));
+  l_hand->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
 
   l_hand->getIK()->getAnalytical()->setExtraDofUtilization(
         IK::Analytical::PRE_ANALYTICAL);
@@ -1184,8 +1194,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_hand->getIK(true)->setTarget(rh_target);
   r_hand->getIK()->useWholeBody();
 
-  r_hand->getIK()->setGradientMethod<HuboArmIK>(
-        hubo->getBodyNode("Body_RSP"));
+  r_hand->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
 
   r_hand->getIK()->getAnalytical()->setExtraDofUtilization(
         IK::Analytical::PRE_ANALYTICAL);
@@ -1233,8 +1242,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   l_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
 
-  l_foot->getIK()->setGradientMethod<HuboLegIK>(
-        hubo->getBodyNode("Body_LHY"));
+  l_foot->getIK()->setGradientMethod<HuboLegIK>("Body_LHY");
 
   l_foot->getSupport(true)->setGeometry(foot_support);
   l_foot->getSupport()->setActive();
@@ -1256,8 +1264,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getIK()->getErrorMethod().setAngularBounds(
         -angularBounds, angularBounds);
 
-  r_foot->getIK()->setGradientMethod<HuboLegIK>(
-        hubo->getBodyNode("Body_RHY"));
+  r_foot->getIK()->setGradientMethod<HuboLegIK>("Body_RHY");
 
   r_foot->getSupport(true)->setGeometry(foot_support);
   r_foot->getSupport()->setActive();
@@ -1280,8 +1287,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
 
   l_peg->getIK(true)->setTarget(lp_target);
 
-  l_peg->getIK()->setGradientMethod<HuboArmIK>(
-        hubo->getBodyNode("Body_LSP"));
+  l_peg->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
 
   l_peg->getIK()->getErrorMethod().setLinearBounds(
         -linearBounds, linearBounds);
@@ -1298,8 +1304,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
 
   r_peg->getIK(true)->setTarget(rp_target);
 
-  r_peg->getIK()->setGradientMethod<HuboArmIK>(
-        hubo->getBodyNode("Body_RSP"));
+  r_peg->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
 
   r_peg->getIK()->getErrorMethod().setLinearBounds(
         -linearBounds, linearBounds);
@@ -1379,9 +1384,13 @@ int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
-  const SkeletonPtr& hubo = createHubo();
+  SkeletonPtr hubo = createHubo();
   setStartupConfiguration(hubo);
   setupEndEffectors(hubo);
+
+  Eigen::VectorXd positions = hubo->getPositions();
+  hubo = hubo->clone("hubo_copy");
+  hubo->setPositions(positions);
 
   world->addSkeleton(hubo);
   world->addSkeleton(createGround());

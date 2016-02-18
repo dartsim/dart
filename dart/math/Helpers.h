@@ -66,34 +66,19 @@ inline int delta(int _i, int _j) {
   return 0;
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x, std::false_type)
 {
   return static_cast<T>(0) < x;
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x, std::true_type)
 {
   return (static_cast<T>(0) < x) - (x < static_cast<T>(0));
 }
 
-#if defined(_MSC_VER)
-// TODO: Change to constexpr once Visual Studio supports it
-template <typename T> inline
-#else
 template <typename T> inline constexpr
-#endif
 int sign(T x)
 {
   return sign(x, std::is_signed<T>());

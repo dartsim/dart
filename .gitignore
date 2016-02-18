@@ -20,6 +20,7 @@ TAGS
 *.manifest
 *.rsp
 *~
+.idea/*
 /nbproject/
 /doxygen/html/
 docs/readthedocs/site

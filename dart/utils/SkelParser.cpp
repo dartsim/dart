@@ -1478,7 +1478,7 @@ static void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
 //==============================================================================
 SkelParser::JointPropPtr SkelParser::readWeldJoint(
     tinyxml2::XMLElement* _jointElement,
-    SkelJoint& _joint,
+    SkelJoint& /*_joint*/,
     const std::string&)
 {
   assert(_jointElement != nullptr);
@@ -1789,11 +1789,11 @@ SkelParser::JointPropPtr SkelParser::readEulerJoint(
   std::string order = getValueString(_jointElement, "axis_order");
   if (order == "xyz")
   {
-    properties.mAxisOrder = dynamics::EulerJoint::AO_XYZ;
+    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::XYZ;
   }
   else if (order == "zyx")
   {
-    properties.mAxisOrder = dynamics::EulerJoint::AO_ZYX;
+    properties.mAxisOrder = dynamics::EulerJoint::AxisOrder::ZYX;
   }
   else
   {
@@ -1889,19 +1889,19 @@ SkelParser::JointPropPtr SkelParser::readPlanarJoint(
 
     if (type == "xy")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PT_XY;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
     }
     else if (type == "yz")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PT_YZ;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::YZ;
     }
     else if (type == "zx")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PT_ZX;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ZX;
     }
     else if (type == "arbitrary")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PT_ARBITRARY;
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ARBITRARY;
 
       tinyxml2::XMLElement* transAxis1Element
           = getElement(planeElement, "translation_axis1");

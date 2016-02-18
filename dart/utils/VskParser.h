@@ -53,6 +53,9 @@ namespace VskParser
   /// mass, and inertia.
   struct Options
   {
+    /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
+    common::ResourceRetrieverPtr retrieverOrNullptr;
+
     /// The default shape for body node is ellipsoid. The size of ellipsoid of
     /// each body node are determined by the relative transformation from a body
     /// node and its child body node. defaultEllipsoidSize is used for body
@@ -79,22 +82,25 @@ namespace VskParser
     /// Joint Coulomb friction
     double jointFriction;
 
+    /// Remove end BodyNodes with no Shape segment
+    bool removeEndBodyNodes;
+
     /// Constructor
-    Options(const Eigen::Vector3d& defaultEllipsoidSize
+    Options(const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
+            const Eigen::Vector3d& defaultEllipsoidSize
                 = Eigen::Vector3d::Constant(0.05),
             double thicknessRatio = 0.35,
             double density = 1e+3,
             double jointPositionLowerLimit = -DART_PI,
             double jointPositionUpperLimit = +DART_PI,
             double jointDampingCoefficient = 0.1,
-            double jointFriction = 0.0);
+            double jointFriction = 0.0,
+            bool removeEndBodyNodes = false);
   };
 
   /// Read Skeleton from VSK file
-  dynamics::SkeletonPtr readSkeleton(
-      const common::Uri& fileUri,
-      const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
-      const Options options = Options());
+  dynamics::SkeletonPtr readSkeleton(const common::Uri& fileUri,
+                                     const Options options = Options());
 
 } // namespace VskParser
 

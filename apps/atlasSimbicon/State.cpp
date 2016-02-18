@@ -590,7 +590,7 @@ void State::setProportionalGain(int _idx, double _val)
 }
 
 //==============================================================================
-void State::setProportionalGain(const string& _jointName, double _val)
+void State::setProportionalGain(const string& /*_jointName*/, double /*_val*/)
 {
   // TODO(JS)
   NOT_YET(State::setProportionalGain());
@@ -624,7 +624,7 @@ void State::setDerivativeGain(int _idx, double _val)
 }
 
 //==============================================================================
-void State::setDerivativeGain(const string& _jointName, double _val)
+void State::setDerivativeGain(const string& /*_jointName*/, double /*_val*/)
 {
   // TODO(JS)
   NOT_YET(State::setDerivativeGain());

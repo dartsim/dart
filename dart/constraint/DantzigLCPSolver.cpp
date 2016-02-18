@@ -252,7 +252,7 @@ bool DantzigLCPSolver::isSymmetric(size_t _n, double* _A,
 
 //==============================================================================
 void DantzigLCPSolver::print(size_t _n, double* _A, double* _x,
-                          double* lo, double* hi, double* b,
+                          double* /*lo*/, double* /*hi*/, double* b,
                           double* w, int* findex)
 {
   size_t nSkip = dPAD(_n);

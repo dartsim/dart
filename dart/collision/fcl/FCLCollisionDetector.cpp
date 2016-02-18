@@ -220,9 +220,9 @@ bool FCLCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
 }
 
 //==============================================================================
-bool FCLCollisionDetector::detectCollision(CollisionNode* _node1,
-                                           CollisionNode* _node2,
-                                           bool _calculateContactPoints)
+bool FCLCollisionDetector::detectCollision(CollisionNode* /*_node1*/,
+                                           CollisionNode* /*_node2*/,
+                                           bool /*_calculateContactPoints*/)
 {
   // TODO(JS): function not implemented
   assert(false);

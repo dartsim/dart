@@ -47,23 +47,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-RevoluteJoint::UniqueProperties::UniqueProperties(const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
-  // Do nothing
-}
-
-//==============================================================================
-RevoluteJoint::Properties::Properties(
-    const SingleDofJoint::Properties& _singleDofJointProperties,
-    const RevoluteJoint::UniqueProperties& _revoluteProperties)
-  : SingleDofJoint::Properties(_singleDofJointProperties),
-    RevoluteJoint::UniqueProperties(_revoluteProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 RevoluteJoint::~RevoluteJoint()
 {
   // Do nothing
@@ -86,7 +69,8 @@ void RevoluteJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mRevoluteP);
+  return Properties(getSingleDofJointProperties(),
+                    getRevoluteJointAddon()->getProperties());
 }
 
 //==============================================================================
@@ -136,23 +120,25 @@ const std::string& RevoluteJoint::getStaticType()
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  mRevoluteP.mAxis = _axis.normalized();
-  updateLocalJacobian();
-  notifyPositionUpdate();
+  getRevoluteJointAddon()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& RevoluteJoint::getAxis() const
 {
-  return mRevoluteP.mAxis;
+  return getRevoluteJointAddon()->getAxis();
 }
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& _properties)
-  : SingleDofJoint(_properties)
+  : detail::RevoluteJointBase(_properties, common::NoArg)
+//  : detail::RevoluteJointBase(common::NextArgs, _properties)
 {
-  setProperties(_properties);
-  updateDegreeOfFreedomNames();
+  createRevoluteJointAddon(_properties);
+
+  // Inherited Joint Properties must be set in the final joint class or else we
+  // get pure virtual function calls
+  SingleDofJoint::setProperties(_properties);
 }
 
 //==============================================================================
@@ -165,7 +151,7 @@ Joint* RevoluteJoint::clone() const
 void RevoluteJoint::updateLocalTransform() const
 {
   mT = mJointP.mT_ParentBodyToJoint
-       * math::expAngular(mRevoluteP.mAxis * getPositionStatic())
+       * math::expAngular(getAxis() * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -177,7 +163,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, mRevoluteP.mAxis);
+    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

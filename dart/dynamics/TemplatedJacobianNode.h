@@ -50,7 +50,7 @@ namespace dynamics {
 /// This style of implementation allows BodyNode and EndEffector to share the
 /// implementations of these various auxiliary Jacobian functions without any
 /// penalty from dynamic overload resolution.
-template <class EntityType>
+template <class NodeType>
 class TemplatedJacobianNode : public JacobianNode
 {
 public:
@@ -122,9 +122,8 @@ public:
 
 protected:
 
-  /// Default constructor. This is only a formality, because Entity and Frame
-  /// do not offer default constructors.
-  TemplatedJacobianNode();
+  /// Constructor
+  TemplatedJacobianNode(BodyNode* bn);
 
 };
 
