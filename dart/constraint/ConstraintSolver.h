@@ -150,7 +150,7 @@ private:
   double mTimeStep;
 
   /// LCP solver
-  LCPSolver* mLCPSolver;
+  std::unique_ptr<LCPSolver> mLCPSolver;
 
   /// Skeleton list
   std::vector<dynamics::SkeletonPtr> mSkeletons;

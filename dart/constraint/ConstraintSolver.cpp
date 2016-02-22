@@ -72,7 +72,6 @@ ConstraintSolver::ConstraintSolver(double _timeStep)
 //==============================================================================
 ConstraintSolver::~ConstraintSolver()
 {
-  delete mLCPSolver;
 }
 
 //==============================================================================
