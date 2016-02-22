@@ -43,6 +43,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
 template <class BaseT, typename PropertiesDataT,
           class ManagerT, void (*updateProperties)(BaseT*), bool OptionalT>
 constexpr void (*AddonWithProtectedPropertiesInSkeleton<
@@ -212,6 +218,12 @@ setManager(common::AddonManager* newManager, bool /*transfer*/)
 }
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT, void (*updateState)(BaseT*),
           void (*updateProperties)(BaseT*), bool OptionalT>

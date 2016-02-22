@@ -205,6 +205,12 @@ private:
 };
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
 template <size_t DOF>
 constexpr size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
 
@@ -283,6 +289,12 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
 }
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
 template <size_t DOF>
 constexpr size_t MultiDofJointAddon<DOF>::NumDofs;
 
