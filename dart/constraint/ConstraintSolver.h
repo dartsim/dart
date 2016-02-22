@@ -41,6 +41,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/constraint/SmartPointer.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
@@ -101,8 +102,15 @@ public:
   /// Get time step
   double getTimeStep() const;
 
-  /// Set collision detector
+  /// Set collision detector. This function acquires ownership of the
+  /// CollisionDetector passed as an argument. This method is deprecated in favor
+  /// of the overload that accepts a std::unique_ptr.
+  DEPRECATED(7.1)
   void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
+
+  /// Set collision detector
+  void setCollisionDetector(
+    std::unique_ptr<collision::CollisionDetector>&& _collisionDetector);
 
   /// Get collision detector
   collision::CollisionDetector* getCollisionDetector() const;
@@ -136,7 +144,7 @@ private:
   bool isSoftContact(const collision::Contact& _contact) const;
 
   /// Collision detector
-  collision::CollisionDetector* mCollisionDetector;
+  std::unique_ptr<collision::CollisionDetector> mCollisionDetector;
 
   /// Time step
   double mTimeStep;
