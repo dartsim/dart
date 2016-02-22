@@ -60,7 +60,7 @@ public:
   // Documentation inherited.
   void draw(renderer::RenderInterface* _ri = nullptr,
             const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-            bool _useDefaultColor = true) const;
+            bool _useDefaultColor = true) const override;
 
   /// \brief Compute volume from given properties
   static double computeVolume(const Eigen::Vector3d& size);

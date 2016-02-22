@@ -72,7 +72,7 @@ public:
   virtual void draw(
       renderer::RenderInterface* _ri      = nullptr,
       const Eigen::Vector4d&     _col     = Eigen::Vector4d::Ones(),
-      bool                       _default = true) const;
+      bool                       _default = true) const override;
 
 protected:
   // Documentation inherited.
