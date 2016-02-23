@@ -1334,9 +1334,9 @@ template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
   : Joint(_properties),
     mCommands(Vector::Zero()),
-    mPositions(Vector::Zero()),
+    mPositions(_properties.mInitialPositions),
     mPositionDeriv(Vector::Zero()),
-    mVelocities(Vector::Zero()),
+    mVelocities(_properties.mInitialVelocities),
     mVelocitiesDeriv(Vector::Zero()),
     mAccelerations(Vector::Zero()),
     mAccelerationsDeriv(Vector::Zero()),
