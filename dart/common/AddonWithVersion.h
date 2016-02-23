@@ -82,11 +82,11 @@ public:
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AddonStateImplementation = AddonWithState<
-      Derived, StateData, ManagerType, UpdateState>;
+      Derived, StateData, ManagerType, updateState>;
 
   using AddonPropertiesImplementation = detail::AddonWithVersionedProperties<
       AddonStateImplementation,
-      Derived, PropertiesData, ManagerType, UpdateProperties>;
+      Derived, PropertiesData, ManagerType, updateProperties>;
 
   using AddonImplementation = AddonWithStateAndVersionedProperties<
       DerivedT, StateDataT, PropertiesDataT, ManagerT,

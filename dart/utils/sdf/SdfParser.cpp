@@ -618,7 +618,7 @@ dynamics::SkeletonPtr makeSkeleton(
 
 //==============================================================================
 template <class NodeType>
-static std::pair<dynamics::Joint*,dynamics::BodyNode*> createJointAndNodePair(
+std::pair<dynamics::Joint*,dynamics::BodyNode*> createJointAndNodePair(
     dynamics::SkeletonPtr skeleton,
     dynamics::BodyNode* parent,
     const SDFJoint& joint,

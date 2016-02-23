@@ -59,7 +59,7 @@ class StateAddonTest : public dart::common::AddonWithState<
 public:
 
   StateAddonTest(AddonManager* mgr, const StateData& state = StateData())
-    : AddonWithState<Base, Derived, StateData, ManagerType, UpdateState>(mgr, state)
+    : dart::common::AddonWithState<StateAddonTest, dart::common::Empty>(mgr, state)
   {
 
   }

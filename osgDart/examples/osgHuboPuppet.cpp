@@ -193,7 +193,7 @@ public:
   }
 
   const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf)
+      const Eigen::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);

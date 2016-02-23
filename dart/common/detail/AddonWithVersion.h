@@ -61,7 +61,7 @@ public:
   constexpr static void (*UpdateState)(Derived*) = updateState;
 
   using AddonImplementation = AddonWithState<
-      Base, Derived, StateData, ManagerT, UpdateState>;
+      Base, Derived, StateData, ManagerT, updateState>;
 
   AddonWithState() = delete;
   AddonWithState(const AddonWithState&) = delete;
@@ -119,7 +119,7 @@ public:
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AddonImplementation = AddonWithVersionedProperties<
-      Base, Derived, PropertiesData, ManagerT, UpdateProperties>;
+      Base, Derived, PropertiesData, ManagerT, updateProperties>;
 
   AddonWithVersionedProperties() = delete;
   AddonWithVersionedProperties(const AddonWithVersionedProperties&) = delete;
