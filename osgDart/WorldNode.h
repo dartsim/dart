@@ -52,6 +52,7 @@ class World;
 namespace dynamics {
 class Frame;
 class Entity;
+class ShapeFrame;
 }
 
 } // namespace dart
@@ -60,6 +61,7 @@ namespace osgDart
 {
 
 class FrameNode;
+class ShapeFrameNode;
 class EntityNode;
 class Viewer;
 
@@ -157,10 +159,10 @@ protected:
   void refreshCustomFrames();
 
   /// Refresh the specified Frame's rendering data
-  void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
+  void refreshBaseFrameNode(dart::dynamics::ShapeFrame* _frame);
 
   /// Create a node for the specified Frame
-  void createBaseFrameNode(dart::dynamics::Frame* _frame);
+  void createBaseFrameNode(dart::dynamics::ShapeFrame* _frame);
 
   /// Refresh the specified Entity's rendering data
   void refreshBaseEntityNode(dart::dynamics::Entity* _entity);
@@ -168,11 +170,11 @@ protected:
   /// Create a node for the specified Entity
   void createBaseEntityNode(dart::dynamics::Entity* _entity);
 
-  /// Map from Frame pointers to child FrameNode pointers
-  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
+  /// Map from ShapeFrame pointers to child ShapeFrameNode pointers
+  std::map<dart::dynamics::ShapeFrame*, ShapeFrameNode*> mFrameToNode;
 
-  /// Map from child FrameNode pointers to Frame pointers
-  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
+  /// Map from child ShapeFrameNode pointers to ShapeFrame pointers
+  std::map<ShapeFrameNode*, dart::dynamics::ShapeFrame*> mNodeToFrame;
 
   /// Map from Entity pointers to child EntityNode pointers
   std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;

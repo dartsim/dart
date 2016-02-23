@@ -43,6 +43,7 @@
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
@@ -52,7 +53,7 @@ class EllipsoidShapeGeode : public ShapeNode, public osg::Geode
 public:
 
   EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
-                      EntityNode* parentEntity,
+                      ShapeFrameNode* parentShapeFrame,
                       EllipsoidShapeNode* parentNode);
 
   void refresh();
@@ -74,6 +75,7 @@ class EllipsoidShapeDrawable : public osg::ShapeDrawable
 public:
 
   EllipsoidShapeDrawable(dart::dynamics::EllipsoidShape* shape,
+                         dart::dynamics::VisualAddon* visualAddon,
                          EllipsoidShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -83,6 +85,7 @@ protected:
   virtual ~EllipsoidShapeDrawable();
 
   dart::dynamics::EllipsoidShape* mEllipsoidShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
   EllipsoidShapeGeode* mParent;
 
 };
@@ -90,13 +93,13 @@ protected:
 //==============================================================================
 EllipsoidShapeNode::EllipsoidShapeNode(
     std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
-    EntityNode* parent)
+    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mEllipsoidShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -104,7 +107,7 @@ void EllipsoidShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -129,12 +132,12 @@ void EllipsoidShapeNode::extractData(bool firstTime)
     const Eigen::Vector3d& s =
        mEllipsoidShape->getSize()/smallestComponent(mEllipsoidShape->getSize());
     S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()*S));
+    setMatrix(eigToOsgMatrix(S));
   }
 
   if(nullptr == mGeode)
   {
-    mGeode = new EllipsoidShapeGeode(mEllipsoidShape.get(), mParentEntity, this);
+    mGeode = new EllipsoidShapeGeode(mEllipsoidShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -150,9 +153,9 @@ EllipsoidShapeNode::~EllipsoidShapeNode()
 
 //==============================================================================
 EllipsoidShapeGeode::EllipsoidShapeGeode(dart::dynamics::EllipsoidShape* shape,
-                                         EntityNode* parentEntity,
+                                         ShapeFrameNode* parentShapeFrame,
                                          EllipsoidShapeNode* parentNode)
-  : ShapeNode(parentNode->getShape(), parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mParentNode(parentNode),
     mEllipsoidShape(shape),
     mDrawable(nullptr)
@@ -174,7 +177,7 @@ void EllipsoidShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new EllipsoidShapeDrawable(mEllipsoidShape, this);
+    mDrawable = new EllipsoidShapeDrawable(mEllipsoidShape, mVisualAddon, this);
     addDrawable(mDrawable);
     return;
   }
@@ -190,8 +193,11 @@ EllipsoidShapeGeode::~EllipsoidShapeGeode()
 
 //==============================================================================
 EllipsoidShapeDrawable::EllipsoidShapeDrawable(
-    dart::dynamics::EllipsoidShape* shape, EllipsoidShapeGeode* parent)
+    dart::dynamics::EllipsoidShape* shape,
+    dart::dynamics::VisualAddon* visualAddon,
+    EllipsoidShapeGeode* parent)
   : mEllipsoidShape(shape),
+    mVisualAddon(visualAddon),
     mParent(parent)
 {
   refresh(true);
@@ -219,7 +225,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mEllipsoidShape->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
   }
 }
 

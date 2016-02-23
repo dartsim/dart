@@ -39,6 +39,7 @@
 #include "osgDart/WorldNode.h"
 #include "osgDart/FrameNode.h"
 #include "osgDart/EntityNode.h"
+#include "osgDart/ShapeFrameNode.h"
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
@@ -185,7 +186,7 @@ void WorldNode::clearUnusedNodes()
   // Clear unusued FrameNodes
   for(auto& node_pair : mNodeToFrame)
   {
-    FrameNode* node = node_pair.first;
+    ShapeFrameNode* node = node_pair.first;
     if(!node->wasUtilized())
     {
       mNodeToFrame.erase(node);
@@ -217,7 +218,12 @@ void WorldNode::refreshSkeletons()
   // Apply the recursive Frame refreshing functionality to the root BodyNode of
   // each Skeleton
   for(size_t i=0, end=mWorld->getNumSkeletons(); i<end; ++i)
-    refreshBaseFrameNode(mWorld->getSkeleton(i)->getBodyNode(0));
+  {
+    auto bodyNode = mWorld->getSkeleton(i)->getBodyNode(0);
+    auto shapeNodes = bodyNode->getShapeNodes();
+    for(auto shapeNode : shapeNodes)
+      refreshBaseFrameNode(shapeNode);
+  }
 }
 
 //==============================================================================
@@ -231,10 +237,9 @@ void WorldNode::refreshCustomFrames()
 }
 
 //==============================================================================
-void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* _frame)
+void WorldNode::refreshBaseFrameNode(dart::dynamics::ShapeFrame* _frame)
 {
-  std::map<dart::dynamics::Frame*, FrameNode*>::iterator it =
-      mFrameToNode.find(_frame);
+  auto it = mFrameToNode.find(_frame);
 
   if(it == mFrameToNode.end())
   {
@@ -242,13 +247,14 @@ void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* _frame)
     return;
   }
 
-  (it->second)->refresh(false, true);
+  (it->second)->refresh(false, true, false);
 }
 
 //==============================================================================
-void WorldNode::createBaseFrameNode(dart::dynamics::Frame* _frame)
+void WorldNode::createBaseFrameNode(dart::dynamics::ShapeFrame* _frame)
 {
-  osg::ref_ptr<FrameNode> node = new FrameNode(_frame, this, false, true);
+  osg::ref_ptr<ShapeFrameNode> node =
+      new ShapeFrameNode(_frame, this, false, true);
 
   mFrameToNode[_frame] = node.get();
   mNodeToFrame[node.get()] = _frame;

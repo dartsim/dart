@@ -151,6 +151,9 @@ protected:
   /// Pointer to the DnD's Entity
   dart::dynamics::Entity* mEntity;
 
+  /// Pointer to the DnD's ShapeFrame
+  dart::dynamics::ShapeFrame* mShapeFrame;
+
   /// The location in the world that was picked by the user
   Eigen::Vector3d mPickedPosition;
 

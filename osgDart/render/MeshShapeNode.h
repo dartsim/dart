@@ -65,7 +65,7 @@ class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
 public:
 
   MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
-                EntityNode* parentEntity);
+                ShapeFrameNode* parentNode);
 
   void refresh();
   void extractData(bool firstTime);

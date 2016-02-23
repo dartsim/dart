@@ -53,12 +53,12 @@ namespace render {
 class BoxShapeGeode;
 class BoxShapeDrawable;
 
-class BoxShapeNode : public ShapeNode, public osg::MatrixTransform
+class BoxShapeNode : public ShapeNode, public osg::Group
 {
 public:
 
   BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
-               EntityNode* parent);
+               ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);

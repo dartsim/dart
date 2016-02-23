@@ -53,32 +53,31 @@ int main()
 
   tf.translation() = Eigen::Vector3d(-4,4,0);
   SimpleFramePtr draggable(new SimpleFrame(frame.get(), "draggable", tf));
-  draggable->addVisualizationShape(
-        std::make_shared<BoxShape>(Eigen::Vector3d(1,1,1)));
+  draggable->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1,1,1)));
   world->addSimpleFrame(draggable);
 
   tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
   SimpleFramePtr x_marker(new SimpleFrame(Frame::World(), "X", tf));
   std::shared_ptr<BoxShape> x_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  x_shape->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
-  x_marker->addVisualizationShape(x_shape);
+  x_marker->setShape(x_shape);
+  x_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
   world->addSimpleFrame(x_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 8.0, 0.0);
   SimpleFramePtr y_marker(new SimpleFrame(Frame::World(), "Y", tf));
   std::shared_ptr<BoxShape> y_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  y_shape->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
-  y_marker->addVisualizationShape(y_shape);
+  y_marker->setShape(y_shape);
+  y_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
   world->addSimpleFrame(y_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 8.0);
   SimpleFramePtr z_marker(new SimpleFrame(Frame::World(), "Z", tf));
   std::shared_ptr<BoxShape> z_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  z_shape->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
-  z_marker->addVisualizationShape(z_shape);
+  z_marker->setShape(z_shape);
+  z_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
   world->addSimpleFrame(z_marker);
 
 

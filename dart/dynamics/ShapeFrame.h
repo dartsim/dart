@@ -343,8 +343,7 @@ protected:
   /// Constructor
   ShapeFrame(Frame* parent,
              const std::string& name,
-             const ShapePtr& shape
-                 = ShapePtr(new EllipsoidShape(Eigen::Vector3d::Ones())));
+             const ShapePtr& shape = nullptr);
 
   /// ShapeFrame properties
   Properties mShapeFrameP;

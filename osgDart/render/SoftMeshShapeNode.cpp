@@ -43,6 +43,7 @@
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
@@ -52,7 +53,7 @@ class SoftMeshShapeGeode : public ShapeNode, public osg::Geode
 public:
 
   SoftMeshShapeGeode(dart::dynamics::SoftMeshShape* shape,
-                     EntityNode* parentEntity,
+                     ShapeFrameNode* parentShapeFrame,
                      SoftMeshShapeNode* parentNode);
 
   void refresh();
@@ -63,6 +64,7 @@ protected:
   virtual ~SoftMeshShapeGeode();
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
   SoftMeshShapeDrawable* mDrawable;
 
 };
@@ -72,7 +74,8 @@ class SoftMeshShapeDrawable : public osg::Geometry
 {
 public:
 
-  SoftMeshShapeDrawable(dart::dynamics::SoftMeshShape* shape);
+  SoftMeshShapeDrawable(dart::dynamics::SoftMeshShape* shape,
+                        dart::dynamics::VisualAddon* visualAddon);
 
   void refresh(bool firstTime);
 
@@ -87,19 +90,20 @@ protected:
   std::vector<Eigen::Vector3d> mEigNormals;
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
 
 };
 
 //==============================================================================
 SoftMeshShapeNode::SoftMeshShapeNode(
     std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
-    EntityNode* parent)
+    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mSoftMeshShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -107,7 +111,7 @@ void SoftMeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -116,15 +120,11 @@ void SoftMeshShapeNode::refresh()
 }
 
 //==============================================================================
-void SoftMeshShapeNode::extractData(bool firstTime)
+void SoftMeshShapeNode::extractData(bool /*firstTime*/)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
-
   if(nullptr == mGeode)
   {
-    mGeode = new SoftMeshShapeGeode(mSoftMeshShape.get(), mParentEntity, this);
+    mGeode = new SoftMeshShapeGeode(mSoftMeshShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -141,10 +141,11 @@ SoftMeshShapeNode::~SoftMeshShapeNode()
 //==============================================================================
 SoftMeshShapeGeode::SoftMeshShapeGeode(
     dart::dynamics::SoftMeshShape* shape,
-    EntityNode* parentEntity,
+    ShapeFrameNode* parentShapeFrame,
     SoftMeshShapeNode* parentNode)
-  : ShapeNode(parentNode->getShape(), parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mSoftMeshShape(shape),
+    mVisualAddon(parentNode->getVisualAddon()),
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
@@ -164,7 +165,7 @@ void SoftMeshShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new SoftMeshShapeDrawable(mSoftMeshShape);
+    mDrawable = new SoftMeshShapeDrawable(mSoftMeshShape, mVisualAddon);
     addDrawable(mDrawable);
     return;
   }
@@ -180,11 +181,13 @@ SoftMeshShapeGeode::~SoftMeshShapeGeode()
 
 //==============================================================================
 SoftMeshShapeDrawable::SoftMeshShapeDrawable(
-    dart::dynamics::SoftMeshShape* shape)
+    dart::dynamics::SoftMeshShape* shape,
+    dart::dynamics::VisualAddon* visualAddon)
   : mVertices(new osg::Vec3Array),
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),
-    mSoftMeshShape(shape)
+    mSoftMeshShape(shape),
+    mVisualAddon(visualAddon)
 {
   refresh(true);
 }
@@ -281,7 +284,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mSoftMeshShape->getRGBA());
+    (*mColors)[0] = eigToOsgVec4(mVisualAddon->getRGBA());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

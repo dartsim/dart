@@ -45,6 +45,7 @@
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 #include "dart/common/Console.h"
 
 namespace osgDart {
@@ -54,8 +55,10 @@ class osgAiNode : public ShapeNode, public osg::MatrixTransform
 {
 public:
 
-  osgAiNode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-            MeshShapeNode* parentNode, const aiNode* node);
+  osgAiNode(dart::dynamics::MeshShape* shape,
+            ShapeFrameNode* parentEntity,
+            MeshShapeNode* parentNode,
+            const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
@@ -82,8 +85,10 @@ class MeshShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  MeshShapeGeode(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-                 MeshShapeNode* parentNode, const aiNode* node);
+  MeshShapeGeode(dart::dynamics::MeshShape* shape,
+                 ShapeFrameNode* parentShapeFrame,
+                 MeshShapeNode* parentNode,
+                 const aiNode* node);
 
   void refresh();
   void extractData(bool firstTime);
@@ -107,8 +112,10 @@ class MeshShapeGeometry : public ShapeNode, public osg::Geometry
 {
 public:
 
-  MeshShapeGeometry(dart::dynamics::MeshShape* shape, EntityNode* parentEntity,
-                    MeshShapeNode* parentNode, MeshShapeGeode* parentGeode,
+  MeshShapeGeometry(dart::dynamics::MeshShape* shape,
+                    ShapeFrameNode* parentShapeFrame,
+                    MeshShapeNode* parentNode,
+                    MeshShapeGeode* parentGeode,
                     aiMesh* mesh);
 
   void refresh();
@@ -131,13 +138,13 @@ protected:
 
 //==============================================================================
 MeshShapeNode::MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
-                             EntityNode* parentEntity)
-  : ShapeNode(shape, parentEntity, this),
+                             ShapeFrameNode* parentNode)
+  : ShapeNode(shape, parentNode, this),
     mMeshShape(shape),
     mRootAiNode(nullptr)
 {
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -145,7 +152,7 @@ void MeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -238,7 +245,7 @@ void MeshShapeNode::extractData(bool firstTime)
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s = mMeshShape->getScale();
     S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()*S));
+    setMatrix(eigToOsgMatrix(S));
   }
 
   if(mRootAiNode)
@@ -254,7 +261,7 @@ void MeshShapeNode::extractData(bool firstTime)
 
   if( (nullptr == mRootAiNode) && root)
   {
-    mRootAiNode = new osgAiNode(mMeshShape.get(), mParentEntity, this, root);
+    mRootAiNode = new osgAiNode(mMeshShape.get(), mParentShapeFrameNode, this, root);
     addChild(mRootAiNode);
     return;
   }
@@ -286,7 +293,7 @@ MeshShapeNode::~MeshShapeNode()
 
 //==============================================================================
 osgAiNode::osgAiNode(dart::dynamics::MeshShape* shape,
-                     EntityNode* parentEntity,
+                     ShapeFrameNode* parentEntity,
                      MeshShapeNode* parentNode,
                      const aiNode* node)
   : ShapeNode(parentNode->getShape(), parentEntity, this),
@@ -330,7 +337,7 @@ void osgAiNode::extractData(bool firstTime)
     if(it == mChildNodes.end())
     {
       osgAiNode* newChild =
-          new osgAiNode(mMeshShape, mParentEntity, mMainNode, child);
+          new osgAiNode(mMeshShape, mParentShapeFrameNode, mMainNode, child);
       addChild(newChild);
     }
     else
@@ -339,7 +346,7 @@ void osgAiNode::extractData(bool firstTime)
 
   if(nullptr == mGeode)
   {
-    mGeode = new MeshShapeGeode(mMeshShape, mParentEntity, mMainNode, mAiNode);
+    mGeode = new MeshShapeGeode(mMeshShape, mParentShapeFrameNode, mMainNode, mAiNode);
     addChild(mGeode);
   }
   else
@@ -377,9 +384,10 @@ void osgAiNode::clearUnusedNodes()
 
 //==============================================================================
 MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
-                               EntityNode* parentEntity,
-                               MeshShapeNode* parentNode, const aiNode* node)
-  : ShapeNode(parentNode->getShape(), parentEntity, this),
+                               ShapeFrameNode* parentShapeFrame,
+                               MeshShapeNode* parentNode,
+                               const aiNode* node)
+  : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mMeshShape(shape),
     mAiNode(node),
     mMainNode(parentNode)
@@ -415,8 +423,8 @@ void MeshShapeGeode::extractData(bool)
 
     if(it == mMeshes.end())
     {
-      MeshShapeGeometry* newMesh = new MeshShapeGeometry(mMeshShape,
-                                          mParentEntity, mMainNode, this, mesh);
+      MeshShapeGeometry* newMesh = new MeshShapeGeometry(
+            mMeshShape, mParentShapeFrameNode, mMainNode, this, mesh);
       addDrawable(newMesh);
       mMeshes[mesh] = newMesh;
     }
@@ -459,11 +467,11 @@ void MeshShapeGeode::clearUnusedMeshes()
 
 //==============================================================================
 MeshShapeGeometry::MeshShapeGeometry(dart::dynamics::MeshShape* shape,
-                                     EntityNode* parentEntity,
+                                     ShapeFrameNode* parentShapeFrame,
                                      MeshShapeNode* parentNode,
                                      MeshShapeGeode* parentGeode,
                                      aiMesh* mesh)
-  : ShapeNode(parentNode->getShape(), parentEntity, parentGeode),
+  : ShapeNode(parentNode->getShape(), parentShapeFrame, parentGeode),
     mVertices(new osg::Vec3Array),
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),
@@ -616,7 +624,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(!isColored
        || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
     {
-      const Eigen::Vector4d& c = mShape->getRGBA();
+      const Eigen::Vector4d& c = mVisualAddon->getRGBA();
 
       if(mColors->size() != 1)
         mColors->resize(1);

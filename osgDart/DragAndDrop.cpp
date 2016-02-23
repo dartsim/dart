@@ -106,7 +106,7 @@ void DragAndDrop::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.entity == mEntity)
+        if(pick.shapeFrame == mShapeFrame)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -352,7 +352,7 @@ void SimpleFrameShapeDnD::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.entity == mEntity && pick.shape.get() == mShape)
+        if(pick.shapeFrame == mShapeFrame && pick.shape.get() == mShape)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -407,7 +407,7 @@ public:
         if(picks.size() > 0)
         {
           const PickInfo& pick = picks[0];
-          if(pick.entity != mFrame->getTool(
+          if(pick.shapeFrame != mFrame->getTool(
                (InteractiveTool::Type)mTool, mCoordinate))
             stop_highlighting = true;
         }
@@ -440,7 +440,7 @@ public:
       {
         for(size_t c=0; c<3; ++c)
         {
-          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.entity)
+          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.shapeFrame)
           {
             mHighlighting = true;
             mTool = s;
@@ -579,10 +579,9 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(!dnd->isMoving() && tool->getEnabled())
         {
-          const std::vector<dart::dynamics::ShapePtr> shapes =
-              tool->getVisualizationShapes();
-          for(size_t s=0; s<shapes.size(); ++s)
-            shapes[s]->setHidden(true);
+          const auto shapeFrames = tool->getShapeFrames();
+          for(size_t s=0; s<shapeFrames.size(); ++s)
+            shapeFrames[s]->getVisualAddon(true)->setHidden(true);
         }
       }
     }
@@ -597,10 +596,9 @@ void InteractiveFrameDnD::update()
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(tool->getEnabled())
         {
-          const std::vector<dart::dynamics::ShapePtr> shapes =
-              tool->getVisualizationShapes();
-          for(size_t s=0; s<shapes.size(); ++s)
-            shapes[s]->setHidden(false);
+          const auto shapeFrames = tool->getShapeFrames();
+          for(size_t s=0; s<shapeFrames.size(); ++s)
+            shapeFrames[s]->getVisualAddon(true)->setHidden(false);
         }
       }
     }

@@ -41,17 +41,22 @@
 
 namespace osg {
 class Node;
+class Group;
 } // namespace osg
 
 namespace dart {
 namespace dynamics {
 class Shape;
+class ShapeFrame;
+class SimpleFrame;
+class VisualAddon;
 } // namespace dynamics
 } // namespace dart
 
 namespace osgDart {
 
 class EntityNode;
+class ShapeFrameNode;
 
 namespace render {
 
@@ -59,14 +64,20 @@ class ShapeNode
 {
 public:
 
-  ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
-            EntityNode* _parent,
-            osg::Node* _node);
+  ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
+            ShapeFrameNode* parentNode,
+            osg::Node* node);
 
   virtual ~ShapeNode();
 
   /// Pointer to the Shape associated with this ShapeNode
   std::shared_ptr<dart::dynamics::Shape> getShape() const;
+
+  const dart::dynamics::ShapeFrame* getShapeFrame() const;
+
+  dart::dynamics::VisualAddon* getVisualAddon();
+
+  const dart::dynamics::VisualAddon* getVisualAddon() const;
 
   /// Cast this ShapeNode into an osg::Node
   osg::Node* getNode();
@@ -75,10 +86,10 @@ public:
   const osg::Node* getNode() const;
 
   /// Pointer to the parent EntityNode of this ShapeNode
-  EntityNode* getParentEntityNode();
+  ShapeFrameNode* getParentShapeFrameNode();
 
   /// Pointer to the parent EntityNode of this ShapeNode
-  const EntityNode* getParentEntityNode() const;
+  const ShapeFrameNode* getParentShapeFrameNode() const;
 
   /// Update all rendering data for this ShapeNode
   virtual void refresh() = 0;
@@ -93,11 +104,19 @@ protected:
   /// Pointer to the Shape associated with this ShapeNode
   const std::shared_ptr<dart::dynamics::Shape> mShape;
 
-  /// Should generally be equal to 'this'
-  osg::Node* const mNode;
+  /// Pointer to the SimpleFrame associated with this ShapeNode
+  dart::dynamics::ShapeFrame* mShapeFrame;
 
-  /// Pointer to the parent EntityNode of this ShapeNode
-  EntityNode* mParentEntity;
+  /// Pointer to the VisualAddon associated with this ShapeNode
+  dart::dynamics::VisualAddon* mVisualAddon;
+
+  /// Pointer to the parent ShapeFrameNode of this ShapeNode
+  ShapeFrameNode* mParentShapeFrameNode;
+
+  /// Should generally be equal to 'this'
+  osg::Node* mNode;
+public:
+  osg::Group* mGroup;
 
   /// True iff this ShapeNode has been utilized on the latest update. If it has
   /// not, that is an indication that it is no longer being used and should be
