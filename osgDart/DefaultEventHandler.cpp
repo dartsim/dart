@@ -45,6 +45,7 @@
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/Entity.h"
+#include "dart/dynamics/ShapeFrame.h"
 
 
 #include <iostream>
@@ -232,7 +233,7 @@ void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
       {
         PickInfo info;
         info.shape = shape->getShape();
-        info.shapeFrame = shape->getParentShapeFrameNode()->getShapeFrame();
+        info.ownerEntity = shape->getParentShapeFrameNode()->getShapeFrame();
         info.normal = osgToEigVec3(intersect.getWorldIntersectNormal());
         info.position = osgToEigVec3(intersect.getWorldIntersectPoint());
 

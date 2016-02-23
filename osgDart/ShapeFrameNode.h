@@ -63,12 +63,12 @@ class ShapeFrameNode : public osg::MatrixTransform
 {
 public:
 
-  /// Create a ShapeFrameNode. If _recursive is set to true, it will also create
+  /// Create a ShapeFrameNode. If recursive is set to true, it will also create
   /// nodes for all child Entities and child Frames
-  ShapeFrameNode(dart::dynamics::ShapeFrame* _frame,
-                 WorldNode* _worldNode,
-                 bool _relative,
-                 bool _recursive);
+  ShapeFrameNode(dart::dynamics::ShapeFrame* frame,
+                 WorldNode* worldNode,
+                 bool relative,
+                 bool recursive);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
   dart::dynamics::ShapeFrame* getShapeFrame();

@@ -106,7 +106,7 @@ void DragAndDrop::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.shapeFrame == mShapeFrame)
+        if(pick.ownerEntity == mEntity)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -329,7 +329,7 @@ void SimpleFrameShapeDnD::update()
   // This is almost identical to the original DragAndDrop::update() except that
   // it also checks that the picked shape matches
 
-  if(nullptr == mEntity || nullptr == mShape)
+  if(nullptr == mFrame || nullptr == mShape)
     return;
 
   osgDart::MouseButtonEvent event =
@@ -352,7 +352,7 @@ void SimpleFrameShapeDnD::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.shapeFrame == mShapeFrame && pick.shape.get() == mShape)
+        if(pick.ownerEntity == mFrame && pick.shape.get() == mShape)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -407,7 +407,7 @@ public:
         if(picks.size() > 0)
         {
           const PickInfo& pick = picks[0];
-          if(pick.shapeFrame != mFrame->getTool(
+          if(pick.ownerEntity != mFrame->getTool(
                (InteractiveTool::Type)mTool, mCoordinate))
             stop_highlighting = true;
         }
@@ -440,7 +440,7 @@ public:
       {
         for(size_t c=0; c<3; ++c)
         {
-          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.shapeFrame)
+          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.ownerEntity)
           {
             mHighlighting = true;
             mTool = s;
@@ -498,7 +498,7 @@ public:
     : SimpleFrameDnD(viewer, frame)
   {
     addSubject(tool);
-    mEntity = tool;
+    mFrame = tool;
   }
 
   virtual ~InteractiveToolDnD() = default;

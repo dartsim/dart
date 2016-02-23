@@ -62,9 +62,9 @@
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart
-{
+namespace osgDart {
 
+//==============================================================================
 ShapeFrameNode::ShapeFrameNode(
     dart::dynamics::ShapeFrame* _frame,
     WorldNode* _worldNode,
@@ -108,14 +108,12 @@ void ShapeFrameNode::refresh(bool _relative, bool _recursive, bool _firstTime)
 
   auto shape = mShapeFrame->getShape();
 
-  if((shape && shape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM))
-     || _firstTime)
-  {
-    if(_relative)
-      setMatrix(eigToOsgMatrix(mShapeFrame->getRelativeTransform()));
-    else
-      setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
-  }
+  if(_relative)
+    setMatrix(eigToOsgMatrix(mShapeFrame->getRelativeTransform()));
+  else
+    setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
+  // TODO(JS): Maybe the data varicance information should be in ShapeFrame and
+  // checked here.
 
   if(shape)
     refreshShapeNode(shape);
@@ -341,7 +339,7 @@ void ShapeFrameNode::createShapeNode(
   mShapeToNode[shape] = node;
   mNodeToShape[node] = shape;
 
-  addChild(static_cast<osg::Group*>(node->getNode()));
+  addChild(node->getNode());
 }
 
 } // namespace osgDart

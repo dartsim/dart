@@ -52,6 +52,7 @@ namespace dart {
 namespace dynamics {
 class Shape;
 class ShapeFrame;
+class Entity;
 } // dynamics
 } // dart
 
@@ -60,7 +61,7 @@ namespace osgDart
 
 struct PickInfo
 {
-  dart::dynamics::ShapeFrame* shapeFrame;
+  dart::dynamics::Entity* ownerEntity;
   std::shared_ptr<dart::dynamics::Shape> shape;
   Eigen::Vector3d position;
   Eigen::Vector3d normal;
