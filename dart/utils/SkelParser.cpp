@@ -707,43 +707,32 @@ simulation::WorldPtr readWorld(
     }
 
     // Collision detector
+    std::unique_ptr<collision::CollisionDetector> collision_detector;
+
     if (hasElement(physicsElement, "collision_detector"))
     {
       std::string strCD = getValueString(physicsElement, "collision_detector");
+
       if (strCD == "fcl_mesh")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::FCLMeshCollisionDetector());
-      }
+        collision_detector.reset(new collision::FCLMeshCollisionDetector);
       else if (strCD == "fcl")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::FCLCollisionDetector());
-      }
+        collision_detector.reset(new collision::FCLCollisionDetector);
       else if (strCD == "dart")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::DARTCollisionDetector());
-      }
+        collision_detector.reset(new collision::DARTCollisionDetector);
 #ifdef HAVE_BULLET_COLLISION
       else if (strCD == "bullet")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::BulletCollisionDetector());
-      }
+        collision_detector.reset(new collision::BulletCollisionDetector);
 #endif
       else
-      {
         dtwarn << "Unknown collision detector[" << strCD << "]. "
-               << "Default collision detector[fcl] will be loaded."
-               << std::endl;
-      }
+               << "Default collision detector[fcl_mesh] will be loaded.\n";
     }
-    else
-    {
-      newWorld->getConstraintSolver()->setCollisionDetector(
-            new collision::FCLMeshCollisionDetector());
-    }
+
+    if (!collision_detector)
+      collision_detector.reset(new collision::FCLMeshCollisionDetector);
+
+    newWorld->getConstraintSolver()->setCollisionDetector(
+      std::move(collision_detector));
   }
 
   //--------------------------------------------------------------------------

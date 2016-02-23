@@ -72,8 +72,6 @@ ConstraintSolver::ConstraintSolver(double _timeStep)
 //==============================================================================
 ConstraintSolver::~ConstraintSolver()
 {
-  delete mCollisionDetector;
-  delete mLCPSolver;
 }
 
 //==============================================================================
@@ -239,23 +237,28 @@ double ConstraintSolver::getTimeStep() const
 void ConstraintSolver::setCollisionDetector(
     collision::CollisionDetector* _collisionDetector)
 {
+  setCollisionDetector(
+    std::unique_ptr<collision::CollisionDetector>(_collisionDetector));
+}
+
+//==============================================================================
+void ConstraintSolver::setCollisionDetector(
+  std::unique_ptr<collision::CollisionDetector>&& _collisionDetector)
+{
   assert(_collisionDetector && "Invalid collision detector.");
+
+  // Change the collision detector of the constraint solver to new one
+  mCollisionDetector = std::move(_collisionDetector);
 
   // Add skeletons in the constraint solver to new collision detector
   for (size_t i = 0; i < mSkeletons.size(); ++i)
-    _collisionDetector->addSkeleton(mSkeletons[i]);
-
-  // Release the old collision detector
-  delete mCollisionDetector;
-
-  // Change the collision detector of the constraint solver to new one
-  mCollisionDetector = _collisionDetector;
+    mCollisionDetector->addSkeleton(mSkeletons[i]);
 }
 
 //==============================================================================
 collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
 {
-  return mCollisionDetector;
+  return mCollisionDetector.get();
 }
 
 //==============================================================================
