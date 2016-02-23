@@ -205,6 +205,16 @@ private:
 };
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <size_t DOF>
+constexpr size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
+
+//==============================================================================
 template <size_t DOF>
 MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const Vector& _positionLowerLimits,
@@ -277,6 +287,16 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
 {
   // Do nothing
 }
+
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <size_t DOF>
+constexpr size_t MultiDofJointAddon<DOF>::NumDofs;
 
 //==============================================================================
 template <size_t DOF>

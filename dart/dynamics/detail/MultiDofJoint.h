@@ -61,6 +61,16 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <size_t DOF>
+constexpr size_t MultiDofJoint<DOF>::NumDofs;
+
+//==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::~MultiDofJoint()
 {

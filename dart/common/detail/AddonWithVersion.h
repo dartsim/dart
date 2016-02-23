@@ -164,6 +164,19 @@ protected:
 };
 
 //==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <class BaseT, class DerivedT, typename StateDataT,
+          class ManagerT, void (*updateState)(DerivedT*)>
+constexpr void (*AddonWithState<
+    BaseT, DerivedT, StateDataT, ManagerT, updateState>::UpdateState)(
+    DerivedT*);
+
+//==============================================================================
 template <class BaseT, class DerivedT, typename StateDataT,
           class ManagerT, void (*updateState)(DerivedT*)>
 AddonWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
@@ -221,6 +234,19 @@ AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
 {
   return std::unique_ptr<Derived>(new Derived(newManager, mState));
 }
+
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <class BaseT, class DerivedT, typename PropertiesDataT,
+          class ManagerT, void (*updateProperties)(DerivedT*)>
+constexpr void (*AddonWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
+                                              ManagerT, updateProperties>::
+UpdateProperties)(DerivedT*);
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesDataT,

@@ -118,6 +118,34 @@ public:
 
 };
 
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <class DerivedT,
+          typename StateDataT,
+          typename PropertiesDataT,
+          class ManagerT,
+          void (*updateState)(DerivedT*),
+          void (*updateProperties)(DerivedT*)>
+constexpr void (*AddonWithStateAndVersionedProperties<DerivedT, StateDataT,
+    PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateState)
+    (DerivedT*);
+
+//==============================================================================
+template <class DerivedT,
+          typename StateDataT,
+          typename PropertiesDataT,
+          class ManagerT,
+          void (*updateState)(DerivedT*),
+          void (*updateProperties)(DerivedT*)>
+constexpr void (*AddonWithStateAndVersionedProperties<DerivedT, StateDataT,
+    PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateProperties)
+    (DerivedT*);
+
 } // namespace common
 } // namespace dart
 
