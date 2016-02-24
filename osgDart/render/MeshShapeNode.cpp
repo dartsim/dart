@@ -387,7 +387,7 @@ MeshShapeGeode::MeshShapeGeode(dart::dynamics::MeshShape* shape,
                                ShapeFrameNode* parentShapeFrame,
                                MeshShapeNode* parentNode,
                                const aiNode* node)
-  : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
+  : ShapeNode(parentNode->getShape(), parentShapeFrame, parentNode),
     mMeshShape(shape),
     mAiNode(node),
     mMainNode(parentNode)

@@ -407,7 +407,7 @@ public:
         if(picks.size() > 0)
         {
           const PickInfo& pick = picks[0];
-          if(pick.ownerEntity != mFrame->getTool(
+          if(pick.ownerEntity->getParentFrame() != mFrame->getTool(
                (InteractiveTool::Type)mTool, mCoordinate))
             stop_highlighting = true;
         }
@@ -440,7 +440,8 @@ public:
       {
         for(size_t c=0; c<3; ++c)
         {
-          if(mFrame->getTool((InteractiveTool::Type)s, c) == pick.ownerEntity)
+          if(mFrame->getTool((InteractiveTool::Type)s, c) ==
+             pick.ownerEntity->getParentFrame())
           {
             mHighlighting = true;
             mTool = s;
@@ -498,7 +499,53 @@ public:
     : SimpleFrameDnD(viewer, frame)
   {
     addSubject(tool);
-    mFrame = tool;
+    mEntity = tool;
+  }
+
+  void update() override
+  {
+    if(nullptr == mEntity)
+      return;
+
+    osgDart::MouseButtonEvent event =
+        mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+
+    if(mAmMoving)
+    {
+      if(osgDart::BUTTON_RELEASE == event)
+      {
+        mAmMoving = false;
+        release();
+      }
+
+      move();
+    }
+    else // not moving
+    {
+      if(osgDart::BUTTON_PUSH == event)
+      {
+        const std::vector<osgDart::PickInfo>& picks =
+            mViewer->getDefaultEventHandler()->getButtonPicks(
+              osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+
+        for(const osgDart::PickInfo& pick : picks)
+        {
+          if(pick.ownerEntity->getParentFrame() == mEntity)
+          {
+            mAmMoving = true;
+            mPickedPosition = pick.position;
+            saveState();
+            return;
+          }
+
+          // The picks are always ordered from closest to furthest. If the closest
+          // pick is not our Entity, then something is blocking the way, so if we
+          // are obstructable, then we should quit.
+          if(mAmObstructable)
+            return;
+        }
+      }
+    }
   }
 
   virtual ~InteractiveToolDnD() = default;

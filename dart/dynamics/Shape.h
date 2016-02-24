@@ -135,6 +135,9 @@ public:
   /// Instruct this shape to update its data
   virtual void refreshData();
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdate(double alpha);
+
   /// Notify that the color (rgba) of this shape has updated
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
 

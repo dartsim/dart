@@ -168,6 +168,17 @@ void MeshShape::update()
 }
 
 //==============================================================================
+void MeshShape::notifyAlphaUpdate(double alpha)
+{
+  for(size_t i=0; i<mMesh->mNumMeshes; ++i)
+  {
+    aiMesh* mesh = mMesh->mMeshes[i];
+    for(size_t j=0; j<mesh->mNumVertices; ++j)
+      mesh->mColors[0][j][3] = alpha;
+  }
+}
+
+//==============================================================================
 void MeshShape::notifyColorUpdate(const Eigen::Vector4d& color)
 {
   for(size_t i=0; i<mMesh->mNumMeshes; ++i)

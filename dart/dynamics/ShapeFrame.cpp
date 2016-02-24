@@ -116,10 +116,11 @@ void VisualAddon::setRGB(const Eigen::Vector3d& rgb)
 //==============================================================================
 void VisualAddon::setAlpha(const double alpha)
 {
-  Eigen::Vector4d rgba = getRGBA();
-  rgba[3] = alpha;
+  mProperties.mRGBA[3] = alpha;
 
-  setRGBA(rgba);
+  UpdateProperties(this);
+
+  mShapeFrame->getShape()->notifyAlphaUpdate(alpha);
 }
 
 //==============================================================================
@@ -257,15 +258,6 @@ void ShapeFrame::copy(const ShapeFrame* other)
 //==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
-  if (nullptr == shape)
-  {
-    dtwarn << "[ShapeFrame::setShape] Attempting to add a nullptr as a "
-           << " shape of ShapeNode '" << getName()
-           << "', which is not allowed. "
-           << "The shape of ShapeNode '" << getName() << "' hasn't changed.\n";
-    return;
-  }
-
   if (shape == mShapeFrameP.mShape)
     return;
 

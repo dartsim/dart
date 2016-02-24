@@ -45,7 +45,7 @@ namespace osgDart {
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
                                  const std::string& name)
-  : Entity(frame, name, false),
+  : Entity(ConstructFrame),
     Frame(frame, name),
     SimpleFrame(frame, name),
     mDefaultAlpha(defaultAlpha),

@@ -115,13 +115,15 @@ void ShapeFrameNode::refresh(bool _relative, bool _recursive, bool _firstTime)
   // TODO(JS): Maybe the data varicance information should be in ShapeFrame and
   // checked here.
 
+  clearChildUtilizationFlags();
+
   if(shape)
     refreshShapeNode(shape);
 
+  clearUnusedNodes();
+
   if(!_recursive)
     return;
-
-  clearChildUtilizationFlags();
 
   const auto& frames = mShapeFrame->getChildFrames();
 
@@ -131,8 +133,6 @@ void ShapeFrameNode::refresh(bool _relative, bool _recursive, bool _firstTime)
     if(shapeFrame)
       refreshShapeFrameNode(shapeFrame);
   }
-
-  clearUnusedNodes();
 }
 
 //==============================================================================

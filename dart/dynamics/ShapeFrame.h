@@ -247,8 +247,7 @@ public:
     size_t mVersion;
 
     /// Composed constructor
-    UniqueProperties(const ShapePtr& shape
-        = ShapePtr(new EllipsoidShape(Eigen::Vector3d::Ones())));
+    UniqueProperties(const ShapePtr& shape = nullptr);
 
     /// Composed move constructor
     UniqueProperties(ShapePtr&& shape);

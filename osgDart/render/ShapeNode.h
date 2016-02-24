@@ -115,8 +115,6 @@ protected:
 
   /// Should generally be equal to 'this'
   osg::Node* mNode;
-public:
-  osg::Group* mGroup;
 
   /// True iff this ShapeNode has been utilized on the latest update. If it has
   /// not, that is an indication that it is no longer being used and should be

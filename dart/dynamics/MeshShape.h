@@ -85,6 +85,9 @@ public:
   virtual void update();
 
   // Documentation inherited
+  void notifyAlphaUpdate(double alpha) override;
+
+  // Documentation inherited
   void notifyColorUpdate(const Eigen::Vector4d& color) override;
 
   /// \brief

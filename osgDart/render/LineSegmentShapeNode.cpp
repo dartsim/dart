@@ -37,8 +37,10 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
+#include <osg/ShapeDrawable>
 
 #include "osgDart/render/LineSegmentShapeNode.h"
+#include "osgDart/ShapeFrameNode.h"
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/LineSegmentShape.h"
@@ -97,6 +99,7 @@ LineSegmentShapeNode::LineSegmentShapeNode(
     mLineSegmentShape(shape),
     mGeode(nullptr)
 {
+  mNode = this;
   extractData(true);
   setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
