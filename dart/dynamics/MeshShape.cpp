@@ -178,18 +178,7 @@ void MeshShape::notifyAlphaUpdate(double alpha)
   }
 }
 
-//==============================================================================
-void MeshShape::notifyColorUpdate(const Eigen::Vector4d& color)
-{
-  for(size_t i=0; i<mMesh->mNumMeshes; ++i)
-  {
-    aiMesh* mesh = mMesh->mMeshes[i];
-    for(size_t j=0; j<mesh->mNumVertices; ++j)
-      mesh->mColors[0][j] = aiColor4D(color[0], color[1], color[2], color[3]);
-  }
-}
-
-const std::string &MeshShape::getMeshPath() const
+const std::string& MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }

@@ -424,6 +424,22 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
+void setMaterial(dynamics::VisualAddon* visualAddon, const urdf::Visual* viz)
+{
+  if(viz->material)
+  {
+    visualAddon->setColor(Eigen::Vector3d(viz->material->color.r,
+                                          viz->material->color.g,
+                                          viz->material->color.b));
+  }
+}
+
+void setMaterial(dynamics::ShapePtr /*_shape*/,
+                 const urdf::Collision* /*_col*/)
+{
+  // Do nothing
+}
+
 //==============================================================================
 bool DartLoader::createShapeNodes(
   const urdf::Link* lk,
@@ -438,9 +454,15 @@ bool DartLoader::createShapeNodes(
         = createShape(visual.get(), baseUri, resourceRetriever);
 
     if(shape)
-      bodyNode->createShapeNode<dynamics::VisualAddon>(shape);
+    {
+      auto shapeNode = bodyNode->createShapeNode<dynamics::VisualAddon>(shape);
+      shapeNode->setRelativeTransform(toEigen(visual->origin));
+      setMaterial(shapeNode->getVisualAddon(), visual.get());
+    }
     else
+    {
       return false;
+    }
   }
 
   // Set collision information
@@ -450,27 +472,16 @@ bool DartLoader::createShapeNodes(
         = createShape(collision.get(), baseUri, resourceRetriever);
 
     if (shape)
-      bodyNode->createShapeNode<dynamics::CollisionAddon,
-                                dynamics::DynamicsAddon>(shape);
+    {
+      auto shapeNode = bodyNode->createShapeNode<
+          dynamics::CollisionAddon, dynamics::DynamicsAddon>(shape);
+      shapeNode->setRelativeTransform(toEigen(collision->origin));
+    }
     else
       return false;
   }
 
   return true;
-}
-
-void setMaterial(dynamics::ShapePtr /*_shape*/, const urdf::Visual* _viz)
-{
-  if(_viz->material)
-  {
-    // _shape->setColor(Eigen::Vector3d(_viz->material->color.r,
-    //                                  _viz->material->color.g,
-    //                                  _viz->material->color.b));
-    // TODO(JS):
-  }
-}
-
-void setMaterial(dynamics::ShapePtr /*_shape*/, const urdf::Collision* /*_col*/) {
 }
 
 /**
@@ -535,8 +546,6 @@ dynamics::ShapePtr DartLoader::createShape(
     return nullptr;
   }
 
-//  shape->setRelativeTransform(toEigen(_vizOrCol->origin));
-//  setMaterial(shape, _vizOrCol);
   return shape;
 }
 

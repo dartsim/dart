@@ -219,10 +219,13 @@ void WorldNode::refreshSkeletons()
   // each Skeleton
   for(size_t i=0, end=mWorld->getNumSkeletons(); i<end; ++i)
   {
-    auto bodyNode = mWorld->getSkeleton(i)->getBodyNode(0);
-    auto shapeNodes = bodyNode->getShapeNodes();
-    for(auto shapeNode : shapeNodes)
-      refreshBaseFrameNode(shapeNode);
+    auto bodyNodes = mWorld->getSkeleton(i)->getBodyNodes();
+    for(auto bodyNode : bodyNodes)
+    {
+      auto shapeNodes = bodyNode->getShapeNodes();
+      for(auto shapeNode : shapeNodes)
+        refreshBaseFrameNode(shapeNode);
+    }
   }
 }
 

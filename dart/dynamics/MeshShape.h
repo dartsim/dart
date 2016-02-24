@@ -87,9 +87,6 @@ public:
   // Documentation inherited
   void notifyAlphaUpdate(double alpha) override;
 
-  // Documentation inherited
-  void notifyColorUpdate(const Eigen::Vector4d& color) override;
-
   /// \brief
   void setMesh(
     const aiScene* _mesh,
