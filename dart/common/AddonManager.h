@@ -83,6 +83,12 @@ public:
   /// It is currently unsafe to move an AddonManager
   AddonManager(AddonManager&&) = delete;
 
+  /// It is currently unsafe to copy an AddonManager
+  AddonManager& operator=(const AddonManager&) = delete;
+
+  /// It is currently unsafe to move an AddonManager
+  AddonManager& operator=(AddonManager&&) = delete;
+
   /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
   bool has() const;
