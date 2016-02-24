@@ -684,6 +684,53 @@ dart::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
 }
 
 //==============================================================================
+void BodyNodeDnD::update()
+{
+  if(nullptr == mEntity)
+    return;
+
+  osgDart::MouseButtonEvent event =
+      mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
+
+  if(mAmMoving)
+  {
+    if(osgDart::BUTTON_RELEASE == event)
+    {
+      mAmMoving = false;
+      release();
+    }
+
+    move();
+  }
+  else // not moving
+  {
+    if(osgDart::BUTTON_PUSH == event)
+    {
+      const std::vector<osgDart::PickInfo>& picks =
+          mViewer->getDefaultEventHandler()->getButtonPicks(
+            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+
+      for(const osgDart::PickInfo& pick : picks)
+      {
+        if(pick.ownerEntity->getParentFrame() == mEntity)
+        {
+          mAmMoving = true;
+          mPickedPosition = pick.position;
+          saveState();
+          return;
+        }
+
+        // The picks are always ordered from closest to furthest. If the closest
+        // pick is not our Entity, then something is blocking the way, so if we
+        // are obstructable, then we should quit.
+        if(mAmObstructable)
+          return;
+      }
+    }
+  }
+}
+
+//==============================================================================
 void BodyNodeDnD::move()
 {
   if(mIK == nullptr)

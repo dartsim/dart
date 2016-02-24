@@ -287,6 +287,9 @@ public:
   dart::dynamics::BodyNode* getBodyNode() const;
 
   // Documentation inherited
+  void update() override;
+
+  // Documentation inherited
   void move() override;
 
   // Documentation inherited
