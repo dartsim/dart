@@ -250,7 +250,7 @@ void WorldNode::refreshBaseFrameNode(dart::dynamics::ShapeFrame* _frame)
     return;
   }
 
-  (it->second)->refresh(false, true, false);
+  (it->second)->refresh(false, true);
 }
 
 //==============================================================================

@@ -73,7 +73,7 @@ ShapeFrameNode::ShapeFrameNode(
     mWorldNode(_worldNode),
     mUtilized(false)
 {
-  refresh(_relative, _recursive, true);
+  refresh(_relative, _recursive);
   setName(_frame->getName()+" [frame]");
 }
 
@@ -102,7 +102,7 @@ const WorldNode* ShapeFrameNode::getWorldNode() const
 }
 
 //==============================================================================
-void ShapeFrameNode::refresh(bool _relative, bool _recursive, bool _firstTime)
+void ShapeFrameNode::refresh(bool _relative, bool _recursive)
 {
   mUtilized = true;
 
@@ -196,7 +196,7 @@ void ShapeFrameNode::refreshShapeFrameNode(
     return;
   }
 
-  (it->second)->refresh(true, true, false);
+  (it->second)->refresh(true, true);
 }
 
 //==============================================================================

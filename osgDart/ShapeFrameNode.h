@@ -84,7 +84,7 @@ public:
   ///
   /// If _recursive is set to true, this ShapeFrameNode will also trigger refreshing
   /// on all child Entities and child Frames
-  void refresh(bool _relative, bool _recursive, bool _firstTime);
+  void refresh(bool _relative, bool _recursive);
 
   /// True iff this ShapeFrameNode has been utilized on the latest update
   bool wasUtilized() const;
