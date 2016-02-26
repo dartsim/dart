@@ -41,7 +41,7 @@
 
 #include "dart/collision/Engine.h"
 #include "dart/collision/SmartPointer.h"
-#include "dart/collision/CollisionObjectEngineData.h"
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
@@ -51,7 +51,7 @@ class CollisionObject
 public:
 
   /// Return collision detection engine associated with this CollisionObject
-  Engine* getEngine() const;
+  CollisionDetector* getCollisionDetector() const;
 
   /// Return shape pointer that associated with this CollisionObject
   dynamics::ShapePtr getShape() const;
@@ -74,27 +74,42 @@ public:
 
   /// Return the collision detection engine specific data of this
   /// CollisionObject
-  CollisionObjectEngineData* getEngineData() const;
+  CollisionObjectData* getEngineData() const;
 
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
+  // TODO(JS): remove. instead, CollisionObjectData should be updated by engine
+
+  template <typename T>
+  T* as()
+  {
+    return static_cast<T*>(this);
+  }
+
+  template <typename T>
+  const T* as() const
+  {
+    return static_cast<const T*>(this);
+  }
+  // TODO(JS): Need this?
 
 protected:
 
   /// Contructor
-  CollisionObject(const EnginePtr& engine, const dynamics::ShapePtr& shape);
+  CollisionObject(const CollisionDetectorPtr& engine,
+                  const dynamics::ShapePtr& shape);
 
 protected:
 
-  /// Collision detection engine
-  EnginePtr mEngine;
+  /// Collision detector
+  CollisionDetectorPtr mCollisionDetector;
 
   /// Shape
   dynamics::ShapePtr mShape;
 
   /// Collision detection engine specific data
-  std::unique_ptr<CollisionObjectEngineData> mEngineData;
+  std::unique_ptr<CollisionObjectData> mEngineData;
 
 };
 
@@ -104,8 +119,14 @@ class FreeCollisionObject : public CollisionObject
 {
 public:
 
+  static std::shared_ptr<FreeCollisionObject> create(
+      const CollisionDetectorPtr& collisionDetector,
+      const dynamics::ShapePtr& shape,
+      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
+
   /// Constructor
-  FreeCollisionObject(const EnginePtr& engine,
+  FreeCollisionObject(
+      const CollisionDetectorPtr& collisionDetector,
       const dynamics::ShapePtr& shape,
       const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
   // TODO(JS): change to engine pointer

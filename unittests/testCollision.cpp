@@ -55,6 +55,7 @@
 using namespace dart;
 using namespace common;
 using namespace math;
+using namespace collision;
 using namespace dynamics;
 using namespace simulation;
 using namespace utils;
@@ -511,22 +512,20 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 template <class EngineType>
 void testFreeCollisionObjects()
 {
-  auto engine = EngineType::create();
+  auto cd = CollisionDetector::create<EngineType>();
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape3(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
 
-  collision::FreeCollisionObjectPtr obj1(
-        new collision::FreeCollisionObject(engine, shape1));
-  collision::FreeCollisionObjectPtr obj2(
-        new collision::FreeCollisionObject(engine, shape2));
-  collision::FreeCollisionObjectPtr obj3(
-        new collision::FreeCollisionObject(engine, shape3));
+  // Create collision objects in different ways
+  auto obj1 = cd->template createCollisionObject<FreeCollisionObject>(shape1);
+  auto obj2 = FreeCollisionObject::create(cd, shape2);
+  auto obj3 = std::shared_ptr<FreeCollisionObject>(new FreeCollisionObject(cd, shape3));
 
-  collision::CollisionGroupPtr group1(new collision::CollisionGroup(engine));
+  collision::CollisionGroupPtr group1(new collision::CollisionGroup(cd));
   group1->addCollisionObject(obj1);
-  collision::CollisionGroupPtr group2(new collision::CollisionGroup(engine));
+  collision::CollisionGroupPtr group2(new collision::CollisionGroup(cd));
   group2->addCollisionObject(obj2);
   group2->addCollisionObject(obj3);
 
@@ -576,7 +575,7 @@ TEST_F(COLLISION, FreeCollisionObjects)
 template <class EngineType>
 void testBodyNodes()
 {
-  auto engine = EngineType::create();
+  auto cd = CollisionDetector::create<EngineType>();
 
   Eigen::Vector3d size(1.0, 1.0, 1.0);
   Eigen::Vector3d pos1(0.0, 0.0, 0.0);
@@ -594,11 +593,13 @@ void testBodyNodes()
   collision::Option option;
   collision::Result result;
 
-  auto hit = dynamics::CollisionDetector::detect(boxShape1, boxBody1,
-                                                 boxShape2, boxBody2,
-                                                 option, result);
+  auto obj1 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
+        boxShape1, boxBody1);
+  auto obj2 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
+        boxShape2, boxBody2);
 
-  EXPECT_TRUE(hit);
+  EXPECT_TRUE(obj1->detect(obj2.get(), option, result));
+  EXPECT_TRUE(cd->detect(obj1.get(), obj2.get(), option, result));
 }
 
 //==============================================================================
@@ -612,22 +613,21 @@ TEST_F(COLLISION, BodyNodeNodes)
 template <class EngineType>
 void testSkeletons()
 {
-  auto engine = EngineType::create();
+//  auto engine = EngineType::create();
 
-  Eigen::Vector3d size(1.0, 1.0, 1.0);
-  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
-  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
+//  Eigen::Vector3d size(1.0, 1.0, 1.0);
+//  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
+//  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
 
-  auto boxSkel1 = createBox(size, pos1);
-  auto boxSkel2 = createBox(size, pos2);
+//  auto boxSkel1 = createBox(size, pos1);
+//  auto boxSkel2 = createBox(size, pos2);
 
-  collision::Option option;
-  collision::Result result;
+//  collision::Option option;
+//  collision::Result result;
 
-  auto hit = dynamics::CollisionDetector::detect(
-        boxSkel1, boxSkel2, option, result);
+//  auto hit = dynamics::detect(engine, boxSkel1, boxSkel2, option, result);
 
-  EXPECT_TRUE(hit);
+//  EXPECT_TRUE(hit);
 }
 
 //==============================================================================

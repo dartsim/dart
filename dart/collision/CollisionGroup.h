@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "dart/collision/Engine.h"
-#include "dart/collision/CollisionGroupEngineData.h"
+#include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
@@ -48,16 +48,19 @@ namespace collision {
 class Engine;
 class CollisionNode;
 
+/// Heterogeneous collision group
 class CollisionGroup
 {
 public:
 
   using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
   using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+  using ConstCollisionObjectPtrs = std::vector<ConstCollisionObjectPtr>;
 
   /// Constructor
-  CollisionGroup(const EnginePtr& engine,
-                 const CollisionObjectPtrs& collObjects = CollisionObjectPtrs());
+  CollisionGroup(
+      const CollisionDetectorPtr& collisionDetector,
+      const CollisionObjectPtrs& collObjects = CollisionObjectPtrs());
 
   /// Copy constructor
   CollisionGroup(const CollisionGroup& other);
@@ -71,8 +74,11 @@ public:
   /// Copy another CollisionGroup into this CollisionGroup
   void copy(const CollisionGroup& other);
 
+  /// Change engine
+  void changeDetector(const CollisionDetectorPtr& collisionDetector);
+
   /// Return collision detection engine associated with this CollisionGroup
-  Engine* getEngine() const;
+  CollisionDetector* getCollisionDetector() const;
 
   /// Return true if this CollisionGroup contains given object
   bool hasCollisionObject(const CollisionObjectPtr& object) const;
@@ -82,6 +88,27 @@ public:
 
   /// Add collision objects to this CollisionGroup
   void addCollisionObjects(const CollisionObjectPtrs& objects);
+
+  /// Remove collision object from this CollisionGroup
+  void removeCollisionObject(const CollisionObjectPtr& object);
+
+  /// Remove collision objects from this CollisionGroup
+  void removeCollisionObjects(const CollisionObjectPtrs& objects);
+
+  /// Remove all the collision object in this CollisionGroup
+  void removeAllCollisionObjects();
+
+  /// Return array of collision objects
+  const CollisionObjectPtrs& getCollisionObjects();
+
+  /// Return array of (const) collision objects
+  const ConstCollisionObjectPtrs getCollisionObjects() const;
+
+  /// Merge other CollisionGroup into this CollisionGroup
+  void unionGroup(const CollisionGroupPtr& other);
+
+  /// Merge other CollisionGroup into this CollisionGroup
+  void subtractGroup(const CollisionGroupPtr& other);
 
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
@@ -100,28 +127,26 @@ public:
 
   /// Return the collision detection engine specific data of this
   /// CollisionObject
-  CollisionGroupEngineData* getEngineData();
+  CollisionGroupData* getEngineData();
 
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
+  // TODO(JS): remove
 
 protected:
 
-  /// Collision engine
-  EnginePtr mEngine;
-  // TODO(JS): Engine* ?
+  /// Collision detector
+  CollisionDetectorPtr mCollisionDetector;
 
   /// Collision objects
   CollisionObjectPtrs mCollisionObjects;
 
   /// Engine specific data
-  std::unique_ptr<CollisionGroupEngineData> mEngineData;
+  std::unique_ptr<CollisionGroupData> mEngineData;
 
 };
 // TODO(JS): make this class iterable for collision objects
-
-using CollisionGroupPtr = std::shared_ptr<CollisionGroup>;
 
 }  // namespace collision
 }  // namespace dart

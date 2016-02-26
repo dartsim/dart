@@ -2,7 +2,7 @@
  * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,39 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_COLLISIONGROUPGENERATOR_H_
-#define DART_DYNAMICS_COLLISIONGROUPGENERATOR_H_
+#ifndef DART_COLLISION_COLLISIONOBJECTDATA_H_
+#define DART_COLLISION_COLLISIONOBJECTDATA_H_
 
-#include <memory>
+#include <Eigen/Dense>
 
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/SmartPointer.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
-namespace dynamics {
+namespace collision {
 
-namespace CollisionNodeGenerator
+class CollisionObjectData
 {
-//  collision::CollisionNode2* create(const BodyNodePtr& bodyNode);
-}
+public:
 
-namespace CollisionGroupGenerator
-{
-//  collision::CollisionGroupPtr generate(
-//      const collision::CollisionDetectorPtr& cd,
-//      const SkeletonPtr& skeleton);
+  CollisionObjectData(Engine* engine);
 
-//  CollisionGroupPtr
-//  createGroup(const ShapeNodePair& shape) { return nullptr; }
+  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
-//  CollisionGroupPtr
-//  createGroup(const dynamics::BodyNodePtr& bodyNode) { return nullptr; }
+  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
 
-//  CollisionGroupPtr
-//  createGroup(const dynamics::SkeletonPtr& Skeleton) { return nullptr; }
-}
+  /// Update engine data. This function will be called ahead of every collision
+  /// checking
+  virtual void update() = 0;
+  // TODO(JS): reorganize updateTansform/updateShape/update
 
-} // namespace dynamics
-} // namespace dart
+  const Engine* getEngine() const;
 
-#endif // DART_DYNAMICS_NODE_H_
+protected:
+
+  Engine* mEngine;
+
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_COLLISIONOBJECTDATA_H_

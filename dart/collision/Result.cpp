@@ -34,56 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_
-
-#include <cstddef>
-#include <Eigen/Dense>
-
-#include <fcl/collision_object.h>
-
-#include "dart/collision/CollisionObjectEngineData.h"
+#include "dart/collision/Result.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-class FCLCollisionObjectUserData;
-
-class FCLCollisionObjectEngineData : public CollisionObjectEngineData
-{
-public:
-
-  /// Constructor
-  FCLCollisionObjectEngineData(CollisionObject* parent,
-                               const dynamics::ShapePtr& shape);
-
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void updateShape(const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-
-  /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
-
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-  // Note: We can consider sharing fcl::CollisionGeometry with other
-  // CollisionObjects that are associated with the same Shape of DART to avoid
-  // unnecessary copy of fcl::CollisionGeometry.
-
-};
-
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECTENGINEDATA_H_

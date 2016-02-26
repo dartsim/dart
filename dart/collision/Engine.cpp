@@ -39,16 +39,9 @@
 namespace dart {
 namespace collision {
 
-//==============================================================================
-Option::Option(bool enableContact, size_t maxNumContacts)
-  : enableContact(enableContact),
-    maxNumContacts(maxNumContacts)
-{
-  // Do nothing
-}
-
 //=============================================================================
-bool Engine::detect(CollisionGroup* group, CollisionObject* object,
+bool Engine::detect(CollisionGroupData* group,
+                    CollisionObjectData* object,
                     const Option& option, Result& result)
 {
   return detect(object, group, option, result);

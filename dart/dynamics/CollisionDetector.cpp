@@ -36,15 +36,17 @@
 
 #include "dart/dynamics/CollisionDetector.h"
 
+#include "dart/dynamics/BodyNode.h"
+
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ShapeNodeCollisionObject::ShapeNodeCollisionObject(
-    const collision::EnginePtr& engine,
+ShapeFrameCollisionObject::ShapeFrameCollisionObject(
+    const collision::CollisionDetectorPtr& collisionDetector,
     const dynamics::ShapePtr& shape,
     const dynamics::BodyNodePtr& bodyNode)
-  : CollisionObject(engine, shape),
+  : collision::CollisionObject(collisionDetector, shape),
     mBodyNode(bodyNode)
 {
   auto found = false;
@@ -61,39 +63,38 @@ ShapeNodeCollisionObject::ShapeNodeCollisionObject(
 
   if (!found)
   {
-    dtwarn << "[ShapeNodeCollisionObject::constructor] Attempting to create "
-           << "ShapeNodeCollisionObject with invalid pair of Shape and "
+    dtwarn << "[ShapeFrameCollisionObject::constructor] Attempting to create "
+           << "ShapeFrameCollisionObject with invalid pair of Shape and "
            << "BodyNode.\n";
     assert(false);
   }
 }
 
 //==============================================================================
-const Eigen::Isometry3d ShapeNodeCollisionObject::getTransform() const
+const Eigen::Isometry3d ShapeFrameCollisionObject::getTransform() const
 {
   return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
 }
 
 //==============================================================================
-BodyNodePtr ShapeNodeCollisionObject::getBodyNode() const
+BodyNodePtr ShapeFrameCollisionObject::getBodyNode() const
 {
   return mBodyNode;
 }
 
 //==============================================================================
-std::shared_ptr<ShapeNodeCollisionObject>
-CollisionDetector::createCollisionObject(
-    const collision::EnginePtr engine,
+ShapeFrameCollisionObjectPtr createShapeFrameCollisionObject(
+    const collision::CollisionDetectorPtr& collisionDetector,
     const ShapePtr& shape,
     const BodyNodePtr& bodyNode)
 {
-  return std::make_shared<ShapeNodeCollisionObject>(engine, shape, bodyNode);
+  return collisionDetector->createCollisionObject<ShapeFrameCollisionObject>(
+        shape, bodyNode);
 }
 
 //==============================================================================
-std::vector<collision::CollisionObjectPtr>
-CollisionDetector::createCollisionObjects(
-    const collision::EnginePtr& engine,
+std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
+    const collision::CollisionDetectorPtr& collisionDetector,
     const SkeletonPtr& skel)
 {
   std::vector<collision::CollisionObjectPtr> objects;
@@ -107,12 +108,56 @@ CollisionDetector::createCollisionObjects(
     for (auto j = 0u; j < numColShapes; ++j)
     {
       auto shape = bodyNode->getCollisionShape(j);
-      objects.push_back(createCollisionObject(engine, shape, bodyNode));
+      auto collObj = collisionDetector->createCollisionObject<
+          ShapeFrameCollisionObject>(shape, bodyNode);
+
+      objects.push_back(
+            std::static_pointer_cast<collision::CollisionObject>(collObj));
     }
   }
 
   return objects;
 }
+
+//==============================================================================
+collision::CollisionGroupPtr createShapeFrameCollisionGroup(
+    const collision::CollisionDetectorPtr& collisionDetector,
+    const SkeletonPtr& skel)
+{
+  auto collObjs = createShapeFrameCollisionObjects(collisionDetector, skel);
+  auto group = collisionDetector->createCollisionGroup(collObjs);
+
+  return group;
+}
+
+////==============================================================================
+//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
+//            const ShapePtr& shape1, const BodyNodePtr& body1,
+//            const ShapePtr& shape2, const BodyNodePtr& body2,
+//            const collision::Option& option,
+//            collision::Result& result)
+//{
+//  auto obj1 = collisionDetector->createCollisionObject(shape1, body1);
+//  auto obj2 = collisionDetector->createCollisionObject(shape2, body2);
+
+//  return obj1->detect(obj2.get(), option, result);
+//}
+
+////==============================================================================
+//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
+//            const SkeletonPtr& skel1,
+//            const SkeletonPtr& skel2,
+//            const collision::Option& option,
+//            collision::Result& result)
+//{
+//  auto objects1 = createShapeFrameCollisionObjects(collisionDetector, skel1);
+//  auto objects2 = createShapeFrameCollisionObjects(collisionDetector, skel2);
+
+//  auto group1 = collisionDetector->createCollisionGroup(objects1);
+//  auto group2 = collisionDetector->createCollisionGroup(objects2);
+
+//  return group1->detect(group2.get(), option, result);
+//}
 
 } // namespace dynamics
 } // namespace dart

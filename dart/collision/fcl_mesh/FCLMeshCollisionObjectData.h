@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,47 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include <cstddef>
+#include <Eigen/Dense>
+
+#include <fcl/collision_object.h>
+
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
-
-namespace dynamics {
-class SoftBodyNode;
-class PointMass;
-}  // namespace dynamics
-
 namespace collision {
 
-///
-class FCLMeshCollisionDetector : public CollisionDetector
+class CollisionObject;
+class FCLCollisionObjectUserData;
+
+class FCLMeshCollisionObjectData : public CollisionObjectData
 {
 public:
+
   /// Constructor
-  FCLMeshCollisionDetector();
-
-  /// Destructor
-  virtual ~FCLMeshCollisionDetector();
-
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  FCLMeshCollisionObjectData(Engine* engine,
+                             CollisionObject* parent,
+                             const dynamics::ShapePtr& shape);
 
   // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  void updateTransform(const Eigen::Isometry3d& tf) override;
 
   // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
+  void updateShape(const dynamics::ShapePtr& shape) override;
 
-  ///
-  void draw();
+  // Documentation inherited
+  void update() override;
+
+  /// Return FCL collision object
+  fcl::CollisionObject* getFCLCollisionObject() const;
+
+protected:
+
+  /// FCL collision geometry user data
+  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
+
+  /// FCL collision object
+  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-
+#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_

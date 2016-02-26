@@ -42,8 +42,6 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-// #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
@@ -59,7 +57,6 @@
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Skeleton.h"

@@ -34,44 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
-#define DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
+#ifndef DART_COLLISION_DETAIL_ENGINE_H_
+#define DART_COLLISION_DETAIL_ENGINE_H_
 
-#include <vector>
-#include "dart/collision/SmartPointer.h"
+#include "dart/collision/Engine.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
-class CollisionGroupEngineData
-{
-public:
-
-  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
-
-  virtual void init() = 0;
-
-  virtual void addCollisionObject(const CollisionObjectPtr& object,
-                                  bool init = true) = 0;
-//  virtual void addCollisionObjects(const CollisionObjectPtr& object) = 0;
-
-  // TODO(JS): notifyCollisionObjectUpdated()?
-
-  virtual void removeCollisionObject(const CollisionObjectPtr& object,
-                                     bool init = true) = 0;
-
-  /// Update engine data. This function will be called ahead of every collision
-  /// checking
-  virtual void update() = 0;
-
-  virtual std::unique_ptr<CollisionGroupEngineData> clone(
-      const CollisionObjectPtrs& collObjects) const = 0;
-
-};
-
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONGROUPENGINEDATA_H_
+#endif  // DART_COLLISION_ENGINE_H_

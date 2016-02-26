@@ -53,6 +53,12 @@ public:
 
   static FCLMeshEnginePtr create();
 
+  /// Constructor
+  FCLMeshEngine();
+
+  /// Constructor
+  virtual ~FCLMeshEngine();
+
   /// Return engine type "FCLMesh"
   static const std::string& getTypeStatic();
 
@@ -60,33 +66,29 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherit
-  std::unique_ptr<CollisionObjectEngineData> createCollisionObjectData(
+  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) override;
 
   // Documentation inherit
-  std::unique_ptr<CollisionGroupEngineData> createCollisionGroupData(
+  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
       const CollisionObjectPtrs& collObjects) override;
 
   // Documentation inherit
-  bool detect(CollisionObject* object1, CollisionObject* object2,
+  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
               const Option& option, Result& result) override;
 
   // Documentation inherit
-  bool detect(CollisionObject* object, CollisionGroup* group,
+  bool detect(CollisionObjectData* object, CollisionGroupData* group,
               const Option& option, Result& result) override;
 
   // Documentation inherit
-  bool detect(CollisionGroup* group,
+  bool detect(CollisionGroupData* group,
               const Option& option, Result& result) override;
 
   // Documentation inherit
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
               const Option& option, Result& result) override;
-
-protected:
-
-  FCLMeshEngine() = default;
 
 };
 

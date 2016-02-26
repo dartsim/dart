@@ -34,27 +34,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_COLLISIONGROUP_H_
-#define DART_DYNAMICS_COLLISIONGROUP_H_
+#ifndef DART_COLLISION_OPTION_H_
+#define DART_COLLISION_OPTION_H_
 
-#include <memory>
-
-#include "dart/collision/CollisionGroup.h"
+#include <cstddef>
 
 namespace dart {
-namespace dynamics {
+namespace collision {
 
-class CollisionGroup : public collision::CollisionGroup
+struct Option
 {
-public:
+  /// Flag whether compute contact information such as point, normal, and
+  /// penetration depth. If this flag is set to false, the Engine returns only
+  /// simple information whether there is a collision of not.
+  bool enableContact;
 
-  CollisionGroup(const collision::EnginePtr& engine);
+  // TODO(JS): add option for immediet termination as soon as the first contact
+  // is detected
 
-  void addCollisionObjects(const SkeletonPtr& skeleton);
+  /// Maximum number of contacts to detect
+  size_t maxNumContacts;
 
+  /// Constructor
+  Option(bool enableContact = true,
+         size_t maxNumContacts = 100);
 };
 
-} // namespace dynamics
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
 
-#endif // DART_DYNAMICS_COLLISIONDETECTOR_H_
+#endif  // DART_COLLISION_OPTION_H_

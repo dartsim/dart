@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,56 +34,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
-
-#include <fcl/collision_object.h>
-#include <fcl/collision_data.h>
-#include <fcl/broadphase/broadphase.h>
-
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
-
-/// FCLCollisionDetector
-class FCLCollisionDetector : public CollisionDetector
+//==============================================================================
+CollisionObjectData::CollisionObjectData(Engine* engine)
+  : mEngine(engine)
 {
-public:
-  /// Constructor
-  FCLCollisionDetector();
+  // Do nothing
+}
 
-  /// Destructor
-  virtual ~FCLCollisionDetector();
-
-  // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) override;
-
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode)
-  override;
-
-  /// Get collision node given FCL collision geometry
-  CollisionNode* findCollisionNode(
-      const fcl::CollisionGeometry* _fclCollGeom) const;
-
-  /// Get collision node given FCL collision object
-  FCLCollisionNode* findCollisionNode(
-      const fcl::CollisionObject* _fclCollObj) const;
-
-protected:
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints) override;
-
-  /// Broad-phase collision checker of FCL
-  fcl::DynamicAABBTreeCollisionManager* mBroadPhaseAlg;
-};
+//==============================================================================
+const Engine* CollisionObjectData::getEngine() const
+{
+  return mEngine;
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

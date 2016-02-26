@@ -34,17 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionObjectEngineData.h"
+#include "dart/collision/fcl/FCLCollisionObjectData.h"
 
 #include <assimp/scene.h>
 #include <fcl/BVH/BVH_model.h>
 #include <fcl/shape/geometric_shapes.h>
 
 #include "dart/common/Console.h"
-#include "dart/collision/fcl/FCLTypes.h"
 #include "dart/collision/Engine.h"
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLCollisionNode.h"
+#include "dart/collision/fcl/FCLTypes.h"
+#include "dart/collision/fcl/FCLCollisionObjectData.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -596,11 +596,22 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
 
 } // anonymous namespace
 
+
 //==============================================================================
-FCLCollisionObjectEngineData::FCLCollisionObjectEngineData(
+FCLCollisionObjectUserData::FCLCollisionObjectUserData(
+    CollisionObject* collisionObject,
+    const dynamics::ShapePtr& shape)
+  : mCollisionObject(collisionObject),
+    mShape(shape)
+{
+  // Do nothing
+}
+
+//==============================================================================
+FCLCollisionObjectData::FCLCollisionObjectData(Engine* engine,
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
-  : CollisionObjectEngineData(),
+  : CollisionObjectData(engine),
     mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent, shape)),
     mFCLCollisionObject(new fcl::CollisionObject(
                         createFCLCollisionGeometry(shape)))
@@ -609,14 +620,14 @@ FCLCollisionObjectEngineData::FCLCollisionObjectEngineData(
 }
 
 //==============================================================================
-void FCLCollisionObjectEngineData::updateTransform(const Eigen::Isometry3d& tf)
+void FCLCollisionObjectData::updateTransform(const Eigen::Isometry3d& tf)
 {
   mFCLCollisionObject->setTransform(FCLTypes::convertTransform(tf));
   mFCLCollisionObject->computeAABB();
 }
 
 //==============================================================================
-void FCLCollisionObjectEngineData::updateShape(const dynamics::ShapePtr& shape)
+void FCLCollisionObjectData::updateShape(const dynamics::ShapePtr& shape)
 {
   auto fclCollGeom = createFCLCollisionGeometry(shape);
 
@@ -624,7 +635,7 @@ void FCLCollisionObjectEngineData::updateShape(const dynamics::ShapePtr& shape)
 }
 
 //==============================================================================
-void FCLCollisionObjectEngineData::update()
+void FCLCollisionObjectData::update()
 {
   using dart::dynamics::BodyNode;
   using dart::dynamics::Shape;
@@ -673,7 +684,7 @@ void FCLCollisionObjectEngineData::update()
 }
 
 //==============================================================================
-fcl::CollisionObject* FCLCollisionObjectEngineData::getFCLCollisionObject() const
+fcl::CollisionObject* FCLCollisionObjectData::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }

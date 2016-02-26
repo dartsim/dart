@@ -39,33 +39,13 @@
 
 #include <vector>
 
-#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/SmartPointer.h"
+#include "dart/collision/Option.h"
+#include "dart/collision/Result.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
-
-struct Option
-{
-  /// Flag whether compute contact information such as point, normal, and
-  /// penetration depth. If this flag is set to false, the Engine returns only
-  /// simple information whether there is a collision of not.
-  bool enableContact;
-
-  /// Maximum number of contacts to detect
-  size_t maxNumContacts;
-
-  /// Constructor
-  Option(bool enableContact = true,
-         size_t maxNumContacts = 100);
-};
-
-struct Result
-{
-  /// List of contact information for each contact
-  std::vector<Contact> contacts;
-};
 
 class Engine
 {
@@ -73,71 +53,44 @@ public:
 
   using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
 
-  /// Create a collision object
-  template <class CollisionObjectType, typename... Args>
-  std::unique_ptr<CollisionObject> createCollisionObject(
-      const dynamics::ShapePtr& shape,
-      const Args&... args);
-
-  /// Create a collision group
-  template <class CollisionObjectType, typename... Args>
-  std::unique_ptr<CollisionGroup> createCollisionGroup(
-      const CollisionObjectPtrs& collObjects,
-      const Args&... args);
-
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
   /// Create collision detection engine specific data for CollisionObject
-  virtual std::unique_ptr<CollisionObjectEngineData> createCollisionObjectData(
+  virtual std::unique_ptr<CollisionObjectData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
 
   /// Create collision detection engine specific data for CollisionGroup
-  virtual std::unique_ptr<CollisionGroupEngineData> createCollisionGroupData(
+  virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
       const CollisionObjectPtrs& collObjects) = 0;
 
   /// Perform collision detection for object1-object2.
-  virtual bool detect(CollisionObject* object1, CollisionObject* object2,
+  virtual bool detect(CollisionObjectData* object1,
+                      CollisionObjectData* object2,
                       const Option& option, Result& result) = 0;
 
   /// Perform collision detection for object-group.
-  virtual bool detect(CollisionObject* object, CollisionGroup* group,
+  virtual bool detect(CollisionObjectData* object, CollisionGroupData* group,
                       const Option& option, Result& result) = 0;
 
   /// Identical with detect(object, group, option, result)
-  bool detect(CollisionGroup* group, CollisionObject* object,
+  bool detect(CollisionGroupData* group, CollisionObjectData* object,
               const Option& option, Result& result);
 
   /// Perform collision detection for group.
-  virtual bool detect(CollisionGroup* group,
+  virtual bool detect(CollisionGroupData* group,
                       const Option& option, Result& result) = 0;
 
   /// Perform collision detection for group1-group2.
-  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
+  virtual bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
                       const Option& option, Result& result) = 0;
 
 };
 
-//==============================================================================
-template <class CollisionObjectType, typename... Args>
-std::unique_ptr<CollisionObject> Engine::createCollisionObject(
-    const dynamics::ShapePtr& shape, const Args&... args)
-{
-  return std::unique_ptr<CollisionObject>(
-        new CollisionObjectType(this, shape, args...));
-}
-
-//==============================================================================
-template <class CollisionGroupType, typename... Args>
-std::unique_ptr<CollisionGroup> Engine::createCollisionGroup(
-    const Engine::CollisionObjectPtrs& collObjects, const Args&... args)
-{
-  return std::unique_ptr<CollisionObject>(
-        new CollisionGroupType(this, collObjects, args...));
-}
-
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/Engine.h"
 
 #endif  // DART_COLLISION_ENGINE_H_

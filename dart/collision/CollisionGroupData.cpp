@@ -2,7 +2,7 @@
  * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,23 +34,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CollisionGroupGenerator.h"
+#include "dart/collision/CollisionGroupData.h"
+
+#include <cassert>
 
 namespace dart {
-namespace dynamics {
+namespace collision {
 
 //==============================================================================
-//collision::CollisionGroupPtr CollisionGroupGenerator::generate(
-//    const collision::CollisionDetectorPtr& cd,
-//    const SkeletonPtr& skeleton)
-//{
-//  // get list of collision node
-//  std::vector<collision::CollisionNode*> collisionNodes;
+CollisionGroupData::CollisionGroupData(Engine* engine)
+  : mEngine(engine)
+{
+  assert(mEngine);
+}
 
-//  collision::CollisionGroupPtr group = cd->createGroup(collisionNodes);
+//==============================================================================
+const Engine* CollisionGroupData::getEngine() const
+{
+  return mEngine;
+}
 
-//  return group;
-//}
-
-} // namespace dynamics
-} // namespace dart
+}  // namespace collision
+}  // namespace dart

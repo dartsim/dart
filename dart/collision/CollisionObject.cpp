@@ -36,15 +36,16 @@
 
 #include "dart/collision/CollisionObject.h"
 
-#include "dart/collision/CollisionObjectEngineData.h"
+#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-Engine* CollisionObject::getEngine() const
+CollisionDetector* CollisionObject::getCollisionDetector() const
 {
-  return mEngine.get();
+  return mCollisionDetector.get();
 }
 
 //==============================================================================
@@ -58,18 +59,18 @@ bool CollisionObject::detect(CollisionObject* other,
                              const Option& option,
                              Result& result)
 {
-  return mEngine->detect(this, other, option, result);
+  return mCollisionDetector->detect(this, other, option, result);
 }
 
 //==============================================================================
 bool CollisionObject::detect(CollisionGroup* group,
                              const Option& option, Result& result)
 {
-  return mEngine->detect(this, group, option, result);
+  return mCollisionDetector->detect(this, group, option, result);
 }
 
 //==============================================================================
-CollisionObjectEngineData* CollisionObject::getEngineData() const
+CollisionObjectData* CollisionObject::getEngineData() const
 {
   return mEngineData.get();
 }
@@ -81,21 +82,32 @@ void CollisionObject::updateEngineData()
 }
 
 //==============================================================================
-CollisionObject::CollisionObject(const EnginePtr& engine,
-                                 const dynamics::ShapePtr& shape)
-  : mEngine(engine),
+CollisionObject::CollisionObject(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapePtr& shape)
+  : mCollisionDetector(collisionDetector),
     mShape(shape),
-    mEngineData(mEngine->createCollisionObjectData(this, mShape).release())
+    mEngineData(mCollisionDetector->getEngine()->createCollisionObjectData(
+        this, mShape).release())
 {
-  assert(mEngine);
+  assert(mCollisionDetector);
   assert(mShape);
 }
 
 //==============================================================================
-FreeCollisionObject::FreeCollisionObject(const EnginePtr& engine,
-                                         const dynamics::ShapePtr& shape,
-                                         const Eigen::Isometry3d& tf)
-  : CollisionObject(engine, shape),
+std::shared_ptr<FreeCollisionObject> FreeCollisionObject::create(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapePtr& shape, const Eigen::Isometry3d& tf)
+{
+  return std::make_shared<FreeCollisionObject>(collisionDetector, shape, tf);
+}
+
+//==============================================================================
+FreeCollisionObject::FreeCollisionObject(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapePtr& shape,
+    const Eigen::Isometry3d& tf)
+  : CollisionObject(collisionDetector, shape),
     mW(tf)
 {
   // Do nothing

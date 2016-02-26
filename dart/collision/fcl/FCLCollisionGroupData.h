@@ -34,33 +34,62 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_SMARTPOINTER_H_
-#define DART_COLLISION_SMARTPOINTER_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_
 
-#include "dart/config.h"
-#include "dart/common/SmartPointer.h"
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionDetector)
+class CollisionObject;
+class FCLCollisionObjectUserData;
 
-DART_COMMON_MAKE_SHARED_WEAK(Engine)
-DART_COMMON_MAKE_SHARED_WEAK(FCLEngine)
-DART_COMMON_MAKE_SHARED_WEAK(FCLMeshEngine)
-#ifdef HAVE_BULLET_COLLISION
-  DART_COMMON_MAKE_SHARED_WEAK(BulletEngine)
-#endif
+class FCLCollisionGroupData : public CollisionGroupData
+{
+public:
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObjectData)
-DART_COMMON_MAKE_SHARED_WEAK(FreeCollisionObject)
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroupData)
+  /// Constructor
+  FCLCollisionGroupData(Engine* engine, const CollisionObjects& collObjects);
 
+  // Documentation inherited
+  std::unique_ptr<CollisionGroupData> clone(
+      const CollisionObjectPtrs& collObjects) const override;
+
+  // Documentation inherited
+  void init() override;
+
+  // Documentation inherited
+  void addCollisionObject(const CollisionObjectPtr& object,
+                          const bool init) override;
+
+  // Documentation inherited
+  void removeCollisionObject(const CollisionObjectPtr& object,
+                             const bool init) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjects(bool init) override;
+
+  // Documentation inherited
+  void update() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+
+};
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_SMARTPOINTER_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUPDATA_H_

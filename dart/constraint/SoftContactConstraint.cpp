@@ -45,7 +45,7 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Shape.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/dynamics/CollisionDetector.h"
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0
@@ -73,8 +73,10 @@ SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
-    mBodyNode1(_contact.bodyNode1.lock()),
-    mBodyNode2(_contact.bodyNode2.lock()),
+    mBodyNode1(static_cast<dynamics::ShapeFrameCollisionObject*>(
+        _contact.collisionObject1)->getBodyNode()),
+    mBodyNode2(static_cast<dynamics::ShapeFrameCollisionObject*>(
+        _contact.collisionObject2)->getBodyNode()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),
@@ -104,7 +106,8 @@ SoftContactConstraint::SoftContactConstraint(
   // Select colling point mass based on trimesh ID
   if (mSoftBodyNode1)
   {
-    if (_contact.shape1->getShapeType() == dynamics::Shape::SOFT_MESH)
+    if (_contact.collisionObject1->getShape()->getShapeType()
+        == dynamics::Shape::SOFT_MESH)
     {
       mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, _contact.point,
                                              _contact.triID1);
@@ -112,7 +115,8 @@ SoftContactConstraint::SoftContactConstraint(
   }
   if (mSoftBodyNode2)
   {
-    if (_contact.shape2->getShapeType() == dynamics::Shape::SOFT_MESH)
+    if (_contact.collisionObject2->getShape()->getShapeType()
+        == dynamics::Shape::SOFT_MESH)
     {
       mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, _contact.point,
                                              _contact.triID2);

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,47 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONNODE_H_
-#define DART_COLLISION_COLLISIONNODE_H_
+#ifndef DART_COLLISION_RESULT_H_
+#define DART_COLLISION_RESULT_H_
 
-#include <cstddef>
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-}  // namespace dynamics
-}  // namespace dart
+#include <vector>
+#include "dart/collision/Contact.h"
 
 namespace dart {
 namespace collision {
 
-/// \brief
-class CollisionNode {
-public:
-  /// \brief Default constructor
-  explicit CollisionNode(dynamics::BodyNode* _bodyNode);
+struct Result
+{
+  /// List of contact information for each contact
+  std::vector<Contact> contacts;
 
-  /// \brief Default destructor
-  virtual ~CollisionNode();
-
-  /// \brief
-  dynamics::BodyNode* getBodyNode() const;
-
-  /// \brief
-  void setIndex(size_t _idx);
-
-  /// \brief
-  size_t getIndex() const;
-
-protected:
-  /// \brief
-  dynamics::BodyNode* mBodyNode;
-
-  /// \brief
-  size_t mIndex;
+  size_t getNumContacts() const { return contacts.size(); }
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONNODE_H_
+#endif  // DART_COLLISION_RESULT_H_

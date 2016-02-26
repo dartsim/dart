@@ -43,7 +43,10 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionNode.h"
+#include "dart/collision/Contact.h"
+#include "dart/collision/Option.h"
+#include "dart/collision/Result.h"
+#include "dart/collision/SmartPointer.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
@@ -51,164 +54,86 @@ namespace collision {
 
 class CollisionObject;
 
-/// Contact information
-struct Contact {
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  /// Contact point w.r.t. the world frame
-  Eigen::Vector3d point;
-
-  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
-  Eigen::Vector3d normal;
-
-  /// Contact force acting on bodyNode1 w.r.t. the world frame
-  ///
-  /// The contact force acting on bodyNode2 is -force, which is the opposite
-  /// direction of the force.
-  Eigen::Vector3d force;
-
-  /// First colliding body node
-  dynamics::WeakBodyNodePtr bodyNode1;
-
-  /// Second colliding body node
-  dynamics::WeakBodyNodePtr bodyNode2;
-
-  /// First colliding shape of the first body node
-  dynamics::ShapePtr shape1;
-
-  /// Second colliding shape of the first body node
-  dynamics::ShapePtr shape2;
-
-  CollisionObject* collisionObject1;
-  CollisionObject* collisionObject2;
-
-  /// Penetration depth
-  double penetrationDepth;
-
-  // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
-  /// \brief
-  int triID1;
-
-  // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
-  /// \brief
-  int triID2;
-
-  // TODO(JS): userData is an experimental variable.
-  /// \brief User data.
-  void* userData;
-};
-
-/// \brief class CollisionDetector
-class CollisionDetector
+class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
-  /// \brief Constructor
-  CollisionDetector();
 
-  /// \brief Destructor
+  template <class EngineType, class... Args>
+  static CollisionDetectorPtr create(const Args&... args);
+
+  /// Destructor
   virtual ~CollisionDetector();
 
-  /// \brief Add skeleton
-  virtual void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  /// Return collision detection engine
+  Engine* getEngine();
 
-  /// \brief Remove skeleton
-  virtual void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  /// Return (const) collision detection engine
+  const Engine* getEngine() const;
 
-  /// \brief Remove all skeletons
-  virtual void removeAllSkeletons();
+  /// Create a collision object
+  template <typename CollisionObjectType, typename... Args>
+  std::shared_ptr<CollisionObjectType> createCollisionObject(
+      const dynamics::ShapePtr& shape,
+      const Args&... args);
 
-  // TODO(JS): Change accessibility to private
-  /// \brief
-  virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                        bool _isRecursive = false);
+  /// Create a collision group
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const std::vector<CollisionObjectPtr>& objects);
 
-  // TODO(JS): Change accessibility to private
-  /// \brief
-  virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                           bool _isRecursive = false);
+  /// Create a collision group
+  std::shared_ptr<CollisionGroup> createCollisionGroup();
 
-  /// \brief
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode) = 0;
+  /// Perform collision detection for object1-object2.
+  bool detect(CollisionObject* object1, CollisionObject* object2,
+              const Option& option, Result& result);
 
-  /// \brief
-  void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+  /// Perform collision detection for object-group.
+  bool detect(CollisionObject* object, CollisionGroup* group,
+              const Option& option, Result& result);
 
-  /// \brief
-  void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
+  /// Identical with detect(object, group, option, result)
+  bool detect(CollisionGroup* group, CollisionObject* object,
+              const Option& option, Result& result);
 
-  /// Return true if there exists at least one contact
-  /// \param[in] _checkAllCollision True to detect every collisions
-  /// \param[in] _calculateContactPoints True to get contact points
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) = 0;
+  /// Perform collision detection for group.
+  bool detect(CollisionGroup* group,
+              const Option& option, Result& result);
 
-  /// Return true if there exists contacts between two bodies
-  /// \param[in] _calculateContactPoints True to get contact points
-  bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
-                       bool _calculateContactPoints);
-
-  /// \brief
-  size_t getNumContacts();
-
-  /// \brief
-  Contact& getContact(int _idx);
-
-  /// \brief
-  void clearAllContacts();
-
-  /// \brief
-  int getNumMaxContacts() const;
-
-  /// \brief
-  void setNumMaxContacs(int _num);
-
-  /// \brief
-  bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
+  /// Perform collision detection for group1-group2.
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+              const Option& option, Result& result);
 
 protected:
-  /// \brief
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints) = 0;
 
-  /// \brief
-  std::vector<Contact> mContacts;
+  /// Constructor
+  CollisionDetector(std::unique_ptr<Engine>&& engine);
 
-  /// \brief
-  std::vector<CollisionNode*> mCollisionNodes;
+protected:
 
-  /// \brief
-  int mNumMaxContacts;
+  std::unique_ptr<Engine> mEngine;
 
-  /// \brief Skeleton array
-  std::vector<dynamics::SkeletonPtr> mSkeletons;
-
-private:
-  /// \brief Return true if _skeleton is contained
-  bool containSkeleton(const dynamics::SkeletonPtr& _skeleton);
-
-  /// \brief
-  bool getPairCollidable(const CollisionNode* _node1,
-                         const CollisionNode* _node2);
-
-  /// \brief
-  void setPairCollidable(const CollisionNode* _node1,
-                         const CollisionNode* _node2,
-                         bool _val);
-
-  /// \brief Return true if _bodyNode1 and _bodyNode2 are adjacent bodies
-  bool isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
-                        const dynamics::BodyNode* _bodyNode2) const;
-
-  /// \brief
-  CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
-
-  /// \brief
-  std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
-
-  /// \brief
-  std::vector<std::vector<bool> > mCollidablePairs;
 };
+
+//==============================================================================
+template <class EngineType, class... Args>
+CollisionDetectorPtr CollisionDetector::create(const Args&... args)
+{
+  auto engine = new EngineType(args...);
+
+  return CollisionDetectorPtr(new CollisionDetector(
+      std::move(std::unique_ptr<EngineType>(engine))));
+}
+
+//==============================================================================
+template <typename CollisionObjectType, typename... Args>
+std::shared_ptr<CollisionObjectType>
+CollisionDetector::createCollisionObject(
+    const dynamics::ShapePtr& shape,
+    const Args&... args)
+{
+  return std::make_shared<CollisionObjectType>(
+        shared_from_this(), shape, args...);
+}
 
 }  // namespace collision
 }  // namespace dart

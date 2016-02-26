@@ -34,13 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPENGINEDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPENGINEDATA_H_
+#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+#include <fcl/broadphase/broadphase_bruteforce.h>
 
 #include "dart/collision/CollisionGroup.h"
-#include "dart/collision/CollisionGroupEngineData.h"
+#include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
@@ -48,18 +49,20 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionObjectUserData;
 
-class FCLMeshCollisionGroupEngineData : public CollisionGroupEngineData
+class FCLMeshCollisionGroupData : public CollisionGroupData
 {
 public:
 
-  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+//  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using FCLCollisionManager = fcl::NaiveCollisionManager;
   using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
-  FCLMeshCollisionGroupEngineData(const CollisionObjects& collObjects);
+  FCLMeshCollisionGroupData(Engine* engine,
+                            const CollisionObjects& collObjects);
 
   // Documentation inherited
-  std::unique_ptr<CollisionGroupEngineData> clone(
+  std::unique_ptr<CollisionGroupData> clone(
       const CollisionObjectPtrs& collObjects) const override;
 
   // Documentation inherited
@@ -72,6 +75,9 @@ public:
   // Documentation inherited
   void removeCollisionObject(const CollisionObjectPtr& object,
                              const bool init) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjects(bool init) override;
 
   // Documentation inherited
   void update() override;
@@ -89,4 +95,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPENGINEDATA_H_
+#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_

@@ -50,6 +50,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
+class ShapeFrameCollisionObject;
 }  // namespace dynamics
 
 namespace constraint {
@@ -73,16 +74,16 @@ public:
   virtual ~ConstraintSolver();
 
   /// Add single skeleton
-  void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  void addSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Add mutiple skeletons
-  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
+  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
 
   /// Remove single skeleton
-  void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  void removeSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Remove multiple skeletons
-  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
+  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
 
   /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();
@@ -103,10 +104,24 @@ public:
   double getTimeStep() const;
 
   /// Set collision detector
-  void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
+  void setCollisionDetector(const collision::CollisionDetectorPtr& detector);
 
   /// Get collision detector
-  collision::CollisionDetector* getCollisionDetector() const;
+  collision::CollisionDetectorPtr getCollisionDetector() const;
+
+  /// Return collision group of collision objects that are added to this
+  /// ConstraintSolver
+  collision::CollisionGroup* getCollisionGroup();
+
+  /// Return (const) collision group of collision objects that are added to this
+  /// ConstraintSolver
+  const collision::CollisionGroup* getCollisionGroup() const;
+
+  /// Return the last collision checking result
+  collision::Result getLastCollisionResult();
+
+  /// Return the last collision checking result
+  const collision::Result& getLastCollisionResult() const;
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
@@ -136,14 +151,16 @@ private:
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& _contact) const;
 
-  /// Collision detector
-  collision::CollisionDetector* mCollisionDetector;
+  using CollisionDetector = collision::CollisionDetector;
 
   /// Collision detection engine
-  std::shared_ptr<collision::Engine> mCollisionEngine;
+  std::shared_ptr<collision::CollisionDetector> mCollisionDetector;
 
   /// Collision group
-  std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
+  std::shared_ptr<collision::CollisionGroup> mCollisionGroup;
+
+  /// Last collision checking result
+  collision::Result mCollisionResult;
 
   /// Time step
   double mTimeStep;

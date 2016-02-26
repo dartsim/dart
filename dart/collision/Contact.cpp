@@ -34,59 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_
-
-#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
-
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/CollisionGroupEngineData.h"
+#include "dart/collision/Contact.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-class FCLCollisionObjectUserData;
-
-class FCLCollisionGroupEngineData : public CollisionGroupEngineData
-{
-public:
-
-  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
-  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
-
-  /// Constructor
-  FCLCollisionGroupEngineData(const CollisionObjects& collObjects);
-
-  // Documentation inherited
-  std::unique_ptr<CollisionGroupEngineData> clone(
-      const CollisionObjectPtrs& collObjects) const override;
-
-  // Documentation inherited
-  void init() override;
-
-  // Documentation inherited
-  void addCollisionObject(const CollisionObjectPtr& object,
-                          const bool init) override;
-
-  // Documentation inherited
-  void removeCollisionObject(const CollisionObjectPtr& object,
-                             const bool init) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return FCL collision manager that is also a broad-phase algorithm
-  FCLCollisionManager* getFCLCollisionManager() const;
-
-protected:
-
-  /// FCL broad-phase algorithm
-  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
-
-};
-
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUPENGINEDATA_H_

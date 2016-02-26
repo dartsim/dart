@@ -42,6 +42,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/CollisionDetector.h"
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0
@@ -69,6 +70,10 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
+    mBodyNode1(static_cast<dynamics::ShapeFrameCollisionObject*>(
+        _contact.collisionObject1)->getBodyNode()),
+    mBodyNode2(static_cast<dynamics::ShapeFrameCollisionObject*>(
+        _contact.collisionObject2)->getBodyNode()),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
@@ -77,10 +82,6 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
 {
   // TODO(JS): Assumed single contact
   mContacts.push_back(&_contact);
-
-  // TODO(JS):
-  mBodyNode1 = _contact.bodyNode1.lock();
-  mBodyNode2 = _contact.bodyNode2.lock();
 
   //----------------------------------------------
   // Bounce

@@ -37,7 +37,8 @@
 #include "dart/collision/CollisionGroup.h"
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroupEngineData.h"
+#include "dart/collision/CollisionGroupData.h"
+#include "dart/collision/CollisionDetector.h"
 
 #include <cassert>
 
@@ -46,18 +47,19 @@ namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(
-    const EnginePtr& engine,
+    const CollisionDetectorPtr& collisionDetector,
     const CollisionGroup::CollisionObjectPtrs& collObjects)
-  : mEngine(engine),
+  : mCollisionDetector(collisionDetector),
     mCollisionObjects(collObjects),
-    mEngineData(mEngine->createCollisionGroupData(mCollisionObjects).release())
+    mEngineData(mCollisionDetector->getEngine()->createCollisionGroupData(
+        mCollisionObjects).release())
 {
-  assert(mEngine);
+  assert(mCollisionDetector);
 }
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionGroup& other)
-  : mEngine(other.mEngine),
+  : mCollisionDetector(other.mCollisionDetector),
     mCollisionObjects(other.mCollisionObjects),
     mEngineData(other.mEngineData->clone(mCollisionObjects))
 {
@@ -80,15 +82,27 @@ CollisionGroup::~CollisionGroup()
 //==============================================================================
 void CollisionGroup::copy(const CollisionGroup& other)
 {
-  mEngine = other.mEngine;
+  mCollisionDetector = other.mCollisionDetector;
   mCollisionObjects = other.mCollisionObjects;
   mEngineData.reset(other.mEngineData->clone(mCollisionObjects).release());
 }
 
 //==============================================================================
-Engine* CollisionGroup::getEngine() const
+void CollisionGroup::changeDetector(
+    const CollisionDetectorPtr& collisionDetector)
 {
-  return mEngine.get();
+  if (mCollisionDetector == collisionDetector)
+    return;
+
+//  mEngineData.reset(
+//        engine->createCollisionGroupData(getCollisionObjects()).release());
+  // TODO(JS): Implement this!
+}
+
+//==============================================================================
+CollisionDetector* CollisionGroup::getCollisionDetector() const
+{
+  return mCollisionDetector.get();
 }
 
 //==============================================================================
@@ -123,9 +137,9 @@ void CollisionGroup::addCollisionObjects(
   {
     if (!hasCollisionObject(object))
     {
-      added = true;
       mCollisionObjects.push_back(object);
       mEngineData->addCollisionObject(object, false);
+      added = true;
     }
   }
 
@@ -134,27 +148,100 @@ void CollisionGroup::addCollisionObjects(
 }
 
 //==============================================================================
+void CollisionGroup::removeCollisionObject(
+    const CollisionGroup::CollisionObjectPtr& object)
+{
+  if (!object)
+    return;
+
+  auto result
+      = std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object);
+
+  if (mCollisionObjects.end() != result)
+  {
+    mCollisionObjects.erase(result);
+    mEngineData->removeCollisionObject(*result);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::removeCollisionObjects(
+    const CollisionGroup::CollisionObjectPtrs& objects)
+{
+  for (auto object : objects)
+    removeCollisionObject(object);
+  // TODO(JS): there is a room for improving the perfomance
+}
+
+//==============================================================================
+void CollisionGroup::removeAllCollisionObjects()
+{
+  mCollisionObjects.clear();
+  mEngineData->removeAllCollisionObjects();
+}
+
+//==============================================================================
+const CollisionGroup::CollisionObjectPtrs&
+CollisionGroup::getCollisionObjects()
+{
+  return mCollisionObjects;
+}
+
+//==============================================================================
+const CollisionGroup::ConstCollisionObjectPtrs
+CollisionGroup::getCollisionObjects() const
+{
+  ConstCollisionObjectPtrs vec(mCollisionObjects.size());
+
+  for (auto i = 0u; i < mCollisionObjects.size(); ++i)
+  {
+    vec[i] = std::const_pointer_cast<const CollisionObject>(
+          mCollisionObjects[i]);
+  }
+
+  return vec;
+}
+
+//==============================================================================
+void CollisionGroup::unionGroup(const CollisionGroupPtr& other)
+{
+  if (!other)
+    return;
+
+  this->addCollisionObjects(other->getCollisionObjects());
+}
+
+//==============================================================================
+void CollisionGroup::subtractGroup(const CollisionGroupPtr& other)
+{
+  if (!other)
+    return;
+
+  this->removeCollisionObjects(other->getCollisionObjects());
+}
+
+//==============================================================================
 bool CollisionGroup::detect(const Option& option, Result& result)
 {
-  return mEngine->detect(this, option, result);
+  return mCollisionDetector->detect(this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::detect(CollisionObject* object,
                             const Option& option, Result& result)
 {
-  return mEngine->detect(object, this, option, result);
+  return mCollisionDetector->detect(object, this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::detect(CollisionGroup* otherGroup,
                             const Option& option, Result& result)
 {
-  return mEngine->detect(this, otherGroup, option, result);
+  return mCollisionDetector->detect(this, otherGroup, option, result);
 }
 
 //==============================================================================
-CollisionGroupEngineData* CollisionGroup::getEngineData()
+CollisionGroupData* CollisionGroup::getEngineData()
 {
   return mEngineData.get();
 }

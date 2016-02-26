@@ -40,29 +40,28 @@
 #include <memory>
 
 #include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/SmartPointer.h"
 #include "dart/collision/Engine.h"
 #include "dart/collision/fcl/FCLEngine.h"
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
 
-class ShapeNodeCollisionObject : public collision::CollisionObject
+class ShapeFrameCollisionObject : public collision::CollisionObject
 {
 public:
 
-  ShapeNodeCollisionObject(const collision::EnginePtr& engine,
-      const dynamics::ShapePtr& shape,
-      const dynamics::BodyNodePtr& bodyNode);
+  ShapeFrameCollisionObject(
+      const collision::CollisionDetectorPtr& collisionDetector,
+      const ShapePtr& shape,
+      const BodyNodePtr& bodyNode);
   // TODO(JS): this should be replaced by ShapeNode
 
   // Documentation inherited
   const Eigen::Isometry3d getTransform() const override;
 
-  /// Return BodyNode pointer associated with this ShapeNodeCollisionObject
+  /// Return BodyNode pointer associated with this ShapeFrameCollisionObject
   dynamics::BodyNodePtr getBodyNode() const;
 
 protected:
@@ -72,70 +71,49 @@ protected:
 
 };
 
-class CollisionDetector
-{
-public:
+using ShapeFrameCollisionObjectPtr = std::shared_ptr<ShapeFrameCollisionObject>;
 
-  static std::shared_ptr<ShapeNodeCollisionObject> createCollisionObject(
-      const collision::EnginePtr engine,
-      const dynamics::ShapePtr& shape,
-      const BodyNodePtr& bodyNode);
+/// Create a ShapeFrameCollisionObject given ShapeNode
+ShapeFrameCollisionObjectPtr createShapeFrameCollisionObject(
+    const collision::CollisionDetectorPtr& collisionDetector,
+    const ShapePtr& shape,
+    const BodyNodePtr& bodyNode);
 
-  static std::vector<collision::CollisionObjectPtr>
-  createCollisionObjects(
-      const collision::EnginePtr& engine,
-      const dynamics::SkeletonPtr& skel);
+/// Create a ShapeFrameCollisionObjects given Skeleton
+std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
+    const collision::CollisionDetectorPtr& collisionDetector,
+    const dynamics::SkeletonPtr& skel);
 
-  template <class ColDecEngine = collision::FCLEngine>
-  static bool detect(const dynamics::ShapePtr& shape1,
-                     const BodyNodePtr& body1,
-                     const dynamics::ShapePtr& shape2,
-                     const BodyNodePtr& body2,
-                     const collision::Option& option,
-                     collision::Result& result);
+/// Create a CollisionGroup given Skeleton
+collision::CollisionGroupPtr createShapeFrameCollisionGroup(
+    const collision::CollisionDetectorPtr& collisionDetector,
+    const dynamics::SkeletonPtr& skel);
 
-  template <class ColDecEngine = collision::FCLEngine>
-  static bool detect(const dynamics::SkeletonPtr& skel1,
-                     const dynamics::SkeletonPtr& skel2,
-                     const collision::Option& option,
-                     collision::Result& result);
+///// Checks the collisions between two BodyNodes for one time.
+//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
+//            const dynamics::ShapePtr& shape1,
+//            const BodyNodePtr& body1,
+//            const dynamics::ShapePtr& shape2,
+//            const BodyNodePtr& body2,
+//            const collision::Option& option,
+//            collision::Result& result);
 
-};
-
-//==============================================================================
-template <class ColDecEngine>
-bool CollisionDetector::detect(
-    const ShapePtr& shape1, const BodyNodePtr& body1,
-    const ShapePtr& shape2, const BodyNodePtr& body2,
-    const collision::Option& option, collision::Result& result)
-{
-  auto engine = ColDecEngine::create();
-
-  auto obj1 = ShapeNodeCollisionObject(engine, shape1, body1);
-  auto obj2 = ShapeNodeCollisionObject(engine, shape2, body2);
-
-  return obj1.detect(&obj2, option, result);
-}
-
-//==============================================================================
-template <class ColDecEngine>
-bool CollisionDetector::detect(
-    const dynamics::SkeletonPtr& skel1,
-    const dynamics::SkeletonPtr& skel2,
-    const collision::Option& option, collision::Result& result)
-{
-  auto engine = ColDecEngine::create();
-
-  auto objects1 = createCollisionObjects(engine, skel1);
-  auto objects2 = createCollisionObjects(engine, skel2);
-
-  auto group1 = collision::CollisionGroup(engine, objects1);
-  auto group2 = collision::CollisionGroup(engine, objects2);
-
-  return group1.detect(&group2, option, result);
-}
+///// Checks the collisions between two Skeletons for one time.
+/////
+///// This function creates two collision groups internally as local variables
+///// of the skeletons for single time collision check. If you want to check
+///// more than once, then create two collision groups explicitly using
+///// createShapeNodeCollisionGroup() and check the collisions with the groups
+///// for better performance.
+//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
+//            const dynamics::SkeletonPtr& skel1,
+//            const dynamics::SkeletonPtr& skel2,
+//            const collision::Option& option,
+//            collision::Result& result);
 
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/CollisionDetector.h"
 
 #endif // DART_DYNAMICS_COLLISIONDETECTOR_H_

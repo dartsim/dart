@@ -34,53 +34,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTENGINEDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTENGINEDATA_H_
+#ifndef DART_COLLISION_CONTACT_H_
+#define DART_COLLISION_CONTACT_H_
 
-#include <cstddef>
 #include <Eigen/Dense>
-
-#include <fcl/collision_object.h>
-
-#include "dart/collision/CollisionObjectEngineData.h"
+#include "dart/collision/SmartPointer.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-class FCLCollisionObjectUserData;
-
-class FCLMeshCollisionObjectEngineData : public CollisionObjectEngineData
+/// Contact information
+struct Contact
 {
-public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /// Constructor
-  FCLMeshCollisionObjectEngineData(CollisionObject* parent,
-                                   const dynamics::ShapePtr& shape);
+  /// Contact point w.r.t. the world frame
+  Eigen::Vector3d point;
 
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
+  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
+  Eigen::Vector3d normal;
 
-  // Documentation inherited
-  void updateShape(const dynamics::ShapePtr& shape) override;
+  /// Contact force acting on bodyNode1 w.r.t. the world frame
+  ///
+  /// The contact force acting on bodyNode2 is -force, which is the opposite
+  /// direction of the force.
+  Eigen::Vector3d force;
 
-  // Documentation inherited
-  void update() override;
+  /// First colliding collision object
+  CollisionObject* collisionObject1;
 
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
+  /// Second colliding collision object
+  CollisionObject* collisionObject2;
 
-protected:
+  /// Penetration depth
+  double penetrationDepth;
 
-  /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
+  // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
+  /// \brief
+  int triID1;
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
+  /// \brief
+  int triID2;
 
+  // TODO(JS): userData is an experimental variable.
+  /// \brief User data.
+  void* userData;
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTENGINEDATA_H_
+#endif  // DART_COLLISION_CONTACT_H_

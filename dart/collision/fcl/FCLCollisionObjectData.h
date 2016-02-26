@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,100 +34,67 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
 
-#include <vector>
-
-#include <assimp/scene.h>
+#include <cstddef>
 #include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
 
-#include "dart/collision/CollisionNode.h"
-#include "dart/collision/SmartPointer.h"
-#include "dart/dynamics/Shape.h"
+#include <fcl/collision_object.h>
 
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Shape;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
 class CollisionObject;
 
 struct FCLCollisionObjectUserData
 {
-  FCLCollisionNode* mFclCollNode;
   CollisionObject* mCollisionObject;
   dynamics::BodyNode* mBodyNode;
   dynamics::ShapePtr mShape;
-
-  FCLCollisionObjectUserData(FCLCollisionNode* mFclCollNode,
-                               dynamics::BodyNode* mBodyNode,
-                               const dynamics::ShapePtr& mShape);
 
   FCLCollisionObjectUserData(CollisionObject* mFclCollNode,
                                const dynamics::ShapePtr& mShape);
 
 };
 
-class ConstFCLCollisionObjects
+class FCLCollisionObjectData : public CollisionObjectData
 {
 public:
-  using ConstIterator = std::vector<fcl::CollisionObject*>::const_iterator;
-
-  ConstFCLCollisionObjects(const std::vector<fcl::CollisionObject*>& container)
-    : mContainer(container)
-  {}
-
-  ConstIterator begin() const { return mContainer.cbegin(); }
-  ConstIterator end() const;
-
-protected:
-  std::vector<fcl::CollisionObject*> mContainer;
-};
-
-/// FCLCollisionNode
-class FCLCollisionNode : public CollisionNode
-{
-public:
-
-  using FCLCollisionObjects = std::vector<fcl::CollisionObject*>;
 
   /// Constructor
-  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
+  FCLCollisionObjectData(Engine* engine,
+                         CollisionObject* parent,
+                         const dynamics::ShapePtr& shape);
 
-  /// Destructor
-  virtual ~FCLCollisionNode();
+  // Documentation inherited
+  void updateTransform(const Eigen::Isometry3d& tf) override;
 
-  /// Get number of collision objects
-  size_t getNumCollisionObjects() const;
+  // Documentation inherited
+  void updateShape(const dynamics::ShapePtr& shape) override;
 
-  const FCLCollisionObjects& getCollisionObjects();
+  // Documentation inherited
+  void update() override;
 
-  /// Get FCL collision object given index
-  fcl::CollisionObject* getCollisionObject(size_t _idx) const;
+  /// Return FCL collision object
+  fcl::CollisionObject* getFCLCollisionObject() const;
 
-  /// Get FCL transformation of shape given index
-  fcl::Transform3f getFCLTransform(size_t _idx) const;
+protected:
 
-  /// Update transformation and AABB of all the fcl collision objects.
-  void updateFCLCollisionObjects();
+  /// FCL collision geometry user data
+  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
 
-private:
-
-  /// Array of FCL collision object that continas geometry and transform
-  FCLCollisionObjects mCollisionObjects;
+  /// FCL collision object
+  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  // Note: We can consider sharing fcl::CollisionGeometry with other
+  // CollisionObjects that are associated with the same Shape of DART to avoid
+  // unnecessary copy of fcl::CollisionGeometry.
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_

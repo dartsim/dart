@@ -46,8 +46,8 @@
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/collision/fcl/FCLEngine.h"
+#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -256,27 +256,30 @@ simulation::WorldPtr SkelParser::readWorld(
       if (strCD == "fcl_mesh")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::FCLMeshCollisionDetector());
+            collision::CollisionDetector::create<collision::FCLMeshEngine>());
       }
       else if (strCD == "fcl")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::FCLCollisionDetector());
+            collision::CollisionDetector::create<collision::FCLEngine>());
       }
-      else if (strCD == "dart")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::DARTCollisionDetector());
-      }
-#ifdef HAVE_BULLET_COLLISION
-      else if (strCD == "bullet")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-              new collision::BulletCollisionDetector());
-      }
-#endif
+//      else if (strCD == "dart")
+//      {
+//        newWorld->getConstraintSolver()->setCollisionEngine(
+//              new collision::DARTEngine());
+//      }
+//#ifdef HAVE_BULLET_COLLISION
+//      else if (strCD == "bullet")
+//      {
+//        newWorld->getConstraintSolver()->setCollisionEngine(
+//              new collision::BulletEngine());
+//      }
+//#endif
+      // TODO(JS)
       else
       {
+        newWorld->getConstraintSolver()->setCollisionDetector(
+            collision::CollisionDetector::create<collision::FCLMeshEngine>());
         dtwarn << "Unknown collision detector[" << strCD << "]. "
                << "Default collision detector[fcl] will be loaded."
                << std::endl;
@@ -285,7 +288,7 @@ simulation::WorldPtr SkelParser::readWorld(
     else
     {
       newWorld->getConstraintSolver()->setCollisionDetector(
-            new collision::FCLMeshCollisionDetector());
+          collision::CollisionDetector::create<collision::FCLMeshEngine>());
     }
   }
 
@@ -626,7 +629,7 @@ SkelParser::SkelBodyNode SkelParser::readBodyNode(
   }
 
   //--------------------------------------------------------------------------
-  // visualization_shape
+  // collision_shape
   ElementEnumerator collShapes(_bodyNodeElement, "collision_shape");
   while (collShapes.next())
   {
@@ -1477,12 +1480,10 @@ static void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
 
 //==============================================================================
 SkelParser::JointPropPtr SkelParser::readWeldJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     SkelJoint& /*_joint*/,
     const std::string&)
 {
-  assert(_jointElement != nullptr);
-
   return Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>();
 }
 

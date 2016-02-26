@@ -34,31 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_
-#define DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_
+#ifndef DART_COLLISION_COLLISIONGROUPDATA_H_
+#define DART_COLLISION_COLLISIONGROUPDATA_H_
 
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SmartPointer.h"
+#include <vector>
+#include "dart/collision/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObjectEngineData
+class CollisionObject;
+
+class CollisionGroupData
 {
 public:
 
-  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
 
-  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
+  CollisionGroupData(Engine* engine);
+
+  virtual void init() = 0;
+
+  virtual void addCollisionObject(const CollisionObjectPtr& object,
+                                  bool init = true) = 0;
+//  virtual void addCollisionObjects(const CollisionObjectPtr& object) = 0;
+
+  // TODO(JS): notifyCollisionObjectUpdated()?
+
+  virtual void removeCollisionObject(const CollisionObjectPtr& object,
+                                     bool init = true) = 0;
+
+  virtual void removeAllCollisionObjects(bool init = true) = 0;
 
   /// Update engine data. This function will be called ahead of every collision
   /// checking
   virtual void update() = 0;
+
+  virtual std::unique_ptr<CollisionGroupData> clone(
+      const CollisionObjectPtrs& collObjects) const = 0;
+
+  const Engine* getEngine() const;
+
+protected:
+
+  Engine* mEngine;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONOBJECTENGINEDATA_H_
+#endif  // DART_COLLISION_COLLISIONGROUPDATA_H_

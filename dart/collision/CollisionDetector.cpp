@@ -42,310 +42,110 @@
 #include <vector>
 
 #include "dart/common/Console.h"
+#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionGroup.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/collision/CollisionNode.h"
 
 namespace dart {
 namespace collision {
 
-CollisionDetector::CollisionDetector()
-  : mNumMaxContacts(100) {
-}
-
-CollisionDetector::~CollisionDetector() {
-  for (size_t i = 0; i < mCollisionNodes.size(); i++)
-    delete mCollisionNodes[i];
+//==============================================================================
+CollisionDetector::~CollisionDetector()
+{
+  // Do nothing
 }
 
 //==============================================================================
-void CollisionDetector::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
+Engine* CollisionDetector::getEngine()
 {
-  assert(_skeleton != nullptr
-      && "Null pointer skeleton is not allowed to add to CollisionDetector.");
-
-  if (containSkeleton(_skeleton) == false)
-  {
-    mSkeletons.push_back(_skeleton);
-    for (size_t i = 0; i < _skeleton->getNumBodyNodes(); ++i)
-      addCollisionSkeletonNode(_skeleton->getBodyNode(i));
-  }
-  else
-  {
-    dtwarn << "Skeleton [" << _skeleton->getName()
-           << "] is already in CollisionDetector." << std::endl;
-  }
+  return mEngine.get();
 }
 
 //==============================================================================
-void CollisionDetector::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
+const Engine* CollisionDetector::getEngine() const
 {
-  assert(_skeleton != nullptr
-      && "Null pointer skeleton is not allowed to add to CollisionDetector.");
-
-  if (containSkeleton(_skeleton))
-  {
-    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
-                     mSkeletons.end());
-    for (size_t i = 0; i < _skeleton->getNumBodyNodes(); ++i)
-      removeCollisionSkeletonNode(_skeleton->getBodyNode(i));
-  }
-  else
-  {
-    dtwarn << "Skeleton [" << _skeleton->getName()
-           << "] is not in CollisionDetector." << std::endl;
-  }
+  return mEngine.get();
 }
 
 //==============================================================================
-void CollisionDetector::removeAllSkeletons()
+std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
+    const std::vector<CollisionObjectPtr>& objects)
 {
-  for (size_t i = 0; i < mSkeletons.size(); ++i)
-    removeSkeleton(mSkeletons[i]);
-
-  mSkeletons.clear();
-}
-
-void CollisionDetector::addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                                 bool _isRecursive) {
-  assert(_bodyNode != nullptr && "Invalid body node.");
-
-  // If this collision detector already has collision node for _bodyNode, then
-  // we do nothing.
-  if (getCollisionNode(_bodyNode) != nullptr) {
-    std::cout << "The collision detector already has a collision node for "
-              << "body node [" << _bodyNode->getName() << "]." << std::endl;
-    return;
-  }
-
-  // Create collision node and set index
-  CollisionNode* collNode = createCollisionNode(_bodyNode);
-  collNode->setIndex(mCollisionNodes.size());
-
-  // Add the collision node to collision node list
-  mCollisionNodes.push_back(collNode);
-
-  // Add the collision node to map (BodyNode -> CollisionNode)
-  mBodyCollisionMap[_bodyNode] = collNode;
-
-  // Add collidable pairs for the collision node
-  mCollidablePairs.push_back(
-        std::vector<bool>(mCollisionNodes.size() - 1, true));
-
-  if (_isRecursive) {
-    for (size_t i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
-      addCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
-  }
-}
-
-void CollisionDetector::removeCollisionSkeletonNode(
-    dynamics::BodyNode* _bodyNode, bool _isRecursive) {
-  assert(_bodyNode != nullptr && "Invalid body node.");
-
-  // If a collision node is already created for _bodyNode, then we just return
-  CollisionNode* collNode = getCollisionNode(_bodyNode);
-  if (collNode == nullptr) {
-    std::cout << "The collision detector does not have any collision node "
-              << "for body node [" << _bodyNode->getName() << "]."
-              << std::endl;
-    return;
-  }
-
-  // Update index of collision nodes.
-  size_t iCollNode = collNode->getIndex();
-  for (size_t i = iCollNode + 1; i < mCollisionNodes.size(); ++i)
-    mCollisionNodes[i]->setIndex(mCollisionNodes[i]->getIndex() - 1);
-
-  // Remove collNode from mCollisionNodes
-  mCollisionNodes.erase(remove(mCollisionNodes.begin(), mCollisionNodes.end(),
-                               collNode),
-                        mCollisionNodes.end());
-
-  // Remove collNode-_bodyNode pair from mBodyCollisionMap
-  mBodyCollisionMap.erase(_bodyNode);
-
-  // Delete collNode
-  delete collNode;
-
-  // Update mCollidablePairs
-  for (size_t i = iCollNode + 1; i < mCollidablePairs.size(); ++i) {
-    for (size_t j = 0; j < iCollNode; ++j)
-      mCollidablePairs[i-1][j] = mCollidablePairs[i][j];
-    for (size_t j = iCollNode + 1; j < mCollidablePairs[i].size(); ++j)
-      mCollidablePairs[i-1][j-1] = mCollidablePairs[i][j];
-  }
-  mCollidablePairs.pop_back();
-
-  if (_isRecursive) {
-    for (size_t i = 0; i < _bodyNode->getNumChildBodyNodes(); i++)
-      removeCollisionSkeletonNode(_bodyNode->getChildBodyNode(i), true);
-  }
-}
-
-bool CollisionDetector::detectCollision(dynamics::BodyNode* _node1,
-                                        dynamics::BodyNode* _node2,
-                                        bool _calculateContactPoints) {
-  return detectCollision(getCollisionNode(_node1),
-                         getCollisionNode(_node2),
-                         _calculateContactPoints);
-}
-
-size_t CollisionDetector::getNumContacts() {
-  return mContacts.size();
-}
-
-Contact& CollisionDetector::getContact(int _idx) {
-  return mContacts[_idx];
-}
-
-void CollisionDetector::clearAllContacts() {
-  mContacts.clear();
-}
-
-int CollisionDetector::getNumMaxContacts() const {
-  return mNumMaxContacts;
-}
-
-void CollisionDetector::setNumMaxContacs(int _num) {
-  mNumMaxContacts = _num;
-}
-
-void CollisionDetector::enablePair(dynamics::BodyNode* _node1,
-                                   dynamics::BodyNode* _node2) {
-  CollisionNode* collisionNode1 = getCollisionNode(_node1);
-  CollisionNode* collisionNode2 = getCollisionNode(_node2);
-  if (collisionNode1 && collisionNode2)
-    setPairCollidable(collisionNode1, collisionNode2, true);
-}
-
-void CollisionDetector::disablePair(dynamics::BodyNode* _node1,
-                                    dynamics::BodyNode* _node2) {
-  CollisionNode* collisionNode1 = getCollisionNode(_node1);
-  CollisionNode* collisionNode2 = getCollisionNode(_node2);
-  if (collisionNode1 && collisionNode2)
-    setPairCollidable(collisionNode1, collisionNode2, false);
+  return std::make_shared<CollisionGroup>(shared_from_this(), objects);
 }
 
 //==============================================================================
-bool CollisionDetector::isCollidable(const CollisionNode* _node1,
-                                     const CollisionNode* _node2)
+std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup()
 {
-  dynamics::BodyNode* bn1 = _node1->getBodyNode();
-  dynamics::BodyNode* bn2 = _node2->getBodyNode();
-
-  if (!getPairCollidable(_node1, _node2))
-    return false;
-
-  if (!bn1->isCollidable() || !bn2->isCollidable())
-    return false;
-
-  if (bn1->getSkeleton() == bn2->getSkeleton())
-  {
-    if (bn1->getSkeleton()->isEnabledSelfCollisionCheck())
-    {
-      if (isAdjacentBodies(bn1, bn2))
-      {
-        if (!bn1->getSkeleton()->isEnabledAdjacentBodyCheck())
-          return false;
-      }
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  return true;
+  return std::make_shared<CollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
-bool CollisionDetector::containSkeleton(const dynamics::SkeletonPtr& _skeleton)
+bool CollisionDetector::detect(
+    CollisionObject* object1, CollisionObject* object2,
+    const Option& option, Result& result)
 {
-  for (std::vector<dynamics::SkeletonPtr>::const_iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if ((*it) == _skeleton)
-      return true;
-  }
+  assert(object1->getCollisionDetector() == object2->getCollisionDetector());
 
-  return false;
+  object1->updateEngineData();
+  object2->updateEngineData();
+
+  return mEngine->detect(object1->getEngineData(), object2->getEngineData(),
+                         option, result);
 }
 
-bool isValidIndex(const std::vector<std::vector<bool>>& _collidablePairs,
-                  const std::size_t _index1,
-                  const std::size_t _index2)
+//==============================================================================
+bool CollisionDetector::detect(
+    CollisionObject* object, CollisionGroup* group,
+    const Option& option, Result& result)
 {
-  assert(_index1 >= _index2);
+  assert(object->getCollisionDetector() == group->getCollisionDetector());
 
-  if (_collidablePairs.size() > _index1
-      && _collidablePairs[_index1].size() > _index2)
-    return true;
+  object->updateEngineData();
+  group->updateEngineData();
 
-  return false;
+  return mEngine->detect(object->getEngineData(), group->getEngineData(),
+                         option, result);
 }
 
-bool CollisionDetector::getPairCollidable(const CollisionNode* _node1,
-                                          const CollisionNode* _node2)
+//==============================================================================
+bool CollisionDetector::detect(
+    CollisionGroup* group, CollisionObject* object,
+    const Option& option, Result& result)
 {
-  assert(_node1 != _node2);
-
-  size_t index1 = _node1->getIndex();
-  size_t index2 = _node2->getIndex();
-
-  if (index1 < index2)
-    std::swap(index1, index2);
-
-  // Index validity check. The indices are not valid if the body nodes are not
-  // completely added to the collision detector yet.
-  if (!isValidIndex(mCollidablePairs, index1, index2))
-    return false;
-
-  if (index1 == index2)
-    return false;
-  
-  return mCollidablePairs[index1][index2];
+  return detect(object, group, option, result);
 }
 
-void CollisionDetector::setPairCollidable(const CollisionNode* _node1,
-                                          const CollisionNode* _node2,
-                                          bool _val)
+//==============================================================================
+bool CollisionDetector::detect(
+    CollisionGroup* group, const Option& option, Result& result)
 {
-  assert(_node1 != _node2);
+  group->updateEngineData();
 
-  size_t index1 = _node1->getIndex();
-  size_t index2 = _node2->getIndex();
-
-  if (index1 < index2)
-    std::swap(index1, index2);
-
-  // Index validity check. The indices are not valid if the body nodes are not
-  // completely added to the collision detector yet.
-  if (!isValidIndex(mCollidablePairs, index1, index2))
-    return;
-
-  mCollidablePairs[index1][index2] = _val;
+  return mEngine->detect(group->getEngineData(), option, result);
 }
 
-bool CollisionDetector::isAdjacentBodies(
-    const dynamics::BodyNode* _bodyNode1,
-    const dynamics::BodyNode* _bodyNode2) const
+//==============================================================================
+bool CollisionDetector::detect(
+    CollisionGroup* group1, CollisionGroup* group2,
+    const Option& option, Result& result)
 {
-  if ((_bodyNode1->getParentBodyNode() == _bodyNode2)
-      || (_bodyNode2->getParentBodyNode() == _bodyNode1))
-  {
-    assert(_bodyNode1->getSkeleton() == _bodyNode2->getSkeleton());
-    return true;
-  }
+  assert(group1->getCollisionDetector() == group2->getCollisionDetector());
 
-  return false;
+  group1->updateEngineData();
+  group2->updateEngineData();
+
+  return mEngine->detect(group1->getEngineData(), group2->getEngineData(),
+                         option, result);
 }
 
-CollisionNode* CollisionDetector::getCollisionNode(
-    const dynamics::BodyNode* _bodyNode) {
-  if (mBodyCollisionMap.find(_bodyNode) != mBodyCollisionMap.end())
-    return mBodyCollisionMap[_bodyNode];
-  else
-    return nullptr;
+//==============================================================================
+CollisionDetector::CollisionDetector(std::unique_ptr<Engine>&& engine)
+  : mEngine(std::move(engine))
+{
+  assert(mEngine);
 }
 
 }  // namespace collision

@@ -34,26 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CollisionGroup.h"
-#include "dart/dynamics/CollisionDetector.h"
+#ifndef DART_DYNAMICS_DETAIL_COLLISIONDETECTOR_H_
+#define DART_DYNAMICS_DETAIL_COLLISIONDETECTOR_H_
+
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace dynamics {
 
-//==============================================================================
-CollisionGroup::CollisionGroup(const collision::EnginePtr& engine)
-  : collision::CollisionGroup(engine)
-{
-
-}
-
-//==============================================================================
-void CollisionGroup::addCollisionObjects(const SkeletonPtr& skeleton)
-{
-  auto objects = CollisionDetector::createCollisionObjects(mEngine, skeleton);
-
-  collision::CollisionGroup::addCollisionObjects(objects);
-}
-
 } // namespace dynamics
 } // namespace dart
+
+#endif // DART_DYNAMICS_COLLISIONDETECTOR_H_
