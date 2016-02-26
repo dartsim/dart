@@ -36,6 +36,7 @@
 
 #include "dart/collision/dart/DARTEngine.h"
 
+#include <iostream>
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/dart/DARTCollide.h"
 #include "dart/collision/dart/DARTCollisionObjectData.h"
@@ -52,7 +53,8 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2,
 bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
              double tol);
 
-void postProcess(CollisionObject* o1, CollisionObject* o2, Result& result);
+void postProcess(CollisionObject* o1, CollisionObject* o2,
+                 Result& totalResult, const Result& pairResult);
 
 } // anonymous namespace
 
@@ -222,12 +224,14 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2, Result& result)
 {
   // TODO(JS): filtering
 
+  Result pairResult;
+
   // Perform narrow-phase detection
   auto colliding = collide(o1->getShape(), o1->getTransform(),
                            o2->getShape(), o2->getTransform(),
-                           &result.contacts);
+                           &pairResult.contacts);
 
-  postProcess(o1, o2, result);
+  postProcess(o1, o2, result, pairResult);
 
   return colliding != 0;
 }
@@ -241,48 +245,35 @@ bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
 
 //==============================================================================
 void postProcess(CollisionObject* o1, CollisionObject* o2,
-                 Result& result)
+                 Result& totalResult, const Result& pairResult)
 {
-  if (result.contacts.empty())
+  if (pairResult.contacts.empty())
     return;
 
   // Remove all the repeated points
   const auto tol = 3.0e-12;
-  auto i = result.contacts.begin();
-  while (i != result.contacts.end() - 1)
+  auto i = pairResult.contacts.begin();
+  while (i != pairResult.contacts.end() - 1)
   {
-    for (auto j = i + 1; j != result.contacts.end(); ++j)
+    for (auto j = i + 1; j != pairResult.contacts.end(); ++j)
     {
       if (isClose(i->point, j->point, tol))
-      {
-        i = result.contacts.erase(i);
         break;
-      }
     }
+
+    totalResult.contacts.push_back(*i);
+    totalResult.contacts.back().collisionObject1 = o1;
+    totalResult.contacts.back().collisionObject2 = o2;
 
     ++i;
   }
 
-  for (auto& contact : result.contacts)
-  {
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-  }
-
-  std::cout << "=================" << std::endl;
-  std::cout << "# of contacts:" << result.contacts.size() << std::endl;
-  std::cout << "=================" << std::endl;
-  for (auto i = 0u; i < result.contacts.size(); ++i)
-  {
-    auto contact = result.contacts[i];
-
-    std::cout << "Contact (" << i << ")" << std::endl;
-    std::cout << "Point : " << contact.point.transpose() << std::endl;
-    std::cout << "Normal: " << contact.normal.transpose() << std::endl;
-    std::cout << "Depth : " << contact.penetrationDepth << std::endl;
-    std::cout << std::endl;
-  }
-  std::cout << "=================" << std::endl;
+//  for (auto& contact : pairResult.contacts)
+//  {
+//    totalResult.contacts.push_back(contact);
+//    totalResult.contacts.back().collisionObject1 = o1;
+//    totalResult.contacts.back().collisionObject2 = o2;
+//  }
 }
 
 } // anonymous namespace

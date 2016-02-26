@@ -45,8 +45,9 @@ namespace collision {
 //==============================================================================
 FCLMeshCollisionGroupData::FCLMeshCollisionGroupData(
     Engine* engine,
+    CollisionGroup* parent,
     const FCLMeshCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(engine),
+  : CollisionGroupData(engine, parent),
     mBroadPhaseAlg(new FCLCollisionManager())
 {
   for (auto collObj : collObjects)
@@ -61,10 +62,11 @@ FCLMeshCollisionGroupData::FCLMeshCollisionGroupData(
 //==============================================================================
 std::unique_ptr<CollisionGroupData>
 FCLMeshCollisionGroupData::clone(
+    CollisionGroup* newParent,
     const CollisionGroupData::CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLMeshCollisionGroupData(mEngine, collObjects));
+        new FCLMeshCollisionGroupData(mEngine, newParent, collObjects));
 }
 
 //==============================================================================

@@ -49,6 +49,10 @@ ShapeFrameCollisionObject::ShapeFrameCollisionObject(
   : collision::CollisionObject(collisionDetector, shape),
     mBodyNode(bodyNode)
 {
+  assert(collisionDetector);
+  assert(shape);
+  assert(bodyNode);
+
   auto found = false;
   auto numShapes = mBodyNode->getNumCollisionShapes();
   for (auto i = 0u; i < numShapes; ++i)
@@ -108,8 +112,8 @@ std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
     for (auto j = 0u; j < numColShapes; ++j)
     {
       auto shape = bodyNode->getCollisionShape(j);
-      auto collObj = collisionDetector->createCollisionObject<
-          ShapeFrameCollisionObject>(shape, bodyNode);
+      auto collObj =
+          createShapeFrameCollisionObject(collisionDetector, shape, bodyNode);
 
       objects.push_back(
             std::static_pointer_cast<collision::CollisionObject>(collObj));

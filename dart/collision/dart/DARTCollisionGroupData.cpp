@@ -54,11 +54,11 @@ DARTCollisionGroupData::DARTCollisionGroupData(
 //==============================================================================
 std::unique_ptr<CollisionGroupData>
 DARTCollisionGroupData::clone(
-    CollisionGroup* newCollisionGroup,
+    CollisionGroup* newParent,
     const CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new DARTCollisionGroupData(mEngine, newCollisionGroup, collObjects));
+        new DARTCollisionGroupData(mEngine, newParent, collObjects));
 }
 
 //==============================================================================

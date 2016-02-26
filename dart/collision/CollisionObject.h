@@ -81,19 +81,6 @@ public:
   void updateEngineData();
   // TODO(JS): remove. instead, CollisionObjectData should be updated by engine
 
-  template <typename T>
-  T* as()
-  {
-    return static_cast<T*>(this);
-  }
-
-  template <typename T>
-  const T* as() const
-  {
-    return static_cast<const T*>(this);
-  }
-  // TODO(JS): Need this?
-
 protected:
 
   /// Contructor

@@ -56,10 +56,13 @@ public:
   using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
-  FCLCollisionGroupData(Engine* engine, const CollisionObjects& collObjects);
+  FCLCollisionGroupData(Engine* engine,
+                        CollisionGroup* parent,
+                        const CollisionObjects& collObjects);
 
   // Documentation inherited
   std::unique_ptr<CollisionGroupData> clone(
+      CollisionGroup* newParent,
       const CollisionObjectPtrs& collObjects) const override;
 
   // Documentation inherited

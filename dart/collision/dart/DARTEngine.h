@@ -44,7 +44,7 @@
 namespace dart {
 namespace collision {
 
-/// FCL Collision detection engine
+/// DART Collision detection engine
 class DARTEngine : public Engine
 {
 public:
@@ -57,7 +57,7 @@ public:
   /// Constructor
   virtual ~DARTEngine();
 
-  /// Return engine type "FCL"
+  /// Return engine type "DART"
   static const std::string& getTypeStatic();
 
   // Documentation inherit

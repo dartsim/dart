@@ -608,10 +608,11 @@ FCLCollisionObjectUserData::FCLCollisionObjectUserData(
 }
 
 //==============================================================================
-FCLCollisionObjectData::FCLCollisionObjectData(Engine* engine,
+FCLCollisionObjectData::FCLCollisionObjectData(
+    Engine* engine,
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
-  : CollisionObjectData(engine),
+  : CollisionObjectData(engine, parent),
     mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent, shape)),
     mFCLCollisionObject(new fcl::CollisionObject(
                         createFCLCollisionGeometry(shape)))

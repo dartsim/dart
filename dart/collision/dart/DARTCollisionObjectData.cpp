@@ -36,24 +36,6 @@
 
 #include "dart/collision/dart/DARTCollisionObjectData.h"
 
-#include <assimp/scene.h>
-#include <fcl/BVH/BVH_model.h>
-#include <fcl/shape/geometric_shapes.h>
-
-#include "dart/common/Console.h"
-#include "dart/collision/Engine.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLTypes.h"
-#include "dart/collision/dart/DARTCollisionObjectData.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-
 namespace dart {
 namespace collision {
 

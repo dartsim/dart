@@ -51,7 +51,7 @@ namespace collision {
 
 namespace {
 
-bool collisionCallBack(fcl::CollisionObject* o1,
+bool checkPair(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata);
 
@@ -144,10 +144,11 @@ std::unique_ptr<CollisionObjectData> FCLEngine::createCollisionObjectData(
 
 //==============================================================================
 std::unique_ptr<CollisionGroupData> FCLEngine::createCollisionGroupData(
+    CollisionGroup* parent,
     const CollisionObjectPtrs& collObjects)
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLCollisionGroupData(this, collObjects));
+        new FCLCollisionGroupData(this, parent, collObjects));
 }
 
 //==============================================================================
@@ -168,7 +169,7 @@ bool FCLEngine::detect(
   auto fclCollObj2 = castedData2->getFCLCollisionObject();
 
   FCLCollisionData collData(&option, &result);
-  collisionCallBack(fclCollObj1, fclCollObj2, &collData);
+  checkPair(fclCollObj1, fclCollObj2, &collData);
 
   return !result.contacts.empty();
 }
@@ -193,7 +194,7 @@ bool FCLEngine::detect(
   auto broadPhaseAlg = castedGrpData->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg->collide(fclObject, &collData, collisionCallBack);
+  broadPhaseAlg->collide(fclObject, &collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -212,7 +213,7 @@ bool FCLEngine::detect(CollisionGroupData* groupData,
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg->collide(&collData, collisionCallBack);
+  broadPhaseAlg->collide(&collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -236,7 +237,7 @@ bool FCLEngine::detect(CollisionGroupData* groupData1,
   auto broadPhaseAlg2 = castedData2->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallBack);
+  broadPhaseAlg1->collide(broadPhaseAlg2, &collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -246,9 +247,7 @@ bool FCLEngine::detect(CollisionGroupData* groupData1,
 namespace {
 
 //==============================================================================
-bool collisionCallBack(fcl::CollisionObject* o1,
-                       fcl::CollisionObject* o2,
-                       void* cdata)
+bool checkPair(fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata)
 {
   FCLCollisionData* collData = static_cast<FCLCollisionData*>(cdata);
 

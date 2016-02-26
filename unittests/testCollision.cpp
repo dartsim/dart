@@ -47,6 +47,7 @@
 #include "dart/collision/CollisionGroup.h"
 #include "dart/collision/fcl/FCLEngine.h"
 #include "dart/collision/fcl_mesh/FCLMeshEngine.h"
+#include "dart/collision/dart/DARTEngine.h"
 #include "dart/dynamics/dynamics.h"
 #include "dart/simulation/simulation.h"
 #include "dart/utils/utils.h"
@@ -569,6 +570,7 @@ TEST_F(COLLISION, FreeCollisionObjects)
 {
   testFreeCollisionObjects<collision::FCLEngine>();
   testFreeCollisionObjects<collision::FCLMeshEngine>();
+  testFreeCollisionObjects<collision::DARTEngine>();
 }
 
 //==============================================================================
@@ -607,6 +609,7 @@ TEST_F(COLLISION, BodyNodeNodes)
 {
   testBodyNodes<collision::FCLEngine>();
   testBodyNodes<collision::FCLMeshEngine>();
+  testBodyNodes<collision::DARTEngine>();
 }
 
 //==============================================================================
@@ -635,6 +638,7 @@ TEST_F(COLLISION, Skeletons)
 {
   testSkeletons<collision::FCLEngine>();
   testSkeletons<collision::FCLMeshEngine>();
+  testSkeletons<collision::DARTEngine>();
 }
 
 //==============================================================================

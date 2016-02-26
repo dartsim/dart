@@ -45,8 +45,9 @@ namespace collision {
 //==============================================================================
 FCLCollisionGroupData::FCLCollisionGroupData(
     Engine* engine,
+    CollisionGroup* parent,
     const FCLCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(engine),
+  : CollisionGroupData(engine, parent),
     mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
 {
   for (auto collObj : collObjects)
@@ -60,10 +61,12 @@ FCLCollisionGroupData::FCLCollisionGroupData(
 
 //==============================================================================
 std::unique_ptr<CollisionGroupData>
-FCLCollisionGroupData::clone(const CollisionObjectPtrs& collObjects) const
+FCLCollisionGroupData::clone(
+    CollisionGroup* newParent,
+    const CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLCollisionGroupData(mEngine, collObjects));
+        new FCLCollisionGroupData(mEngine, newParent, collObjects));
 }
 
 //==============================================================================

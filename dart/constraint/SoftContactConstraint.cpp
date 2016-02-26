@@ -88,6 +88,11 @@ SoftContactConstraint::SoftContactConstraint(
     mIsBounceOn(false),
     mActive(false)
 {
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+      _contact.collisionObject1)->getBodyNode());
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+      _contact.collisionObject2)->getBodyNode());
+
   // TODO(JS): Assumed single contact
   mContacts.push_back(&_contact);
 

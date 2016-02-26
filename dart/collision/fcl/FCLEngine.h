@@ -44,8 +44,6 @@
 namespace dart {
 namespace collision {
 
-class FCLCollisionGroup;
-
 /// FCL Collision detection engine
 class FCLEngine : public Engine
 {
@@ -72,6 +70,7 @@ public:
 
   // Documentation inherit
   std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
       const CollisionObjectPtrs& collObjects) override;
 
   // Documentation inherit

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_
-#define DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_
 
 #include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionGroupData.h"
@@ -56,7 +56,7 @@ public:
 
   // Documentation inherited
   std::unique_ptr<CollisionGroupData> clone(
-      CollisionGroup* newCollisionGroup,
+      CollisionGroup* newParent,
       const CollisionObjectPtrs& collObjects) const override;
 
   // Documentation inherited
@@ -81,4 +81,4 @@ public:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_

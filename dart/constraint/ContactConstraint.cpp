@@ -80,6 +80,11 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     mIsBounceOn(false),
     mActive(false)
 {
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+      _contact.collisionObject1)->getBodyNode());
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+      _contact.collisionObject2)->getBodyNode());
+
   // TODO(JS): Assumed single contact
   mContacts.push_back(&_contact);
 
@@ -662,13 +667,13 @@ void ContactConstraint::applyImpulse(double* _lambda)
 
     for (size_t i = 0; i < mContacts.size(); ++i)
     {
-//      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
-//      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
-//      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
+//      std::cout << "_lambda1: " << _lambda[index] << std::endl;
+//      std::cout << "_lambda2: " << _lambda[index + 1] << std::endl;
+//      std::cout << "_lambda3: " << _lambda[index + 2] << std::endl;
 
-//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[_idx] << std::endl;
-//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[_idx + 1] << std::endl;
-//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
+//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[index] << std::endl;
+//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[index + 1] << std::endl;
+//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[index + 2] << std::endl;
 
       assert(!math::isNan(_lambda[index]));
 
@@ -750,7 +755,7 @@ void ContactConstraint::getRelVelocity(double* _relVel)
     if (mBodyNode2->isReactive())
       _relVel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
-//    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
+//    std::cout << "_relVel[i]: " << _relVel[i] << std::endl;
   }
 }
 

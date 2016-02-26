@@ -72,6 +72,7 @@ public:
 
   // Documentation inherit
   std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
       const CollisionObjectPtrs& collObjects) override;
 
   // Documentation inherit

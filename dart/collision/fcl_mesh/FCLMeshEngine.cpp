@@ -54,7 +54,7 @@ namespace collision {
 
 namespace {
 
-bool collisionCallBack(fcl::CollisionObject* o1,
+bool checkPair(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata);
 
@@ -109,6 +109,11 @@ int evalContactPosition(
     const fcl::Transform3f& transform2,
     Eigen::Vector3d* contactPosition1,
     Eigen::Vector3d* contactPosition2);
+
+bool isColinear(const Eigen::Vector3d& pos1,
+                const Eigen::Vector3d& pos2,
+                const Eigen::Vector3d& pos3,
+                double tol);
 
 int FFtest(
     const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
@@ -165,10 +170,11 @@ FCLMeshEngine::createCollisionObjectData(
 //==============================================================================
 std::unique_ptr<CollisionGroupData>
 FCLMeshEngine::createCollisionGroupData(
+    CollisionGroup* parent,
     const CollisionObjectPtrs& collObjects)
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLMeshCollisionGroupData(this, collObjects));
+        new FCLMeshCollisionGroupData(this, parent, collObjects));
 }
 
 //==============================================================================
@@ -189,7 +195,7 @@ bool FCLMeshEngine::detect(
   auto fclCollObj2 = castedData2->getFCLCollisionObject();
 
   FCLCollisionData collData(&option, &result);
-  collisionCallBack(fclCollObj1, fclCollObj2, &collData);
+  checkPair(fclCollObj1, fclCollObj2, &collData);
 
   return !result.contacts.empty();
 }
@@ -214,7 +220,7 @@ bool FCLMeshEngine::detect(
   auto broadPhaseAlg = castedGrpData->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg->collide(fclObject, &collData, collisionCallBack);
+  broadPhaseAlg->collide(fclObject, &collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -233,7 +239,7 @@ bool FCLMeshEngine::detect(CollisionGroupData* groupData,
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg->collide(&collData, collisionCallBack);
+  broadPhaseAlg->collide(&collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -257,7 +263,7 @@ bool FCLMeshEngine::detect(CollisionGroupData* groupData1,
   auto broadPhaseAlg2 = castedData2->getFCLCollisionManager();
 
   FCLCollisionData collData(&option, &result);
-  broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallBack);
+  broadPhaseAlg1->collide(broadPhaseAlg2, &collData, checkPair);
 
   return !result.contacts.empty();
 }
@@ -267,7 +273,7 @@ bool FCLMeshEngine::detect(CollisionGroupData* groupData1,
 namespace {
 
 //==============================================================================
-bool collisionCallBack(fcl::CollisionObject* o1,
+bool checkPair(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata)
 {
@@ -385,8 +391,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
 
 
 
-  const double ZERO = 0.000001;
-  const double ZERO2 = ZERO*ZERO;
+  const double tol = 1e-12;
 
   auto unfilteredSize = unfiltered.size();
 
@@ -403,7 +408,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
 
       const auto diff = contact1.point - contact2.point;
 
-      if (diff.norm() < 3.0 * ZERO2)
+      if (diff.norm() < 3.0 * tol)
       {
         markForDeletion[i] = true;
         break;
@@ -433,11 +438,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
 
 //        const auto& contact3 = unfiltered[k];
 
-//        const auto va = contact1.point - contact2.point;
-//        const auto vb = contact1.point - contact3.point;
-//        const auto v = va.cross(vb);
-
-//        if (v.norm() < ZERO2)
+//        if (isColinear(contact1.point, contact2.point, contact3.point, tol))
 //        {
 //          markForDeletion[i] = true;
 //          break;
@@ -572,6 +573,20 @@ double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3)
 
   return area;
 }
+
+//==============================================================================
+bool isColinear(const Eigen::Vector3d& pos1,
+                const Eigen::Vector3d& pos2,
+                const Eigen::Vector3d& pos3,
+                double tol)
+{
+  const auto va = pos1 - pos2;
+  const auto vb = pos1 - pos3;
+  const auto v = va.cross(vb);
+
+  return v.norm() < tol;
+}
+
 
 //==============================================================================
 void convertOption(const Option& fclOption, fcl::CollisionRequest& request)
