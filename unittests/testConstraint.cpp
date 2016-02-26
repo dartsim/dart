@@ -45,7 +45,7 @@
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/DARTEngine.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
@@ -126,7 +126,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
-        new DARTCollisionDetector());
+        CollisionDetector::create<DARTEngine>());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
@@ -157,9 +157,6 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
-  ConstraintSolver* cs = world->getConstraintSolver();
-  dart::collision::CollisionDetector* cd = cs->getCollisionDetector();
-
   // Lower and upper bound of configuration for system
   // double lb = -1.5 * DART_PI;
   // double ub =  1.5 * DART_PI;
@@ -173,8 +170,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 //    std::cout << "pos1:" << pos1.transpose() << std::endl;
 //    std::cout << "vel1:" << vel1.transpose() << std::endl;
 
-    cd->detectCollision(true, true);
-    if (cd->getNumContacts() == 0)
+    if (!world->checkCollision())
     {
       world->step();
       continue;
@@ -192,9 +188,12 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
     world->step();
 
-    for (size_t j = 0; j < cd->getNumContacts(); ++j)
+    const auto& result = world->getConstraintSolver()->getLastCollisionResult();
+    const auto& contacts = result.contacts;
+
+    for (size_t j = 0; j < contacts.size(); ++j)
     {
-      Contact contact = cd->getContact(j);
+      const Contact& contact = contacts[j];
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
       Vector3d vel1 = sphere->getLinearVelocity(pos1);
 

@@ -51,7 +51,7 @@ public:
 
   using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
 
-  CollisionGroupData(Engine* engine);
+  CollisionGroupData(Engine* engine, CollisionGroup* parent);
 
   virtual void init() = 0;
 
@@ -71,13 +71,22 @@ public:
   virtual void update() = 0;
 
   virtual std::unique_ptr<CollisionGroupData> clone(
+      CollisionGroup* newCollisionGroup,
       const CollisionObjectPtrs& collObjects) const = 0;
 
+  Engine* getEngine();
+
   const Engine* getEngine() const;
+
+  CollisionGroup* getCollisionGroup();
+
+  const CollisionGroup* getCollisionGroup() const;
 
 protected:
 
   Engine* mEngine;
+
+  CollisionGroup* mParent;
 
 };
 

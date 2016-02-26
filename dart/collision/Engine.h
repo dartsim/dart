@@ -63,6 +63,7 @@ public:
 
   /// Create collision detection engine specific data for CollisionGroup
   virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
       const CollisionObjectPtrs& collObjects) = 0;
 
   /// Perform collision detection for object1-object2.

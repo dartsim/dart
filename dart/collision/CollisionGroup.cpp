@@ -52,7 +52,7 @@ CollisionGroup::CollisionGroup(
   : mCollisionDetector(collisionDetector),
     mCollisionObjects(collObjects),
     mEngineData(mCollisionDetector->getEngine()->createCollisionGroupData(
-        mCollisionObjects).release())
+        this, mCollisionObjects).release())
 {
   assert(mCollisionDetector);
 }
@@ -61,7 +61,7 @@ CollisionGroup::CollisionGroup(
 CollisionGroup::CollisionGroup(const CollisionGroup& other)
   : mCollisionDetector(other.mCollisionDetector),
     mCollisionObjects(other.mCollisionObjects),
-    mEngineData(other.mEngineData->clone(mCollisionObjects))
+    mEngineData(other.mEngineData->clone(this, mCollisionObjects))
 {
   // Do nothing
 }
@@ -84,7 +84,8 @@ void CollisionGroup::copy(const CollisionGroup& other)
 {
   mCollisionDetector = other.mCollisionDetector;
   mCollisionObjects = other.mCollisionObjects;
-  mEngineData.reset(other.mEngineData->clone(mCollisionObjects).release());
+  mEngineData.reset(
+        other.mEngineData->clone(this, mCollisionObjects).release());
 }
 
 //==============================================================================

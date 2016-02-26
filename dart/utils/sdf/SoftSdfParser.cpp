@@ -41,7 +41,6 @@
 #include <fstream>
 
 #include "dart/common/Console.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"

@@ -37,18 +37,18 @@
 #include "dart/constraint/ConstraintSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/fcl/FCLEngine.h"
+#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
+#include "dart/collision/dart/DARTEngine.h"
+#ifdef HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/BulletCollisionDetector.h"
+#endif
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/CollisionDetector.h"
-#include "dart/collision/fcl/FCLEngine.h"
-#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#ifdef HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
-#endif
 #include "dart/constraint/ConstrainedGroup.h"
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
@@ -216,8 +216,7 @@ void ConstraintSolver::setCollisionDetector(
 }
 
 //==============================================================================
-collision::CollisionDetectorPtr
-ConstraintSolver::getCollisionDetector() const
+collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector() const
 {
   return mCollisionDetector;
 }
@@ -530,16 +529,24 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+           _contact.collisionObject1));
+  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+           _contact.collisionObject2));
+
   auto shapeFrameCollObj1 = static_cast<dynamics::ShapeFrameCollisionObject*>(
         _contact.collisionObject1);
   auto shapeFrameCollObj2 = static_cast<dynamics::ShapeFrameCollisionObject*>(
         _contact.collisionObject2);
 
+  auto bodyNode1 = shapeFrameCollObj1->getBodyNode().get();
+  auto bodyNode2 = shapeFrameCollObj2->getBodyNode().get();
+
   auto bodyNode1IsSoft =
-      dynamic_cast<dynamics::SoftBodyNode*>(shapeFrameCollObj1) != nullptr;
+      dynamic_cast<dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
 
   auto bodyNode2IsSoft =
-      dynamic_cast<dynamics::SoftBodyNode*>(shapeFrameCollObj2) != nullptr;
+      dynamic_cast<dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
 }

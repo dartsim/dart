@@ -34,45 +34,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObjectData.h"
+#ifndef DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_
+
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionObjectData::CollisionObjectData(
-    Engine* engine,
-    CollisionObject* parent)
-  : mEngine(engine),
-    mParent(parent)
-{
-  assert(mEngine);
-  assert(mParent);
-}
+class DARTCollisionObject;
 
-//==============================================================================
-Engine* CollisionObjectData::getEngine()
+class DARTCollisionGroupData : public CollisionGroupData
 {
-  return mEngine;
-}
+public:
 
-//==============================================================================
-const Engine* CollisionObjectData::getEngine() const
-{
-  return mEngine;
-}
+  /// Constructor
+  DARTCollisionGroupData(Engine* engine,
+                         CollisionGroup* parent,
+                         const CollisionObjectPtrs& collObjects);
 
-//==============================================================================
-CollisionObject* CollisionObjectData::getCollisionObject()
-{
-  return mParent;
-}
+  // Documentation inherited
+  std::unique_ptr<CollisionGroupData> clone(
+      CollisionGroup* newCollisionGroup,
+      const CollisionObjectPtrs& collObjects) const override;
 
-//==============================================================================
-const CollisionObject* CollisionObjectData::getCollisionObject() const
-{
-  return mParent;
-}
+  // Documentation inherited
+  void init() override;
+
+  // Documentation inherited
+  void addCollisionObject(const CollisionObjectPtr& object,
+                          const bool init) override;
+
+  // Documentation inherited
+  void removeCollisionObject(const CollisionObjectPtr& object,
+                             const bool init) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjects(bool init) override;
+
+  // Documentation inherited
+  void update() override;
+
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_FCL_DARTCOLLISIONGROUPDATA_H_

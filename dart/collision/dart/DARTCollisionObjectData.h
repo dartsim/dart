@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,38 +34,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
-#define  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECTDATA_H_
+#define DART_COLLISION_DART_DARTCOLLISIONOBJECTDATA_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include <cstddef>
+#include <Eigen/Dense>
+
+#include <fcl/collision_object.h>
+
+#include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
-/// \brief
-class DARTCollisionDetector : public CollisionDetector {
+class CollisionObject;
+
+class DARTCollisionObjectData : public CollisionObjectData
+{
 public:
-  /// \brief Default constructor
-  DARTCollisionDetector();
 
-  /// \brief Default destructor
-  virtual ~DARTCollisionDetector();
+  /// Constructor
+  DARTCollisionObjectData(Engine* engine, CollisionObject* parent);
 
   // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  void updateTransform(const Eigen::Isometry3d& tf) override;
 
   // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  void updateShape(const dynamics::ShapePtr& shape) override;
+
+  // Documentation inherited
+  void update() override;
 
 protected:
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _collNode1,
-                               CollisionNode* _collNode2,
-                               bool _calculateContactPoints);
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
+#endif  // DART_COLLISION_DART_DARTCOLLISIONOBJECTDATA_H_

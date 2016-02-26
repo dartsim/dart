@@ -42,16 +42,36 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionGroupData::CollisionGroupData(Engine* engine)
-  : mEngine(engine)
+CollisionGroupData::CollisionGroupData(Engine* engine, CollisionGroup* parent)
+  : mEngine(engine),
+    mParent(parent)
 {
   assert(mEngine);
+  assert(mParent);
+}
+
+//==============================================================================
+Engine* CollisionGroupData::getEngine()
+{
+  return mEngine;
 }
 
 //==============================================================================
 const Engine* CollisionGroupData::getEngine() const
 {
   return mEngine;
+}
+
+//==============================================================================
+CollisionGroup* CollisionGroupData::getCollisionGroup()
+{
+  return mParent;
+}
+
+//==============================================================================
+const CollisionGroup* CollisionGroupData::getCollisionGroup() const
+{
+  return mParent;
 }
 
 }  // namespace collision

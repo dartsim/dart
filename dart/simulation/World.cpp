@@ -50,6 +50,7 @@
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintSolver.h"
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace simulation {
@@ -488,10 +489,17 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 }
 
 //==============================================================================
-bool World::checkCollision(bool _checkAllCollisions)
+bool World::checkCollision(bool checkAllCollisions)
 {
-  return mConstraintSolver->getCollisionDetector()->detectCollision(
-        _checkAllCollisions, false);
+  collision::Option option;
+  if (checkAllCollisions)
+    option.enableContact = true;
+  else
+    option.enableContact = false;
+
+  collision::Result result;
+
+  return mConstraintSolver->getCollisionGroup()->detect(option, result);
 }
 
 //==============================================================================
@@ -503,22 +511,24 @@ constraint::ConstraintSolver* World::getConstraintSolver() const
 //==============================================================================
 void World::bake()
 {
-  collision::CollisionDetector* cd
-      = getConstraintSolver()->getCollisionDetector();
-  int nContacts = cd->getNumContacts();
-  int nSkeletons = getNumSkeletons();
+  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
+  const auto nContacts = static_cast<int>(collisionResult.contacts.size());
+  const auto nSkeletons = getNumSkeletons();
+
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
-  for (size_t i = 0; i < getNumSkeletons(); i++)
+  for (auto i = 0u; i < getNumSkeletons(); ++i)
   {
     state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
         = getSkeleton(i)->getPositions();
   }
-  for (int i = 0; i < nContacts; i++)
+
+  for (auto i = 0; i < nContacts; ++i)
   {
-    int begin = getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3)     = cd->getContact(i).point;
-    state.segment(begin + 3, 3) = cd->getContact(i).force;
+    auto begin = getIndex(nSkeletons) + i * 6;
+    state.segment(begin, 3)     = collisionResult.contacts[i].point;
+    state.segment(begin + 3, 3) = collisionResult.contacts[i].force;
   }
+
   mRecording->addState(state);
 }
 

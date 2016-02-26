@@ -49,7 +49,7 @@ class CollisionObjectData
 {
 public:
 
-  CollisionObjectData(Engine* engine);
+  CollisionObjectData(Engine* engine, CollisionObject* parent);
 
   virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
@@ -60,11 +60,19 @@ public:
   virtual void update() = 0;
   // TODO(JS): reorganize updateTansform/updateShape/update
 
+  Engine* getEngine();
+
   const Engine* getEngine() const;
+
+  CollisionObject* getCollisionObject();
+
+  const CollisionObject* getCollisionObject() const;
 
 protected:
 
   Engine* mEngine;
+
+  CollisionObject* mParent;
 
 };
 

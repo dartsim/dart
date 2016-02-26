@@ -264,9 +264,9 @@ public:
 
     // Look through the collisions to see if any dominoes are penetrating
     // something
-    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionEngine();
+    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
-    auto newGroup = createShapeNodeCollisionGroup(collisionEngine, newDomino);
+    auto newGroup = createShapeFrameCollisionGroup(collisionEngine, newDomino);
 
     dart::collision::Option option;
     dart::collision::Result result;

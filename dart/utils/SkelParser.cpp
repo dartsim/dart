@@ -45,7 +45,7 @@
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/DARTEngine.h"
 #include "dart/collision/fcl/FCLEngine.h"
 #include "dart/collision/fcl_mesh/FCLMeshEngine.h"
 #include "dart/constraint/ConstraintSolver.h"
@@ -263,11 +263,11 @@ simulation::WorldPtr SkelParser::readWorld(
         newWorld->getConstraintSolver()->setCollisionDetector(
             collision::CollisionDetector::create<collision::FCLEngine>());
       }
-//      else if (strCD == "dart")
-//      {
-//        newWorld->getConstraintSolver()->setCollisionEngine(
-//              new collision::DARTEngine());
-//      }
+      else if (strCD == "dart")
+      {
+        newWorld->getConstraintSolver()->setCollisionDetector(
+            collision::CollisionDetector::create<collision::DARTEngine>());
+      }
 //#ifdef HAVE_BULLET_COLLISION
 //      else if (strCD == "bullet")
 //      {

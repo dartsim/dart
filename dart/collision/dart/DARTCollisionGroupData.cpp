@@ -34,44 +34,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/dart/DARTCollisionGroupData.h"
+
+#include "dart/collision/CollisionObject.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionObjectData::CollisionObjectData(
+DARTCollisionGroupData::DARTCollisionGroupData(
     Engine* engine,
-    CollisionObject* parent)
-  : mEngine(engine),
-    mParent(parent)
+    CollisionGroup* parent,
+    const CollisionObjectPtrs& /*collObjects*/)
+  : CollisionGroupData(engine, parent)
 {
-  assert(mEngine);
-  assert(mParent);
+  // Do nothing
 }
 
 //==============================================================================
-Engine* CollisionObjectData::getEngine()
+std::unique_ptr<CollisionGroupData>
+DARTCollisionGroupData::clone(
+    CollisionGroup* newCollisionGroup,
+    const CollisionObjectPtrs& collObjects) const
 {
-  return mEngine;
+  return std::unique_ptr<CollisionGroupData>(
+        new DARTCollisionGroupData(mEngine, newCollisionGroup, collObjects));
 }
 
 //==============================================================================
-const Engine* CollisionObjectData::getEngine() const
+void DARTCollisionGroupData::init()
 {
-  return mEngine;
+  // Do nothing
 }
 
 //==============================================================================
-CollisionObject* CollisionObjectData::getCollisionObject()
+void DARTCollisionGroupData::addCollisionObject(
+    const CollisionObjectPtr& /*object*/, const bool /*init*/)
 {
-  return mParent;
+  // Do nothing
 }
 
 //==============================================================================
-const CollisionObject* CollisionObjectData::getCollisionObject() const
+void DARTCollisionGroupData::removeCollisionObject(
+    const CollisionObjectPtr& /*object*/, const bool /*init*/)
 {
-  return mParent;
+  // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroupData::removeAllCollisionObjects(bool /*init*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroupData::update()
+{
+  // Do nothing
 }
 
 }  // namespace collision

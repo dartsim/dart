@@ -213,9 +213,9 @@ protected:
 
     // Look through the collisions to see if the new object would start in
     // collision with something
-    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionEngine();
+    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
-    auto newGroup = createShapeNodeCollisionGroup(collisionEngine, object);
+    auto newGroup = createShapeFrameCollisionGroup(collisionEngine, object);
 
     dart::collision::Option option;
     dart::collision::Result result;

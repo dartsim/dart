@@ -34,45 +34,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObjectData.h"
+#ifndef DART_COLLISION_DART_DARTENGINE_H_
+#define DART_COLLISION_DART_DARTENGINE_H_
+
+#include <vector>
+
+#include "dart/collision/Engine.h"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionObjectData::CollisionObjectData(
-    Engine* engine,
-    CollisionObject* parent)
-  : mEngine(engine),
-    mParent(parent)
+/// FCL Collision detection engine
+class DARTEngine : public Engine
 {
-  assert(mEngine);
-  assert(mParent);
-}
+public:
 
-//==============================================================================
-Engine* CollisionObjectData::getEngine()
-{
-  return mEngine;
-}
+  static DARTEnginePtr create();
 
-//==============================================================================
-const Engine* CollisionObjectData::getEngine() const
-{
-  return mEngine;
-}
+  /// Constructor
+  DARTEngine();
 
-//==============================================================================
-CollisionObject* CollisionObjectData::getCollisionObject()
-{
-  return mParent;
-}
+  /// Constructor
+  virtual ~DARTEngine();
 
-//==============================================================================
-const CollisionObject* CollisionObjectData::getCollisionObject() const
-{
-  return mParent;
-}
+  /// Return engine type "FCL"
+  static const std::string& getTypeStatic();
+
+  // Documentation inherit
+  const std::string& getType() const override;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) override;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
+      const CollisionObjectPtrs& collObjects) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object, CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+              const Option& option, Result& result) override;
+
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_DARTENGINE_H_

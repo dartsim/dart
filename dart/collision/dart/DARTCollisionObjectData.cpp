@@ -34,44 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/dart/DARTCollisionObjectData.h"
+
+#include <assimp/scene.h>
+#include <fcl/BVH/BVH_model.h>
+#include <fcl/shape/geometric_shapes.h>
+
+#include "dart/common/Console.h"
+#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/fcl/FCLTypes.h"
+#include "dart/collision/dart/DARTCollisionObjectData.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/SoftMeshShape.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionObjectData::CollisionObjectData(
+DARTCollisionObjectData::DARTCollisionObjectData(
     Engine* engine,
     CollisionObject* parent)
-  : mEngine(engine),
-    mParent(parent)
+  : CollisionObjectData(engine, parent)
 {
-  assert(mEngine);
-  assert(mParent);
+  // Do nothing
 }
 
 //==============================================================================
-Engine* CollisionObjectData::getEngine()
+void DARTCollisionObjectData::updateTransform(const Eigen::Isometry3d& /*tf*/)
 {
-  return mEngine;
+  // Do nothing
 }
 
 //==============================================================================
-const Engine* CollisionObjectData::getEngine() const
+void DARTCollisionObjectData::updateShape(const dynamics::ShapePtr& /*shape*/)
 {
-  return mEngine;
+  // Do nothing
 }
 
 //==============================================================================
-CollisionObject* CollisionObjectData::getCollisionObject()
+void DARTCollisionObjectData::update()
 {
-  return mParent;
-}
-
-//==============================================================================
-const CollisionObject* CollisionObjectData::getCollisionObject() const
-{
-  return mParent;
+  // Do nothing
 }
 
 }  // namespace collision
