@@ -1,4 +1,5 @@
 build/
+build_debug/
 syntax: glob
 *.swp
 *.swo
