@@ -87,11 +87,34 @@ CollisionObject::CollisionObject(
     const dynamics::ShapePtr& shape)
   : mCollisionDetector(collisionDetector),
     mShape(shape),
-    mEngineData(mCollisionDetector->getEngine()->createCollisionObjectData(
-        this, mShape).release())
+    mEngineData(
+        mCollisionDetector->createCollisionObjectData(this, mShape).release())
 {
   assert(mCollisionDetector);
   assert(mShape);
+}
+
+//==============================================================================
+void CollisionObject::addGroup(CollisionGroup* group)
+{
+  if (!group)
+    return;
+
+  if (!hasGroup(group))
+    mGroups.push_back(group);
+}
+
+//==============================================================================
+void CollisionObject::removeGroup(CollisionGroup* group)
+{
+  mGroups.erase(std::remove(mGroups.begin(), mGroups.end(), group),
+                mGroups.end());
+}
+
+//==============================================================================
+bool CollisionObject::hasGroup(CollisionGroup* group)
+{
+  return std::find(mGroups.begin(), mGroups.end(), group) != mGroups.end();
 }
 
 //==============================================================================

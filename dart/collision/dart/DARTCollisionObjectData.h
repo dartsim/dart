@@ -50,7 +50,7 @@ class DARTCollisionObjectData : public CollisionObjectData
 public:
 
   /// Constructor
-  DARTCollisionObjectData(Engine* engine, CollisionObject* parent);
+  DARTCollisionObjectData(CollisionDetector* collisionDetector, CollisionObject* parent);
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;

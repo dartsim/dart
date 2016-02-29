@@ -39,13 +39,13 @@
 
 #include <vector>
 
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionGroupData.h"
 
 namespace dart {
 namespace collision {
 
-class Engine;
+class CollisionDetector;
 class CollisionNode;
 
 /// Heterogeneous collision group
@@ -84,19 +84,23 @@ public:
   bool hasCollisionObject(const CollisionObjectPtr& object) const;
 
   /// Add collision object to this CollisionGroup
-  void addCollisionObject(const CollisionObjectPtr& object);
+  void addCollisionObject(const CollisionObjectPtr& object,
+                          bool init = true);
 
   /// Add collision objects to this CollisionGroup
-  void addCollisionObjects(const CollisionObjectPtrs& objects);
+  void addCollisionObjects(const CollisionObjectPtrs& objects,
+                           bool init = true);
 
   /// Remove collision object from this CollisionGroup
-  void removeCollisionObject(const CollisionObjectPtr& object);
+  void removeCollisionObject(const CollisionObjectPtr& object,
+                             bool init = true);
 
   /// Remove collision objects from this CollisionGroup
-  void removeCollisionObjects(const CollisionObjectPtrs& objects);
+  void removeCollisionObjects(const CollisionObjectPtrs& objects,
+                              bool init = true);
 
   /// Remove all the collision object in this CollisionGroup
-  void removeAllCollisionObjects();
+  void removeAllCollisionObjects(bool init = true);
 
   /// Return array of collision objects
   const CollisionObjectPtrs& getCollisionObjects();
@@ -132,7 +136,6 @@ public:
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
-  // TODO(JS): remove
 
 protected:
 

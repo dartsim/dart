@@ -58,17 +58,11 @@ class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
 
-  template <class EngineType, class... Args>
-  static CollisionDetectorPtr create(const Args&... args);
+  friend class CollisionObject;
+  friend class CollisionGroup;
 
-  /// Destructor
-  virtual ~CollisionDetector();
-
-  /// Return collision detection engine
-  Engine* getEngine();
-
-  /// Return (const) collision detection engine
-  const Engine* getEngine() const;
+  /// Return collision detection engine type in std::string
+  virtual const std::string& getType() const = 0;
 
   /// Create a collision object
   template <typename CollisionObjectType, typename... Args>
@@ -78,10 +72,8 @@ public:
 
   /// Create a collision group
   std::shared_ptr<CollisionGroup> createCollisionGroup(
-      const std::vector<CollisionObjectPtr>& objects);
-
-  /// Create a collision group
-  std::shared_ptr<CollisionGroup> createCollisionGroup();
+      const std::vector<CollisionObjectPtr>& objects
+          = std::vector<CollisionObjectPtr>());
 
   /// Perform collision detection for object1-object2.
   bool detect(CollisionObject* object1, CollisionObject* object2,
@@ -105,24 +97,43 @@ public:
 
 protected:
 
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+
   /// Constructor
-  CollisionDetector(std::unique_ptr<Engine>&& engine);
+  CollisionDetector() = default;
 
-protected:
+  /// Create collision detection engine specific data for CollisionObject
+  virtual std::unique_ptr<CollisionObjectData> createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) = 0;
 
-  std::unique_ptr<Engine> mEngine;
+  /// Create collision detection engine specific data for CollisionGroup
+  virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
+      const CollisionObjectPtrs& collObjects) = 0;
+
+  /// Perform collision detection for object1-object2.
+  virtual bool detect(CollisionObjectData* object1,
+                      CollisionObjectData* object2,
+                      const Option& option, Result& result) = 0;
+
+  /// Perform collision detection for object-group.
+  virtual bool detect(CollisionObjectData* object, CollisionGroupData* group,
+                      const Option& option, Result& result) = 0;
+
+  /// Identical with detect(object, group, option, result)
+  bool detect(CollisionGroupData* group, CollisionObjectData* object,
+              const Option& option, Result& result);
+
+  /// Perform collision detection for group.
+  virtual bool detect(CollisionGroupData* group,
+                      const Option& option, Result& result) = 0;
+
+  /// Perform collision detection for group1-group2.
+  virtual bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+                      const Option& option, Result& result) = 0;
 
 };
-
-//==============================================================================
-template <class EngineType, class... Args>
-CollisionDetectorPtr CollisionDetector::create(const Args&... args)
-{
-  auto engine = new EngineType(args...);
-
-  return CollisionDetectorPtr(new CollisionDetector(
-      std::move(std::unique_ptr<EngineType>(engine))));
-}
 
 //==============================================================================
 template <typename CollisionObjectType, typename... Args>

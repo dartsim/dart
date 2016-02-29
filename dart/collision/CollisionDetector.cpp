@@ -42,7 +42,6 @@
 #include <vector>
 
 #include "dart/common/Console.h"
-#include "dart/collision/Engine.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/CollisionGroup.h"
 #include "dart/dynamics/BodyNode.h"
@@ -52,34 +51,10 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionDetector::~CollisionDetector()
-{
-  // Do nothing
-}
-
-//==============================================================================
-Engine* CollisionDetector::getEngine()
-{
-  return mEngine.get();
-}
-
-//==============================================================================
-const Engine* CollisionDetector::getEngine() const
-{
-  return mEngine.get();
-}
-
-//==============================================================================
 std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
     const std::vector<CollisionObjectPtr>& objects)
 {
   return std::make_shared<CollisionGroup>(shared_from_this(), objects);
-}
-
-//==============================================================================
-std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup()
-{
-  return std::make_shared<CollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
@@ -92,8 +67,8 @@ bool CollisionDetector::detect(
   object1->updateEngineData();
   object2->updateEngineData();
 
-  return mEngine->detect(object1->getEngineData(), object2->getEngineData(),
-                         option, result);
+  return detect(object1->getEngineData(), object2->getEngineData(),
+                option, result);
 }
 
 //==============================================================================
@@ -106,8 +81,8 @@ bool CollisionDetector::detect(
   object->updateEngineData();
   group->updateEngineData();
 
-  return mEngine->detect(object->getEngineData(), group->getEngineData(),
-                         option, result);
+  return detect(object->getEngineData(), group->getEngineData(),
+                option, result);
 }
 
 //==============================================================================
@@ -124,7 +99,7 @@ bool CollisionDetector::detect(
 {
   group->updateEngineData();
 
-  return mEngine->detect(group->getEngineData(), option, result);
+  return detect(group->getEngineData(), option, result);
 }
 
 //==============================================================================
@@ -137,15 +112,16 @@ bool CollisionDetector::detect(
   group1->updateEngineData();
   group2->updateEngineData();
 
-  return mEngine->detect(group1->getEngineData(), group2->getEngineData(),
-                         option, result);
+  return detect(group1->getEngineData(), group2->getEngineData(),
+                option, result);
 }
 
 //==============================================================================
-CollisionDetector::CollisionDetector(std::unique_ptr<Engine>&& engine)
-  : mEngine(std::move(engine))
+bool CollisionDetector::detect(
+    CollisionGroupData* group, CollisionObjectData* object,
+    const Option& option, Result& result)
 {
-  assert(mEngine);
+  return detect(object, group, option, result);
 }
 
 }  // namespace collision

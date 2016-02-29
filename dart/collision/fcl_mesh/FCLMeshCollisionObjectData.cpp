@@ -42,7 +42,7 @@
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 
 #include "dart/common/Console.h"
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
 #include "dart/collision/fcl/FCLCollisionObjectData.h"
@@ -563,10 +563,10 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
 
 //==============================================================================
 FCLMeshCollisionObjectData::FCLMeshCollisionObjectData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
-  : CollisionObjectData(engine, parent),
+  : CollisionObjectData(collisionDetector, parent),
     mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent, shape)),
     mFCLCollisionObject(new fcl::CollisionObject(
                         createFCLCollisionGeometry(shape)))

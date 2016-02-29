@@ -51,7 +51,7 @@ CollisionGroup::CollisionGroup(
     const CollisionGroup::CollisionObjectPtrs& collObjects)
   : mCollisionDetector(collisionDetector),
     mCollisionObjects(collObjects),
-    mEngineData(mCollisionDetector->getEngine()->createCollisionGroupData(
+    mEngineData(mCollisionDetector->createCollisionGroupData(
         this, mCollisionObjects).release())
 {
   assert(mCollisionDetector);
@@ -116,7 +116,8 @@ bool CollisionGroup::hasCollisionObject(
 }
 
 //==============================================================================
-void CollisionGroup::addCollisionObject(const CollisionObjectPtr& object)
+void CollisionGroup::addCollisionObject(
+    const CollisionObjectPtr& object, bool init)
 {
   if (hasCollisionObject(object))
   {
@@ -124,33 +125,26 @@ void CollisionGroup::addCollisionObject(const CollisionObjectPtr& object)
     return;
   }
 
+  object->addGroup(this);
+
   mCollisionObjects.push_back(object);
-  mEngineData->addCollisionObject(object);
+  mEngineData->addCollisionObject(object, init);
 }
 
 //==============================================================================
 void CollisionGroup::addCollisionObjects(
-    const CollisionGroup::CollisionObjectPtrs& objects)
+    const CollisionGroup::CollisionObjectPtrs& objects, bool init)
 {
-  bool added = false;
-
   for (auto object : objects)
-  {
-    if (!hasCollisionObject(object))
-    {
-      mCollisionObjects.push_back(object);
-      mEngineData->addCollisionObject(object, false);
-      added = true;
-    }
-  }
+    addCollisionObject(object, false);
 
-  if (added)
+  if (init)
     mEngineData->init();
 }
 
 //==============================================================================
 void CollisionGroup::removeCollisionObject(
-    const CollisionGroup::CollisionObjectPtr& object)
+    const CollisionGroup::CollisionObjectPtr& object, bool init)
 {
   if (!object)
     return;
@@ -161,24 +155,32 @@ void CollisionGroup::removeCollisionObject(
   if (mCollisionObjects.end() != result)
   {
     mCollisionObjects.erase(result);
-    mEngineData->removeCollisionObject(*result);
+    mEngineData->removeCollisionObject(*result, false);
   }
+
+  if (init)
+    mEngineData->init();
 }
 
 //==============================================================================
 void CollisionGroup::removeCollisionObjects(
-    const CollisionGroup::CollisionObjectPtrs& objects)
+    const CollisionGroup::CollisionObjectPtrs& objects, bool init)
 {
   for (auto object : objects)
-    removeCollisionObject(object);
-  // TODO(JS): there is a room for improving the perfomance
+    removeCollisionObject(object, false);
+
+ if (init)
+   mEngineData->init();
 }
 
 //==============================================================================
-void CollisionGroup::removeAllCollisionObjects()
+void CollisionGroup::removeAllCollisionObjects(bool init)
 {
+  // Notify the engine data first that the collision objects are going to be
+  // removed, then actually remove all the collision objects.
+  mEngineData->removeAllCollisionObjects(init);
+
   mCollisionObjects.clear();
-  mEngineData->removeAllCollisionObjects();
 }
 
 //==============================================================================

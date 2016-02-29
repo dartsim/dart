@@ -38,44 +38,65 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_H_
 
 #include <vector>
-#include <map>
-
 #include <btBulletCollisionCommon.h>
-#include <Eigen/Dense>
-
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/bullet/BulletTypes.h"
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionNode;
+class CollisionGroup;
 
-/// @brief class BulletCollisionDetector
 class BulletCollisionDetector : public CollisionDetector
 {
 public:
-  /// @brief Constructor
-  BulletCollisionDetector();
 
-  /// @brief Destructor
-  virtual ~BulletCollisionDetector();
+  friend class CollisionDetector;
 
-  /// \copydoc CollisionDetector::createCollisionNode
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  static std::shared_ptr<BulletCollisionDetector> create();
 
-  /// \copydoc CollisionDetector::detectCollision
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  /// Return engine type "Bullet"
+  static const std::string& getTypeStatic();
+
+  // Documentation inherit
+  const std::string& getType() const override;
+
+  using CollisionDetector::detect;
 
 protected:
-  // TODO(JS): Not implemented yet.
-  /// \copydoc CollisionDetector::detectCollision
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
 
-  /// @brief Bullet collision world
-  btCollisionWorld* mBulletCollisionWorld;
+  /// Constructor
+  BulletCollisionDetector() = default;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) override;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
+      const CollisionObjectPtrs& collObjects) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object, CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+              const Option& option, Result& result) override;
+
+protected:
+
+  std::shared_ptr<CollisionGroup> mBulletCollisionGroupForSinglePair;
+
 };
 
 }  // namespace collision

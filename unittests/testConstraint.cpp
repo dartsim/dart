@@ -45,7 +45,7 @@
 #include "dart/common/Console.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
-#include "dart/collision/dart/DARTEngine.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
@@ -126,7 +126,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
-        CollisionDetector::create<DARTEngine>());
+        DARTCollisionDetector::create());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);

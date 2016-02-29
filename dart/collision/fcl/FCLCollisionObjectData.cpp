@@ -41,7 +41,7 @@
 #include <fcl/shape/geometric_shapes.h>
 
 #include "dart/common/Console.h"
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
 #include "dart/collision/fcl/FCLCollisionObjectData.h"
@@ -609,10 +609,10 @@ FCLCollisionObjectUserData::FCLCollisionObjectUserData(
 
 //==============================================================================
 FCLCollisionObjectData::FCLCollisionObjectData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
-  : CollisionObjectData(engine, parent),
+  : CollisionObjectData(collisionDetector, parent),
     mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent, shape)),
     mFCLCollisionObject(new fcl::CollisionObject(
                         createFCLCollisionGeometry(shape)))
@@ -642,8 +642,7 @@ void FCLCollisionObjectData::update()
   using dart::dynamics::Shape;
   using dart::dynamics::SoftMeshShape;
 
-  auto collisionObject = mFCLCollisionObjectUserData->mCollisionObject;
-  auto shape = collisionObject->getShape().get();
+  auto shape = mParent->getShape().get();
 
   if (shape->getShapeType() == dynamics::Shape::SOFT_MESH)
   {
@@ -681,7 +680,7 @@ void FCLCollisionObjectData::update()
     }
   }
 
-  updateTransform(collisionObject->getTransform());
+  updateTransform(mParent->getTransform());
 }
 
 //==============================================================================

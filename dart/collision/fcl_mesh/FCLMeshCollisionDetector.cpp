@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
 #include <fcl/collision.h>
 #include <fcl/collision_object.h>
@@ -127,31 +127,20 @@ double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3);
 
 
 //==============================================================================
-FCLMeshEnginePtr FCLMeshEngine::create()
+std::shared_ptr<FCLMeshCollisionDetector> FCLMeshCollisionDetector::create()
 {
-  return FCLMeshEnginePtr(new FCLMeshEngine());
+  return std::shared_ptr<FCLMeshCollisionDetector>(
+        new FCLMeshCollisionDetector());
 }
 
 //==============================================================================
-FCLMeshEngine::FCLMeshEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-FCLMeshEngine::~FCLMeshEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-const std::string& FCLMeshEngine::getType() const
+const std::string& FCLMeshCollisionDetector::getType() const
 {
   return getTypeStatic();
 }
 
 //==============================================================================
-const std::string& FCLMeshEngine::getTypeStatic()
+const std::string& FCLMeshCollisionDetector::getTypeStatic()
 {
   static const std::string& type("FCLMesh");
   return type;
@@ -159,7 +148,7 @@ const std::string& FCLMeshEngine::getTypeStatic()
 
 //==============================================================================
 std::unique_ptr<CollisionObjectData>
-FCLMeshEngine::createCollisionObjectData(
+FCLMeshCollisionDetector::createCollisionObjectData(
     CollisionObject* parent,
     const dynamics::ShapePtr& shape)
 {
@@ -169,7 +158,7 @@ FCLMeshEngine::createCollisionObjectData(
 
 //==============================================================================
 std::unique_ptr<CollisionGroupData>
-FCLMeshEngine::createCollisionGroupData(
+FCLMeshCollisionDetector::createCollisionGroupData(
     CollisionGroup* parent,
     const CollisionObjectPtrs& collObjects)
 {
@@ -178,15 +167,15 @@ FCLMeshEngine::createCollisionGroupData(
 }
 
 //==============================================================================
-bool FCLMeshEngine::detect(
+bool FCLMeshCollisionDetector::detect(
     CollisionObjectData* objectData1,
     CollisionObjectData* objectData2,
     const Option& option, Result& result)
 {
   result.contacts.clear();
 
-  assert(objectData1->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
-  assert(objectData2->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
+  assert(objectData1->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
+  assert(objectData2->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
 
   auto castedData1 = static_cast<const FCLMeshCollisionObjectData*>(objectData1);
   auto castedData2 = static_cast<const FCLMeshCollisionObjectData*>(objectData2);
@@ -201,7 +190,7 @@ bool FCLMeshEngine::detect(
 }
 
 //==============================================================================
-bool FCLMeshEngine::detect(
+bool FCLMeshCollisionDetector::detect(
     CollisionObjectData* objectData,
     CollisionGroupData* groupData,
     const Option& option, Result& result)
@@ -210,8 +199,8 @@ bool FCLMeshEngine::detect(
 
   assert(objectData);
   assert(groupData);
-  assert(objectData->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
-  assert(groupData->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
+  assert(objectData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
 
   auto castedObjData = static_cast<FCLMeshCollisionObjectData*>(objectData);
   auto castedGrpData = static_cast<FCLMeshCollisionGroupData*>(groupData);
@@ -226,13 +215,14 @@ bool FCLMeshEngine::detect(
 }
 
 //==============================================================================
-bool FCLMeshEngine::detect(CollisionGroupData* groupData,
-                           const Option& option, Result& result)
+bool FCLMeshCollisionDetector::detect(
+    CollisionGroupData* groupData,
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData);
-  assert(groupData->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
 
   auto castedData = static_cast<FCLMeshCollisionGroupData*>(groupData);
 
@@ -245,16 +235,17 @@ bool FCLMeshEngine::detect(CollisionGroupData* groupData,
 }
 
 //==============================================================================
-bool FCLMeshEngine::detect(CollisionGroupData* groupData1,
-                           CollisionGroupData* groupData2,
-                           const Option& option, Result& result)
+bool FCLMeshCollisionDetector::detect(
+    CollisionGroupData* groupData1,
+    CollisionGroupData* groupData2,
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData1);
   assert(groupData2);
-  assert(groupData1->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
-  assert(groupData2->getEngine()->getType() == FCLMeshEngine::getTypeStatic());
+  assert(groupData1->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
+  assert(groupData2->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
 
   auto castedData1 = static_cast<FCLMeshCollisionGroupData*>(groupData1);
   auto castedData2 = static_cast<FCLMeshCollisionGroupData*>(groupData2);
@@ -467,20 +458,20 @@ void postProcess(const fcl::CollisionResult& fclResult,
 
 
 
-  std::cout << "=================" << std::endl;
-  std::cout << "# of contacts:" << result.contacts.size() << std::endl;
-  std::cout << "=================" << std::endl;
-  for (auto i = 0u; i < result.contacts.size(); ++i)
-  {
-    auto contact = result.contacts[i];
+//  std::cout << "=================" << std::endl;
+//  std::cout << "# of contacts:" << result.contacts.size() << std::endl;
+//  std::cout << "=================" << std::endl;
+//  for (auto i = 0u; i < result.contacts.size(); ++i)
+//  {
+//    auto contact = result.contacts[i];
 
-    std::cout << "Contact (" << i << ")" << std::endl;
-    std::cout << "Point : " << contact.point.transpose() << std::endl;
-    std::cout << "Normal: " << contact.normal.transpose() << std::endl;
-    std::cout << "Depth : " << contact.penetrationDepth << std::endl;
-    std::cout << std::endl;
-  }
-  std::cout << "=================" << std::endl;
+//    std::cout << "Contact (" << i << ")" << std::endl;
+//    std::cout << "Point : " << contact.point.transpose() << std::endl;
+//    std::cout << "Normal: " << contact.normal.transpose() << std::endl;
+//    std::cout << "Depth : " << contact.penetrationDepth << std::endl;
+//    std::cout << std::endl;
+//  }
+//  std::cout << "=================" << std::endl;
 
 }
 

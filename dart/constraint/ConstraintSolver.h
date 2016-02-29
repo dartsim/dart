@@ -44,7 +44,6 @@
 #include "dart/constraint/SmartPointer.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/Engine.h"
 
 namespace dart {
 

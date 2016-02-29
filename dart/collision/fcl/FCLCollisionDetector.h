@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Chen Tang <ctang40@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,67 +35,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_
 
 #include <vector>
 
-#include <assimp/scene.h>
-#include <btBulletCollisionCommon.h>
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionNode.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionNode;
-class BulletCollisionDetector;
-
-struct BulletUserData {
-    dynamics::BodyNode* bodyNode;
-    dynamics::ConstShapePtr shape;
-    BulletCollisionNode* btCollNode;
-    BulletCollisionDetector* btCollDet;
-};
-
-/// @brief class BulletCollisionNode
-class BulletCollisionNode : public CollisionNode
+class FCLCollisionDetector : public CollisionDetector
 {
 public:
-    /// @brief Constructor
-    explicit BulletCollisionNode(dynamics::BodyNode* _bodyNode);
 
-    /// @brief Destructor
-    virtual ~BulletCollisionNode();
+  static std::shared_ptr<FCLCollisionDetector> create();
 
-    /// @brief Update transformation of all the bullet collision objects.
-    void updateBulletCollisionObjects();
+  /// Return engine type "FCL"
+  static const std::string& getTypeStatic();
 
-    /// @brief Get number of bullet collision objects
-    int getNumBulletCollisionObjects() const;
+  // Documentation inherit
+  const std::string& getType() const override;
 
-    /// @brief Get bullet collision object whose index is _i
-    btCollisionObject* getBulletCollisionObject(int _i);
+  using CollisionDetector::detect;
 
-private:
-    /// @brief Bullet collision objects
-    std::vector<btCollisionObject*> mbtCollsionObjects;
+protected:
+
+  /// Constructor
+  FCLCollisionDetector() = default;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) override;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
+      const CollisionObjectPtrs& collObjects) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object, CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+              const Option& option, Result& result) override;
+
 };
-
-/// @brief Create Bullet mesh from assimp3 mesh
-btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
-                                       const aiScene* _mesh);
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_H_

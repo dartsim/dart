@@ -36,194 +36,263 @@
 
 #include "dart/collision/bullet/BulletCollisionDetector.h"
 
-#include <vector>
+#include <iostream>
 
-#include "dart/collision/bullet/BulletCollisionNode.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/bullet/BulletTypes.h"
+#include "dart/collision/bullet/BulletCollisionObjectData.h"
+#include "dart/collision/bullet/BulletCollisionGroupData.h"
 
 namespace dart {
 namespace collision {
 
-//struct btContactResultCB : public btCollisionWorld::ContactResultCallback {
-//  virtual btScalar addSingleResult(
-//      btManifoldPoint& cp,
-//      const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,
-//      const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) {
-//    Contact contactPair;
-//    contactPair.point = convertVector3(cp.getPositionWorldOnA());
-//    contactPair.normal = convertVector3(cp.m_normalWorldOnB);
-//    contactPair.penetrationDepth = -cp.m_distance1;
+namespace {
 
-//    mContacts.push_back(contactPair);
-
-//    return 0;
-//  }
-
-//  std::vector<Contact> mContacts;
-//};
-
-//==============================================================================
-struct CollisionFilter : public btOverlapFilterCallback
+struct BulletContactResultCallback : btCollisionWorld::ContactResultCallback
 {
-  // return true when pairs need collision
-  virtual bool needBroadphaseCollision(btBroadphaseProxy* _proxy0,
-                                       btBroadphaseProxy* _proxy1) const
+  BulletContactResultCallback(Result& result)
+    : ContactResultCallback(),
+      mResult(result)
   {
-    assert((_proxy0 != nullptr && _proxy1 != nullptr) &&
-           "Bullet broadphase overlapping pair proxies are nullptr");
-
-    bool collide = (_proxy0->m_collisionFilterGroup &
-                    _proxy1->m_collisionFilterMask) != 0;
-    collide = collide && (_proxy1->m_collisionFilterGroup &
-                          _proxy0->m_collisionFilterMask);
-
-    if (collide)
-    {
-      btCollisionObject* collObj0 =
-          static_cast<btCollisionObject*>(_proxy0->m_clientObject);
-      btCollisionObject* collObj1 =
-          static_cast<btCollisionObject*>(_proxy1->m_clientObject);
-
-      BulletUserData* userData0 =
-          static_cast<BulletUserData*>(collObj0->getUserPointer());
-      BulletUserData* userData1 =
-          static_cast<BulletUserData*>(collObj1->getUserPointer());
-
-      // Assume single collision detector
-      assert(userData0->btCollDet == userData1->btCollDet);
-
-      CollisionDetector* cd = userData0->btCollDet;
-
-      CollisionNode* cn1 = userData0->btCollNode;
-      CollisionNode* cn2 = userData1->btCollNode;
-
-      collide = cd->isCollidable(cn1, cn2);
-    }
-
-    return collide;
   }
+
+  btScalar addSingleResult(btManifoldPoint& cp,
+                           const btCollisionObjectWrapper* colObj0Wrap,
+                           int partId0,
+                           int index0,
+                           const btCollisionObjectWrapper* colObj1Wrap,
+                           int partId1,
+                           int index1) override;
+
+  Result& mResult;
 };
 
+} // anonymous namespace
+
+
+
 //==============================================================================
-BulletCollisionDetector::BulletCollisionDetector() : CollisionDetector()
+std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 {
-//  btVector3 worldAabbMin(-1000, -1000, -1000);
-//  btVector3 worldAabbMax(1000, 1000, 1000);
-//  btBroadphaseInterface* broadphasePairCache =
-//      new btAxisSweep3(worldAabbMin, worldAabbMax);
-  btBroadphaseInterface* broadphasePairCache = new btDbvtBroadphase();
-  btCollisionConfiguration* collisionConfiguration =
-      new btDefaultCollisionConfiguration();
-  btDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
-
-  mBulletCollisionWorld = new btCollisionWorld(dispatcher,
-                                               broadphasePairCache,
-                                               collisionConfiguration);
-
-  btOverlapFilterCallback* filterCallback = new CollisionFilter();
-  btOverlappingPairCache* pairCache = mBulletCollisionWorld->getPairCache();
-  assert(pairCache != nullptr);
-  pairCache->setOverlapFilterCallback(filterCallback);
+  return std::shared_ptr<BulletCollisionDetector>(
+        new BulletCollisionDetector());
 }
 
 //==============================================================================
-BulletCollisionDetector::~BulletCollisionDetector()
+const std::string& BulletCollisionDetector::getTypeStatic()
 {
+  static const std::string& type("Bullet");
+  return type;
 }
 
 //==============================================================================
-CollisionNode* BulletCollisionDetector::createCollisionNode(
-    dynamics::BodyNode* _bodyNode)
+const std::string& BulletCollisionDetector::getType() const
 {
-  BulletCollisionNode* collNode = new BulletCollisionNode(_bodyNode);
+  return getTypeStatic();
+}
 
-  for (int i = 0; i < collNode->getNumBulletCollisionObjects(); ++i)
+//==============================================================================
+std::unique_ptr<CollisionObjectData>
+BulletCollisionDetector::createCollisionObjectData(CollisionObject* parent,
+                                        const dynamics::ShapePtr& shape)
+{
+  return std::unique_ptr<CollisionObjectData>(
+        new BulletCollisionObjectData(this, parent, shape));
+}
+
+//==============================================================================
+std::unique_ptr<CollisionGroupData>
+BulletCollisionDetector::createCollisionGroupData(
+    CollisionGroup* parent,
+    const CollisionObjectPtrs& collObjects)
+{
+  return std::unique_ptr<CollisionGroupData>(
+        new BulletCollisionGroupData(this, parent, collObjects));
+}
+
+//==============================================================================
+Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
+                       const BulletCollisionObjectUserData* userData1,
+                       const BulletCollisionObjectUserData* userData2)
+{
+  assert(userData1);
+  assert(userData2);
+
+  Contact contact;
+
+  contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
+  contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
+  contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
+  contact.collisionObject1 = userData1->collisionObject;
+  contact.collisionObject2 = userData2->collisionObject;
+
+  return contact;
+}
+
+//==============================================================================
+void convertContacts(btCollisionWorld* collWorld, Result& result)
+{
+  assert(collWorld);
+
+  auto dispatcher = collWorld->getDispatcher();
+  assert(dispatcher);
+
+  auto numManifolds = dispatcher->getNumManifolds();
+
+  for (auto i = 0; i < numManifolds; ++i)
   {
-    btCollisionObject* collObj = collNode->getBulletCollisionObject(i);
-    BulletUserData* userData
-        = static_cast<BulletUserData*>(collObj->getUserPointer());
-    userData->btCollDet = this;
-    mBulletCollisionWorld->addCollisionObject(collObj);
-  }
+    auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+    const auto bulletCollObj0 = contactManifold->getBody0();
+    const auto bulletCollObj1 = contactManifold->getBody1();
 
-  return collNode;
-}
+    auto userPointer0 = bulletCollObj0->getUserPointer();
+    auto userPointer1 = bulletCollObj1->getUserPointer();
 
-//==============================================================================
-bool BulletCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
-                                              bool /*_calculateContactPoints*/)
-{
-  // Update all the transformations of the collision nodes
-  for (size_t i = 0; i < mCollisionNodes.size(); ++i)
-    static_cast<BulletCollisionNode*>(
-        mCollisionNodes[i])->updateBulletCollisionObjects();
+    auto userDataA = static_cast<BulletCollisionObjectUserData*>(userPointer1);
+    auto userDataB = static_cast<BulletCollisionObjectUserData*>(userPointer0);
 
-  // Setting up broadphase collision detection options
-  btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
-  dispatchInfo.m_timeStep  = 0.001;
-  dispatchInfo.m_stepCount = 0;
-  // dispatchInfo.m_debugDraw = getDebugDrawer();
+    auto numContacts = contactManifold->getNumContacts();
 
-  // Collision detection
-  mBulletCollisionWorld->performDiscreteCollisionDetection();
-//  std::cout << "Number of collision objects: "
-//            << collWorld->getNumCollisionObjects() << std::endl;
-
-  // Clear mContacts which is the list of old contacts
-  clearAllContacts();
-
-  // Set all the body nodes are not in colliding
-  for (size_t i = 0; i < mCollisionNodes.size(); i++)
-    mCollisionNodes[i]->getBodyNode()->setColliding(false);
-
-  // Add all the contacts to mContacts
-  int numManifolds = mBulletCollisionWorld->getDispatcher()->getNumManifolds();
-  btDispatcher* dispatcher = mBulletCollisionWorld->getDispatcher();
-  for (int i = 0; i < numManifolds; ++i)
-  {
-    btPersistentManifold* contactManifold
-        = dispatcher->getManifoldByIndexInternal(i);
-    const btCollisionObject* obA = contactManifold->getBody0();
-    const btCollisionObject* obB = contactManifold->getBody1();
-
-    BulletUserData* userDataA
-        = static_cast<BulletUserData*>(obA->getUserPointer());
-    BulletUserData* userDataB
-        = static_cast<BulletUserData*>(obB->getUserPointer());
-
-    int numContacts = contactManifold->getNumContacts();
-    for (int j = 0; j < numContacts; j++)
+    for (auto j = 0; j < numContacts; ++j)
     {
-      btManifoldPoint& cp = contactManifold->getContactPoint(j);
+      auto& cp = contactManifold->getContactPoint(j);
 
-      Contact contactPair;
-      contactPair.point            = convertVector3(cp.getPositionWorldOnA());
-      contactPair.normal           = convertVector3(cp.m_normalWorldOnB);
-      contactPair.penetrationDepth = -cp.m_distance1;
-      contactPair.bodyNode1   = userDataA->btCollNode->getBodyNode();
-      contactPair.bodyNode2   = userDataB->btCollNode->getBodyNode();
-
-      mContacts.push_back(contactPair);
-
-      // Set these two bodies are in colliding
-      contactPair.bodyNode1.lock()->setColliding(true);
-      contactPair.bodyNode2.lock()->setColliding(true);
+      result.contacts.push_back(convertContact(cp, userDataA, userDataB));
     }
   }
-
-  // Return true if there are contacts
-  return !mContacts.empty();
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detectCollision(CollisionNode* /*_node1*/,
-                                              CollisionNode* /*_node2*/,
-                                              bool /*_calculateContactPoints*/)
+bool BulletCollisionDetector::detect(
+    CollisionObjectData* objectData1,
+    CollisionObjectData* objectData2,
+    const Option& /*option*/, Result& result)
 {
-  assert(false);
-  return false;
+  result.contacts.clear();
+
+  assert(objectData1->getCollisionDetector()->getType()
+         == BulletCollisionDetector::getTypeStatic());
+  assert(objectData2->getCollisionDetector()->getType()
+         == BulletCollisionDetector::getTypeStatic());
+
+  auto castedData1 = static_cast<const BulletCollisionObjectData*>(objectData1);
+  auto castedData2 = static_cast<const BulletCollisionObjectData*>(objectData2);
+
+  auto bulletCollObj1 = castedData1->getBulletCollisionObject();
+  auto bulletCollObj2 = castedData2->getBulletCollisionObject();
+
+  if (!mBulletCollisionGroupForSinglePair)
+    mBulletCollisionGroupForSinglePair = createCollisionGroup();
+
+  auto cb = BulletContactResultCallback(result);
+  auto collisionGroupData = static_cast<BulletCollisionGroupData*>(
+        mBulletCollisionGroupForSinglePair->getEngineData());
+  auto bulletCollisionWorld = collisionGroupData->getBulletCollisionWorld();
+  bulletCollisionWorld->contactPairTest(bulletCollObj1, bulletCollObj2, cb);
+
+  return !result.contacts.empty();
 }
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+bool BulletCollisionDetector::detect(
+    CollisionObjectData* objectData,
+    CollisionGroupData* groupData,
+    const Option& /*option*/, Result& result)
+{
+  result.contacts.clear();
+
+  assert(objectData);
+  assert(groupData);
+  assert(objectData->getCollisionDetector()->getType()
+         == BulletCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType()
+         == BulletCollisionDetector::getTypeStatic());
+
+  auto castedObjData = static_cast<BulletCollisionObjectData*>(objectData);
+  auto castedGrpData = static_cast<BulletCollisionGroupData*>(groupData);
+
+  auto bulletCollObj = castedObjData->getBulletCollisionObject();
+  auto bulletCollisionWorld = castedGrpData->getBulletCollisionWorld();
+
+  auto cb = BulletContactResultCallback(result);
+  bulletCollisionWorld->contactTest(bulletCollObj, cb);
+
+  return !result.contacts.empty();
+}
+
+//==============================================================================
+bool BulletCollisionDetector::detect(
+    CollisionGroupData* groupData,
+    const Option& /*option*/, Result& result)
+{
+  result.contacts.clear();
+
+  assert(groupData);
+  assert(groupData->getCollisionDetector()->getType()
+         == BulletCollisionDetector::getTypeStatic());
+
+  auto castedData = static_cast<BulletCollisionGroupData*>(groupData);
+
+  auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
+
+  bulletCollisionWorld->performDiscreteCollisionDetection();
+
+  convertContacts(bulletCollisionWorld, result);
+
+  return !result.contacts.empty();
+}
+
+//==============================================================================
+bool BulletCollisionDetector::detect(
+    CollisionGroupData* groupData1,
+    CollisionGroupData* groupData2,
+    const Option& /*option*/, Result& result)
+{
+  result.contacts.clear();
+
+  assert(groupData1);
+  assert(groupData2);
+  assert(groupData1->getCollisionDetector()->getType() == BulletCollisionDetector::getTypeStatic());
+  assert(groupData2->getCollisionDetector()->getType() == BulletCollisionDetector::getTypeStatic());
+
+  auto castedData1 = static_cast<BulletCollisionGroupData*>(groupData1);
+  auto castedData2 = static_cast<BulletCollisionGroupData*>(groupData2);
+
+  auto bulletCollisionWorld1 = castedData1->getBulletCollisionWorld();
+  auto bulletCollisionWorld2 = castedData2->getBulletCollisionWorld();
+
+//  BulletCollisionData collData(&option, &result);
+//  bulletCollisionWorld1->collide(bulletCollisionWorld2, &collData, checkPair);
+
+  return !result.contacts.empty();
+}
+
+
+
+
+namespace {
+
+btScalar BulletContactResultCallback::addSingleResult(
+    btManifoldPoint& cp,
+    const btCollisionObjectWrapper* colObj0Wrap,
+    int /*partId0*/,
+    int /*index0*/,
+    const btCollisionObjectWrapper* colObj1Wrap,
+    int /*partId1*/,
+    int /*index1*/)
+{
+  auto userPointer0 = colObj0Wrap->getCollisionObject()->getUserPointer();
+  auto userPointer1 = colObj1Wrap->getCollisionObject()->getUserPointer();
+
+  auto userDataA = static_cast<BulletCollisionObjectUserData*>(userPointer1);
+  auto userDataB = static_cast<BulletCollisionObjectUserData*>(userPointer0);
+
+  mResult.contacts.push_back(convertContact(cp, userDataA, userDataB));
+
+  return 1.0f;
+}
+
+} // anonymous namespace
+
+} // namespace collision
+} // namespace dart

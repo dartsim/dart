@@ -34,11 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_
+#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_
+#define DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_
 
-#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
-#include <fcl/broadphase/broadphase_bruteforce.h>
+#include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionGroupData.h"
@@ -47,20 +46,19 @@ namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionObjectUserData;
+class BulletCollisionObjectUserData;
 
-class FCLMeshCollisionGroupData : public CollisionGroupData
+class BulletCollisionGroupData : public CollisionGroupData
 {
 public:
 
-//  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
-  using FCLCollisionManager = fcl::NaiveCollisionManager;
   using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
-  FCLMeshCollisionGroupData(CollisionDetector* collisionDetector,
-                            CollisionGroup* parent,
-                            const CollisionObjects& collObjects);
+  BulletCollisionGroupData(
+      CollisionDetector* collisionDetector,
+      CollisionGroup* parent,
+      const CollisionObjects& collObjects = CollisionObjects());
 
   // Documentation inherited
   std::unique_ptr<CollisionGroupData> clone(
@@ -88,17 +86,35 @@ public:
   // Documentation inherited
   void update() override;
 
-  /// Return FCL collision manager that is also a broad-phase algorithm
-  FCLCollisionManager* getFCLCollisionManager() const;
+  /// Return Bullet collision world
+  btCollisionWorld* getBulletCollisionWorld() const;
 
 protected:
 
-  /// FCL broad-phase algorithm
-  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+  struct CollisionFilter : public btOverlapFilterCallback
+  {
+    // return true when pairs need collision
+    bool needBroadphaseCollision(btBroadphaseProxy* proxy0,
+                                 btBroadphaseProxy* proxy1) const override;
+  };
 
+  /// Bullet broad-phase algorithm
+  std::unique_ptr<btBroadphaseInterface> mBulletProadphaseAlg;
+
+  /// Bullet collision filter
+  std::unique_ptr<CollisionFilter> mBulletCollisionFilter;
+
+  /// Bullet collision configuration
+  std::unique_ptr<btCollisionConfiguration> mBulletCollisionConfiguration;
+
+  /// Bullet collision dispatcher
+  std::unique_ptr<btDispatcher> mBulletDispatcher;
+
+  /// Bullet collision world
+  std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_

@@ -34,30 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_
+#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_
 
 #include <cstddef>
 #include <Eigen/Dense>
-
-#include <fcl/collision_object.h>
-
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
+#include <btBulletCollisionCommon.h>
+#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 #include "dart/collision/CollisionObjectData.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionObjectUserData;
 
-class FCLMeshCollisionObjectData : public CollisionObjectData
+struct BulletCollisionObjectUserData
+{
+  dynamics::ConstShapePtr shape;
+  CollisionObject* collisionObject;
+
+  CollisionDetector* collisionDetector;
+  CollisionGroup* group;
+
+  BulletCollisionObjectUserData();
+};
+
+class BulletCollisionObjectData : public CollisionObjectData
 {
 public:
 
   /// Constructor
-  FCLMeshCollisionObjectData(CollisionDetector* collisionDetector,
-                             CollisionObject* parent,
-                             const dynamics::ShapePtr& shape);
+  BulletCollisionObjectData(CollisionDetector* collisionDetector,
+                            CollisionObject* parent,
+                            const dynamics::ShapePtr& shape);
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
@@ -69,19 +80,33 @@ public:
   void update() override;
 
   /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
+  btCollisionObject* getBulletCollisionObject() const;
 
 protected:
 
-  /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
+  btGImpactMeshShape* createMesh(const Eigen::Vector3d& scale,
+                                 const aiScene* mesh);
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  btGImpactMeshShape* createSoftMesh(const aiMesh* mesh);
+
+  /// Bullet collision geometry user data
+  std::unique_ptr<BulletCollisionObjectUserData> mBulletCollisionObjectUserData;
+
+  /// Bullet triangle mesh
+  std::unique_ptr<btTriangleMesh> mBulletTriangleMesh;
+
+  /// Bullet GImpact mesh
+  std::unique_ptr<btGImpactMeshShape> mBulletGImpactMeshShape;
+
+  /// Bullet collision geometry user data
+  std::unique_ptr<btCollisionShape> mBulletCollisionShape;
+
+  /// Bullet collision object
+  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_

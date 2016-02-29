@@ -41,9 +41,9 @@ namespace collision {
 
 //==============================================================================
 DARTCollisionObjectData::DARTCollisionObjectData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionObject* parent)
-  : CollisionObjectData(engine, parent)
+  : CollisionObjectData(collisionDetector, parent)
 {
   // Do nothing
 }

@@ -45,9 +45,9 @@
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
-#include "dart/collision/dart/DARTEngine.h"
-#include "dart/collision/fcl/FCLEngine.h"
-#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -256,30 +256,29 @@ simulation::WorldPtr SkelParser::readWorld(
       if (strCD == "fcl_mesh")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::CollisionDetector::create<collision::FCLMeshEngine>());
+            collision::FCLMeshCollisionDetector::create());
       }
       else if (strCD == "fcl")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::CollisionDetector::create<collision::FCLEngine>());
+            collision::FCLCollisionDetector::create());
       }
       else if (strCD == "dart")
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::CollisionDetector::create<collision::DARTEngine>());
+            collision::DARTCollisionDetector::create());
       }
-//#ifdef HAVE_BULLET_COLLISION
-//      else if (strCD == "bullet")
-//      {
-//        newWorld->getConstraintSolver()->setCollisionEngine(
-//              new collision::BulletEngine());
-//      }
-//#endif
-      // TODO(JS)
+#ifdef HAVE_BULLET_COLLISION
+      else if (strCD == "bullet")
+      {
+        newWorld->getConstraintSolver()->setCollisionDetector(
+            collision::BulletCollisionDetector::create());
+      }
+#endif
       else
       {
         newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::CollisionDetector::create<collision::FCLMeshEngine>());
+            collision::FCLMeshCollisionDetector::create());
         dtwarn << "Unknown collision detector[" << strCD << "]. "
                << "Default collision detector[fcl] will be loaded."
                << std::endl;
@@ -288,7 +287,7 @@ simulation::WorldPtr SkelParser::readWorld(
     else
     {
       newWorld->getConstraintSolver()->setCollisionDetector(
-          collision::CollisionDetector::create<collision::FCLMeshEngine>());
+          collision::FCLCollisionDetector::create());
     }
   }
 

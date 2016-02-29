@@ -44,10 +44,10 @@ namespace collision {
 
 //==============================================================================
 FCLCollisionGroupData::FCLCollisionGroupData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionGroup* parent,
     const FCLCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(engine, parent),
+  : CollisionGroupData(collisionDetector, parent),
     mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
 {
   for (auto collObj : collObjects)
@@ -66,7 +66,7 @@ FCLCollisionGroupData::clone(
     const CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLCollisionGroupData(mEngine, newParent, collObjects));
+        new FCLCollisionGroupData(mCollisionDetector, newParent, collObjects));
 }
 
 //==============================================================================
@@ -82,6 +82,23 @@ void FCLCollisionGroupData::addCollisionObject(
   auto data = static_cast<FCLCollisionObjectData*>(
         object->getEngineData());
   mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+
+  if (init)
+    this->init();
+}
+
+//==============================================================================
+void FCLCollisionGroupData::addCollisionObjects(
+    const FCLCollisionGroupData::CollisionObjectPtrs& collObjects,
+    const bool init)
+{
+  for (auto collObj : collObjects)
+  {
+    auto data = static_cast<FCLCollisionObjectData*>(
+          collObj->getEngineData());
+
+    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  }
 
   if (init)
     this->init();

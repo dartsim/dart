@@ -56,7 +56,7 @@ public:
   using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
-  FCLCollisionGroupData(Engine* engine,
+  FCLCollisionGroupData(CollisionDetector* collisionDetector,
                         CollisionGroup* parent,
                         const CollisionObjects& collObjects);
 
@@ -71,6 +71,10 @@ public:
   // Documentation inherited
   void addCollisionObject(const CollisionObjectPtr& object,
                           const bool init) override;
+
+  // Documentation inherited
+  void addCollisionObjects(const CollisionObjectPtrs& collObjects,
+                           const bool init) override;
 
   // Documentation inherited
   void removeCollisionObject(const CollisionObjectPtr& object,

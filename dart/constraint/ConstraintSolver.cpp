@@ -38,9 +38,9 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionGroup.h"
-#include "dart/collision/fcl/FCLEngine.h"
-#include "dart/collision/fcl_mesh/FCLMeshEngine.h"
-#include "dart/collision/dart/DARTEngine.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
@@ -65,8 +65,7 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double _timeStep)
-  : mCollisionDetector(
-      collision::CollisionDetector::create<collision::FCLMeshEngine>()),
+  : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroup()),
     mTimeStep(_timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))

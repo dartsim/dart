@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTEngine.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
 
 #include <iostream>
 #include "dart/collision/CollisionObject.h"
@@ -61,38 +61,27 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
 
 
 //==============================================================================
-DARTEnginePtr DARTEngine::create()
+std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 {
-  return DARTEnginePtr(new DARTEngine());
+  return std::shared_ptr<DARTCollisionDetector>(new DARTCollisionDetector());
 }
 
 //==============================================================================
-DARTEngine::DARTEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-DARTEngine::~DARTEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-const std::string& DARTEngine::getTypeStatic()
+const std::string& DARTCollisionDetector::getTypeStatic()
 {
   static const std::string& type("DART");
   return type;
 }
 
 //==============================================================================
-const std::string& DARTEngine::getType() const
+const std::string& DARTCollisionDetector::getType() const
 {
   return getTypeStatic();
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObjectData> DARTEngine::createCollisionObjectData(
+std::unique_ptr<CollisionObjectData>
+DARTCollisionDetector::createCollisionObjectData(
     CollisionObject* parent,
     const dynamics::ShapePtr& /*shape*/)
 {
@@ -101,7 +90,8 @@ std::unique_ptr<CollisionObjectData> DARTEngine::createCollisionObjectData(
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroupData> DARTEngine::createCollisionGroupData(
+std::unique_ptr<CollisionGroupData>
+DARTCollisionDetector::createCollisionGroupData(
     CollisionGroup* parent,
     const CollisionObjectPtrs& collObjects)
 {
@@ -110,15 +100,15 @@ std::unique_ptr<CollisionGroupData> DARTEngine::createCollisionGroupData(
 }
 
 //==============================================================================
-bool DARTEngine::detect(
+bool DARTCollisionDetector::detect(
     CollisionObjectData* objectData1,
     CollisionObjectData* objectData2,
     const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
-  assert(objectData1->getEngine()->getType() == DARTEngine::getTypeStatic());
-  assert(objectData2->getEngine()->getType() == DARTEngine::getTypeStatic());
+  assert(objectData1->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(objectData2->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
 
   auto collObj1 = objectData1->getCollisionObject();
   auto collObj2 = objectData2->getCollisionObject();
@@ -127,7 +117,7 @@ bool DARTEngine::detect(
 }
 
 //==============================================================================
-bool DARTEngine::detect(
+bool DARTCollisionDetector::detect(
     CollisionObjectData* objectData,
     CollisionGroupData* groupData,
     const Option& /*option*/, Result& result)
@@ -136,8 +126,8 @@ bool DARTEngine::detect(
 
   assert(objectData);
   assert(groupData);
-  assert(objectData->getEngine()->getType() == DARTEngine::getTypeStatic());
-  assert(groupData->getEngine()->getType() == DARTEngine::getTypeStatic());
+  assert(objectData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
 
   auto collObj1 = objectData->getCollisionObject();
   auto collGrp = groupData->getCollisionGroup();
@@ -150,13 +140,14 @@ bool DARTEngine::detect(
 }
 
 //==============================================================================
-bool DARTEngine::detect(CollisionGroupData* groupData,
-                       const Option& /*option*/, Result& result)
+bool DARTCollisionDetector::detect(
+    CollisionGroupData* groupData,
+    const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData);
-  assert(groupData->getEngine()->getType() == DARTEngine::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
 
   auto collGrp = groupData->getCollisionGroup();
   auto collObjs = collGrp->getCollisionObjects();
@@ -180,16 +171,17 @@ bool DARTEngine::detect(CollisionGroupData* groupData,
 }
 
 //==============================================================================
-bool DARTEngine::detect(CollisionGroupData* groupData1,
-                       CollisionGroupData* groupData2,
-                       const Option& /*option*/, Result& result)
+bool DARTCollisionDetector::detect(
+    CollisionGroupData* groupData1,
+    CollisionGroupData* groupData2,
+    const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData1);
   assert(groupData2);
-  assert(groupData1->getEngine()->getType() == DARTEngine::getTypeStatic());
-  assert(groupData2->getEngine()->getType() == DARTEngine::getTypeStatic());
+  assert(groupData1->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(groupData2->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
 
   auto collGrp1 = groupData1->getCollisionGroup();
   auto collGrp2 = groupData2->getCollisionGroup();

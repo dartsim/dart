@@ -50,7 +50,7 @@ class DARTCollisionGroupData : public CollisionGroupData
 public:
 
   /// Constructor
-  DARTCollisionGroupData(Engine* engine,
+  DARTCollisionGroupData(CollisionDetector* collisionDetector,
                          CollisionGroup* parent,
                          const CollisionObjectPtrs& collObjects);
 
@@ -65,6 +65,10 @@ public:
   // Documentation inherited
   void addCollisionObject(const CollisionObjectPtr& object,
                           const bool init) override;
+
+  // Documentation inherited
+  void addCollisionObjects(const CollisionObjectPtrs& collObjects,
+                           const bool init) override;
 
   // Documentation inherited
   void removeCollisionObject(const CollisionObjectPtr& object,

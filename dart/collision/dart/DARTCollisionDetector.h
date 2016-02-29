@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,15 +34,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_ENGINE_H_
-#define DART_COLLISION_DETAIL_ENGINE_H_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
+#define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
 
-#include "dart/collision/Engine.h"
+#include <vector>
+
+#include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
+class DARTCollisionDetector : public CollisionDetector
+{
+public:
+
+  static std::shared_ptr<DARTCollisionDetector> create();
+
+  /// Return engine type "FCLMesh"
+  static const std::string& getTypeStatic();
+
+  // Documentation inherit
+  const std::string& getType() const override;
+
+  using CollisionDetector::detect;
+
+protected:
+
+  /// Constructor
+  DARTCollisionDetector() = default;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
+      CollisionObject* parent,
+      const dynamics::ShapePtr& shape) override;
+
+  // Documentation inherit
+  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
+      CollisionGroup* parent,
+      const CollisionObjectPtrs& collObjects) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionObjectData* object, CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherit
+  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+              const Option& option, Result& result) override;
+
+};
+
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_ENGINE_H_
+#endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_

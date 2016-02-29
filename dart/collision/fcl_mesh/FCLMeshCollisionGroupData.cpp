@@ -44,10 +44,10 @@ namespace collision {
 
 //==============================================================================
 FCLMeshCollisionGroupData::FCLMeshCollisionGroupData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionGroup* parent,
     const FCLMeshCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(engine, parent),
+  : CollisionGroupData(collisionDetector, parent),
     mBroadPhaseAlg(new FCLCollisionManager())
 {
   for (auto collObj : collObjects)
@@ -66,7 +66,7 @@ FCLMeshCollisionGroupData::clone(
     const CollisionGroupData::CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new FCLMeshCollisionGroupData(mEngine, newParent, collObjects));
+        new FCLMeshCollisionGroupData(mCollisionDetector, newParent, collObjects));
 }
 
 //==============================================================================
@@ -82,6 +82,22 @@ void FCLMeshCollisionGroupData::addCollisionObject(
   auto data = static_cast<FCLMeshCollisionObjectData*>(
         object->getEngineData());
   mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+
+  if (init)
+    this->init();
+}
+
+//==============================================================================
+void FCLMeshCollisionGroupData::addCollisionObjects(
+    const CollisionGroupData::CollisionObjectPtrs& collObjects, const bool init)
+{
+  for (auto collObj : collObjects)
+  {
+    auto data = static_cast<FCLMeshCollisionObjectData*>(
+          collObj->getEngineData());
+
+    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+  }
 
   if (init)
     this->init();

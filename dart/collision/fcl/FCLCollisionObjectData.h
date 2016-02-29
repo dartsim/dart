@@ -65,7 +65,7 @@ class FCLCollisionObjectData : public CollisionObjectData
 public:
 
   /// Constructor
-  FCLCollisionObjectData(Engine* engine,
+  FCLCollisionObjectData(CollisionDetector* collisionDetector,
                          CollisionObject* parent,
                          const dynamics::ShapePtr& shape);
 

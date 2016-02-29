@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Chen Tang <ctang40@gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLEngine.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
 
 #include <fcl/collision.h>
 #include <fcl/collision_object.h>
@@ -103,64 +104,53 @@ struct FCLCollisionData
 
 
 //==============================================================================
-FCLEnginePtr FCLEngine::create()
+std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
 {
-  return FCLEnginePtr(new FCLEngine());
+  return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
 }
 
 //==============================================================================
-FCLEngine::FCLEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-FCLEngine::~FCLEngine()
-{
-  // Do nothing
-}
-
-//==============================================================================
-const std::string& FCLEngine::getTypeStatic()
+const std::string& FCLCollisionDetector::getTypeStatic()
 {
   static const std::string& type("FCL");
   return type;
 }
 
 //==============================================================================
-const std::string& FCLEngine::getType() const
+const std::string& FCLCollisionDetector::getType() const
 {
-  return getTypeStatic();
+  return FCLCollisionDetector::getTypeStatic();
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObjectData> FCLEngine::createCollisionObjectData(
-    CollisionObject* parent,
-    const dynamics::ShapePtr& shape)
+std::unique_ptr<CollisionObjectData>
+FCLCollisionDetector::createCollisionObjectData(
+    CollisionObject* parent, const dynamics::ShapePtr& shape)
 {
   return std::unique_ptr<CollisionObjectData>(
         new FCLCollisionObjectData(this, parent, shape));
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroupData> FCLEngine::createCollisionGroupData(
+std::unique_ptr<CollisionGroupData>
+FCLCollisionDetector::createCollisionGroupData(
     CollisionGroup* parent,
-    const CollisionObjectPtrs& collObjects)
+    const CollisionDetector::CollisionObjectPtrs& collObjects)
 {
   return std::unique_ptr<CollisionGroupData>(
         new FCLCollisionGroupData(this, parent, collObjects));
 }
 
 //==============================================================================
-bool FCLEngine::detect(
+bool FCLCollisionDetector::detect(
     CollisionObjectData* objectData1,
     CollisionObjectData* objectData2,
     const Option& option, Result& result)
 {
   result.contacts.clear();
 
-  assert(objectData1->getEngine()->getType() == FCLEngine::getTypeStatic());
-  assert(objectData2->getEngine()->getType() == FCLEngine::getTypeStatic());
+  assert(objectData1->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
+  assert(objectData2->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
 
   auto castedData1 = static_cast<const FCLCollisionObjectData*>(objectData1);
   auto castedData2 = static_cast<const FCLCollisionObjectData*>(objectData2);
@@ -175,7 +165,7 @@ bool FCLEngine::detect(
 }
 
 //==============================================================================
-bool FCLEngine::detect(
+bool FCLCollisionDetector::detect(
     CollisionObjectData* objectData,
     CollisionGroupData* groupData,
     const Option& option, Result& result)
@@ -184,8 +174,8 @@ bool FCLEngine::detect(
 
   assert(objectData);
   assert(groupData);
-  assert(objectData->getEngine()->getType() == FCLEngine::getTypeStatic());
-  assert(groupData->getEngine()->getType() == FCLEngine::getTypeStatic());
+  assert(objectData->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
 
   auto castedObjData = static_cast<FCLCollisionObjectData*>(objectData);
   auto castedGrpData = static_cast<FCLCollisionGroupData*>(groupData);
@@ -200,13 +190,14 @@ bool FCLEngine::detect(
 }
 
 //==============================================================================
-bool FCLEngine::detect(CollisionGroupData* groupData,
-                       const Option& option, Result& result)
+bool FCLCollisionDetector::detect(
+    CollisionGroupData* groupData,
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData);
-  assert(groupData->getEngine()->getType() == FCLEngine::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
 
   auto castedData = static_cast<FCLCollisionGroupData*>(groupData);
 
@@ -219,16 +210,17 @@ bool FCLEngine::detect(CollisionGroupData* groupData,
 }
 
 //==============================================================================
-bool FCLEngine::detect(CollisionGroupData* groupData1,
-                       CollisionGroupData* groupData2,
-                       const Option& option, Result& result)
+bool FCLCollisionDetector::detect(
+    CollisionGroupData* groupData1,
+    CollisionGroupData* groupData2,
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
   assert(groupData1);
   assert(groupData2);
-  assert(groupData1->getEngine()->getType() == FCLEngine::getTypeStatic());
-  assert(groupData2->getEngine()->getType() == FCLEngine::getTypeStatic());
+  assert(groupData1->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
+  assert(groupData2->getCollisionDetector()->getType() == FCLCollisionDetector::getTypeStatic());
 
   auto castedData1 = static_cast<FCLCollisionGroupData*>(groupData1);
   auto castedData2 = static_cast<FCLCollisionGroupData*>(groupData2);
@@ -363,21 +355,6 @@ void postProcess(const fcl::CollisionResult& fclResult,
       result.contacts.push_back(convertContact(fclContact, o1, o2));
     }
   }
-
-  std::cout << "=================" << std::endl;
-  std::cout << "# of contacts:" << result.contacts.size() << std::endl;
-  std::cout << "=================" << std::endl;
-  for (auto i = 0u; i < result.contacts.size(); ++i)
-  {
-    auto contact = result.contacts[i];
-
-    std::cout << "Contact (" << i << ")" << std::endl;
-    std::cout << "Point : " << contact.point.transpose() << std::endl;
-    std::cout << "Normal: " << contact.normal.transpose() << std::endl;
-    std::cout << "Depth : " << contact.penetrationDepth << std::endl;
-    std::cout << std::endl;
-  }
-  std::cout << "=================" << std::endl;
 }
 
 //==============================================================================

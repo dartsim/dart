@@ -40,8 +40,7 @@
 #include <memory>
 
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/Engine.h"
-#include "dart/collision/fcl/FCLEngine.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/dynamics/SmartPointer.h"
 

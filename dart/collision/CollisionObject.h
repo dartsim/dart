@@ -39,7 +39,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/Engine.h"
+#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/SmartPointer.h"
 #include "dart/collision/CollisionObjectData.h"
 
@@ -49,6 +49,8 @@ namespace collision {
 class CollisionObject
 {
 public:
+
+  friend class CollisionGroup;
 
   /// Return collision detection engine associated with this CollisionObject
   CollisionDetector* getCollisionDetector() const;
@@ -84,8 +86,14 @@ public:
 protected:
 
   /// Contructor
-  CollisionObject(const CollisionDetectorPtr& engine,
+  CollisionObject(const CollisionDetectorPtr& collisionDetector,
                   const dynamics::ShapePtr& shape);
+
+  void addGroup(CollisionGroup* group);
+
+  void removeGroup(CollisionGroup* group);
+
+  bool hasGroup(CollisionGroup* group);
 
 protected:
 
@@ -97,6 +105,8 @@ protected:
 
   /// Collision detection engine specific data
   std::unique_ptr<CollisionObjectData> mEngineData;
+
+  std::vector<CollisionGroup*> mGroups;
 
 };
 

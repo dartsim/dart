@@ -43,10 +43,10 @@ namespace collision {
 
 //==============================================================================
 DARTCollisionGroupData::DARTCollisionGroupData(
-    Engine* engine,
+    CollisionDetector* collisionDetector,
     CollisionGroup* parent,
     const CollisionObjectPtrs& /*collObjects*/)
-  : CollisionGroupData(engine, parent)
+  : CollisionGroupData(collisionDetector, parent)
 {
   // Do nothing
 }
@@ -58,7 +58,7 @@ DARTCollisionGroupData::clone(
     const CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new DARTCollisionGroupData(mEngine, newParent, collObjects));
+        new DARTCollisionGroupData(mCollisionDetector, newParent, collObjects));
 }
 
 //==============================================================================
@@ -70,6 +70,13 @@ void DARTCollisionGroupData::init()
 //==============================================================================
 void DARTCollisionGroupData::addCollisionObject(
     const CollisionObjectPtr& /*object*/, const bool /*init*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroupData::addCollisionObjects(
+    const CollisionObjectPtrs& /*collObjects*/, const bool /*init*/)
 {
   // Do nothing
 }

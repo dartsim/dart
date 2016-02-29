@@ -49,7 +49,8 @@ class CollisionObjectData
 {
 public:
 
-  CollisionObjectData(Engine* engine, CollisionObject* parent);
+  CollisionObjectData(CollisionDetector* collisionDetector,
+                      CollisionObject* parent);
 
   virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
@@ -60,9 +61,9 @@ public:
   virtual void update() = 0;
   // TODO(JS): reorganize updateTansform/updateShape/update
 
-  Engine* getEngine();
+  CollisionDetector* getCollisionDetector();
 
-  const Engine* getEngine() const;
+  const CollisionDetector* getCollisionDetector() const;
 
   CollisionObject* getCollisionObject();
 
@@ -70,7 +71,7 @@ public:
 
 protected:
 
-  Engine* mEngine;
+  CollisionDetector* mCollisionDetector;
 
   CollisionObject* mParent;
 

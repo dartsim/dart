@@ -51,15 +51,18 @@ public:
 
   using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
 
-  CollisionGroupData(Engine* engine, CollisionGroup* parent);
+  CollisionGroupData(CollisionDetector* collisionDetector,
+                     CollisionGroup* parent);
 
+  /// Initiate collision group data. This function should be called whenever
+  /// collision object is added or removed.
   virtual void init() = 0;
 
   virtual void addCollisionObject(const CollisionObjectPtr& object,
                                   bool init = true) = 0;
-//  virtual void addCollisionObjects(const CollisionObjectPtr& object) = 0;
 
-  // TODO(JS): notifyCollisionObjectUpdated()?
+  virtual void addCollisionObjects(const CollisionObjectPtrs& objects,
+                                   bool init = true) = 0;
 
   virtual void removeCollisionObject(const CollisionObjectPtr& object,
                                      bool init = true) = 0;
@@ -74,9 +77,9 @@ public:
       CollisionGroup* newCollisionGroup,
       const CollisionObjectPtrs& collObjects) const = 0;
 
-  Engine* getEngine();
+  CollisionDetector* getCollisionDetector();
 
-  const Engine* getEngine() const;
+  const CollisionDetector* getCollisionDetector() const;
 
   CollisionGroup* getCollisionGroup();
 
@@ -84,7 +87,7 @@ public:
 
 protected:
 
-  Engine* mEngine;
+  CollisionDetector* mCollisionDetector;
 
   CollisionGroup* mParent;
 
