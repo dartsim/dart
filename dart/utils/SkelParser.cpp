@@ -250,45 +250,32 @@ simulation::WorldPtr SkelParser::readWorld(
     }
 
     // Collision detector
+    std::shared_ptr<collision::CollisionDetector> collision_detector;
+
     if (hasElement(physicsElement, "collision_detector"))
     {
       std::string strCD = getValueString(physicsElement, "collision_detector");
+
       if (strCD == "fcl_mesh")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::FCLMeshCollisionDetector::create());
-      }
+        collision_detector = collision::FCLMeshCollisionDetector::create();
       else if (strCD == "fcl")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::FCLCollisionDetector::create());
-      }
+        collision_detector = collision::FCLCollisionDetector::create();
       else if (strCD == "dart")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::DARTCollisionDetector::create());
-      }
+        collision_detector = collision::DARTCollisionDetector::create();
 #ifdef HAVE_BULLET_COLLISION
       else if (strCD == "bullet")
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::BulletCollisionDetector::create());
-      }
+        collision_detector = collision::BulletCollisionDetector::create();
 #endif
       else
-      {
-        newWorld->getConstraintSolver()->setCollisionDetector(
-            collision::FCLMeshCollisionDetector::create());
         dtwarn << "Unknown collision detector[" << strCD << "]. "
-               << "Default collision detector[fcl] will be loaded."
-               << std::endl;
-      }
+               << "Default collision detector[fcl_mesh] will be loaded.\n";
     }
-    else
-    {
-      newWorld->getConstraintSolver()->setCollisionDetector(
-          collision::FCLCollisionDetector::create());
-    }
+
+    if (!collision_detector)
+      collision_detector = collision::FCLMeshCollisionDetector::create();
+
+    newWorld->getConstraintSolver()->setCollisionDetector(
+      std::move(collision_detector));
   }
 
   //--------------------------------------------------------------------------

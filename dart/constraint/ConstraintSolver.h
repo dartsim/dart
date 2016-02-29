@@ -41,6 +41,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/constraint/SmartPointer.h"
 #include "dart/constraint/ConstraintBase.h"
 #include "dart/collision/CollisionDetector.h"
@@ -102,11 +103,21 @@ public:
   /// Get time step
   double getTimeStep() const;
 
+  /// Set collision detector. This function acquires ownership of the
+  /// CollisionDetector passed as an argument. This method is deprecated in
+  /// favor of the overload that accepts a std::shared_ptr.
+  DEPRECATED(7.1)
+  void setCollisionDetector(collision::CollisionDetector* collisionDetector);
+
   /// Set collision detector
-  void setCollisionDetector(const collision::CollisionDetectorPtr& detector);
+  void setCollisionDetector(
+    const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
 
   /// Get collision detector
-  collision::CollisionDetectorPtr getCollisionDetector() const;
+  collision::CollisionDetectorPtr getCollisionDetector();
+
+  /// Get collision detector
+  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
 
   /// Return collision group of collision objects that are added to this
   /// ConstraintSolver
@@ -117,7 +128,7 @@ public:
   const collision::CollisionGroup* getCollisionGroup() const;
 
   /// Return the last collision checking result
-  collision::Result getLastCollisionResult();
+  collision::Result& getLastCollisionResult();
 
   /// Return the last collision checking result
   const collision::Result& getLastCollisionResult() const;
@@ -152,7 +163,7 @@ private:
 
   using CollisionDetector = collision::CollisionDetector;
 
-  /// Collision detection engine
+  /// Collision detector
   std::shared_ptr<collision::CollisionDetector> mCollisionDetector;
 
   /// Collision group
@@ -165,7 +176,7 @@ private:
   double mTimeStep;
 
   /// LCP solver
-  LCPSolver* mLCPSolver;
+  std::unique_ptr<LCPSolver> mLCPSolver;
 
   /// Skeleton list
   std::vector<dynamics::SkeletonPtr> mSkeletons;

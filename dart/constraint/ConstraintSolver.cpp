@@ -76,7 +76,7 @@ ConstraintSolver::ConstraintSolver(double _timeStep)
 //==============================================================================
 ConstraintSolver::~ConstraintSolver()
 {
-  delete mLCPSolver;
+  // Do nothing
 }
 
 //==============================================================================
@@ -202,12 +202,20 @@ double ConstraintSolver::getTimeStep() const
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-    const collision::CollisionDetectorPtr& detector)
+    collision::CollisionDetector* collisionDetector)
 {
-  assert(detector && "Invalid collision detector.");
+  setCollisionDetector(
+    std::shared_ptr<collision::CollisionDetector>(collisionDetector));
+}
+
+//==============================================================================
+void ConstraintSolver::setCollisionDetector(
+    const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
+{
+  assert(collisionDetector && "Invalid collision detector.");
 
   // Change the collision detector of the constraint solver to new one
-  mCollisionDetector = detector;
+  mCollisionDetector = collisionDetector;
 
   auto newCollisionGroup = mCollisionDetector->createCollisionGroup(
         mCollisionGroup->getCollisionObjects());
@@ -215,9 +223,17 @@ void ConstraintSolver::setCollisionDetector(
 }
 
 //==============================================================================
-collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector() const
+collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector()
 {
   return mCollisionDetector;
+}
+
+//==============================================================================
+collision::ConstCollisionDetectorPtr
+ConstraintSolver::getCollisionDetector() const
+{
+  return std::const_pointer_cast<const collision::CollisionDetector>(
+        mCollisionDetector);
 }
 
 //==============================================================================
@@ -233,7 +249,7 @@ const collision::CollisionGroup* ConstraintSolver::getCollisionGroup() const
 }
 
 //==============================================================================
-collision::Result ConstraintSolver::getLastCollisionResult()
+collision::Result& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;
 }

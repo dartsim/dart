@@ -5,11 +5,11 @@ file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB detail_hdrs "detail/*.h")
 
 # Add subdirectories
-#add_subdirectory(dart)
+add_subdirectory(dart)
 add_subdirectory(fcl)
 add_subdirectory(fcl_mesh)
 if(HAVE_BULLET_COLLISION)
-#  add_subdirectory(bullet)
+  add_subdirectory(bullet)
 endif()
 
 set(dart_collision_hdrs ${hdrs} "${dart_collision_hdrs};${detail_hdrs}" PARENT_SCOPE)
