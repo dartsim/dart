@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionObjectData.h"
+#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
 
 #include <fcl/BVH/BVH_model.h>
 

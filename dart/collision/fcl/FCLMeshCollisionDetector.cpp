@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#include "dart/collision/fcl/FCLMeshCollisionDetector.h"
 
 #include <assimp/scene.h>
 
@@ -50,9 +50,9 @@
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
 #include "dart/collision/fcl/FCLCollisionObjectData.h"
-#include "dart/collision/fcl_mesh/tri_tri_intersection_test.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionObjectData.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionGroupData.h"
+#include "dart/collision/fcl/tri_tri_intersection_test.h"
+#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
+#include "dart/collision/fcl/FCLMeshCollisionGroupData.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"

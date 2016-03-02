@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl_mesh/FCLMeshCollisionGroupData.h"
+#include "dart/collision/fcl/FCLMeshCollisionGroupData.h"
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionObjectData.h"
+#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
 
 namespace dart {
 namespace collision {

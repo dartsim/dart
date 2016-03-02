@@ -7,7 +7,6 @@ file(GLOB detail_hdrs "detail/*.h")
 # Add subdirectories
 add_subdirectory(dart)
 add_subdirectory(fcl)
-add_subdirectory(fcl_mesh)
 if(HAVE_BULLET_COLLISION)
   add_subdirectory(bullet)
 endif()
@@ -23,7 +22,6 @@ set(dart_collision_srcs ${srcs} "${dart_collision_srcs};${detail_srcs}" PARENT_S
 #  dart_math
 #  dart_collision_dart
 #  dart_collision_fcl
-#  dart_collision_fcl_mesh
 #  ${DART_CORE_DEPENDENCIES}
 #)
 #if(HAVE_BULLET_COLLISION)
@@ -37,7 +35,6 @@ set(
   ${header_names}
   dart/dart.h
   fcl/fcl.h
-  fcl_mesh/fcl_mesh.h
 )
 if(HAVE_BULLET_COLLISION)
   set(header_names ${header_names} bullet/bullet.h)
