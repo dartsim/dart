@@ -170,6 +170,9 @@ private:
   std::shared_ptr<collision::CollisionGroup> mCollisionGroup;
 
   /// Last collision checking result
+  collision::Option mCollisionOption;
+
+  /// Last collision checking result
   collision::Result mCollisionResult;
 
   /// Time step

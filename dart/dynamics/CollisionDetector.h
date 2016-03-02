@@ -40,12 +40,22 @@
 #include <memory>
 
 #include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionFilter.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
+
+struct BodyNodeCollisionFilter : collision::CollisionFilter
+{
+  bool needCollision(const collision::CollisionObject* object1,
+                     const collision::CollisionObject* object2) const override;
+
+  bool isAdjacentBodies(const BodyNode* bodyNode1,
+                        const BodyNode* bodyNode2) const;
+};
 
 class ShapeFrameCollisionObject : public collision::CollisionObject
 {

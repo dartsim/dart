@@ -46,9 +46,6 @@
 namespace dart {
 namespace collision {
 
-class CollisionDetector;
-class CollisionFilter;
-
 class CollisionGroup
 {
 public:
@@ -137,12 +134,6 @@ public:
   /// detection is performed by the engine in most cases.
   void updateEngineData();
 
-  /// Return collision filter
-  CollisionFilter* getCollisionFilter();
-
-  /// Return (const) collision filter
-  const CollisionFilter* getCollisionFilter() const;
-
 protected:
 
   /// Collision detector
@@ -153,9 +144,6 @@ protected:
 
   /// Engine specific data
   std::unique_ptr<CollisionGroupData> mEngineData;
-
-  /// Collision filter
-  std::unique_ptr<CollisionFilter> mCollisionFilter;
 
 };
 

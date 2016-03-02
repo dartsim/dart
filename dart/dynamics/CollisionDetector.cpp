@@ -42,6 +42,51 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+bool BodyNodeCollisionFilter::needCollision(
+    const collision::CollisionObject* object1,
+    const collision::CollisionObject* object2) const
+{
+  auto castedObj1 = static_cast<const ShapeFrameCollisionObject*>(object1);
+  auto castedObj2 = static_cast<const ShapeFrameCollisionObject*>(object2);
+
+  auto bodyNode1 = castedObj1->getBodyNode();
+  auto bodyNode2 = castedObj2->getBodyNode();
+
+  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
+    return false;
+
+  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
+  {
+    auto skeleton = bodyNode1->getSkeleton();
+
+    if (!skeleton->isEnabledSelfCollisionCheck())
+      return false;
+
+    if (!skeleton->isEnabledAdjacentBodyCheck())
+    {
+      if (isAdjacentBodies(bodyNode1, bodyNode2))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool BodyNodeCollisionFilter::isAdjacentBodies(const BodyNode* bodyNode1,
+                                               const BodyNode* bodyNode2) const
+{
+  if ((bodyNode1->getParentBodyNode() == bodyNode2)
+      || (bodyNode2->getParentBodyNode() == bodyNode1))
+  {
+    assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 ShapeFrameCollisionObject::ShapeFrameCollisionObject(
     const collision::CollisionDetectorPtr& collisionDetector,
     const dynamics::ShapePtr& shape,

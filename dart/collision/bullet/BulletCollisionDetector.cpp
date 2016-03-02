@@ -56,6 +56,55 @@ namespace collision {
 
 namespace {
 
+struct BulletOverlapFilterCallback : public btOverlapFilterCallback
+{
+  BulletOverlapFilterCallback(CollisionFilter* filter)
+    : mFilter(filter)
+  {
+    // Do nothing
+  }
+
+  // return true when pairs need collision
+  bool needBroadphaseCollision(btBroadphaseProxy* proxy0,
+                               btBroadphaseProxy* proxy1) const override
+  {
+    assert((proxy0 != nullptr && proxy1 != nullptr) &&
+           "Bullet broadphase overlapping pair proxies are nullptr");
+
+    bool collide = (proxy0->m_collisionFilterGroup &
+                    proxy1->m_collisionFilterMask) != 0;
+    collide = collide && (proxy1->m_collisionFilterGroup &
+                          proxy0->m_collisionFilterMask);
+
+    if (collide && mFilter)
+    {
+      auto bulletCollObj0
+          = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+      auto bulletCollObj1
+          = static_cast<btCollisionObject*>(proxy1->m_clientObject);
+
+      auto userData0 = static_cast<BulletCollisionObjectUserData*>(
+            bulletCollObj0->getUserPointer());
+      auto userData1 = static_cast<BulletCollisionObjectUserData*>(
+            bulletCollObj1->getUserPointer());
+
+      auto collisionDetector = userData0->collisionDetector;
+      assert(collisionDetector == userData1->collisionDetector);
+
+      auto castedCD = static_cast<BulletCollisionDetector*>(collisionDetector);
+
+      auto collObj0 = castedCD->findCollisionObject(bulletCollObj0);
+      auto collObj1 = castedCD->findCollisionObject(bulletCollObj1);
+
+      collide = mFilter->needCollision(collObj0, collObj1);
+    }
+
+    return collide;
+  }
+
+  CollisionFilter* mFilter;
+};
+
 struct BulletContactResultCallback : btCollisionWorld::ContactResultCallback
 {
   BulletContactResultCallback(Result& result);
@@ -101,6 +150,29 @@ const std::string& BulletCollisionDetector::getTypeStatic()
 const std::string& BulletCollisionDetector::getType() const
 {
   return getTypeStatic();
+}
+
+//==============================================================================
+BulletCollisionObjectData* BulletCollisionDetector::findCollisionObjectData(
+    btCollisionObject* bulletCollObj) const
+{
+  auto search = mCollisionObjectMap.find(bulletCollObj);
+  if (mCollisionObjectMap.end() != search)
+    return search->second;
+  else
+    return nullptr;
+}
+
+//==============================================================================
+CollisionObject* BulletCollisionDetector::findCollisionObject(
+    btCollisionObject* bulletCollObj) const
+{
+  auto data = findCollisionObjectData(bulletCollObj);
+
+  if (data)
+    return data->getCollisionObject();
+  else
+    return nullptr;
 }
 
 //==============================================================================
@@ -271,7 +343,7 @@ bool BulletCollisionDetector::detect(
 //==============================================================================
 bool BulletCollisionDetector::detect(
     CollisionGroupData* groupData,
-    const Option& /*option*/, Result& result)
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
@@ -282,8 +354,11 @@ bool BulletCollisionDetector::detect(
   auto castedData = static_cast<BulletCollisionGroupData*>(groupData);
 
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
-//  auto bulletPairCache = bulletCollisionWorld->getPairCache();
-//  bulletPairCache->setOverlapFilterCallback();
+  auto bulletPairCache = bulletCollisionWorld->getPairCache();
+
+  auto filterCallback
+      = new BulletOverlapFilterCallback(option.collisionFilter.get());
+  bulletPairCache->setOverlapFilterCallback(filterCallback);
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 

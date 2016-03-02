@@ -40,9 +40,12 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-Option::Option(bool enableContact, size_t maxNumContacts)
+Option::Option(bool enableContact,
+    size_t maxNumContacts,
+    const std::shared_ptr<CollisionFilter>& collisionFilter)
   : enableContact(enableContact),
-    maxNumContacts(maxNumContacts)
+    maxNumContacts(maxNumContacts),
+    collisionFilter(collisionFilter)
 {
   // Do nothing
 }

@@ -46,6 +46,7 @@ namespace dart {
 namespace collision {
 
 class CollisionGroup;
+class BulletCollisionObjectData;
 
 class BulletCollisionDetector : public CollisionDetector
 {
@@ -65,6 +66,12 @@ public:
   const std::string& getType() const override;
 
   using CollisionDetector::detect;
+
+  BulletCollisionObjectData* findCollisionObjectData(
+      btCollisionObject* bulletCollObj) const;
+
+  CollisionObject* findCollisionObject(
+      btCollisionObject* bulletCollObj) const;
 
 protected:
 
@@ -122,6 +129,9 @@ protected:
   using ShapeMapValue = std::pair<BulletCollsionPack, size_t>;
 
   std::map<dynamics::ShapePtr, ShapeMapValue> mShapeMap;
+
+  std::map<btCollisionObject*,
+           BulletCollisionObjectData*> mCollisionObjectMap;
 
   std::shared_ptr<CollisionGroup> mBulletCollisionGroupForSinglePair;
 

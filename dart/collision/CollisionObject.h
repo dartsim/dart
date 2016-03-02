@@ -83,7 +83,6 @@ public:
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void updateEngineData();
-  // TODO(JS): remove. instead, CollisionObjectData should be updated by engine
 
 protected:
 

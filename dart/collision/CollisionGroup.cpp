@@ -52,8 +52,7 @@ CollisionGroup::CollisionGroup(
   : mCollisionDetector(collisionDetector),
     mCollisionObjects(collObjects),
     mEngineData(mCollisionDetector->createCollisionGroupData(
-        this, mCollisionObjects).release()),
-    mCollisionFilter(nullptr)
+        this, mCollisionObjects).release())
 {
   assert(mCollisionDetector);
 }
@@ -257,18 +256,6 @@ void CollisionGroup::updateEngineData()
     collObj->updateEngineData();
 
   mEngineData->update();
-}
-
-//==============================================================================
-CollisionFilter* CollisionGroup::getCollisionFilter()
-{
-  return mCollisionFilter.get();
-}
-
-//==============================================================================
-const CollisionFilter* CollisionGroup::getCollisionFilter() const
-{
-  return mCollisionFilter.get();
 }
 
 }  // namespace collision

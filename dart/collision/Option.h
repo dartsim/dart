@@ -38,9 +38,12 @@
 #define DART_COLLISION_OPTION_H_
 
 #include <cstddef>
+#include <memory>
 
 namespace dart {
 namespace collision {
+
+class CollisionFilter;
 
 struct Option
 {
@@ -55,9 +58,13 @@ struct Option
   /// Maximum number of contacts to detect
   size_t maxNumContacts;
 
+  /// CollisionFilter
+  std::shared_ptr<CollisionFilter> collisionFilter;
+
   /// Constructor
   Option(bool enableContact = true,
-         size_t maxNumContacts = 100);
+         size_t maxNumContacts = 100,
+         const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };
 
 }  // namespace collision

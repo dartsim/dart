@@ -45,7 +45,7 @@
 namespace dart {
 namespace collision {
 
-class FCLCollisionObject;
+class FCLCollisionObjectData;
 
 class FCLCollisionDetector : public CollisionDetector
 {
@@ -63,6 +63,12 @@ public:
   const std::string& getType() const override;
 
   using CollisionDetector::detect;
+
+  FCLCollisionObjectData* findCollisionObjectData(
+      fcl::CollisionObject* fclCollObj) const;
+
+  CollisionObject* findCollisionObject(
+      fcl::CollisionObject* fclCollObj) const;
 
 protected:
 
@@ -99,8 +105,6 @@ protected:
   bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
               const Option& option, Result& result) override;
 
-  FCLCollisionObject* findCollisionObject(fcl::CollisionObject* fclCollObj);
-
 protected:
 
   using ShapeMapValue
@@ -108,7 +112,7 @@ protected:
 
   std::map<dynamics::ShapePtr, ShapeMapValue> mShapeMap;
 
-  std::map<fcl::CollisionObject*, FCLCollisionObject*> mFCLObjectMap;
+  std::map<fcl::CollisionObject*, FCLCollisionObjectData*> mCollisionObjectMap;
 
 };
 

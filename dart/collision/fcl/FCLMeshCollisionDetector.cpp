@@ -86,6 +86,9 @@ void convertOption(const Option& option, fcl::CollisionRequest& fclRequest);
 /// collision algorithm.
 struct FCLCollisionCallbackData
 {
+  /// Collision detector
+  FCLMeshCollisionDetector* mFclCollisionDetector;
+
   /// FCL collision request
   fcl::CollisionRequest mFclRequest;
 
@@ -103,9 +106,11 @@ struct FCLCollisionCallbackData
 
   /// Constructor
   FCLCollisionCallbackData(
+      FCLMeshCollisionDetector* collisionDetector,
       const Option* option = nullptr,
       Result* result = nullptr)
-    : mOption(option),
+    : mFclCollisionDetector(collisionDetector),
+      mOption(option),
       mResult(result),
       done(false)
   {
@@ -658,6 +663,29 @@ const std::string& FCLMeshCollisionDetector::getType() const
 }
 
 //==============================================================================
+FCLMeshCollisionObjectData* FCLMeshCollisionDetector::findCollisionObjectData(
+    fcl::CollisionObject* fclCollObj) const
+{
+  auto search = mCollisionObjectMap.find(fclCollObj);
+  if (mCollisionObjectMap.end() != search)
+    return search->second;
+  else
+    return nullptr;
+}
+
+//==============================================================================
+CollisionObject* FCLMeshCollisionDetector::findCollisionObject(
+    fcl::CollisionObject* fclCollObj) const
+{
+  auto data = findCollisionObjectData(fclCollObj);
+
+  if (data)
+    return data->getCollisionObject();
+  else
+    return nullptr;
+}
+
+//==============================================================================
 const std::string& FCLMeshCollisionDetector::getTypeStatic()
 {
   static const std::string& type("FCLMesh");
@@ -734,7 +762,7 @@ bool FCLMeshCollisionDetector::detect(
   auto fclCollObj1 = castedData1->getFCLCollisionObject();
   auto fclCollObj2 = castedData2->getFCLCollisionObject();
 
-  FCLCollisionCallbackData collData(&option, &result);
+  FCLCollisionCallbackData collData(this, &option, &result);
   collisionCallback(fclCollObj1, fclCollObj2, &collData);
 
   return !result.contacts.empty();
@@ -759,7 +787,7 @@ bool FCLMeshCollisionDetector::detect(
   auto fclObject = castedObjData->getFCLCollisionObject();
   auto broadPhaseAlg = castedGrpData->getFCLCollisionManager();
 
-  FCLCollisionCallbackData collData(&option, &result);
+  FCLCollisionCallbackData collData(this, &option, &result);
   broadPhaseAlg->collide(fclObject, &collData, collisionCallback);
 
   return !result.contacts.empty();
@@ -779,7 +807,7 @@ bool FCLMeshCollisionDetector::detect(
 
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
-  FCLCollisionCallbackData collData(&option, &result);
+  FCLCollisionCallbackData collData(this, &option, &result);
   broadPhaseAlg->collide(&collData, collisionCallback);
 
   return !result.contacts.empty();
@@ -804,7 +832,7 @@ bool FCLMeshCollisionDetector::detect(
   auto broadPhaseAlg1 = castedData1->getFCLCollisionManager();
   auto broadPhaseAlg2 = castedData2->getFCLCollisionManager();
 
-  FCLCollisionCallbackData collData(&option, &result);
+  FCLCollisionCallbackData collData(this, &option, &result);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
 
   return !result.contacts.empty();
@@ -819,21 +847,28 @@ bool collisionCallback(fcl::CollisionObject* o1,
                        fcl::CollisionObject* o2,
                        void* cdata)
 {
-  FCLCollisionCallbackData* collData = static_cast<FCLCollisionCallbackData*>(cdata);
+  auto collData = static_cast<FCLCollisionCallbackData*>(cdata);
 
-  const fcl::CollisionRequest& fclRequest = collData->mFclRequest;
-        fcl::CollisionResult&  fclResult  = collData->mFclResult;
-        Result&                result     = *(collData->mResult);
-//  FCLEngine*        cd      = collData->collisionDetector;
-  // TODO(JS): take filter object instead of collision detector
+  const auto& fclRequest = collData->mFclRequest;
+  auto& fclResult = collData->mFclResult;
+  auto& result = *(collData->mResult);
+  auto option = collData->mOption;
+  auto filter = option->collisionFilter;
 
   if (collData->done)
     return true;
 
   // Filtering
-//  if (!cd->isCollidable(cd->findCollisionNode(o1), cd->findCollisionNode(o2)))
-//    return collData->done;
-  // TODO(JS): disabled until other functionalities are implemented
+  if (filter)
+  {
+    auto collisionDetector = collData->mFclCollisionDetector;
+
+    auto collObj1 = collisionDetector->findCollisionObject(o1);
+    auto collObj2 = collisionDetector->findCollisionObject(o2);
+
+    if (filter->needCollision(collObj1, collObj2))
+      return collData->done;
+  }
 
   // Clear previous results
   fclResult.clear();

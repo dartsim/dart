@@ -67,6 +67,9 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver(double _timeStep)
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroup()),
+    mCollisionOption(collision::Option(true, 100,
+        std::unique_ptr<collision::CollisionFilter>(
+        new BodyNodeCollisionFilter()))),
     mTimeStep(_timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
@@ -354,9 +357,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.contacts.clear();
 
-  collision::Option option;
-  option.enableContact = true;
-  mCollisionGroup->detect(option, mCollisionResult);
+  mCollisionGroup->detect(mCollisionOption, mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();

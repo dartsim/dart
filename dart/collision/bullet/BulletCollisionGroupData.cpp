@@ -59,11 +59,6 @@ BulletCollisionGroupData::BulletCollisionGroupData(
                            mBulletProadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
-  btOverlapFilterCallback* filterCallback = new CollisionFilter();
-  btOverlappingPairCache* pairCache = mBulletCollisionWorld->getPairCache();
-  assert(pairCache != nullptr);
-  pairCache->setOverlapFilterCallback(filterCallback);
-
   addCollisionObjects(collObjects, true);
 }
 
@@ -73,7 +68,8 @@ std::unique_ptr<CollisionGroupData> BulletCollisionGroupData::clone(
     const CollisionObjectPtrs& collObjects) const
 {
   return std::unique_ptr<CollisionGroupData>(
-        new BulletCollisionGroupData(mCollisionDetector, newParent, collObjects));
+        new BulletCollisionGroupData(mCollisionDetector, newParent,
+                                     collObjects));
 }
 
 //==============================================================================
@@ -150,40 +146,6 @@ void BulletCollisionGroupData::update()
 btCollisionWorld* BulletCollisionGroupData::getBulletCollisionWorld() const
 {
   return mBulletCollisionWorld.get();
-}
-
-//==============================================================================
-bool BulletCollisionGroupData::CollisionFilter::needBroadphaseCollision(
-    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
-{
-  assert((proxy0 != nullptr && proxy1 != nullptr) &&
-         "Bullet broadphase overlapping pair proxies are nullptr");
-
-  bool collide = (proxy0->m_collisionFilterGroup &
-                  proxy1->m_collisionFilterMask) != 0;
-  collide = collide && (proxy1->m_collisionFilterGroup &
-                        proxy0->m_collisionFilterMask);
-
-  if (collide)
-  {
-//    auto collObj0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-//    auto collObj1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
-
-//    auto userData0 = static_cast<BulletCollisionObjectUserData*>(collObj0->getUserPointer());
-//    auto userData1 = static_cast<BulletCollisionObjectUserData*>(collObj1->getUserPointer());
-
-//    // Assume single collision detector
-//    assert(userData0->collisionDetector == userData1->collisionDetector);
-
-//    auto collGroup0 = userData0->group;
-//    auto collGroup1 = userData1->group;
-
-//    if (!collGroup0 || !)
-
-    // TODO(JS): check collision pair if they are enabled.
-  }
-
-  return collide;
 }
 
 }  // namespace collision
