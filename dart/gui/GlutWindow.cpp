@@ -161,7 +161,7 @@ void GlutWindow::runTimer(int _val) {
 bool GlutWindow::screenshot() {
   static int count = 0;
   const char directory[8] = "frames";
-  char fileBase[8] = "Capture";
+  const char fileBase[8] = "Capture";
   char fileName[32];
 
   // create frames directory if not exists
