@@ -183,7 +183,7 @@ bool GlutWindow::screenshot() {
   {
     dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
            << "cannot write a screenshot\n";
-    return;
+    return false;
   }
 
   // png
