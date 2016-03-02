@@ -107,6 +107,10 @@ protected:
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
 
+  /// Create collision detection engine specific data for CollisionObject
+  virtual void reclaimCollisionObjectData(
+      CollisionObjectData* collisionObjectData) = 0;
+
   /// Create collision detection engine specific data for CollisionGroup
   virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
       CollisionGroup* parent,

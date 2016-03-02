@@ -54,8 +54,6 @@ public:
 
   virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
 
-  virtual void updateShape(const dynamics::ShapePtr& shape) = 0;
-
   /// Update engine data. This function will be called ahead of every collision
   /// checking
   virtual void update() = 0;

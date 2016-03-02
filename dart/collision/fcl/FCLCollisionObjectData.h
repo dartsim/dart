@@ -52,34 +52,32 @@ class CollisionObject;
 struct FCLCollisionObjectUserData
 {
   CollisionObject* mCollisionObject;
-  dynamics::BodyNode* mBodyNode;
-  dynamics::ShapePtr mShape;
 
-  FCLCollisionObjectUserData(CollisionObject* mFclCollNode,
-                               const dynamics::ShapePtr& mShape);
-
+  FCLCollisionObjectUserData(CollisionObject* collisionObject);
 };
 
 class FCLCollisionObjectData : public CollisionObjectData
 {
 public:
 
-  /// Constructor
-  FCLCollisionObjectData(CollisionDetector* collisionDetector,
-                         CollisionObject* parent,
-                         const dynamics::ShapePtr& shape);
+  friend class FCLCollisionDetector;
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void updateShape(const dynamics::ShapePtr& shape) override;
 
   // Documentation inherited
   void update() override;
 
   /// Return FCL collision object
   fcl::CollisionObject* getFCLCollisionObject() const;
+
+protected:
+
+  /// Constructor
+  FCLCollisionObjectData(
+      CollisionDetector* collisionDetector,
+      CollisionObject* parent,
+      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
 
 protected:
 

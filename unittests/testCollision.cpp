@@ -543,8 +543,11 @@ void testFreeCollisionObjects()
   EXPECT_FALSE(obj2->detect(obj3.get(), option, result));
   EXPECT_FALSE(obj1->detect(group2.get(), option, result));
   EXPECT_FALSE(group1->detect(obj3.get(), option, result));
-//  EXPECT_FALSE(group1->detect(group2.get(), option, result));
-  EXPECT_FALSE(group2->detect(option, result));
+  if (cd->getType() != "Bullet")
+  {
+    EXPECT_FALSE(group1->detect(group2.get(), option, result));
+    EXPECT_FALSE(group2->detect(option, result));
+  }
 
   obj1->setTranslation(Eigen::Vector3d::Zero());
   obj2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
@@ -552,28 +555,29 @@ void testFreeCollisionObjects()
   EXPECT_TRUE(obj1->detect(obj2.get(), option, result));
   EXPECT_TRUE(obj2->detect(obj3.get(), option, result));
   EXPECT_TRUE(obj1->detect(group2.get(), option, result));
-//  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+  if (cd->getType() != "Bullet")
+    EXPECT_TRUE(group1->detect(group2.get(), option, result));
   EXPECT_TRUE(group2->detect(option, result));
   EXPECT_TRUE(group2->detect(option, result));
 
-//  for (auto contact : result.contacts)
-//  {
-//    auto freeCollObj1 = dynamic_cast<collision::FreeCollisionObject*>(
-//          contact.collisionObject1);
-//    auto freeCollObj2 = dynamic_cast<collision::FreeCollisionObject*>(
-//          contact.collisionObject2);
+  for (auto contact : result.contacts)
+  {
+    auto freeCollObj1 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject1);
+    auto freeCollObj2 = dynamic_cast<collision::FreeCollisionObject*>(
+          contact.collisionObject2);
 
-//    EXPECT_NE(freeCollObj1, nullptr);
-//    EXPECT_NE(freeCollObj2, nullptr);
-//  }
+    EXPECT_NE(freeCollObj1, nullptr);
+    EXPECT_NE(freeCollObj2, nullptr);
+  }
 }
 
 //==============================================================================
 TEST_F(COLLISION, FreeCollisionObjects)
 {
-//  testFreeCollisionObjects<collision::FCLCollisionDetector>();
-//  testFreeCollisionObjects<collision::FCLMeshCollisionDetector>();
-//  testFreeCollisionObjects<collision::DARTCollisionDetector>();
+  testFreeCollisionObjects<collision::FCLCollisionDetector>();
+  testFreeCollisionObjects<collision::FCLMeshCollisionDetector>();
+  testFreeCollisionObjects<collision::DARTCollisionDetector>();
   testFreeCollisionObjects<collision::BulletCollisionDetector>();
 }
 
@@ -614,7 +618,7 @@ TEST_F(COLLISION, BodyNodeNodes)
   testBodyNodes<collision::FCLCollisionDetector>();
   testBodyNodes<collision::FCLMeshCollisionDetector>();
   testBodyNodes<collision::DARTCollisionDetector>();
-//  testBodyNodes<collision::BulletCollisionDetector>();
+  testBodyNodes<collision::BulletCollisionDetector>();
 }
 
 //==============================================================================
@@ -644,7 +648,7 @@ TEST_F(COLLISION, Skeletons)
   testSkeletons<collision::FCLCollisionDetector>();
   testSkeletons<collision::FCLMeshCollisionDetector>();
   testSkeletons<collision::DARTCollisionDetector>();
-//  testSkeletons<collision::BulletCollisionDetector>();
+  testSkeletons<collision::BulletCollisionDetector>();
 }
 
 //==============================================================================

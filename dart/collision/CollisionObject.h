@@ -52,6 +52,8 @@ public:
 
   friend class CollisionGroup;
 
+  virtual ~CollisionObject();
+
   /// Return collision detection engine associated with this CollisionObject
   CollisionDetector* getCollisionDetector() const;
 

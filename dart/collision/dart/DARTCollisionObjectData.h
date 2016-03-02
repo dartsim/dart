@@ -49,19 +49,19 @@ class DARTCollisionObjectData : public CollisionObjectData
 {
 public:
 
-  /// Constructor
-  DARTCollisionObjectData(CollisionDetector* collisionDetector, CollisionObject* parent);
+  friend class DARTCollisionDetector;
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
 
   // Documentation inherited
-  void updateShape(const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherited
   void update() override;
 
 protected:
+
+  /// Constructor
+  DARTCollisionObjectData(CollisionDetector* collisionDetector,
+                          CollisionObject* parent);
 
 };
 

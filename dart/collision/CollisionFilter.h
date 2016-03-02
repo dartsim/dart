@@ -34,56 +34,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
-
-#include <cstddef>
-#include <Eigen/Dense>
-
-#include <fcl/collision_object.h>
-
-#include "dart/collision/CollisionObjectData.h"
+#ifndef DART_COLLISION_COLLISIONFILTER_H_
+#define DART_COLLISION_COLLISIONFILTER_H_
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
-class FCLCollisionObjectUserData;
 
-class FCLMeshCollisionObjectData : public CollisionObjectData
+struct CollisionFilter
 {
-public:
-
-  friend class FCLMeshCollisionDetector;
-
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-
-  /// Constructor
-  FCLMeshCollisionObjectData(
-      CollisionDetector* collisionDetector,
-      CollisionObject* parent,
-      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
-
-protected:
-
-  /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
-
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-
+  virtual bool needCollision(const CollisionObject* object1,
+                             const CollisionObject* object2) const = 0;
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_COLLISIONFILTER_H_

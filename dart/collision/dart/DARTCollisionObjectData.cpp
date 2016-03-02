@@ -40,28 +40,22 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-DARTCollisionObjectData::DARTCollisionObjectData(
-    CollisionDetector* collisionDetector,
-    CollisionObject* parent)
-  : CollisionObjectData(collisionDetector, parent)
-{
-  // Do nothing
-}
-
-//==============================================================================
 void DARTCollisionObjectData::updateTransform(const Eigen::Isometry3d& /*tf*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionObjectData::updateShape(const dynamics::ShapePtr& /*shape*/)
+void DARTCollisionObjectData::update()
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionObjectData::update()
+DARTCollisionObjectData::DARTCollisionObjectData(
+    CollisionDetector* collisionDetector,
+    CollisionObject* parent)
+  : CollisionObjectData(collisionDetector, parent)
 {
   // Do nothing
 }

@@ -166,17 +166,17 @@ bool BulletCollisionGroupData::CollisionFilter::needBroadphaseCollision(
 
   if (collide)
   {
-    auto collObj0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-    auto collObj1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
+//    auto collObj0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+//    auto collObj1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
 
-    auto userData0 = static_cast<BulletCollisionObjectUserData*>(collObj0->getUserPointer());
-    auto userData1 = static_cast<BulletCollisionObjectUserData*>(collObj1->getUserPointer());
+//    auto userData0 = static_cast<BulletCollisionObjectUserData*>(collObj0->getUserPointer());
+//    auto userData1 = static_cast<BulletCollisionObjectUserData*>(collObj1->getUserPointer());
 
-    // Assume single collision detector
-    assert(userData0->collisionDetector == userData1->collisionDetector);
+//    // Assume single collision detector
+//    assert(userData0->collisionDetector == userData1->collisionDetector);
 
-    auto collGroup0 = userData0->group;
-    auto collGroup1 = userData1->group;
+//    auto collGroup0 = userData0->group;
+//    auto collGroup1 = userData1->group;
 
 //    if (!collGroup0 || !)
 

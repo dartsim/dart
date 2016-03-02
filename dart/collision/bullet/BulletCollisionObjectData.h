@@ -52,29 +52,24 @@ class CollisionObject;
 
 struct BulletCollisionObjectUserData
 {
-  dynamics::ConstShapePtr shape;
   CollisionObject* collisionObject;
 
   CollisionDetector* collisionDetector;
   CollisionGroup* group;
 
-  BulletCollisionObjectUserData();
+  BulletCollisionObjectUserData(CollisionObject* collisionObject,
+                                CollisionDetector* collisionDetector,
+                                CollisionGroup* collisionGroup);
 };
 
 class BulletCollisionObjectData : public CollisionObjectData
 {
 public:
 
-  /// Constructor
-  BulletCollisionObjectData(CollisionDetector* collisionDetector,
-                            CollisionObject* parent,
-                            const dynamics::ShapePtr& shape);
+  friend class BulletCollisionDetector;
 
   // Documentation inherited
   void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void updateShape(const dynamics::ShapePtr& shape) override;
 
   // Documentation inherited
   void update() override;
@@ -84,22 +79,15 @@ public:
 
 protected:
 
-  btGImpactMeshShape* createMesh(const Eigen::Vector3d& scale,
-                                 const aiScene* mesh);
+  /// Constructor
+  BulletCollisionObjectData(CollisionDetector* collisionDetector,
+                            CollisionObject* parent,
+                            btCollisionShape* bulletCollisionShape);
 
-  btGImpactMeshShape* createSoftMesh(const aiMesh* mesh);
+protected:
 
   /// Bullet collision geometry user data
   std::unique_ptr<BulletCollisionObjectUserData> mBulletCollisionObjectUserData;
-
-  /// Bullet triangle mesh
-  std::unique_ptr<btTriangleMesh> mBulletTriangleMesh;
-
-  /// Bullet GImpact mesh
-  std::unique_ptr<btGImpactMeshShape> mBulletGImpactMeshShape;
-
-  /// Bullet collision geometry user data
-  std::unique_ptr<btCollisionShape> mBulletCollisionShape;
 
   /// Bullet collision object
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;

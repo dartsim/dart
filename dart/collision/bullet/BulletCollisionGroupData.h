@@ -102,7 +102,7 @@ protected:
   std::unique_ptr<btBroadphaseInterface> mBulletProadphaseAlg;
 
   /// Bullet collision filter
-  std::unique_ptr<CollisionFilter> mBulletCollisionFilter;
+  std::unique_ptr<CollisionFilter> mBulletDefaultCollisionFilter;
 
   /// Bullet collision configuration
   std::unique_ptr<btCollisionConfiguration> mBulletCollisionConfiguration;

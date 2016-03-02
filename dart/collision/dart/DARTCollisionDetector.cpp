@@ -90,6 +90,13 @@ DARTCollisionDetector::createCollisionObjectData(
 }
 
 //==============================================================================
+void DARTCollisionDetector::reclaimCollisionObjectData(
+    CollisionObjectData* /*collisionObjectData*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
 std::unique_ptr<CollisionGroupData>
 DARTCollisionDetector::createCollisionGroupData(
     CollisionGroup* parent,
@@ -107,8 +114,10 @@ bool DARTCollisionDetector::detect(
 {
   result.contacts.clear();
 
-  assert(objectData1->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
-  assert(objectData2->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(objectData1->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
+  assert(objectData2->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
 
   auto collObj1 = objectData1->getCollisionObject();
   auto collObj2 = objectData2->getCollisionObject();
@@ -126,8 +135,10 @@ bool DARTCollisionDetector::detect(
 
   assert(objectData);
   assert(groupData);
-  assert(objectData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
-  assert(groupData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(objectData->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
 
   auto collObj1 = objectData->getCollisionObject();
   auto collGrp = groupData->getCollisionGroup();
@@ -147,7 +158,8 @@ bool DARTCollisionDetector::detect(
   result.contacts.clear();
 
   assert(groupData);
-  assert(groupData->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(groupData->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
 
   auto collGrp = groupData->getCollisionGroup();
   auto collObjs = collGrp->getCollisionObjects();
@@ -180,8 +192,10 @@ bool DARTCollisionDetector::detect(
 
   assert(groupData1);
   assert(groupData2);
-  assert(groupData1->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
-  assert(groupData2->getCollisionDetector()->getType() == DARTCollisionDetector::getTypeStatic());
+  assert(groupData1->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
+  assert(groupData2->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
 
   auto collGrp1 = groupData1->getCollisionGroup();
   auto collGrp2 = groupData2->getCollisionGroup();

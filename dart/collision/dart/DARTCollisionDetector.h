@@ -53,7 +53,7 @@ public:
   /// Return engine type "FCLMesh"
   static const std::string& getTypeStatic();
 
-  // Documentation inherit
+  // Documentation inherited
   const std::string& getType() const override;
 
   using CollisionDetector::detect;
@@ -63,29 +63,33 @@ protected:
   /// Constructor
   DARTCollisionDetector() = default;
 
-  // Documentation inherit
+  // Documentation inherited
   std::unique_ptr<CollisionObjectData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) override;
 
-  // Documentation inherit
+  // Documentation inherited
+  void reclaimCollisionObjectData(
+      CollisionObjectData* collisionObjectData) override;
+
+  // Documentation inherited
   std::unique_ptr<CollisionGroupData> createCollisionGroupData(
       CollisionGroup* parent,
       const CollisionObjectPtrs& collObjects) override;
 
-  // Documentation inherit
+  // Documentation inherited
   bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
               const Option& option, Result& result) override;
 
-  // Documentation inherit
+  // Documentation inherited
   bool detect(CollisionObjectData* object, CollisionGroupData* group,
               const Option& option, Result& result) override;
 
-  // Documentation inherit
+  // Documentation inherited
   bool detect(CollisionGroupData* group,
               const Option& option, Result& result) override;
 
-  // Documentation inherit
+  // Documentation inherited
   bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
               const Option& option, Result& result) override;
 

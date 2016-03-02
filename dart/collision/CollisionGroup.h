@@ -41,14 +41,14 @@
 
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionGroupData.h"
+#include "dart/collision/CollisionFilter.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionDetector;
-class CollisionNode;
+class CollisionFilter;
 
-/// Heterogeneous collision group
 class CollisionGroup
 {
 public:
@@ -137,6 +137,12 @@ public:
   /// detection is performed by the engine in most cases.
   void updateEngineData();
 
+  /// Return collision filter
+  CollisionFilter* getCollisionFilter();
+
+  /// Return (const) collision filter
+  const CollisionFilter* getCollisionFilter() const;
+
 protected:
 
   /// Collision detector
@@ -148,8 +154,10 @@ protected:
   /// Engine specific data
   std::unique_ptr<CollisionGroupData> mEngineData;
 
+  /// Collision filter
+  std::unique_ptr<CollisionFilter> mCollisionFilter;
+
 };
-// TODO(JS): make this class iterable for collision objects
 
 }  // namespace collision
 }  // namespace dart
