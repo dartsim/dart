@@ -37,7 +37,13 @@
 
 #include "dart/gui/GlutWindow.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <direct.h>
+#else
+  #include <sys/types.h>
+  #include <sys/stat.h>
   #include <dirent.h>
 #endif
 #include <cstdio>
@@ -154,13 +160,30 @@ void GlutWindow::runTimer(int _val) {
 
 bool GlutWindow::screenshot() {
   static int count = 0;
-  char fileBase[32] = "frames/Capture";
-  char fileName[64];
+  const char directory[8] = "frames";
+  char fileBase[8] = "Capture";
+  char fileName[32];
+
+  // create frames directory if not exists
+#ifdef _WIN32
+  using Stat = struct _stat;
+  Stat buff;
+  if (_stat(directory, &buff) != 0)
+    _mkdir(directory);
+#else
+  using Stat = struct stat;
+  Stat buff;
+  if (stat(directory, &buff) != 0)
+    mkdir(directory, 0777);
+#endif
+
   // png
 #ifdef _WIN32
-  _snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+  _snprintf(fileName, sizeof(fileName), "%s%s%s%.4d.png",
+            directory, "\\", fileBase, count++);
 #else
-  std::snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+  std::snprintf(fileName, sizeof(fileName), "%s%s%s%.4d.png",
+                directory, "/", fileBase, count++);
 #endif
   int tw = glutGet(GLUT_WINDOW_WIDTH);
   int th = glutGet(GLUT_WINDOW_HEIGHT);
