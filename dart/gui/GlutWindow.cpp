@@ -50,6 +50,7 @@
 #include <iostream>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
@@ -165,17 +166,25 @@ bool GlutWindow::screenshot() {
   char fileName[32];
 
   // create frames directory if not exists
-#ifdef _WIN32
-  using Stat = struct _stat;
-  Stat buff;
-  if (_stat(directory, &buff) != 0)
-    _mkdir(directory);
-#else
   using Stat = struct stat;
   Stat buff;
+
+#ifdef _WIN32
+#define __S_ISTYPE(mode, mask) (((mode) & _S_IFMT) == (mask))
+#define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
+  if (stat(directory, &buff) != 0)
+    _mkdir(directory);
+#else
   if (stat(directory, &buff) != 0)
     mkdir(directory, 0777);
 #endif
+
+  if (!S_ISDIR(buff.st_mode))
+  {
+    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
+           << "cannot write a screenshot\n";
+    return;
+  }
 
   // png
 #ifdef _WIN32
