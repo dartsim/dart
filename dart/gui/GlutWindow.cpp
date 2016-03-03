@@ -37,13 +37,20 @@
 
 #include "dart/gui/GlutWindow.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <direct.h>
+#else
+  #include <sys/types.h>
+  #include <sys/stat.h>
   #include <dirent.h>
 #endif
 #include <cstdio>
 #include <iostream>
 #include <vector>
 
+#include "dart/common/Console.h"
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/renderer/OpenGLRenderInterface.h"
@@ -154,13 +161,38 @@ void GlutWindow::runTimer(int _val) {
 
 bool GlutWindow::screenshot() {
   static int count = 0;
-  char fileBase[32] = "frames/Capture";
-  char fileName[64];
+  const char directory[8] = "frames";
+  const char fileBase[8] = "Capture";
+  char fileName[32];
+
+  // create frames directory if not exists
+  using Stat = struct stat;
+  Stat buff;
+
+#ifdef _WIN32
+#define __S_ISTYPE(mode, mask) (((mode) & _S_IFMT) == (mask))
+#define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
+  if (stat(directory, &buff) != 0)
+    _mkdir(directory);
+#else
+  if (stat(directory, &buff) != 0)
+    mkdir(directory, 0777);
+#endif
+
+  if (!S_ISDIR(buff.st_mode))
+  {
+    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
+           << "cannot write a screenshot\n";
+    return false;
+  }
+
   // png
 #ifdef _WIN32
-  _snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+  _snprintf(fileName, sizeof(fileName), "%s%s%s%.4d.png",
+            directory, "\\", fileBase, count++);
 #else
-  std::snprintf(fileName, sizeof(fileName), "%s%.4d.png", fileBase, count++);
+  std::snprintf(fileName, sizeof(fileName), "%s%s%s%.4d.png",
+                directory, "/", fileBase, count++);
 #endif
   int tw = glutGet(GLUT_WINDOW_WIDTH);
   int th = glutGet(GLUT_WINDOW_HEIGHT);
