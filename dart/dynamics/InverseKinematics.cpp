@@ -38,6 +38,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/SimpleFrame.h"
+#include "dart/optimizer/GradientDescentSolver.h"
 
 namespace dart {
 namespace dynamics {
