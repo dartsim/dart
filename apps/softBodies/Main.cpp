@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     {
       dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
       Eigen::Vector3d color = dart::Color::Random();
-      auto shapeNodes = bn->getShapeNodes<dart::dynamics::VisualAddon>();
+      auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAddon>();
       for(auto shapeNode : shapeNodes)
         shapeNode->getVisualAddon(true)->setColor(color);
     }

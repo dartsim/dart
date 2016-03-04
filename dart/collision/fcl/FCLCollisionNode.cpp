@@ -326,8 +326,9 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh,
 }
 
 //==============================================================================
-FCLUserData::FCLUserData(FCLCollisionNode* fclCollNode,
-                         dynamics::ShapeNode* shapeNode)
+FCLCollisionNode::FCLUserData::FCLUserData(
+    FCLCollisionNode* fclCollNode,
+    const dynamics::WeakShapeNodePtr& shapeNode)
   : fclCollNode(fclCollNode),
     shapeNode(shapeNode)
 {
@@ -346,7 +347,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  auto collShapeNodes = _bodyNode->getShapeNodes<dynamics::CollisionAddon>();
+  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
   for (auto shapeNode : collShapeNodes)
   {
     auto shape = shapeNode->getShape();
@@ -490,7 +491,7 @@ void FCLCollisionNode::updateFCLCollisionObjects()
     FCLUserData* userData
         = static_cast<FCLUserData*>(fclCollObj->getUserData());
 
-    ShapeNode* shapeNode = userData->shapeNode;
+    ShapeNode* shapeNode = userData->shapeNode.lock().get();
     Shape* shape = shapeNode->getShape().get();
 
     // Update shape's transform

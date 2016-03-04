@@ -564,11 +564,11 @@ public:
 
   /// Return the list of ShapeNodes containing given Addon
   template <class Addon>
-  const std::vector<ShapeNode*> getShapeNodes();
+  const std::vector<ShapeNode*> getShapeNodesWith();
 
   /// Return the list of ShapeNodes containing given Addon
   template <class Addon>
-  const std::vector<const ShapeNode*> getShapeNodes() const;
+  const std::vector<const ShapeNode*> getShapeNodesWith() const;
 
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();

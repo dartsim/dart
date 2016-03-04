@@ -335,7 +335,7 @@ void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
   for(size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
-    auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+    auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
     for(auto visualShapeNode : visualShapeNodes)
       visualShapeNode->getVisualAddon()->setColor(color);
   }

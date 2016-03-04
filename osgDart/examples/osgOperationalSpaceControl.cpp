@@ -266,7 +266,7 @@ int main()
   for(size_t i=0; i<robot->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = robot->getBodyNode(i);
-    auto shapeNodes = bn->getShapeNodes<dart::dynamics::VisualAddon>();
+    auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAddon>();
     for(auto shapeNode : shapeNodes)
     {
       std::shared_ptr<MeshShape> mesh =

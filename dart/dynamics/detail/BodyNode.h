@@ -206,7 +206,7 @@ size_t BodyNode::getNumShapeNodes() const
 
 //==============================================================================
 template <class Addon>
-const std::vector<ShapeNode*> BodyNode::getShapeNodes()
+const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 {
   std::vector<ShapeNode*> shapeNodes;
 
@@ -225,7 +225,7 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 
 //==============================================================================
 template <class Addon>
-const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
+const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 {
   std::vector<const ShapeNode*> shapeNodes;
 
@@ -246,7 +246,7 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
 template <class Addon>
 void BodyNode::removeAllShapeNodes()
 {
-  auto shapeNodes = getShapeNodes<Addon>();
+  auto shapeNodes = getShapeNodesWith<Addon>();
   for (auto shapeNode : shapeNodes)
     shapeNode->remove();
 }

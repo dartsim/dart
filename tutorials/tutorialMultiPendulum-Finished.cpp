@@ -257,7 +257,7 @@ public:
     for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
       BodyNode* bn = mPendulum->getBodyNode(i);
-      auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+      auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
       for(size_t j = 0; j < 2; ++j)
         visualShapeNodes[j]->getVisualAddon()->setColor(dart::Color::Blue());
 
@@ -282,7 +282,7 @@ public:
           dof->setForce( mPositiveSign? default_torque : -default_torque );
 
           BodyNode* bn = dof->getChildBodyNode();
-          auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+          auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
           visualShapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
 
           --mForceCountDown[i];
@@ -307,7 +307,7 @@ public:
           }
           bn->addExtForce(force, location, true, true);
 
-          auto shapeNodes = bn->getShapeNodes<VisualAddon>();
+          auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
           shapeNodes[1]->getVisualAddon()->setColor(dart::Color::Red());
           bn->createShapeNode<VisualAddon>(mArrow);
 

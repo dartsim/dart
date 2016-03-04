@@ -164,11 +164,6 @@ public:
   /// setting
   bool isHidden() const;
 
-protected:
-
-  /// The parent shape frame
-  ShapeFrame* mShapeFrame;
-
 };
 
 class CollisionAddon final :

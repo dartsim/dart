@@ -268,7 +268,7 @@ public:
     if(mForceCountDown > 0)
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      auto shapeNodes = bn->getShapeNodes<VisualAddon>();
+      auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
       shapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
       
       if(mPositiveSign)
@@ -473,7 +473,8 @@ int main(int argc, char* argv[])
 
 #ifdef HAVE_BULLET_COLLISION
   world->getConstraintSolver()->setCollisionDetector(
-          new dart::collision::BulletCollisionDetector());
+      std::unique_ptr<dart::collision::BulletCollisionDetector>(
+          new dart::collision::BulletCollisionDetector()));
 #endif
   
   world->addSkeleton(floor);

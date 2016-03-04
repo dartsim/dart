@@ -52,10 +52,10 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
-  : CollisionNode(_bodyNode)
+BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* bodyNode)
+  : CollisionNode(bodyNode)
 {
-  auto collShapeNodes = _bodyNode->getShapeNodes<dynamics::CollisionAddon>();
+  auto collShapeNodes = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
   for (auto shapeNode : collShapeNodes)
   {
     auto shape = shapeNode->getShape();
@@ -168,7 +168,7 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       default:
       {
         std::cout << "ERROR: Collision checking does not support "
-                  << _bodyNode->getName()
+                  << bodyNode->getName()
                   << "'s Shape type\n";
         break;
       }
@@ -188,7 +188,7 @@ void BulletCollisionNode::updateBulletCollisionObjects()
   {
     BulletUserData* userData =
         static_cast<BulletUserData*>(mbtCollsionObjects[i]->getUserPointer());
-    dynamics::ShapeNode* shapeNode = userData->shapeNode;
+    dynamics::ShapeNode* shapeNode = userData->shapeNode.lock().get();
     btTransform T = convertTransform(shapeNode->getWorldTransform());
     mbtCollsionObjects[i]->setWorldTransform(T);
   }

@@ -77,10 +77,10 @@ bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
       if (!isCollidable(collNode1, collNode2))
         continue;
 
-      auto collShapeNodes1 = BodyNode1->getShapeNodes<dynamics::CollisionAddon>();
+      auto collShapeNodes1 = BodyNode1->getShapeNodesWith<dynamics::CollisionAddon>();
       for (auto shapeNode1 : collShapeNodes1)
       {
-        auto collShapeNodes2 = BodyNode2->getShapeNodes<dynamics::CollisionAddon>();
+        auto collShapeNodes2 = BodyNode2->getShapeNodesWith<dynamics::CollisionAddon>();
         for (auto shapeNode2 : collShapeNodes2)
         {
           int currContactNum = mContacts.size();

@@ -1382,7 +1382,7 @@ void BodyNode::draw(renderer::RenderInterface* ri,
   ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  auto shapeNodes = getShapeNodes<VisualAddon>();
+  auto shapeNodes = getShapeNodesWith<VisualAddon>();
   for (auto shapeNode : shapeNodes)
     shapeNode->draw(ri, color, useDefaultColor);
   // _ri.popName();

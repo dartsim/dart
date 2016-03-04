@@ -57,22 +57,22 @@ class ShapeNode;
 namespace dart {
 namespace collision {
 
-class BulletCollisionNode;
 class BulletCollisionDetector;
-
-struct BulletUserData
-{
-  dynamics::ShapeNode* shapeNode;
-  BulletCollisionNode* btCollNode;
-  BulletCollisionDetector* btCollDet;
-};
 
 /// @brief class BulletCollisionNode
 class BulletCollisionNode : public CollisionNode
 {
 public:
+
+    struct BulletUserData
+    {
+      dynamics::WeakShapeNodePtr shapeNode;
+      BulletCollisionNode* btCollNode;
+      BulletCollisionDetector* btCollDet;
+    };
+
     /// @brief Constructor
-    explicit BulletCollisionNode(dynamics::BodyNode* _bodyNode);
+    explicit BulletCollisionNode(dynamics::BodyNode* bodyNode);
 
     /// @brief Destructor
     virtual ~BulletCollisionNode();

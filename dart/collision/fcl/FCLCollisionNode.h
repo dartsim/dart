@@ -58,21 +58,20 @@ class ShapeNode;
 namespace dart {
 namespace collision {
 
-class FCLCollisionNode;
-
-struct FCLUserData
-{
-  FCLCollisionNode* fclCollNode;
-  dynamics::ShapeNode* shapeNode;
-
-  FCLUserData(FCLCollisionNode* fclCollNode,
-              dynamics::ShapeNode* shape);
-};
-
 /// FCLCollisionNode
 class FCLCollisionNode : public CollisionNode
 {
 public:
+
+  struct FCLUserData
+  {
+    FCLCollisionNode* fclCollNode;
+    dynamics::WeakShapeNodePtr shapeNode;
+
+    FCLUserData(FCLCollisionNode* fclCollNode,
+                const dynamics::WeakShapeNodePtr& shape);
+  };
+
   /// Constructor
   explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
 

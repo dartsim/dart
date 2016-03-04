@@ -496,7 +496,7 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   bn->setInertia(inertia);
 
   // Make the shape transparent
-  auto visualAddon = bn->getShapeNodes<VisualAddon>()[0]->getVisualAddon();
+  auto visualAddon = bn->getShapeNodesWith<VisualAddon>()[0]->getVisualAddon();
   Eigen::Vector4d color = visualAddon->getRGBA();
   color[3] = 0.4;
   visualAddon->setRGBA(color);
@@ -510,7 +510,7 @@ void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
   for(size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
-    auto visualShapeNodes = bn->getShapeNodes<VisualAddon>();
+    auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
     for(auto visualShapeNode : visualShapeNodes)
       visualShapeNode->getVisualAddon()->setColor(color);
   }

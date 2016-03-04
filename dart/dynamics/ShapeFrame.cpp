@@ -76,10 +76,9 @@ DynamicsDataProperties::DynamicsDataProperties(
 //==============================================================================
 VisualAddon::VisualAddon(common::AddonManager* mgr,
                          const PropertiesData& properties)
-  : VisualAddon::BaseClass(mgr, properties),
-    mShapeFrame(dynamic_cast<ShapeFrame*>(mgr))
+  : VisualAddon::BaseClass(mgr, properties)
 {
-  assert(mShapeFrame);
+  // Do nothing
 }
 
 //==============================================================================
@@ -89,7 +88,7 @@ void VisualAddon::setRGBA(const Eigen::Vector4d& color)
 
   UpdateProperties(this);
 
-  mShapeFrame->getShape()->notifyColorUpdate(color);
+  mManager->getShape()->notifyColorUpdate(color);
 }
 
 //==============================================================================
@@ -120,7 +119,7 @@ void VisualAddon::setAlpha(const double alpha)
 
   UpdateProperties(this);
 
-  mShapeFrame->getShape()->notifyAlphaUpdate(alpha);
+  mManager->getShape()->notifyAlphaUpdate(alpha);
 }
 
 //==============================================================================
