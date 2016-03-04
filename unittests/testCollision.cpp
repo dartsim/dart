@@ -610,6 +610,29 @@ void testBodyNodes()
 
   EXPECT_TRUE(obj1->detect(obj2.get(), option, result));
   EXPECT_TRUE(cd->detect(obj1.get(), obj2.get(), option, result));
+
+  auto obj3 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
+        boxShape2, boxBody2);
+
+  EXPECT_FALSE(obj1->isEqual(obj2.get()));
+  EXPECT_FALSE(obj2->isEqual(obj1.get()));
+
+  EXPECT_FALSE(obj1->isEqual(obj3.get()));
+  EXPECT_FALSE(obj3->isEqual(obj1.get()));
+
+  EXPECT_TRUE(obj2->isEqual(obj3.get()));
+  EXPECT_TRUE(obj3->isEqual(obj2.get()));
+
+  collision::CollisionGroupPtr group1(new collision::CollisionGroup(cd));
+  group1->addCollisionObject(obj2);
+  collision::CollisionGroupPtr group2(new collision::CollisionGroup(cd));
+  group2->addCollisionObject(obj3);
+
+  EXPECT_EQ(group1->getCollisionObjects().size(), 1u);
+  EXPECT_EQ(group2->getCollisionObjects().size(), 1u);
+
+  group1->unionGroup(group2);
+  EXPECT_EQ(group1->getCollisionObjects().size(), 1u);
 }
 
 //==============================================================================

@@ -717,6 +717,7 @@ FCLCollisionDetector::createCollisionObjectData(
   if (mShapeMap.end() != findResult)
   {
     fclCollGeom = findResult->second.first;
+    findResult->second.second++;
   }
   else
   {
@@ -743,7 +744,7 @@ void FCLCollisionDetector::reclaimCollisionObjectData(
   auto findResult = mShapeMap.find(shape);
   assert(mShapeMap.end() != findResult);
 
-  auto fclCollGeomAndCount = findResult->second;
+  auto& fclCollGeomAndCount = findResult->second;
   assert(0u != fclCollGeomAndCount.second);
 
   fclCollGeomAndCount.second--;
@@ -893,7 +894,7 @@ bool collisionCallback(
     auto collObj1 = collisionDetector->findCollisionObject(o1);
     auto collObj2 = collisionDetector->findCollisionObject(o2);
 
-    if (filter->needCollision(collObj1, collObj2))
+    if (!filter->needCollision(collObj1, collObj2))
       return collData->done;
   }
 

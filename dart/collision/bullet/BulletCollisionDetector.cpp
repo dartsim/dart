@@ -109,8 +109,6 @@ struct BulletContactResultCallback : btCollisionWorld::ContactResultCallback
 {
   BulletContactResultCallback(Result& result);
 
-//  bool needsCollision(btBroadphaseProxy* proxy0) const override;
-
   btScalar addSingleResult(btManifoldPoint& cp,
                            const btCollisionObjectWrapper* colObj0Wrap,
                            int partId0,
@@ -188,6 +186,7 @@ BulletCollisionDetector::createCollisionObjectData(
     ShapeMapValue& pair = findResult->second;
     BulletCollsionPack& pack = pair.first;
     bulletCollGeom = pack.collisionShape.get();
+    pair.second++;
   }
   else
   {

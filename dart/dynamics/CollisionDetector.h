@@ -70,6 +70,9 @@ public:
   // Documentation inherited
   const Eigen::Isometry3d getTransform() const override;
 
+  // Documentation inherited
+  bool isEqual(const CollisionObject* other) override;
+
   /// Return BodyNode pointer associated with this ShapeFrameCollisionObject
   dynamics::BodyNodePtr getBodyNode() const;
 

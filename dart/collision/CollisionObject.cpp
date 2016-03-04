@@ -166,5 +166,11 @@ const Eigen::Isometry3d FreeCollisionObject::getTransform() const
   return mW;
 }
 
+//==============================================================================
+bool FreeCollisionObject::isEqual(const CollisionObject* other)
+{
+  return this == other;
+}
+
 }  // namespace collision
 }  // namespace dart

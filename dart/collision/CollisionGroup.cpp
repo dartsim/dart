@@ -107,11 +107,26 @@ CollisionDetector* CollisionGroup::getCollisionDetector() const
 }
 
 //==============================================================================
+struct is_collision_object_equal
+    : public std::unary_function<CollisionObjectPtr, bool>
+{
+  explicit is_collision_object_equal(const CollisionObjectPtr& object)
+    : mObject(object) {}
+
+  bool operator() (const CollisionObjectPtr& arg)
+  {
+    return mObject->isEqual(arg.get());
+  }
+
+  const CollisionObjectPtr& mObject;
+};
+
+//==============================================================================
 bool CollisionGroup::hasCollisionObject(
     const CollisionGroup::CollisionObjectPtr& object) const
 {
-  return std::find(mCollisionObjects.begin(),
-                   mCollisionObjects.end(), object)
+  return std::find_if(mCollisionObjects.begin(), mCollisionObjects.end(),
+                      is_collision_object_equal(object))
       != mCollisionObjects.end();
 }
 
@@ -120,10 +135,7 @@ void CollisionGroup::addCollisionObject(
     const CollisionObjectPtr& object, bool init)
 {
   if (hasCollisionObject(object))
-  {
-    // TODO(JS): print warning message
     return;
-  }
 
   object->addGroup(this);
 

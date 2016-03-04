@@ -704,6 +704,7 @@ FCLMeshCollisionDetector::createCollisionObjectData(
   if (mShapeMap.end() != findResult)
   {
     fclCollGeom = findResult->second.first;
+    findResult->second.second++;
   }
   else
   {
@@ -711,8 +712,13 @@ FCLMeshCollisionDetector::createCollisionObjectData(
     mShapeMap[shape] = std::make_pair(fclCollGeom, 1u);
   }
 
-  return std::unique_ptr<CollisionObjectData>(
-        new FCLMeshCollisionObjectData(this, parent, fclCollGeom));
+  auto fclCollObjData
+      = new FCLMeshCollisionObjectData(this, parent, fclCollGeom);
+  auto fclCollObj = fclCollObjData->getFCLCollisionObject();
+
+  mCollisionObjectMap[fclCollObj] = fclCollObjData;
+
+  return std::unique_ptr<CollisionObjectData>(fclCollObjData);
 }
 
 //==============================================================================
@@ -726,13 +732,17 @@ void FCLMeshCollisionDetector::reclaimCollisionObjectData(
   auto findResult = mShapeMap.find(shape);
   assert(mShapeMap.end() != findResult);
 
-  auto fclCollGeomAndCount = findResult->second;
+  auto& fclCollGeomAndCount = findResult->second;
   assert(0u != fclCollGeomAndCount.second);
 
   fclCollGeomAndCount.second--;
 
   if (0u == fclCollGeomAndCount.second)
     mShapeMap.erase(findResult);
+
+  auto castedCollObjData
+      = static_cast<FCLMeshCollisionObjectData*>(collisionObjectData);
+  mCollisionObjectMap.erase(castedCollObjData->getFCLCollisionObject());
 }
 
 //==============================================================================
@@ -865,8 +875,10 @@ bool collisionCallback(fcl::CollisionObject* o1,
 
     auto collObj1 = collisionDetector->findCollisionObject(o1);
     auto collObj2 = collisionDetector->findCollisionObject(o2);
+    assert(collObj1);
+    assert(collObj2);
 
-    if (filter->needCollision(collObj1, collObj2))
+    if (!filter->needCollision(collObj1, collObj2))
       return collData->done;
   }
 

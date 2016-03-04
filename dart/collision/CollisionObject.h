@@ -64,6 +64,9 @@ public:
   /// Return the transformation of this CollisionObject in world coordinates
   virtual const Eigen::Isometry3d getTransform() const = 0;
 
+  /// Return true if this CollisionObject is identical to other
+  virtual bool isEqual(const CollisionObject* other) = 0;
+
   /// Perform collision detection with other CollisionObject.
   ///
   /// Return false if the engine type of the other CollisionObject is different
@@ -140,6 +143,9 @@ public:
 
   /// Return world transformation of this FreeCollisionObject
   const Eigen::Isometry3d getTransform() const override;
+
+  // Documentation inherited
+  bool isEqual(const CollisionObject* other) override;
 
 protected:
 

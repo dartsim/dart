@@ -46,6 +46,9 @@ bool BodyNodeCollisionFilter::needCollision(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const
 {
+  if (object1 == object2)
+    return false;
+
   auto castedObj1 = static_cast<const ShapeFrameCollisionObject*>(object1);
   auto castedObj2 = static_cast<const ShapeFrameCollisionObject*>(object2);
 
@@ -123,6 +126,26 @@ ShapeFrameCollisionObject::ShapeFrameCollisionObject(
 const Eigen::Isometry3d ShapeFrameCollisionObject::getTransform() const
 {
   return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
+}
+
+//==============================================================================
+bool ShapeFrameCollisionObject::isEqual(const collision::CollisionObject* other)
+{
+  if (this == other)
+    return true;
+
+  auto castedOther = dynamic_cast<const ShapeFrameCollisionObject*>(other);
+
+  if (!castedOther)
+    return false;
+
+  if (mShape != castedOther->mShape)
+    return false;
+
+  if (mBodyNode != castedOther->mBodyNode)
+    return false;
+
+  return true;
 }
 
 //==============================================================================
