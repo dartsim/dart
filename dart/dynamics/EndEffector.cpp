@@ -266,15 +266,6 @@ void EndEffector::resetRelativeTransform()
 }
 
 //==============================================================================
-Support* EndEffector::getSupport(bool _createIfNull)
-{
-  if(nullptr == getSupport() && _createIfNull)
-    createSupport();
-
-  return getSupport();
-}
-
-//==============================================================================
 bool EndEffector::dependsOn(size_t _genCoordIndex) const
 {
   return mBodyNode->dependsOn(_genCoordIndex);

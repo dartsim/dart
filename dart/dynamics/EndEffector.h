@@ -229,10 +229,6 @@ public:
 
   DART_BAKE_SPECIALIZED_ADDON(Support)
 
-  /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
-  /// is true, then the Support will be generated if one does not already exist.
-  Support* getSupport(bool _createIfNull);
-
   // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;
 

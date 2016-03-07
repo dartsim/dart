@@ -132,7 +132,7 @@ SimpleFrame& SimpleFrame::operator=(const SimpleFrame& _otherFrame)
 }
 
 //==============================================================================
-std::shared_ptr<SimpleFrame> SimpleFrame::createChildSimpleFrame(
+std::shared_ptr<SimpleFrame> SimpleFrame::spawnChildSimpleFrame(
     const std::string& name, const Eigen::Isometry3d& relativeTransform)
 {
   return std::make_shared<SimpleFrame>(this, name, relativeTransform);

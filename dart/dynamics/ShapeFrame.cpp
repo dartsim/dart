@@ -44,8 +44,8 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color,
-                                           const bool hidden)
+VisualAddonProperties::VisualAddonProperties(const Eigen::Vector4d& color,
+                                             const bool hidden)
   : mRGBA(color),
     mHidden(hidden)
 {
@@ -53,7 +53,7 @@ VisualDataProperties::VisualDataProperties(const Eigen::Vector4d& color,
 }
 
 //==============================================================================
-CollisionDataProperties::CollisionDataProperties(
+CollisionAddonProperties::CollisionAddonProperties(
     const bool collidable)
   : mCollidable(collidable)
 {
@@ -61,7 +61,7 @@ CollisionDataProperties::CollisionDataProperties(
 }
 
 //==============================================================================
-DynamicsDataProperties::DynamicsDataProperties(
+DynamicsAddonProperties::DynamicsAddonProperties(
     const double frictionCoeff,
     const double restitutionCoeff)
   :
@@ -280,53 +280,20 @@ ConstShapePtr ShapeFrame::getShape() const
 }
 
 //==============================================================================
-VisualAddon* ShapeFrame::getVisualAddon(const bool createIfNull)
-{
-  VisualAddon* visualData = getVisualAddon();
-
-  if (createIfNull && nullptr == visualData)
-    return createVisualAddon();
-
-  return visualData;
-}
-
-//==============================================================================
-CollisionAddon* ShapeFrame::getCollisionAddon(const bool createIfNull)
-{
-  CollisionAddon* collisionData = getCollisionAddon();
-
-  if (createIfNull && nullptr == collisionData)
-    return createCollisionAddon();
-
-  return collisionData;
-}
-
-//==============================================================================
-DynamicsAddon* ShapeFrame::getDynamicsAddon(const bool createIfNull)
-{
-  DynamicsAddon* dynamicsData = getDynamicsAddon();
-
-  if (createIfNull && nullptr == dynamicsData)
-    return createDynamicsAddon();
-
-  return dynamicsData;
-}
-
-//==============================================================================
 void ShapeFrame::draw(renderer::RenderInterface* ri,
                      const Eigen::Vector4d& color,
                      bool useDefaultColor) const
 {
-  auto visualData = getVisualAddon();
+  auto visualAddon = getVisualAddon();
 
-  if (!visualData || visualData->isHidden())
+  if (!visualAddon || visualAddon->isHidden())
     return;
 
   ri->pushMatrix();
   ri->transform(getRelativeTransform());
 
   if (useDefaultColor)
-    mShapeFrameP.mShape->draw(ri, visualData->getRGBA());
+    mShapeFrameP.mShape->draw(ri, visualAddon->getRGBA());
   else
     mShapeFrameP.mShape->draw(ri, color);
 
@@ -371,6 +338,10 @@ ShapeFrame::ShapeFrame(Frame* parent,
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
   setName(name);
+  // TODO: As setName() is a virtual function, it is not safe to call this
+  // function in a constructor especially of abstract class. This line should be
+  // removed once Entity class is changed to abstract interface class.
+
   setShape(shape);
 }
 

@@ -88,8 +88,11 @@ public:
   /// left the same, and _copyProperties is set to false.
   SimpleFrame& operator=(const SimpleFrame& _otherFrame);
 
-  /// Create a child SimpleFrame to this SimpleFrame
-  std::shared_ptr<SimpleFrame> createChildSimpleFrame(
+  /// Spawn a child SimpleFrame to this SimpleFrame. SimpleFrame doesn't have
+  /// the ownership of the created child SimpleFrame. So please make sure you
+  /// are responsible to hold the returning pointer to the child SimpleFrame so
+  /// that it doesn't get destroyed.
+  std::shared_ptr<SimpleFrame> spawnChildSimpleFrame(
       const std::string& name = "SimpleFrame",
       const Eigen::Isometry3d& relativeTransform
           = Eigen::Isometry3d::Identity());

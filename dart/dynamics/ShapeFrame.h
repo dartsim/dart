@@ -56,7 +56,7 @@ class ShapeFrame;
 
 namespace detail {
 
-struct VisualDataProperties
+struct VisualAddonProperties
 {
   /// Color for the primitive shape
   Eigen::Vector4d mRGBA;
@@ -67,27 +67,27 @@ struct VisualDataProperties
   bool mHidden;
 
   /// Constructor
-  VisualDataProperties(
+  VisualAddonProperties(
       const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
       const bool hidden = false);
 
   /// Destructor
-  virtual ~VisualDataProperties() = default;
+  virtual ~VisualAddonProperties() = default;
 };
 
-struct CollisionDataProperties
+struct CollisionAddonProperties
 {
   /// This object is collidable if true
   bool mCollidable;
 
   /// Constructor
-  CollisionDataProperties(const bool collidable = true);
+  CollisionAddonProperties(const bool collidable = true);
 
   /// Destructor
-  virtual ~CollisionDataProperties() = default;
+  virtual ~CollisionAddonProperties() = default;
 };
 
-struct DynamicsDataProperties
+struct DynamicsAddonProperties
 {
   /// Coefficient of friction
   double mFrictionCoeff;
@@ -96,11 +96,11 @@ struct DynamicsDataProperties
   double mRestitutionCoeff;
 
   /// Constructor
-  DynamicsDataProperties(const double frictionCoeff = 1.0,
-                         const double restitutionCoeff = 0.0);
+  DynamicsAddonProperties(const double frictionCoeff = 1.0,
+                          const double restitutionCoeff = 0.0);
 
   /// Destructor
-  virtual ~DynamicsDataProperties() = default;
+  virtual ~DynamicsAddonProperties() = default;
 };
 
 } // namespace detail
@@ -108,13 +108,13 @@ struct DynamicsDataProperties
 class VisualAddon final :
     public common::AddonWithVersionedProperties<
         VisualAddon,
-        detail::VisualDataProperties,
+        detail::VisualAddonProperties,
         ShapeFrame>
 {
 public:
 
   using BaseClass = common::AddonWithVersionedProperties<
-      VisualAddon, detail::VisualDataProperties, ShapeFrame>;
+      VisualAddon, detail::VisualAddonProperties, ShapeFrame>;
 
   /// Constructor
   VisualAddon(common::AddonManager* mgr,
@@ -169,7 +169,7 @@ public:
 class CollisionAddon final :
     public common::AddonWithVersionedProperties<
         CollisionAddon,
-        detail::CollisionDataProperties,
+        detail::CollisionAddonProperties,
         ShapeFrame>
 {
 public:
@@ -190,13 +190,13 @@ public:
 class DynamicsAddon final :
     public common::AddonWithVersionedProperties<
         DynamicsAddon,
-        detail::DynamicsDataProperties,
+        detail::DynamicsAddonProperties,
         ShapeFrame>
 {
 public:
 
   using BaseClass = common::AddonWithVersionedProperties<
-      DynamicsAddon, detail::DynamicsDataProperties, ShapeFrame>;
+      DynamicsAddon, detail::DynamicsAddonProperties, ShapeFrame>;
 
   DynamicsAddon(const DynamicsAddon&) = delete;
 
@@ -302,21 +302,6 @@ public:
   DART_BAKE_SPECIALIZED_ADDON(CollisionAddon)
 
   DART_BAKE_SPECIALIZED_ADDON(DynamicsAddon)
-
-  /// Get a pointer to the VisualData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the VisualData will be generated if one does
-  /// not already exist.
-  VisualAddon* getVisualAddon(const bool createIfNull);
-
-  /// Get a pointer to the CollisionData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the CollisionData will be generated if one
-  /// does not already exist.
-  CollisionAddon* getCollisionAddon(const bool createIfNull);
-
-  /// Get a pointer to the DynamicsData Addon for this ShapeNode. If
-  /// _createIfNull is true, then the DynamicsData will be generated if one
-  /// does not already exist.
-  DynamicsAddon* getDynamicsAddon(const bool createIfNull);
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* ri = nullptr,

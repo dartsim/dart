@@ -562,13 +562,13 @@ void readVisualizationShapeNode(
                       bodyNode->getName() + " - visual shape",
                       baseUri, retriever);
 
-  auto visualData = newShapeNode->getVisualAddon(true);
+  auto visualAddon = newShapeNode->getVisualAddon(true);
 
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
     Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualData->setColor(color);
+    visualAddon->setColor(color);
   }
 }
 
@@ -584,14 +584,14 @@ void readCollisionShapeNode(
                       bodyNode->getName() + " - collision shape",
                       baseUri, retriever);
 
-  auto collisionData = newShapeNode->getCollisionAddon(true);
+  auto collisionAddon = newShapeNode->getCollisionAddon(true);
   newShapeNode->createDynamicsAddon();
 
   // collidable
   if (hasElement(collShapeNodeEle, "collidable"))
   {
     const bool collidable = getValueDouble(collShapeNodeEle, "collidable");
-    collisionData->setCollidable(collidable);
+    collisionAddon->setCollidable(collidable);
   }
 }
 

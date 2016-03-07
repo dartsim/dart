@@ -356,7 +356,7 @@ protected:
   UniqueProperties mSoftP;
 
   /// \brief Soft mesh shape belonging to this node.
-  ShapeNode* mSoftShapeNode;
+  ShapeNodePtr mSoftShapeNode;
 
   /// Generalized inertia with point masses
   math::Inertia mI2;
