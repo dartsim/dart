@@ -185,7 +185,7 @@ void MyWindow::spawnBox(const Eigen::Isometry3d& _T,
 
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
-  auto shapeNode = pair.second->createShapeNode<
+  auto shapeNode = pair.second->createShapeNodeWith<
       dynamics::VisualAddon,
       dynamics::CollisionAddon,
       dynamics::DynamicsAddon>(newShape);
@@ -213,7 +213,7 @@ void MyWindow::spawnEllipsoid(const Eigen::Isometry3d& _T,
 
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
-  auto shapeNode = pair.second->createShapeNode<
+  auto shapeNode = pair.second->createShapeNodeWith<
       dynamics::VisualAddon,
       dynamics::CollisionAddon,
       dynamics::DynamicsAddon>(newShape);
@@ -242,7 +242,7 @@ void MyWindow::spawnCylinder(const Eigen::Isometry3d& _T,
 
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
-  auto shapeNode = pair.second->createShapeNode<
+  auto shapeNode = pair.second->createShapeNodeWith<
       dynamics::VisualAddon,
       dynamics::CollisionAddon,
       dynamics::DynamicsAddon>(newShape);

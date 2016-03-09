@@ -504,7 +504,7 @@ SkeletonPtr createGround()
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
 
-  auto shapeNode = ground->getBodyNode(0)->createShapeNode<
+  auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
       VisualAddon, CollisionAddon, DynamicsAddon>(groundShape);
   shapeNode->getVisualAddon()->setColor(dart::Color::Blue(0.2));
 
@@ -527,7 +527,7 @@ SkeletonPtr createAtlas()
   tf.translation() = Eigen::Vector3d(0.1*Eigen::Vector3d(0.0, 0.0, 1.0));
 
   auto shapeNode =
-      atlas->getBodyNode(0)->createShapeNode<VisualAddon>(boxShape);
+      atlas->getBodyNode(0)->createShapeNodeWith<VisualAddon>(boxShape);
   shapeNode->getVisualAddon()->setColor(dart::Color::Black());
   shapeNode->setRelativeTransform(tf);
 

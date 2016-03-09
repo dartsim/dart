@@ -145,52 +145,41 @@ NodeType* BodyNode::createNode(Args&&... args)
 
 //==============================================================================
 template <class ShapeNodeProperties>
-ShapeNode* BodyNode::createShapeNode(const ShapeNodeProperties& properties)
+ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
+                                     bool automaticName)
 {
+  if(automaticName)
+  {
+    properties.mName = getName()+"_ShapeNode_"
+        +std::to_string(getNumShapeNodes());
+  }
+
   return createNode<ShapeNode>(properties);
 }
 
 //==============================================================================
 template <class... Addons>
-struct AddonAdder;
-
-//==============================================================================
-template <class Addon>
-struct AddonAdder<Addon>
+ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {
-  static void add(ShapeNode* shapeNode)
-  {
-    shapeNode->create<Addon>();
-  }
-};
-
-//==============================================================================
-template <class Addon, class... OtherAddons>
-struct AddonAdder<Addon, OtherAddons...>
-{
-  static void add(ShapeNode* shapeNode)
-  {
-    shapeNode->create<Addon>();
-
-    AddonAdder<OtherAddons...>::add(shapeNode);
-  }
-};
+  return createShapeNodeWith<Addons...>(shape, getName()+"_ShapeNode_"
+                                        +std::to_string(getNumShapeNodes()));
+}
 
 //==============================================================================
 template <class... Addons>
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
-                                     const std::string& name)
+ShapeNode* BodyNode::createShapeNodeWith(
+    const ShapePtr& shape, const std::string& name)
 {
   auto shapeNode = createShapeNode(shape, name);
 
-  AddonAdder<Addons...>::add(shapeNode);
+  common::createAddons<ShapeNode, Addons...>(shapeNode);
 
   return shapeNode;
 }
 
 //==============================================================================
 template <class Addon>
-size_t BodyNode::getNumShapeNodes() const
+size_t BodyNode::getNumShapeNodesWith() const
 {
   auto count = 0u;
   auto numShapeNode = getNumShapeNodes();
@@ -244,7 +233,7 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 
 //==============================================================================
 template <class Addon>
-void BodyNode::removeAllShapeNodes()
+void BodyNode::removeAllShapeNodesWith()
 {
   auto shapeNodes = getShapeNodesWith<Addon>();
   for (auto shapeNode : shapeNodes)

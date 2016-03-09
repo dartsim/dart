@@ -58,7 +58,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
   BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
     MultiDofJoint<6>::Properties(std::string("joint1")), node).second;
-  parent_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+  parent_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
         shape);
 
   // Create the second link
@@ -68,7 +68,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
         robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
-  pair2.second->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+  pair2.second->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
         shape);
 
   Joint* joint = pair2.first;

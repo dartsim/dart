@@ -117,7 +117,8 @@ void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
   auto pair = robot->createJointAndBodyNodePair<WeldJoint>(
         parent_node, joint, node);
   auto bodyNode = pair.second;
-  bodyNode->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  bodyNode->createShapeNodeWith<
+      VisualAddon, CollisionAddon, DynamicsAddon>(shape);
 }
 
 //==============================================================================
@@ -173,7 +174,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
       robot, nullptr, node, "joint1", 0.0, -DART_PI, DART_PI, type1);
   auto current_node = pair1.second;
-  auto shapeNode = current_node->createShapeNode<VisualAddon>(shape);
+  auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
   if(collisionShape)
   {
     shapeNode->createCollisionAddon();
@@ -197,7 +198,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair2.second;
-    auto shapeNode = current_node->createShapeNode<VisualAddon>(shape);
+    auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
     if(collisionShape)
     {
       shapeNode->createCollisionAddon();
@@ -223,7 +224,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair3.second;
-    auto shapeNode = current_node->createShapeNode<VisualAddon>(shape);
+    auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
     if(collisionShape)
     {
       shapeNode->createCollisionAddon();
@@ -275,7 +276,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   joint->setDampingCoefficient(0, 0.01);
 
   auto current_node = pair1.second;
-  current_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+  current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
         shape);
 
   BodyNode* parent_node = current_node;
@@ -302,7 +303,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     joint->setDampingCoefficient(0, 0.01);
 
     auto current_node = newPair.second;
-    current_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+    current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
           shape);
 
     parent_node = current_node;
@@ -345,7 +346,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   joint->setDampingCoefficient(0, 0.01);
 
   auto current_node = pair1.second;
-  current_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+  current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
         shape);
 
   BodyNode* parent_node = current_node;
@@ -372,7 +373,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
     joint->setDampingCoefficient(0, 0.01);
 
     auto current_node = newPair.second;
-    current_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+    current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
           shape);
 
     parent_node = current_node;
@@ -407,7 +408,7 @@ SkeletonPtr createGround(
           nullptr, joint, node);
 
     auto body_node = pair.second;
-    body_node->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+    body_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
           shape);
 
     return skeleton;
@@ -446,7 +447,7 @@ SkeletonPtr createSphere(
   BodyNode* bn = sphere->getBodyNode(0);
   std::shared_ptr<EllipsoidShape> ellipShape(
         new EllipsoidShape(Vector3d::Constant(_radius * 2.0)));
-  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(ellipShape);
+  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(ellipShape);
 
   return sphere;
 }
@@ -461,7 +462,7 @@ SkeletonPtr createBox(
 
   BodyNode* bn = box->getBodyNode(0);
   std::shared_ptr<Shape> boxShape(new BoxShape(_size));
-  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(boxShape);
+  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(boxShape);
 
   return box;
 }

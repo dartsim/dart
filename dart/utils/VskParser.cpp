@@ -526,7 +526,7 @@ bool readShape(const tinyxml2::XMLElement* shapeEle,
     return false;
   }
 
-  dynamics::ShapeNode* node = parent->createShapeNode<
+  dynamics::ShapeNode* node = parent->createShapeNodeWith<
       dynamics::VisualAddon,
       dynamics::CollisionAddon,
       dynamics::DynamicsAddon>(
@@ -914,7 +914,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
                                                     math::AxisType::AXIS_X);
     localTransform.translation() = 0.5 * tf.translation();
 
-    dynamics::ShapeNode* shapeNode = parent->createShapeNode<
+    dynamics::ShapeNode* shapeNode = parent->createShapeNodeWith<
         dynamics::VisualAddon,
         dynamics::CollisionAddon,
         dynamics::DynamicsAddon>(

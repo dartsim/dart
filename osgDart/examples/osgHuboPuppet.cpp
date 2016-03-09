@@ -1086,7 +1086,7 @@ SkeletonPtr createGround()
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
 
-  auto shapeNode = ground->getBodyNode(0)->createShapeNode<
+  auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
       VisualAddon, CollisionAddon, DynamicsAddon>(groundShape);
   shapeNode->getVisualAddon()->setColor(dart::Color::Blue(0.2));
 

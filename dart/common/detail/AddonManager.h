@@ -147,6 +147,22 @@ bool AddonManager::requires() const
   return (mRequiredAddons.find(typeid(T)) != mRequiredAddons.end());
 }
 
+//==============================================================================
+template <class T>
+void createAddons(T* /*mgr*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class NextAddon, class... Addons>
+void createAddons(T* mgr)
+{
+  mgr->template create<NextAddon>();
+
+  createAddons<T, Addons...>(mgr);
+}
+
 } // namespace common
 } // namespace dart
 

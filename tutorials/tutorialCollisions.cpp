@@ -424,7 +424,7 @@ SkeletonPtr createGround()
         Eigen::Vector3d(default_ground_width, default_ground_width,
                         default_wall_thickness));
   auto shapeNode
-      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
   shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
@@ -440,7 +440,7 @@ SkeletonPtr createWall()
         Eigen::Vector3d(default_wall_thickness, default_ground_width,
                         default_wall_height));
   auto shapeNode
-      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
   shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

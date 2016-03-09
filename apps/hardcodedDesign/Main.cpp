@@ -72,9 +72,10 @@ int main(int argc, char* argv[]) {
   std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair =
       LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         nullptr, joint, body);
-  pair.second->createShapeNode<dart::dynamics::VisualAddon,
-                               dart::dynamics::CollisionAddon,
-                               dart::dynamics::DynamicsAddon>(shape);
+  pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAddon,
+      dart::dynamics::CollisionAddon,
+      dart::dynamics::DynamicsAddon>(shape);
   dart::dynamics::BodyNode* parent = pair.second;
 
   // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) {
   LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         parent, joint, body);
   pair1.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-  auto shapeNode1 = pair1.second->createShapeNode<
+  auto shapeNode1 = pair1.second->createShapeNodeWith<
       dart::dynamics::VisualAddon,
       dart::dynamics::CollisionAddon,
       dart::dynamics::DynamicsAddon>(shape);
@@ -113,7 +114,7 @@ int main(int argc, char* argv[]) {
   std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> pair2 =
   LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         LeftLegSkel->getBodyNode(1), joint, body);
-  auto shapeNode2 = pair2.second->createShapeNode<
+  auto shapeNode2 = pair2.second->createShapeNodeWith<
       dart::dynamics::VisualAddon,
       dart::dynamics::CollisionAddon,
       dart::dynamics::DynamicsAddon>(shape);

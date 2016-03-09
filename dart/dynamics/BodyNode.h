@@ -526,28 +526,27 @@ public:
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
 
-  /// Create an ShapeNode attached to this BodyNode. Pass an
-  /// ShapeNode::Properties argument into this function.
+  /// Create an ShapeNode attached to this BodyNode. Pass a
+  /// ShapeNode::Properties argument into its constructor. If automaticName is
+  /// true, then the mName field of properties will be ignored, and the
+  /// ShapeNode will be automatically assigned a name:
+  /// <BodyNodeName>_ShapeNode_<#>
   template <class ShapeNodeProperties>
-  ShapeNode* createShapeNode(const ShapeNodeProperties& properties);
+  ShapeNode* createShapeNode(ShapeNodeProperties properties,
+                             bool automaticName = true);
+
+  /// Create a ShapeNode with an automatically assigned name:
+  /// <BodyNodeName>_ShapeNode_<#>.
+  ShapeNode* createShapeNode(const ShapePtr& shape);
 
   /// Create an ShapeNode with the specified name
   ShapeNode* createShapeNode(
-      const ShapePtr& shape, const std::string& name = "ShapeNode");
+      const ShapePtr& shape, const std::string& name);
 
   /// Create an ShapeNode with the specified name
   ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
 
-  /// Create an ShapeNode with the specified name and addons
-  template <class... Addons>
-  ShapeNode* createShapeNode(const ShapePtr& shape,
-                             const std::string& name = "ShapeNode");
-
   /// Return the number of all the ShapeNodes in this BodyNode
-  size_t getNumShapeNodes() const;
-
-  /// Return the number of ShapeNodes containing given Addon in this BodyNode
-  template <class Addon>
   size_t getNumShapeNodes() const;
 
   /// Return the index-th ShapeNode
@@ -562,6 +561,23 @@ public:
   /// Return the list of (const) ShapeNodes
   const std::vector<const ShapeNode*> getShapeNodes() const;
 
+  /// Remove all ShapeNodes from this BodyNode
+  void removeAllShapeNodes();
+
+  /// Create a ShapeNode with the specified Addons and an automatically assigned
+  /// name: <BodyNodeName>_ShapeNode_<#>.
+  template <class... Addons>
+  ShapeNode* createShapeNodeWith(const ShapePtr& shape);
+
+  /// Create a ShapeNode with the specified name and Addons
+  template <class... Addons>
+  ShapeNode* createShapeNodeWith(const ShapePtr& shape,
+                                 const std::string& name);
+
+  /// Return the number of ShapeNodes containing given Addon in this BodyNode
+  template <class Addon>
+  size_t getNumShapeNodesWith() const;
+
   /// Return the list of ShapeNodes containing given Addon
   template <class Addon>
   const std::vector<ShapeNode*> getShapeNodesWith();
@@ -570,12 +586,9 @@ public:
   template <class Addon>
   const std::vector<const ShapeNode*> getShapeNodesWith() const;
 
-  /// Remove all ShapeNodes from this BodyNode
-  void removeAllShapeNodes();
-
   /// Remove all ShapeNodes containing given Addon from this BodyNode
   template <class Addon>
-  void removeAllShapeNodes();
+  void removeAllShapeNodesWith();
 
   /// Add a collision Shape into the BodyNode
   void addCollisionShapeNode(const ShapePtr& shape);

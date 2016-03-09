@@ -67,8 +67,8 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 
   BodyNodePtr bodyNode = skel->getBodyNode(0);
   EXPECT_TRUE(bodyNode != nullptr);
-  EXPECT_EQ(bodyNode->getNumShapeNodes<VisualAddon>(), 1u);
-  EXPECT_EQ(bodyNode->getNumShapeNodes<CollisionAddon>(), 1u);
+  EXPECT_EQ(bodyNode->getNumShapeNodesWith<VisualAddon>(), 1u);
+  EXPECT_EQ(bodyNode->getNumShapeNodesWith<CollisionAddon>(), 1u);
 
   JointPtr joint = skel->getJoint(0);
   EXPECT_TRUE(joint != nullptr);

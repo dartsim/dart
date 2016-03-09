@@ -103,7 +103,7 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
   auto pair
       = newCubeSkeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
         nullptr, joint, body);
-  auto shapeNode = pair.second->createShapeNode<
+  auto shapeNode = pair.second->createShapeNodeWith<
       dart::dynamics::VisualAddon,
       dart::dynamics::CollisionAddon,
       dart::dynamics::DynamicsAddon>(newBoxShape);

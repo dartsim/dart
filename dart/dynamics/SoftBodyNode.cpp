@@ -183,19 +183,20 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
   // Create a new SoftMeshShape for this SoftBodyNode
   auto softMesh = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
   auto newSoftShapeNode
-      = createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(
+      = createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
           softMesh, "soft mesh");
 
   // Copy the properties of the previous soft shape, if it exists
-  if(mSoftShapeNode)
+  ShapeNodePtr softNode = mSoftShapeNode.lock();
+  if(softNode)
   {
     newSoftShapeNode->getVisualAddon()->setColor(
-          mSoftShapeNode->getVisualAddon()->getRGBA());
+          softNode->getVisualAddon()->getRGBA());
 
     newSoftShapeNode->setRelativeTransform(
-          mSoftShapeNode->getRelativeTransform());
+          softNode->getRelativeTransform());
 
-    mSoftShapeNode->remove();
+    softNode->remove();
   }
 
   mSoftShapeNode = newSoftShapeNode;
@@ -1172,7 +1173,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 //  _ri->setPenColor(fleshColor);
 //  if (_showMeshs)
   {
-    _ri->setPenColor(mSoftShapeNode->get<VisualAddon>()->getRGBA());
+    _ri->setPenColor(mSoftShapeNode.lock()->get<VisualAddon>()->getRGBA());
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

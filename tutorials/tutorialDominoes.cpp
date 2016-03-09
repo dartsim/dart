@@ -282,7 +282,7 @@ SkeletonPtr createDomino()
         new BoxShape(Eigen::Vector3d(default_domino_depth,
                                      default_domino_width,
                                      default_domino_height)));
-  body->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+  body->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
 
   // Set up inertia for the domino
   dart::dynamics::Inertia inertia;
@@ -309,7 +309,7 @@ SkeletonPtr createFloor()
   std::shared_ptr<BoxShape> box(
         new BoxShape(Eigen::Vector3d(floor_width, floor_width, floor_height)));
   auto shapeNode
-      = body->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+      = body->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
   shapeNode->getVisualAddon()->setColor(dart::Color::Black());
 
   // Put the body into position

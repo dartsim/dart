@@ -394,7 +394,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
           default_shape_height*Eigen::Vector3d::Ones());
   }
 
-  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
 
   // Setup the inertia for the body
   Inertia inertia;
@@ -571,7 +571,7 @@ SkeletonPtr createSoftBody()
   Eigen::Vector3d dims(width, width, height);
   dims *= 0.6;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
-  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
 
   Inertia inertia;
   inertia.setMass(default_shape_density * box->getVolume());
@@ -597,7 +597,7 @@ SkeletonPtr createHybridBody()
   double box_shape_height = default_shape_height;
   std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
         box_shape_height*Eigen::Vector3d::Ones());
-  bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
@@ -623,7 +623,7 @@ SkeletonPtr createGround()
         Eigen::Vector3d(default_ground_width, default_ground_width,
                         default_wall_thickness));
   auto shapeNode
-      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
   shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
@@ -639,7 +639,7 @@ SkeletonPtr createWall()
         Eigen::Vector3d(default_wall_thickness, default_ground_width,
                         default_wall_height));
   auto shapeNode
-      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
   shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

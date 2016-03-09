@@ -309,7 +309,7 @@ public:
 
           auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
           shapeNodes[1]->getVisualAddon()->setColor(dart::Color::Red());
-          bn->createShapeNode<VisualAddon>(mArrow);
+          bn->createShapeNodeWith<VisualAddon>(mArrow);
 
           --mForceCountDown[i];
         }
@@ -350,7 +350,7 @@ void setGeometry(const BodyNodePtr& bn)
 
   // Create a shpae node for visualization and collision checking
   auto shapeNode
-      = bn->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
   shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
 
   // Set the location of the shape node
@@ -378,7 +378,7 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   const double& R = default_width;
   std::shared_ptr<EllipsoidShape> ball(
         new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
-  auto shapeNode = bn->createShapeNode<VisualAddon>(ball);
+  auto shapeNode = bn->createShapeNodeWith<VisualAddon>(ball);
   shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
 
   // Set the geometry of the Body
@@ -414,7 +414,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
   tf.linear() = dart::math::eulerXYZToMatrix(
         Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
 
-  auto shapeNode = bn->createShapeNode<VisualAddon>(cyl);
+  auto shapeNode = bn->createShapeNodeWith<VisualAddon>(cyl);
   shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
   shapeNode->setRelativeTransform(tf);
 

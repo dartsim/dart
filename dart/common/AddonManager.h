@@ -184,6 +184,18 @@ protected:
   RequiredAddonSet mRequiredAddons;
 };
 
+//==============================================================================
+/// Attach an arbitrary number of Addons to the specified AddonManager type.
+// TODO(MXG): Consider putting this functionality into the AddonManager class
+// itself. Also consider allowing the user to specify arguments for the
+// constructors of the Addons.
+template <class T>
+void createAddons(T* /*mgr*/);
+
+//==============================================================================
+template <class T, class NextAddon, class... Addons>
+void createAddons(T* mgr);
+
 } // namespace common
 } // namespace dart
 

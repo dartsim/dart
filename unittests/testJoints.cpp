@@ -638,7 +638,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   for (size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
   {
     auto bodyNode = pendulum->getBodyNode(i);
-    bodyNode->removeAllShapeNodes<CollisionAddon>();
+    bodyNode->removeAllShapeNodesWith<CollisionAddon>();
   }
 
   // Joint common setting

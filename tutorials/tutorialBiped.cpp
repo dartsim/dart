@@ -278,7 +278,7 @@ SkeletonPtr createFloor()
   std::shared_ptr<BoxShape> box(
       new BoxShape(Eigen::Vector3d(floor_width, floor_height, floor_width)));
   auto shapeNode
-      = body->createShapeNode<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+      = body->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
   shapeNode->getVisualAddon()->setColor(dart::Color::Black());
   
   // Put the body into position
