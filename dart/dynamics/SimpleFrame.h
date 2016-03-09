@@ -89,9 +89,9 @@ public:
   SimpleFrame& operator=(const SimpleFrame& _otherFrame);
 
   /// Spawn a child SimpleFrame to this SimpleFrame. SimpleFrame doesn't have
-  /// the ownership of the created child SimpleFrame. So please make sure you
-  /// are responsible to hold the returning pointer to the child SimpleFrame so
-  /// that it doesn't get destroyed.
+  /// the ownership of the created child SimpleFrame. This means that you are
+  /// responsible for holding onto the returned SimpleFrame. If you neglect to
+  /// store it, it will automatically be destroyed.
   std::shared_ptr<SimpleFrame> spawnChildSimpleFrame(
       const std::string& name = "SimpleFrame",
       const Eigen::Isometry3d& relativeTransform
