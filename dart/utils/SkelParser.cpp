@@ -1875,12 +1875,10 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
 
 //==============================================================================
 JointPropPtr readWeldJoint(
-    tinyxml2::XMLElement* _jointElement,
+    tinyxml2::XMLElement* /*_jointElement*/,
     SkelJoint& /*_joint*/,
     const std::string&)
 {
-  assert(_jointElement != nullptr);
-
   return Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>();
 }
 
