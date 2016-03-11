@@ -626,15 +626,23 @@ void readAddons(
 
       if (!hasElement(inertiaElement, "moment_of_inertia"))
       {
-        if (bodyNode->getNumNodes<dynamics::ShapeNode>() > 0)
+        for (auto& shapeNode : bodyNode->getShapeNodes())
         {
-          auto mass = bodyNode->getMass();
-          auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(0);
-          Eigen::Matrix3d Ic = shapeNode->getShape()->computeInertia(mass);
+          auto shapeType = shapeNode->getShape()->getShapeType();
+          if (dynamics::Shape::SOFT_MESH == shapeType)
+            continue;
 
+          auto mass = bodyNode->getMass();
+          Eigen::Matrix3d Ic = shapeNode->getShape()->computeInertia(mass);
           auto inertia = bodyNode->getInertia();
           inertia.setMoment(Ic);
           bodyNode->setInertia(inertia);
+
+          // TODO(JS): We use the inertia of the first non-soft mesh shape in
+          // a body for the body's inertia when not specified. We might want to
+          // use the summation of all the shapes' inertia instead.
+
+          break;
         }
       }
     }
