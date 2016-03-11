@@ -1141,7 +1141,7 @@ void SoftBodyNode::clearInternalForces()
 void SoftBodyNode::draw(renderer::RenderInterface* _ri,
                         const Eigen::Vector4d& _color,
                         bool _useDefaultColor,
-                        int _depth) const
+                        int /*_depth*/) const
 {
   if (_ri == nullptr)
     return;
@@ -1154,7 +1154,9 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 
   _ri->pushName((unsigned)mID);
 
-  Entity::draw(_ri, _color, _useDefaultColor, _depth);
+  auto shapeNodes = getShapeNodesWith<VisualAddon>();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->draw(_ri, _color, _useDefaultColor);
 
   // vertex
 //  if (_showPointMasses)
