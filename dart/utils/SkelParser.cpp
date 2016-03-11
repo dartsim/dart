@@ -2391,6 +2391,7 @@ JointPropPtr readFreeJoint(
       properties);
 }
 
+//==============================================================================
 common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& _retriever)
 {
