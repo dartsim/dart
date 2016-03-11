@@ -590,12 +590,6 @@ public:
   template <class Addon>
   void removeAllShapeNodesWith();
 
-  /// Add a collision Shape into the BodyNode
-  void addCollisionShapeNode(const ShapePtr& shape);
-
-  /// Remove a collision Shape from this BodyNode
-  void removeCollisionShapeNode(const ShapePtr& shape);
-
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
   template <class EndEffectorProperties>
