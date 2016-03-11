@@ -90,6 +90,44 @@ bool BodyNodeCollisionFilter::isAdjacentBodies(const BodyNode* bodyNode1,
 }
 
 //==============================================================================
+const Eigen::Isometry3d ShapeFrameCollisionObject::getTransform() const
+{
+  return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
+}
+
+//==============================================================================
+bool ShapeFrameCollisionObject::isEqual(
+    const collision::CollisionObject* other) const
+{
+  if (this == other)
+    return true;
+
+  auto castedOther = dynamic_cast<const ShapeFrameCollisionObject*>(other);
+
+  if (!castedOther)
+    return false;
+
+  if (mShape != castedOther->mShape)
+    return false;
+
+  if (mBodyNode != castedOther->mBodyNode)
+    return false;
+
+  // If castedOther has the same shape and body node then it must be the same
+  // pointer with this as well because the collision detector doesn't allow to
+  // create new collision objects for the same shape and body node.
+  assert(this != other);
+
+  return true;
+}
+
+//==============================================================================
+BodyNodePtr ShapeFrameCollisionObject::getBodyNode() const
+{
+  return mBodyNode;
+}
+
+//==============================================================================
 ShapeFrameCollisionObject::ShapeFrameCollisionObject(
     const collision::CollisionDetectorPtr& collisionDetector,
     const dynamics::ShapePtr& shape,
@@ -120,38 +158,6 @@ ShapeFrameCollisionObject::ShapeFrameCollisionObject(
            << "BodyNode.\n";
     assert(false);
   }
-}
-
-//==============================================================================
-const Eigen::Isometry3d ShapeFrameCollisionObject::getTransform() const
-{
-  return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
-}
-
-//==============================================================================
-bool ShapeFrameCollisionObject::isEqual(const collision::CollisionObject* other)
-{
-  if (this == other)
-    return true;
-
-  auto castedOther = dynamic_cast<const ShapeFrameCollisionObject*>(other);
-
-  if (!castedOther)
-    return false;
-
-  if (mShape != castedOther->mShape)
-    return false;
-
-  if (mBodyNode != castedOther->mBodyNode)
-    return false;
-
-  return true;
-}
-
-//==============================================================================
-BodyNodePtr ShapeFrameCollisionObject::getBodyNode() const
-{
-  return mBodyNode;
 }
 
 //==============================================================================
@@ -201,35 +207,6 @@ collision::CollisionGroupPtr createShapeFrameCollisionGroup(
 
   return group;
 }
-
-////==============================================================================
-//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
-//            const ShapePtr& shape1, const BodyNodePtr& body1,
-//            const ShapePtr& shape2, const BodyNodePtr& body2,
-//            const collision::Option& option,
-//            collision::Result& result)
-//{
-//  auto obj1 = collisionDetector->createCollisionObject(shape1, body1);
-//  auto obj2 = collisionDetector->createCollisionObject(shape2, body2);
-
-//  return obj1->detect(obj2.get(), option, result);
-//}
-
-////==============================================================================
-//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
-//            const SkeletonPtr& skel1,
-//            const SkeletonPtr& skel2,
-//            const collision::Option& option,
-//            collision::Result& result)
-//{
-//  auto objects1 = createShapeFrameCollisionObjects(collisionDetector, skel1);
-//  auto objects2 = createShapeFrameCollisionObjects(collisionDetector, skel2);
-
-//  auto group1 = collisionDetector->createCollisionGroup(objects1);
-//  auto group2 = collisionDetector->createCollisionGroup(objects2);
-
-//  return group1->detect(group2.get(), option, result);
-//}
 
 } // namespace dynamics
 } // namespace dart

@@ -61,6 +61,9 @@ public:
   friend class CollisionObject;
   friend class CollisionGroup;
 
+  /// Destructor
+  virtual ~CollisionDetector();
+
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
@@ -102,12 +105,15 @@ protected:
   /// Constructor
   CollisionDetector() = default;
 
+  /// Reclaim collisionObject from this CollisionDetector.
+  void reclaimCollisionObject(CollisionObject* collisionObject);
+
   /// Create collision detection engine specific data for CollisionObject
   virtual std::unique_ptr<CollisionObjectData> createCollisionObjectData(
       CollisionObject* parent,
       const dynamics::ShapePtr& shape) = 0;
 
-  /// Create collision detection engine specific data for CollisionObject
+  /// Reclaim collision detection engine specific data for CollisionObject
   virtual void reclaimCollisionObjectData(
       CollisionObjectData* collisionObjectData) = 0;
 
@@ -115,6 +121,9 @@ protected:
   virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
       CollisionGroup* parent,
       const CollisionObjectPtrs& collObjects) = 0;
+
+  /// Return true if collisionObject is created from this CollisionDetector
+  bool hasCollisionObject(const CollisionObject* collisionObject) const;
 
   /// Perform collision detection for object1-object2.
   virtual bool detect(CollisionObjectData* object1,
@@ -137,20 +146,16 @@ protected:
   virtual bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
                       const Option& option, Result& result) = 0;
 
-};
+protected:
 
-//==============================================================================
-template <typename CollisionObjectType, typename... Args>
-std::shared_ptr<CollisionObjectType>
-CollisionDetector::createCollisionObject(
-    const dynamics::ShapePtr& shape,
-    const Args&... args)
-{
-  return std::make_shared<CollisionObjectType>(
-        shared_from_this(), shape, args...);
-}
+  /// CollisionObject array created from this CollisionDetector
+  std::vector<WeakCollisionObjectPtr> mCollisionObjects;
+
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/CollisionDetector.h"
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_

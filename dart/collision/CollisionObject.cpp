@@ -45,6 +45,7 @@ namespace collision {
 //==============================================================================
 CollisionObject::~CollisionObject()
 {
+//  mCollisionDetector->reclaimCollisionObject(this);
   mCollisionDetector->reclaimCollisionObjectData(mEngineData.get());
 }
 
@@ -128,18 +129,8 @@ std::shared_ptr<FreeCollisionObject> FreeCollisionObject::create(
     const CollisionDetectorPtr& collisionDetector,
     const dynamics::ShapePtr& shape, const Eigen::Isometry3d& tf)
 {
-  return std::make_shared<FreeCollisionObject>(collisionDetector, shape, tf);
-}
-
-//==============================================================================
-FreeCollisionObject::FreeCollisionObject(
-    const CollisionDetectorPtr& collisionDetector,
-    const dynamics::ShapePtr& shape,
-    const Eigen::Isometry3d& tf)
-  : CollisionObject(collisionDetector, shape),
-    mW(tf)
-{
-  // Do nothing
+  return collisionDetector->createCollisionObject<FreeCollisionObject>(
+        shape, tf);
 }
 
 //==============================================================================
@@ -167,9 +158,20 @@ const Eigen::Isometry3d FreeCollisionObject::getTransform() const
 }
 
 //==============================================================================
-bool FreeCollisionObject::isEqual(const CollisionObject* other)
+bool FreeCollisionObject::isEqual(const CollisionObject* other) const
 {
   return this == other;
+}
+
+//==============================================================================
+FreeCollisionObject::FreeCollisionObject(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapePtr& shape,
+    const Eigen::Isometry3d& tf)
+  : CollisionObject(collisionDetector, shape),
+    mW(tf)
+{
+  // Do nothing
 }
 
 }  // namespace collision

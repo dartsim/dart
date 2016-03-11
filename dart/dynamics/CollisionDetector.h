@@ -61,22 +61,24 @@ class ShapeFrameCollisionObject : public collision::CollisionObject
 {
 public:
 
-  ShapeFrameCollisionObject(
-      const collision::CollisionDetectorPtr& collisionDetector,
-      const ShapePtr& shape,
-      const BodyNodePtr& bodyNode);
-  // TODO(JS): this should be replaced by ShapeNode
+  friend class collision::CollisionDetector;
 
   // Documentation inherited
   const Eigen::Isometry3d getTransform() const override;
 
   // Documentation inherited
-  bool isEqual(const CollisionObject* other) override;
+  bool isEqual(const CollisionObject* other) const override;
 
   /// Return BodyNode pointer associated with this ShapeFrameCollisionObject
   dynamics::BodyNodePtr getBodyNode() const;
 
 protected:
+
+  ShapeFrameCollisionObject(
+      const collision::CollisionDetectorPtr& collisionDetector,
+      const ShapePtr& shape,
+      const BodyNodePtr& bodyNode);
+  // TODO(JS): this should be replaced by ShapeNode
 
   dynamics::BodyNodePtr mBodyNode;
   // TODO(JS): this should be changed to ShapeNode
@@ -100,28 +102,6 @@ std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
 collision::CollisionGroupPtr createShapeFrameCollisionGroup(
     const collision::CollisionDetectorPtr& collisionDetector,
     const dynamics::SkeletonPtr& skel);
-
-///// Checks the collisions between two BodyNodes for one time.
-//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
-//            const dynamics::ShapePtr& shape1,
-//            const BodyNodePtr& body1,
-//            const dynamics::ShapePtr& shape2,
-//            const BodyNodePtr& body2,
-//            const collision::Option& option,
-//            collision::Result& result);
-
-///// Checks the collisions between two Skeletons for one time.
-/////
-///// This function creates two collision groups internally as local variables
-///// of the skeletons for single time collision check. If you want to check
-///// more than once, then create two collision groups explicitly using
-///// createShapeNodeCollisionGroup() and check the collisions with the groups
-///// for better performance.
-//bool detect(const DynamicsCollisionDetectorPtr& collisionDetector,
-//            const dynamics::SkeletonPtr& skel1,
-//            const dynamics::SkeletonPtr& skel2,
-//            const collision::Option& option,
-//            collision::Result& result);
 
 } // namespace dynamics
 } // namespace dart

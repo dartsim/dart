@@ -525,7 +525,7 @@ void testFreeCollisionObjects()
   // Create collision objects in different ways
   auto obj1 = cd->template createCollisionObject<FreeCollisionObject>(shape1);
   auto obj2 = FreeCollisionObject::create(cd, shape2);
-  auto obj3 = std::shared_ptr<FreeCollisionObject>(new FreeCollisionObject(cd, shape3));
+  auto obj3 = FreeCollisionObject::create(cd, shape3);
 
   collision::CollisionGroupPtr group1(new collision::CollisionGroup(cd));
   group1->addCollisionObject(obj1);

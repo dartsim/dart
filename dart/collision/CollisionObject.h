@@ -65,7 +65,7 @@ public:
   virtual const Eigen::Isometry3d getTransform() const = 0;
 
   /// Return true if this CollisionObject is identical to other
-  virtual bool isEqual(const CollisionObject* other) = 0;
+  virtual bool isEqual(const CollisionObject* other) const = 0;
 
   /// Perform collision detection with other CollisionObject.
   ///
@@ -120,17 +120,12 @@ class FreeCollisionObject : public CollisionObject
 {
 public:
 
+  friend class CollisionDetector;
+
   static std::shared_ptr<FreeCollisionObject> create(
       const CollisionDetectorPtr& collisionDetector,
       const dynamics::ShapePtr& shape,
       const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
-
-  /// Constructor
-  FreeCollisionObject(
-      const CollisionDetectorPtr& collisionDetector,
-      const dynamics::ShapePtr& shape,
-      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
-  // TODO(JS): change to engine pointer
 
   /// Set world transformation of this FreeCollisionObject
   void setTransform(const Eigen::Isometry3d& tf);
@@ -145,9 +140,16 @@ public:
   const Eigen::Isometry3d getTransform() const override;
 
   // Documentation inherited
-  bool isEqual(const CollisionObject* other) override;
+  bool isEqual(const CollisionObject* other) const override;
 
 protected:
+
+  /// Constructor
+  FreeCollisionObject(
+      const CollisionDetectorPtr& collisionDetector,
+      const dynamics::ShapePtr& shape,
+      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
+  // TODO(JS): change to engine pointer
 
   /// Transformation in world coordinates
   Eigen::Isometry3d mW;

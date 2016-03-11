@@ -51,6 +51,12 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
+CollisionDetector::~CollisionDetector()
+{
+//  assert(mCollisionObjects.empty());
+}
+
+//==============================================================================
 std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
     const std::vector<CollisionObjectPtr>& objects)
 {
@@ -114,6 +120,46 @@ bool CollisionDetector::detect(
 
   return detect(group1->getEngineData(), group2->getEngineData(),
                 option, result);
+}
+
+//==============================================================================
+struct is_collision_object_equal
+    : public std::unary_function<WeakCollisionObjectPtr, bool>
+{
+  explicit is_collision_object_equal(const CollisionObject* object)
+    : mObject(object) {}
+
+  bool operator() (const WeakCollisionObjectPtr& arg)
+  {
+    auto locked = arg.lock();
+    assert(locked);
+
+    return mObject == locked.get();
+  }
+
+  const CollisionObject* mObject;
+};
+
+//==============================================================================
+void CollisionDetector::reclaimCollisionObject(CollisionObject* collisionObject)
+{
+  assert(hasCollisionObject(collisionObject));
+
+  mCollisionObjects.erase(
+      std::remove_if(mCollisionObjects.begin(), mCollisionObjects.end(),
+                     is_collision_object_equal(collisionObject)),
+      mCollisionObjects.end());
+
+  reclaimCollisionObjectData(collisionObject->getEngineData());
+}
+
+//==============================================================================
+bool CollisionDetector::hasCollisionObject(
+    const CollisionObject* collisionObject) const
+{
+  return std::find_if(mCollisionObjects.begin(), mCollisionObjects.end(),
+                      is_collision_object_equal(collisionObject))
+      != mCollisionObjects.end();
 }
 
 //==============================================================================
