@@ -57,7 +57,7 @@ struct BodyNodeCollisionFilter : collision::CollisionFilter
                         const BodyNode* bodyNode2) const;
 };
 
-class ShapeFrameCollisionObject : public collision::CollisionObject
+class ShapeNodeCollisionObject : public collision::CollisionObject
 {
 public:
 
@@ -69,31 +69,37 @@ public:
   // Documentation inherited
   bool isEqual(const CollisionObject* other) const override;
 
-  /// Return BodyNode pointer associated with this ShapeFrameCollisionObject
-  dynamics::BodyNodePtr getBodyNode() const;
+  /// Return ShapeNode pointer associated with this ShapeNodeCollisionObject
+  dynamics::ShapeNode* getShapeNode();
+
+  /// Return ShapeNode pointer associated with this ShapeNodeCollisionObject
+  const dynamics::ShapeNode* getShapeNode() const;
+
+  /// Return BodyNode pointer associated with this ShapeNodeCollisionObject
+  dynamics::BodyNode* getBodyNode();
+
+  /// Return BodyNode pointer associated with this ShapeNodeCollisionObject
+  const dynamics::BodyNode* getBodyNode() const;
 
 protected:
 
-  ShapeFrameCollisionObject(
+  ShapeNodeCollisionObject(
       const collision::CollisionDetectorPtr& collisionDetector,
       const ShapePtr& shape,
-      const BodyNodePtr& bodyNode);
-  // TODO(JS): this should be replaced by ShapeNode
+      const ShapeNodePtr& shapeNode);
 
-  dynamics::BodyNodePtr mBodyNode;
-  // TODO(JS): this should be changed to ShapeNode
+  dynamics::ShapeNodePtr mShapeNode;
 
 };
 
-using ShapeFrameCollisionObjectPtr = std::shared_ptr<ShapeFrameCollisionObject>;
+using ShapeNodeCollisionObjectPtr = std::shared_ptr<ShapeNodeCollisionObject>;
 
-/// Create a ShapeFrameCollisionObject given ShapeNode
-ShapeFrameCollisionObjectPtr createShapeFrameCollisionObject(
+/// Create a ShapeNodeCollisionObjectPtr given ShapeNode
+ShapeNodeCollisionObjectPtr createShapeNodeCollisionObject(
     const collision::CollisionDetectorPtr& collisionDetector,
-    const ShapePtr& shape,
-    const BodyNodePtr& bodyNode);
+    const ShapeNodePtr& shapeNode);
 
-/// Create a ShapeFrameCollisionObjects given Skeleton
+/// Create a ShapeNodeCollisionObjectPtr given Skeleton
 std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
     const collision::CollisionDetectorPtr& collisionDetector,
     const dynamics::SkeletonPtr& skel);

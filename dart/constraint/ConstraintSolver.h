@@ -50,7 +50,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
-class ShapeFrameCollisionObject;
+class ShapeNodeCollisionObject;
 }  // namespace dynamics
 
 namespace constraint {

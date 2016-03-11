@@ -118,7 +118,7 @@ FCLMeshCollisionObjectData::FCLMeshCollisionObjectData(
     CollisionObject* parent,
     const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObjectData(collisionDetector, parent),
-    mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent)),
+    mFCLCollisionObjectUserData(new FCLCollisionObjectData::UserData(parent)),
     mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());

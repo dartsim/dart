@@ -49,8 +49,8 @@ bool BodyNodeCollisionFilter::needCollision(
   if (object1 == object2)
     return false;
 
-  auto castedObj1 = static_cast<const ShapeFrameCollisionObject*>(object1);
-  auto castedObj2 = static_cast<const ShapeFrameCollisionObject*>(object2);
+  auto castedObj1 = static_cast<const ShapeNodeCollisionObject*>(object1);
+  auto castedObj2 = static_cast<const ShapeNodeCollisionObject*>(object2);
 
   auto bodyNode1 = castedObj1->getBodyNode();
   auto bodyNode2 = castedObj2->getBodyNode();
@@ -90,19 +90,19 @@ bool BodyNodeCollisionFilter::isAdjacentBodies(const BodyNode* bodyNode1,
 }
 
 //==============================================================================
-const Eigen::Isometry3d ShapeFrameCollisionObject::getTransform() const
+const Eigen::Isometry3d ShapeNodeCollisionObject::getTransform() const
 {
-  return mBodyNode->getWorldTransform() * mShape->getLocalTransform();
+  return mShapeNode->getWorldTransform();
 }
 
 //==============================================================================
-bool ShapeFrameCollisionObject::isEqual(
+bool ShapeNodeCollisionObject::isEqual(
     const collision::CollisionObject* other) const
 {
   if (this == other)
     return true;
 
-  auto castedOther = dynamic_cast<const ShapeFrameCollisionObject*>(other);
+  auto castedOther = dynamic_cast<const ShapeNodeCollisionObject*>(other);
 
   if (!castedOther)
     return false;
@@ -110,7 +110,7 @@ bool ShapeFrameCollisionObject::isEqual(
   if (mShape != castedOther->mShape)
     return false;
 
-  if (mBodyNode != castedOther->mBodyNode)
+  if (mShapeNode != castedOther->mShapeNode)
     return false;
 
   // If castedOther has the same shape and body node then it must be the same
@@ -122,36 +122,43 @@ bool ShapeFrameCollisionObject::isEqual(
 }
 
 //==============================================================================
-BodyNodePtr ShapeFrameCollisionObject::getBodyNode() const
+ShapeNode* ShapeNodeCollisionObject::getShapeNode()
 {
-  return mBodyNode;
+  return mShapeNode.get();
 }
 
 //==============================================================================
-ShapeFrameCollisionObject::ShapeFrameCollisionObject(
+const ShapeNode* ShapeNodeCollisionObject::getShapeNode() const
+{
+  return mShapeNode.get();
+}
+
+//==============================================================================
+BodyNode* ShapeNodeCollisionObject::getBodyNode()
+{
+  return mShapeNode->getBodyNodePtr().get();
+}
+
+//==============================================================================
+const BodyNode* ShapeNodeCollisionObject::getBodyNode() const
+{
+  return mShapeNode->getBodyNodePtr().get();
+}
+
+//==============================================================================
+ShapeNodeCollisionObject::ShapeNodeCollisionObject(
     const collision::CollisionDetectorPtr& collisionDetector,
-    const dynamics::ShapePtr& shape,
-    const dynamics::BodyNodePtr& bodyNode)
+    const ShapePtr& shape,
+    const ShapeNodePtr& shapeNode)
   : collision::CollisionObject(collisionDetector, shape),
-    mBodyNode(bodyNode)
+    mShapeNode(shapeNode)
 {
   assert(collisionDetector);
-  assert(shape);
-  assert(bodyNode);
+  assert(shapeNode);
+  assert(shapeNode->getShape());
+  assert(shape == shapeNode->getShape());
 
-  auto found = false;
-  auto numShapes = mBodyNode->getNumCollisionShapes();
-  for (auto i = 0u; i < numShapes; ++i)
-  {
-    auto shapeIt = mBodyNode->getCollisionShape(i);
-    if (shape == shapeIt)
-    {
-      found = true;
-      break;
-    }
-  }
-
-  if (!found)
+  if (!mShapeNode->hasCollisionAddon())
   {
     dtwarn << "[ShapeFrameCollisionObject::constructor] Attempting to create "
            << "ShapeFrameCollisionObject with invalid pair of Shape and "
@@ -161,13 +168,12 @@ ShapeFrameCollisionObject::ShapeFrameCollisionObject(
 }
 
 //==============================================================================
-ShapeFrameCollisionObjectPtr createShapeFrameCollisionObject(
+ShapeNodeCollisionObjectPtr createShapeNodeCollisionObject(
     const collision::CollisionDetectorPtr& collisionDetector,
-    const ShapePtr& shape,
-    const BodyNodePtr& bodyNode)
+    const ShapeNodePtr& shapeNode)
 {
-  return collisionDetector->createCollisionObject<ShapeFrameCollisionObject>(
-        shape, bodyNode);
+  return collisionDetector->createCollisionObject<ShapeNodeCollisionObject>(
+        shapeNode->getShape(), shapeNode);
 }
 
 //==============================================================================
@@ -181,13 +187,12 @@ std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
   for (auto i = 0u; i < numBodyNodes; ++i)
   {
     auto bodyNode = skel->getBodyNode(i);
-    auto numColShapes = bodyNode->getNumCollisionShapes();
+    auto collisionShapeNodes = bodyNode->getShapeNodesWith<CollisionAddon>();
 
-    for (auto j = 0u; j < numColShapes; ++j)
+    for (auto& shapeNode : collisionShapeNodes)
     {
-      auto shape = bodyNode->getCollisionShape(j);
-      auto collObj =
-          createShapeFrameCollisionObject(collisionDetector, shape, bodyNode);
+      auto collObj
+          = createShapeNodeCollisionObject(collisionDetector, shapeNode);
 
       objects.push_back(
             std::static_pointer_cast<collision::CollisionObject>(collObj));

@@ -926,10 +926,10 @@ void postProcess(const fcl::CollisionResult& fclResult,
     Contact pair1, pair2;
     const fcl::Contact& c = fclResult.getContact(k);
 
-    FCLCollisionObjectUserData* userData1
-        = static_cast<FCLCollisionObjectUserData*>(o1->getUserData());
-    FCLCollisionObjectUserData* userData2
-        = static_cast<FCLCollisionObjectUserData*>(o2->getUserData());
+    auto userData1
+        = static_cast<FCLCollisionObjectData::UserData*>(o1->getUserData());
+    auto userData2
+        = static_cast<FCLCollisionObjectData::UserData*>(o2->getUserData());
     assert(userData1);
     assert(userData2);
 
@@ -1202,10 +1202,10 @@ Contact convertContact(const fcl::Contact& fclContact,
   contact.triID1 = fclContact.b1;
   contact.triID2 = fclContact.b2;
 
-  FCLCollisionObjectUserData* userData1
-      = static_cast<FCLCollisionObjectUserData*>(o1->getUserData());
-  FCLCollisionObjectUserData* userData2
-      = static_cast<FCLCollisionObjectUserData*>(o2->getUserData());
+  auto userData1
+      = static_cast<FCLCollisionObjectData::UserData*>(o1->getUserData());
+  auto userData2
+      = static_cast<FCLCollisionObjectData::UserData*>(o2->getUserData());
   assert(userData1);
   assert(userData2);
   contact.collisionObject1 = userData1->mCollisionObject;

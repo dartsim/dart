@@ -597,22 +597,22 @@ void testBodyNodes()
   auto boxBody1 = boxSkel1->getBodyNode(0u);
   auto boxBody2 = boxSkel2->getBodyNode(0u);
 
-  auto boxShape1 = boxBody1->getCollisionShape(0u);
-  auto boxShape2 = boxBody2->getCollisionShape(0u);
+  auto boxShapeNode1 = boxBody1->getShapeNodesWith<CollisionAddon>()[0];
+  auto boxShapeNode2 = boxBody2->getShapeNodesWith<CollisionAddon>()[0];
 
   collision::Option option;
   collision::Result result;
 
-  auto obj1 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
-        boxShape1, boxBody1);
-  auto obj2 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
-        boxShape2, boxBody2);
+  auto obj1 = cd->template createCollisionObject<ShapeNodeCollisionObject>(
+        boxShapeNode1->getShape(), boxShapeNode1);
+  auto obj2 = cd->template createCollisionObject<ShapeNodeCollisionObject>(
+        boxShapeNode2->getShape(), boxShapeNode2);
 
   EXPECT_TRUE(obj1->detect(obj2.get(), option, result));
   EXPECT_TRUE(cd->detect(obj1.get(), obj2.get(), option, result));
 
-  auto obj3 = cd->template createCollisionObject<ShapeFrameCollisionObject>(
-        boxShape2, boxBody2);
+  auto obj3 = cd->template createCollisionObject<ShapeNodeCollisionObject>(
+        boxShapeNode2->getShape(), boxShapeNode2);
 
   EXPECT_FALSE(obj1->isEqual(obj2.get()));
   EXPECT_FALSE(obj2->isEqual(obj1.get()));

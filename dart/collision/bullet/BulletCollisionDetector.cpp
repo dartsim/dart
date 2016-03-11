@@ -231,8 +231,8 @@ BulletCollisionDetector::createCollisionGroupData(
 
 //==============================================================================
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObjectUserData* userData1,
-                       const BulletCollisionObjectUserData* userData2)
+                       const BulletCollisionObjectData::UserData* userData1,
+                       const BulletCollisionObjectData::UserData* userData2)
 {
   assert(userData1);
   assert(userData2);
@@ -267,8 +267,10 @@ void convertContacts(btCollisionWorld* collWorld, Result& result)
     auto userPointer0 = bulletCollObj0->getUserPointer();
     auto userPointer1 = bulletCollObj1->getUserPointer();
 
-    auto userDataA = static_cast<BulletCollisionObjectUserData*>(userPointer1);
-    auto userDataB = static_cast<BulletCollisionObjectUserData*>(userPointer0);
+    auto userDataA
+        = static_cast<BulletCollisionObjectData::UserData*>(userPointer1);
+    auto userDataB
+        = static_cast<BulletCollisionObjectData::UserData*>(userPointer0);
 
     auto numContacts = contactManifold->getNumContacts();
 
@@ -594,8 +596,10 @@ btScalar BulletContactResultCallback::addSingleResult(
   auto userPointer0 = colObj0Wrap->getCollisionObject()->getUserPointer();
   auto userPointer1 = colObj1Wrap->getCollisionObject()->getUserPointer();
 
-  auto userDataA = static_cast<BulletCollisionObjectUserData*>(userPointer1);
-  auto userDataB = static_cast<BulletCollisionObjectUserData*>(userPointer0);
+  auto userDataA
+      = static_cast<BulletCollisionObjectData::UserData*>(userPointer1);
+  auto userDataB
+      = static_cast<BulletCollisionObjectData::UserData*>(userPointer0);
 
   mResult.contacts.push_back(convertContact(cp, userDataA, userDataB));
 

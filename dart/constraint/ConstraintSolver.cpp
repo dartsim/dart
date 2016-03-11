@@ -545,18 +545,18 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
 {
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
            _contact.collisionObject1));
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
            _contact.collisionObject2));
 
-  auto shapeFrameCollObj1 = static_cast<dynamics::ShapeFrameCollisionObject*>(
+  auto shapeFrameCollObj1 = static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject1);
-  auto shapeFrameCollObj2 = static_cast<dynamics::ShapeFrameCollisionObject*>(
+  auto shapeFrameCollObj2 = static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject2);
 
-  auto bodyNode1 = shapeFrameCollObj1->getBodyNode().get();
-  auto bodyNode2 = shapeFrameCollObj2->getBodyNode().get();
+  auto bodyNode1 = shapeFrameCollObj1->getBodyNode();
+  auto bodyNode2 = shapeFrameCollObj2->getBodyNode();
 
   auto bodyNode1IsSoft =
       dynamic_cast<dynamics::SoftBodyNode*>(bodyNode1) != nullptr;

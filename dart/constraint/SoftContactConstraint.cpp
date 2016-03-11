@@ -73,9 +73,9 @@ SoftContactConstraint::SoftContactConstraint(
     collision::Contact& _contact, double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
-    mBodyNode1(static_cast<dynamics::ShapeFrameCollisionObject*>(
+    mBodyNode1(static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject1)->getBodyNode()),
-    mBodyNode2(static_cast<dynamics::ShapeFrameCollisionObject*>(
+    mBodyNode2(static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject2)->getBodyNode()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
@@ -88,9 +88,9 @@ SoftContactConstraint::SoftContactConstraint(
     mIsBounceOn(false),
     mActive(false)
 {
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
       _contact.collisionObject1)->getBodyNode());
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
       _contact.collisionObject2)->getBodyNode());
 
   // TODO(JS): Assumed single contact

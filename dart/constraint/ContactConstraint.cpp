@@ -70,9 +70,9 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
-    mBodyNode1(static_cast<dynamics::ShapeFrameCollisionObject*>(
+    mBodyNode1(static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject1)->getBodyNode()),
-    mBodyNode2(static_cast<dynamics::ShapeFrameCollisionObject*>(
+    mBodyNode2(static_cast<dynamics::ShapeNodeCollisionObject*>(
         _contact.collisionObject2)->getBodyNode()),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
@@ -80,9 +80,9 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     mIsBounceOn(false),
     mActive(false)
 {
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
       _contact.collisionObject1)->getBodyNode());
-  assert(dynamic_cast<dynamics::ShapeFrameCollisionObject*>(
+  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
       _contact.collisionObject2)->getBodyNode());
 
   // TODO(JS): Assumed single contact

@@ -43,12 +43,10 @@
 #include <fcl/collision_object.h>
 
 #include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/fcl/FCLCollisionObjectData.h"
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
-class FCLCollisionObjectUserData;
 
 class FCLMeshCollisionObjectData : public CollisionObjectData
 {
@@ -76,7 +74,7 @@ protected:
 protected:
 
   /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
+  std::unique_ptr<FCLCollisionObjectData::UserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
   std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
