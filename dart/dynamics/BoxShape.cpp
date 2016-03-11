@@ -89,19 +89,15 @@ const Eigen::Vector3d& BoxShape::getSize() const {
   return mSize;
 }
 
+//==============================================================================
 void BoxShape::draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color,
-                    bool _useDefaultColor) const {
-  if (!_ri) return;
-  if (mHidden) return;
-  if (!_useDefaultColor)
-    _ri->setPenColor(_color);
-  else
-    _ri->setPenColor(mColor);
-  _ri->pushMatrix();
-  _ri->transform(mTransform);
+                    const Eigen::Vector4d& _color) const
+{
+  if (!_ri)
+    return;
+
+  _ri->setPenColor(_color);
   _ri->drawCube(mBoundingBox.computeFullExtents());
-  _ri->popMatrix();
 }
 
 //==============================================================================

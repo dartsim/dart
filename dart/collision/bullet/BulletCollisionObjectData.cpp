@@ -48,7 +48,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionObjectUserData::BulletCollisionObjectUserData(
+BulletCollisionObjectData::UserData::UserData(
     CollisionObject* collisionObject,
     CollisionDetector* collisionDetector,
     CollisionGroup* collisionGroup)
@@ -83,8 +83,8 @@ BulletCollisionObjectData::BulletCollisionObjectData(
     CollisionObject* parent,
     btCollisionShape* bulletCollisionShape)
   : CollisionObjectData(collisionDetector, parent),
-    mBulletCollisionObjectUserData(new BulletCollisionObjectUserData(
-        mParent, mCollisionDetector, nullptr)),
+    mBulletCollisionObjectUserData(new UserData(mParent, mCollisionDetector,
+                                                nullptr)),
     mBulletCollisionObject(new btCollisionObject())
 {
   mBulletCollisionObject->setCollisionShape(bulletCollisionShape);

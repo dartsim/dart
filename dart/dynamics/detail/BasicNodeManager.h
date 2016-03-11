@@ -53,7 +53,7 @@ class BasicNodeManagerForBodyNode
 {
 public:
 
-  using NodeMap = std::map<std::type_index, std::vector<Node*> >;
+  using NodeMap = std::map< std::type_index, std::vector<Node*> >;
   using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
   using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
   using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
@@ -284,7 +284,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AddonName, PluralAddonName )\
-  inline size_t getNum ## PluralAddoName (size_t treeIndex) const\
+  inline size_t getNum ## PluralAddonName (size_t treeIndex) const\
   { return getNumNodes< TypeName >(treeIndex); }\
   inline TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex)\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\
@@ -313,7 +313,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
-  size_t getNum ## PluralAddoName (size_t treeIndex) const;\
+  size_t getNum ## PluralAddonName (size_t treeIndex) const;\
   TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex);\
   const TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex) const;\
   \
@@ -340,7 +340,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
   DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
-  size_t ClassName :: getNum ## PluralAddoName (size_t treeIndex) const\
+  size_t ClassName :: getNum ## PluralAddonName (size_t treeIndex) const\
   { return getNumNodes< TypeName >(treeIndex); }\
   TypeName * ClassName :: get ## AddonName (size_t treeIndex, size_t nodeIndex)\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\

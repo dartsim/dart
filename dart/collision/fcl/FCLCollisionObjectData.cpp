@@ -48,8 +48,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-FCLCollisionObjectUserData::FCLCollisionObjectUserData(
-    CollisionObject* collisionObject)
+FCLCollisionObjectData::UserData::UserData(CollisionObject* collisionObject)
   : mCollisionObject(collisionObject)
 {
   // Do nothing
@@ -122,7 +121,7 @@ FCLCollisionObjectData::FCLCollisionObjectData(
     CollisionObject* parent,
     const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObjectData(collisionDetector, parent),
-    mFCLCollisionObjectUserData(new FCLCollisionObjectUserData(parent)),
+    mFCLCollisionObjectUserData(new UserData(parent)),
     mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());

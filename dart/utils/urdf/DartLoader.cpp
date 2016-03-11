@@ -189,6 +189,11 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
         dterr << "[DartLoader::modelInterfaceToSkeleton] Failed to create root node!\n";
         return nullptr;
       }
+
+      const auto result
+          = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+      if(!result)
+        return nullptr;
     }
   }
   else
@@ -204,6 +209,11 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
             dynamics::Joint::Properties("rootJoint"))),
           rootProperties);
     rootNode = pair.second;
+
+    const auto result
+        = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+    if(!result)
+      return nullptr;
   }
 
   for(size_t i = 0; i < root->child_links.size(); i++)
@@ -232,7 +242,12 @@ bool DartLoader::createSkeletonRecursive(
   dynamics::BodyNode* node = createDartJointAndNode(
     _lk->parent_joint.get(), properties, _parentNode, _skel,
     _baseUri, _resourceRetriever);
+
   if(!node)
+    return false;
+
+  const auto result = createShapeNodes(_lk, node, _baseUri, _resourceRetriever);
+  if(!result)
     return false;
   
   for(size_t i = 0; i < _lk->child_links.size(); ++i)
@@ -383,8 +398,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
 bool DartLoader::createDartNodeProperties(
   const urdf::Link* _lk,
   dynamics::BodyNode::Properties &node,
-  const common::Uri& _baseUri,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
+  const common::Uri& /*_baseUri*/,
+  const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
 {
   node.mName = _lk->name;
   
@@ -406,40 +421,67 @@ bool DartLoader::createDartNodeProperties(
                             J(0,1), J(0,2), J(1,2));
   }
 
-  // Set visual information
-  for(size_t i = 0; i < _lk->visual_array.size(); i++)
+  return true;
+}
+
+void setMaterial(dynamics::VisualAddon* visualAddon, const urdf::Visual* viz)
+{
+  if(viz->material)
   {
-    dynamics::ShapePtr shape = createShape(
-      _lk->visual_array[i].get(), _baseUri, _resourceRetriever);
+    visualAddon->setColor(Eigen::Vector3d(viz->material->color.r,
+                                          viz->material->color.g,
+                                          viz->material->color.b));
+  }
+}
+
+void setMaterial(dynamics::ShapePtr /*_shape*/,
+                 const urdf::Collision* /*_col*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+bool DartLoader::createShapeNodes(
+  const urdf::Link* lk,
+  dynamics::BodyNode* bodyNode,
+  const common::Uri& baseUri,
+  const common::ResourceRetrieverPtr& resourceRetriever)
+{
+  // Set visual information
+  for(auto visual : lk->visual_array)
+  {
+    dynamics::ShapePtr shape
+        = createShape(visual.get(), baseUri, resourceRetriever);
 
     if(shape)
-      node.mVizShapes.push_back(shape);
+    {
+      auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAddon>(shape);
+      shapeNode->setRelativeTransform(toEigen(visual->origin));
+      setMaterial(shapeNode->getVisualAddon(), visual.get());
+    }
     else
+    {
       return false;
+    }
   }
 
   // Set collision information
-  for(size_t i = 0; i < _lk->collision_array.size(); i++) {
-    dynamics::ShapePtr shape = createShape(
-      _lk->collision_array[i].get(), _baseUri, _resourceRetriever);
+  for(auto collision : lk->collision_array)
+  {
+    dynamics::ShapePtr shape
+        = createShape(collision.get(), baseUri, resourceRetriever);
 
     if (shape)
-      node.mColShapes.push_back(shape);
+    {
+      auto shapeNode = bodyNode->createShapeNodeWith<
+          dynamics::CollisionAddon, dynamics::DynamicsAddon>(shape);
+      shapeNode->setRelativeTransform(toEigen(collision->origin));
+    }
     else
       return false;
   }
 
   return true;
-}
-
-
-void setMaterial(dynamics::ShapePtr _shape, const urdf::Visual* _viz) {
-  if(_viz->material) {
-    _shape->setColor(Eigen::Vector3d(_viz->material->color.r, _viz->material->color.g, _viz->material->color.b));
-  }
-}
-
-void setMaterial(dynamics::ShapePtr /*_shape*/, const urdf::Collision* /*_col*/) {
 }
 
 /**
@@ -504,8 +546,6 @@ dynamics::ShapePtr DartLoader::createShape(
     return nullptr;
   }
 
-  shape->setLocalTransform(toEigen(_vizOrCol->origin));
-  setMaterial(shape, _vizOrCol);
   return shape;
 }
 

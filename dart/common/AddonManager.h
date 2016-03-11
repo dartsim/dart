@@ -38,6 +38,7 @@
 #define DART_COMMON_ADDONMANAGER_H_
 
 #include <map>
+#include <unordered_set>
 #include <typeinfo>
 #include <typeindex>
 
@@ -54,27 +55,8 @@ namespace common {
 /// on average in log(N) time. Most often, a class that accepts Addons will have
 /// certain Addon types that it will need to access frequently, and it would be
 /// beneficial to have constant-time access to those Addon types. To get
-/// constant-time access to specific Addon types, there are FOUR macros that you
-/// should use in your derived class:
-///
-/// DART_ENABLE_ADDON_SPECIALIZATION() must be declared once in the derived
-/// class's definition, under a 'public:' declaration range.
-///
-/// DART_SPECIALIZE_ADDON_INTERNAL( AddonType ) must be declared once for each
-/// AddonType that you want to specialize. It should be placed in the derived
-/// class's definition, under a 'public:' declaration range.
-///
-/// DART_SPECIALIZE_ADDON_EXTERNAL( Derived, AddonType ) must be declared once
-/// for each AddonType that you want to specialize. It should be placed
-/// immediately after the class's definition in the same header file as the
-/// derived class, inside of the same namespace as the derived class. This macro
-/// defines a series of templated functions, so it should go in a header, and
-/// not in a source file.
-///
-/// DART_INSTANTIATE_SPECIALIZED_ADDON( AddonType ) must be declared once for
-/// each AddonType that you want to specialize. It should be placed inside the
-/// constructor of the derived class, preferably before anything else is done
-/// inside the body of the constructor.
+/// constant-time access to specific Addon types, you can use the templated
+/// class SpecializedAddonManager.
 class AddonManager
 {
 public:
@@ -86,9 +68,26 @@ public:
   using Properties = ExtensibleMapHolder<PropertiesMap>;
 
   using AddonMap = std::map< std::type_index, std::unique_ptr<Addon> >;
+  using RequiredAddonSet = std::unordered_set<std::type_index>;
 
   /// Virtual destructor
   virtual ~AddonManager() = default;
+
+  /// Default constructor
+  AddonManager() = default;
+
+  /// It is currently unsafe to copy an AddonManager
+  // TODO(MXG): Consider making this safe by cloning Addons into the new copy
+  AddonManager(const AddonManager&) = delete;
+
+  /// It is currently unsafe to move an AddonManager
+  AddonManager(AddonManager&&) = delete;
+
+  /// It is currently unsafe to copy an AddonManager
+  AddonManager& operator=(const AddonManager&) = delete;
+
+  /// It is currently unsafe to move an AddonManager
+  AddonManager& operator=(AddonManager&&) = delete;
 
   /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
@@ -134,6 +133,10 @@ public:
   template <class T>
   static constexpr bool isSpecializedFor();
 
+  /// Check if this Manager requires this specific type of Addon
+  template <class T>
+  bool requires() const;
+
   /// Set the states of the addons in this AddonManager based on the given
   /// AddonManager::State. The states of any Addon types that do not exist
   /// within this manager will be ignored.
@@ -175,7 +178,23 @@ protected:
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;
+
+  /// A set containing type information for Addons which are not allowed to
+  /// leave this manager.
+  RequiredAddonSet mRequiredAddons;
 };
+
+//==============================================================================
+/// Attach an arbitrary number of Addons to the specified AddonManager type.
+// TODO(MXG): Consider putting this functionality into the AddonManager class
+// itself. Also consider allowing the user to specify arguments for the
+// constructors of the Addons.
+template <class T>
+void createAddons(T* /*mgr*/);
+
+//==============================================================================
+template <class T, class NextAddon, class... Addons>
+void createAddons(T* mgr);
 
 } // namespace common
 } // namespace dart

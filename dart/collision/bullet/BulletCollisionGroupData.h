@@ -45,9 +45,6 @@
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-class BulletCollisionObjectUserData;
-
 class BulletCollisionGroupData : public CollisionGroupData
 {
 public:

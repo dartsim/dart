@@ -193,7 +193,7 @@ public:
   }
 
   const std::vector<Solution>& computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf)
+      const Eigen::Isometry3d& _desiredBodyTf) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);
@@ -1085,10 +1085,10 @@ SkeletonPtr createGround()
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
-  groundShape->setColor(dart::Color::Blue(0.2));
 
-  ground->getBodyNode(0)->addVisualizationShape(groundShape);
-  ground->getBodyNode(0)->addCollisionShape(groundShape);
+  auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
+      VisualAddon, CollisionAddon, DynamicsAddon>(groundShape);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Blue(0.2));
 
   return ground;
 }

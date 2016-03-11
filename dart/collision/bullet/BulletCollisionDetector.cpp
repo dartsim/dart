@@ -83,9 +83,9 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
       auto bulletCollObj1
           = static_cast<btCollisionObject*>(proxy1->m_clientObject);
 
-      auto userData0 = static_cast<BulletCollisionObjectUserData*>(
+      auto userData0 = static_cast<BulletCollisionObjectData::UserData*>(
             bulletCollObj0->getUserPointer());
-      auto userData1 = static_cast<BulletCollisionObjectUserData*>(
+      auto userData1 = static_cast<BulletCollisionObjectData::UserData*>(
             bulletCollObj1->getUserPointer());
 
       auto collisionDetector = userData0->collisionDetector;

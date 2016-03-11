@@ -42,7 +42,6 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -78,12 +77,12 @@ struct RevoluteJointProperties :
 
 //==============================================================================
 class RevoluteJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         RevoluteJointAddon, RevoluteJointUniqueProperties, RevoluteJoint,
-        detail::JointPropertyUpdate<RevoluteJointAddon>, false >
+        detail::JointPropertyUpdate<RevoluteJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
 
   void setAxis(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis() const;
@@ -91,7 +90,7 @@ public:
 
 //==============================================================================
 using RevoluteJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<RevoluteJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<RevoluteJointAddon> >;
 
 } // namespace detail
 

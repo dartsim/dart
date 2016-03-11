@@ -286,13 +286,14 @@ void frameChangecCallback(const Entity* _entity,
 }
 
 //==============================================================================
-void vizShapeAddedCallback(const Entity* _entity,
-                           std::shared_ptr<const Shape> _newShape)
+void nameChangedCallback(const Entity* entity,
+                         const std::string& oldName,
+                         const std::string& newName)
 {
-  assert(_entity);
+  assert(entity);
 
-  std::cout << "[" << _entity->getName() << "]: New shape '"
-            << _newShape->getShapeType() << "' type added." << std::endl;
+  std::cout << "[" << entity->getName() << "]: Name changed: '"
+            << oldName << "' --> '" << newName << "'.\n";
 }
 
 //==============================================================================
@@ -317,16 +318,13 @@ TEST(Signal, FrameSignals)
   Connection cf2 = F2.onFrameChanged.connect(frameChangecCallback);
   ScopedConnection cf3(F3.onFrameChanged.connect(frameChangecCallback));
 
-  Connection cv1 = F1.onVizShapeAdded.connect(vizShapeAddedCallback);
-  Connection cv2 = F2.onVizShapeAdded.connect(vizShapeAddedCallback);
-  ScopedConnection cv3(F3.onVizShapeAdded.connect(vizShapeAddedCallback));
+  Connection cv1 = F1.onNameChanged.connect(nameChangedCallback);
+  Connection cv2 = F2.onNameChanged.connect(nameChangedCallback);
+  ScopedConnection cv3(F3.onNameChanged.connect(nameChangedCallback));
 
-  F1.addVisualizationShape(std::shared_ptr<Shape>(
-                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
-  F2.addVisualizationShape(std::shared_ptr<Shape>(
-                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
-  F3.addVisualizationShape(std::shared_ptr<Shape>(
-                             new BoxShape(Vector3d(0.05, 0.05, 0.02))));
+  F1.setName("new " + F1.getName());
+  F2.setName("new " + F2.getName());
+  F3.setName("new " + F3.getName());
 
   F3.setParentFrame(&F1);
 }

@@ -37,11 +37,14 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LineWidth>
+#include <osg/ShapeDrawable>
 
 #include "osgDart/render/LineSegmentShapeNode.h"
+#include "osgDart/ShapeFrameNode.h"
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/LineSegmentShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
@@ -51,7 +54,7 @@ class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
 public:
 
   LineSegmentShapeGeode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
-                        EntityNode* parent);
+                        ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
@@ -72,7 +75,8 @@ class LineSegmentShapeDrawable : public osg::Geometry
 {
 public:
 
-  LineSegmentShapeDrawable(dart::dynamics::LineSegmentShape* shape);
+  LineSegmentShapeDrawable(dart::dynamics::LineSegmentShape* shape,
+                           dart::dynamics::VisualAddon* visualAddon);
 
   void refresh(bool firstTime);
 
@@ -81,6 +85,7 @@ protected:
   virtual ~LineSegmentShapeDrawable();
 
   dart::dynamics::LineSegmentShape* mLineSegmentShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
 
   osg::ref_ptr<osg::Vec3Array> mVertices;
   osg::ref_ptr<osg::Vec4Array> mColors;
@@ -89,13 +94,14 @@ protected:
 //==============================================================================
 LineSegmentShapeNode::LineSegmentShapeNode(
     std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
-    EntityNode* parent)
+    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mGeode(nullptr)
 {
+  mNode = this;
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -103,7 +109,7 @@ void LineSegmentShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -112,15 +118,11 @@ void LineSegmentShapeNode::refresh()
 }
 
 //==============================================================================
-void LineSegmentShapeNode::extractData(bool firstTime)
+void LineSegmentShapeNode::extractData(bool /*firstTime*/)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
-
   if(nullptr == mGeode)
   {
-    mGeode = new LineSegmentShapeGeode(mLineSegmentShape, mParentEntity);
+    mGeode = new LineSegmentShapeGeode(mLineSegmentShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
   }
@@ -136,7 +138,8 @@ LineSegmentShapeNode::~LineSegmentShapeNode()
 
 //==============================================================================
 LineSegmentShapeGeode::LineSegmentShapeGeode(
-    std::shared_ptr<dart::dynamics::LineSegmentShape> shape, EntityNode* parent)
+    std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
+    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mDrawable(nullptr),
@@ -167,7 +170,7 @@ void LineSegmentShapeGeode::extractData(bool firstTime)
 
   if(nullptr == mDrawable)
   {
-    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape.get());
+    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape.get(), mVisualAddon);
     addDrawable(mDrawable);
     return;
   }
@@ -183,8 +186,10 @@ LineSegmentShapeGeode::~LineSegmentShapeGeode()
 
 //==============================================================================
 LineSegmentShapeDrawable::LineSegmentShapeDrawable(
-    dart::dynamics::LineSegmentShape* shape)
+    dart::dynamics::LineSegmentShape* shape,
+    dart::dynamics::VisualAddon* visualAddon)
   : mLineSegmentShape(shape),
+    mVisualAddon(visualAddon),
     mVertices(new osg::Vec3Array),
     mColors(new osg::Vec4Array)
 {
@@ -241,7 +246,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mLineSegmentShape->getRGBA());
+    (*mColors)[0] = eigToOsgVec4(mVisualAddon->getRGBA());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

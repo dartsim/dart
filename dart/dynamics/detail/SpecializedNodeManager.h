@@ -204,6 +204,15 @@ const NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
+constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
+    isSpecializedForNode()
+{
+  return _isSpecializedForNode(type<NodeType>());
+}
+
+//==============================================================================
+template <class SpecNode>
+template <class NodeType>
 size_t SpecializedNodeManagerForSkeleton<SpecNode>::_getNumNodes(
     type<NodeType>, size_t treeIndex) const
 {
@@ -293,6 +302,23 @@ SpecNode* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
   return static_cast<SpecNode*>(mSpecNodeNameMgrIterator->second.getObject(name));
+}
+
+//==============================================================================
+template <class SpecNode>
+template <class NodeType>
+constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
+    _isSpecializedForNode(type<NodeType>)
+{
+  return false;
+}
+
+//==============================================================================
+template <class SpecNode>
+constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
+    _isSpecializedForNode(type<SpecNode>)
+{
+  return true;
 }
 
 } // namespace dynamics

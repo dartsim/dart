@@ -173,29 +173,19 @@ public:
     if(mPtr == _ptr)
       return;
 
-    // Get a shared_ptr to each Skeleton before making any modifications to the
-    // reference counts
-    std::shared_ptr<const Skeleton> old_skeleton = (mPtr == nullptr)? nullptr :
-          static_cast<const SkeletonRefCountingBase*>(mPtr)->getSkeleton();
-
-    std::shared_ptr<const Skeleton> new_skeleton = (_ptr == nullptr)? nullptr :
-          static_cast<const SkeletonRefCountingBase*>(_ptr)->getSkeleton();
-
     if(nullptr != mPtr)
     {
-      if(nullptr != old_skeleton)
-        static_cast<const SkeletonRefCountingBase*>(mPtr)->
+      static_cast<const SkeletonRefCountingBase*>(mPtr)->
           decrementReferenceCount();
-
-      mPtr = nullptr;
     }
 
-    if(nullptr != new_skeleton)
+    if(nullptr != _ptr)
     {
-      mPtr = _ptr;
       static_cast<const SkeletonRefCountingBase*>(_ptr)->
           incrementReferenceCount();
     }
+
+    mPtr = _ptr;
   }
 
 private:

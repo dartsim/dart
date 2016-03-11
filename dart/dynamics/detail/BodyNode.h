@@ -133,36 +133,6 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
         this, _jointProperties, _bodyProperties);
 }
 
-////==============================================================================
-//template <class NodeType>
-//size_t BodyNode::getNumNodes() const
-//{
-//  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-//  if(mNodeMap.end() == it)
-//    return 0;
-
-//  return it->second.size();
-//}
-
-////==============================================================================
-//template <class NodeType>
-//NodeType* BodyNode::getNode(size_t index)
-//{
-//  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
-//  if(mNodeMap.end() == it)
-//    return nullptr;
-
-//  return static_cast<NodeType*>(
-//        getVectorObjectIfAvailable(index, it->second));
-//}
-
-////==============================================================================
-//template <class NodeType>
-//const NodeType* BodyNode::getNode(size_t index) const
-//{
-//  return const_cast<BodyNode*>(this)->getNode<NodeType>(index);
-//}
-
 //==============================================================================
 template <class NodeType, typename ...Args>
 NodeType* BodyNode::createNode(Args&&... args)
@@ -171,6 +141,103 @@ NodeType* BodyNode::createNode(Args&&... args)
   node->attach();
 
   return node;
+}
+
+//==============================================================================
+template <class ShapeNodeProperties>
+ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
+                                     bool automaticName)
+{
+  if(automaticName)
+  {
+    properties.mName = getName()+"_ShapeNode_"
+        +std::to_string(getNumShapeNodes());
+  }
+
+  return createNode<ShapeNode>(properties);
+}
+
+//==============================================================================
+template <class... Addons>
+ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
+{
+  return createShapeNodeWith<Addons...>(shape, getName()+"_ShapeNode_"
+                                        +std::to_string(getNumShapeNodes()));
+}
+
+//==============================================================================
+template <class... Addons>
+ShapeNode* BodyNode::createShapeNodeWith(
+    const ShapePtr& shape, const std::string& name)
+{
+  auto shapeNode = createShapeNode(shape, name);
+
+  common::createAddons<ShapeNode, Addons...>(shapeNode);
+
+  return shapeNode;
+}
+
+//==============================================================================
+template <class Addon>
+size_t BodyNode::getNumShapeNodesWith() const
+{
+  auto count = 0u;
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    if (getShapeNode(i)->has<Addon>())
+      ++count;
+  }
+
+  return count;
+}
+
+//==============================================================================
+template <class Addon>
+const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
+{
+  std::vector<ShapeNode*> shapeNodes;
+
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    auto shapeNode = getShapeNode(i);
+
+    if (shapeNode->has<Addon>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class Addon>
+const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
+{
+  std::vector<const ShapeNode*> shapeNodes;
+
+  auto numShapeNode = getNumShapeNodes();
+
+  for (auto i = 0u; i < numShapeNode; ++i)
+  {
+    const auto shapeNode = getShapeNode(i);
+
+    if (shapeNode->has<Addon>())
+      shapeNodes.push_back(shapeNode);
+  }
+
+  return shapeNodes;
+}
+
+//==============================================================================
+template <class Addon>
+void BodyNode::removeAllShapeNodesWith()
+{
+  auto shapeNodes = getShapeNodesWith<Addon>();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->remove();
 }
 
 //==============================================================================

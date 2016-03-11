@@ -54,6 +54,7 @@
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/LineSegmentShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 
@@ -89,11 +90,12 @@ void EntityNode::refresh()
 {
   mUtilized = true;
 
-  const std::vector<dart::dynamics::ShapePtr>& visShapes =
-      mEntity->getVisualizationShapes();
+//  const std::vector<dart::dynamics::ShapePtr>& visShapes =
+//      mEntity->getVisualizationShapes();
 
-  for(dart::dynamics::ShapePtr shape : visShapes)
-    refreshShapeNode(shape);
+//  for(dart::dynamics::ShapePtr shape : visShapes)
+//    refreshShapeNode(shape);
+  // TODO(JS): Entity doesn't contain shapes anymore
 }
 
 //==============================================================================
@@ -169,89 +171,105 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
   using namespace dart::dynamics;
   render::ShapeNode* node = nullptr;
 
-  switch(shape->getShapeType())
-  {
-    case Shape::BOX:
-    {
-      std::shared_ptr<BoxShape> bs =
-          std::dynamic_pointer_cast<BoxShape>(shape);
-      if(bs)
-        node = new render::BoxShapeNode(bs, this);
-      else
-        warnAboutUnsuccessfulCast("BoxShape", mEntity->getName());
-      break;
-    }
+//  switch(shape->getShapeType())
+//  {
+//    case Shape::BOX:
+//    {
+//      std::shared_ptr<BoxShape> bs =
+//          std::dynamic_pointer_cast<BoxShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(bs);
+//      if(bs)
+//        node = new render::BoxShapeNode(bs, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("BoxShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::ELLIPSOID:
-    {
-      std::shared_ptr<EllipsoidShape> es =
-          std::dynamic_pointer_cast<EllipsoidShape>(shape);
-      if(es)
-        node = new render::EllipsoidShapeNode(es, this);
-      else
-        warnAboutUnsuccessfulCast("EllipsoidShape", mEntity->getName());
-      break;
-    }
+//    case Shape::ELLIPSOID:
+//    {
+//      std::shared_ptr<EllipsoidShape> es =
+//          std::dynamic_pointer_cast<EllipsoidShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(es);
+//      if(es)
+//        node = new render::EllipsoidShapeNode(es, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("EllipsoidShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::CYLINDER:
-    {
-      std::shared_ptr<CylinderShape> cs =
-          std::dynamic_pointer_cast<CylinderShape>(shape);
-      if(cs)
-        node = new render::CylinderShapeNode(cs, this);
-      else
-        warnAboutUnsuccessfulCast("CylinderShape", mEntity->getName());
-      break;
-    }
+//    case Shape::CYLINDER:
+//    {
+//      std::shared_ptr<CylinderShape> cs =
+//          std::dynamic_pointer_cast<CylinderShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(cs);
+//      if(cs)
+//        node = new render::CylinderShapeNode(cs, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("CylinderShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::PLANE:
-    {
-      std::shared_ptr<PlaneShape> ps =
-          std::dynamic_pointer_cast<PlaneShape>(shape);
-      if(ps)
-        node = new render::PlaneShapeNode(ps, this);
-      else
-        warnAboutUnsuccessfulCast("PlaneShape", mEntity->getName());
-      break;
-    }
+//    case Shape::PLANE:
+//    {
+//      std::shared_ptr<PlaneShape> ps =
+//          std::dynamic_pointer_cast<PlaneShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(ps);
+//      if(ps)
+//        node = new render::PlaneShapeNode(ps, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("PlaneShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::MESH:
-    {
-      std::shared_ptr<MeshShape> ms =
-          std::dynamic_pointer_cast<MeshShape>(shape);
-      if(ms)
-        node = new render::MeshShapeNode(ms, this);
-      else
-        warnAboutUnsuccessfulCast("MeshShape", mEntity->getName());
-      break;
-    }
+//    case Shape::MESH:
+//    {
+//      std::shared_ptr<MeshShape> ms =
+//          std::dynamic_pointer_cast<MeshShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(ms);
+//      if(ms)
+//        node = new render::MeshShapeNode(ms, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("MeshShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::SOFT_MESH:
-    {
-      std::shared_ptr<SoftMeshShape> sms =
-          std::dynamic_pointer_cast<SoftMeshShape>(shape);
-      if(sms)
-        node = new render::SoftMeshShapeNode(sms, this);
-      else
-        warnAboutUnsuccessfulCast("SoftMeshShape", mEntity->getName());
-      break;
-    }
+//    case Shape::SOFT_MESH:
+//    {
+//      std::shared_ptr<SoftMeshShape> sms =
+//          std::dynamic_pointer_cast<SoftMeshShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(sms);
+//      if(sms)
+//        node = new render::SoftMeshShapeNode(sms, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("SoftMeshShape", mEntity->getName());
+//      break;
+//    }
 
-    case Shape::LINE_SEGMENT:
-    {
-      std::shared_ptr<LineSegmentShape> lss =
-          std::dynamic_pointer_cast<LineSegmentShape>(shape);
-      if(lss)
-        node = new render::LineSegmentShapeNode(lss, this);
-      else
-        warnAboutUnsuccessfulCast("LineSegmentShape", mEntity->getName());
-      break;
-    }
+//    case Shape::LINE_SEGMENT:
+//    {
+//      std::shared_ptr<LineSegmentShape> lss =
+//          std::dynamic_pointer_cast<LineSegmentShape>(shape);
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(lss);
+//      if(lss)
+//        node = new render::LineSegmentShapeNode(lss, sf, this);
+//      else
+//        warnAboutUnsuccessfulCast("LineSegmentShape", mEntity->getName());
+//      break;
+//    }
 
-    default:
-      node = new render::WarningShapeNode(shape, this);
-      break;
-  }
+//    default:
+//      auto sf = std::make_shared<SimpleFrame>(dart::dynamics::Frame::World());
+//      sf->setShape(shape);
+//      node = new render::WarningShapeNode(shape, sf, this);
+//      break;
+//  }
 
   if(nullptr == node)
     return;

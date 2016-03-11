@@ -56,7 +56,7 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 {
   // Regression test for #444
   WorldPtr world
-      = SdfParser::readSdfFile(
+      = SdfParser::readWorld(
             DART_DATA_PATH"/sdf/test/single_bodynode_skeleton.world");
   EXPECT_TRUE(world != nullptr);
 
@@ -67,8 +67,8 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 
   BodyNodePtr bodyNode = skel->getBodyNode(0);
   EXPECT_TRUE(bodyNode != nullptr);
-  EXPECT_EQ(bodyNode->getNumVisualizationShapes(), 1u);
-  EXPECT_EQ(bodyNode->getNumCollisionShapes(), 1u);
+  EXPECT_EQ(bodyNode->getNumShapeNodesWith<VisualAddon>(), 1u);
+  EXPECT_EQ(bodyNode->getNumShapeNodesWith<CollisionAddon>(), 1u);
 
   JointPtr joint = skel->getJoint(0);
   EXPECT_TRUE(joint != nullptr);

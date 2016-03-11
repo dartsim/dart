@@ -40,7 +40,6 @@
 #include <string>
 
 #include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -125,12 +124,12 @@ struct PlanarJointProperties :
 
 //==============================================================================
 class PlanarJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         PlanarJointAddon, PlanarJointUniqueProperties, PlanarJoint,
-        detail::JointPropertyUpdate<PlanarJointAddon>, false >
+        detail::JointPropertyUpdate<PlanarJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( PlanarJointAddon )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( PlanarJointAddon )
 
   void setXYPlane();
   void setYZPlane();
@@ -138,15 +137,15 @@ public:
   void setArbitraryPlane(const Eigen::Vector3d& _axis1,
                          const Eigen::Vector3d& _axis2);
 
-  DART_DYNAMICS_GET_ADDON_PROPERTY( PlaneType, PlaneType )
-  DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
-  DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis2 )
-  DART_DYNAMICS_GET_ADDON_PROPERTY( Eigen::Vector3d, RotAxis )
+  DART_COMMON_GET_ADDON_PROPERTY( PlaneType, PlaneType )
+  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
+  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis2 )
+  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, RotAxis )
 };
 
 //==============================================================================
 using PlanarJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<3>, common::SpecializedAddonManager<PlanarJointAddon> >;
+    MultiDofJoint<3>, common::RequiresAddon<PlanarJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

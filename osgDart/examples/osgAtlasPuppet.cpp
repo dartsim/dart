@@ -503,10 +503,10 @@ SkeletonPtr createGround()
   ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
   ShapePtr groundShape =
       std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
-  groundShape->setColor(dart::Color::Blue(0.2));
 
-  ground->getBodyNode(0)->addVisualizationShape(groundShape);
-  ground->getBodyNode(0)->addCollisionShape(groundShape);
+  auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
+      VisualAddon, CollisionAddon, DynamicsAddon>(groundShape);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Blue(0.2));
 
   return ground;
 }
@@ -522,13 +522,14 @@ SkeletonPtr createAtlas()
   double scale = 0.25;
   ShapePtr boxShape =
       std::make_shared<BoxShape>(scale*Eigen::Vector3d(1.0, 1.0, 0.5));
-  boxShape->setColor(dart::Color::Black());
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(0.1*Eigen::Vector3d(0.0, 0.0, 1.0));
-  boxShape->setLocalTransform(tf);
 
-  atlas->getBodyNode(0)->addVisualizationShape(boxShape);
+  auto shapeNode =
+      atlas->getBodyNode(0)->createShapeNodeWith<VisualAddon>(boxShape);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Black());
+  shapeNode->setRelativeTransform(tf);
 
   return atlas;
 }

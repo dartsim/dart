@@ -236,7 +236,7 @@ public:
   //--------------------------------------------------------------------------
 
   // Render this Frame as well as any Entities it contains
-  virtual void draw(
+  void draw(
       renderer::RenderInterface *_ri = nullptr,
       const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
       bool _useDefaultColor = true, int _depth = 0) const override;

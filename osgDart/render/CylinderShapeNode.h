@@ -53,12 +53,12 @@ namespace render {
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
-class CylinderShapeNode : public ShapeNode, public osg::MatrixTransform
+class CylinderShapeNode : public ShapeNode, public osg::Group
 {
 public:
 
   CylinderShapeNode(std::shared_ptr<dart::dynamics::CylinderShape> shape,
-                    EntityNode* parent);
+                    ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);

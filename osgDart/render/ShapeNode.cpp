@@ -35,20 +35,22 @@
  */
 
 #include "osgDart/render/ShapeNode.h"
-#include "osgDart/EntityNode.h"
+#include "osgDart/ShapeFrameNode.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
 
-ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> _shape,
-                     EntityNode* _parent,
-                     osg::Node* _node)
-  : mShape(_shape),
-    mNode(_node),
-    mParentEntity(_parent),
+ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
+                     ShapeFrameNode* parentNode,
+                     osg::Node* node)
+  : mShape(shape),
+    mParentShapeFrameNode(parentNode),
+    mNode(node),
     mUtilized(true)
 {
-  // Do nothing
+  mShapeFrame = mParentShapeFrameNode->getShapeFrame();
+  mVisualAddon = mShapeFrame->getVisualAddon(true);
 }
 
 //==============================================================================
@@ -64,6 +66,24 @@ std::shared_ptr<dart::dynamics::Shape> ShapeNode::getShape() const
 }
 
 //==============================================================================
+const dart::dynamics::ShapeFrame* ShapeNode::getShapeFrame() const
+{
+  return mShapeFrame;
+}
+
+//==============================================================================
+dart::dynamics::VisualAddon* ShapeNode::getVisualAddon()
+{
+  return mVisualAddon;
+}
+
+//==============================================================================
+const dart::dynamics::VisualAddon* ShapeNode::getVisualAddon() const
+{
+  return mVisualAddon;
+}
+
+//==============================================================================
 osg::Node* ShapeNode::getNode()
 {
   return mNode;
@@ -76,15 +96,15 @@ const osg::Node* ShapeNode::getNode() const
 }
 
 //==============================================================================
-EntityNode* ShapeNode::getParentEntityNode()
+ShapeFrameNode* ShapeNode::getParentShapeFrameNode()
 {
-  return mParentEntity;
+  return mParentShapeFrameNode;
 }
 
 //==============================================================================
-const EntityNode* ShapeNode::getParentEntityNode() const
+const ShapeFrameNode* ShapeNode::getParentShapeFrameNode() const
 {
-  return mParentEntity;
+  return mParentShapeFrameNode;
 }
 
 //==============================================================================

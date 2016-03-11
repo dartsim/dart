@@ -278,24 +278,13 @@ LineSegmentShape::getConnections() const
 
 //==============================================================================
 void LineSegmentShape::draw(renderer::RenderInterface* _ri,
-                            const Eigen::Vector4d& _color,
-                            bool _useDefaultColor) const
+                            const Eigen::Vector4d& _color) const
 {
   if(!_ri)
     return;
 
-  if(mHidden)
-    return;
-
-  if(!_useDefaultColor)
-    _ri->setPenColor(_color);
-  else
-    _ri->setPenColor(mColor);
-
-  _ri->pushMatrix();
-  _ri->transform(mTransform);
+  _ri->setPenColor(_color);
   _ri->drawLineSegments(mVertices, mConnections);
-  _ri->popMatrix();
 }
 
 //==============================================================================
@@ -314,8 +303,8 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
 
   for(const Eigen::Vector2i& c : mConnections)
   {
-    const Eigen::Vector3d& v0 = mTransform * mVertices[c[0]];
-    const Eigen::Vector3d& v1 = mTransform * mVertices[c[1]];
+    const Eigen::Vector3d& v0 = mVertices[c[0]];
+    const Eigen::Vector3d& v1 = mVertices[c[1]];
 
     double radius = 1e-6;
     double height = (v1-v0).norm();

@@ -435,7 +435,7 @@ bool Frame::isWorld() const
 
 //==============================================================================
 void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                 bool _useDefaultColor, int /*_depth*/) const
+                 bool _useDefaultColor, int _depth) const
 {
   if(nullptr == _ri)
     return;
@@ -448,14 +448,7 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
   // on an Entity or Frame which is not a child of the World Frame
   _ri->transform(getRelativeTransform());
 
-  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
-  {
-    _ri->pushMatrix();
-    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
-    _ri->popMatrix();
-  }
-  // _ri.popName();
+  Entity::draw(_ri, _color, _useDefaultColor, _depth);
 
   // render the subtree
   for(Entity* entity : mChildEntities)

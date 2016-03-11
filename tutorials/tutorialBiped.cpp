@@ -202,8 +202,8 @@ public:
     if(mForceCountDown > 0)
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      const ShapePtr& shape = bn->getVisualizationShape(0);
-      shape->setColor(dart::Color::Red());
+      auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
+      shapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
       
       if(mPositiveSign)
         bn->addExtForce(default_force * Eigen::Vector3d::UnitX(),
@@ -277,10 +277,9 @@ SkeletonPtr createFloor()
   double floor_height = 0.01;
   std::shared_ptr<BoxShape> box(
       new BoxShape(Eigen::Vector3d(floor_width, floor_height, floor_width)));
-  box->setColor(dart::Color::Black());
-  
-  body->addVisualizationShape(box);
-  body->addCollisionShape(box);
+  auto shapeNode
+      = body->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
+  shapeNode->getVisualAddon()->setColor(dart::Color::Black());
   
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -311,9 +310,8 @@ int main(int argc, char* argv[])
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
 #ifdef HAVE_BULLET_COLLISION
-//  world->getConstraintSolver()->setCollisionEngine(
-//          dart::collision::BulletEngine::create());
-  // TODO(JS)
+  world->getConstraintSolver()->setCollisionEngine(
+        dart::collision::BulletEngine::create());
 #endif
   
   world->addSkeleton(floor);

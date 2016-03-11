@@ -49,16 +49,16 @@ namespace collision {
 
 class CollisionObject;
 
-struct FCLCollisionObjectUserData
-{
-  CollisionObject* mCollisionObject;
-
-  FCLCollisionObjectUserData(CollisionObject* collisionObject);
-};
-
 class FCLCollisionObjectData : public CollisionObjectData
 {
 public:
+
+  struct UserData
+  {
+    CollisionObject* mCollisionObject;
+
+    UserData(CollisionObject* collisionObject);
+  };
 
   friend class FCLCollisionDetector;
 
@@ -82,7 +82,7 @@ protected:
 protected:
 
   /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectUserData> mFCLCollisionObjectUserData;
+  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
   std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;

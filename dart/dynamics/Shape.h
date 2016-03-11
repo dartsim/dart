@@ -90,59 +90,10 @@ public:
   /// \brief Destructor
   virtual ~Shape();
 
-  /// \brief Set RGB color components (leave alpha alone). Identical to
-  /// setRGB(const Eigen::Vector3d&)
-  void setColor(const Eigen::Vector3d& _color);
-
-  /// \brief Set RGBA color components
-  void setColor(const Eigen::Vector4d& _color);
-
-  /// \brief Set RGB color components (leave alpha alone)
-  void setRGB(const Eigen::Vector3d& _rgb);
-
-  /// \brief Set RGBA color components
-  virtual void setRGBA(const Eigen::Vector4d& _rgba);
-
-  /// \brief Get color.
-  Eigen::Vector3d getColor() const;
-
-  /// \brief Get RGB color components
-  Eigen::Vector3d getRGB() const;
-
-  /// \brief Get RGBA color components
-  const Eigen::Vector4d& getRGBA() const;
-
-  /// \brief Set the transparency of this Shape
-  virtual void setAlpha(double _alpha);
-
-
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   const math::BoundingBox& getBoundingBox() const;
-
-  /// \brief Get dimensions of bounding box.
-  ///        The dimension will be automatically determined by the sub-classes
-  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
-  /// \deprecated Please use getBoundingBox() instead
-  DEPRECATED(5.2)
-  Eigen::Vector3d getBoundingBoxDim() const;
-
-  /// \brief Set local transformation of the shape w.r.t. parent frame.
-  void setLocalTransform(const Eigen::Isometry3d& _Transform);
-
-  /// \brief Get local transformation of the shape w.r.t. parent frame.
-  const Eigen::Isometry3d& getLocalTransform() const;
-
-  /// \brief Set local transformation of the shape
-  ///        The offset is translational part of the local transformation.
-  /// \sa setLocalTransform()
-  void setOffset(const Eigen::Vector3d& _offset);
-
-  /// \brief Get local offset of the shape w.r.t. parent frame.
-  ///        The offset is translational part of the local transformation.
-  /// \sa getLocalTransform()
-  Eigen::Vector3d getOffset() const;
 
   /// \brief
   virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
@@ -184,28 +135,21 @@ public:
   /// Instruct this shape to update its data
   virtual void refreshData();
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdate(double alpha);
+
+  /// Notify that the color (rgba) of this shape has updated
+  virtual void notifyColorUpdate(const Eigen::Vector4d& color);
+
   /// \brief
-  virtual void draw(renderer::RenderInterface* _ri = nullptr,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true) const = 0;
-
-  /// Pass in true to prevent this shape from being rendered. Pass in false to
-  /// allow it to render again.
-  void setHidden(bool _hide=true);
-
-  /// True iff this Shape is set to be hidden. Use hide(bool) to change this
-  /// setting
-  bool isHidden() const;
+  virtual void draw(
+      renderer::RenderInterface* _ri = nullptr,
+      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones()) const = 0;
 
 protected:
-  DEPRECATED(6.0)
-  virtual void computeVolume() { updateVolume(); }
 
   /// \brief Update volume
   virtual void updateVolume() = 0;
-
-  DEPRECATED(6.0)
-  virtual void initMeshes() {}
 
   /// \brief The bounding box (in the local coordinate frame) of the shape.
   math::BoundingBox mBoundingBox;
@@ -216,28 +160,17 @@ protected:
   /// \brief Unique id.
   int mID;
 
-  /// \brief Color for the primitive.
-  Eigen::Vector4d mColor;
-
-  /// \brief Local geometric transformation of the Shape w.r.t. parent frame.
-  Eigen::Isometry3d mTransform;
-
   /// The DataVariance of this Shape
   unsigned int mVariance;
-
-  /// True if this shape should be kept from rendering
-  bool mHidden;
 
   /// \brief
   static int mCounter;
 
 private:
+
   /// \brief Type of primitive
   ShapeType mType;
 
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

@@ -167,18 +167,18 @@ void MeshShape::update()
   // Do nothing
 }
 
-void MeshShape::setAlpha(double _alpha) {
-
+//==============================================================================
+void MeshShape::notifyAlphaUpdate(double alpha)
+{
   for(size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
     aiMesh* mesh = mMesh->mMeshes[i];
     for(size_t j=0; j<mesh->mNumVertices; ++j)
-      mesh->mColors[0][j][3] = _alpha;
+      mesh->mColors[0][j][3] = alpha;
   }
-
 }
 
-const std::string &MeshShape::getMeshPath() const
+const std::string& MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }
@@ -258,24 +258,15 @@ void MeshShape::setDisplayList(int _index) {
   mDisplayList = _index;
 }
 
-void MeshShape::draw(renderer::RenderInterface* _ri,
-                     const Eigen::Vector4d& _color,
-                     bool _useDefaultColor) const {
-  if (!_ri)
+//==============================================================================
+void MeshShape::draw(renderer::RenderInterface* ri,
+                     const Eigen::Vector4d& color) const
+{
+  if (!ri)
     return;
-  if (mHidden)
-    return;
 
-  if (!_useDefaultColor)
-    _ri->setPenColor(_color);
-  else
-    _ri->setPenColor(mColor);
-  _ri->pushMatrix();
-  _ri->transform(mTransform);
-
-  _ri->drawMesh(mScale, mMesh);
-
-  _ri->popMatrix();
+  ri->setPenColor(color);
+  ri->drawMesh(mScale, mMesh);
 }
 
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {

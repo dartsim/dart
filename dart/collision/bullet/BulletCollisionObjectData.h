@@ -50,21 +50,21 @@ namespace collision {
 
 class CollisionObject;
 
-struct BulletCollisionObjectUserData
-{
-  CollisionObject* collisionObject;
-
-  CollisionDetector* collisionDetector;
-  CollisionGroup* group;
-
-  BulletCollisionObjectUserData(CollisionObject* collisionObject,
-                                CollisionDetector* collisionDetector,
-                                CollisionGroup* collisionGroup);
-};
-
 class BulletCollisionObjectData : public CollisionObjectData
 {
 public:
+
+  struct UserData
+  {
+    CollisionObject* collisionObject;
+
+    CollisionDetector* collisionDetector;
+    CollisionGroup* group;
+
+    UserData(CollisionObject* collisionObject,
+             CollisionDetector* collisionDetector,
+             CollisionGroup* collisionGroup);
+  };
 
   friend class BulletCollisionDetector;
 
@@ -87,7 +87,7 @@ protected:
 protected:
 
   /// Bullet collision geometry user data
-  std::unique_ptr<BulletCollisionObjectUserData> mBulletCollisionObjectUserData;
+  std::unique_ptr<UserData> mBulletCollisionObjectUserData;
 
   /// Bullet collision object
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
