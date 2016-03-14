@@ -86,7 +86,7 @@ void VisualAddon::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
 
-  UpdateProperties(this);
+  notifyPropertiesUpdate();
 
   mManager->getShape()->notifyColorUpdate(color);
 }
@@ -117,7 +117,7 @@ void VisualAddon::setAlpha(const double alpha)
 {
   mProperties.mRGBA[3] = alpha;
 
-  UpdateProperties(this);
+  notifyPropertiesUpdate();
 
   mManager->getShape()->notifyAlphaUpdate(alpha);
 }

@@ -136,7 +136,9 @@ const std::string& ShapeNode::setName(const std::string& name)
 size_t ShapeNode::incrementVersion()
 {
   ++mShapeFrameP.mVersion;
-  getSkeleton()->incrementVersion();
+  if(const SkeletonPtr& skel = getSkeleton())
+    skel->incrementVersion();
+
   return mShapeFrameP.mVersion;
 }
 

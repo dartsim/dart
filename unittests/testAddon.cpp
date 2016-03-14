@@ -575,6 +575,25 @@ TEST(Addon, Joints)
   EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
 }
 
+TEST(Addon, Duplication)
+{
+  AddonManager mgr1, mgr2;
+
+  mgr1.create<DoubleAddon>();
+  mgr1.create<IntAddon>();
+  mgr1.create<FloatAddon>();
+  mgr1.create<CharAddon>();
+
+  mgr2.create<DoubleAddon>();
+
+  mgr2.duplicateAddons(&mgr1);
+
+  EXPECT_FALSE(mgr2.get<DoubleAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<IntAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<FloatAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<CharAddon>() == nullptr);
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

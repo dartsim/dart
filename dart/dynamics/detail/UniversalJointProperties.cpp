@@ -62,8 +62,7 @@ UniversalJointProperties::UniversalJointProperties(
 void UniversalJointAddon::setAxis1(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis[0] = _axis.normalized();
-  UpdateProperties(this);
-  incrementVersion();
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================
@@ -76,8 +75,7 @@ const Eigen::Vector3d& UniversalJointAddon::getAxis1() const
 void UniversalJointAddon::setAxis2(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis[1] = _axis.normalized();
-  UpdateProperties(this);
-  incrementVersion();
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================

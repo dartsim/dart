@@ -80,23 +80,14 @@ const T* AddonManager::get() const
 template <class T>
 void AddonManager::set(const T* addon)
 {
-  if(addon)
-  {
-    mAddonMap[typeid(T)] = addon->cloneAddon(this);
-    becomeManager(mAddonMap[typeid(T)].get(), false);
-  }
-  else
-  {
-    mAddonMap[typeid(T)] = nullptr;
-  }
+  _set(typeid(T), addon);
 }
 
 //==============================================================================
 template <class T>
 void AddonManager::set(std::unique_ptr<T>&& addon)
 {
-  mAddonMap[typeid(T)] = std::move(addon);
-  becomeManager(mAddonMap[typeid(T)].get(), true);
+  _set(typeid(T), std::move(addon));
 }
 
 //==============================================================================
