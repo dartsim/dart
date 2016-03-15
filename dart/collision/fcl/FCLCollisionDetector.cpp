@@ -554,20 +554,19 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     case Shape::BOX:
     {
       assert(dynamic_cast<BoxShape*>(shape.get()));
-      const BoxShape* box = static_cast<const BoxShape*>(shape.get());
+
+      auto box = static_cast<const BoxShape*>(shape.get());
       const Eigen::Vector3d& size = box->getSize();
-#if FCL_MAJOR_MINOR_VERSION_AT_MOST(0,3)
+
       fclCollGeom.reset(createCube<fcl::OBBRSS>(size[0], size[1], size[2]));
-#else
-      fclCollGeom.reset(new fcl::Box(size[0], size[1], size[2]));
-#endif
+
       break;
     }
     case Shape::ELLIPSOID:
     {
       assert(dynamic_cast<EllipsoidShape*>(shape.get()));
-      EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape.get());
 
+      auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
       const Eigen::Vector3d& size = ellipsoid->getSize();
 
       if (ellipsoid->isSphere())
@@ -576,15 +575,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
       }
       else
       {
-#if FCL_MAJOR_MINOR_VERSION_AT_MOST(0,3)
         fclCollGeom.reset(
-              createEllipsoid<fcl::OBBRSS>(ellipsoid->getSize()[0],
-              ellipsoid->getSize()[1],
-            ellipsoid->getSize()[2]));
-#else
-        fclCollGeom.reset(
-              new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5)));
-#endif
+            createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]));
       }
 
       break;
@@ -592,60 +584,55 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     case Shape::CYLINDER:
     {
       assert(dynamic_cast<CylinderShape*>(shape.get()));
-      const CylinderShape* cylinder
-          = static_cast<const CylinderShape*>(shape.get());
-      const double radius = cylinder->getRadius();
-      const double height = cylinder->getHeight();
-#if FCL_MAJOR_MINOR_VERSION_AT_MOST(0,4)
+
+      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+      const auto radius = cylinder->getRadius();
+      const auto height = cylinder->getHeight();
+
       fclCollGeom.reset(createCylinder<fcl::OBBRSS>(
                           radius, radius, height, 16, 16));
-#else
-      fclCollGeom.reset(new fcl::Cylinder(radius, height));
-#endif
-      // TODO(JS): We still need to use mesh for cylinder since FCL 0.4.0
-      // returns single contact point for cylinder yet.
+
       break;
     }
     case Shape::PLANE:
     {
-#if FCL_MAJOR_MINOR_VERSION_AT_MOST(0,3)
       fclCollGeom.reset(createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0));
-#else
-      assert(dynamic_cast<PlaneShape*>(shape.get()));
-      dynamics::PlaneShape* plane = static_cast<PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double          offset = plane->getOffset();
-      fclCollGeom.reset(
-            new fcl::Halfspace(FCLTypes::convertVector3(normal), offset));
-#endif
+
+      dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
+             << "FCLCollisionDetector. We create a thin box mesh insted, where "
+             << "the size is [1000 0 1000].\n";
+
       break;
     }
     case Shape::MESH:
     {
       assert(dynamic_cast<MeshShape*>(shape.get()));
-      MeshShape* shapeMesh = static_cast<MeshShape*>(shape.get());
+
+      auto shapeMesh = static_cast<MeshShape*>(shape.get());
+      const Eigen::Vector3d& scale = shapeMesh->getScale();
+      auto aiScene = shapeMesh->getMesh();
+
       fclCollGeom.reset(
-            createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
-            shapeMesh->getScale()[1],
-          shapeMesh->getScale()[2],
-          shapeMesh->getMesh()));
+          createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene));
 
       break;
     }
     case Shape::SOFT_MESH:
     {
       assert(dynamic_cast<SoftMeshShape*>(shape.get()));
-      SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape.get());
-      fclCollGeom.reset(
-            createSoftMesh<fcl::OBBRSS>(softMeshShape->getAssimpMesh()));
+
+      auto softMeshShape = static_cast<SoftMeshShape*>(shape.get());
+      auto aiMesh = softMeshShape->getAssimpMesh();
+
+      fclCollGeom.reset(createSoftMesh<fcl::OBBRSS>(aiMesh));
 
       break;
     }
     default:
     {
-      dterr << "[FCLCollisionObjectData::updateShape] "
-            << "Attempting to create unsupported shape type '"
-            << shape->getShapeType() << "'.\n";
+      dterr << "[FCLCollisionDetector] Attempting to create unsupported shape "
+            << "type '" << shape->getShapeType() << "'.\n";
+
       return nullptr;
     }
   }

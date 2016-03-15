@@ -119,14 +119,12 @@ struct FCLCollisionCallbackData
   }
 };
 
-int evalContactPosition(
-    const fcl::Contact& fclContact,
+int evalContactPosition(const fcl::Contact& fclContact,
     const fcl::BVHModel<fcl::OBBRSS>* mesh1,
     const fcl::BVHModel<fcl::OBBRSS>* mesh2,
     const fcl::Transform3f& transform1,
     const fcl::Transform3f& transform2,
-    Eigen::Vector3d* contactPosition1,
-    Eigen::Vector3d* contactPosition2);
+    Eigen::Vector3d* contactPosition);
 
 bool isColinear(const Eigen::Vector3d& pos1,
                 const Eigen::Vector3d& pos2,
@@ -918,13 +916,14 @@ void postProcess(const fcl::CollisionResult& fclResult,
   int numContacts = 0;
 
   std::vector<Contact> unfiltered;
-  unfiltered.reserve(fclResult.numContacts());
+  unfiltered.reserve(initNumContacts * 2);
 
-  for (auto k = 0u; k < fclResult.numContacts(); ++k)
+  for (auto k = 0u; k < initNumContacts; ++k)
   {
     // for each pair of intersecting triangles, we create two contact points
-    Contact pair1, pair2;
-    const fcl::Contact& c = fclResult.getContact(k);
+    Contact pair1;
+    Contact pair2;
+    const auto& c = fclResult.getContact(k);
 
     auto userData1
         = static_cast<FCLCollisionObjectData::UserData*>(o1->getUserData());
@@ -942,7 +941,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
         static_cast<const fcl::BVHModel<fcl::OBBRSS>*>(c.o2),
         FCLTypes::convertTransform(collisionObject1->getTransform()),
         FCLTypes::convertTransform(collisionObject2->getTransform()),
-        &pair1.point, &pair2.point);
+        &pair1.point);
 
     if (contactResult == COPLANAR_CONTACT)
     {
@@ -962,12 +961,10 @@ void postProcess(const fcl::CollisionResult& fclResult,
       numContacts++;
     }
 
-    pair1.normal = FCLTypes::convertVector3(-fclResult.getContact(k).normal);
-    pair2.normal = pair1.normal;
+    pair1.normal = FCLTypes::convertVector3(-c.normal);
     pair1.penetrationDepth = c.penetration_depth;
     pair1.triID1 = c.b1;
     pair1.triID2 = c.b2;
-
     pair1.collisionObject1 = collisionObject1;
     pair1.collisionObject2 = collisionObject2;
 
@@ -976,11 +973,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
     unfiltered.push_back(pair2);
   }
 
-
-
-
-
-  const double tol = 1e-12;
+  const auto tol = 1e-12;
 
   auto unfilteredSize = unfiltered.size();
 
@@ -997,7 +990,7 @@ void postProcess(const fcl::CollisionResult& fclResult,
 
       const auto diff = contact1.point - contact2.point;
 
-      if (diff.norm() < 3.0 * tol)
+      if (diff.dot(diff) < 3.0 * tol)
       {
         markForDeletion[i] = true;
         break;
@@ -1006,71 +999,44 @@ void postProcess(const fcl::CollisionResult& fclResult,
   }
 
   // remove all the co-linear contact points
-//  for (auto i = 0u; i < initNumContacts; ++i)
-//  {
-//    if (markForDeletion[i])
-//      continue;
-
-//    const auto& contact1 = unfiltered[i];
-
-//    for (auto j = i + 1u; j < initNumContacts; ++j)
-//    {
-//      if (markForDeletion[j])
-//        continue;
-
-//      const auto& contact2 = unfiltered[j];
-
-//      for (auto k = j + 1u; k < initNumContacts; ++k)
-//      {
-//        if (markForDeletion[k])
-//          continue;
-
-//        const auto& contact3 = unfiltered[k];
-
-//        if (isColinear(contact1.point, contact2.point, contact3.point, tol))
-//        {
-//          markForDeletion[i] = true;
-//          break;
-//        }
-//      }
-//    }
-//  }
-
-  for (size_t i = 0; i < initNumContacts; ++i)
+  for (auto i = 0u; i < unfilteredSize; ++i)
   {
-//    if (!markForDeletion[i])
+    if (markForDeletion[i])
+      continue;
+
+    const auto& contact1 = unfiltered[i];
+
+    for (auto j = 0u; j < unfilteredSize; ++j)
     {
-      const auto& contact = unfiltered[i];
-      result.contacts.push_back(contact);
+      if (i == j || markForDeletion[j])
+        continue;
+
+      if (markForDeletion[i])
+        break;
+
+      const auto& contact2 = unfiltered[j];
+
+      for (auto k = j + 1u; k < unfilteredSize; ++k)
+      {
+        if (i == k)
+          continue;
+
+        const auto& contact3 = unfiltered[k];
+
+        if (isColinear(contact1.point, contact2.point, contact3.point, tol))
+        {
+          markForDeletion[i] = true;
+          break;
+        }
+      }
     }
   }
 
-
-
-
-//  for (auto i = 0u; i < numContacts; ++i)
-//  {
-//    const auto fclContact = fclResult.getContact(i);
-//    result.contacts.push_back(convertContact(fclContact, o1, o2));
-//  }
-
-
-
-//  std::cout << "=================" << std::endl;
-//  std::cout << "# of contacts:" << result.contacts.size() << std::endl;
-//  std::cout << "=================" << std::endl;
-//  for (auto i = 0u; i < result.contacts.size(); ++i)
-//  {
-//    auto contact = result.contacts[i];
-
-//    std::cout << "Contact (" << i << ")" << std::endl;
-//    std::cout << "Point : " << contact.point.transpose() << std::endl;
-//    std::cout << "Normal: " << contact.normal.transpose() << std::endl;
-//    std::cout << "Depth : " << contact.penetrationDepth << std::endl;
-//    std::cout << std::endl;
-//  }
-//  std::cout << "=================" << std::endl;
-
+  for (auto i = 0u; i < unfilteredSize; ++i)
+  {
+    if (!markForDeletion[i])
+      result.contacts.push_back(unfiltered[i]);
+  }
 }
 
 //==============================================================================
@@ -1080,8 +1046,7 @@ int evalContactPosition(
     const fcl::BVHModel<fcl::OBBRSS>* mesh2,
     const fcl::Transform3f& transform1,
     const fcl::Transform3f& transform2,
-    Eigen::Vector3d* contactPosition1,
-    Eigen::Vector3d* contactPosition2)
+    Eigen::Vector3d* contactPosition)
 {
   int id1 = fclContact.b1;
   int id2 = fclContact.b2;
@@ -1122,8 +1087,7 @@ int evalContactPosition(
     contact2 = contact1;
   }
 
-  *contactPosition1 = Eigen::Vector3d(contact1[0], contact1[1], contact1[2]);
-  *contactPosition2 = Eigen::Vector3d(contact2[0], contact2[1], contact2[2]);
+  *contactPosition = Eigen::Vector3d(contact1[0], contact1[1], contact1[2]);
 
   return testRes;
 }
@@ -1173,9 +1137,11 @@ bool isColinear(const Eigen::Vector3d& pos1,
   const auto vb = pos1 - pos3;
   const auto v = va.cross(vb);
 
-  return v.norm() < tol;
-}
+  const auto cond1 = v.dot(v) < tol;
+  const auto cond2 = va.dot(vb) < 0.0;
 
+  return cond1 && cond2;
+}
 
 //==============================================================================
 void convertOption(const Option& fclOption, fcl::CollisionRequest& request)

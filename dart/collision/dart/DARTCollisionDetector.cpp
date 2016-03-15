@@ -256,30 +256,29 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
   if (pairResult.contacts.empty())
     return;
 
-  // Remove all the repeated points
+  // Don't add repeated points
   const auto tol = 3.0e-12;
-  auto i = pairResult.contacts.begin();
-  while (i != pairResult.contacts.end() - 1)
+
+  for (auto pairContact : pairResult.contacts)
   {
-    for (auto j = i + 1; j != pairResult.contacts.end(); ++j)
+    auto foundClose = false;
+
+    for (auto totalContact : totalResult.contacts)
     {
-      if (isClose(i->point, j->point, tol))
+      if (isClose(pairContact.point, totalContact.point, tol))
+      {
+        foundClose = true;
         break;
+      }
     }
 
-    totalResult.contacts.push_back(*i);
+    if (foundClose)
+      continue;
+
+    totalResult.contacts.push_back(pairContact);
     totalResult.contacts.back().collisionObject1 = o1;
     totalResult.contacts.back().collisionObject2 = o2;
-
-    ++i;
   }
-
-//  for (auto& contact : pairResult.contacts)
-//  {
-//    totalResult.contacts.push_back(contact);
-//    totalResult.contacts.back().collisionObject1 = o1;
-//    totalResult.contacts.back().collisionObject2 = o2;
-//  }
 }
 
 } // anonymous namespace
