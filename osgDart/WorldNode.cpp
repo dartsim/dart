@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <deque>
+
 #include <osg/NodeCallback>
 
 #include "osgDart/WorldNode.h"
-#include "osgDart/FrameNode.h"
-#include "osgDart/EntityNode.h"
 #include "osgDart/ShapeFrameNode.h"
 
 #include "dart/simulation/World.h"
@@ -103,7 +103,7 @@ void WorldNode::refresh()
   }
 
   refreshSkeletons();
-  refreshCustomFrames();
+  refreshSimpleFrames();
 
   clearUnusedNodes();
 
@@ -173,39 +173,31 @@ void WorldNode::setupViewer()
 //==============================================================================
 void WorldNode::clearChildUtilizationFlags()
 {
-  for(auto& node : mNodeToFrame)
-    node.first->clearUtilization();
-
-  for(auto& node : mNodeToEntity)
-    node.first->clearUtilization();
+  for(auto& node_pair : mFrameToNode)
+    node_pair.second->clearUtilization();
 }
 
 //==============================================================================
 void WorldNode::clearUnusedNodes()
 {
-  // Clear unusued FrameNodes
-  for(auto& node_pair : mNodeToFrame)
-  {
-    ShapeFrameNode* node = node_pair.first;
-    if(!node->wasUtilized())
-    {
-      mNodeToFrame.erase(node);
-      mFrameToNode.erase(node_pair.second);
+  std::vector<dart::dynamics::Frame*> unused;
+  unused.reserve(mFrameToNode.size());
 
-      removeChild(node);
-    }
+  // Find unusued ShapeFrameNodes
+  for(auto& node_pair : mFrameToNode)
+  {
+    ShapeFrameNode* node = node_pair.second;
+    if(node && !node->wasUtilized())
+      unused.push_back(node_pair.first);
   }
 
-  for(auto& node_pair : mNodeToEntity)
+  // Clear unused ShapeFrameNodes
+  for(dart::dynamics::Frame* frame : unused)
   {
-    EntityNode* node = node_pair.first;
-    if(!node->wasUtilized())
-    {
-      mNodeToEntity.erase(node);
-      mEntityToNode.erase(node_pair.second);
-
-      removeChild(node->getParentFrameNode());
-    }
+    NodeMap::iterator it = mFrameToNode.find(frame);
+    ShapeFrameNode* node = it->second;
+    removeChild(node);
+    mFrameToNode.erase(it);
   }
 }
 
@@ -217,20 +209,18 @@ void WorldNode::refreshSkeletons()
 
   // Apply the recursive Frame refreshing functionality to the root BodyNode of
   // each Skeleton
-  for(size_t i=0, end=mWorld->getNumSkeletons(); i<end; ++i)
+  for(size_t i=0; i < mWorld->getNumSkeletons(); ++i)
   {
-    auto bodyNodes = mWorld->getSkeleton(i)->getBodyNodes();
-    for(auto bodyNode : bodyNodes)
+    const dart::dynamics::SkeletonPtr& skeleton = mWorld->getSkeleton(i);
+    for(size_t i=0; i < skeleton->getNumTrees(); ++i)
     {
-      auto shapeNodes = bodyNode->getShapeNodes();
-      for(auto shapeNode : shapeNodes)
-        refreshBaseFrameNode(shapeNode);
+      refreshBaseFrameNode(skeleton->getRootBodyNode(i));
     }
   }
 }
 
 //==============================================================================
-void WorldNode::refreshCustomFrames()
+void WorldNode::refreshSimpleFrames()
 {
   if(!mWorld)
     return;
@@ -240,76 +230,57 @@ void WorldNode::refreshCustomFrames()
 }
 
 //==============================================================================
-void WorldNode::refreshBaseFrameNode(dart::dynamics::ShapeFrame* _frame)
+void WorldNode::refreshBaseFrameNode(dart::dynamics::Frame* frame)
 {
-  auto it = mFrameToNode.find(_frame);
-
-  if(it == mFrameToNode.end())
+  std::deque<dart::dynamics::Frame*> frames;
+  frames.push_back(frame);
+  while(!frames.empty())
   {
-    createBaseFrameNode(_frame);
-    return;
-  }
+    dart::dynamics::Frame* nextFrame = frames.front();
+    frames.pop_front();
+    if(nextFrame->isShapeFrame())
+      refreshShapeFrameNode(nextFrame);
 
-  (it->second)->refresh(false, true);
+    const std::set<dart::dynamics::Frame*>& childFrames =
+        nextFrame->getChildFrames();
+
+    for(dart::dynamics::Frame* child : childFrames)
+      frames.push_back(child);
+  }
 }
 
 //==============================================================================
-void WorldNode::createBaseFrameNode(dart::dynamics::ShapeFrame* _frame)
+void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
 {
-  osg::ref_ptr<ShapeFrameNode> node =
-      new ShapeFrameNode(_frame, this, false, true);
+  std::pair<NodeMap::iterator, bool> insertion =
+      mFrameToNode.insert(std::make_pair(frame, nullptr));
+  NodeMap::iterator it = insertion.first;
+  bool inserted = insertion.second;
 
-  mFrameToNode[_frame] = node.get();
-  mNodeToFrame[node.get()] = _frame;
+  if(!inserted)
+  {
+    ShapeFrameNode* node = it->second;
+    if(!node)
+      return;
 
+    node->refresh(true);
+    return;
+  }
+
+  dart::dynamics::ShapeFrame* shapeFrame =
+      dynamic_cast<dart::dynamics::ShapeFrame*>(frame);
+  if(!shapeFrame)
+  {
+    dtwarn << "[WorldNode::refreshShapeFrameNode] Frame named ["
+           << frame->getName() << "] (" << frame << ") claims to be a "
+           << "ShapeFrame, but failed to be converted. Please report this as a "
+           << "bug!\n";
+    return;
+  }
+
+  osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(shapeFrame, this);
+  it->second = node;
   addChild(node);
-}
-
-//==============================================================================
-void WorldNode::refreshBaseEntityNode(dart::dynamics::Entity* _entity)
-{
-  std::map<dart::dynamics::Entity*, EntityNode*>::iterator it =
-      mEntityToNode.find(_entity);
-
-  if(it == mEntityToNode.end())
-  {
-    createBaseEntityNode(_entity);
-    return;
-  }
-
-  (it->second)->getParentFrameNode()->refresh(false, false);
-  (it->second)->refresh();
-}
-
-//==============================================================================
-void WorldNode::createBaseEntityNode(dart::dynamics::Entity* _entity)
-{
-  dart::dynamics::Frame* parentFrame;
-
-  if(_entity->isFrame())
-  {
-    parentFrame = dynamic_cast<dart::dynamics::Frame*>(_entity);
-    if(nullptr == parentFrame)
-    {
-      dtwarn << "[WorldNode::createBaseEntityNode] _entity named '"
-             << _entity->getName() << "' claimed to be a Frame, but failed to "
-             << "be dynamically cast into one\n";
-      parentFrame = dart::dynamics::Frame::World();
-    }
-  }
-  else
-    parentFrame = _entity->getParentFrame();
-
-  osg::ref_ptr<FrameNode> parentFrameNode =
-      new FrameNode(parentFrame, this, false, false);
-  addChild(parentFrameNode);
-
-  osg::ref_ptr<EntityNode> entityNode =
-      new EntityNode(_entity, parentFrameNode);
-  parentFrameNode->addChild(entityNode);
-
-  mEntityToNode[_entity] = entityNode;
-  mNodeToEntity[entityNode] = _entity;
 }
 
 } // namespace osgDart

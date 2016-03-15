@@ -67,13 +67,13 @@ namespace osgDart {
 //==============================================================================
 ShapeFrameNode::ShapeFrameNode(
     dart::dynamics::ShapeFrame* _frame,
-    WorldNode* _worldNode,
-    bool _relative, bool _recursive)
+    WorldNode* _worldNode)
   : mShapeFrame(_frame),
     mWorldNode(_worldNode),
+    mShapeNode(nullptr),
     mUtilized(false)
 {
-  refresh(_relative, _recursive);
+  refresh();
   setName(_frame->getName()+" [frame]");
 }
 
@@ -102,37 +102,21 @@ const WorldNode* ShapeFrameNode::getWorldNode() const
 }
 
 //==============================================================================
-void ShapeFrameNode::refresh(bool _relative, bool _recursive)
+void ShapeFrameNode::refresh(bool shortCircuitIfUtilized)
 {
+  if(shortCircuitIfUtilized && mUtilized)
+    return;
+
   mUtilized = true;
 
   auto shape = mShapeFrame->getShape();
 
-  if(_relative)
-    setMatrix(eigToOsgMatrix(mShapeFrame->getRelativeTransform()));
-  else
-    setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
+  setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
   // TODO(JS): Maybe the data varicance information should be in ShapeFrame and
   // checked here.
 
-  clearChildUtilizationFlags();
-
   if(shape)
     refreshShapeNode(shape);
-
-  clearUnusedNodes();
-
-  if(!_recursive)
-    return;
-
-  const auto& frames = mShapeFrame->getChildFrames();
-
-  for(auto* frame : frames)
-  {
-    const auto shapeFrame = dynamic_cast<dart::dynamics::ShapeFrame*>(frame);
-    if(shapeFrame)
-      refreshShapeFrameNode(shapeFrame);
-  }
 }
 
 //==============================================================================
@@ -154,77 +138,16 @@ ShapeFrameNode::~ShapeFrameNode()
 }
 
 //==============================================================================
-void ShapeFrameNode::clearChildUtilizationFlags()
-{
-  for(auto& node : mNodeToShape)
-    node.first->clearUtilization();
-}
-
-//==============================================================================
-void ShapeFrameNode::clearUnusedNodes()
-{
-  for(auto node_pair_it = mNodeToShape.begin();
-      node_pair_it != mNodeToShape.end(); )
-  {
-    render::ShapeNode* node = node_pair_it->first;
-
-    if(!node->wasUtilized())
-    {
-      auto shape = node_pair_it->second;
-
-      node_pair_it = mNodeToShape.erase(node_pair_it);
-      mShapeToNode.erase(shape);
-
-      removeChild(node->getNode());
-    }
-    else
-    {
-      ++node_pair_it;
-    }
-  }
-}
-
-//==============================================================================
-void ShapeFrameNode::refreshShapeFrameNode(
-    dart::dynamics::ShapeFrame* shapeFrame)
-{
-  auto it = mShapeFrameToNode.find(shapeFrame);
-
-  if(it == mShapeFrameToNode.end())
-  {
-    createShapeFrameNode(shapeFrame);
-    return;
-  }
-
-  (it->second)->refresh(true, true);
-}
-
-//==============================================================================
-void ShapeFrameNode::createShapeFrameNode(
-    dart::dynamics::ShapeFrame* shapeFrame)
-{
-  osg::ref_ptr<ShapeFrameNode> node =
-      new ShapeFrameNode(shapeFrame, mWorldNode, true, true);
-
-  mShapeFrameToNode[shapeFrame] = node.get();
-  mNodeToShapeFrame[node.get()] = shapeFrame;
-
-  addChild(node);
-}
-
-//==============================================================================
 void ShapeFrameNode::refreshShapeNode(
     const std::shared_ptr<dart::dynamics::Shape>& shape)
 {
-  auto it = mShapeToNode.find(shape);
-
-  if(it == mShapeToNode.end())
+  if(mShapeNode && mShapeNode->getShape() == shape)
   {
-    createShapeNode(shape);
+    mShapeNode->refresh();
     return;
   }
 
-  (it->second)->refresh();
+  createShapeNode(shape);
 }
 
 //==============================================================================
@@ -243,7 +166,10 @@ void ShapeFrameNode::createShapeNode(
     const std::shared_ptr<dart::dynamics::Shape>& shape)
 {
   using namespace dart::dynamics;
-  render::ShapeNode* node = nullptr;
+  if(mShapeNode)
+    removeChild(mShapeNode->getNode());
+
+  mShapeNode = nullptr;
 
   switch(shape->getShapeType())
   {
@@ -252,11 +178,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<BoxShape> bs =
           std::dynamic_pointer_cast<BoxShape>(shape);
       if(bs)
-      {
-        auto boxShapeNode = new render::BoxShapeNode(bs, this);
-        addChild(boxShapeNode);
-        node = boxShapeNode;
-      }
+        mShapeNode = new render::BoxShapeNode(bs, this);
       else
         warnAboutUnsuccessfulCast("BoxShape", mShapeFrame->getName());
       break;
@@ -267,7 +189,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<EllipsoidShape> es =
           std::dynamic_pointer_cast<EllipsoidShape>(shape);
       if(es)
-        node = new render::EllipsoidShapeNode(es, this);
+        mShapeNode = new render::EllipsoidShapeNode(es, this);
       else
         warnAboutUnsuccessfulCast("EllipsoidShape", mShapeFrame->getName());
       break;
@@ -278,7 +200,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<CylinderShape> cs =
           std::dynamic_pointer_cast<CylinderShape>(shape);
       if(cs)
-        node = new render::CylinderShapeNode(cs, this);
+        mShapeNode = new render::CylinderShapeNode(cs, this);
       else
         warnAboutUnsuccessfulCast("CylinderShape", mShapeFrame->getName());
       break;
@@ -289,7 +211,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<PlaneShape> ps =
           std::dynamic_pointer_cast<PlaneShape>(shape);
       if(ps)
-        node = new render::PlaneShapeNode(ps, this);
+        mShapeNode = new render::PlaneShapeNode(ps, this);
       else
         warnAboutUnsuccessfulCast("PlaneShape", mShapeFrame->getName());
       break;
@@ -300,7 +222,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<MeshShape> ms =
           std::dynamic_pointer_cast<MeshShape>(shape);
       if(ms)
-        node = new render::MeshShapeNode(ms, this);
+        mShapeNode = new render::MeshShapeNode(ms, this);
       else
         warnAboutUnsuccessfulCast("MeshShape", mShapeFrame->getName());
       break;
@@ -311,7 +233,7 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<SoftMeshShape> sms =
           std::dynamic_pointer_cast<SoftMeshShape>(shape);
       if(sms)
-        node = new render::SoftMeshShapeNode(sms, this);
+        mShapeNode = new render::SoftMeshShapeNode(sms, this);
       else
         warnAboutUnsuccessfulCast("SoftMeshShape", mShapeFrame->getName());
       break;
@@ -322,24 +244,21 @@ void ShapeFrameNode::createShapeNode(
       std::shared_ptr<LineSegmentShape> lss =
           std::dynamic_pointer_cast<LineSegmentShape>(shape);
       if(lss)
-        node = new render::LineSegmentShapeNode(lss, this);
+        mShapeNode = new render::LineSegmentShapeNode(lss, this);
       else
         warnAboutUnsuccessfulCast("LineSegmentShape", mShapeFrame->getName());
       break;
     }
 
     default:
-      node = new render::WarningShapeNode(shape, this);
+      mShapeNode = new render::WarningShapeNode(shape, this);
       break;
   }
 
-  if(nullptr == node)
+  if(nullptr == mShapeNode)
     return;
 
-  mShapeToNode[shape] = node;
-  mNodeToShape[node] = shape;
-
-  addChild(node->getNode());
+  addChild(mShapeNode->getNode());
 }
 
 } // namespace osgDart

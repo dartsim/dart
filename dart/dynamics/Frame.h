@@ -62,6 +62,7 @@ class Frame : public virtual Entity
 public:
   friend class Entity;
   friend class WorldFrame;
+  friend class ShapeFrame;
 
   Frame(const Frame&) = delete;
 
@@ -228,6 +229,9 @@ public:
   /// Get the number of Frames that are currently children of this Frame.
   size_t getNumChildFrames() const;
 
+  /// Returns true if this Frame is a ShapeFrame
+  bool isShapeFrame() const;
+
   /// Returns true if this Frame is the World Frame
   bool isWorld() const;
 
@@ -308,6 +312,9 @@ protected:
 private:
   /// Contains whether or not this is the World Frame
   const bool mAmWorld;
+
+  /// Contains whether or not this is a ShapeFrame
+  bool mAmShapeFrame;
 
 public:
   // To get byte-aligned Eigen vectors

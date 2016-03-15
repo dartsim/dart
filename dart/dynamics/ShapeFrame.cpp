@@ -322,6 +322,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  mAmShapeFrame = true;
   setProperties(properties);
 }
 
@@ -337,6 +338,7 @@ ShapeFrame::ShapeFrame(Frame* parent,
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  mAmShapeFrame = true;
   setName(name);
   // TODO: As setName() is a virtual function, it is not safe to call this
   // function in a constructor especially of abstract class. This line should be

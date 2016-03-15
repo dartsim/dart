@@ -106,7 +106,7 @@ void DragAndDrop::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.ownerEntity == mEntity)
+        if(pick.frame == mEntity)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -352,7 +352,7 @@ void SimpleFrameShapeDnD::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.ownerEntity == mFrame && pick.shape.get() == mShape)
+        if(pick.frame == mFrame && pick.shape.get() == mShape)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
@@ -407,7 +407,7 @@ public:
         if(picks.size() > 0)
         {
           const PickInfo& pick = picks[0];
-          if(pick.ownerEntity->getParentFrame() != mFrame->getTool(
+          if(pick.frame->getParentFrame() != mFrame->getTool(
                (InteractiveTool::Type)mTool, mCoordinate))
             stop_highlighting = true;
         }
@@ -441,7 +441,7 @@ public:
         for(size_t c=0; c<3; ++c)
         {
           if(mFrame->getTool((InteractiveTool::Type)s, c) ==
-             pick.ownerEntity->getParentFrame())
+             pick.frame->getParentFrame())
           {
             mHighlighting = true;
             mTool = s;
@@ -530,7 +530,7 @@ public:
 
         for(const osgDart::PickInfo& pick : picks)
         {
-          if(pick.ownerEntity->getParentFrame() == mEntity)
+          if(pick.frame->getParentFrame() == mEntity)
           {
             mAmMoving = true;
             mPickedPosition = pick.position;
@@ -712,7 +712,7 @@ void BodyNodeDnD::update()
 
       for(const osgDart::PickInfo& pick : picks)
       {
-        if(pick.ownerEntity->getParentFrame() == mEntity)
+        if(pick.frame->getParentFrame() == mEntity)
         {
           mAmMoving = true;
           mPickedPosition = pick.position;
