@@ -188,9 +188,9 @@ void AddonManager::copyAddonPropertiesTo(
 }
 
 //==============================================================================
-void AddonManager::duplicateAddons(const AddonManager* otherManager)
+void AddonManager::duplicateAddons(const AddonManager* fromManager)
 {
-  if(nullptr == otherManager)
+  if(nullptr == fromManager)
   {
     dterr << "[AddonManager::duplicateAddons] You have asked to duplicate the "
           << "Addons of a nullptr, which is not allowed!\n";
@@ -198,10 +198,10 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     return;
   }
 
-  if(this == otherManager)
+  if(this == fromManager)
     return;
 
-  const AddonMap& otherMap = otherManager->mAddonMap;
+  const AddonMap& otherMap = fromManager->mAddonMap;
 
   AddonMap::iterator receiving = mAddonMap.begin();
   AddonMap::const_iterator incoming = otherMap.begin();
@@ -212,12 +212,13 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     {
       // If we've reached the end of this Manager's AddonMap, then we should
       // just add each entry
-      mAddonMap[incoming->first] = incoming->second->cloneAddon(this);
+      _set(incoming->first, incoming->second.get());
+      ++incoming;
     }
     else if( receiving->first == incoming->first )
     {
       if(incoming->second)
-        receiving->second = incoming->second->cloneAddon(this);
+        _set(incoming->first, incoming->second.get());
 
       ++receiving;
       ++incoming;
@@ -230,7 +231,7 @@ void AddonManager::duplicateAddons(const AddonManager* otherManager)
     {
       // If this Manager does not have an entry corresponding to the incoming
       // Addon, then we must create it
-      mAddonMap[incoming->first] = incoming->second->cloneAddon(this);
+      _set(incoming->first, incoming->second.get());
       ++incoming;
     }
   }
@@ -258,6 +259,27 @@ void AddonManager::becomeManager(Addon* addon, bool transfer)
 {
   if(addon)
     addon->setManager(this, transfer);
+}
+
+//==============================================================================
+void AddonManager::_set(std::type_index type_idx, const Addon* addon)
+{
+  if(addon)
+  {
+    mAddonMap[type_idx] = addon->cloneAddon(this);
+    becomeManager(mAddonMap[type_idx].get(), false);
+  }
+  else
+  {
+    mAddonMap[type_idx] = nullptr;
+  }
+}
+
+//==============================================================================
+void AddonManager::_set(std::type_index type_idx, std::unique_ptr<Addon> addon)
+{
+  mAddonMap[type_idx] = std::move(addon);
+  becomeManager(mAddonMap[type_idx].get(), true);
 }
 
 } // namespace common

@@ -285,7 +285,7 @@ void SupportPolygonVisual::refresh()
 
     mCentroid->setTransform(tf);
 
-    mCentroidNode->refresh(false, true);
+    mCentroidNode->refresh();
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCentroid->getShape()->removeDataVariance(
@@ -333,7 +333,7 @@ void SupportPolygonVisual::refresh()
     else
       mCom->getVisualAddon(true)->setColor(mInvalidColor);
 
-    mComNode->refresh(false, true);
+    mComNode->refresh();
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
     mCom->getShape()->removeDataVariance(
@@ -379,7 +379,7 @@ void SupportPolygonVisual::initialize()
   mCentroid->getVisualAddon(true)->setColor(
         Eigen::Vector4d(color[0], color[1], color[2], color[3]));
 
-  mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr, false, false);
+  mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);
   addChild(mCentroidNode);
 
   mValidColor = dart::Color::Blue(1.0);
@@ -394,7 +394,7 @@ void SupportPolygonVisual::initialize()
                                 mComRadius/2.0*Eigen::Vector3d::Ones()));
   mCom->getShape()->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
 
-  mComNode = new ShapeFrameNode(mCom.get(), nullptr, false, false);
+  mComNode = new ShapeFrameNode(mCom.get(), nullptr);
   addChild(mComNode);
 }
 

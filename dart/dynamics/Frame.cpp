@@ -428,6 +428,12 @@ size_t Frame::getNumChildFrames() const
 }
 
 //==============================================================================
+bool Frame::isShapeFrame() const
+{
+  return mAmShapeFrame;
+}
+
+//==============================================================================
 bool Frame::isWorld() const
 {
   return mAmWorld;
@@ -518,7 +524,8 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(false)
+    mAmWorld(false),
+    mAmShapeFrame(false)
 {
   mAmFrame = true;
   mEntityP.mName = _name;
@@ -528,7 +535,8 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
 //==============================================================================
 Frame::Frame(ConstructAbstract_t)
   : Entity(Entity::ConstructAbstract),
-    mAmWorld(false)
+    mAmWorld(false),
+    mAmShapeFrame(false)
 {
   dterr << "[Frame::constructor] You are calling a constructor for the Frame "
         << "class which is only meant to be used by pure abstract classes. If "
@@ -595,7 +603,8 @@ Frame::Frame(ConstructWorld_t)
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(true)
+    mAmWorld(true),
+    mAmShapeFrame(false)
 {
   mAmFrame = true;
 }

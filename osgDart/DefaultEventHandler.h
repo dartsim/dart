@@ -61,7 +61,7 @@ namespace osgDart
 
 struct PickInfo
 {
-  dart::dynamics::Entity* ownerEntity;
+  dart::dynamics::ShapeFrame* frame;
   std::shared_ptr<dart::dynamics::Shape> shape;
   Eigen::Vector3d position;
   Eigen::Vector3d normal;

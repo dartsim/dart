@@ -60,7 +60,7 @@ ShapeNode::~ShapeNode()
 }
 
 //==============================================================================
-std::shared_ptr<dart::dynamics::Shape> ShapeNode::getShape() const
+const std::shared_ptr<dart::dynamics::Shape>& ShapeNode::getShape() const
 {
   return mShape;
 }

@@ -66,9 +66,7 @@ public:
   /// Create a ShapeFrameNode. If recursive is set to true, it will also create
   /// nodes for all child Entities and child Frames
   ShapeFrameNode(dart::dynamics::ShapeFrame* frame,
-                 WorldNode* worldNode,
-                 bool relative,
-                 bool recursive);
+                 WorldNode* worldNode);
 
   /// Pointer to the ShapeFrame associated with this ShapeFrameNode
   dart::dynamics::ShapeFrame* getShapeFrame();
@@ -82,9 +80,10 @@ public:
 
   /// Update all rendering data for this ShapeFrame
   ///
-  /// If _recursive is set to true, this ShapeFrameNode will also trigger refreshing
-  /// on all child Entities and child Frames
-  void refresh(bool _relative, bool _recursive);
+  /// If shortCircuitIfUtilized is true, this will skip the refresh process if
+  /// mUtilized is set to true. clearUtilization() needs to be called before
+  /// this function if short circuiting is going to be used.
+  void refresh(bool shortCircuitIfUtilized = false);
 
   /// True iff this ShapeFrameNode has been utilized on the latest update
   bool wasUtilized() const;
@@ -96,14 +95,6 @@ protected:
 
   virtual ~ShapeFrameNode();
 
-  void clearChildUtilizationFlags();
-
-  void clearUnusedNodes();
-
-  void refreshShapeFrameNode(dart::dynamics::ShapeFrame* shapeFrame);
-
-  void createShapeFrameNode(dart::dynamics::ShapeFrame* shapeFrame);
-
   void refreshShapeNode(const std::shared_ptr<dart::dynamics::Shape>& shape);
 
   void createShapeNode(const std::shared_ptr<dart::dynamics::Shape>& shape);
@@ -114,19 +105,7 @@ protected:
   /// Pointer to the WorldNode that this ShapeFrameNode belongs to
   WorldNode* mWorldNode;
 
-  /// Map from child Frames to child ShapeFrameNodes
-  std::map<dart::dynamics::ShapeFrame*, ShapeFrameNode*> mShapeFrameToNode;
-
-  /// Map from child ShapeFrameNodes to child Frames
-  std::map<ShapeFrameNode*, dart::dynamics::ShapeFrame*> mNodeToShapeFrame;
-
-  /// Map from child Frames to child ShapeFrameNodes
-  std::map<std::shared_ptr<dart::dynamics::Shape>,
-           render::ShapeNode*> mShapeToNode;
-
-  /// Map from child ShapeFrameNodes to child Frames
-  std::map<render::ShapeNode*,
-           std::shared_ptr<dart::dynamics::Shape>> mNodeToShape;
+  render::ShapeNode* mShapeNode;
 
   /// True iff this ShapeFrameNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being

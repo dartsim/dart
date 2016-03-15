@@ -172,11 +172,6 @@ public:
   using BoolArray = std::array<bool, DOF>;
   using StringArray = std::array<std::string, DOF>;
 
-//    void setPositionLowerLimit(size_t index, const double& value)
-//    {
-//      MultiDofJoint<DOF>::Addon::UpdateProperties(this);
-//    }
-
   DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionLowerLimit)
   DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionUpperLimit)
   DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, InitialPosition)

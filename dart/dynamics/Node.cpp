@@ -141,13 +141,19 @@ std::shared_ptr<const Skeleton> Node::getSkeleton() const
 //==============================================================================
 size_t Node::incrementVersion()
 {
-  return getSkeleton()->incrementVersion();
+  if(const SkeletonPtr& skel = getSkeleton())
+    return skel->incrementVersion();
+
+  return 0;
 }
 
 //==============================================================================
 size_t Node::getVersion() const
 {
-  return getSkeleton()->getVersion();
+  if(const ConstSkeletonPtr& skel = getSkeleton())
+    return skel->getVersion();
+
+  return 0;
 }
 
 //==============================================================================

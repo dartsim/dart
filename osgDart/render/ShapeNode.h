@@ -71,7 +71,7 @@ public:
   virtual ~ShapeNode();
 
   /// Pointer to the Shape associated with this ShapeNode
-  std::shared_ptr<dart::dynamics::Shape> getShape() const;
+  const std::shared_ptr<dart::dynamics::Shape>& getShape() const;
 
   const dart::dynamics::ShapeFrame* getShapeFrame() const;
 

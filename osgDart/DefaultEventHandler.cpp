@@ -40,7 +40,6 @@
 #include "osgDart/MouseEventHandler.h"
 #include "osgDart/Viewer.h"
 #include "osgDart/render/ShapeNode.h"
-#include "osgDart/EntityNode.h"
 #include "osgDart/ShapeFrameNode.h"
 #include "osgDart/Utils.h"
 
@@ -233,7 +232,7 @@ void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
       {
         PickInfo info;
         info.shape = shape->getShape();
-        info.ownerEntity = shape->getParentShapeFrameNode()->getShapeFrame();
+        info.frame = shape->getParentShapeFrameNode()->getShapeFrame();
         info.normal = osgToEigVec3(intersect.getWorldIntersectNormal());
         info.position = osgToEigVec3(intersect.getWorldIntersectPoint());
 

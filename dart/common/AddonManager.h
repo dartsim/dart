@@ -161,7 +161,7 @@ public:
   void copyAddonPropertiesTo(Properties& outgoingProperties) const;
 
   /// Give this AddonManager a copy of each Addon from otherManager
-  void duplicateAddons(const AddonManager* otherManager);
+  void duplicateAddons(const AddonManager* fromManager);
 
   /// Make the Addons of this AddonManager match the Addons of otherManager. Any
   /// Addons in this AddonManager which do not exist in otherManager will be
@@ -175,6 +175,12 @@ protected:
   /// Become the AddonManager of the given Addon. This allows derived
   /// AddonManager types to call the protected Addon::setManager function.
   void becomeManager(Addon* addon, bool transfer);
+
+  /// Non-templated version of set(const T*)
+  void _set(std::type_index type_idx, const Addon* addon);
+
+  /// Non-templated version of set(std::unqiue_ptr<T>&&)
+  void _set(std::type_index type_idx, std::unique_ptr<Addon> addon);
 
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;

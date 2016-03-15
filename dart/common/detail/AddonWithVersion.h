@@ -154,7 +154,11 @@ public:
   std::unique_ptr<Addon> cloneAddon(
       AddonManager* newManager) const override;
 
+  /// Increment the version of this Addon and its Manager
   size_t incrementVersion();
+
+  /// Call UpdateProperties(this) and incrementVersion()
+  void notifyPropertiesUpdate();
 
 protected:
 
@@ -290,8 +294,7 @@ void AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
-  UpdateProperties(static_cast<Derived*>(this));
-  this->incrementVersion();
+  this->notifyPropertiesUpdate();
 }
 
 //==============================================================================
@@ -325,6 +328,17 @@ size_t AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
     return mgr->incrementVersion();
 
   return 0;
+}
+
+//==============================================================================
+template <class BaseT, class DerivedT, typename PropertiesData,
+          class ManagerT, void (*updateProperties)(DerivedT*)>
+void AddonWithVersionedProperties<
+    BaseT, DerivedT, PropertiesData,
+    ManagerT, updateProperties>::notifyPropertiesUpdate()
+{
+  UpdateProperties(static_cast<Derived*>(this));
+  this->incrementVersion();
 }
 
 } // namespace detail

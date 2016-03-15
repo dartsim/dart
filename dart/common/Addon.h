@@ -178,11 +178,11 @@ protected:
 //==============================================================================
 #define DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
   inline void set ## Name (const Type & value)\
-  { mProperties.m ## Name = value; Update(this); }
+  { mProperties.m ## Name = value; Update(); }
 
 //==============================================================================
 #define DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, UpdateProperties )
+  DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
 
 //==============================================================================
 #define DART_COMMON_GET_ADDON_PROPERTY( Type, Name )\
@@ -195,7 +195,7 @@ protected:
   DART_COMMON_GET_ADDON_PROPERTY( Type, Name )
 
 //==============================================================================
-#define DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+#define DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
   void set ## SingleName (size_t index, const SingleType & value)\
   {\
     if( index >= Size )\
@@ -205,14 +205,12 @@ protected:
       assert(false); return;\
     }\
     this->mProperties.m ## PluralName [index] = value;\
-    UpdatePrefix :: UpdateProperties(this);\
-    this->incrementVersion();\
+    this->notifyPropertiesUpdate();\
   }\
   void set ## PluralName (const VectorType & vec)\
   {\
     this->mProperties.m ## PluralName = vec;\
-    UpdatePrefix :: UpdateProperties(this);\
-    this->incrementVersion();\
+    this->notifyPropertiesUpdate();\
   }
 
 //==============================================================================
@@ -233,31 +231,21 @@ protected:
   }
 
 //==============================================================================
-#define DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
-  DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size, UpdatePrefix )\
+#define DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
   DART_COMMON_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
 
 //==============================================================================
-#define DART_COMMON_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size, UpdatePrefix )\
-  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size, UpdatePrefix )
+#define DART_COMMON_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
 
 //==============================================================================
 #define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, PluralName )\
-  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF, MultiDofJoint<DOF>::Addon )
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF )
 
 //==============================================================================
 #define DART_COMMON_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
   DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
-
-//==============================================================================
-#define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateProperties( GetAddon () );\
-  GetAddon ()->incrementVersion();
-
-//==============================================================================
-#define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateState( GetAddon () );\
-  DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon );
 
 #include "dart/common/detail/Addon.h"
 
