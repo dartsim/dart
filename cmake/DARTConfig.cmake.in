@@ -4,7 +4,6 @@
 # This sets the following variables:
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES    - Libraries needed to use DART.
-# DART_LIBRARY_DIRS - Directories that contain the DART libraries.
 # DART_VERSION      - DART version.
 
 #===============================================================================
@@ -14,11 +13,6 @@ set(DART_INCLUDE_DIRS
     "@CMAKE_INSTALL_PREFIX@/include"
     "@EIGEN3_INCLUDE_DIRS@"
     "@BULLET_INCLUDE_DIRS@")
-
-#===============================================================================
-# DART_LIBRARY_DIRS
-#===============================================================================
-set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
 
 #===============================================================================
 # DART_LIBRARIES
