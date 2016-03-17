@@ -25,5 +25,7 @@ install(
   DESTINATION include/dart/optimizer/snopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-snopt EXPORT DARTSNOPTTargets DESTINATION lib)
-
+install(TARGETS dart-optimizer-snopt
+  EXPORT DARTTargets
+  DESTINATION lib
+)
