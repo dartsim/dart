@@ -69,7 +69,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   size_t n = _group->getTotalDimension();
 
   // If there is no constraint, then just return.
-  if (n == 0)
+  if (0u == n)
     return;
 
   int nSkip = dPAD(n);
