@@ -74,6 +74,13 @@ option(DART_BUILD_OSGDART "Build osgDart library" ON)
 option(DART_BUILD_EXAMPLES "Build examples" ON)
 option(DART_BUILD_TUTORIALS "Build tutorials" ON)
 option(DART_BUILD_UNITTESTS "Build unit tests" ON)
+option(DART_COVERALLS "Turn on coveralls support" OFF)
+option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+
+if(DART_COVERALLS)
+  include(Coveralls)
+  coveralls_turn_on_coverage()
+endif()
 
 #===============================================================================
 # Build type settings
@@ -485,7 +492,7 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-Wall -Wextra -msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -msse2 -fPIC")
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   set(CXX_COMPILER_VERSION ${GCC_VERSION})
@@ -499,7 +506,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "-msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -fPIC")
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
   set(CXX_COMPILER_VERSION ${CLANG_VERSION})
