@@ -262,6 +262,20 @@ collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
 }
 
 //==============================================================================
+void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver)
+{
+  assert(_lcpSolver && "Invalid LCP solver.");
+
+  mLCPSolver = std::move(_lcpSolver);
+}
+
+//==============================================================================
+LCPSolver* ConstraintSolver::getLCPSolver() const
+{
+  return mLCPSolver.get();
+}
+
+//==============================================================================
 void ConstraintSolver::solve()
 {
   for (size_t i = 0; i < mSkeletons.size(); ++i)

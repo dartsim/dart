@@ -115,6 +115,12 @@ public:
   /// Get collision detector
   collision::CollisionDetector* getCollisionDetector() const;
 
+  /// Set LCP solver
+  void setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver);
+
+  /// Get LCP solver
+  LCPSolver* getLCPSolver() const;
+
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
