@@ -63,13 +63,15 @@ DantzigLCPSolver::~DantzigLCPSolver()
 //==============================================================================
 void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 {
-  // If there is no constraint, then just return true.
-  size_t numConstraints = _group->getNumConstraints();
-  if (numConstraints == 0)
-    return;
 
   // Build LCP terms by aggregating them from constraints
+  size_t numConstraints = _group->getNumConstraints();
   size_t n = _group->getTotalDimension();
+
+  // If there is no constraint, then just return.
+  if (n == 0)
+    return;
+
   int nSkip = dPAD(n);
   double* A = new double[n * nSkip];
   double* x = new double[n];
