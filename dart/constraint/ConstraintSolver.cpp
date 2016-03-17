@@ -243,7 +243,7 @@ void ConstraintSolver::setCollisionDetector(
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-  std::unique_ptr<collision::CollisionDetector>&& _collisionDetector)
+  std::unique_ptr<collision::CollisionDetector> _collisionDetector)
 {
   assert(_collisionDetector && "Invalid collision detector.");
 

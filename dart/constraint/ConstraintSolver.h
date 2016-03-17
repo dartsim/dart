@@ -110,7 +110,7 @@ public:
 
   /// Set collision detector
   void setCollisionDetector(
-    std::unique_ptr<collision::CollisionDetector>&& _collisionDetector);
+    std::unique_ptr<collision::CollisionDetector> _collisionDetector);
 
   /// Get collision detector
   collision::CollisionDetector* getCollisionDetector() const;
