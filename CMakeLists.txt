@@ -360,14 +360,8 @@ else()
 endif()
 
 # BulletCollision
-if(UNIX)
-  pkg_check_modules(BULLET bullet>=2.82 QUIET)
-  if(NOT BULLET_FOUND)
-     pkg_check_modules(BULLET bullet2.82>=2.82 QUIET)
-  endif()
-else()
-  find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
-endif()
+find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
+
 if(BULLET_FOUND)
   message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
   set(HAVE_BULLET_COLLISION TRUE)
