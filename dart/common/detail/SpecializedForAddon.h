@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_DETAIL_SPECIALIZEDADDONMANAGER_H_
 #define DART_COMMON_DETAIL_SPECIALIZEDADDONMANAGER_H_
 
-#include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/SpecializedForAddon.h"
 
 // This preprocessor token should only be used by the unittest that is
 // responsible for checking that the specialized routines are being used to
@@ -51,7 +51,7 @@ namespace common {
 
 //==============================================================================
 template <class SpecAddon>
-SpecializedAddonManager<SpecAddon>::SpecializedAddonManager()
+SpecializedForAddon<SpecAddon>::SpecializedForAddon()
 {
   mAddonMap[typeid( SpecAddon )] = nullptr;
   mSpecAddonIterator = mAddonMap.find(typeid( SpecAddon ));
@@ -60,7 +60,7 @@ SpecializedAddonManager<SpecAddon>::SpecializedAddonManager()
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-bool SpecializedAddonManager<SpecAddon>::has() const
+bool SpecializedForAddon<SpecAddon>::has() const
 {
   return _has(type<T>());
 }
@@ -68,7 +68,7 @@ bool SpecializedAddonManager<SpecAddon>::has() const
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-T* SpecializedAddonManager<SpecAddon>::get()
+T* SpecializedForAddon<SpecAddon>::get()
 {
   return _get(type<T>());
 }
@@ -76,7 +76,7 @@ T* SpecializedAddonManager<SpecAddon>::get()
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-const T* SpecializedAddonManager<SpecAddon>::get() const
+const T* SpecializedForAddon<SpecAddon>::get() const
 {
   return _get(type<T>());
 }
@@ -84,7 +84,7 @@ const T* SpecializedAddonManager<SpecAddon>::get() const
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::set(const T* addon)
+void SpecializedForAddon<SpecAddon>::set(const T* addon)
 {
   _set(type<T>(), addon);
 }
@@ -92,7 +92,7 @@ void SpecializedAddonManager<SpecAddon>::set(const T* addon)
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::set(std::unique_ptr<T>&& addon)
+void SpecializedForAddon<SpecAddon>::set(std::unique_ptr<T>&& addon)
 {
   _set(type<T>(), std::move(addon));
 }
@@ -100,7 +100,7 @@ void SpecializedAddonManager<SpecAddon>::set(std::unique_ptr<T>&& addon)
 //==============================================================================
 template <class SpecAddon>
 template <class T, typename ...Args>
-T* SpecializedAddonManager<SpecAddon>::create(Args&&... args)
+T* SpecializedForAddon<SpecAddon>::create(Args&&... args)
 {
   return _create(type<T>(), std::forward<Args>(args)...);
 }
@@ -108,7 +108,7 @@ T* SpecializedAddonManager<SpecAddon>::create(Args&&... args)
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::erase()
+void SpecializedForAddon<SpecAddon>::erase()
 {
   _erase(type<T>());
 }
@@ -116,7 +116,7 @@ void SpecializedAddonManager<SpecAddon>::erase()
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-std::unique_ptr<T> SpecializedAddonManager<SpecAddon>::release()
+std::unique_ptr<T> SpecializedForAddon<SpecAddon>::release()
 {
   return _release(type<T>());
 }
@@ -124,7 +124,7 @@ std::unique_ptr<T> SpecializedAddonManager<SpecAddon>::release()
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-constexpr bool SpecializedAddonManager<SpecAddon>::isSpecializedFor()
+constexpr bool SpecializedForAddon<SpecAddon>::isSpecializedFor()
 {
   return _isSpecializedFor(type<T>());
 }
@@ -132,7 +132,7 @@ constexpr bool SpecializedAddonManager<SpecAddon>::isSpecializedFor()
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-bool SpecializedAddonManager<SpecAddon>::_has(type<T>) const
+bool SpecializedForAddon<SpecAddon>::_has(type<T>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
   usedSpecializedAddonAccess = true;
@@ -143,7 +143,7 @@ bool SpecializedAddonManager<SpecAddon>::_has(type<T>) const
 
 //==============================================================================
 template <class SpecAddon>
-bool SpecializedAddonManager<SpecAddon>::_has(type<SpecAddon>) const
+bool SpecializedForAddon<SpecAddon>::_has(type<SpecAddon>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
   usedSpecializedAddonAccess = true;
@@ -155,14 +155,14 @@ bool SpecializedAddonManager<SpecAddon>::_has(type<SpecAddon>) const
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-T* SpecializedAddonManager<SpecAddon>::_get(type<T>)
+T* SpecializedForAddon<SpecAddon>::_get(type<T>)
 {
   return AddonManager::get<T>();
 }
 
 //==============================================================================
 template <class SpecAddon>
-SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>)
+SpecAddon* SpecializedForAddon<SpecAddon>::_get(type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
   usedSpecializedAddonAccess = true;
@@ -174,14 +174,14 @@ SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>)
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-const T* SpecializedAddonManager<SpecAddon>::_get(type<T>) const
+const T* SpecializedForAddon<SpecAddon>::_get(type<T>) const
 {
   return AddonManager::get<T>();
 }
 
 //==============================================================================
 template <class SpecAddon>
-const SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>) const
+const SpecAddon* SpecializedForAddon<SpecAddon>::_get(type<SpecAddon>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
   usedSpecializedAddonAccess = true;
@@ -193,14 +193,14 @@ const SpecAddon* SpecializedAddonManager<SpecAddon>::_get(type<SpecAddon>) const
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::_set(type<T>, const T* addon)
+void SpecializedForAddon<SpecAddon>::_set(type<T>, const T* addon)
 {
   AddonManager::set<T>(addon);
 }
 
 //==============================================================================
 template <class SpecAddon>
-void SpecializedAddonManager<SpecAddon>::_set(
+void SpecializedForAddon<SpecAddon>::_set(
     type<SpecAddon>, const SpecAddon* addon)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
@@ -221,14 +221,14 @@ void SpecializedAddonManager<SpecAddon>::_set(
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::_set(type<T>, std::unique_ptr<T>&& addon)
+void SpecializedForAddon<SpecAddon>::_set(type<T>, std::unique_ptr<T>&& addon)
 {
   AddonManager::set<T>(std::move(addon));
 }
 
 //==============================================================================
 template <class SpecAddon>
-void SpecializedAddonManager<SpecAddon>::_set(
+void SpecializedForAddon<SpecAddon>::_set(
     type<SpecAddon>, std::unique_ptr<SpecAddon>&& addon)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
@@ -242,7 +242,7 @@ void SpecializedAddonManager<SpecAddon>::_set(
 //==============================================================================
 template <class SpecAddon>
 template <class T, typename ...Args>
-T* SpecializedAddonManager<SpecAddon>::_create(type<T>, Args&&... args)
+T* SpecializedForAddon<SpecAddon>::_create(type<T>, Args&&... args)
 {
   return AddonManager::create<T>(std::forward<Args>(args)...);
 }
@@ -250,7 +250,7 @@ T* SpecializedAddonManager<SpecAddon>::_create(type<T>, Args&&... args)
 //==============================================================================
 template <class SpecAddon>
 template <typename ...Args>
-SpecAddon* SpecializedAddonManager<SpecAddon>::_create(
+SpecAddon* SpecializedForAddon<SpecAddon>::_create(
     type<SpecAddon>, Args&&... args)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
@@ -267,14 +267,14 @@ SpecAddon* SpecializedAddonManager<SpecAddon>::_create(
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-void SpecializedAddonManager<SpecAddon>::_erase(type<T>)
+void SpecializedForAddon<SpecAddon>::_erase(type<T>)
 {
   AddonManager::erase<T>();
 }
 
 //==============================================================================
 template <class SpecAddon>
-void SpecializedAddonManager<SpecAddon>::_erase(type<SpecAddon>)
+void SpecializedForAddon<SpecAddon>::_erase(type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
   usedSpecializedAddonAccess = true;
@@ -287,14 +287,14 @@ void SpecializedAddonManager<SpecAddon>::_erase(type<SpecAddon>)
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-std::unique_ptr<T> SpecializedAddonManager<SpecAddon>::_release(type<T>)
+std::unique_ptr<T> SpecializedForAddon<SpecAddon>::_release(type<T>)
 {
   return AddonManager::release<T>();
 }
 
 //==============================================================================
 template <class SpecAddon>
-std::unique_ptr<SpecAddon> SpecializedAddonManager<SpecAddon>::_release(
+std::unique_ptr<SpecAddon> SpecializedForAddon<SpecAddon>::_release(
     type<SpecAddon>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
@@ -311,14 +311,14 @@ std::unique_ptr<SpecAddon> SpecializedAddonManager<SpecAddon>::_release(
 //==============================================================================
 template <class SpecAddon>
 template <class T>
-constexpr bool SpecializedAddonManager<SpecAddon>::_isSpecializedFor(type<T>)
+constexpr bool SpecializedForAddon<SpecAddon>::_isSpecializedFor(type<T>)
 {
   return false;
 }
 
 //==============================================================================
 template <class SpecAddon>
-constexpr bool SpecializedAddonManager<SpecAddon>::_isSpecializedFor(type<SpecAddon>)
+constexpr bool SpecializedForAddon<SpecAddon>::_isSpecializedFor(type<SpecAddon>)
 {
   return true;
 }
