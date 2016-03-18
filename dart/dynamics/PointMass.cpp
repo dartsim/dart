@@ -147,13 +147,13 @@ size_t PointMass::getIndexInSoftBodyNode() const
 void PointMass::setMass(double _mass)
 {
   assert(0.0 < _mass);
-  mParentSoftBodyNode->mSoftP.mPointProps[mIndex].mMass = _mass;
+  mParentSoftBodyNode->getSoftAndInc().mPointProps[mIndex].mMass = _mass;
 }
 
 //==============================================================================
 double PointMass::getMass() const
 {
-  return mParentSoftBodyNode->mSoftP.mPointProps[mIndex].mMass;
+  return mParentSoftBodyNode->getSoft().mPointProps[mIndex].mMass;
 }
 
 //==============================================================================
@@ -189,14 +189,14 @@ void PointMass::addConnectedPointMass(PointMass* _pointMass)
 {
   assert(_pointMass != nullptr);
 
-  mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
+  mParentSoftBodyNode->getSoftAndInc().mPointProps[mIndex].
       mConnectedPointMassIndices.push_back(_pointMass->mIndex);
 }
 
 //==============================================================================
 size_t PointMass::getNumConnectedPointMasses() const
 {
-  return mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
+  return mParentSoftBodyNode->getSoft().mPointProps[mIndex].
       mConnectedPointMassIndices.size();
 }
 
@@ -206,7 +206,7 @@ PointMass* PointMass::getConnectedPointMass(size_t _idx)
   assert(_idx < getNumConnectedPointMasses());
 
   return mParentSoftBodyNode->mPointMasses[
-      mParentSoftBodyNode->mSoftP.mPointProps[mIndex].
+      mParentSoftBodyNode->getSoft().mPointProps[mIndex].
       mConnectedPointMassIndices[_idx]];
 }
 
@@ -532,14 +532,14 @@ void PointMass::clearConstraintImpulse()
 //==============================================================================
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
-  mParentSoftBodyNode->mSoftP.mPointProps[mIndex].mX0 = _p;
+  mParentSoftBodyNode->getSoftAndInc().mPointProps[mIndex].mX0 = _p;
   mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PointMass::getRestingPosition() const
 {
-  return mParentSoftBodyNode->mSoftP.mPointProps[mIndex].mX0;
+  return mParentSoftBodyNode->getSoft().mPointProps[mIndex].mX0;
 }
 
 //==============================================================================

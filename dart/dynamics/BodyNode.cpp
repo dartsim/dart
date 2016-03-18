@@ -1232,6 +1232,13 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 }
 
 //==============================================================================
+BodyNode::BodyNode(const std::tuple<BodyNode *, Joint *, Properties>& args)
+  : BodyNode(std::get<0>(args), std::get<1>(args), std::get<2>(args))
+{
+  // The initializer list is delegating the construction
+}
+
+//==============================================================================
 BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
                           bool cloneNodes) const
 {

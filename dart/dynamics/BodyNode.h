@@ -870,6 +870,9 @@ protected:
   BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
            const Properties& _properties);
 
+  /// Delegating constructor
+  BodyNode(const std::tuple<BodyNode*, Joint*, Properties>& args);
+
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,

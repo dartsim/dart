@@ -80,6 +80,13 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 }
 
 //==============================================================================
+Entity::Entity()
+  : Entity(ConstructAbstract)
+{
+  // Delegated to Entity(ConstructAbstract_t)
+}
+
+//==============================================================================
 Entity::~Entity()
 {
   changeParentFrame(nullptr);

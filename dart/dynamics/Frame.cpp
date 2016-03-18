@@ -533,6 +533,13 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
 }
 
 //==============================================================================
+Frame::Frame()
+  : Frame(ConstructAbstract)
+{
+  // Delegated to Frame(ConstructAbstract)
+}
+
+//==============================================================================
 Frame::Frame(ConstructAbstract_t)
   : Entity(Entity::ConstructAbstract),
     mAmWorld(false),

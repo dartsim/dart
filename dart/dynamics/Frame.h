@@ -263,6 +263,9 @@ protected:
   /// Constructor for typical usage
   explicit Frame(Frame* _refFrame, const std::string& _name);
 
+  /// Default constructor, delegates to Frame(ConstructAbstract_t)
+  Frame();
+
   /// Constructor for use by pure abstract classes
   explicit Frame(ConstructAbstract_t);
 

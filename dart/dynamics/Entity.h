@@ -97,6 +97,9 @@ public:
   /// Constructor for typical usage
   explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
 
+  /// Default constructor, delegates to Entity(ConstructAbstract_t)
+  Entity();
+
   Entity(const Entity&) = delete;
 
   /// Destructor
