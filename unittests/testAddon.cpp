@@ -46,7 +46,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/sub_ptr.h"
 #include "dart/common/AddonManager.h"
-#include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/SpecializedForAddon.h"
 
 #include "dart/dynamics/EulerJoint.h"
 
@@ -224,7 +224,7 @@ typedef StatefulAddon<float>  FloatAddon;
 typedef StatefulAddon<char>   CharAddon;
 typedef StatefulAddon<int>    IntAddon;
 
-class CustomSpecializedManager : public SpecializedAddonManager<SpecializedAddon> { };
+class CustomSpecializedManager : public SpecializedForAddon<SpecializedAddon> { };
 
 TEST(Addon, Generic)
 {

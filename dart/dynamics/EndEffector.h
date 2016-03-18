@@ -37,10 +37,11 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_H_
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
+#include "dart/common/Addon.h"
+#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/AddonWithVersion.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/common/SpecializedAddonManager.h"
-#include "dart/common/AddonWithVersion.h"
 
 namespace dart {
 namespace dynamics {
@@ -99,7 +100,7 @@ public:
 };
 
 class EndEffector final :
-    public virtual common::SpecializedAddonManager<Support>,
+    public virtual common::SpecializedForAddon<Support>,
     public FixedFrame,
     public AccessoryNode<EndEffector>,
     public TemplatedJacobianNode<EndEffector>

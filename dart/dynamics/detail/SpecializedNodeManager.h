@@ -51,7 +51,7 @@ bool usedSpecializedNodeAccess;
 
 //==============================================================================
 template <class SpecNode>
-SpecializedNodeManagerForBodyNode<SpecNode>::SpecializedNodeManagerForBodyNode()
+BodyNodeSpecializedFor<SpecNode>::BodyNodeSpecializedFor()
 {
   mNodeMap[typeid( SpecNode )] = std::vector<Node*>();
   mSpecNodeIterator = mNodeMap.find(typeid( SpecNode ));
@@ -60,7 +60,7 @@ SpecializedNodeManagerForBodyNode<SpecNode>::SpecializedNodeManagerForBodyNode()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SpecializedNodeManagerForBodyNode<SpecNode>::getNumNodes() const
+size_t BodyNodeSpecializedFor<SpecNode>::getNumNodes() const
 {
   return _getNumNodes(type<NodeType>());
 }
@@ -68,7 +68,7 @@ size_t SpecializedNodeManagerForBodyNode<SpecNode>::getNumNodes() const
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForBodyNode<SpecNode>::getNode(size_t index)
+NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(size_t index)
 {
   return _getNode(type<NodeType>(), index);
 }
@@ -76,16 +76,16 @@ NodeType* SpecializedNodeManagerForBodyNode<SpecNode>::getNode(size_t index)
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-const NodeType* SpecializedNodeManagerForBodyNode<SpecNode>::getNode(size_t index) const
+const NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(size_t index) const
 {
-  return const_cast<SpecializedNodeManagerForBodyNode<SpecNode>*>(this)->
+  return const_cast<BodyNodeSpecializedFor<SpecNode>*>(this)->
       _getNode(type<NodeType>(), index);
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-constexpr bool SpecializedNodeManagerForBodyNode<SpecNode>::isSpecializedForNode()
+constexpr bool BodyNodeSpecializedFor<SpecNode>::isSpecializedForNode()
 {
   return _isSpecializedForNode(type<NodeType>());
 }
@@ -93,14 +93,14 @@ constexpr bool SpecializedNodeManagerForBodyNode<SpecNode>::isSpecializedForNode
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SpecializedNodeManagerForBodyNode<SpecNode>::_getNumNodes(type<NodeType>) const
+size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<NodeType>) const
 {
   return detail::BasicNodeManagerForBodyNode::getNumNodes<NodeType>();
 }
 
 //==============================================================================
 template <class SpecNode>
-size_t SpecializedNodeManagerForBodyNode<SpecNode>::_getNumNodes(type<SpecNode>) const
+size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<SpecNode>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
@@ -112,14 +112,14 @@ size_t SpecializedNodeManagerForBodyNode<SpecNode>::_getNumNodes(type<SpecNode>)
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForBodyNode<SpecNode>::_getNode(type<NodeType>, size_t index)
+NodeType* BodyNodeSpecializedFor<SpecNode>::_getNode(type<NodeType>, size_t index)
 {
   return detail::BasicNodeManagerForBodyNode::getNode<NodeType>(index);
 }
 
 //==============================================================================
 template <class SpecNode>
-SpecNode* SpecializedNodeManagerForBodyNode<SpecNode>::_getNode(type<SpecNode>, size_t index)
+SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(type<SpecNode>, size_t index)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
@@ -132,21 +132,21 @@ SpecNode* SpecializedNodeManagerForBodyNode<SpecNode>::_getNode(type<SpecNode>, 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-constexpr bool SpecializedNodeManagerForBodyNode<SpecNode>::_isSpecializedForNode(type<NodeType>)
+constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(type<NodeType>)
 {
   return false;
 }
 
 //==============================================================================
 template <class SpecNode>
-constexpr bool SpecializedNodeManagerForBodyNode<SpecNode>::_isSpecializedForNode(type<SpecNode>)
+constexpr bool BodyNodeSpecializedFor<SpecNode>::_isSpecializedForNode(type<SpecNode>)
 {
   return true;
 }
 
 //==============================================================================
 template <class SpecNode>
-SpecializedNodeManagerForSkeleton<SpecNode>::SpecializedNodeManagerForSkeleton()
+SkeletonSpecializedFor<SpecNode>::SkeletonSpecializedFor()
 {
   mSpecializedTreeNodes[typeid( SpecNode )] = &mTreeSpecNodeIterators;
 
@@ -157,7 +157,7 @@ SpecializedNodeManagerForSkeleton<SpecNode>::SpecializedNodeManagerForSkeleton()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SpecializedNodeManagerForSkeleton<SpecNode>::getNumNodes(
+size_t SkeletonSpecializedFor<SpecNode>::getNumNodes(
     size_t treeIndex) const
 {
   return _getNumNodes(type<NodeType>(), treeIndex);
@@ -166,7 +166,7 @@ size_t SpecializedNodeManagerForSkeleton<SpecNode>::getNumNodes(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
+NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     size_t treeIndex, size_t nodeIndex)
 {
   return _getNode(type<NodeType>(), treeIndex, nodeIndex);
@@ -175,17 +175,17 @@ NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-const NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
+const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     size_t treeIndex, size_t nodeIndex) const
 {
-  return const_cast<SpecializedNodeManagerForSkeleton<SpecNode>*>(this)->
+  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->
         _getNode(type<NodeType>(), treeIndex, nodeIndex);
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
+NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     const std::string& name)
 {
   return _getNode(type<NodeType>(), name);
@@ -194,18 +194,17 @@ NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-const NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::getNode(
+const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
     const std::string& name) const
 {
-  return const_cast<SpecializedNodeManagerForSkeleton<SpecNode>*>(this)->
+  return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->
         _getNode(type<NodeType>(), name);
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
-    isSpecializedForNode()
+constexpr bool SkeletonSpecializedFor<SpecNode>::isSpecializedForNode()
 {
   return _isSpecializedForNode(type<NodeType>());
 }
@@ -213,7 +212,7 @@ constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SpecializedNodeManagerForSkeleton<SpecNode>::_getNumNodes(
+size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
     type<NodeType>, size_t treeIndex) const
 {
   return detail::BasicNodeManagerForSkeleton::getNumNodes<NodeType>(treeIndex);
@@ -221,7 +220,7 @@ size_t SpecializedNodeManagerForSkeleton<SpecNode>::_getNumNodes(
 
 //==============================================================================
 template <class SpecNode>
-size_t SpecializedNodeManagerForSkeleton<SpecNode>::_getNumNodes(
+size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
     type<SpecNode>, size_t treeIndex) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
@@ -243,7 +242,7 @@ size_t SpecializedNodeManagerForSkeleton<SpecNode>::_getNumNodes(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
+NodeType* SkeletonSpecializedFor<SpecNode>::_getNode(
     type<NodeType>, size_t treeIndex, size_t nodeIndex)
 {
   return detail::BasicNodeManagerForSkeleton::getNode<NodeType>(
@@ -252,7 +251,7 @@ NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
 
 //==============================================================================
 template <class SpecNode>
-SpecNode* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
+SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
     type<SpecNode>, size_t treeIndex, size_t nodeIndex)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
@@ -286,7 +285,7 @@ SpecNode* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
+NodeType* SkeletonSpecializedFor<SpecNode>::_getNode(
     type<NodeType>, const std::string& name)
 {
   return detail::BasicNodeManagerForSkeleton::getNode<NodeType>(name);
@@ -294,29 +293,30 @@ NodeType* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
 
 //==============================================================================
 template <class SpecNode>
-SpecNode* SpecializedNodeManagerForSkeleton<SpecNode>::_getNode(
+SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
     type<SpecNode>, const std::string& name)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 
-  return static_cast<SpecNode*>(mSpecNodeNameMgrIterator->second.getObject(name));
+  return static_cast<SpecNode*>(
+      mSpecNodeNameMgrIterator->second.getObject(name));
 }
 
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
-    _isSpecializedForNode(type<NodeType>)
+constexpr bool SkeletonSpecializedFor<SpecNode>::_isSpecializedForNode(
+    type<NodeType>)
 {
   return false;
 }
 
 //==============================================================================
 template <class SpecNode>
-constexpr bool SpecializedNodeManagerForSkeleton<SpecNode>::
-    _isSpecializedForNode(type<SpecNode>)
+constexpr bool SkeletonSpecializedFor<SpecNode>::_isSpecializedForNode(
+    type<SpecNode>)
 {
   return true;
 }

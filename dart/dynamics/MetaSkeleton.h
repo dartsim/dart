@@ -475,7 +475,7 @@ public:
   /// You can specify a coordinate Frame to express the Jabocian in.
   virtual math::LinearJacobian getLinearJacobianDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const = 0;
 
   /// Get the angular Jacobian time derivative of a BodyNode. You can specify a

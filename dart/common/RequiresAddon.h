@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_REQUIRESADDON_H_
 #define DART_COMMON_REQUIRESADDON_H_
 
-#include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/SpecializedForAddon.h"
 
 namespace dart {
 namespace common {
@@ -53,7 +53,7 @@ class RequiresAddon { };
 
 //==============================================================================
 template <class ReqAddon>
-class RequiresAddon<ReqAddon> : public virtual SpecializedAddonManager<ReqAddon>
+class RequiresAddon<ReqAddon> : public virtual SpecializedForAddon<ReqAddon>
 {
 public:
 

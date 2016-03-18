@@ -50,19 +50,19 @@ class Skeleton;
 //==============================================================================
 /// Declaration of the variadic template
 template <class... OtherSpecNodes>
-class SpecializedNodeManagerForBodyNode { };
+class BodyNodeSpecializedFor { };
 
 //==============================================================================
-/// SpecializedNodeManagerForBodyNode allows classes that inherit BodyNode to
+/// BodyNodeSpecializedFor allows classes that inherit BodyNode to
 /// have constant-time access to a specific type of Node
 template <class SpecNode>
-class SpecializedNodeManagerForBodyNode<SpecNode> :
+class BodyNodeSpecializedFor<SpecNode> :
     public virtual detail::BasicNodeManagerForBodyNode
 {
 public:
 
   /// Default constructor
-  SpecializedNodeManagerForBodyNode();
+  BodyNodeSpecializedFor();
 
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
@@ -109,35 +109,35 @@ protected:
 };
 
 //==============================================================================
-/// This is the variadic version of the SpecializedNodeManagerForBodyNode class
+/// This is the variadic version of the BodyNodeSpecializedFor class
 /// which allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecNode1, class... OtherSpecNodes>
-class SpecializedNodeManagerForBodyNode<SpecNode1, OtherSpecNodes...> :
+class BodyNodeSpecializedFor<SpecNode1, OtherSpecNodes...> :
     public NodeManagerJoinerForBodyNode<
-      common::Virtual< SpecializedNodeManagerForBodyNode<SpecNode1> >,
-      common::Virtual< SpecializedNodeManagerForBodyNode<OtherSpecNodes...> > > { };
+      common::Virtual< BodyNodeSpecializedFor<SpecNode1> >,
+      common::Virtual< BodyNodeSpecializedFor<OtherSpecNodes...> > > { };
 
 //==============================================================================
 /// Declaration of the variadic template
 template <class... OtherSpecNodes>
-class SpecializedNodeManagerForSkeleton { };
+class SkeletonSpecializedFor { };
 
 //==============================================================================
-/// SpecializedNodeManagerForSkeleton allows classes that inherit Skeleton to
+/// SkeletonSpecializedForNode allows classes that inherit Skeleton to
 /// have constant-time access to a specific type of Node
 template <class SpecNode>
-class SpecializedNodeManagerForSkeleton<SpecNode> :
+class SkeletonSpecializedFor<SpecNode> :
     public virtual detail::BasicNodeManagerForSkeleton,
-    public virtual SpecializedNodeManagerForBodyNode<SpecNode>
+    public virtual BodyNodeSpecializedFor<SpecNode>
 {
 public:
 
-  using SpecializedNodeManagerForBodyNode<SpecNode>::getNode;
-  using SpecializedNodeManagerForBodyNode<SpecNode>::getNumNodes;
-  using SpecializedNodeManagerForBodyNode<SpecNode>::isSpecializedForNode;
+  using BodyNodeSpecializedFor<SpecNode>::getNode;
+  using BodyNodeSpecializedFor<SpecNode>::getNumNodes;
+  using BodyNodeSpecializedFor<SpecNode>::isSpecializedForNode;
 
-  SpecializedNodeManagerForSkeleton();
+  SkeletonSpecializedFor();
 
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
@@ -207,14 +207,14 @@ protected:
 };
 
 //==============================================================================
-/// This is the variadic version of the SpecializedNodeManagerForSkeleton class
+/// This is the variadic version of the SkeletonSpecializedForNode class
 /// which allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecNode1, class... OtherSpecNodes>
-class SpecializedNodeManagerForSkeleton<SpecNode1, OtherSpecNodes...> :
+class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...> :
     public NodeManagerJoinerForSkeleton<
-      common::Virtual< SpecializedNodeManagerForSkeleton<SpecNode1> >,
-      common::Virtual< SpecializedNodeManagerForSkeleton<OtherSpecNodes...> > > { };
+      common::Virtual< SkeletonSpecializedFor<SpecNode1> >,
+      common::Virtual< SkeletonSpecializedFor<OtherSpecNodes...> > > { };
 
 } // namespace dynamics
 } // namespace dart

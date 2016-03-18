@@ -52,9 +52,9 @@ template <class Base1>
 class AddonManagerJoiner<Base1> : public Base1 { };
 
 /// AddonManagerJoiner allows classes that inherit from various
-/// SpecializedAddonManager types to be inherited by a single derived class.
+/// SpecializedForAddon types to be inherited by a single derived class.
 /// This class solves the diamond-of-death problem for multiple
-/// SpecializedAddonManager inheritance.
+/// SpecializedForAddon inheritance.
 template <class Base1, class Base2>
 class AddonManagerJoiner<Base1, Base2> : public Base1, public Base2
 {
