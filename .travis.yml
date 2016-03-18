@@ -16,7 +16,7 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug COVERALLS=ON
+      env: BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug COVERALLS=ON COVERALLS_REPO_TOKEN=FKh1HgwfV5uzNrYxIT6ZWjcFqybYZSUym
   exclude:
     - os: osx
       compiler: gcc
