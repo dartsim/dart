@@ -131,6 +131,8 @@ if (GIT_FOUND)
 	git_log_format(B GIT_COMMIT_MESSAGE)
 	git_log_format(H GIT_COMMIT_HASH)
 
+	string(REPLACE "\n" "\\n" GIT_COMMIT_MESSAGE ${GIT_COMMIT_MESSAGE})
+
 	message("Git exe: ${GIT_EXECUTABLE}")
 	message("Git branch: ${GIT_BRANCH}")
 	message("Git author: ${GIT_AUTHOR_NAME}")
